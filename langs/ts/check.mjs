@@ -92,7 +92,7 @@ export async function check(opts) {
     }
   }
   crumb.phase = 'lane A'; crumb.input = null;
-  cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}) })) : null };
+  cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}) })) : null, ...(b.record ? { record: b.record } : {}) }; // record: the witness-record/v2 unit certificate (exec/record.mjs), additive
   try { cert.unitTextEqual = b.unitTextEqual ?? unitTextEqual(parent, candidate, unit); } catch { cert.unitTextEqual = null; } // the unit's own text, comments and whitespace dropped, equal on both sides or not: beside the file hashes, it says whether a difference came through this function's text or through what it calls
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
   if (b.bound?.frontEnd?.layers) { const L = b.bound.frontEnd.layers; cert.layers = { tree: { ...L.tree, proof: 'lane A reads the unit alone: a component tag is a name and useContext a world read keyed by the context, so a proof covers the unit\'s own tree of names' }, styles: L.styles, notObserved: L.notObserved }; } // a rendered unit: each layer its own result with its assumptions (design/ui-layers.md)

@@ -20,11 +20,12 @@ import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import { fork } from 'node:child_process';
+import { fork, spawnSync } from 'node:child_process';
+import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
-import { inputsFor, aliasInputs, knownInput, knownLength } from './gen.mjs';
+import { inputsFor, aliasInputs, knownInput, knownLength, walkLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
 import { Graph } from './graph.mjs';
@@ -435,6 +436,7 @@ function routeCall(env, Cls, member, args, spec, run) {
 
 // one sandbox per side: a module cache, the fakes, the frozen globals
 export function sandbox(env, root) {
+  captureEnvironment(env);
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null) };
   const react = reactRuntime(env);
@@ -845,14 +847,22 @@ const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefin
 // a unit whose parent does not hold it runs as today (new-unit.mjs starts its own bounded process); every other unit runs
 // in the child under the bound
 const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit);
+let recordHeadCache = null;
+const leanHeadForRecords = () => {
+  if (recordHeadCache) return recordHeadCache;
+  const head = spawnSync('git', ['-C', path.dirname(new URL(import.meta.url).pathname), 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+  if (head.status !== 0) console.error(`witness record head unavailable (exit ${head.status}): ${head.stderr ?? head.error?.message}`);
+  return recordHeadCache = head.status === 0 ? head.stdout.trim() : 'unknown';
+};
 export async function runPair(opts) {
+  if (!opts.recordHead) opts = { ...opts, recordHead: leanHeadForRecords() }; // the lean head every record names, read once per process
   if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
   const seconds = unitSecondsValue(opts.unitSeconds);
   const { unitSeconds, inProcess, ...rest } = opts;
   return new Promise((resolve) => {
     let last = null, done = false;
     const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
-    const end = (res) => { if (done) return; done = true; clearTimeout(timer); resolve(res); };
+    const end = (res) => { if (done) return; done = true; clearTimeout(timer); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
     const timer = setTimeout(() => {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
       end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its wall-clock bound (timeout) of ${seconds} s per unit (--unit-seconds); the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
@@ -874,7 +884,13 @@ export async function runPairInProcess(opts) { runsInFlight++; try { return awai
 async function runPairInFlight(opts) {
   const owner = enclosingUnitName(opts.candidate, opts.unit);
   if (owner) return { ...await runPairInFlight({ ...opts, unit: owner }), unit: opts.unit, 'covered-by': owner };
-  const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
+  const unitRecord = { schema: 'witness-record/v2', version: 2, invocation: { kind: 'unit' }, unit: opts.unit, seed: opts.seed ?? 1, leanHead: opts.recordHead ?? 'unknown', drawDomain: { parameters: [], status: 'not recorded', reason: 'input plan not reached' }, draws: [], reach: { status: 'not recorded', reason: 'sandbox statement markers retain only current/completed sites; no per-line visit accumulator or diff bitmap' } };
+  beginUnitRecord(unitRecord);
+  let res;
+  try { res = annotateWitness(await runPairOnce({ ...opts, unitRecord }), opts.parent, opts.candidate, opts.unit); }
+  finally { finishUnitRecord(unitRecord); }
+  res.record = unitRecord; // one home: lane B's result; check.mjs and pr.mjs pass it to the certificate
+  for (const w of res.witnesses ?? []) if (!w.record) w.record = { schema: 'witness-record/v2', version: 2, seed: unitRecord.seed, leanHead: unitRecord.leanHead, invocation: { kind: 'unrecorded' }, unrecorded: [{ site: 'runPairInFlight: non-single-call witness', reason: 'program/sequence initialization and command arguments not captured at this output boundary' }] };
   const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
   for (const witness of res.witnesses ?? []) {
     const hd = handlerDifference(witness.parent?.outcome?.returned, witness.candidate?.outcome?.returned); if (hd) witness.where = { ...(witness.where ?? {}), handler: hd }; // a held handler's keys differ: the prop and the first differing step, or the escape that kept a text key
@@ -932,6 +948,8 @@ async function runPairOnce(opts) {
   let plan; step('inputs');
   try { plan = inputPlan(parent, candidate, unit, { project, seed, values: opts.values }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const { spec, heaps } = plan;
+  const unitRecord = opts.unitRecord;
+  unitRecord.drawDomain = { status: 'recorded', parameters: spec.params.map(p => ({ name: p.name, spec: p.spec, optional: !!p.optional, count: 0, families: {} })), requested: n, seed, heaps: heaps.builders.length, known: knownLength(spec), boundaryWalk: spec.shaped ? walkLength(spec) : 0 };
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
@@ -952,22 +970,23 @@ async function runPairOnce(opts) {
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       let inputs;
+      captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
-      sides[name] = { env, unit: u, inputs, drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
+      sides[name] = { env, unit: u, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
     return sides;
   };
   // a witness's args: the input as drawn, before either call; `parent` and `candidate` keep what each call left. The two
   // sides draw their own copies from one seed, so their drawn renderings are equal; one that differs is named beside it
-  const drawnOf = (sides) => ({ args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
-  const observeSide = (sides, name) => { crumb.side = name; tellCrumb(); return observe(sides[name], spec, sides[name].inputs, ms); }; // the side being observed joins the breadcrumb
+  const drawnOf = (sides) => ({ record: witnessRecord({ seed, leanHead: opts.recordHead ?? 'unknown', input: crumb.input, sides, invocation: { kind: 'call', isMethod: spec.isMethod, isStatic: spec.isStatic, accessor: spec.accessor ?? null } }), args: sides.parent.drawn, ...(JSON.stringify(sides.parent.drawn) !== JSON.stringify(sides.candidate.drawn) ? { drawnCandidate: sides.candidate.drawn } : {}) });
+  const observeSide = async (sides, name) => { crumb.side = name; tellCrumb(); captureActive(sides[name].env, true); try { return await observe(sides[name], spec, sides[name].inputs, ms); } finally { captureActive(sides[name].env, false); } }; // the side being observed joins the breadcrumb
   const observeBoth = (sides, record) => (record ? recording(records, async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')]) : (async () => [await observeSide(sides, 'parent'), await observeSide(sides, 'candidate')])());
   // retained state: for a class unit, programs of method calls on one constructed instance per side run first (programs.mjs); a divergence in a program that calls this unit is its WITNESS, one elsewhere rides in the certificate for the unit it names
   let programRun = null;
   if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
     const { runPrograms } = await import('./programs.mjs'); step('programs');
-    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
+    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
   for (let i = 0; i < n; i++) {
     step('lane B', i); let sides = await mountSides(i);
@@ -976,6 +995,10 @@ async function runPairOnce(opts) {
     if (!treeDone && (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout')) { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
       recorderRetries++; sides = await mountSides(i); if (harnessAsk) break; [oP, oC] = await observeBoth(sides, false);
     }
+    const family = i < heaps.builders.length ? 'enumerated heaps' : knownInput(spec, i) ? 'listed values' : spec.shaped && i - heaps.builders.length - knownLength(spec) < walkLength(spec) ? 'boundary walk' : 'seeded type-directed draw';
+    const drawnRecord = witnessRecord({ seed, leanHead: opts.recordHead ?? 'unknown', input: i, sides, invocation: { kind: 'call', isMethod: spec.isMethod, isStatic: spec.isStatic, accessor: spec.accessor ?? null } });
+    unitRecord.draws.push({ ...drawSummary(drawnRecord), family, completion: { parent: oP.harness ?? (oP.impure ? 'impure' : 'observed'), candidate: oC.harness ?? (oC.impure ? 'impure' : 'observed') } });
+    for (const p of unitRecord.drawDomain.parameters) { p.count++; p.families[family] = (p.families[family] ?? 0) + 1; }
     if (treeDone && (oP.harness || oC.harness || oP.impure || oC.impure)) break; // past the tree layer's witnesses the run only feeds the styles layer: a stop there ends it
     if ((sides.parent.sawJsx || sides.candidate.sawJsx) && oP.outcome && oC.outcome && Object.hasOwn(oP.outcome, 'returned') && Object.hasOwn(oC.outcome, 'returned')) styles.add(i, oP.outcome.returned, oC.outcome.returned);
     if (treeDone) continue;
@@ -1021,7 +1044,7 @@ async function runPairOnce(opts) {
     if (programRun.verdict === 'WITNESS') {
       const mine = programRun.program.some((c) => c.method === member);
       bound.programs.divergence = { method: programRun.divergence.method, commands: programRun.program.length, program: programRun.program, mine };
-      if (mine) return { verdict: 'WITNESS', unit, witnesses: [{ input: `program ${programRun.programIndex}`, program: programRun.program, args: programRun.program.map((c) => c.args), parent: programRun.divergence.parent, candidate: programRun.divergence.candidate, where: { ...programRun.divergence.where, command: programRun.divergence.command, method: programRun.divergence.method } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
+      if (mine) return { verdict: 'WITNESS', unit, witnesses: [{ record: programRun.record, input: `program ${programRun.programIndex}`, program: programRun.program, args: programRun.program.map((c) => c.args), parent: programRun.divergence.parent, candidate: programRun.divergence.candidate, where: { ...programRun.divergence.where, command: programRun.divergence.command, method: programRun.divergence.method } }, ...diffs], bound, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
     }
   }
   // races (design/schedules.md): an async unit called twice, the second call arriving while the first is pending, every
@@ -1212,7 +1235,8 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);
-  if (out) fs.writeFileSync(out, text); else console.log(text);
-  if (out) console.log(`${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}`);
-  process.exit(res.verdict === 'ASK' ? 2 : 0);
+  if (out) fs.writeFileSync(out, text);
+  // exit once stdout has taken the whole line: on macOS a pipe write is asynchronous, and process.exit right after
+  // console.log dropped a result larger than the pipe buffer (64 KB) when the reader was slow (the same bytes as before)
+  process.stdout.write((out ? `${res.verdict}${res.reason ? ': ' + res.reason : ''} -> ${out}` : text) + '\n', () => process.exit(res.verdict === 'ASK' ? 2 : 0));
 }
