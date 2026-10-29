@@ -2333,3 +2333,52 @@ export function findingUnit(sf, units, finding) {
   return values.filter(u => u.node.getStart(sf) <= start && end <= u.node.getEnd())
     .sort((a, b) => (a.node.getEnd() - a.node.getStart(sf)) - (b.node.getEnd() - b.node.getStart(sf)))[0] ?? null;
 }
+
+const callbackWrites = new WeakMap();
+// A closure input is a binding owned by an enclosing unit. A module binding retains its module-state reading.
+// Symbol identity, not spelling, joins uses and writes; writes in a loop or another closure can happen later even
+// when their source precedes creation. Const bindings are stable; a mutable binding must have no possible later write.
+export function callbackEnvironment(checker, u) {
+  if (u.form !== 'callback') return [];
+  const sf = u.fn.getSourceFile(), owners = new Set();
+  for (let p = u.enclosingUnit; p; p = p.enclosingUnit) owners.add(p.fn);
+  const enclosing = n => { for (let p = n.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; };
+  if (!callbackWrites.has(checker)) callbackWrites.set(checker, new WeakMap());
+  const byFile = callbackWrites.get(checker);
+  let writes = byFile.get(sf);
+  if (!writes) {
+    writes = new Map(); byFile.set(sf, writes);
+    const target = n => {
+      if (ts.isIdentifier(n)) {
+        const d = checker.getSymbolAtLocation(n)?.valueDeclaration;
+        if (d) { if (!writes.has(d)) writes.set(d, []); writes.get(d).push(n); }
+      } else if (ts.isArrayLiteralExpression(n)) n.elements.forEach(target);
+      else if (ts.isObjectLiteralExpression(n)) n.properties.forEach(p => target(ts.isPropertyAssignment(p) ? p.initializer : ts.isShorthandPropertyAssignment(p) ? p.name : p.expression));
+      else if (ts.isParenthesizedExpression(n) || ts.isSpreadElement(n) || ts.isSpreadAssignment(n)) target(n.expression);
+      else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) target(n.left);
+    };
+    const scan = n => {
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment) target(n.left);
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(n.operator)) target(n.operand);
+      if ((ts.isForOfStatement(n) || ts.isForInStatement(n)) && !ts.isVariableDeclarationList(n.initializer)) target(n.initializer);
+      ts.forEachChild(n, scan);
+    };
+    scan(sf);
+  }
+  const captures = new Map();
+  const visit = n => {
+    if (ts.isTypeNode(n)) return;
+    if (ts.isIdentifier(n)) {
+      const sym = ts.isShorthandPropertyAssignment(n.parent) ? checker.getShorthandAssignmentValueSymbol(n.parent) : checker.getSymbolAtLocation(n);
+      const decl = sym?.valueDeclaration;
+      if (decl && (ts.isParameter(decl) || ts.isVariableDeclaration(decl) || ts.isBindingElement(decl)) && owners.has(enclosing(decl)) && !captures.has(decl)) {
+        const loop = w => { for (let p = u.fn.parent; p; p = p.parent) if (ts.isIterationStatement(p, false) && p.pos <= w.pos && w.end <= p.end) return true; return false; };
+        const mutable = !(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && (writes.get(decl) ?? []).some(w => w.getStart(sf) >= u.fn.getStart(sf) || enclosing(w) !== enclosing(decl) || loop(w));
+        captures.set(decl, { decl, sym, use: n, mutable });
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(u.fn);
+  return [...captures.values()];
+}

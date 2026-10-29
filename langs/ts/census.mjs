@@ -7,7 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { lintFile } from './lint/lint.mjs';
-import { loadManyChunks, topLevelFunctions, lineOf } from './common.mjs';
+import { loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
 
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
 const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts|js|jsx|mjs|cjs)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
@@ -56,13 +56,15 @@ export function census(root, opts = {}) {
       if (!L || L.error) throw new Error(L?.error ?? 'not loaded');
       const { sf } = L;
       sourceLines = sf.text.split(/\r?\n/);
-      unitNames = [...topLevelFunctions(sf).values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
+      const inventory = topLevelFunctions(sf);
+      unitNames = [...inventory.values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
       findings = lintFile(file, null, { project: true, loaded: L });
+      for (const f of findings) f.unit = findingUnit(sf, inventory, f)?.name ?? null;
     } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
-    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), findings: findings.map((f) => ({ line: f.line, rule: f.rule, msg: f.msg, env: !!f.env })) });
+    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), findings: findings.map((f) => ({ line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env })) });
     const blocked = new Set();
     for (const f of findings) {
-      const unit = unitNames.find(([, a, b]) => a <= f.line && f.line <= b)?.[0] ?? null;
+      const unit = f.unit;
       if (unit && !f.env && !blocked.has(unit)) {
         // Count each stopped unit under its first refusal. Environment findings do not stop a unit.
         blocked.add(unit);

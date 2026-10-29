@@ -11,7 +11,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit } from '../common.mjs';
+import { originOf } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
@@ -211,6 +212,11 @@ export function lintFile(file, ranges = null, opts = {}) {
   const ownText = given.sf.text; // what the owner wrote: the normalised text has the same length, so a finding quotes this at the same positions
   const out = [];
   const units = topLevelFunctions(sf);
+  const callbackInputs = new Map([...units.values()].filter(u => u.form === 'callback').map(u => [u.node, callbackEnvironment(checker, u)]));
+  const originOf = (checker, id, sf, node) => {
+    const o = sourceOriginOf(checker, id, sf, node);
+    return callbackInputs.get(node)?.some(c => c.decl === o.decl) ? { ...o, kind: 'local' } : o;
+  };
   const unitByNode = new Map([...units.values()].map(u => [u.node, u]));
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
   const generators = generatorReading(checker, sf, units);
@@ -2387,6 +2393,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   for (const u of units.values()) if (u.form === 'callback' && overlaps(sf, u.node, ranges)) {
     checkedDiagSpans.push(u.node);
     current = u.node; currentFn = u.fn; currentClass = null; literalUnit = null; objectMethod = null; thisParam = null;
+    for (const c of callbackInputs.get(u.node) ?? []) if (c.mutable) v(c.use, 'captured-mutable', `captured binding \`${c.use.text}\` may be written after this callback is created; capture a stable value`);
     const why = callbackUntypedJsUnit(sf, u, checker);
     if (why) v(u.node, 'untyped-js', why);
     if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
