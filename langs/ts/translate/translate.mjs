@@ -43,6 +43,7 @@ import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
+import { optionalCallShape } from '../lower.mjs';
 import { admitUnits } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
@@ -3767,30 +3768,23 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // the value of an optional chain that stopped, in the chain's own type: a void call's result is Unit either way
   function absentIn(t, n) { const none = checker.getUndefinedType(); return dtype(t, n) === 'Unit' ? 'Unit' : convert(absentValue(none), none, t, n); }
   function optionalCall(n, awaited) {
-    if (valueOperands) fail(n, 'optional-chain: an optional call beside an assignment, update or comma is not read');
-    const f = n.expression;
-    let cond, present, calleeT;
+    const shape = optionalCallShape(checker, n, sf, { current: currentUnit?.node, currentClass: currentUnit?.cls, thisParam: thisParamOf(currentUnit), units: fns, valueOperands });
+    if (shape.why) fail(n, `optional-chain: ${shape.why}`);
+    if (!shape.absent) return null;
+    const f = shape.callee, calleeT = shape.calleeType;
+    let cond, present;
     const sig = checker.getResolvedSignature(n);
-    if (ts.isIdentifier(f)) {
-      const ft = typeOf(f);
-      if (originOf(checker, f, sf, currentUnit?.node ?? null).kind !== 'local' || isAny(baseOf(ft))) fail(n, 'optional-chain: the callee is not a local function value');
-      if (!isOptional(ft)) return null;
-      calleeT = baseOf(ft);
+    if (shape.kind === 'local') {
       const v = `oc${tempCount++}_`;
       pending.push(`var ${v} := ${rawOperand(f)};`);
-      const fd = dtype(baseOf(ft), f);
+      const fd = dtype(calleeT, f);
       cond = `${v}.Some?`;
       present = () => isEffectCall(n)
         ? externalCall('invoke', n, [...n.arguments], `${v}.value`, fd, true)
         : `${v}.value(${n.arguments.map((a, i) => expr(a, sig && sig.parameters[i] ? checker.getTypeOfSymbolAtLocation(sig.parameters[i], a) : undefined)).join(', ')})`;
-    } else if (ts.isPropertyAccessExpression(f)) {
-      const recv = f.expression, name = f.name.text;
-      if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
-        if (fns.get(`${currentUnit.className}.${name}`)) return null; // a method of the class is never absent
-        const p = checker.getPropertyOfType(checker.getTypeAtLocation(currentUnit.cls.name), name);
-        const declared = p ? checker.getTypeOfSymbolAtLocation(p, f) : typeOf(f);
-        if (!isOptional(declared) && !(p && p.flags & ts.SymbolFlags.Optional)) return null;
-        calleeT = baseOf(declared);
+    } else {
+      const recv = shape.receiver, name = shape.name;
+      if (shape.kind === 'receiver') {
         const v = `oc${tempCount++}_`;
         pending.push(`var ${v} := ${propAccess(f, true)};`);
         cond = `${v}.Some?`;
@@ -3799,14 +3793,8 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         const T = selfType(currentUnit);
         present = () => externalCall('invoke_bound', n, [...n.arguments], `(${v}.value, ${SELF})`, `(${dtype(calleeT, f)}, ${T})`, true);
       } else {
-        const recvT = typeOf(recv), base = baseOf(recvT), T = dtype(base, n);
-        const absentRecv = !!f.questionDotToken && isOptional(recvT);
-        const p = checker.getPropertyOfType(base, name);
-        if (!p) fail(n, 'optional-chain: the callee is not a declared field');
-        const declared = checker.getTypeOfSymbolAtLocation(p, f);
-        const absentField = isOptional(declared) || !!(p.flags & ts.SymbolFlags.Optional);
-        if (!absentRecv && !absentField) return null;
-        calleeT = baseOf(declared);
+        const recvT = shape.receiverType, base = shape.receiverBase, T = dtype(base, n);
+        const absentRecv = shape.absentReceiver, absentField = shape.absentField;
         let rc;
         const parts = [];
         if (absentRecv) { const o = `oc${tempCount++}_`; pending.push(`var ${o} := ${rawOperand(recv)};`); rc = `${o}.value`; parts.push(`${o}.Some?`); }
@@ -3822,11 +3810,9 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           ? externalCall(`${awaited ? 'await_' : ''}${T}_${name}`, n, [...n.arguments], rc, T)
           : externalCall('invoke_bound', n, [...n.arguments], `(${fieldCode()}.value, ${rc})`, `(${dtype(calleeT, f)}, ${T})`, true);
       }
-    } else fail(n, 'optional-chain: a computed callee is not read');
+    }
     usesOption = true;
-    const one = checker.getSignaturesOfType(calleeT, ts.SignatureKind.Call);
-    if (one.length !== 1 || one[0].typeParameters?.length) fail(n, 'optional-chain: an overloaded or generic optional callee is not read');
-    n.__plainReturn = one[0].getReturnType();
+    n.__plainReturn = shape.signature.getReturnType();
     let rt = n.__plainReturn;
     if (isPromiseT(rt) && !(isHandleT(rt) && !awaited)) rt = checker.getTypeArguments(rt)[0];
     else if (awaited && checker.getAwaitedType) { const aw = checker.getAwaitedType(rt); if (aw) rt = aw; }

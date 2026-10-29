@@ -25,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import { ts, loadProgram, normaliseApplyCalls, topLevelFunctions, lineOf, colOf, overlaps, isArrayLike, originOf } from './common.mjs';
 import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, readingOfFinding, readingOfRefusal, translatorText, withdrawnReason, withdrawalKey, currentVersion } from './readings.mjs';
 import { memberRow } from './library-rows.mjs';
+import { methodLiteralOf } from './common.mjs';
 import { moduleState } from './module-forms.mjs';
 import { admissionFindings } from './lint/lint.mjs';
 import { translate } from './translate/translate.mjs';
@@ -68,6 +69,7 @@ const SHARED_TEXTS = { valueAssignmentWhy: 'write this assignment as a statement
 // both: a site whose statement calls one is decided once (the named-then pattern); any other is one decider's, which the
 // other reads through the record
 const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy', 'numberSpecial', 'nonemptyMathArgs']);
+LOWER_DECISIONS.add('optionalCallShape');
 function importedNames(sf) {
   const out = new Set();
   for (const st of sf.statements) if (ts.isImportDeclaration(st) && st.importClause?.namedBindings && ts.isNamedImports(st.importClause.namedBindings) && !/lint\.mjs|translate\.mjs/.test(st.moduleSpecifier.text)) for (const e of st.importClause.namedBindings.elements) out.add(e.name.text);
@@ -250,6 +252,73 @@ export function nonemptyMathArgs(checker, e) {
     if (ts.isIterationStatement(p, false)) loopEnd = Math.max(loopEnd, p.end);
   }
   return false;
+}
+
+// One optional-call decision: the lint reads why; emission reads kind, absence, field and signature.
+// Context carries lexical facts from the caller, never a second callee classifier. valueOperands records an
+// active synthetic value-step context; source contexts are checked below by the same rule.
+export function optionalCallShape(checker, e, sf, context = {}) {
+  const K = ts.SyntaxKind, TF = ts.TypeFlags;
+  const tOf = (n) => checker.getTypeAtLocation(n);
+  const nonNull = (t) => t.flags & TF.Union ? t.types.filter((x) => !(x.flags & (TF.Undefined | TF.Null))) : [t];
+  const isAny = (t) => !!(t.flags & (TF.Any | TF.Unknown));
+  const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
+  const local = (n) => originOf(checker, n, sf, context.current ?? null).kind === 'local';
+  const refuse = (why) => ({ why });
+  const valueStepIn = (n) => {
+    if (!n || ts.isFunctionLike(n)) return false;
+    if ((ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) ||
+        ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) ||
+        ts.isCommaListExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.CommaToken)) return true;
+    let found = false; ts.forEachChild(n, (c) => { if (!found && valueStepIn(c)) found = true; }); return found;
+  };
+  let top = e;
+  for (let p = e.parent; p && !ts.isStatement(p) && !ts.isFunctionLike(p) && !ts.isVariableDeclaration(p) && !ts.isParameter(p) && !ts.isCaseClause(p) && !ts.isSourceFile(p); p = p.parent) top = p;
+  const root = ts.isBinaryExpression(top) && top.operatorToken.kind >= K.FirstAssignment && top.operatorToken.kind <= K.LastAssignment && top.parent && ts.isExpressionStatement(top.parent) ? top.right : top;
+  if (context.valueOperands || valueStepIn(root)) return refuse('write the optional call in its own statement; an assignment, update or comma beside it evaluates every operand before the call decides');
+  const plainRecord = (t) => {
+    const parts = nonNull(t); if (parts.length !== 1) return false;
+    const p = parts[0], literal = methodLiteralOf(checker, p);
+    return !!(p.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, p) && !['Set', 'ReadonlySet', 'Map', 'ReadonlyMap', 'Promise'].includes(p.symbol?.name) &&
+      !isAny(p) && !p.symbol?.declarations?.some((d) => (ts.isClassDeclaration(d) || ts.isClassExpression(d)) && d.getSourceFile() === sf) && literal?.getSourceFile() !== sf;
+  };
+  const functionShape = (t) => {
+    const parts = nonNull(t); if (parts.length !== 1 || isAny(parts[0])) return null;
+    const sigs = checker.getSignaturesOfType(parts[0], ts.SignatureKind.Call);
+    return sigs.length === 1 && !sigs[0].typeParameters?.length ? { calleeType: parts[0], signature: sigs[0] } : null;
+  };
+  const f = e.expression;
+  if (ts.isIdentifier(f)) {
+    if (!local(f)) return refuse('an optional call reads a local function value; bind an imported or global callee to a local first');
+    const declared = tOf(f), fn = functionShape(declared);
+    return fn ? { why: null, kind: 'local', callee: f, declared, absent: isOptional(declared), ...fn } : refuse('an optional call needs a callee typed as one nongeneric function or undefined; narrow an opaque or overloaded value first');
+  }
+  if (!ts.isPropertyAccessExpression(f)) return refuse('an optional call reads a named callee; bind a computed callee to a local first');
+  const recv = f.expression, name = f.name.text;
+  if (recv.kind === K.ThisKeyword) {
+    if (!context.currentClass || context.objectMethod || context.thisParam) return refuse('an optional call on `this` reads a field of a class receiver');
+    if (context.units?.has(`${context.currentClass.name?.text}.${name}`)) return { why: null, kind: 'method', callee: f, absent: false };
+    const field = checker.getPropertyOfType(tOf(recv), name);
+    const declared = field && checker.getTypeOfSymbolAtLocation(field, f), fn = declared && functionShape(declared);
+    if (!fn || field.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d))) return refuse('an optional call on `this` reads a function field of the class');
+    return { why: null, kind: 'receiver', callee: f, receiver: recv, name, field, declared, absent: isOptional(declared) || !!(field.flags & ts.SymbolFlags.Optional), ...fn };
+  }
+  let link = recv;
+  for (;;) {
+    if (ts.isPropertyAccessExpression(link) && link.questionDotToken) return refuse('an optional call reads a field of a nonoptional record path; narrow the path first');
+    if (ts.isIdentifier(link)) { if (!local(link)) return refuse('an optional call reads a function field of a record held in a local or a parameter'); break; }
+    if (!ts.isPropertyAccessExpression(link)) return refuse('an optional call reads a function field of a record path; bind the receiver to a local first');
+    link = link.expression;
+  }
+  for (let x = recv; ts.isPropertyAccessExpression(x); x = x.expression) if (!plainRecord(tOf(x.expression)) || nonNull(tOf(x.expression)).length !== (tOf(x.expression).types?.length ?? 1)) return refuse('an optional call reads a field of a nonoptional record path; narrow the path first');
+  const receiverType = tOf(recv);
+  if (!plainRecord(receiverType)) return refuse('an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first');
+  if (isOptional(receiverType) && !f.questionDotToken) return refuse('an optional call reads a field of a present record');
+  const receiverBase = nonNull(receiverType)[0], field = checker.getPropertyOfType(receiverBase, name);
+  const declared = field && checker.getTypeOfSymbolAtLocation(field, f), fn = declared && functionShape(declared);
+  if (!fn) return refuse('an optional call reads a declared function field of the record');
+  const absentReceiver = !!f.questionDotToken && isOptional(receiverType), absentField = isOptional(declared) || !!(field.flags & ts.SymbolFlags.Optional);
+  return { why: null, kind: 'record', callee: f, receiver: recv, name, receiverType, receiverBase, field, declared, absentReceiver, absentField, absent: absentReceiver || absentField, ...fn };
 }
 
 // ---------- the lowering ----------
