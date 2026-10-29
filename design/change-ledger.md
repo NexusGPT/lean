@@ -65,3 +65,10 @@ Full pair step (`node langs/ts/tests/run.mjs`), baseline `fea80f8` in a detached
 - **A head commit is read from its tree only.** The fixture's dependency guards edited `types.ts` and `tsconfig.json` in the working tree while asking for `--head HEAD`; the runner at `fea80f8` resolved imports from the dirty working tree, mixing two snapshots. The private snapshot reads the commit, so the fixture now commits each dependency change, and its guards read the four unit rows (the ledger adds rows for the edited import and config files, which run no lane and carry no certificate).
 
 `node langs/ts/tests/fixtures/pr-intake/test.mjs`: exit 1 at `e15b0f1`, exit 0 now. The full pair step was not rerun after this (a targeted rerun of the one differing check); the ci tests all exit 0.
+
+## Snapshot cap and hash list
+
+- **A run folder stays under 2 GB.** The source snapshot is the only large part. `materializeSources` sizes every entry first (`git cat-file --batch-check` for a commit, `stat` for WORKTREE) and refuses a snapshot over `SNAPSHOT_CAP_BYTES` (2 GiB) before writing a byte. The worker records `worker-refusal.json` (`snapshot-cap`, bytes, cap), and reconciliation gives every task without a receipt the terminal state `snapshot-cap` (row coverage `failed:snapshot-cap`). The state is in the `comment.test.mjs` vocabulary.
+- **The hash list outlives the snapshot.** `sources.json` in the run folder lists each copied file with its bytes and sha256, plus the repository and head. The snapshot itself is still deleted once every task is terminal.
+
+Red: `node langs/ts/ci/worktree.test.mjs` exit 1 (`ENOENT ... sources.json`). Green: exit 0, including a run with a 1-byte cap that ends `failed:snapshot-cap` with a complete reconciliation and no `sources` folder.

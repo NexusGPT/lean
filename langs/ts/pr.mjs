@@ -439,7 +439,13 @@ async function ledgerWorker(optionsFile) {
   const opts = JSON.parse(fs.readFileSync(optionsFile, 'utf8'));
   opts.scope = new Set(opts.scope);
   opts.paths = opts.selectedPaths ? f => opts.selectedPaths.includes(f) : null;
-  opts.filesRoot = materializeSources({ repo: opts.repo, head: opts.head, dir: path.join(opts._runDir, 'sources'), sensitivePath });
+  try { opts.filesRoot = materializeSources({ repo: opts.repo, head: opts.head, dir: path.join(opts._runDir, 'sources'), sensitivePath, ...(opts.snapshotCapBytes ? { capBytes: opts.snapshotCapBytes } : {}) }); }
+  catch (e) {
+    if (e.code !== 'SNAPSHOT_CAP') throw e;
+    console.error('lean worker: ' + e.message);
+    atomicJSON(path.join(opts._runDir, 'worker-refusal.json'), { state: 'snapshot-cap', bytes: e.bytes, cap: e.cap });
+    return;
+  }
   const rows = await prWorker(opts);
   atomicJSON(path.join(opts._runDir, 'worker-report.json'), reportJSON(rows));
 }

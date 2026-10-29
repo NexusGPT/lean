@@ -22,5 +22,13 @@ try {
   assert(fs.existsSync(path.join(rows.runDir, 'terminal.json')), 'the durable ledger stays');
   assert(!fs.readdirSync(tmp).some(f => f.startsWith('.lean_')), 'no temporary source siblings in the input checkout');
   assert(git('status', '--porcelain').includes(before));
+  const listed = JSON.parse(fs.readFileSync(path.join(rows.runDir, 'sources.json'), 'utf8'));
+  assert(listed.files.some(f => f.file === 'added.ts' && /^[a-f0-9]{64}$/.test(f.sha256)), 'the snapshot leaves its hash list');
+  // A snapshot over the cap is refused before a byte is written: a named terminal state, a complete reconciliation.
+  const capped = await prReport({ repo: tmp, base, head: 'WORKTREE', preview: true, project: false, runsDir: path.join(tmp, '.runs-cap'), cacheDir: path.join(tmp, '.cache'), snapshotCapBytes: 1 });
+  const unitRow = capped.find(r => r.unit === 'added');
+  assert.equal(unitRow?.coverage, 'failed:snapshot-cap', 'a unit whose snapshot was refused ends failed:snapshot-cap');
+  assert.equal(capped.reconciliation.complete, true);
+  assert(!fs.existsSync(path.join(capped.runDir, 'sources')), 'nothing written past the cap');
   console.log('worktree.test: all assertions pass');
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

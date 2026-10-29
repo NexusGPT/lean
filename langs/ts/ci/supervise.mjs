@@ -63,6 +63,8 @@ export function commitArtifact(dir, id, row) {
 }
 export function reconcileTasks(dir, failure = { state: 'lost-worker' }) {
   if (fs.existsSync(path.join(dir, 'terminal.json'))) return read(path.join(dir, 'terminal.json'));
+  // A worker that refused its own work (e.g. a snapshot over the cap) names the state; it outranks a bare exit status.
+  if (fs.existsSync(path.join(dir, 'worker-refusal.json'))) failure = { ...failure, ...read(path.join(dir, 'worker-refusal.json')) };
   const manifest = read(path.join(dir, 'tasks.json')), ledger = read(path.join(dir, 'change.json'));
   const expected = manifest.tasks.map(t => t.id);
   if (new Set(expected).size !== expected.length) throw new Error('duplicate task identity');
@@ -117,7 +119,9 @@ export async function supervise(dir, { command, args, timeoutMs, env = process.e
 
 // Materialize only tracked source/configuration files, from the requested tree, inside the private run.
 // The checkout is read-only; package installations are never performed. A node_modules link is read-only input.
-export function materializeSources({ repo, head, dir, sensitivePath }) {
+// The snapshot is the only large part of a run folder; past this many bytes it is refused before a byte is written.
+export const SNAPSHOT_CAP_BYTES = 2 * 1024 ** 3;
+export function materializeSources({ repo, head, dir, sensitivePath, capBytes = SNAPSHOT_CAP_BYTES }) {
   const runGit = args => {
     const r = spawnSync('git', ['-C', repo, ...args], { maxBuffer: 1 << 28 });
     if (r.status !== 0) throw new Error(`snapshot git exit ${r.status}: ${r.stderr}`);
@@ -135,12 +139,26 @@ export function materializeSources({ repo, head, dir, sensitivePath }) {
   const seen = new Set(); // an unmerged path has one index entry per stage; it is copied once
   const entries = listing.filter(e => !seen.has(e.file) && seen.add(e.file)).filter(e => e.type === 'blob' && /^100/.test(e.mode) && !sensitivePath(e.file)
     && (/\.[cm]?[jt]sx?$/.test(e.file) || /(?:^|\/)(?:package|tsconfig[^/]*)\.json$/.test(e.file) || e.file === '.lean/values.json'));
+  // Sizes first: the cap is checked against the whole snapshot, so a refused snapshot leaves nothing half written.
+  if (head === 'WORKTREE') for (const e of entries) {
+    const src = path.join(repo, e.file);
+    e.size = fs.existsSync(src) && fs.lstatSync(src).isFile() ? fs.statSync(src).size : null;
+  } else if (entries.length) {
+    const r = spawnSync('git', ['-C', repo, 'cat-file', '--batch-check'], { input: entries.map(e => e.oid).join('\n') + '\n', maxBuffer: 1 << 28 });
+    if (r.status !== 0) throw new Error(`snapshot cat-file exit ${r.status}: ${r.stderr}`);
+    r.stdout.toString().trim().split('\n').forEach((line, i) => { entries[i].size = Number(line.split(' ')[2]); });
+  }
+  const bytes = entries.reduce((n, e) => n + (e.size ?? 0), 0);
+  if (bytes > capBytes) throw Object.assign(new Error(`source snapshot of ${bytes} bytes exceeds the cap of ${capBytes}`), { code: 'SNAPSHOT_CAP', bytes, cap: capBytes });
   fs.mkdirSync(dir, { recursive: true });
+  const files = [];
+  const record = (e, data) => files.push({ file: e.file, bytes: data.length, sha256: hash(data) });
   if (head === 'WORKTREE') {
     for (const e of entries) {
       const src = path.join(repo, e.file);
-      if (!fs.existsSync(src) || !fs.lstatSync(src).isFile()) continue;
-      const target = path.join(dir, e.file); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.copyFileSync(src, target);
+      if (e.size == null) continue;
+      const data = fs.readFileSync(src);
+      const target = path.join(dir, e.file); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, data); record(e, data);
     }
   } else if (entries.length) {
     const r = spawnSync('git', ['-C', repo, 'cat-file', '--batch'], { input: entries.map(e => e.oid).join('\n') + '\n', maxBuffer: 1 << 30 });
@@ -150,12 +168,15 @@ export function materializeSources({ repo, head, dir, sensitivePath }) {
       const end = r.stdout.indexOf(10, pos), header = r.stdout.subarray(pos, end).toString().split(' '), size = Number(header[2]);
       if (header[0] !== e.oid || header[1] !== 'blob' || !Number.isSafeInteger(size)) throw new Error('invalid snapshot blob');
       const target = path.join(dir, e.file); fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.writeFileSync(target, r.stdout.subarray(end + 1, end + 1 + size)); pos = end + size + 2;
+      const data = r.stdout.subarray(end + 1, end + 1 + size);
+      fs.writeFileSync(target, data); record(e, data); pos = end + size + 2;
     }
   }
   for (const parent of new Set(['', ...entries.filter(e => /(?:^|\/)package\.json$/.test(e.file)).map(e => path.dirname(e.file))])) {
     const modules = path.join(repo, parent, 'node_modules'), target = path.join(dir, parent, 'node_modules');
     if (fs.existsSync(modules) && !fs.existsSync(target)) { fs.mkdirSync(path.dirname(target), { recursive: true }); fs.symlinkSync(modules, target, 'dir'); }
   }
+  // The hash list outlives the snapshot, which is deleted once every task is terminal.
+  atomicJSON(path.join(path.dirname(dir), 'sources.json'), { repo, head, bytes, files });
   return dir;
 }
