@@ -119,6 +119,10 @@ against `const b = [...a]`, though the copy is another object (`===` false, a pu
   source's), and another text, so the guard decides: a result that may be the input, or an identity comparison of two
   references, withholds the lemma (ASK:identity). One copy on each side is the same text again and proves.
 - `x.slice()`, `x.map(...)`, `[...x, y]` and `Array.from(x)` already read as another text than x's and are unchanged.
+- `x.toSorted()` and `x.toReversed()` copy, then sort or reverse (23.1.3.33, 23.1.3.34): their receiver reads through
+  `arrayCopyOf` too, so they keep the text of `[...x].sort()` and `[...x].reverse()` (library_rows `sortedNames` stays
+  proved) and never take the text of `x.sort()`, which sorts x and returns x itself (the lint refuses that one as an
+  in-place mutation today).
 - Lane B compares a returned array of primitives by value, so it does not separate `return a` from `return [...a]`
   (PASS-bounded); `b === a` it witnesses.
 
