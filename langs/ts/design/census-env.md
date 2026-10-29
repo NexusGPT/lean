@@ -125,3 +125,7 @@ Tsconfigs whose `extends` did not read:
    `unresolved-module` finding reaches (each unit once, under its first finding's kind); each such finding names its
    module and package state. `census-env.mjs diff <before> <after>` reports per rule the units before, after, left
    and joined, and the units that left `unresolved-module` clean versus still stopped by another rule.
+4. Environment-blocked units. After the rungs, a unit whose module or global still does not resolve is not inside the
+   subset: its types are unknown. The census counts it once under `environment: <kind>` of its first such finding, in
+   `environmentBlocked`, apart from `entered` and `languageRefused`. `--clean-after` removes the root's node_modules
+   once it is read, so the disk budget holds one installed root at a time.
