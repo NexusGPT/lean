@@ -51,12 +51,11 @@ export function loadProgram(file, opts = {}) {
   let configFile = null;
   if (typeof want === 'string') configFile = path.resolve(want);
   else if (want) configFile = ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null;
-  let options = { ...COMPILER_OPTIONS };
+  let options = { ...COMPILER_OPTIONS, ...projectless(abs) };
   let roots = [abs];
   if (configFile && fs.existsSync(configFile)) {
-    const raw = ts.readConfigFile(configFile, ts.sys.readFile);
-    if (!raw.error) {
-      const parsed = ts.parseJsonConfigFileContent(raw.config, ts.sys, path.dirname(configFile));
+    const parsed = parseProjectConfig(configFile);
+    if (parsed) {
       // the project's own options decide resolution; ours decide strictness and emit
       options = { ...parsed.options, strict: true, noEmit: true, skipLibCheck: true, noImplicitReturns: true, allowJs: true, checkJs: true };
       if (options.jsx === undefined) options.jsx = ts.JsxEmit.ReactJSX; // a project without a jsx setting still parses .tsx
@@ -67,10 +66,12 @@ export function loadProgram(file, opts = {}) {
         if (!options.lib.length) options.lib = ['lib.es2022.d.ts'];
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
+      delete options.rootDir; // an emit layout: nothing is emitted, and a workspace package read from its source lies outside it
       options.configFilePath = configFile; // automatic @types inclusion starts from the config's directory
       workspaceResolution(options, configFile);
-      // the file alone is the root: the compiler follows its imports, which is what a translation needs
-      roots = [abs];
+      // the file is the root: the compiler follows its imports, which is what a translation needs; the project's own
+      // declaration files join it (the globals they declare are part of every file's program)
+      roots = [abs, ...projectDeclarations(parsed, abs)];
     } else configFile = null;
   }
   if (!configFile) roots = [...roots, path.join(here, 'ambient.d.ts')]; // structuredClone and the like, declared for a file read without its project
@@ -98,7 +99,8 @@ export function* loadManyChunks(files, opts = {}) {
   for (const f of files) {
     const abs = path.resolve(f);
     const cfg = opts.project === false ? null : (ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null);
-    const k = cfg ?? ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
+    // a file without a project groups with the files that see the same installed declarations
+    const k = cfg ?? `\0${typeRootsFrom(path.dirname(abs)).join('\0')}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
   }
   const CHUNK = opts.chunk ?? 1200; // a program over thousands of roots exhausts the heap; chunks share nothing but cost little
   const chunks = [];
@@ -106,29 +108,31 @@ export function* loadManyChunks(files, opts = {}) {
   for (const [cfg, absList] of chunks) {
     const out = new Map();
     // options exactly as loadProgram computes them, with the whole group as roots
-    const first = loadProgramOptions(absList[0], cfg || null);
+    const project = cfg && !cfg.startsWith('\0') ? cfg : null;
+    const first = loadProgramOptions(absList[0], project);
     let program;
-    try { program = ts.createProgram(absList, first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); yield out; continue; }
+    try { program = ts.createProgram([...absList, ...first.declarations.filter((d) => !absList.includes(d))], first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); yield out; continue; }
     const checker = program.getTypeChecker();
     for (const abs of absList) {
       const sf = program.getSourceFile(abs);
       if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
       let diagnostics;
       try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; } catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}` }); continue; }
-      out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null });
+      out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: project });
     }
-    opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files`);
+    opts.log?.(`project ${project || '(none)'}: ${absList.length} files`);
     yield out;
   }
 }
 
 // the compiler options loadProgram uses for a file under a config (shared by loadProgram and loadMany)
 export function loadProgramOptions(abs, configFile) {
-  let options = { ...COMPILER_OPTIONS };
+  let options = { ...COMPILER_OPTIONS, ...projectless(abs) };
+  let declarations = [];
   if (configFile && fs.existsSync(configFile)) {
-    const raw = ts.readConfigFile(configFile, ts.sys.readFile);
-    if (!raw.error) {
-      const parsed = ts.parseJsonConfigFileContent(raw.config, ts.sys, path.dirname(configFile));
+    const parsed = parseProjectConfig(configFile);
+    if (parsed) {
+      declarations = projectDeclarations(parsed, abs);
       options = { ...parsed.options, strict: true, noEmit: true, skipLibCheck: true, noImplicitReturns: true, allowJs: true, checkJs: true };
       if (Array.isArray(options.lib)) {
         const libDir = path.join(here, 'vendor', 'typescript', 'lib');
@@ -136,11 +140,74 @@ export function loadProgramOptions(abs, configFile) {
         if (!options.lib.length) options.lib = ['lib.es2022.d.ts'];
       }
       delete options.composite; delete options.incremental; delete options.tsBuildInfoFile;
+      delete options.rootDir;
       options.configFilePath = configFile;
       workspaceResolution(options, configFile);
     }
   }
-  return { options };
+  return { options, declarations };
+}
+
+// The declaration files a project's own `include`/`files` name (outside node_modules): ambient globals the project
+// declares for itself (an `interface AbortSignal` in a both.d.ts), part of the program of every file it holds.
+export function projectDeclarations(parsed, abs) {
+  return parsed.fileNames.filter((f) => /\.d\.[mc]?ts$/.test(f) && !/[\\/]node_modules[\\/]/.test(f) && path.resolve(f) !== abs).map((f) => path.resolve(f));
+}
+
+// The `node_modules/@types` folders TypeScript's default type roots name for a directory: every ancestor's, nearest first.
+export function typeRootsFrom(dir) {
+  const out = [];
+  for (let d = dir; ; d = path.dirname(d)) { const t = path.join(d, 'node_modules', '@types'); if (fs.existsSync(t)) out.push(t); if (path.dirname(d) === d) break; }
+  return out;
+}
+
+// A file read without a project resolves as the compiler resolves for a bundler (node_modules, package exports), not by
+// the Classic walk that never reads node_modules; where an install provides declaration packages, they are visible as
+// TypeScript makes them visible by default (every package under the type roots above the file). With no install above
+// the file nothing changes: no type roots, no declaration packages.
+export function projectless(abs) {
+  const typeRoots = typeRootsFrom(path.dirname(abs));
+  const o = { moduleResolution: ts.ModuleResolutionKind.Bundler };
+  if (typeRoots.length) { o.typeRoots = typeRoots; o.types = undefined; }
+  return o;
+}
+
+// A tsconfig as TypeScript reads it ({options, errors}), or null when the file itself does not parse. An `extends` that
+// names a package of the repository's own workspace reads that package's folder, as the package manager's workspace
+// link would, when no node_modules entry provides it: the inherited options (target, lib, moduleResolution) are the
+// project's, not the compiler's defaults. An installed entry always wins; a package from outside the workspace is
+// never invented.
+const projectConfigs = new Map(); // tsconfig -> parsed
+export function parseProjectConfig(configFile) {
+  const key = `${configFile}\0${fs.statSync(configFile).mtimeMs}`; // a rewritten tsconfig is read again
+  if (projectConfigs.has(key)) return projectConfigs.get(key);
+  const raw = ts.readConfigFile(configFile, ts.sys.readFile);
+  const parsed = raw.error ? null : ts.parseJsonConfigFileContent(raw.config, workspaceLinkHost(path.dirname(configFile)), path.dirname(configFile));
+  projectConfigs.set(key, parsed);
+  return parsed;
+}
+
+// A file-system host on which `<any>/node_modules/<workspace package>/<rest>` that does not exist reads
+// `<the package's folder>/<rest>` (the link pnpm, npm and yarn workspaces create). Used to read configurations only.
+export function workspaceLinkHost(fromDir) {
+  const ws = workspacePaths(fromDir);
+  if (!ws || !ws.packages.length) return ts.sys;
+  const marker = `${path.sep}node_modules${path.sep}`;
+  const linked = (p) => {
+    const i = p.lastIndexOf(marker); if (i < 0) return null;
+    const rest = p.slice(i + marker.length).split(path.sep).join('/');
+    for (const [name, dir] of ws.packages) if (rest === name || rest.startsWith(name + '/')) return path.join(dir, rest.slice(name.length));
+    return null;
+  };
+  const via = (p, test) => { if (test(p)) return p; const l = linked(p); return l && test(l) ? l : null; };
+  return {
+    ...ts.sys,
+    fileExists: (p) => !!via(p, ts.sys.fileExists),
+    // a node_modules folder inside the workspace exists for the link even before any install
+    directoryExists: (p) => !!via(p, ts.sys.directoryExists) || (path.basename(p) === 'node_modules' && (p + path.sep).startsWith(ws.root + path.sep)),
+    readFile: (p, enc) => { const q = via(p, ts.sys.fileExists); return q ? ts.sys.readFile(q, enc) : undefined; },
+    realpath: (p) => { const q = via(p, (x) => ts.sys.fileExists(x) || ts.sys.directoryExists(x)); return q ? (ts.sys.realpath ? ts.sys.realpath(q) : q) : p; },
+  };
 }
 
 // A project's module resolution, as TypeScript reads its tsconfig, plus the workspace's own packages (shared by
