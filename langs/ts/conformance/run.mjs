@@ -119,6 +119,13 @@ console.log(`\n## The product check: ${couplings.length} inputs where both model
 const sampledOnly = couplings.filter((c) => c.laneA !== true);
 console.log(`(${couplings.length - sampledOnly.length} under a lemma lane A proves: findings; ${sampledOnly.length} under a lemma lane A does not prove or withholds: sampled agreement, no finding, by unit: ${[...new Set(sampledOnly.map((c) => `${c.pair}/${c.unit}`))].join(', ') || 'none'})`);
 for (const c of couplings.filter((x) => x.laneA === true)) { const kn = isKnown(c, 'coupling'); if (!kn) unknown++; console.log(`- ${c.pair}/${c.unit} (the pair expects lane A ${laneAText(c.laneA)})${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${c.input} ${JSON.stringify(c.args).slice(0, 120)}; ${c.why}; Node parent ${JSON.stringify(c.node.parent).slice(0, 80)}, candidate ${JSON.stringify(c.node.candidate).slice(0, 80)}`); }
+// a known finding of a pair that ran and no longer seen: a fix or a moved translation; listed so the baseline is rewritten,
+// never a failure (a fix must not fail the step)
+const ranPairs = new Set(results.filter((r) => !r.harness && !r.skipped).map((r) => r.pair));
+const seen = [...findings.map((f) => ({ ...f, kind: 'disagree' })), ...couplings.filter((c) => c.laneA === true).map((c) => ({ ...c, kind: 'coupling' }))];
+const vanished = known.filter((k) => ranPairs.has(k.pair) && !seen.some((f) => f.kind === k.kind && f.pair === k.pair && f.unit === k.unit && (!k.cause || k.cause === f.cause) && (!k.side || k.side === f.side)));
+console.log(`\n## Known findings not seen in a pair that ran: ${vanished.length}${vanished.length ? ' (rewrite known-findings.json with the reason)' : ''}`);
+for (const k of vanished) console.log(`- ${k.pair}/${k.unit}: ${k.cause} [${k.row}]`);
 console.log(`\n## Inputs: ${totals.inputs} drawn, ${totals.inputs * 2} model runs; ${totals.unseen} positions of Node's result lane B rendered as a second sight, not compared`);
 console.log(`\n## Inputs by status (both sides): ${Object.entries(inputTally).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 // ----- the cost: per pair wall and CPU (pair and descendants), the slowest pairs, the load the machine was under -----

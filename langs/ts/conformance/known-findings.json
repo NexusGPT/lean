@@ -1,5 +1,5 @@
 {
- "about": "disagreements and coupling findings the model conformance step has seen (run on 4edf56b: the translator of f409bd8); each names its board row: d7e54baf, this lane, until the lead opens a row per cause",
+ "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause",
  "findings": [
   {
    "kind": "disagree",
@@ -1656,6 +1656,76 @@
    "row": "d7e54baf",
    "laneA": "proved",
    "first": "input 1, parent: result: model true against false"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exported_object_methods",
+   "unit": "ops.add",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
+   "added": "600dd759: new pair (merge 600dd759, exported-units)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exported_object_methods",
+   "unit": "ops.scale",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "added": "600dd759: new pair (merge 600dd759, exported-units)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "exported_object_methods",
+   "unit": "ops.viaSibling",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 27021597764222979 against 27021597764222976",
+   "added": "600dd759: new pair (merge 600dd759, exported-units)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "opaque_values",
+   "unit": "flowFixed",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "added": "600dd759: new pair (merge fea80f88, opaque-values)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "opaque_values",
+   "unit": "mapPresent",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "added": "600dd759: new pair (merge fea80f88, opaque-values)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_0",
+   "unit": "thrower",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "added": "600dd759: pair unchanged; lane A translates x! since merge fea80f88 (opaque-values), refused before"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_2",
+   "unit": "bang",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "added": "600dd759: pair unchanged; lane A translates x! since merge fea80f88 (opaque-values), refused before"
   }
  ]
 }

@@ -100,6 +100,23 @@ process); it prints the step's wall, the sums, the load average at start and end
 all of it to `--json` under `cost`. Each pair runs in its own process group, so the pair bound kills the pair and what
 it started (its unit's process, dafny, the translator), not the pair's process alone.
 
+## The baseline on 600dd759 (`known-findings.json`)
+
+The full run on 600dd759 (`--jobs 2`, all 221 pairs): 1333 units in 197 pairs (24 skipped), 719 executable (540
+agree, 179 disagree), 0 coupling findings, 7 findings not in the f409bd8 baseline, 0 of its 184 gone. Each of the 7 is
+one of the two known causes on a unit the old run never executed; none is a moved translation of a known finding:
+
+| pair/unit | cause | why it is new |
+|---|---|---|
+| exported_object_methods/ops.add, ops.viaSibling | an integer past 2^53 | new pair (600dd759, exported-units) |
+| exported_object_methods/ops.scale | signed zero | new pair (600dd759) |
+| opaque_values/flowFixed, mapPresent | signed zero | new pair (fea80f88, opaque-values) |
+| proof_hunt_0/thrower, proof_hunt_2/bang | signed zero | pair unchanged; lane A refused `x!` before fea80f88 and translates it since, so the units run |
+
+Vanished: none. The rest-parameter entries were retired before (af9678b2); every other old entry was seen again. The
+step lists a known finding of a pair that ran and was not seen ("Known findings not seen"), never as a failure: a fix
+must not fail the step, and the list says the baseline needs rewriting.
+
 ## Measurement
 
 See the lane reports under W: `harness/lanes/model-conformance.md` (the step) and `harness/lanes/oracle-cost.md` (its
