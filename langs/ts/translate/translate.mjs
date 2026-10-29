@@ -42,7 +42,9 @@ import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or f
 import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
-import { lintFile, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
+import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
+import { admitUnits } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
+import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy } from '../lower.mjs'; // decisions taken once for the lint and the translator
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
@@ -74,7 +76,7 @@ const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCod
 export function translate(file, fnName, opts = {}) {
   const { real: realFlag = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null, heap = false, heapUnits = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
-  const loaded = normaliseApplyCalls(loadProgram(file, { project })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
+  const loaded = normaliseApplyCalls(opts.loaded ?? loadProgram(file, { project })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
   const { sf, checker } = loaded;
   let real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
   const fns = topLevelFunctions(sf);
@@ -98,7 +100,7 @@ export function translate(file, fnName, opts = {}) {
   const staticReceiver = (u) => { let found = false; const walk = (n) => { if (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isClassLike(n)) return; if (n.kind === K.ThisKeyword || n.kind === K.SuperKeyword) found = true; ts.forEachChild(n, walk); }; walk(u.body); return found; };
   for (const u of fns.values()) if (u.isStatic && !u.accessor && u.params.every((p) => ts.isIdentifier(p.name)) && staticReceiver(u)) accessorOpaque.add(u.name);
   if ([...fns.values()].some((u) => u.accessor)) {
-    const findings = lintFile(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
+    const findings = admissionFindings(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
     for (const u of fns.values()) if (u.accessor) { let staticThis = false; const walk = (n) => { if (u.isStatic && n.kind === K.ThisKeyword) staticThis = true; ts.forEachChild(n, walk); }; walk(u.body); if (staticThis || findings.some((g) => g.line >= lineOf(sf, u.node.getStart(sf)) && g.line <= lineOf(sf, u.node.getEnd()))) accessorOpaque.add(u.name); }
   }
   function accessorOf(n, kind, owner = currentUnit) {
@@ -158,7 +160,7 @@ export function translate(file, fnName, opts = {}) {
 
   // ----- the subset gate: refuse before translating -----
   const promiseReadings = new Set();
-  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const gate0 = admitUnits(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, loaded).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
   const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
   const failedUnits = new Set();
   let gate = gate0;
@@ -766,7 +768,7 @@ export function translate(file, fnName, opts = {}) {
     const rt = root ? anyType() : dtype(typeOf(recv), recv);
     const handle = root ? `${external(`global_handle_${recv.text}`, [], rt)}()` : expr(recv);
     const target = typeOf(n);
-    if (nonNull(typeOf(e.right)).some((t) => isCallable(t))) fail(e, 'property-assign: a function value installed into the outside is not read');
+    if (installsFunction(checker, e.right)) { let r = recv; while (ts.isPropertyAccessExpression(r)) r = r.expression; fail(e, `property-assign: ${INSTALLS_FUNCTION_WHY(r.getText(sf))}`); } // one decision with the lint (lower.mjs), named by the root as the lint names it
     let d; try { d = isAny(target) ? anyType() : dtype(target, n); } catch (x) { if (!(x instanceof Unsupported)) throw x; d = anyType(); }
     const value = outerParens(d === 'Any' ? expr(e.right, anyTarget()) : expr(e.right, target));
     addPrelude('World', 'type World');
@@ -1342,7 +1344,7 @@ export function translate(file, fnName, opts = {}) {
   // with a literal k below the declared parameters is the k-th parameter; `Object.create(null)` typed as a dictionary
   // (a string index and no declared field) is the empty dictionary
   const argumentsParam = (n) => { if (!(ts.isElementAccessExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'arguments' && ts.isNumericLiteral(n.argumentExpression) && currentUnit && currentUnit.params)) return null; if (originOf(checker, n.expression, sf, currentUnit.node ?? null).kind !== 'global') return null; const k = Number(n.argumentExpression.text); const ps = currentUnit.params.filter((p) => !(ts.isIdentifier(p.name) && p.name.text === 'this')); const q = ps[k]; return Number.isInteger(k) && q && ts.isIdentifier(q.name) && !q.dotDotDotToken && !q.questionToken && !q.initializer && !ps.slice(0, k).some((x) => x.dotDotDotToken) ? q : null; };
-  const isNullCreate = (n) => ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'create' && n.arguments.length === 1 && n.arguments[0].kind === K.NullKeyword && originOf(checker, n.expression.expression, sf, currentUnit?.node ?? null).kind === 'global';
+  const isNullCreate = (n) => nullPrototypeCreate(checker, n, sf, currentUnit?.node ?? null); // one decision with the lint (lower.mjs)
   const dictionaryT = (t) => !!t && !!(t.flags & TF.Object) && !!checker.getIndexInfoOfType(t, ts.IndexKind.String) && checker.getPropertiesOfType(t).length === 0;
   // the hook table (moonshot 8): a listed library hook call is a transition of the world returning the table's record;
   // the names bound to its result (a variable, a destructured field) carry the fields' kinds, which the type reading
@@ -1809,7 +1811,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     return `${external(`cast_${mangle(fd)}_${mangle(td)}`, [fd], td)}(${code})`;
   }
   const strEsc = (s) => {
-    if (/[\uD800-\uDFFF]/.test(s)) fail(sf, 'string-code-unit: use BMP scalar literals within the string model');
+    if (loneSurrogate(s)) fail(sf, `string-code-unit: ${LONE_SURROGATE_WHY}`); // one decision with the lint (lower.mjs)
     return '"' + Array.from(s, (c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) > 126 ? `\\U{${c.charCodeAt(0).toString(16)}}` : JSON.stringify(c).slice(1, -1)).join('') + '"';
   };
 
@@ -1925,7 +1927,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const old = update || op !== K.EqualsToken ? valueBind(expr(target)) : null;
     const rhs = update ? (typeOf(target).flags & TF.BigIntLike ? '1' : one()) : expr(n.right);
     const symbol = update ? (op === K.PlusPlusToken ? '+' : '-') : op === K.PlusEqualsToken ? '+' : op === K.MinusEqualsToken ? '-' : op === K.AsteriskEqualsToken ? '*' : null;
-    if (!update && op !== K.EqualsToken && !symbol) fail(n, 'assignment-expression: write this assignment as a statement');
+    if (!update && valueAssignmentWhy(op)) fail(n, `assignment-expression: ${valueAssignmentWhy(op)}`); // one decision with the lint (lower.mjs)
     const value = valueBind(symbol ? `${old} ${symbol} ${rhs}` : rhs);
     const storedAs = (d) => convertToD(value, typeOf(n), d, n);
     const moduleDecl = moduleState(checker, target, sf), staticDecl = staticCell(target);
@@ -3917,7 +3919,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const key = expr(ok.key, typeOf(ok.key));
       return ok.kind === 'dict' ? `(${key} in ${dictCarrier(ok.obj) ? member(expr(ok.obj), 'm') : expr(ok.obj)})` : `(${key} in {${ok.keys.map(strEsc).join(', ')}})`;
     } }
-    if (isNullCreate(n)) fail(n, 'prototype: `Object.create(null)` makes an object without a prototype; a plain object reads through Object.prototype and a dictionary is one map for both'); // the heap core's prototype bit (design/heap-stage4.md section 6) is the reading that would admit it
+    if (isNullCreate(n)) fail(n, `prototype: ${NULL_PROTOTYPE_WHY}`); // the heap core's prototype bit (design/heap-stage4.md section 6) is the reading that would admit it
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       const callee = fns.get(f.text);
