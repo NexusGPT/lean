@@ -26,6 +26,8 @@ test('every existing pair unit still finds the artifact it wrote', () => {
   const dir = path.resolve('.lean/cache/callback-units/artifacts'); fs.mkdirSync(dir, { recursive: true });
   const encoded = new Map();
   for (const unit of names) {
+    assert.equal(common.formatUnitList([unit]), unit, 'existing pair names retain their raw transport');
+    assert.deepEqual(common.parseUnitList(common.formatUnitList([unit])), [unit]);
     const name = common.artifactName(unit); assert.equal(encoded.has(name), false); encoded.set(name, unit);
     const file = path.join(dir, `b_${name}.json`); fs.writeFileSync(file, JSON.stringify({ unit }));
     assert.equal(JSON.parse(fs.readFileSync(path.join(dir, `b_${common.artifactName(unit)}.json`))).unit, unit);

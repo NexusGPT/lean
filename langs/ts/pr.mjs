@@ -26,7 +26,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, loadProgramOptions, topLevelFunctions, findingUnit, parseUnitList } from './common.mjs';
+import { ts, loadProgram, loadProgramOptions, topLevelFunctions, findingUnit, parseUnitList, formatUnitList } from './common.mjs';
 import { check } from './check.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
@@ -539,9 +539,14 @@ export function calleeNote(r, rows) {
 }
 
 const cell = (value) => String(value ?? '').replace(/[\r\n|]/g, ' ').replace(/`/g, "'");
+// Serialize source identities for one Markdown cell without renaming the stored unit.
+const unitCell = (unit, code = true) => {
+  const text = formatUnitList([unit]);
+  return /[`|&<>]/.test(text) ? `<code>${text.replace(/[&<>|]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '|': '&#124;' })[c])}</code>` : code ? `\`${text}\`` : text;
+};
 export function intakeMarkdown(rows) {
   const lines = ['## Intake', '', '| file | unit | coverage | decision | reason |', '|---|---|---|---|---|'];
-  for (const r of rows.filter((x) => !x.caller)) lines.push(`| \`${cell(r.file)}\` | ${cell(r.unit)} | ${cell(r.coverage)} | ${cell(r.decision ?? (r.coverage === 'checked' ? 'check' : r.coverage?.split(':')[0]))} | ${cell(r.reason ?? (r.coverage === 'checked' ? 'verdict produced' : ''))} |`);
+  for (const r of rows.filter((x) => !x.caller)) lines.push(`| \`${cell(r.file)}\` | ${unitCell(r.unit, false)} | ${cell(r.coverage)} | ${cell(r.decision ?? (r.coverage === 'checked' ? 'check' : r.coverage?.split(':')[0]))} | ${cell(r.reason ?? (r.coverage === 'checked' ? 'verdict produced' : ''))} |`);
   return lines.join('\n');
 }
 
@@ -551,7 +556,7 @@ export function markdown(rows, base, head) {
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
-    if (r['covered-by']) note = `covered-by: ${r['covered-by']}`;
+    if (r['covered-by']) note = `covered-by: ${unitCell(r['covered-by'], false)}`;
     if (!r['covered-by'] && r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
       const site = r.witness?.where?.lines?.candidate;
       if (site) {
@@ -562,17 +567,17 @@ export function markdown(rows, base, head) {
       }
     }
     if (r.verdict === 'WITNESS' && r.witness?.args) r.note = note;
-    lines.push(`| ${r.file} | \`${r.unit}\` (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);
+    lines.push(`| ${r.file} | ${unitCell(r.unit)} (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);
   }
   const patched = rows.filter((r) => r.verdict === 'WITNESS' && r.witness?.patch?.length); // a front-end WITNESS: the first three ops of its patch, one per line
   if (patched.length) {
     lines.push('', '## What changed on the page', '');
-    for (const r of patched) { lines.push(`### ${r.file} · \`${r.unit}\`: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${formatOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
+    for (const r of patched) { lines.push(`### ${r.file} · ${unitCell(r.unit)}: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${formatOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
   }
   const asks = rows.filter((r) => r.advice && r.advice.length);
   if (asks.length) {
     lines.push('', '## What would make the asks provable', '');
-    for (const r of asks) { lines.push(`### ${r.file} · \`${r.unit}\``, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
+    for (const r of asks) { lines.push(`### ${r.file} · ${unitCell(r.unit)}`, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
   }
   lines.push('', 'A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.');
   return lines.join('\n');

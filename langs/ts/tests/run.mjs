@@ -11,7 +11,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, dn, artifactName, loadProgram, topLevelFunctions, findingUnit } from '../common.mjs';
+import { ts, dn, artifactName, loadProgram, topLevelFunctions, findingUnit, formatUnitList } from '../common.mjs';
 import { lintFile } from '../lint/lint.mjs';
 import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
 
@@ -126,7 +126,7 @@ function differential(label, tsFile, entries) {
   const mod = { exports: {} };
   new Function('exports', 'module', js)(mod.exports, mod);
   const dfy = path.join(tmp, `diff_${label}.dfy`);
-  const t = run('node', [translate, tsFile, '--core', '--only', entries.map(e => e.fn).join(','), '--out', dfy]);
+  const t = run('node', [translate, tsFile, '--core', '--only', formatUnitList(entries.map(e => e.fn)), '--out', dfy]);
   if (t.status !== 0) { add('differential', label, 'translate --core', false, (t.stderr || t.stdout).trim().split('\n')[0]); return; }
   const lines = [], want = [];
   for (const { fn, samples } of entries) for (const args of samples) {

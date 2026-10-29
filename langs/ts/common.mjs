@@ -2414,9 +2414,20 @@ export function parseUnitList(text) {
     else if (c === ',' && depth === 0) { out.push(text.slice(start, i).trim()); start = i + 1; }
   }
   out.push(text.slice(start).trim());
-  return out.filter(Boolean);
+  return out.filter(Boolean).map(token => {
+    if (token.startsWith('"')) { try { const name = JSON.parse(token); if (typeof name === 'string') return name; } catch { /* raw source name */ } }
+    return token;
+  });
 }
 
+// Inverse transport for raw source names. Keep ordinary lists unchanged; JSON-quote a name when its source
+// comments/quotes/brackets would consume a separator, or when a newline would break a one-line HEAP header.
+export function formatUnitList(names) {
+  return names.map(name => {
+    const probe = parseUnitList(`${name},__unit_list_end__`);
+    return !/[\r\n\u2028\u2029]/.test(name) && probe.length === 2 && probe[0] === name && probe[1] === '__unit_list_end__' ? name : JSON.stringify(name);
+  }).join(',');
+}
 
 // Execution/check requests for a nested callback are requests for its enclosing unit's verdict.
 export function enclosingUnitName(file, name) {

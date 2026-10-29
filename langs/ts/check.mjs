@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
-import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, enclosingUnitName } from './common.mjs';
+import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, enclosingUnitName } from './common.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 
@@ -110,7 +110,7 @@ export async function check(opts) {
   // ---- lane A ----
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-check-'));
   // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature (agreeCore: on the units both translations hold)
-  const tr = (file, suffix, eff, heapUnits) => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', unit, '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000);
+  const tr = (file, suffix, eff, heapUnits) => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', formatUnitList([unit]), '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000);
   const headerOf = (suffix, key) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm')); return m ? m[1].trim() : ''; };
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
@@ -215,7 +215,7 @@ export function agreeCore({ files, dfyOf, tr, heap = true }) {
     const defined = new Set([...text.matchAll(/^\/\/ CELLS ([A-Za-z0-9_]+): /gm)].map((m) => m[1])); // every unit the translation emitted has its CELLS line (written once the unit is read)
     return { eff: hdr('EFFECTFUL'), heap: parseUnitList(hdr('HEAP')), held: new Set(units[side].filter((u) => defined.has(`${dafnyName(u)}_${side}`))) }; // the unit's Dafny name as the translator writes it (dafnyName: a Dafny keyword takes a trailing underscore)
   };
-  const list = (xs) => (heap ? [...new Set(xs)].sort().join(',') : undefined);
+  const list = (xs) => (heap ? formatUnitList([...new Set(xs)].sort()) : undefined);
   const p1 = tr('parent', '', undefined);
   if (p1.status !== 0) return { failed: 'parent', run: p1 };
   let P = read('parent');
@@ -223,7 +223,7 @@ export function agreeCore({ files, dfyOf, tr, heap = true }) {
   const c1 = tr('candidate', P.eff, list([...P.heap, ...units.candidate.filter((u) => !P.held.has(u))]));
   if (c1.status !== 0) return { failed: 'candidate', run: c1 };
   let C = read('candidate');
-  const agree = () => { const shared = (u) => P.held.has(u) && C.held.has(u); const a = P.heap.filter(shared).sort(), b = C.heap.filter(shared).sort(); return { same: a.join(',') === b.join(','), both: a.filter((u) => b.includes(u)), shared }; };
+  const agree = () => { const shared = (u) => P.held.has(u) && C.held.has(u); const a = P.heap.filter(shared).sort(), b = C.heap.filter(shared).sort(); return { same: formatUnitList(a) === formatUnitList(b), both: a.filter((u) => b.includes(u)), shared }; };
   const narrowed = (X, both, shared) => list([...both, ...X.heap.filter((u) => !shared(u))]);
   let g = agree();
   if (C.eff !== P.eff || (heap && !g.same)) {
