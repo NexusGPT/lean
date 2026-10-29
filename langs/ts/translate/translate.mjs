@@ -36,7 +36,7 @@ import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-for
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
-import { openRecordType, OPEN_RECORD_WHY, openRecordIn } from '../common.mjs';
+import { openRecordType, OPEN_RECORD_WHY, openRecordIn, openRecordReadWhy } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the lint
 import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
@@ -2829,7 +2829,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const vals = [], types = [];
       for (const p of n.properties) {
         const v = ts.isSpreadAssignment(p) ? p.expression : ts.isShorthandPropertyAssignment(p) ? p.name : ts.isPropertyAssignment(p) ? p.initializer : null;
-        if (!v || (ts.isPropertyAssignment(p) && (ts.isArrowFunction(p.initializer) || ts.isFunctionExpression(p.initializer)))) fail(p, 'spread-source: a method or a function value beside a later spread is not read');
+        // spreadReadWhy above guarantees a data member here; the dictionary and opaque readings returned earlier.
         if (ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name)) { vals.push(expr(p.name.expression)); types.push(dtype(typeOf(p.name.expression), p)); } // a computed key: its value, then the member's
         vals.push(expr(v)); types.push(dtype(typeOf(v), v));
       }
@@ -3449,7 +3449,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // open_index_ slot (open-datatype.md); receiver and key are evaluated once, in that order. A literal key names no
   // declared field here (fieldOf reads those); a name of Object.prototype is refused (prototype), as on a dictionary
   function openIndexRead(n, recvT, recvCode, keyCode, keyName) {
-    if (keyName !== null && (OBJECT_PROTO_NAMES.includes(keyName) || keyName === '__proto__')) fail(n, `prototype: ${keyName} names a member of Object.prototype, which an open record reads through its prototype, not its own keys`);
+    if (openRecordReadWhy(checker, recvT, keyName)?.rule === 'prototype') fail(n, `prototype: ${keyName} names a member of Object.prototype, which an open record reads through its prototype, not its own keys`);
     const ix = checker.getIndexInfoOfType(recvT, ts.IndexKind.String);
     if (!ix || !openSlots(dtype(recvT, n)).includes(OPEN_INDEX)) fail(n, `dynamic-key: ${OPEN_RECORD_WHY(checker.typeToString(recvT))}`);
     const R = `or${tempCount++}_`, Kc = `ok${tempCount++}_`;
