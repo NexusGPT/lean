@@ -160,3 +160,17 @@ disagreements: opaque_values flowFixed, opaque_values mapPresent and proof_hunt_
 Node answers -0. The FP reading decides proofs but does not change the executable model. An executable model that
 agrees with Node needs a number type that carries -0 (the congruence type N, made executable with a double
 representation), or a refusal where a -0 can reach the result.
+
+### Commutative operations in the faithful reading (2026-10-29)
+
+The faithful reading passes a number the model does not hold through uninterpreted operations (`Math.__lean_add` and kin,
+one Dafny function per operation, the same symbol on both sides). Two bodies that compute `n + 1` and `1 + n` then read as
+`add(n, 1)` and `add(1, n)`, two different terms, and the lemma fails where the exact reading proved it (pair
+callback_behaviour, unit `deep`). IEEE-754 binary64 addition and multiplication commute for every pair of operands, NaN
+included (a NaN payload is not observable in JavaScript); `===` on numbers is symmetric; `Math.min`, `Math.max` and
+`Math.imul` of two arguments are symmetric (a NaN wins either way; -0 loses to +0 in max and wins in min, either way).
+So `translate.mjs external()` declares each of `__lean_add`, `__lean_mul`, `__lean_eq`, `__lean_min2`, `__lean_max2`,
+`__lean_imul2` over the canonical order of its two arguments: `f(a, b) = if a <= b then f_raw(a, b) else f_raw(b, a)`
+with `f_raw` uninterpreted. The two commuted terms are one term; Dafny needs no lemma call. Nothing else is assumed:
+associativity does not hold in binary64 and is not declared; `a + 0 == a` fails for `-0` and is not declared.
+

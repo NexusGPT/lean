@@ -1575,6 +1575,18 @@ function translateOnce(file, fnName, opts = {}) {
     let id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
     const ps = paramTypes.map((t, i) => `a${i}: ${t}`).join(', ');
     { const had = prelude.get(id); if (had && had.startsWith('function ') && !had.endsWith(`): ${retType}`) && !had.includes(`): ${retType} {`)) id = `${id}_to_${mangle(retType)}`; } // one name read at two types (a field narrowed in one branch, not in the other): one function per result type, so both branches keep their own type
+    // the faithful reading's commutative operations (translate/faithful.mjs: Math.__lean_add, __lean_mul, __lean_eq, __lean_min2,
+    // __lean_max2, __lean_imul2): IEEE-754 binary64 addition and multiplication commute for every pair of operands (NaN
+    // payloads are not observable in JavaScript), equality is symmetric, and Math.min, Math.max and Math.imul of two
+    // arguments are symmetric (a NaN wins either way; -0 loses to +0 in max and wins in min either way). The uninterpreted
+    // operation is declared over the canonical order of its two arguments, so `a + b` and `b + a` are one term and the
+    // lemma proves what the standard guarantees, nothing more (design/doubles.md, "Commutative operations")
+    const commutative = /_lean_(add|mul|eq|min2|max2|imul2)$/.test(id.replace(/_to_\w+$/, '').replace(new RegExp(`_${paramTypes.map(mangle).join('_')}$`), '')) && paramTypes.length === 2 && paramTypes[0] === paramTypes[1] && (paramTypes[0] === 'int' || paramTypes[0] === 'real');
+    if (commutative) {
+      addPrelude(`${id}_raw`, `function ${id}_raw(${ps}): ${retType}`);
+      addPrelude(id, `function ${id}(${ps}): ${retType} { if a0 <= a1 then ${id}_raw(a0, a1) else ${id}_raw(a1, a0) }`);
+      return id;
+    }
     addPrelude(id, `function ${id}${tclause([...paramTypes, retType])}(${ps}): ${retType}`); // generic when a type parameter of the unit appears
     return id;
   }
