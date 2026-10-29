@@ -275,13 +275,13 @@ if (PAIR_ONLY) {
 // The measured wall seconds of each job are kept beside the step cache (LEAN_SUITE_DURATIONS moves them): the next run
 // starts the longest jobs first. A section waits only for what it reads: the steps that read the pairs' lane B results
 // wait for the pair step, witness args (which runs lane B where a pair did not) for the steps that count those results.
-const pool = createPool(JOBS, { historyFile: process.env.LEAN_SUITE_DURATIONS || path.join(CACHE_DIR, 'suite-durations.json') });
+const pool = createPool(JOBS, { historyFile: process.env.LEAN_SUITE_DURATIONS || path.join(CACHE_DIR, 'suite-durations.json'), outDir: tmp });
 // a runner given --jobs takes that many slots: half the pool, so two of them run beside each other and the rest
 const WIDE = Math.max(1, Math.floor(JOBS / 2));
 const withEnv = (env) => (env ? { ...process.env, ...env } : process.env);
-// one job's runners: run, crun and dafny as above, each child on the pool
-const runner = (key) => {
-  const job = pool.job(key);
+// one job's runners: run, crun and dafny as above, each child on the pool; an item of a fan-out names its group
+const runner = (key, group = null) => {
+  const job = pool.job(key, { group });
   const prun = (cmd, args, env, { cwd = root, maxBuffer = 1 << 26 } = {}) => job.run(cmd, args, { cwd, env: withEnv(env), maxBuffer });
   return {
     job,
@@ -317,7 +317,7 @@ async function sharedFixtures(add) {
     if (!fs.existsSync(ts)) return;
     const th = theorems[name];
     if (!th) { add('shared', name, 'theorem', false, 'no entry in tests/theorems.json'); return; }
-    const R = runner(`shared/${name}`);
+    const R = runner(`shared/${name}`, 'shared');
     const l = await R.run('node', [lint, ts]);
     add('shared', name, 'lint', l.status === 0, l.status === 0 ? 'inside the subset' : l.stdout.trim().split('\n')[0], await R.lsc(ts));
     const out = path.join(tmp, `${name}.dfy`);
@@ -343,7 +343,7 @@ async function sharedFixtures(add) {
 async function constructs(add) {
   await each(add, cases, async (c, add) => {
     const file = path.join(casesDir, c.file);
-    const R = runner(`constructs/${c.name}`);
+    const R = runner(`constructs/${c.name}`, 'constructs');
     const l = await R.run('node', [path.join(here, 'construct-lint.mjs'), file, c.fn]); // lintFile on the case, its unit's findings (construct-lint.mjs)
     let found; try { found = JSON.parse(l.stdout); } catch { throw new Error(`construct lint ${c.name}: exit ${l.status}: ${(l.stderr || l.stdout).trim().slice(-400)}`); }
     add('construct', c.name, 'lint', found.count === 0, found.count ? `${found.first.rule}: ${found.first.msg}` : 'inside the subset', await R.lsc(file));
@@ -368,7 +368,7 @@ async function constructs(add) {
 async function numbersPerFile(add) {
   const f = path.join(casesDir, 'float_literal.ts');
   await each(add, ['literal', 'real'], async (step, add) => {
-    const R = runner(`numbers/${step}`);
+    const R = runner(`numbers/${step}`, 'numbers');
     if (step === 'literal') {
       const t = await R.run('node', [translate, f, '--fn', 'drift', '--out', path.join(tmp, 'drift.dfy')]);
       const driftDfy = t.status === 0 && fs.existsSync(path.join(tmp, 'drift.dfy')) ? fs.readFileSync(path.join(tmp, 'drift.dfy'), 'utf8') : '';
@@ -417,7 +417,7 @@ async function differentialRun(add) {
       add('construct', 'number_helpers', 'concrete Dafny execution', r.status === 0, text.trim().split('\n').pop());
     } },
   ];
-  await each(add, items, (it, add) => it.go(runner(`differential/${it.key}`), add));
+  await each(add, items, (it, add) => it.go(runner(`differential/${it.key}`, 'differential'), add));
 }
 
 // ----- negative controls: a false theorem must NOT verify, in both shapes -----
@@ -447,7 +447,7 @@ async function negativeControls(add) {
       add('control', 'missing invariant', 'proof shape refuted', !d3.ok, d3.ok ? 'VERIFIED WITHOUT AN INVARIANT' : d3.summary);
     },
   ];
-  await each(add, items, (go, add) => go(runner(`negative/${items.indexOf(go)}`), add));
+  await each(add, items, (go, add) => go(runner(`negative/${items.indexOf(go)}`, 'negative'), add));
 }
 
 // ----- --changed: only the changed functions are checked -----
@@ -458,7 +458,7 @@ async function changedOnly(add) {
     async (R, add) => { const touched = await R.run('node', [lint, f, '--changed', path.join(casesDir, 'mixed_bad.json')]); add('changed', 'mixed.ts', 'bad function changed: refused', touched.status === 1 && /\sdynamic-eval\s/.test(touched.stdout), touched.status === 1 ? 'exit 1, dynamic-eval' : 'ACCEPTED'); },
     async (R, add) => { const all = await R.run('node', [lint, f]); add('changed', 'mixed.ts', 'no ranges: refused', all.status === 1, all.status === 1 ? 'exit 1' : 'ACCEPTED'); },
   ];
-  await each(add, items, (go, add) => go(runner(`changed/${items.indexOf(go)}`), add));
+  await each(add, items, (go, add) => go(runner(`changed/${items.indexOf(go)}`, 'changed'), add));
 }
 
 // ----- pairs: one child per pair on the pool, the rows replayed in pair order -----
@@ -466,7 +466,7 @@ const spawnPair = (args) => new Promise((resolve) => { const c = spawn(process.e
 async function pairs(add) {
   try {
     if (JOBS > 1 && pairNames.length > 1) {
-      await Promise.all(pairNames.map((name) => { const result = path.join(tmp, `pair_${name}.result.json`); fs.rmSync(result, { force: true }); return pool.job(`pairs/${name}`).slots(1, () => spawnPair([fileURLToPath(import.meta.url), '--pair', name, '--result', result, '--tmp', tmp])); }));
+      await Promise.all(pairNames.map((name) => { const result = path.join(tmp, `pair_${name}.result.json`); fs.rmSync(result, { force: true }); return pool.job(`pairs/${name}`, { group: 'pairs' }).slots(1, () => spawnPair([fileURLToPath(import.meta.url), '--pair', name, '--result', result, '--tmp', tmp])); }));
       for (const name of pairNames) {
         let res = null; try { res = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}.result.json`), 'utf8')); } catch { /* no result: the worker died */ }
         if (!res) { add('pair', name, 'pair worker', false, 'the pair worker wrote no result (it died or was killed)'); continue; }
@@ -518,7 +518,7 @@ async function modelConformance(add) {
   const selectTest = runner('conformance/select').run('node', [path.join(here, '../conformance/select.test.mjs')]);
   let sel; try { sel = conformanceSelection({ root, pairsDir: path.join(here, 'pairs'), knownFile: path.join(here, '../conformance/known-findings.json') }); } catch (e) { sel = { error: e.message }; }
   console.log(`conformance: ${sel.error ?? sel.why}`);
-  const step = sel.error || (sel.pairs && !sel.pairs.length) ? null : pool.job(`conformance/model ${sel.pairs ? sel.pairs.join(',') : 'every pair'}`).slots(WIDE, (n) => spawnCollect('node', [path.join(here, '../conformance/run.mjs'), '--jobs', String(n), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { cwd: root, env: withEnv({ LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' }), maxBuffer: 1 << 26 }));
+  const step = sel.error || (sel.pairs && !sel.pairs.length) ? null : pool.job(`conformance/model ${sel.pairs ? sel.pairs.join(',') : 'every pair'}`).slots(WIDE, (n) => spawnCollect('node', [path.join(here, '../conformance/run.mjs'), '--jobs', String(n), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { cwd: root, env: withEnv({ LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' }), maxBuffer: 1 << 26, dir: tmp }));
   const t = await selectTest;
   add('conformance', 'select', 'the running rule: a changed pair runs, an unchanged one is skipped (conformance/select.test.mjs)', t.status === 0, (t.stdout ?? '').trim().split('\n').pop() || (t.stderr ?? '').trim().slice(-200));
   if (sel.error) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", false, sel.error);
@@ -567,7 +567,7 @@ async function escapes(add) {
     const want = (src.match(/^\/\/ expect:\s*(\S+)/m) ?? [])[1];
     const name = f.replace(/\.ts$/, '');
     if (!want) { add('escape', name, 'expect line', false, 'missing `// expect: <rule>`'); return; }
-    const R = runner(`escapes/${name}`);
+    const R = runner(`escapes/${name}`, 'escapes');
     const candidateUnit = (src.match(/^\/\/ candidate-unit:\s*(\S+)/m) ?? [])[1];
     const l = await R.run('node', [lint, ...(candidateUnit ? ['--candidate', file, '--unit', candidateUnit, '--n', '1', '--no-project'] : [file])]);
     const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
@@ -590,7 +590,7 @@ const scriptRow = (kind, name, check, args, detail, { env, echoStderr = false } 
 const lastLine = (r) => (r.stdout + r.stderr).trim().split('\n').pop();
 async function adviceLabels(add) {
   const advDir = path.join(here, 'fixtures/advice');
-  const advice = (fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.endsWith('.ts')).sort() : []).map((f) => ({ key: `advice/${f}`, go: async (R, add) => {
+  const advice = (fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.endsWith('.ts')).sort() : []).map((f) => ({ key: `advice/${f}`, group: 'advice', go: async (R, add) => {
     const src = fs.readFileSync(path.join(advDir, f), 'utf8');
     const [, rule, label] = src.match(/^\/\/ expect:\s*(\S+)\s+(proved|conditional|migration|flag-only)(?![\w-])/m) ?? [];
     const name = f.replace(/\.ts$/, '');
@@ -633,7 +633,7 @@ async function adviceLabels(add) {
   // Every selected pair's parent, the self-pair fixtures, and an optional challenge
   // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane. Its own workers take WIDE slots.
   const selfPair = { key: `runtime/self-pair ${process.env.LEAN_PAIRS || 'every pair'}${process.env.LEAN_SELF_PAIR_SAMPLE ? ' + sample' : ''}`, wide: true, go: async (job, add) => {
-    const r = await job.slots(WIDE, (n) => spawnCollect('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json'), '--jobs', String(n)], { cwd: root, env: process.env, maxBuffer: 1 << 26 }));
+    const r = await job.slots(WIDE, (n) => spawnCollect('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json'), '--jobs', String(n)], { cwd: root, env: process.env, maxBuffer: 1 << 26, dir: tmp }));
     if (r.stderr) process.stderr.write(r.stderr);
     const text = (r.stdout ?? '') + (r.stderr ?? '');
     add('runtime', 'self-pair', 'every parent against itself: zero WITNESS; refusals counted', r.status === 0, text.trim().split('\n').pop());
@@ -655,7 +655,7 @@ async function adviceLabels(add) {
       add('runtime', 'paths-alias', `${cfg}: @/ alias and workspace package resolve`, ok, detail);
     }
   } };
-  await each(add, [...advice, ...runtime, selfPair, pathsAlias], (it, add) => it.go(it.inline ? null : it.wide ? pool.job(it.key) : runner(it.key), add));
+  await each(add, [...advice, ...runtime, selfPair, pathsAlias], (it, add) => it.go(it.inline ? null : it.wide ? pool.job(it.key) : runner(it.key, it.group ?? null), add));
 }
 
 // ----- lane B's hook runtime against React-tRace's scenarios (langs/ts/exec/react-trace.mjs) -----
@@ -803,7 +803,7 @@ async function witnessArgs(add) {
       for (const [unit, kind] of Object.entries({ ...(listed[name] ?? {}), ...(exp.witnessArgs ?? {}) })) items.push({ name, d, unit, kind });
     }
     await each(add, items, async ({ name, d, unit, kind }, add) => {
-      const R = runner(`witness-args/${name} ${unit}`);
+      const R = runner(`witness-args/${name} ${unit}`, 'witness-args');
       const result = path.join(tmp, `pair_${name}`, `b_${artifactName(unit)}.json`);
       if (!fs.existsSync(result)) { fs.mkdirSync(path.dirname(result), { recursive: true }); await R.run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', result]); } // the pair's own lane B step did not run (its theorem stopped it): lane B runs here, as that step runs it
       if (!fs.existsSync(result)) { add('witness-args', name, `${unit} ${kind}`, false, 'no lane B result for the unit'); return; }
@@ -834,7 +834,7 @@ async function witnessLines(add) {
   const items = [
     ...listed.filter(([name]) => !onlyPairs || onlyPairs.has(name)).map(([name, unit, token]) => async (add) => {
       await witnessArgsDone;
-      const R = runner(`witness-lines/${name} ${unit}`);
+      const R = runner(`witness-lines/${name} ${unit}`, 'witness-lines');
       const d = path.join(pairsDir, name), candidate = pairFile(d, 'candidate');
       const result = path.join(tmp, `pair_${name}`, `b_${artifactName(unit)}.json`);
       if (!fs.existsSync(result)) {
@@ -876,7 +876,7 @@ async function convert(add) {
   const cache = path.join(tmp, 'convert-cache');
   const count = (rs) => Object.entries(rs.reduce((c, r) => ({ ...c, [r.verdict ?? 'none']: (c[r.verdict ?? 'none'] ?? 0) + 1 }), {})).map(([k, v]) => `${v} ${k}`).join(', ');
   await each(add, fs.existsSync(convDir) ? fs.readdirSync(convDir).sort() : [], async (name, add) => {
-    const R = runner(`convert/${name}`);
+    const R = runner(`convert/${name}`, 'convert');
     const d = path.join(convDir, name);
     const work = fs.mkdtempSync(path.join(tmp, `convert-${name}-`));
     const unit = path.join(work, 'unit.ts');
@@ -945,7 +945,6 @@ const widths = Object.fromEntries(cols.map((c) => [c, w(c, c)]));
 const line = (r) => `| ${cols.map((c) => String(r[c]).padEnd(widths[c])).join(' | ')} | ${r.ok ? 'PASS' : 'FAIL'} | ${r.lsc.padEnd(11)} | ${r.detail}`;
 console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | lsc accepts | detail`);
 for (const r of rows) console.log(line(r));
-rows.push(row('time', 'table', 'wall', true, )); // the table's own time row, counted in TOTAL, printed nowhere (as each section's row is added at the next one's start)
 rows.push(row('time', 'table', 'wall', true, `${Math.round((Date.now() - tableStart) / 1000)} s`)); // the table's own time row: counted in TOTAL, printed nowhere (each section's time row is added after its rows)
 const failed = rows.filter((r) => !r.ok).length;
 const sc = stepCacheStats();

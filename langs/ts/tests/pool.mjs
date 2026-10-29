@@ -3,38 +3,53 @@
 // belong to. A job is one item of work (a fixture, a case, a pair, a script); its children run one after another, each
 // taking a slot while it runs. A job that runs its own workers (a runner given --jobs) takes several slots at once.
 // The order: the job measured longest on the last run first (LPT: the long jobs must not start last and hold the
-// end of the run), a job never measured with the mean of its section's measured jobs, a section never measured first;
+// end of the run); a job never measured takes the mean of its group (the items of one fan-out: the escapes, the
+// pairs), a job of no group or of a group never measured goes first;
 // a job holding several slots before a job holding one (it waits for its slots while the pool fills otherwise);
 // then the order the jobs were made in. A started job's next child goes before a later job's first. The measurements
 // are the wall seconds of the children a job really ran (a step-cache hit runs none), kept in one JSON file; the order
 // never changes a result, only when it is computed.
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { spawn } from 'node:child_process';
 
-// a child's output collected as spawnSync collects it ({ status, signal, stdout, stderr, error }): the bytes decoded once
-// at the end, the child killed when stdout or stderr passes maxBuffer (error ENOBUFS), a spawn failure as `error` with
-// status null
-export function spawnCollect(cmd, args, { cwd, env, maxBuffer = 1024 * 1024 } = {}) {
+// a child's output collected as spawnSync collects it ({ status, signal, stdout, stderr, error }). The child writes
+// its stdout and stderr to two files in `dir`, read when it exits: a child that ends with process.exit loses no output
+// whatever this process is doing meanwhile (a pipe this process is slow to read holds the child's writes in its own
+// memory, and process.exit drops them; spawnSync reads its pipe at once, this process reads many children's). Past
+// maxBuffer on stdout or stderr the result is spawnSync's: the text cut there, error ENOBUFS, status null, SIGTERM
+// (spawnSync kills the child at that point; here it has run to its end). A spawn failure is `error` with status null.
+let named = 0;
+export function spawnCollect(cmd, args, { cwd, env, maxBuffer = 1024 * 1024, dir = os.tmpdir() } = {}) {
   return new Promise((resolve) => {
-    const out = [], err = []; let error, done = false;
-    const finish = (status, signal) => { if (done) return; done = true; resolve({ status, signal, stdout: Buffer.concat(out).toString('utf8'), stderr: Buffer.concat(err).toString('utf8'), ...(error ? { error } : {}) }); };
-    let child;
-    try { child = spawn(cmd, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] }); } catch (e) { error = e; finish(null, null); return; }
-    const take = (list) => { let size = 0; return (b) => { size += b.length; if (size > maxBuffer) { if (!error) { error = Object.assign(new Error(`spawn ${cmd} ENOBUFS`), { code: 'ENOBUFS' }); child.kill('SIGTERM'); } return; } list.push(b); }; };
-    child.stdout.on('data', take(out)); child.stderr.on('data', take(err));
+    const base = path.join(dir, `child-${process.pid}-${named++}`), files = [`${base}.out`, `${base}.err`];
+    const read = () => files.map((f) => { try { const b = fs.readFileSync(f); fs.rmSync(f, { force: true }); return b; } catch { return Buffer.alloc(0); } });
+    let fds = [], child, error, done = false;
+    const finish = (status, signal) => {
+      if (done) return; done = true;
+      const [out, err] = read();
+      if (out.length > maxBuffer || err.length > maxBuffer) { error ??= Object.assign(new Error(`spawn ${cmd} ENOBUFS`), { code: 'ENOBUFS' }); status = null; signal = 'SIGTERM'; }
+      resolve({ status, signal, stdout: out.subarray(0, maxBuffer).toString('utf8'), stderr: err.subarray(0, maxBuffer).toString('utf8'), ...(error ? { error } : {}) });
+    };
+    try {
+      fds = files.map((f) => fs.openSync(f, 'w', 0o600));
+      child = spawn(cmd, args, { cwd, env, stdio: ['ignore', fds[0], fds[1]] });
+    } catch (e) { error = e; for (const fd of fds) fs.closeSync(fd); finish(null, null); return; }
+    for (const fd of fds) fs.closeSync(fd); // the child holds its own copies
     child.on('error', (e) => { error ??= e; if (child.pid === undefined) finish(null, null); });
     child.on('close', (code, signal) => finish(code, signal));
   });
 }
 
-export function createPool(width, { historyFile = null } = {}) {
+// outDir: where the children's output files go while they run
+export function createPool(width, { historyFile = null, outDir = os.tmpdir() } = {}) {
   let free = width, made = 0;
   const queue = [];
   let history = {};
   if (historyFile) try { history = JSON.parse(fs.readFileSync(historyFile, 'utf8')); } catch (e) { if (e.code !== 'ENOENT') console.error(`suite durations unreadable (${e.code ?? e.message}): ${historyFile}`); }
   const measured = {}; // key -> wall seconds of the children this run really ran
-  const sectionMean = (section) => { const xs = Object.entries(history).filter(([k]) => k.startsWith(section + '/')).map(([, v]) => v); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
+  const groupMean = (group) => { const xs = Object.entries(history).filter(([k]) => k.startsWith(group + '/')).map(([, v]) => v); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null; };
   const before = (a, b) => (b.estimate - a.estimate) || (b.min - a.min) || (b.started - a.started) || (a.seq - b.seq);
   let pending = false; // the grants wait for the end of the current tick: the jobs made together are ordered together
   const schedule = () => { if (!pending) { pending = true; setImmediate(pump); } };
@@ -43,10 +58,10 @@ export function createPool(width, { historyFile = null } = {}) {
     queue.sort(before);
     while (queue.length && free >= queue[0].min) { const h = queue.shift(); const n = Math.min(h.max, free); free -= n; h.resolve(n); }
   };
-  // key: `<section>/<item>`, unique in the run and stable across runs
-  function job(key) {
-    const seq = made++, section = key.slice(0, key.indexOf('/'));
-    const estimate = history[key] ?? sectionMean(section) ?? Infinity;
+  // key: unique in the run and stable across runs; group: a fan-out's name, the prefix of its items' keys (`<group>/<item>`)
+  function job(key, { group = null } = {}) {
+    const seq = made++;
+    const estimate = history[key] ?? (group ? groupMean(group) : null) ?? Infinity;
     let started = 0, spent = 0;
     // hold `need` slots ({ min, max } or a count) while fn(granted) runs
     async function slots(need, fn) {
@@ -56,7 +71,7 @@ export function createPool(width, { historyFile = null } = {}) {
       const t = Date.now();
       try { return await fn(n); } finally { spent += (Date.now() - t) / 1000; measured[key] = Math.round(spent * 10) / 10; free += n; schedule(); }
     }
-    return { key, slots, run: (cmd, args, opts) => slots(1, () => spawnCollect(cmd, args, opts)) };
+    return { key, slots, run: (cmd, args, opts) => slots(1, () => spawnCollect(cmd, args, { dir: outDir, ...opts })) };
   }
   // the measurements back to the file: this run's jobs replace their old values, the others are kept
   function save() {
