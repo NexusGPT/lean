@@ -464,8 +464,9 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
       }
       ts.forEachChild(n, x => walk(x, admission, output));
     };
-    // A bodyless emission retains the translator's existing handling; this change does not alter ambient admission.
-    walk(u.body, !!u.body, !!emission && !asyncGenerator(u));
+    // A unit without a body (an ambient or overload declaration) writes nothing: its record stays empty, and the walk
+    // never starts on a missing node (the translator-crash the ambient fixture reproduces).
+    if (u.body) walk(u.body, true, !!emission && !asyncGenerator(u));
     rec.rebound = [...rebounds];
   }
   for (let changed = true; changed;) {
