@@ -423,8 +423,17 @@ export function admissionFindings(file, ranges = null, opts = {}) {
 
   // ---------- types (as the checker resolved them; syntax matters less in v2) ----------
   const seenTypes = new Set();
+  // The checker exposes a graph: intersections can lead through signatures back
+  // to the same type. Expand each identity/site/depth once, keeping the existing
+  // depth cutoff and the finding's original site. This table dies with this lint.
+  const visitedTypes = new Map();
   function checkType(t, n, depth = 0) {
-    if (depth > 6) return;
+    if (!t || depth > 6) return; // absent checker type: no structural type finding (opaque)
+    let sites = visitedTypes.get(t);
+    if (!sites) visitedTypes.set(t, sites = new Map());
+    const bit = 1 << depth, seen = sites.get(n) ?? 0;
+    if (seen & bit) return;
+    sites.set(n, seen | bit);
     const f = t.flags;
     if (f & (TF.Any | TF.Unknown)) return; // opaque: every operation on it is an uninterpreted external
     if (f & (TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.StringLike | TF.Undefined | TF.Null | TF.Void | TF.Never)) return;

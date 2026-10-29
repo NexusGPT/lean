@@ -13,7 +13,7 @@
 // with three examples each, per package and in total. Read-only: nothing is written into the repository.
 import fs from 'node:fs';
 import path from 'node:path';
-import { lowerFile } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
+import { lowerFile, startLoweringProfile, measureLowering, loweringProfile, loweringProfileTable } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
 import { loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
 import { classifier, ensureInstalled, cleanInstall } from './census-env.mjs';
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
@@ -49,7 +49,7 @@ export function census(root, opts = {}) {
   const perPackage = new Map();
   const languages = {}; // ts and (with --js) js: files, units, units inside the subset
   const records = []; // one per file: what the per-file reader needs
-  let files = 0, units = 0, entered = 0, failedFiles = 0, nested = 0, nestedEntered = 0, environmentBlocked = 0, languageRefused = 0; // nested: units inside another unit's body (callbacks), covered by it
+  let files = 0, units = 0, entered = 0, failedFiles = 0, nested = 0, nestedEntered = 0, environmentBlocked = 0, languageRefused = 0, oversizedClosures = 0; // nested: units inside another unit's body (callbacks), covered by it
   const t0 = Date.now();
   const list = [];
   for (const file of walk(root, js ? ANY_EXT : TS_EXT)) {
@@ -59,8 +59,18 @@ export function census(root, opts = {}) {
   }
   // one program per tsconfig (in chunks), every file of the project as a root: the type checker is built once per
   // chunk, not per file, and a chunk is dropped once its files are linted
-  for (const loaded of loadManyChunks(list, { log })) for (const abs of loaded.keys()) {
+  // (lowering-cache) the chunks are read one at a time and released: a chunk's Map is cleared once its files are lowered,
+  // so two Programs never live across a chunk boundary; the heap is logged per chunk; a chunk's records go to the journal
+  const chunks = loadManyChunks(list, { log, ...(opts.chunk ? { chunk: opts.chunk } : {}), ...(opts.sourceByteBudget ? { sourceByteBudget: opts.sourceByteBudget } : {}) });
+  const heap = (stage) => { const row = { stage, files, ...process.memoryUsage() }; log(`heap ${stage} ${JSON.stringify(row)}`); opts.onHeap?.(row); };
+  function* timedChunks() { while (true) { const next = measureLowering('load census chunk', () => chunks.next()); if (next.done) return; yield next.value; } }
+  function consumeChunk(loaded) {
+  const chunkStart = records.length;
+  heap('chunk loaded');
+  for (const abs of loaded.keys()) {
     const file = abs;
+    const closure = loaded.get(abs)?.closure; // an indivisible import closure over the source budget: read whole, reported
+    if (closure) oversizedClosures++;
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
@@ -77,7 +87,7 @@ export function census(root, opts = {}) {
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
       envBlocked = new Set(findings.filter((f) => f.rule === 'unresolved-module' && f.unit).map((f) => f.unit)); // judged on unknown types: neither admitted nor refused by a reading
       for (const u of rec.units) { if (envBlocked.has(u.unit)) continue; if (u.refusal) reading(u.refusal.id).refused++; else for (const r of u.readings) reading(r.id).admitted++; }
-    } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
+    } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, ...(closure ? { closure } : {}), error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
     // an unresolved-module finding names its module (or global) and its kind; the unit it falls in is counted once
     const envSeen = new Set();
     const named = findings.map((f) => {
@@ -90,7 +100,7 @@ export function census(root, opts = {}) {
       if (f.unit && !envSeen.has(f.unit)) { envSeen.add(f.unit); envUnits.set(o.kind, (envUnits.get(o.kind) ?? 0) + 1); }
       return o;
     });
-    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: named });
+    records.push({ file: path.relative(root, file), pkg, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: named });
     const blocked = new Set();
     const stop = (unit, f, rule) => {
       blocked.add(unit);
@@ -127,7 +137,13 @@ export function census(root, opts = {}) {
     units += unitNames.length; entered += unitNames.length - blocked.size;
     { const lang = JS_EXT.test(file) ? 'js' : 'ts'; const Lg = languages[lang] ??= { files: 0, units: 0, entered: 0 }; Lg.files++; Lg.units += unitNames.length; Lg.entered += unitNames.length - blocked.size; }
     P.units += unitNames.length; P.entered += unitNames.length - blocked.size;
-    if (files % 50 === 0) log(`${files} files, ${units} units, ${entered} inside, ${Math.round((Date.now() - t0) / 1000)} s`);
+    if (files % 50 === 0) { heap('files'); log(`${files} files, ${units} units, ${entered} inside, ${Math.round((Date.now() - t0) / 1000)} s`); }
+  }
+  opts.onChunk?.({ kind: 'chunk', complete: false, files, units, entered, failedFiles, oversizedClosures, readings: [...readings.values()], records: records.slice(chunkStart) });
+  heap('chunk processed');
+  }
+  for (const loaded of timedChunks()) {
+    try { consumeChunk(loaded); } finally { loaded.clear(); }
   }
   const ruleRows = [...rules.entries()].map(([rule, r]) => ({ rule, findings: r.count, units: r.units.size, examples: r.examples })).sort((a, b) => b.units - a.units);
   const refusalRules = [...refusalGroups.values()].map((r) => ({
@@ -136,7 +152,7 @@ export function census(root, opts = {}) {
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
   const blockedKinds = Object.fromEntries([...refusalGroups.values()].filter((r) => r.rule.startsWith('environment: ')).map((r) => [r.rule.slice(13), r.units]).sort((a, b) => b[1] - a[1]));
   const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds };
-  return { root, date, depth, languages, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  return { complete: true, root, date, depth, oversizedClosures, languages, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
 
 // Render only the saved census result. No files are read and no units are linted here.
@@ -179,6 +195,7 @@ export function censusReadingsReport(res) {
 // keyed by its file and its name; it is admitted (using its readings) or refused (by one reading). A gain of a reading is
 // a unit admitted in the second run that uses it and was refused (or absent) in the first; a loss the converse.
 export function censusDiff(a, b) {
+  if (a.complete === false || b.complete === false) throw new Error('cannot compare an incomplete census; its recordsFile journal retains completed chunks');
   const state = (res) => { const m = new Map(); for (const rec of res.records ?? []) for (const u of rec.lowering ?? []) m.set(`${rec.file}:${u.unit}`, u); return m; };
   const A = state(a), B = state(b);
   const ids = [...new Set([...(a.readings ?? []), ...(b.readings ?? [])].map((r) => r.id))].sort();
@@ -208,16 +225,33 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   }
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const root = path.resolve(a[0]);
-  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), js: a.includes('--js'), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m) });
+  const out = opt('--out', null), journal = out ? out + '.records.jsonl' : null;
+  // the summary is written whole or not at all; a run that dies leaves `complete: false` and its journal of finished chunks
+  const writeSummary = (value) => {
+    const next = `${out}.${process.pid}.${process.hrtime.bigint()}.next`;
+    try { fs.writeFileSync(next, JSON.stringify(value, null, 1), { flag: 'wx' }); fs.renameSync(next, out); }
+    finally { if (fs.existsSync(next)) fs.unlinkSync(next); }
+  };
+  if (out) {
+    const pending = { kind: 'census', complete: false, root, recordsFile: journal };
+    fs.writeFileSync(journal, JSON.stringify(pending) + '\n');
+    writeSummary(pending);
+  }
+  if (a.includes('--profile')) startLoweringProfile();
+  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), js: a.includes('--js'), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m),
+    onChunk: journal ? (chunk) => fs.appendFileSync(journal, JSON.stringify(chunk) + '\n') : null });
+  if (a.includes('--profile')) { res.profile = loweringProfile(); console.error(loweringProfileTable(res.profile)); }
   // --clean-after: the disk budget keeps one installed root at a time; the root's node_modules go once it is read
   if (a.includes('--clean-after')) { const removed = cleanInstall(root, opt('--install-under', null)); res.environment.cleaned = removed.length; }
-  const out = opt('--out', null);
   const report = opt('--report', null);
-  if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
+  if (out) {
+    writeSummary(res);
+    fs.appendFileSync(journal, JSON.stringify({ kind: 'complete', complete: true, files: res.files, units: res.units, entered: res.entered, oversizedClosures: res.oversizedClosures }) + '\n');
+  }
   if (report) fs.writeFileSync(report, censusReport(res));
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
-  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked, ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.seconds} s`);
+  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked, ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);
   const st = res.environment.install;
   console.log(`  environment: install ${st.status}${st.exit !== undefined ? ` (exit ${st.exit}, ${st.command})` : ''}; ${res.environment.units} units reach an unresolved module or global: ${Object.entries(res.environment.kinds).map(([k, n]) => `${k} ${n}`).join(', ') || 'none'}`);
   for (const r of res.rules.slice(0, 25)) console.log(`  ${String(r.units).padStart(6)} units  ${r.rule.padEnd(22)} ${r.examples[0] ?? ''}`);

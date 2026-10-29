@@ -93,7 +93,14 @@ export function loadMany(files, opts = {}) {
   return out;
 }
 
-// loadManyChunks: the same, one Map per chunk of one project, so a caller can lint a chunk and let it go
+// One GiB is a last-resort source/declaration guard, not a chunking target.
+// Keep the normal project/1200-root grouping: a smaller byte target repeats
+// large shared declaration closures. Type-graph expansion is bounded in the lint.
+// An indivisible import closure is still read whole and reported, never truncated.
+export const PROGRAM_SOURCE_BUDGET_BYTES = 1024 * 1024 * 1024;
+const CHUNK_OVER_BUDGET = Symbol('compiler source budget');
+
+// loadManyChunks: the same, one Map per byte-bounded chunk of one project.
 export function* loadManyChunks(files, opts = {}) {
   const groups = new Map(); // configFile|'' -> [abs]
   for (const f of files) {
@@ -102,27 +109,63 @@ export function* loadManyChunks(files, opts = {}) {
     // a file without a project groups with the files that see the same installed declarations
     const k = cfg ?? `\0${typeRootsFrom(path.dirname(abs)).join('\0')}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
   }
-  const CHUNK = opts.chunk ?? 1200; // a program over thousands of roots exhausts the heap; chunks share nothing but cost little
-  const chunks = [];
-  for (const [cfg, absList] of groups) for (let i = 0; i < absList.length; i += CHUNK) chunks.push([cfg, absList.slice(i, i + CHUNK)]);
-  for (const [cfg, absList] of chunks) {
-    const out = new Map();
-    // options exactly as loadProgram computes them, with the whole group as roots
-    const project = cfg && !cfg.startsWith('\0') ? cfg : null;
-    const first = loadProgramOptions(absList[0], project);
-    let program;
-    try { program = ts.createProgram([...absList, ...first.declarations.filter((d) => !absList.includes(d))], first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); yield out; continue; }
-    const checker = program.getTypeChecker();
+  const budget = opts.sourceByteBudget ?? PROGRAM_SOURCE_BUDGET_BYTES;
+  if (!Number.isSafeInteger(budget) || budget <= 0) throw new Error('sourceByteBudget must be a positive integer');
+  const cap = opts.chunk ?? 1200; // preserve the original project grouping; bytes are a final guard
+  if (cap !== Infinity && (!Number.isSafeInteger(cap) || cap <= 0)) throw new Error('chunk must be a positive integer');
+  for (const [cfg, absList] of groups) {
+    let roots = [], bytes = 0;
     for (const abs of absList) {
-      const sf = program.getSourceFile(abs);
-      if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
-      let diagnostics;
-      try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; } catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}` }); continue; }
-      out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: project });
+      let size = 0; try { size = fs.statSync(abs).size; } catch { /* loadChunk reports unreadable sources */ }
+      if (roots.length && (bytes + size > budget || roots.length >= cap)) { yield* boundedChunks(cfg, roots, opts, budget); roots = []; bytes = 0; }
+      roots.push(abs); bytes += size;
     }
-    opts.log?.(`project ${project || '(none)'}: ${absList.length} files`);
-    yield out;
+    if (roots.length) yield* boundedChunks(cfg, roots, opts, budget);
   }
+}
+function* boundedChunks(cfg, roots, opts, budget) {
+  const loaded = loadChunk(cfg, roots, opts, budget);
+  if (loaded !== CHUNK_OVER_BUDGET) { yield loaded; return; }
+  const half = Math.ceil(roots.length / 2);
+  opts.log?.(`split project ${cfg || '(none)'}: ${roots.length} roots exceed ${budget} source/declaration bytes`);
+  yield* boundedChunks(cfg, roots.slice(0, half), opts, budget);
+  yield* boundedChunks(cfg, roots.slice(half), opts, budget);
+}
+
+// End the compiler/checker construction frame before the generator suspends.
+// The caller owns the returned Map and clears it before requesting another chunk.
+function loadChunk(cfg, absList, opts, budget) {
+  const out = new Map();
+  const project = cfg && !cfg.startsWith('\0') ? cfg : null; // a projectless group is keyed by its type roots (census-env), not a config
+  const first = loadProgramOptions(absList[0], project);
+  const host = ts.createCompilerHost(first.options);
+  const getSourceFile = host.getSourceFile;
+  const seen = new Set(); let bytes = 0;
+  host.getSourceFile = (...args) => {
+    const sf = getSourceFile.apply(host, args);
+    if (sf && !seen.has(sf.fileName)) {
+      seen.add(sf.fileName); bytes += Buffer.byteLength(sf.text);
+      if (bytes > budget && absList.length > 1) throw CHUNK_OVER_BUDGET;
+    }
+    return sf;
+  };
+  let program;
+  try { program = ts.createProgram([...absList, ...first.declarations.filter((d) => !absList.includes(d))], first.options, host); } // the project's own declaration files join the program (census-env)
+  catch (e) { if (e === CHUNK_OVER_BUDGET) return e; for (const a of absList) out.set(a, { error: String(e.message) }); return out; }
+  const sourceBytes = program.getSourceFiles().filter(s => !s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+  const declarationBytes = program.getSourceFiles().filter(s => s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+  const closure = sourceBytes + declarationBytes > budget ? { sourceBytes, declarationBytes, totalBytes: sourceBytes + declarationBytes, budgetBytes: budget } : null;
+  const checker = program.getTypeChecker();
+  for (const abs of absList) {
+    const sf = program.getSourceFile(abs);
+    if (!sf) { out.set(abs, { error: `cannot read ${abs}`, ...(closure ? { closure } : {}) }); continue; }
+    let diagnostics;
+    try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; }
+    catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}`, ...(closure ? { closure } : {}) }); continue; }
+    out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: project, ...(closure ? { closure } : {}) });
+  }
+  opts.log?.(`project ${project || '(none)'}: ${absList.length} files, ${sourceBytes} source + ${declarationBytes} declaration bytes${closure ? ' (indivisible closure over budget)' : ''}`);
+  return out;
 }
 
 // the compiler options loadProgram uses for a file under a config (shared by loadProgram and loadMany)
