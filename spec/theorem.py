@@ -165,10 +165,18 @@ def parse_functions(text, suffix, label):
     return found
 
 
-def split_helpers(funcs_defined, scoped, suffix, label):
+def nested_units(text):
+    """The `// NESTED:` header of a translation: the units nested in another emitted unit (a callback passed as an
+    argument), by their Dafny base names. One the scope lists is a function of its own; one it does not list is covered by
+    the unit that encloses it (the lambda is read inside that unit's body): neither a helper nor an unscoped function."""
+    m = re.search(r'^// NESTED: (.*)$', text, flags=re.M)
+    return {x.strip() for x in m.group(1).split(',') if x.strip()} if m else set()
+
+
+def split_helpers(funcs_defined, scoped, suffix, label, nested=()):
     """Functions named <scoped>_<x>_<suffix> are private helpers. Return the
-    helper names; refuse a helper that no scoped function reaches."""
-    helpers = [b for b in funcs_defined if b not in scoped and any(b.startswith(f + '_') for f in scoped)]
+    helper names; refuse a helper that no scoped function reaches. A nested unit is never a helper."""
+    helpers = [b for b in funcs_defined if b not in scoped and b not in nested and any(b.startswith(f + '_') for f in scoped)]
     reached, todo = set(), list(scoped)
     while todo:
         cur = todo.pop()
@@ -426,9 +434,10 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             raise Refusal(f'scope lists {f}, which the parent does not define')
         if f not in cf:
             raise Refusal(f'scope lists {f}, which the candidate does not define')
-    hp = split_helpers(pf, list(funcs), 'parent', 'parent')
-    hc = split_helpers(cf, list(funcs), 'candidate', 'candidate')
-    unscoped = sorted(set(cf) - set(funcs) - set(hc))
+    nested_p, nested_c = nested_units(parent_text), nested_units(cand_text)
+    hp = split_helpers(pf, list(funcs), 'parent', 'parent', nested_p)
+    hc = split_helpers(cf, list(funcs), 'candidate', 'candidate', nested_c)
+    unscoped = sorted(set(cf) - set(funcs) - set(hc) - nested_c)  # a nested unit the scope does not list is covered by the unit that encloses it
     if unscoped:
         raise Refusal('candidate defines functions that the scope does not list: ' + ', '.join(unscoped))
     slot_layout_differs = set()
