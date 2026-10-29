@@ -456,6 +456,10 @@ add('runtime', 'clock-read', 'seeded recording fakes', clocks.status === 0, (clo
 // handler-compared, and the op printer is total (a witness is never lost to its rendering)
 const kids = run('node', [path.join(here, 'patch-children.mjs')]);
 add('runtime', 'patch-children', 'single-object and string children diffed and printed; the printer is total', kids.status === 0, (kids.stdout + kids.stderr).trim().split('\n').pop());
+// every children shape (array, element, text, number, a depth-cut {$deep}, null, undefined) read as kidsOf reads it by every
+// exported reader, and every element-tree `.children` in lean's source read through kidsOf or a named exception
+const shapes = run('node', [path.join(here, 'children-shapes.mjs')]);
+add('runtime', 'children-shapes', 'seven children shapes read one way; no raw children reader outside the named exceptions', shapes.status === 0, (shapes.stdout + shapes.stderr).trim().split('\n').pop());
 const silent = run('node', [path.join(here, 'no-silent-exit.mjs')]);
 add('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', silent.status === 0, (silent.stdout + silent.stderr).trim().split('\n').pop());
 const importers = run('node', [path.join(here, 'no-silent-exit-importers.mjs')]); // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown
