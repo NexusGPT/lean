@@ -176,6 +176,8 @@ if (process.argv.includes('--heap-child')) {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const tmp = fs.mkdtempSync(path.join(here, '.lowering-cache-'));
+const previousCacheDir = process.env.LEAN_CACHE_DIR;
+process.env.LEAN_CACHE_DIR = path.join(tmp, 'main-cache');
 try {
   const missing = path.join(tmp, 'shadowed-promise.ts');
   fs.writeFileSync(missing, 'export class Promise { constructor(public value: number) {} }');
@@ -319,4 +321,7 @@ try {
   process.stdout.write(summary.stdout); process.stderr.write(summary.stderr); console.log(`summary child exit ${summary.status}`);
   assert.equal(summary.status, 0);
   }
-} finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+} finally {
+  if (previousCacheDir === undefined) delete process.env.LEAN_CACHE_DIR; else process.env.LEAN_CACHE_DIR = previousCacheDir;
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
