@@ -12,7 +12,7 @@
  ],
  "equal": {
   "key_order": false,
-  "same_order": true,
+  "same_order": "real-only",
   "index_first": true,
   "written": false,
   "in_header": false,

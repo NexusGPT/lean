@@ -48,7 +48,7 @@
     "nullable_at": false,
     "null_echo": true,
     "boundary_result": true,
-    "and_absence": true,
+    "and_absence": "real-only",
     "append_absence": false
   },
   "why": "Null clears a patch, undefined preserves it; defaults apply only to undefined; both tags coalesce and optional-chain; single-absence Option interfaces stay unchanged. andAbsence: x && undefined returns NaN for NaN, the candidate undefined: lane B WITNESS since lane B draws NaN (design/special-numbers.md).",

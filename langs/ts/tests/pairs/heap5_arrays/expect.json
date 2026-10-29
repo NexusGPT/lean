@@ -1,6 +1,6 @@
 {
  "scope": ["has_rush", "all_positive", "total", "first_big", "bump", "first_tag"],
- "equal": {"has_rush": true, "all_positive": false, "total": true, "first_big": true, "bump": true, "first_tag": true},
+ "equal": {"has_rush": true, "all_positive": false, "total": "real-only", "first_big": "real-only", "bump": "real-only", "first_tag": true},
  "why": "the array callbacks read the items as a pure function of them: hasRush writes includes for a some that compares each tag (proved: both test membership); allPositive admits a zero price (unproved, WITNESS); total names the prices before its reduce (proved); firstBig is untouched; bump writes the forEach as a for-of loop over the same items (the same loop helper: proved); firstTag is untouched, at reading the first tag or absent.",
  "b": {"hasRush": "PASS-bounded", "allPositive": "WITNESS", "total": "PASS-bounded", "firstBig": "PASS-bounded", "bump": "PASS-bounded", "firstTag": "PASS-bounded"},
  "heap": true

@@ -5,7 +5,7 @@
   "scaled"
  ],
  "equal": {
-  "make_scale": true,
+  "make_scale": "real-only",
   "scaled": false,
   "applied": false
  },

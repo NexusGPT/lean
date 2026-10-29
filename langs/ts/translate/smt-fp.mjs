@@ -37,7 +37,7 @@ function firstNumberOp(checker, sf, root) {
       else if ((op === K.PlusToken || op === K.PlusEqualsToken) && (isNum(checker, n.left) || isNum(checker, n.right))) at(n, 'conversion');
       else if (RELATIONAL.has(op) && isNum(checker, n.left) && isNum(checker, n.right)) at(n, 'comparison'); // NaN is unordered (7.2.13): a comparison of two read numbers differs from the reals' on a NaN input
       else if (EQUALITY.has(op) && (isNum(checker, n.left) || isNum(checker, n.right))) at(n, 'comparison'); // IsStrictlyEqual (7.2.15): -0 equals 0 and NaN equals nothing, so a test reads a -0 or NaN input
-    } else if (ts.isPrefixUnaryExpression(n) && [K.MinusToken, K.PlusToken, K.TildeToken, K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && !ts.isNumericLiteral(n.operand)) at(n, n.operator === K.TildeToken ? 'bitwise' : 'arithmetic');
+    } else if (ts.isPrefixUnaryExpression(n) && [K.MinusToken, K.PlusToken, K.TildeToken, K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && !(ts.isNumericLiteral(n.operand) && Number(n.operand.text.replace(/_/g, '')) !== 0)) at(n, n.operator === K.TildeToken ? 'bitwise' : 'arithmetic');
     else if (ts.isPostfixUnaryExpression(n)) at(n, 'arithmetic');
     else if (mathCall(n)) at(n, 'Math');
     else if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && CONVERSIONS.has(n.expression.text) && n.arguments.length) at(n, 'conversion');

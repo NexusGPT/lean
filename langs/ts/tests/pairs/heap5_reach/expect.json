@@ -1,6 +1,6 @@
 {
  "scope": ["mean", "whole", "half"],
- "equal": {"mean": true, "whole": true, "half": false},
+ "equal": {"mean": "real-only", "whole": true, "half": false},
  "why": "mean is untouched: a for-of loop in a real file whose body never changes the world, then a division guarded by the length test (proved: the loop helper returns the world it was given, so the zero-divisor and negative-zero marks read the world before it); whole writes ~~x for x | 0 (proved: both ToInt32, the ordinary lane's reading); half divides by 4 for 2 (unproved, WITNESS).",
  "b": {"mean": "PASS-bounded", "whole": "PASS-bounded", "half": "WITNESS"},
  "heap": true

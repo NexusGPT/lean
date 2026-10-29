@@ -19,9 +19,9 @@
   "cut": false,
   "flipped": true,
   "joined": true,
-  "doubled": true,
-  "evens": true,
-  "tallied": true,
+  "doubled": "real-only",
+  "evens": "real-only",
+  "tallied": "real-only",
   "remembered": true,
   "cut_at": true
  },

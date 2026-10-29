@@ -6,7 +6,7 @@
   "order"
  ],
  "equal": {
-  "cost": true,
+  "cost": "real-only",
   "persist": false,
   "twice": false,
   "order": false

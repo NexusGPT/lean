@@ -13,6 +13,8 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts, dn } from '../common.mjs';
 import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
+import { solveUnit } from '../solve/fp.mjs';
+import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -226,6 +228,11 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   const finished = /finished with \d+ verified/.test(text); // no verdict line: a resolution error, nothing is proved
   const rests = restsOf(lines); // a caller's lemma rests on its callees' summaries: proved only when every lemma it rests on is proved
   const spanClean = (k) => finished && !!spans[k] && !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]);
+  // the doubles reading (check.mjs, design/doubles.md): a number-bearing unit's lemma is decided over IEEE-754 binary64,
+  // the real lemma alone proves it no longer; `witness` in expect.json: the solver's counterexample, replayed in Node
+  const unitByLemma = (() => { try { return new Map([...unitsOfFile(loadForUnits(pairFile(d, 'candidate'), { project: false }).sf).keys()].map((u) => [dafnyName(u), u])); } catch { return new Map(); } })();
+  const doublesOf = new Map();
+  const doubles = async (f) => { if (!doublesOf.has(f)) { const u = unitByLemma.get(f); doublesOf.set(f, u ? await solveUnit({ parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate'), unit: u, project: false, keep: tmpd }) : { bearing: null }); } return doublesOf.get(f); };
   for (const [f, want] of Object.entries(exp.equal)) {
     const sp = spans[`Equal_${f}`];
     const viaRests = provedLemma(`Equal_${f}`, spanClean, rests);
@@ -233,15 +240,22 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     const whole = finished && !!sp && viaRests;
     const parts = canonPartsOf(Object.keys(spans), f); // the canonical-heap certificate: every part must hold (check.mjs canonPartsOf: this unit's parts only)
     const canon = finished && parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]));
-    const proved = whole || canon;
+    const real = whole || canon;
     const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));
-    const got = sp ? (proved ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : 'not proved') : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
-    const ok = want === 'withheld' ? !!withheld : proved === want && !(want && withheld); // "withheld": the identity guard must have withheld the lemma
-    add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want ? 'proved' : 'not proved'}`, ok, got);
+    const fp = await doubles(f);
+    const proved = fp.bearing ? finished && !!sp && fp.verdict === 'proved' : real;
+    const realText = real ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : 'not proved';
+    const got = sp ? (fp.bearing ? `doubles ${fp.verdict}${fp.verdict === 'witness' ? ' at ' + JSON.stringify(fp.input).slice(0, 60) : fp.reason ? ': ' + fp.reason.slice(0, 80) : ''} (${fp.seconds ?? 0} s); real lemma ${realText}` : realText) : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
+    // "withheld": the identity guard must have withheld the lemma; "witness": the doubles reading's replayed counterexample;
+    // "real-only": the real lemma proves and the doubles reading does not read the unit whole (unknown), so lane A does
+    // not prove it (design/doubles.md): the row keeps the translator's real proof under test and names the gap
+    const ok = want === 'withheld' ? !!withheld : want === 'witness' ? !!sp && fp.verdict === 'witness' : want === 'real-only' ? real && fp.bearing && fp.verdict === 'unknown' && !withheld : proved === want && !(want && withheld);
+    add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want === 'witness' ? 'witness (doubles)' : want === 'real-only' ? 'real only (doubles unknown)' : want ? 'proved' : 'not proved'}`, ok, got);
     if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
   }
   // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
-  huntA.set(name, { adapters: Object.keys(allAdapters), proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
+  for (const unit of Object.keys(exp.b ?? {})) if (finished && spans[`Equal_${dafnyName(unit)}`]) await doubles(dafnyName(unit)); // the proof-hunt step reads the doubles reading of every unit lane B ran
+  huntA.set(name, { adapters: Object.keys(allAdapters), bearing: (f) => !!doublesOf.get(f)?.bearing, proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const fp = doublesOf.get(f); if (fp?.bearing) return fp.verdict === 'proved'; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
@@ -379,16 +393,17 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
       if (!b || a === null) continue;
       both++;
       if (!(a && b === 'WITNESS')) continue;
-      // two doors only: a declared adapter, and a witness whose every input holds NaN, an infinity or a negative zero
-      // (lane A's number model is finite and holds no -0 input, so its hypothesis excludes them: design/special-numbers.md,
-      // design/signed-zero.md; the doubles reading, row 0d8976c3, closes this door); any other witness is hidden
-      const door = A.adapters.includes(f) ? 'the pair declares an adapter door for this unit' : (B.witnesses ?? []).length && B.witnesses.every((w) => /"\$(nan|infinity|negativeZero)"/.test(JSON.stringify(w.args ?? w.input ?? null))) ? 'every witness input holds NaN, an infinity or -0, outside the finite number model (-0: row 0d8976c3)' : null;
+      // two doors only: a declared adapter, and, on a unit the doubles reading does not decide (no number operation:
+      // its lemma is the real one), a witness whose every input holds NaN or an infinity (design/special-numbers.md). A
+      // number-bearing unit is decided over binary64, which holds -0, NaN and the infinities, so it has no door; the -0
+      // door (row 0d8976c3) is closed by the doubles reading (design/doubles.md); any other witness is hidden
+      const door = A.adapters.includes(f) ? 'the pair declares an adapter door for this unit' : !A.bearing(f) && (B.witnesses ?? []).length && B.witnesses.every((w) => /"\$(nan|infinity)"/.test(JSON.stringify(w.args ?? w.input ?? null))) ? 'every witness input holds NaN or an infinity, and the unit has no number operation (its lemma is the real reading)' : null;
       if (door) exempt++; else hidden++;
       add('proof-hunt', name, `${unit}: lane A proved, lane B WITNESS`, !!door, door ? `exempt: ${door}` : `HIDDEN FALSE PROOF: lane A proved a unit lane B witnessed at ${JSON.stringify(B.witnesses?.[0]?.args ?? null).slice(0, 120)}`);
     }
   }
-  add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, special numbers incl. -0)`);
-  console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers incl. -0) |`);
+  add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, NaN or infinity on a unit with no number operation)`);
+  console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, NaN or infinity on a unit with no number operation) |`);
 }
 
 // ----- escapes -----

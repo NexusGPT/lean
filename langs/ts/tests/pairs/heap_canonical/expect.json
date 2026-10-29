@@ -9,7 +9,7 @@
   "attach": true,
   "pair": true,
   "unhook": false,
-  "tally": true
+  "tally": "real-only"
  },
  "canon": {
   "attach": true,

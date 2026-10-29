@@ -4,7 +4,7 @@
   "last_ok"
  ],
  "equal": {
-  "check": true,
+  "check": "real-only",
   "last_ok": false
  },
  "why": "class 4, a loop helper running on after a callee faults in a callback: closed on 1e55e21 (lastOk not proved); check is untouched (proved).",

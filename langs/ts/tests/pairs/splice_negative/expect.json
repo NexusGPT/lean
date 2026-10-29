@@ -1,6 +1,6 @@
 {
  "scope": ["drop_last", "tail", "trim_end", "head"],
- "equal": {"drop_last": false, "tail": false, "trim_end": true, "head": true},
+ "equal": {"drop_last": false, "tail": false, "trim_end": "real-only", "head": "real-only"},
  "why": "The library table's heap rows for splice and slice count a negative start from the end, as the spec does; before this pair they clamped it to 0, so xs.splice(-1, 1) proved equal to xs.splice(0, 1). dropLast changes the start from -1 to 0 (unproved, WITNESS on an array of two or more: the array left behind differs, the length agrees); tail changes slice(-2) to slice(0, 2) (unproved, WITNESS); trimEnd writes the same removal with a negative start and with xs.length - 1 (proved, PASS-bounded); head is untouched. Lane B's content check for splice compares the receiver after the call with the spec's result, so a wrong row is a defect it reports.",
  "b": {"dropLast": "WITNESS", "tail": "WITNESS", "trimEnd": "PASS-bounded", "head": "PASS-bounded"},
  "heap": true

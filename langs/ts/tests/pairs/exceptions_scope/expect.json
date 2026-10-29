@@ -13,17 +13,17 @@
     "switch_fallback"
   ],
   "equal": {
-    "helper": true,
-    "caller": true,
+    "helper": "real-only",
+    "caller": "real-only",
     "terminal": false,
-    "loop_catch": true,
-    "callback_catch": true,
+    "loop_catch": "real-only",
+    "callback_catch": "real-only",
     "shadow_catch": true,
     "cleanup_loop": false,
-    "ordinary": true,
+    "ordinary": "real-only",
     "lazy": false,
-    "lazy_leaf": true,
-    "switch_fallback": true
+    "lazy_leaf": "real-only",
+    "switch_fallback": "real-only"
   },
   "why": "ordinary effectful helpers keep their loop and callback reading; complex catches are local opaque transitions; terminal throws and dropped finalizers stay observable; opaque calls retain dependency guards",
   "b": {

@@ -9,8 +9,8 @@
  ],
  "equal": {
   "bump": false,
-  "first": true,
-  "set_first": true,
+  "first": "real-only",
+  "set_first": "real-only",
   "label_": false,
   "get": false,
   "size": true

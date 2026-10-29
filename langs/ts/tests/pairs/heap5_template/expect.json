@@ -1,6 +1,6 @@
 {
  "scope": ["greet", "badge", "years", "handle", "stamp"],
- "equal": {"greet": false, "badge": true, "years": true, "handle": true, "stamp": true},
+ "equal": {"greet": "witness", "badge": true, "years": "real-only", "handle": true, "stamp": "real-only"},
  "why": "a template literal is a string concatenation with ToString on each hole: greet puts the age in parentheses (unproved, WITNESS); badge spells the boolean hole as the two string literals under a test of the field (proved: a boolean hole is its name); years writes the age plus zero (proved: ToString of a number is a function of the number alone); handle is untouched, its hole a field that may be missing, read as \"undefined\" when it is; stamp splits the template into concatenations and writes the number literal 10 as its string (proved).",
  "b": {"greet": "WITNESS", "badge": "PASS-bounded", "years": "PASS-bounded", "handle": "PASS-bounded", "stamp": "PASS-bounded"},
  "heap": true

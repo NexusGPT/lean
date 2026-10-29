@@ -9,7 +9,7 @@
  "equal": {
   "number_name": false,
   "is_text": true,
-  "has_media": true,
+  "has_media": "real-only",
   "or_default": false,
   "length_of": false
  },

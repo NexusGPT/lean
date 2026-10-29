@@ -1,6 +1,6 @@
 {
   "scope": ["truth", "let_truth", "same"],
-  "equal": { "truth": false, "let_truth": false, "same": true },
+  "equal": { "truth": false, "let_truth": false, "same": "real-only" },
   "why": "truth and letTruth: `m[k] ? 1 : 0` against `m[k] !== 0 ? 1 : 0` translate to the same Dafny body in the heap core, where a missing key marks the world (oob) and reads 0; JavaScript reads undefined, so the parent gives 0 and the candidate 1 (lane B WITNESS). The theorem aliased the two bodies and dropped the in-range obligation, which proved them equal; an aliased unit now keeps every obligation unless the two sources (the unit and every same-file unit it reaches, `// SOURCE`) are the same, so both stay unproved. same is the same source on both sides: aliased and proved without the obligation.",
   "b": { "truth": "WITNESS", "letTruth": "WITNESS", "same": "PASS-bounded" }
 }

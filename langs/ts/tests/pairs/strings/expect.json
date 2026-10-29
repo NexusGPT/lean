@@ -14,9 +14,9 @@
  ],
  "equal": {
   "slug": false,
-  "padded": true,
+  "padded": "real-only",
   "maximum": false,
-  "untouched": true,
+  "untouched": "real-only",
   "unicode_case": false,
   "split_limit": false,
   "substitution": false,

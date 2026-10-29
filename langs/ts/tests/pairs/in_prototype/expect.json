@@ -1,6 +1,6 @@
 {
  "scope": ["inherits", "present", "has_constructor", "weight"],
- "equal": {"inherits": false, "present": true, "has_constructor": true, "weight": true},
+ "equal": {"inherits": false, "present": "real-only", "has_constructor": true, "weight": true},
  "why": "`k in o` on a plain object is an own key or a name of Object.prototype (ECMA-262 HasProperty walks the prototype chain): 'toString' in d is true on every dictionary, the own-key test is not, unproved and witnessed; `k in d` and `d[k] === undefined` agree because an inherited name reads a function, proved; 'constructor' in a record is true, proved; weight untouched.",
  "heap": false,
  "b": {"inherits": "WITNESS", "present": "PASS-bounded", "hasConstructor": "PASS-bounded", "weight": "PASS-bounded"}

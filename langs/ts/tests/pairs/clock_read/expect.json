@@ -14,8 +14,8 @@
     "numeric_opaque"
   ],
   "equal": {
-    "once": true,
-    "date_once": true,
+    "once": "real-only",
+    "date_once": "real-only",
     "window_size": false,
     "date_window": false,
     "across_port": false,
@@ -25,7 +25,7 @@
     "high_resolution": true,
     "high_resolution_window": false,
     "untouched": true,
-    "numeric_opaque": true
+    "numeric_opaque": "real-only"
   },
   "why": "clock reads are ordered world transitions; fixed Date construction is a value and unsupported numeric arithmetic stays opaque by its text.",
   "b": {

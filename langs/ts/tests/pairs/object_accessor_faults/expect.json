@@ -32,7 +32,7 @@
     "changed_fault_get_value": false,
     "changed_fault_read": false,
     "opaque_tagged": false,
-    "nested_tag": true,
+    "nested_tag": "real-only",
     "special_getter_get_value": false,
     "special_getter_read": false,
     "special_setter_set_value": false,

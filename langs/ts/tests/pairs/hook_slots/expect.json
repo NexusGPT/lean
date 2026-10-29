@@ -7,10 +7,10 @@
   "layout"
  ],
  "equal": {
-  "counter": true,
+  "counter": "real-only",
   "mutant": false,
-  "updater": true,
-  "lazy": true,
+  "updater": "real-only",
+  "lazy": "real-only",
   "layout": "withheld"
  },
  "why": "Components are read over their hook slots. Counter's handler sets 1 + n for n + 1: the next slot value is the same number, proved. Mutant sets n + 2: a different next slot, unproved and witnessed after one click. Updater's functional updater applied to the slot equals the value form: proved. Lazy's lazy initializer equals the eager one: the initial slots agree, proved. Layout adds a second useState: the slot lists differ, the lemma is withheld; lane B sees the extra hook record in the trace and witnesses it.",

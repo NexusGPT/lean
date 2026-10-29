@@ -11,8 +11,8 @@
  ],
  "equal": {
   "key_list": false,
-  "lookup": true,
-  "pairs_text": true,
+  "lookup": "real-only",
+  "pairs_text": "real-only",
   "index_first": true,
   "reinsert": false,
   "count_keys": true,

@@ -26,14 +26,14 @@
     "is_base": false,
     "shifted": true,
     "moved": true,
-    "opts_y": true,
-    "marked": true,
+    "opts_y": "real-only",
+    "marked": "real-only",
     "is_shape": true,
-    "make_scale": true,
-    "make_shift": true,
+    "make_scale": "real-only",
+    "make_shift": "real-only",
     "build": true,
     "mark": true,
-    "ratio": true
+    "ratio": "real-only"
   },
   "why": "design/reach-keys.md: a same-file reference (a function-value constant called or passed by name, a module constant read as a cell, a tag function, the classes an instanceof test can meet) is keyed by the code it reaches. The changed initializer argument, callee body, tag body and class heritage are reached by scaled, applied, cfgX, tagged and isBase (must not prove); shifted, moved, optsY, marked and isShape reach none of the changed code (proved). ratio is an opaque numeric unit reading the cell count, keyed by its reach, so the edits elsewhere leave it proved.",
   "b": {

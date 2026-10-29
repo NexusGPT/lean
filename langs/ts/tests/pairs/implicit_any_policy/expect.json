@@ -1,6 +1,6 @@
 {
  "scope": ["failure", "reason", "arity", "depth"],
- "equal": {"failure": false, "reason": true, "arity": true, "depth": true},
+ "equal": {"failure": false, "reason": "real-only", "arity": true, "depth": "real-only"},
  "why": "Values only strict mode types as unknown or any are opaque and admitted. failure reads the caught value's name instead of its message: a changed read on the opaque catch binding (TS18046), witnessed and not proved. reason renames the catch binding and inlines the local into an if: the same opaque read compared with the same literal, proved. arity (an untyped rest parameter, TS7019) and depth (a local referenced in its own initializer, TS7022) are untouched: proved.",
  "b": {"failure": "WITNESS", "reason": "PASS-bounded", "arity": "PASS-bounded", "depth": "PASS-bounded"}
 }

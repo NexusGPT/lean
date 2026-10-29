@@ -12,7 +12,7 @@
   "text_input": true,
   "text_input_local": true,
   "form": false,
-  "two_sets": true,
+  "two_sets": "real-only",
   "two_sets_swapped": false,
   "toggle": true,
   "caption": true

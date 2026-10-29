@@ -9,7 +9,7 @@
  "equal": {
   "counter_bump": false,
   "counter_flush": true,
-  "counter_label": true,
+  "counter_label": "real-only",
   "counter_constructor": true,
   "counter_step": false
  },

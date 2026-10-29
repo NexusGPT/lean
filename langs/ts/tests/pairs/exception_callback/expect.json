@@ -14,16 +14,16 @@
   "middle"
  ],
  "equal": {
-  "check": true,
+  "check": "real-only",
   "scaled": false,
-  "total": true,
+  "total": "real-only",
   "later": false,
-  "ordered": true,
-  "guarded": true,
-  "times": true,
-  "via_call": true,
+  "ordered": "real-only",
+  "guarded": "real-only",
+  "times": "real-only",
+  "via_call": "real-only",
   "call_one": false,
-  "call_ordered": true,
+  "call_ordered": "real-only",
   "both": false,
   "middle": false
  },
@@ -47,25 +47,25 @@
    "verdict": "WITNESS"
   },
   "total": {
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   "later": {
    "verdict": "WITNESS"
   },
   "ordered": {
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   "guarded": {
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   "viaCall": {
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   "callOne": {
    "verdict": "WITNESS"
   },
   "callOrdered": {
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   "both": {
    "verdict": "WITNESS"

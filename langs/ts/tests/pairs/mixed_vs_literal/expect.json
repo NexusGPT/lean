@@ -7,7 +7,7 @@
     "swapped": true,
     "every": true,
     "optional": true,
-    "negative": true,
+    "negative": "real-only",
     "untouched": true
   },
   "why": "A primitive-or-record union against a literal: === is true only on the literal's primitive arm holding its value, never through the coercion table. true against \"true\" and 1 against \"1\" differ (== would coerce the second pair to equal), unproved and witnessed. The literal on either side, a !== branch inverted, a typeof guard around the comparison, an explicit undefined test on an optional value and a negated number literal agree, proved; a string-or-array union is a sum compared exactly on its string arm.",

@@ -11,7 +11,7 @@
       "file": "candidate.ts",
       "parent": "parent.ts",
       "unit": "early",
-      "verdict": "PASS-proved"
+      "verdict": "PASS-bounded"
     },
     {
       "file": "candidate.ts",

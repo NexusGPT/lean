@@ -1,6 +1,6 @@
 {
   "scope": ["double", "inc", "make_scale", "make_shift", "unit_handler", "binding_handler", "binding_refactor", "changed_unit", "changed_binding"],
-  "equal": { "double": true, "inc": false, "make_scale": true, "make_shift": true, "unit_handler": true, "binding_handler": true, "binding_refactor": true, "changed_unit": false, "changed_binding": false },
+  "equal": { "double": true, "inc": "witness", "make_scale": "real-only", "make_shift": "real-only", "unit_handler": "real-only", "binding_handler": true, "binding_refactor": true, "changed_unit": false, "changed_binding": false },
   "why": "a named then handler is decided once (common.mjs namedPromiseHandler) for the lint and the translator: a unit is called by its own function; a module constant holding a function value is one transition named by the code its initializer reaches, so the same maker and argument on both sides is one transition (bindingHandler, bindingRefactor proved) and a changed argument is another (changedBinding not proved, lane B witnesses); a changed unit body is not proved (changedUnit)",
   "b": { "unitHandler": "PASS-bounded", "bindingHandler": "PASS-bounded", "bindingRefactor": "PASS-bounded", "changedUnit": "WITNESS", "changedBinding": "WITNESS" }
 }

@@ -10,7 +10,7 @@
    "parent": "real/knowledge.parent.ts",
    "file": "real/knowledge.candidate.ts",
    "unit": "isValidKnowledgePlaceholder",
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   {
    "parent": "real/guard.parent.ts",
@@ -28,7 +28,7 @@
    "parent": "calls.parent.ts",
    "file": "calls.candidate.ts",
    "unit": "cost",
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   {
    "parent": "module.parent.ts",
@@ -58,7 +58,7 @@
    "parent": "calls.parent.ts",
    "file": "calls.candidate.ts",
    "unit": "Cart.charge",
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   {
    "parent": "calls.parent.ts",

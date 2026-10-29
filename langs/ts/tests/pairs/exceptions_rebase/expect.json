@@ -10,10 +10,10 @@
   ],
   "equal": {
     "guard_constructor": false,
-    "guard_read": true,
+    "guard_read": "real-only",
     "build": false,
     "ignored_new": false,
-    "method_call": true,
+    "method_call": "real-only",
     "ignored_method": false,
     "untouched": true
   },

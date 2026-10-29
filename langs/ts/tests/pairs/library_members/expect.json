@@ -13,8 +13,8 @@
  "equal": {
   "lower_all": false,
   "has_name": true,
-  "labels_map": true,
-  "nested_count": true,
+  "labels_map": "real-only",
+  "nested_count": "real-only",
   "tokens": true,
   "word_letters": false,
   "sep_count": true,

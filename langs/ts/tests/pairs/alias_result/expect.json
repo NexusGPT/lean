@@ -17,7 +17,7 @@
       "file": "candidate.ts",
       "parent": "parent.ts",
       "unit": "Box.grown",
-      "verdict": "PASS-proved"
+      "verdict": "PASS-bounded"
     },
     {
       "file": "candidate.ts",
@@ -35,7 +35,7 @@
       "file": "candidate.ts",
       "parent": "parent.ts",
       "unit": "counts",
-      "verdict": "PASS-proved"
+      "verdict": "PASS-bounded"
     }
   ]
 }

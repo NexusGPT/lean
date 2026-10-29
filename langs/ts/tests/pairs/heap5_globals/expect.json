@@ -1,6 +1,6 @@
 {
  "scope": ["spread", "half", "title", "distance", "listed", "note_count"],
- "equal": {"spread": true, "half": false, "title": true, "distance": true, "listed": true, "note_count": true},
+ "equal": {"spread": "real-only", "half": "witness", "title": true, "distance": true, "listed": true, "note_count": true},
  "why": "the pure globals: spread writes the absolute difference for max minus min (proved: Max, Min and Abs are exact); half floors a third for a half (unproved, WITNESS); title writes a template for String(count) and a concatenation (proved: one conversion); distance is untouched; listed answers true for Array.isArray of an array field (proved); noteCount is untouched, Object.keys of a dictionary allocating its keys.",
  "b": {"spread": "PASS-bounded", "half": "WITNESS", "title": "PASS-bounded", "distance": "PASS-bounded", "listed": "PASS-bounded", "noteCount": "PASS-bounded"},
  "heap": true

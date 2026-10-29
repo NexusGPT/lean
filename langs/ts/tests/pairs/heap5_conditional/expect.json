@@ -1,6 +1,6 @@
 {
  "scope": ["size", "caption", "pick", "count"],
- "equal": {"size": false, "caption": true, "pick": true, "count": true},
+ "equal": {"size": "witness", "caption": true, "pick": "real-only", "count": "real-only"},
  "why": "a conditional expression is if c then a else b, the selected operand alone evaluated: size moves the bound to >= (unproved, WITNESS at a quantity of 10); caption tests the optional note before reading it where the candidate writes ?? (proved: the narrowed read sits in its branch and never marks the world); pick allocates a one-element or an empty array in a branch where the candidate returns from an if (the same allocation on each path: proved); count is untouched.",
  "b": {"size": "WITNESS", "caption": "PASS-bounded", "pick": "PASS-bounded", "count": "PASS-bounded"},
  "heap": true

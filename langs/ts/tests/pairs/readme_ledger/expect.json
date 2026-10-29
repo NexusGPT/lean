@@ -11,7 +11,7 @@
  ],
  "equal": {
   "apply_all": false,
-  "statement": true,
+  "statement": "real-only",
   "rollback": false,
   "ledger_post": false,
   "ledger_reset": true,

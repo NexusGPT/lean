@@ -8,12 +8,12 @@
   "loose"
  ],
  "equal": {
-  "gate_constructor": true,
-  "gate_admits": true,
+  "gate_constructor": "real-only",
+  "gate_admits": "real-only",
   "notify": false,
-  "badge": true,
-  "size": true,
-  "loose": true
+  "badge": "real-only",
+  "size": "real-only",
+  "loose": "real-only"
  },
  "why": "notify's bare return now skips the send only below zero, where the parent's skipped it at zero too: at n = 0 the candidate sends and the parent does not, so the trace differs (lane B) and the transitions differ (lane A, the lemma fails). Gate's constructor turns its bare return into a guarded write, the same writes in the same order; badge writes the absent result as an explicit undefined in one conditional, the same value; loose (an `any` result) writes `return undefined`, the same uninterpreted undefined; Gate.admits and size are untouched. Gate.constructor: on NaN the parent keeps the limit (NaN < 0 is false, so it assigns NaN) and the candidate keeps 0 (NaN >= 0 is false): lane B WITNESS since lane B draws NaN (design/special-numbers.md); lane A proves it on the finite model.",
  "b": {

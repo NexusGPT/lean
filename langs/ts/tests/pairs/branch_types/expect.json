@@ -9,13 +9,13 @@
   "bump"
  ],
  "equal": {
-  "payload": true,
+  "payload": "real-only",
   "choose": false,
   "missing": true,
   "or_five": true,
   "is_five": false,
-  "extra_or": true,
-  "bump": true
+  "extra_or": "real-only",
+  "bump": "real-only"
  },
  "why": "Both branches of every Dafny if-then-else the translator writes are one type, the Dafny type of the expression's TypeScript type. An any holds undefined itself, so the absent branch of an optional read ending in an any field is Any_undefined(), never None; an optional field or parameter declared any is an Option<Any> slot, read as Some(v) is v and None is undefined; an any value put in an optional slot (a declared optional local, an optional field or parameter, a defaulted parameter) is tested for the absence the slot admits before it is Some. payload writes the optional read as a loose null test on the receiver (proved). choose falls back to the message when the note is absent (unproved; WITNESS with b false and no note). missing tests the lifted optional string for undefined against the any value itself (proved: the lift is exact). isFive drops the default call (unproved; WITNESS on y undefined, where the default 5 applies). bump writes a typeof guard as a statement, the narrowed read one cast from Any (proved). orFive and extraOr are untouched.",
  "b": {

@@ -8,9 +8,9 @@
  ],
  "equal": {
   "totals_sum_all": false,
-  "totals_pair": true,
+  "totals_pair": "real-only",
   "totals_touch": false,
-  "totals_labels": true,
+  "totals_labels": "real-only",
   "totals_constructor": true
  },
  "why": "sumAll doubles each value in the candidate; touch writes 2 instead of 1 inside the Promise.all map; pair (a literal Promise.all) and labels (a map with returns) are untouched",

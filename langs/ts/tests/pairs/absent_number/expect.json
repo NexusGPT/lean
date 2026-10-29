@@ -4,7 +4,7 @@
     "pick": true,
     "read_mechanic": false,
     "nth_of": false,
-    "entry_or": true,
+    "entry_or": "real-only",
     "entry_kind": false,
     "entry_let": false
   },
@@ -18,7 +18,7 @@
     "entryLet": "PASS-bounded"
   },
   "check": {
-    "readMechanic": { "verdict": "PASS-bounded", "laneA": "ASK:unproved" },
+    "readMechanic": { "verdict": "PASS-bounded", "laneA": "ASK:doubles-unknown" },
     "entryLet": { "verdict": "PASS-bounded", "laneA": "ASK:unproved" }
   }
 }

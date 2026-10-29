@@ -15,13 +15,13 @@
     "dangling": false,
     "stored": false,
     "loop": false,
-    "race": true,
+    "race": "real-only",
     "settled": true,
     "any": true,
     "resolve_later": true,
-    "wide_handler": true,
-    "mixed": true,
-    "pending_schedule": true
+    "wide_handler": "real-only",
+    "mixed": "real-only",
+    "pending_schedule": "real-only"
   },
   "why": "Existing promise calls retain their opaque reading when the exact continuation does not apply; changed pending effects, stored handlers and loop handlers remain visible.",
   "b": {

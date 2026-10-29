@@ -6,10 +6,10 @@
   "bump"
  ],
  "equal": {
-  "count_words": true,
+  "count_words": "real-only",
   "gather": false,
   "tagged": false,
-  "bump": true
+  "bump": "real-only"
  },
  "why": "Stage 5 rank 21: a local procedure, a const arrow with a block body or a nested function whose name is used only as the callee of plain call statements, is read as its body spliced at each call with the parameters bound to the arguments, so an outer cell it writes threads like any statement; a parameter may share a name with an outer binding only when every call passes that name unchanged. countWords writes the procedure's body inline in the loop (proved: the same loop helper). gather keeps zero too (unproved; lane B WITNESS on an array holding 0). tagged drops the call outside the loop (unproved; WITNESS on any input). bump is untouched.",
  "b": {

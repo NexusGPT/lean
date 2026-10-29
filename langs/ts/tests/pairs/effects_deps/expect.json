@@ -4,7 +4,7 @@
   "stable"
  ],
  "equal": {
-  "stable": true
+  "stable": "real-only"
  },
  "why": "The candidate's handler sets id to start + 1 instead of id + 1 (a stale value): the first click is the same on both sides, so one render and one click show nothing; the second click moves the parent to start + 2 while the candidate stays at start + 1, and the parent's effect cleans up and re-subscribes once more. Lane B's re-render sequences find it after two clicks. Stable is untouched: proved, and clean over every 2-click sequence.",
  "heap": false,

@@ -12,7 +12,7 @@
  "equal": {
   "admin_read": "withheld",
   "admin_by_id": "withheld",
-  "admin_total": true,
+  "admin_total": "real-only",
   "admin_list": "withheld",
   "admin_health": true,
   "allows": false,

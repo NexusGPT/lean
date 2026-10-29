@@ -1,6 +1,6 @@
 {
  "scope": ["width", "show", "make", "tag_of", "id_length"],
- "equal": {"width": true, "show": false, "make": true, "tag_of": true, "id_length": true},
+ "equal": {"width": "real-only", "show": false, "make": true, "tag_of": true, "id_length": true},
  "why": "tuples and intersections: width names the first position before the difference (proved: its two reads are in range, the hypothesis giving the pair its length); show writes a colon for = between a tuple's two positions (unproved, WITNESS); make is untouched, a tuple literal of mixed shapes allocating its record of positions; tagOf names the field of an intersection before returning it (proved); idLength is untouched, the length of a branded string.",
  "b": {"width": "PASS-bounded", "show": "WITNESS", "make": "PASS-bounded", "tagOf": "PASS-bounded", "idLength": "PASS-bounded"},
  "heap": true

@@ -80,3 +80,19 @@ doubles: every unary case and every pair, 6,486 evaluations in one Z3 call. This
 Set `LEAN_FP_CROSS=bitwuzla` or `LEAN_FP_CROSS=cvc5` with the binary on PATH. The same query file then runs on that
 solver too, and an unsat against a sat is a finding. Neither solver is installed on this machine; enabling the
 cross-check means putting its release binary on PATH for the run.
+
+## What the pair suite reads (measured over tests/pairs, every `equal` row)
+
+There are 649 number-bearing lemmas. The emitter reads 108 of them whole: median 0.068 s, p90 7.0 s, max 60.1 s. The
+rest touch loops, arrays, class members, throws or calls outside the file, so their doubles reading is unknown. An
+expected-proved row of that kind carries `real-only` in expect.json: the real lemma still proves and stays under test,
+but lane A does not prove the unit. The doubles reading found 6 rows the real reading had proved and that differ in
+Node: three at -0, two at 0 < n < 1 where the integer reading equated `n > 0` with `n >= 1`, and one at NaN. 33 rows
+expected not proved now carry `witness`, each a replayed counterexample.
+
+## The open choice
+
+A sound way to keep the real proofs of units the emitter cannot read is a translator mode in which every JavaScript
+number operation is an uninterpreted Dafny function, the same on both sides. A proof there uses congruence only, and
+IEEE doubles are a model of it. Comparing the multiset of number-operation texts on the two sides is not enough:
+`return (a + b) - b` against `const t = (a + b) - b; return a` has the same sites and differs in doubles.

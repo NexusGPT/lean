@@ -9,7 +9,7 @@
   "add_tag": false,
   "alias_refactor": true,
   "identity": false,
-  "count_tags": true
+  "count_tags": "real-only"
  },
  "why": "addTag replaces the array in the parent and pushes into it in the candidate: the pre-call array differs after the call, and when the second argument is the user's own array the user differs too; aliasRefactor is the same replacement through a local name; identity returns the input in the parent and a copy in the candidate, equal field by field and different as objects; countTags reads only",
  "b": {
