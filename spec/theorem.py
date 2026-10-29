@@ -588,7 +588,10 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
             codes = set(re.findall(r'\bFn\("([0-9a-f]+)"', fn.get('body', '')))
             if not codes:
                 continue
-            owner = next((f for f in sorted(funcs, key=len, reverse=True) if base == f or base.startswith(f + '_')), base)  # a loop or branch helper (<unit>_<x>) carries its unit's list
+            # a unit with its own FN list (a nested callback the translator emits as a unit, listed in `// NESTED`) is its own
+            # owner; a loop or branch helper (<unit>_<x>) carries its unit's list; the scope's units are the outermost owners
+            owners = set(funcs) | {k[:-len(suffix)] for k in listed if k.endswith(suffix)}
+            owner = next((f for f in sorted(owners, key=len, reverse=True) if base == f or base.startswith(f + '_')), base)
             allowed = listed.get(owner + suffix, set())
             outside = sorted(codes - allowed)
             if outside:
