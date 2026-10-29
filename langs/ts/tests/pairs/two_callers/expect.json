@@ -11,7 +11,7 @@
   "beat_constructor": true,
   "beat_heartbeat": false,
   "beat_refresh": false,
-  "beat_total": false,
+  "beat_total": true,
   "beat_next": true,
   "beat_label": true
  },
@@ -28,8 +28,13 @@
   "Beat.refresh": {
    "verdict": "WITNESS",
    "side": "parent",
-   "pair": ["call2", "call1/1"],
-   "cells": ["this.epoch"]
+   "pair": [
+    "call2",
+    "call1/1"
+   ],
+   "cells": [
+    "this.epoch"
+   ]
   },
   "Beat.total": {
    "verdict": "PASS-bounded",

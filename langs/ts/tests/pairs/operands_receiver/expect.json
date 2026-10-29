@@ -7,8 +7,8 @@
   "named"
  ],
  "equal": {
-  "scaled": false,
-  "via_call": false,
+  "scaled": true,
+  "via_call": true,
   "via_apply": false,
   "tag_of": true,
   "named": true

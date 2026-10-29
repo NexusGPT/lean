@@ -174,3 +174,9 @@ So `translate.mjs external()` declares each of `__lean_add`, `__lean_mul`, `__le
 with `f_raw` uninterpreted. The two commuted terms are one term; Dafny needs no lemma call. Nothing else is assumed:
 associativity does not hold in binary64 and is not declared; `a + 0 == a` fails for `-0` and is not declared.
 
+Six lemmas the faithful reading had left unproved prove again under this rule, each a product or sum with commuted
+operands: operands_receiver `scaled` and `via_call`, two_callers `beat_total`, witness_args `sum_both` (lowered to
+"not proved" when the doubles reading arrived) and this_receiver `sized` and `size_of` (kept unproved since signed-zero,
+because `self.n * k` can make a -0 the real lemma cannot hold; under the faithful reading both sides are one
+uninterpreted product of the same two operands, whatever double it makes, -0 included). Their expectations say proved.
+
