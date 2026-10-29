@@ -36,3 +36,14 @@ test('certificate heapCore retains the source unit name emitted in HEAP', async 
   assert.deepEqual(result.certificate.lanes.A.heapCore, [unit], JSON.stringify(result.certificate.lanes.A));
   assert.equal(result.certificate.unit, unit);
 });
+test('PR --scope reads a raw callback name containing a comma', () => {
+  const repo = fs.mkdtempSync(path.join(scratch, 'scope-repo-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', repo, '-c', 'user.name=lean', '-c', 'user.email=lean@example.invalid', ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, `${r.stdout}${r.stderr}\nexit=${r.status}`); };
+  const source = n => `const app = { get(_p: string, _i: number, _cb: (x: number) => number): void {} };\napp.get('/a',1,(x: number) => x + ${n});\n`;
+  git('init', '-q'); fs.writeFileSync(path.join(repo, 'a.ts'), source(1)); git('add', 'a.ts'); git('commit', '-qm', 'base');
+  fs.writeFileSync(path.join(repo, 'a.ts'), source(2));
+  const out = path.join(scratch, 'scope-pr.json');
+  const r = spawnSync(process.execPath, ['langs/ts/pr.mjs', '--repo', repo, '--base', 'HEAD', '--no-project', '--n', '3', '--scope', unit, '--json', out, '--out', path.join(scratch, 'scope-pr.md')], { encoding: 'utf8' });
+  assert.equal(r.status, 0, `${r.stdout}${r.stderr}\nexit=${r.status}`);
+  assert.equal(JSON.parse(fs.readFileSync(out)).rows.find(r => r.unit === unit)?.verdict, 'IN-SCOPE');
+});

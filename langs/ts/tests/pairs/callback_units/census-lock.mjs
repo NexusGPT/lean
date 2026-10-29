@@ -12,9 +12,9 @@ export async function acquire() {
           fs.unlinkSync(owner); fs.rmdirSync(lock); console.log(`removed dead-owner lock: ${text.trim()}`); continue;
         }
       }
-      console.log(`census lock held by ${text.trim()}; retry in 60 s`);
-    } else console.log('census lock owner pending; retry in 60 s');
-    await new Promise(resolve => setTimeout(resolve, 60000));
+      console.log(`census lock held by ${text.trim()}; retry in 10 s`);
+    } else console.log('census lock owner pending; retry in 10 s');
+    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 }
 export function release() {

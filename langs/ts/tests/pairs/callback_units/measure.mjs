@@ -40,4 +40,6 @@ for (const r of roots) {
   fs.writeFileSync(commandFile, JSON.stringify(commands, null, 2));
   if (run.status !== 0) { process.exitCode = run.status ?? 1; break; }
   } finally { release(); }
+  console.log("yield census lock for 60 s between roots");
+  await new Promise(resolve => setTimeout(resolve, 60000));
 }

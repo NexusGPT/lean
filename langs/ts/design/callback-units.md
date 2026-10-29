@@ -143,3 +143,5 @@ The measured four-pair conformance run produced six new (pair, unit, cause) find
 ## Conversion identity
 
 The converter's single identity check recognizes a removed nested callback only when its enclosing unit has a head verdict. It copies that verdict with `covered-by`, then applies the existing WITNESS/ASK control rules. An independent lost unit still takes the original refusal text. `convert.test.mjs` records foreach conversion red on the exact identity-loss reason, then green: both rewrites applied and all reported verdicts PASS-bounded. No other converter policy changed.
+
+The raw-list reader audit also found PR CLI `--scope`. Its comma-containing callback scope was red (WITNESS instead of IN-SCOPE) and is now read by the same `parseUnitList`; no new parser was added. The census helper follows the updated shared fairness rule: waiters retry every 10 seconds and holders yield 60 seconds between roots. The pair-step conformance subprocess receives JOBS explicitly, so the requested parallelism is honored there too.

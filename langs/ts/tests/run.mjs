@@ -393,7 +393,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers incl. -0) |`);
 }
 
-{ const r = run('node', [path.join(here, '../conformance/run.mjs'), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')]); add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", r.status === 0, (r.stdout ?? '').trim().split('\n').pop() || (r.stderr ?? '').trim().slice(-200)); } // design/model-conformance.md
+{ const r = run('node', [path.join(here, '../conformance/run.mjs'), '--jobs', process.env.JOBS ?? '2', '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')]); add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", r.status === 0, (r.stdout ?? '').trim().split('\n').pop() || (r.stderr ?? '').trim().slice(-200)); } // design/model-conformance.md
 
 // ----- escapes -----
 const escDir = path.join(root, 'fixtures/escapes/ts');
