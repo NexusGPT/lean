@@ -61,7 +61,7 @@ an invented untyped callback argument. Control characters in string-literal iden
 
 The evidence runner and the dedicated census test share `census-lock.mjs`. Each root takes the machine-wide lock,
 records its child PID, checks free disk space, streams stdout/stderr and releases immediately on exit. A live owner's
-lock causes a 60-second wait; a dead owner's lock can be removed. Langchainjs's syntax prediction remains included,
+lock causes a 10-second retry; a dead owner's lock can be removed. A completed root yields 60 seconds before the runner takes the lock again. Langchainjs's syntax prediction remains included,
 but census runs exclude it at the owner's direction pending the separate memory fix. The interrupted Nutshell run
 used only this lane's PID and retains its SIGTERM log; its complete retry is a separate recorded attempt.
 
@@ -147,3 +147,7 @@ The converter's single identity check recognizes a removed nested callback only 
 The raw-list reader audit also found PR CLI `--scope`. Its comma-containing callback scope was red (WITNESS instead of IN-SCOPE) and is now read by the same `parseUnitList`; no new parser was added. The census helper follows the updated shared fairness rule: waiters retry every 10 seconds and holders yield 60 seconds between roots. The pair-step conformance subprocess receives JOBS explicitly, so the requested parallelism is honored there too.
 
 The final focused command `node --test --test-concurrency=2 langs/ts/tests/pairs/callback_units/*.test.mjs` passes 25/25 tests (exit 0), recorded in `unit-tests-final.log`. The artifact compatibility test enumerates 222 pair specifications and 1079 distinct source unit names, checking filesystem writer/reader round trips; this supplements the required four-pair integration step without running the full pair suite.
+
+## Census attribution class
+
+The owner accepted raw admission changes caused solely by assigning a retained nested-body refusal to the newly listed callback: `attribution: a refusal inside a nested callback now belongs to the callback`. The comparator retains all raw moves and separately classifies only refused→inside moves where every former refusal remains at the same line with exactly the same rule/message, now owned by a newly listed nested callback. A disappeared/changed diagnostic or newly refused old unit remains an unexplained move and fails the command. The report lists each source unit, range, diagnostic code and destination. The invariant is no admission/refusal changed except by this attribution; the report must not claim zero raw moves.
