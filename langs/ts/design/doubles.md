@@ -148,7 +148,8 @@ statements about the exact model, not equivalences.
 
 ### What the rule does not cover yet
 - **Non-bearing units.** An input number read as an integer by a modelled library operation in a unit with no number
-  operation: `splice(i)`, `new Date(n)`, `setFullYear(y)`, `includes(s, pos)`. These are 8 rows of the pair suite,
+  operation (`splice(i)`, `new Date(n)`, `setFullYear(y)`, `includes(s, pos)`, `Number.isFinite`), or a truth or
+  equality test over a union holding number. These are 14 rows of the pair suite,
   named in the report. They keep their lemma, because the number-bearing test does not select them.
 - **Distinct non-exact literals.** Two different literals that round to the same double, such as 9007199254740993 and
   9007199254740992, are different constants in the model. The reading is incomplete there, never unsound.
