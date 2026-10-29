@@ -2329,7 +2329,7 @@ export function callbackUnits(sf, existing) {
 // The checker supplies a callback's input type from the receiving signature. Unknown/any is not a type promise.
 export function callbackUntypedJsUnit(sf, u, checker) {
   if (u.form !== 'callback') return untypedJsUnit(sf, u);
-  return untypedJsUnit(sf, { ...u, params: u.params.filter(p => {
+  return untypedJsUnit(sf, { ...u, params: u.fn.parameters.filter(p => {
     const t = checker.getTypeAtLocation(p.name);
     return !!(t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown));
   }) });
