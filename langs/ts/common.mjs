@@ -103,23 +103,28 @@ export function* loadManyChunks(files, opts = {}) {
   const CHUNK = opts.chunk ?? 1200; // a program over thousands of roots exhausts the heap; chunks share nothing but cost little
   const chunks = [];
   for (const [cfg, absList] of groups) for (let i = 0; i < absList.length; i += CHUNK) chunks.push([cfg, absList.slice(i, i + CHUNK)]);
-  for (const [cfg, absList] of chunks) {
-    const out = new Map();
-    // options exactly as loadProgram computes them, with the whole group as roots
-    const first = loadProgramOptions(absList[0], cfg || null);
-    let program;
-    try { program = ts.createProgram(absList, first.options); } catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); yield out; continue; }
-    const checker = program.getTypeChecker();
-    for (const abs of absList) {
-      const sf = program.getSourceFile(abs);
-      if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
-      let diagnostics;
-      try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; } catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}` }); continue; }
-      out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null });
-    }
-    opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files`);
-    yield out;
+  for (const [cfg, absList] of chunks) yield loadChunk(cfg, absList, opts);
+}
+
+// End the compiler/checker construction frame before the generator suspends.
+// The caller owns the returned Map and clears it before requesting another chunk.
+function loadChunk(cfg, absList, opts) {
+  const out = new Map();
+  const first = loadProgramOptions(absList[0], cfg || null);
+  let program;
+  try { program = ts.createProgram(absList, first.options); }
+  catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); return out; }
+  const checker = program.getTypeChecker();
+  for (const abs of absList) {
+    const sf = program.getSourceFile(abs);
+    if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
+    let diagnostics;
+    try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; }
+    catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}` }); continue; }
+    out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null });
   }
+  opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files`);
+  return out;
 }
 
 // the compiler options loadProgram uses for a file under a config (shared by loadProgram and loadMany)

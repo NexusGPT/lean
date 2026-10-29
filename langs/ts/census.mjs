@@ -45,9 +45,12 @@ export function census(root, opts = {}) {
   }
   // one program per tsconfig (in chunks), every file of the project as a root: the type checker is built once per
   // chunk, not per file, and a chunk is dropped once its files are linted
-  const chunks = loadManyChunks(list, { log });
+  const chunks = loadManyChunks(list, { log, ...(opts.chunk ? { chunk: opts.chunk } : {}) });
+  const heap = (stage) => { const row = { stage, files, ...process.memoryUsage() }; log(`heap ${stage} ${JSON.stringify(row)}`); opts.onHeap?.(row); };
   function* timedChunks() { while (true) { const next = measureLowering('load census chunk', () => chunks.next()); if (next.done) return; yield next.value; } }
-  for (const loaded of timedChunks()) for (const abs of loaded.keys()) {
+  function consumeChunk(loaded) {
+  heap('chunk loaded');
+  for (const abs of loaded.keys()) {
     const file = abs;
     files++;
     const pkg = packageOf(root, file);
@@ -89,7 +92,13 @@ export function census(root, opts = {}) {
     }
     units += unitNames.length; entered += unitNames.length - blocked.size;
     P.units += unitNames.length; P.entered += unitNames.length - blocked.size;
+    if (files % 50 === 0) heap('files');
     if (files % 50 === 0) log(`${files} files, ${units} units, ${entered} inside, ${Math.round((Date.now() - t0) / 1000)} s`);
+  }
+  heap('chunk processed');
+  }
+  for (const loaded of timedChunks()) {
+    try { consumeChunk(loaded); } finally { loaded.clear(); }
   }
   const ruleRows = [...rules.entries()].map(([rule, r]) => ({ rule, findings: r.count, units: r.units.size, examples: r.examples })).sort((a, b) => b.units - a.units);
   const refusalRules = [...refusalGroups.values()].map((r) => ({

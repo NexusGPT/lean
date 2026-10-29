@@ -735,3 +735,29 @@ fails when a site has no reading.
 | translate/translate.mjs:6062 | translate-refuse |  | decorators | one-decider | the route wrapper is not read: ${} |
 | translate/translate.mjs:6068 | translate-refuse |  | decorators | one-decider | a piped parameter is a plain required name |
 | translate/translate.mjs:6107 | translate-throw |  | numbers | one-decider | internal: an integer division was not placed under Math.floor |
+
+## File preparation and compiler lifetime
+
+`lowerFile` passes one file-analysis map to its per-unit translations. Its identity
+is the loaded SourceFile, checker and project setting. Normalization, number mode,
+unit and declaration indexes, class/accessor tables, exception and generator
+analyses, reachability, React slot bindings, library-hook bindings and parameter
+mutation propagation run once for that file. Class-field, static-cell and reference
+indexes fill lazily; decoration and operand-name scans retain their original lazy
+trigger. Emission order, effects, type substitutions, heap planning and emitted
+text remain local to each translation. Sharing the latter would confuse units or
+numeric modes. The analysis map never enters a lowering record.
+
+`census.mjs --profile` prints inclusive phase wall times and TypeScript's nested
+parse/program/bind/check counters. These rows overlap and must not be summed.
+The census logs `process.memoryUsage()` after each chunk and every 50 files.
+Chunk construction returns from a normal function before the generator yields;
+the census processes the chunk in a separate stack frame and clears its Map
+before advancing. Neither loop keeps the preceding compiler graph alive while
+building the next one.
+
+The lint's type walk records visited compiler type identities, source sites and
+depths. An intersection/signature cycle is a graph, not a tree: repeated visits at
+the same depth cannot produce a new finding. The existing depth cutoff, string
+based object guard, predicates and finding messages are unchanged. This visited
+table lives only for one admission call.

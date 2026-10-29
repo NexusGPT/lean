@@ -302,10 +302,11 @@ export function lowerFile(file, ranges = null, opts = {}) {
   // them. A refusal there is the record's, named by the reading its site belongs to; a callee refused refuses the unit,
   // since the gate and the emission take the callees with it. A translation that crashes refuses the unit by that, named
   const open = units.filter((u) => !u.refusal);
+  const fileAnalysis = new Map();
   if (open.length && opts.emission !== false) {
     const refuse = (u, id, rule, reason, line, by, site = null) => { u.refusal = { id, version: readingById(id) ? currentVersion(readingById(id)) : null, rule, reason, line, by, ...(site ? { site } : {}) }; };
     for (const u of open) {
-      try { measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given })); }
+      try { measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given, normalized: L, fileAnalysis })); }
       catch (e) {
         const message = String(e?.message ?? e);
         if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }

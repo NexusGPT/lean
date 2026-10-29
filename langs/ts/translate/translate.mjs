@@ -43,7 +43,7 @@ import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
-import { admitUnits } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
+import { admitUnits, measureLowering } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy } from '../lower.mjs'; // decisions taken once for the lint and the translator
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
@@ -73,15 +73,28 @@ const indentBlock = (s, n = 1) => s.split('\n').map((l) => '  '.repeat(n) + l).j
 const wrapLet = (s) => (/^\s*var /.test(s) ? `(\n${indentBlock(s)}\n)` : s);
 const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0; return h.toString(36); };
 
+// A context belongs to one loaded source/checker and project setting. It carries only
+// file analyses; ordering, effects, heap planning and emitted declarations stay per call.
+const ANALYSIS_CONTEXT = Symbol('translation source');
 export function translate(file, fnName, opts = {}) {
   const { real: realFlag = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null, heap = false, heapUnits = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
-  const loaded = normaliseApplyCalls(opts.loaded ?? loadProgram(file, { project })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
+  const given = opts.loaded ?? loadProgram(file, { project });
+  const fileAnalysis = opts.fileAnalysis ?? new Map();
+  const previous = fileAnalysis.get(ANALYSIS_CONTEXT);
+  if (!previous || previous.sf !== given.sf || previous.checker !== given.checker || previous.project !== project) {
+    fileAnalysis.clear(); fileAnalysis.set(ANALYSIS_CONTEXT, { sf: given.sf, checker: given.checker, project });
+  }
+  const analyze = (name, build) => {
+    if (!fileAnalysis.has(name)) fileAnalysis.set(name, measureLowering(`analysis ${name}`, () => { opts.onAnalysis?.(name); return build(); }));
+    return fileAnalysis.get(name);
+  };
+  const loaded = analyze('normalization', () => opts.normalized ?? normaliseApplyCalls(given)); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
   const { sf, checker } = loaded;
-  let real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
-  const fns = topLevelFunctions(sf);
-  const exceptionUnits = exceptionUnitsOf(sf, checker, fns);
-  const generators = generatorReading(checker, sf, fns);
+  let real = realFlag || analyze('number-mode', () => fileUsesReals(sf)); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
+  const fns = analyze('units', () => topLevelFunctions(sf));
+  const exceptionUnits = analyze('exceptions', () => exceptionUnitsOf(sf, checker, fns));
+  const generators = analyze('generators', () => generatorReading(checker, sf, fns));
   let yieldState = null;
   const target = fnName ? fns.get(fnName) : null;
   if (fnName && !target) throw new Unsupported(`no top-level function named ${fnName} in ${file}`);
@@ -91,9 +104,10 @@ export function translate(file, fnName, opts = {}) {
   const fail = (n, msg) => { throw new Unsupported(`${where(n)}: ${msg}`); };
 
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
-  const classDecls = new Map(); for (const st of sf.statements) if (ts.isClassDeclaration(st) && st.name) classDecls.set(st.name.text, st); // the file's own classes, by name
+  const classDecls = analyze('classes', () => { const classDecls = new Map(); for (const st of sf.statements) if (ts.isClassDeclaration(st) && st.name) classDecls.set(st.name.text, st); return classDecls; }); // the file's own classes, by name
   const classOfType = (t) => { const sym = t && t.symbol; const d = sym?.declarations?.[0]; return d && ts.isClassDeclaration(d) && d.getSourceFile() === sf && d.name ? (classDecls.get(d.name.text) ?? null) : null; };
   // accessors retain an opaque unit when their body is outside the subset
+  const accessorOpaque = analyze('accessors', () => {
   const accessorOpaque = new Set();
   // a static method whose body names `this` or `super` (the class the call went through, a subclass too) is one opaque
   // unit keyed by the file's text, as a static accessor naming `this` is; arrows inherit `this`, nested functions do not
@@ -103,6 +117,8 @@ export function translate(file, fnName, opts = {}) {
     const findings = admissionFindings(file, null, { project, loaded, accessorBodies: true }).filter((g) => !g.env);
     for (const u of fns.values()) if (u.accessor) { let staticThis = false; const walk = (n) => { if (u.isStatic && n.kind === K.ThisKeyword) staticThis = true; ts.forEachChild(n, walk); }; walk(u.body); if (staticThis || findings.some((g) => g.line >= lineOf(sf, u.node.getStart(sf)) && g.line <= lineOf(sf, u.node.getEnd()))) accessorOpaque.add(u.name); }
   }
+    return accessorOpaque;
+  });
   function accessorOf(n, kind, owner = currentUnit) {
     if (!ts.isPropertyAccessExpression(n)) return null;
     const cls = n.expression.kind === K.ThisKeyword ? owner?.cls : classOfType(checker.getTypeAtLocation(n.expression));
@@ -177,7 +193,7 @@ export function translate(file, fnName, opts = {}) {
     throw new Unsupported(`outside the subset:\n${gate.map((g) => `  ${g.file}:${g.line}:${g.col}  ${g.rule}  ${g.msg}`).join('\n')}`);
   }
   // ----- references, layer 2: the heap core (heap.mjs) is planned over the final order; its units are emitted there -----
-  const reachOf = makeReach(checker, sf);
+  const reachOf = analyze('reach', () => makeReach(checker, sf));
   const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
   const heapHyps = [];
   const superObligations = new Set(); // `<unit>\u0000<method>`: a `super.m()` whose base code may change the receiver behind its transition: an obligation (design/inherited-method.md)
@@ -284,9 +300,9 @@ export function translate(file, fnName, opts = {}) {
   // returns its initial slots. Equal renders for every slots value, equal next slots for every handler and equal
   // initial slots make every click sequence equal (the induction is in design/moonshots/02-step-lemma). A unit called
   // by another unit (a custom hook) keeps the world reading: its slots would belong to its caller's list.
+  const { slotUnits, slotOfCall } = analyze('react-slots', () => {
   const slotUnits = new Map(); // unit name -> [{ call, index }]
   const slotOfCall = new Map(); // useState call node -> { unit, index }
-  const setterSlot = new Map(); // the setter local's symbol -> slot index (filled when the call is translated)
   {
     const calledUnits = new Set();
     for (const [, u] of fns) { const w = (n) => { if (ts.isIdentifier(n) && fns.has(n.text) && n.text !== u.name) { const d = checker.getSymbolAtLocation(n)?.declarations?.[0]; if (d && d.getSourceFile() === sf) calledUnits.add(n.text); } ts.forEachChild(n, w); }; if (u.body) w(u.body); }
@@ -299,6 +315,9 @@ export function translate(file, fnName, opts = {}) {
       calls.forEach((call, index) => slotOfCall.set(call, { unit: name, index }));
     }
   }
+    return { slotUnits, slotOfCall };
+  });
+  const setterSlot = new Map(); // the setter local's symbol -> slot index (filled when the call is translated)
   let currentSlots = null; // while a slot unit is emitted: { T: the Slots datatype, n: slot count, types: [D] }
   const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol', 'Object']); // Object.keys/values/entries/assign/fromEntries: pure functions of their arguments (the lint refuses the prototype ones)
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
@@ -655,7 +674,7 @@ export function translate(file, fnName, opts = {}) {
   // local that starts as the argument; the function returns its final value beside the result, and a caller that passed
   // a name takes the new value back into that name. Two parameters are distinct objects (the stated axiom; the lint
   // refuses a mutation through a local alias). A parameter passed to a same-file function that mutates it is mutated too.
-  const mutatedByUnit = new Map(); // unit name -> [param names] in parameter order
+  let mutatedByUnit = new Map(); // unit name -> [param names] in parameter order
   const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   function syntacticMutations(u) {
     if (asyncGenerator(u)) return new Set(); // the suspended body has not run at construction
@@ -723,7 +742,7 @@ export function translate(file, fnName, opts = {}) {
   // ----- world fields: a field of `this` that a method of the class assigns, updates, or mutates through a method-call
   // statement lives in the world. Every read is a transition (ext_<C>_get_<f>(wld, self)), every write a transition
   // (ext_<C>_set_<f>(wld, self, v)); the method becomes effectful. A field no method changes stays a pure accessor of self.
-  const mutatedByClass = new Map(); // class declaration -> Set of field names
+  const mutatedByClass = analyze('class-field-index', () => new Map()); // class declaration -> Set of field names
   function mutatedFields(cls) {
     if (mutatedByClass.has(cls)) return mutatedByClass.get(cls);
     const out = new Set(); mutatedByClass.set(cls, out);
@@ -862,7 +881,7 @@ export function translate(file, fnName, opts = {}) {
     const own = cls.members.filter((m) => m.name && ts.isIdentifier(m.name) && m.name.text === n.name.text && m.modifiers?.some((k) => k.kind === K.StaticKeyword));
     return own.length === 1 && ts.isPropertyDeclaration(own[0]) ? { cls, decl: own[0] } : null;
   };
-  const staticCellMemo = new Map();
+  const staticCellMemo = analyze('static-cell-index', () => new Map());
   function staticCellDecl(cls, decl) {
     const name = decl.name.text, sym = checker.getSymbolAtLocation(cls.name);
     const t = checker.getTypeAtLocation(decl.name);
@@ -1349,9 +1368,12 @@ export function translate(file, fnName, opts = {}) {
   // the hook table (moonshot 8): a listed library hook call is a transition of the world returning the table's record;
   // the names bound to its result (a variable, a destructured field) carry the fields' kinds, which the type reading
   // below answers where the checker says any
+  const { hookBound, hookResultOf } = analyze('hook-bindings', () => {
   const hookBound = new Map(); // symbol -> { row, field | null }
   const hookResultOf = new Map(); // call node -> row
   { const walk = (n) => { if (ts.isVariableDeclaration(n) && n.initializer) { let init = n.initializer; while (ts.isParenthesizedExpression(init) || ts.isAsExpression(init) || ts.isNonNullExpression(init)) init = init.expression; const h = libraryHook(checker, init); if (h) { hookResultOf.set(init, h.row); if (ts.isIdentifier(n.name)) { const sy = checker.getSymbolAtLocation(n.name); if (sy) hookBound.set(sy, { row: h.row, field: null }); } else if (ts.isObjectBindingPattern(n.name)) for (const el of n.name.elements) { if (!ts.isIdentifier(el.name) || el.dotDotDotToken) continue; const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text; const sy = checker.getSymbolAtLocation(el.name); if (sy && Object.hasOwn(h.row.result, prop)) hookBound.set(sy, { row: h.row, field: prop }); } } } ts.forEachChild(n, walk); }; walk(sf); }
+    return { hookBound, hookResultOf };
+  });
   const hookTsType = (row, field) => { const k = fieldKind(row.result[field] ?? ''); return k === 'boolean' ? checker.getBooleanType() : k === 'string' ? checker.getStringType() : k === 'number' ? checker.getNumberType() : null; };
   // the decorator contract table (decorators.mjs, translate/decorators.json): the rows each unit's reading used (the
   // header's DECORATORS line, so that a row the framework contradicts withholds the proof), and the file's decoration
@@ -1360,7 +1382,7 @@ export function translate(file, fnName, opts = {}) {
   const decoRows = new Map(); // unit name -> Set of row ids
   const useRow = (id) => { if (!currentUnit) return; const s = decoRows.get(currentUnit.name) ?? new Set(); s.add(id); decoRows.set(currentUnit.name, s); };
   let decorationLit = null;
-  const decorationOf = () => decorationLit ??= (() => { const es = decorationTable(checker, sf); return es.length ? `map[${es.map(([k, v]) => `${strEsc(k)} := ${strEsc(v)}`).join(', ')}]` : 'map[]'; })();
+  const decorationOf = () => decorationLit ??= (() => { const es = analyze('decorations', () => decorationTable(checker, sf)); return es.length ? `map[${es.map(([k, v]) => `${strEsc(k)} := ${strEsc(v)}`).join(', ')}]` : 'map[]'; })();
   // a metadata API: a read is a transition of the world and the file's decoration returning the cell (key, target); a
   // write is a transition of the world. No axiom links a write to a later read: a read after a write reads the world
   // the write returned, so the same writes and reads in the same order give the same values, and nothing else is claimed
@@ -1865,9 +1887,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   let valueNames = null;
   function valueName() {
     if (!valueNames) {
-      valueNames = new Set();
+      valueNames = analyze('value-names', () => {
+      const valueNames = new Set();
       const walk = (n) => { if (ts.isIdentifier(n)) { const name = dn(n.text); valueNames.add(name.match(/^ov[0-9]+_/)?.[0] ?? name); } ts.forEachChild(n, walk); };
       walk(sf);
+      return valueNames;
+      });
     }
     let name;
     do { name = `ov${tempCount++}_`; } while (valueNames.has(name));
@@ -4248,7 +4273,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // in the same chain. scopeFor names those outer bindings; the chain saves each one before the block and rebinds it after
   // (`var sc3_ := x; ...; var x := sc3_;`). An outer binding is saved only when it is bound here and read again: a read
   // after the block in the same function, or any read inside an enclosing loop or function (its next step or call).
-  const refIndex = new Map();
+  const refIndex = analyze('reference-index', () => new Map());
   const refsOf = (sym) => {
     const root = currentUnit?.node; if (!root) return [];
     if (!refIndex.has(root)) {
@@ -5740,7 +5765,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
 
   // special-producing arithmetic keeps its entire observer opaque, including same-file callers
   const numericOpaque = new Set(), numericDeps = new Map(), numericSources = new Map(), absentOpaque = new Set();
-  const unitByDecl = new Map([...fns.values()].flatMap((u) => [[u.fn, u], [u.node, u]]));
+  const unitByDecl = analyze('declarations', () => new Map([...fns.values()].flatMap((u) => [[u.fn, u], [u.node, u]])));
   const finiteLiteral = (n) => {
     while (ts.isParenthesizedExpression(n)) n = n.expression;
     if (ts.isNumericLiteral(n)) return Number(n.text);
@@ -5898,7 +5923,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     }
     effectsChanged = effectfulUnits.size !== before;
   }
-  if (core) computeMutations();
+  if (core) mutatedByUnit = analyze('parameter-mutations', () => { computeMutations(); return mutatedByUnit; });
   // ----- emit functions -----
   for (const u of order) kindOf.set(u, hasLoopOrMutation(u.body) ? 'method' : 'function');
   // param-rebind: a parameter the unit reassigns by name in its own body (never inside a callback; the lint refuses that)
