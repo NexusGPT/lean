@@ -391,7 +391,25 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers incl. -0) |`);
 }
 
-{ const r = run('node', [path.join(here, '../conformance/run.mjs'), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')]); add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", r.status === 0, (r.stdout ?? '').trim().split('\n').pop() || (r.stderr ?? '').trim().slice(-200)); } // design/model-conformance.md
+// ----- model conformance (design/model-conformance.md): its running rule (conformance/select.mjs), tested first, then the
+// step on the pairs the rule selects: LEAN_PAIRS as given, every pair under LEAN_CONFORMANCE=full (the admission suite),
+// else the pairs changed since the baseline commit; the selection is printed and stands in the row's detail -----
+{
+  const t = run('node', [path.join(here, '../conformance/select.test.mjs')]);
+  add('conformance', 'select', 'the running rule: a changed pair runs, an unchanged one is skipped (conformance/select.test.mjs)', t.status === 0, (t.stdout ?? '').trim().split('\n').pop() || (t.stderr ?? '').trim().slice(-200));
+  const { conformanceSelection } = await import('../conformance/select.mjs');
+  let sel; try { sel = conformanceSelection({ root, pairsDir: path.join(here, 'pairs'), knownFile: path.join(here, '../conformance/known-findings.json') }); } catch (e) { sel = { error: e.message }; }
+  console.log(`conformance: ${sel.error ?? sel.why}`);
+  if (sel.error) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", false, sel.error);
+  else if (sel.pairs && !sel.pairs.length) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", true, `not run: ${sel.why}`);
+  else {
+    const r = run('node', [path.join(here, '../conformance/run.mjs'), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' });
+    // the TOTAL line is the step's last line; when it is missing the step died before it, and its stderr says why
+    const last = (r.stdout ?? '').trim().split('\n').pop() ?? '';
+    const detail = last.startsWith('| MODEL-CONFORMANCE TOTAL') ? last : `exit ${r.status}${r.signal ? ` (${r.signal})` : ''}, no TOTAL line: ${(r.stderr ?? '').trim().split('\n').slice(-3).join(' ').slice(-300)}`;
+    add('conformance', 'model', `each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs) on ${sel.mode === 'changed' ? `the ${sel.pairs.length} changed pair(s)` : sel.mode === 'named' ? 'the LEAN_PAIRS set' : 'every pair'}`, r.status === 0, detail);
+  }
+}
 
 // ----- escapes -----
 const escDir = path.join(root, 'fixtures/escapes/ts');

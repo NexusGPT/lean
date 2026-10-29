@@ -31,7 +31,11 @@ const N = Number(opt('--n', 30)), SEED = Number(opt('--seed', 1)), SEEDS = [1, 2
 const ONLY = opt('--unit', null), UNIT_SECONDS = Number(opt('--unit-seconds', 120)); // lane B's own bound per unit (run.mjs UNIT_SECONDS)
 const name = path.basename(pairDir);
 fs.mkdirSync(work, { recursive: true });
-const result = { pair: name, units: [], notes: [] };
+// timing (seconds): the pair's own phases and each unit's wall and CPU, read by run.mjs into the cost table (row d7e54baf:
+// the step's cost per pair was never measured)
+const result = { pair: name, units: [], notes: [], timing: {} };
+const secs = (t0) => Math.round((performance.now() - t0) / 10) / 100;
+const cpuSecs = () => { const c = process.cpuUsage(); return Math.round((c.user + c.system) / 1e4) / 100; }; // this process alone, worker threads included
 const write = () => { if (!opt('--unit', null)) fs.writeFileSync(path.join(work, 'result.json'), JSON.stringify(result, null, 1)); }; // a unit's process writes only its unit file
 const pairFile = (side) => (fs.existsSync(path.join(pairDir, side + '.tsx')) ? path.join(pairDir, side + '.tsx') : path.join(pairDir, side + '.ts'));
 const exp = JSON.parse(fs.readFileSync(path.join(pairDir, 'expect.json'), 'utf8'));
@@ -39,7 +43,9 @@ if (exp.candidateOnly || exp.laneBOnly) { result.skipped = exp.candidateOnly ? '
 
 // ----- the translation, exactly as the suite's pair step -----
 const tr = (which, extra) => spawnSync('node', [translate, pairFile(which), '--core', '--suffix', which, '--out', path.join(work, `${which}.dfy`), '--prelude', path.join(work, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
+const tTranslate = performance.now();
 const agreed = ONLY ? {} : agreeCore({ files: { parent: pairFile('parent'), candidate: pairFile('candidate') }, dfyOf: (w) => path.join(work, `${w}.dfy`), heap: exp.heap !== false, tr: (w, eff, units) => tr(w, [...(eff ? ['--effectful', eff] : []), ...(units !== undefined ? ['--heap-units', units || '-'] : [])]) });
+if (!ONLY) result.timing.translateS = secs(tTranslate);
 if (agreed.failed) { result.skipped = `lane A translation refused (${agreed.failed}): ${(agreed.run.stderr || agreed.run.stdout || '').trim().split('\n')[0].slice(0, 200)}`; write(); process.exit(0); }
 
 // the units of the scope both files hold, by their TypeScript names
@@ -51,7 +57,9 @@ for (const s of exp.scope) if (!units.some((u) => dafnyName(u) === s)) result.no
 // ----- the two models -----
 const models = {};
 for (const side of ['parent', 'candidate']) {
+  const tCompile = performance.now();
   const c = (ONLY && compiledSide({ dir: path.join(work, 'js'), label: side })) || compileSide({ dfy: path.join(work, `${side}.dfy`), prelude: path.join(work, `${side}.pre.dfy`), units: units.map((u) => `${dafnyName(u)}_${side}`), dir: path.join(work, 'js'), label: side });
+  if (!ONLY) result.timing[`compile_${side}S`] = secs(tCompile);
   if (!c.ok) { result.skipped = `the ${side} model does not compile: ${c.error}`; write(); process.exit(0); }
   const m = loadSide(c); m.bridge = makeBridge(m); m.heap = heapBridge(m); models[side] = m;
 }
@@ -215,11 +223,14 @@ const substitute = (t, env) => (t.k === 'name' && env[t.name] && !t.args.length 
 if (!ONLY) { // the pair's process: each unit in its own process under the bound
   for (const unit of units) {
     const out = path.join(work, `unit-${dafnyName(unit)}.json`); fs.rmSync(out, { force: true });
+    const tUnit = performance.now();
     const r = spawnSync(process.execPath, [fileURLToPath(import.meta.url), pairDir, work, '--n', String(N), '--seed', String(SEED), '--unit', unit], { encoding: 'utf8', timeout: UNIT_SECONDS * 1000, killSignal: 'SIGKILL', maxBuffer: 1 << 26 });
     let rec = null; try { rec = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* none: below */ }
     if (!rec) rec = { unit, dafny: dafnyName(unit), inputs: 0, sides: { parent: {}, candidate: {} }, disagreements: [], coupling: [], product: { inputs: 0, coupled: 0, agreedAllSeeds: 0 }, skipped: r.signal ? `Node did not answer: the unit's process passed its bound of ${UNIT_SECONDS} s (a run that spins, as lane B's spin-bound)` : `the unit's process ended without a result (exit ${r.status}): ${((r.stderr ?? '') + (r.stdout ?? '')).trim().split('\n').slice(-1)[0]?.slice(0, 200)}` };
+    rec.wallS = secs(tUnit); // the unit's process from spawn to exit, its bound included when killed
     result.units.push(rec); write();
   }
+  result.timing.pairProcessCpuS = cpuSecs(); // the pair's own process: translation driver, model loads; children are in run.mjs's CPU
   write(); process.exit(0);
 }
 const { planOf, drawCopy, nodeRun } = await import('./node-side.mjs');
@@ -227,7 +238,7 @@ for (const unit of units.filter((u) => u === ONLY)) {
   const fn = { parent: `${dafnyName(unit)}_parent`, candidate: `${dafnyName(unit)}_candidate` };
   const rec = { unit, dafny: dafnyName(unit), laneA: exp.equal?.[dafnyName(unit)] ?? null, inputs: 0, sides: { parent: {}, candidate: {} }, disagreements: [], coupling: [], product: { inputs: 0, coupled: 0, agreedAllSeeds: 0 } };
   result.units.push(rec);
-  let plan; try { plan = planOf(pairFile('parent'), pairFile('candidate'), unit, SEED); } catch (e) { rec.skipped = `lane B has no input plan: ${String(e.message).slice(0, 160)}`; fs.writeFileSync(path.join(work, `unit-${dafnyName(unit)}.json`), JSON.stringify(rec, null, 1)); continue; }
+  let plan; try { plan = planOf(pairFile('parent'), pairFile('candidate'), unit, SEED); } catch (e) { rec.skipped = `lane B has no input plan: ${String(e.message).slice(0, 160)}`; rec.cpuS = cpuSecs(); fs.writeFileSync(path.join(work, `unit-${dafnyName(unit)}.json`), JSON.stringify(rec, null, 1)); continue; }
   const paramNames = plan.spec.params?.map((p) => p.name) ?? [];
   for (let i = 0; i < N; i++) {
     const live = { parent: drawCopy(plan, i, SEED), candidate: drawCopy(plan, i, SEED) };
@@ -258,6 +269,7 @@ for (const unit of units.filter((u) => u === ONLY)) {
     }
   }
   rec.unseen = models.parent.bridge.state.unseen + models.candidate.bridge.state.unseen; // positions of Node's result rendered as a second sight: not compared
+  rec.cpuS = cpuSecs(); // the unit's process: lane B's sandbox runs and the two models, in this process
   fs.writeFileSync(path.join(work, `unit-${dafnyName(unit)}.json`), JSON.stringify(rec, null, 1));
 }
 process.exit(0); // a unit's late timers or pending work never hold its process
