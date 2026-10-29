@@ -55,3 +55,13 @@ Each item names the invariant it restores. Commands run in the worktree; red was
 ## Measurement
 
 Benchmark lanes 1 and 2 at `a1f1b55` (before the snapshot removal, which changes no row): every one of the 303 lane 1 defects that had zero rows in `runs/lanes12-92eebd9` now has reasoned rows; 616 of 616 reports reconcile, 13,167 expected task identities equal 13,167 terminal ones. Distribution and commands: `W/harness/lanes/change-ledger.md`.
+
+## Pair step and the intake fixture
+
+Full pair step (`node langs/ts/tests/run.mjs`), baseline `fea80f8` in a detached copy against this lane at `e15b0f1`, run concurrently on the same loaded machine: 3,877 checks each; 16 FAILED at the baseline, 17 at the lane. The failure sets differ by exactly one check, `repo | pr intake | coverage and preview` (`langs/ts/tests/fixtures/pr-intake/test.mjs`). The other 16 fail identically on both sides. Three causes, each fixed:
+
+- **Status vocabulary.** The fixture expected `skipped:secret-path`, `skipped:binary`, `skipped:not-typescript` and a non-terminal `pending`; the ledger names them `artifact:secret-path`, `artifact:binary`, `unassigned:untyped JavaScript file`, and a previewed unit ends `skipped:preview` (terminal; reconciliation refuses `pending`). Ledger rows are decided at intake (verdict ASK), and the removed unit carries its edit identities.
+- **A preview spawns only git.** The supervisor started the worker as a child process, and the fixture's audit rejects any non-git process in a preview. A preview runs no lane, so `prReport` now runs the same worker code (`ledgerWorker`, which reads only `options.json`) in-process for a preview, and an exception there is a `crash` for every task without a receipt. A full run still uses the supervised child.
+- **A head commit is read from its tree only.** The fixture's dependency guards edited `types.ts` and `tsconfig.json` in the working tree while asking for `--head HEAD`; the runner at `fea80f8` resolved imports from the dirty working tree, mixing two snapshots. The private snapshot reads the commit, so the fixture now commits each dependency change, and its guards read the four unit rows (the ledger adds rows for the edited import and config files, which run no lane and carry no certificate).
+
+`node langs/ts/tests/fixtures/pr-intake/test.mjs`: exit 1 at `e15b0f1`, exit 0 now. The full pair step was not rerun after this (a targeted rerun of the one differing check); the ci tests all exit 0.

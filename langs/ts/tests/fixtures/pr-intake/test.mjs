@@ -22,8 +22,9 @@ export function testIntake() {
     const rows = report.rows;
     assert.deepEqual(report.stop, { reason: 'none', reached: 3, total: 3 });
     const want = {
-      '.env': 'skipped:secret-path', 'image.bin': 'skipped:binary', 'inside.ts': 'checked',
-      'loader.ts': 'failed:loader', 'plain.js': 'skipped:not-typescript', 'refused.ts': 'refused:alias-mutation',
+      // non-unit edits come from the change ledger: artifact rows by kind or class, unassigned rows by named reason
+      '.env': 'artifact:secret-path', 'image.bin': 'artifact:binary', 'inside.ts': 'checked',
+      'loader.ts': 'failed:loader', 'plain.js': 'unassigned:untyped JavaScript file', 'refused.ts': 'refused:alias-mutation',
       'gone.ts': 'removed',
     };
     console.log('JSON rows: ' + JSON.stringify(rows.map(({ file, unit, coverage }) => ({ file, unit, coverage }))));
@@ -44,12 +45,17 @@ export function testIntake() {
     assert.equal(preview.status, 0, preview.stderr);
     const intake = JSON.parse(fs.readFileSync(previewJson, 'utf8'));
     assert.deepEqual(intake.map((r) => [r.file, r.unit]), rows.map((r) => [r.file, r.unit]));
-    assert.ok(intake.every((r) => r.coverage && r.decision && r.reason && r.verdict === null));
-    assert.equal(intake.filter((r) => r.coverage === 'pending').length, 2);
-    assert.deepEqual(intake.find((r) => r.file === 'gone.ts'), { file: 'gone.ts', unit: 'gone', lines: [1, 1], coverage: 'removed', decision: 'removed', verdict: null, reason: 'present at the parent, absent at the head', advice: [] });
+    // a ledger row is decided at intake (ASK with its reason); a unit row waits for its lanes
+    assert.ok(intake.every((r) => r.coverage && r.decision && r.reason && r.verdict === (['artifact', 'unassigned'].includes(r.decision) ? 'ASK' : null)));
+    // the two units a full run would check end the preview as a terminal row, `skipped:preview` (never a non-terminal `pending`)
+    assert.equal(intake.filter((r) => r.coverage === 'skipped:preview').length, 2);
+    // the removed unit names the deletion edits of the change ledger that route to it
+    const { editIds: goneEdits, ...goneRow } = intake.find((r) => r.file === 'gone.ts');
+    assert.ok(Array.isArray(goneEdits) && goneEdits.length > 0, 'the removed unit carries its edit identities');
+    assert.deepEqual(goneRow, { file: 'gone.ts', unit: 'gone', lines: [1, 1], coverage: 'removed', decision: 'removed', verdict: null, reason: 'present at the parent, absent at the head', advice: [] });
     assert.equal(fs.readFileSync(audit, 'utf8'), '', 'no lane process, sandbox, or secret read');
     assert.ok(!preview.stdout.includes('## Verdicts') && preview.stdout.includes('| coverage | decision | reason |'));
-    console.log('Preview: 7 matching rows; 2 pending; 0 lane processes; 0 sandbox executions; 0 secret reads');
+    console.log('Preview: 7 matching rows; 2 skipped:preview; 0 lane processes; 0 sandbox executions; 0 secret reads');
     for (const file of ['.env', 'nested/.env.local', 'a.pem', 'a.key', 'id_rsa.pub', 'a.p12', 'a.pfx', 'a.jks']) assert.ok(secretPath(file), file);
     assert.ok(!secretPath('environment.ts'));
     const changes = Object.freeze([Object.freeze({ file: 'a.ts', units: Object.freeze([Object.freeze({ name: 'a', start: 1, end: 1, findings: Object.freeze([]) })]) })]);
@@ -205,7 +211,7 @@ export function testRunIdentity() {
       console.log('Identity ' + label + ' wall ms: ' + ms.toFixed(3));
       assert.match(report.identity, /^[a-f0-9]{64}$/);
       assert.ok(result.stdout.includes('Identity: ' + report.identity));
-      for (const row of report.rows) assert.ok(row.certificate?.identity);
+      for (const row of report.rows) if (!['artifact', 'unassigned'].includes(row.decision)) assert.ok(row.certificate?.identity); // a ledger row runs no lane, so it has no certificate
       return { report, ms };
     };
     const cacheBytes = () => Object.fromEntries(fs.readdirSync(cache).filter((name) => name.endsWith('.json')).sort().map((name) => [name, fs.readFileSync(path.join(cache, name), 'utf8')]));
@@ -239,17 +245,24 @@ export function testRunIdentity() {
     assert.ok(fresh.report.rows.every((r) => r.coverage === 'checked'));
     assert.ok(fresh.report.rows.every((r) => r.certificate.identity === fresh.report.identity));
     console.log('Identity fresh: 0 reused; report and new certificate identities agree');
+    // A head commit is read from that commit's tree only, so each dependency change is committed; the change ledger then
+    // adds its own rows for the edited import and config files, and the guard reads the four unit rows.
+    const unitRows = (report) => report.rows.filter((r) => !['artifact', 'unassigned'].includes(r.decision));
     fs.writeFileSync(path.join(refs.repo, 'types.ts'), 'export type Marker = string;\n');
+    git('add', 'types.ts');
+    git('commit', '-qm', 'Read the changed import');
     const imported = run('import');
-    assert.ok(imported.report.rows.every((r) => r.coverage === 'checked'), 'a direct project import must invalidate the file');
+    assert.ok(unitRows(imported.report).length === 4 && unitRows(imported.report).every((r) => r.coverage === 'checked'), 'a direct project import must invalidate the file');
     fs.appendFileSync(config, '\n');
+    git('add', 'tsconfig.json');
+    git('commit', '-qm', 'Read the changed config');
     const configured = run('config');
-    assert.ok(configured.report.rows.every((r) => r.coverage === 'checked'), 'resolved config contents must invalidate the file');
+    assert.ok(unitRows(configured.report).length === 4 && unitRows(configured.report).every((r) => r.coverage === 'checked'), 'resolved config contents must invalidate the file');
     fs.writeFileSync(source, fs.readFileSync(source, 'utf8').replace('offset: Local = 0', 'offset: Local = 1'));
     git('add', 'chain.ts');
     git('commit', '-qm', 'Read the changed module constant');
     const outside = run('outside');
-    assert.ok(outside.report.rows.every((r) => r.coverage === 'checked'), 'text outside functions must invalidate the file');
+    assert.ok(unitRows(outside.report).length === 4 && unitRows(outside.report).every((r) => r.coverage === 'checked'), 'text outside functions must invalidate the file');
     console.log('Identity dependency guards: direct import, resolved config and module constant each invalidate all 4 rows');
     return 'run identity and cache pass';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

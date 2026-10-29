@@ -404,7 +404,16 @@ export async function prReport(opts) {
   atomicJSON(path.join(dir, 'options.json'), workerOpts);
   const unitSeconds = Number(opts.unitSeconds ?? UNIT_SECONDS), dafnySeconds = Number(opts.dafnySeconds ?? 30);
   const timeoutMs = Math.max(1000, 1000 * (opts.timeBudget == null ? taskMap.size * (unitSeconds + dafnySeconds + 30) + 60 : Number(opts.timeBudget) + unitSeconds + dafnySeconds + 60));
-  const terminal = [...taskMap.values()].every(t => !t.lanes.length) ? reconcileTasks(dir) : await supervise(dir, { command: process.execPath, args: [fileURLToPath(import.meta.url), '--ledger-worker', path.join(dir, 'options.json')], timeoutMs });
+  let terminal;
+  if ([...taskMap.values()].every(t => !t.lanes.length)) terminal = reconcileTasks(dir);
+  else if (opts.preview) {
+    // A preview runs no lane, so it needs no worker process (and promises none: only git is spawned). The same worker
+    // code runs in this process from the same options file; an exception is a crash for every task left without a receipt.
+    let failure = { state: 'incomplete-artifact' };
+    try { await ledgerWorker(path.join(dir, 'options.json')); }
+    catch (e) { failure = { state: 'crash', error: e.name }; console.error('lean preview worker: ' + String(e.message).slice(0, 300)); }
+    terminal = reconcileTasks(dir, failure);
+  } else terminal = await supervise(dir, { command: process.execPath, args: [fileURLToPath(import.meta.url), '--ledger-worker', path.join(dir, 'options.json')], timeoutMs });
   // The snapshot is a copy of git blobs named by options.json (repo, head); once every task is terminal it is only a
   // cache. Kept, it cost 11 GB over the 616 benchmark cases and filled the disk.
   fs.rmSync(path.join(dir, 'sources'), { recursive: true, force: true });
@@ -423,6 +432,16 @@ export async function prReport(opts) {
 function repoRunRoot(repo) {
   const abs = path.resolve(repo);
   return abs.startsWith('/Users/assem/Documents/GitHub/') || abs === '/Users/assem/promo-app' || abs.startsWith('/Users/assem/promo-app/') ? path.resolve(here, '../..') : abs;
+}
+
+// The worker reads only its options file: the same code whether the supervisor spawned it or a preview runs it inline.
+async function ledgerWorker(optionsFile) {
+  const opts = JSON.parse(fs.readFileSync(optionsFile, 'utf8'));
+  opts.scope = new Set(opts.scope);
+  opts.paths = opts.selectedPaths ? f => opts.selectedPaths.includes(f) : null;
+  opts.filesRoot = materializeSources({ repo: opts.repo, head: opts.head, dir: path.join(opts._runDir, 'sources'), sensitivePath });
+  const rows = await prWorker(opts);
+  atomicJSON(path.join(opts._runDir, 'worker-report.json'), reportJSON(rows));
 }
 
 async function prWorker(opts) {
@@ -643,12 +662,7 @@ export function markdown(rows, base, head) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   if (process.argv[2] === '--ledger-worker') {
-    const opts = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
-    opts.scope = new Set(opts.scope);
-    opts.paths = opts.selectedPaths ? f => opts.selectedPaths.includes(f) : null;
-    opts.filesRoot = materializeSources({ repo: opts.repo, head: opts.head, dir: path.join(opts._runDir, 'sources'), sensitivePath });
-    const rows = await prWorker(opts);
-    atomicJSON(path.join(opts._runDir, 'worker-report.json'), reportJSON(rows));
+    await ledgerWorker(process.argv[3]);
   } else {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
