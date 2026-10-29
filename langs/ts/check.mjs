@@ -33,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
-import { ts, loadProgram, topLevelFunctions, dn, parseUnitList } from './common.mjs';
+import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, enclosingUnitName } from './common.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 
@@ -65,6 +65,11 @@ function z3Record() {
 const run = (cmd, args, timeoutMs) => { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: !!r.error && r.error.code === 'ETIMEDOUT' }; };
 
 export async function check(opts) {
+  const owner = enclosingUnitName(opts.candidate, opts.unit);
+  if (owner) {
+    const result = await check({ ...opts, unit: owner });
+    return { ...result, 'covered-by': owner, certificate: { ...result.certificate, unit: opts.unit, 'covered-by': owner } };
+  }
   const { parent, candidate, unit, n = 200, seed = 1, project = true, dafnySeconds = 60, scope = null, deep = false, adapters = null } = opts;
   // an adapter for this unit (the scope file's "adapters", the caller's, or a // lean-adapter comment on the candidate): the
   // claim is f_candidate(A(x)) == f_parent(x); lane B runs both sides on the same raw inputs, so its WITNESS does not

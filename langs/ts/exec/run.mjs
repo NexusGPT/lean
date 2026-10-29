@@ -21,7 +21,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork } from 'node:child_process';
-import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits } from '../common.mjs';
+import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength } from './gen.mjs';
@@ -545,7 +545,7 @@ export function sandbox(env, root) {
 export function pickUnit(exportsObj, spec, env) {
   const callback = env.callbackUnits?.get(exportsObj)?.units.get(spec.unit);
   if (callback) {
-    if (callback.inBody) { env.callbackRefusal = 'callback-in-body'; return null; }
+    if (callback.inBody) return null; // nested callbacks are covered by their enclosing unit before execution
     if (callback.instances.length !== 1) { env.callbackRefusal = callback.instances.length ? 'callback-multiple-instances' : 'callback-not-created'; return null; }
     const fn = callback.instances[0];
     return { call: drawn => fn(...argsFor(spec, drawn)), receiver: null };
@@ -870,6 +870,8 @@ export async function runPair(opts) {
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
 export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
 async function runPairInFlight(opts) {
+  const owner = enclosingUnitName(opts.candidate, opts.unit);
+  if (owner) return { ...await runPairInFlight({ ...opts, unit: owner }), unit: opts.unit, 'covered-by': owner };
   const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
   const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
   for (const witness of res.witnesses ?? []) {

@@ -26,7 +26,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, loadProgramOptions, topLevelFunctions } from './common.mjs';
+import { ts, loadProgram, loadProgramOptions, topLevelFunctions, findingUnit } from './common.mjs';
 import { check } from './check.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
@@ -206,12 +206,12 @@ function changedRanges(repo, base, head, rel, deleted) {
 }
 
 function changedUnits(loaded, ranges, file) {
-  const { sf } = loaded;
-  return [...topLevelFunctions(sf).values()].flatMap((u) => {
+  const { sf } = loaded, units = topLevelFunctions(sf);
+  return [...units.values()].flatMap((u) => {
     const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
     const end = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
     if (!ranges.some(([a, b]) => a <= end && start <= b)) return [];
-    try { return [{ name: u.name, start, end, findings: loaded.checker ? lintFile(file, [[start, end]], { loaded }) : [] }]; }
+    try { return [{ name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), findings: loaded.checker ? lintFile(file, [[start, end]], { loaded }).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }]; }
     catch (e) { return [{ name: u.name, start, end, error: String(e.message).slice(0, 300) }]; }
   });
 }
@@ -222,7 +222,7 @@ function removedUnits(rel, parentText, headText) {
   const read = (text) => ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true);
   const parent = read(parentText), kept = headText === null ? new Map() : topLevelFunctions(read(headText));
   return [...topLevelFunctions(parent).values()].filter((u) => !kept.has(u.name)).map((u) => ({
-    name: u.name, start: parent.getLineAndCharacterOfPosition(u.node.getStart(parent)).line + 1, end: parent.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1 }));
+    name: u.name, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), start: parent.getLineAndCharacterOfPosition(u.node.getStart(parent)).line + 1, end: parent.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1 }));
 }
 
 // Read the change set before selection. Files outside code and secret names need no contents.
@@ -400,8 +400,8 @@ export async function prReport(opts) {
       for (const item of intake) {
         const u = item.unit;
         const index = rows.length;
-        rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
-        if (!opts.preview && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });
+        rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, ...(u.enclosingUnit ? { 'covered-by': u.enclosingUnit } : {}), verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
+        if (!opts.preview && !u.enclosingUnit && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });
       }
       if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;
       const changedNames = new Set(units.map((u) => u.name));
@@ -509,6 +509,16 @@ export async function prReport(opts) {
       save(row);
     }
   } finally { for (const t of temps) { try { fs.rmSync(t, { force: true }); } catch { /* Gone. */ } } }
+  // Nested rows retain their own intake/refusal record, but never run a lane or produce an independent verdict.
+  // Inventory order puts enclosing units first, including a callback enclosed by another callback.
+  for (const r of rows) if (r['covered-by'] && r.decision !== 'removed') {
+    const owner = rows.find(x => x.file === r.file && x.unit === r['covered-by']);
+    if (!owner) continue;
+    r.verdict = owner.verdict;
+    r.laneA = owner.laneA; r.laneB = owner.laneB;
+    r.certificate = { ...owner.certificate, unit: r.unit, verdict: r.verdict, 'covered-by': r['covered-by'] };
+    r.reason = `covered-by: ${r['covered-by']}`;
+  }
   rows.callersChecked = callersChecked;
   if (rows.identity) {
     try { rows.refusalsFile = writeRefusals(rows, path.resolve(opts.runsDir ?? path.join(repo, '.lean/runs')), { repo: path.resolve(repo) }); }
@@ -541,7 +551,8 @@ export function markdown(rows, base, head) {
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
-    if (r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
+    if (r['covered-by']) note = `covered-by: ${r['covered-by']}`;
+    if (!r['covered-by'] && r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
       const site = r.witness?.where?.lines?.candidate;
       if (site) {
         const source = site.file.replace(/(^|\/)\.lean_head_\d+_/, '$1');

@@ -1,0 +1,1 @@
+no silent exit for importers: a rejection outside a run exits 1 with its message; a late error inside a run is recorded; pr.mjs without git reports lean unknown PASS

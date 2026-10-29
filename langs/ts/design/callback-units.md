@@ -50,7 +50,7 @@ The module loader wraps each module callback argument in a capture operation tha
 does not replace the call, evaluate the callee twice, change its receiver or reorder other arguments. Each sandbox
 has its own capture table. `pickUnit` uses that recorded closure. No instance is `callback-not-created`; multiple
 instances of the same call site are `callback-multiple-instances` rather than an arbitrary chosen closure. An
-in-body callback is `callback-in-body`: loading the module cannot create that closure. The pair's module route is
+nested callback inherits its enclosing unit verdict, labelled `covered-by: <enclosing unit>`: lane B runs the enclosing unit, not the closure on invented inputs. The pair's module route is
 WITNESS after its arithmetic changes; its sibling is PASS-bounded. Lane A separately proves the sibling and the
 in-body callback over its captured inputs.
 
@@ -94,7 +94,7 @@ pattern. This lane's base has no `readings.mjs`; no partial catalogue is created
   lint: ['captured-mutable'],
   translate: [],
   assumptions: {
-    runtime: 'identity comes from the original source call, its preceding literal arguments and argument index; callback parameters use their checker types; captured enclosing-unit bindings become explicit inputs, while module bindings retain the module-state reading; lane B records the single closure created at module load and refuses in-body, absent or multiply instantiated callbacks',
+    runtime: 'identity comes from the original source call, its preceding literal arguments and argument index; callback parameters use their checker types; captured enclosing-unit bindings become explicit inputs, while module bindings retain the module-state reading; lane B records the single closure created at module load and inherits the enclosing verdict for nested callbacks and refuses absent or multiply instantiated module callbacks',
     aliasing: 'a const binding is stable; a let or parameter is an input only if no possible write follows closure creation, including writes in another closure or a containing loop; object inputs retain the ordinary parameter and heap alias rules, not a deep-immutability assumption',
     exceptions: 'the callback body uses the ordinary unit exception reading; no capture operation invokes the callback or changes the surrounding call evaluation order; a mutable capture is refused before emission',
     termination: 'the callback body uses ordinary unit termination obligations; capturing a module-load argument terminates immediately and runs no callback body; lane B never invokes an enclosing unit to manufacture a closure',
@@ -131,3 +131,7 @@ This is merge guidance only; `lower.mjs` remains untouched in this lane.
 ## Named-function consumers
 
 The construct loop and differential helper in `tests/run.mjs` select their named function. Construct lint uses `findingUnit` against the shared inventory; differential passes `--only` for its entries. Whole-file intake fixtures are unchanged. The original pair-step log records the red captured-mutable failures on nested callbacks and index_callbacks' extra standalone callback producing a bodiless signed-zero helper. Selecting the actual tested function removes those unrelated standalone units; `consumers.test.mjs` checks every affected construct and executes each selected model. The importer failure at `no-silent-exit-importers.mjs:44` was caused by the lane setting TMPDIR inside a git worktree, not a production defect; reruns use a scratch directory outside git.
+
+## Nested verdicts
+
+A nested callback remains independently listed and linted, including captured-mutable refusals in the census. Its verdict belongs to its enclosing body. `enclosingUnitName` reads that relation from the shared source inventory. `check` delegates both lanes to the enclosing check and preserves the requested source unit name with `covered-by`; direct lane B requests delegate to the enclosing run. `pr.mjs` attributes findings with `findingUnit`, retains nested intake/refusal rows, excludes them from independent checks, then copies the enclosing verdict and certificate with the same label. This also handles callbacks nested inside callbacks in inventory order. Module-level callbacks remain independent. Red/green logs cover direct lane B, certificate identity and a PR containing a captured-mutable nested callback whose outer function has a WITNESS. Only this pair's expectation changed from ASK to the inherited PASS-bounded under the owner's revised contract.

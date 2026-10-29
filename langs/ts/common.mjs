@@ -2417,3 +2417,10 @@ export function parseUnitList(text) {
   return out.filter(Boolean);
 }
 
+
+// Execution/check requests for a nested callback are requests for its enclosing unit's verdict.
+export function enclosingUnitName(file, name) {
+  if (!file || !fs.existsSync(file)) return null;
+  const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+  return topLevelFunctions(sf).get(name)?.enclosingUnit?.name ?? null;
+}
