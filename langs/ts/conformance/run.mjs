@@ -109,7 +109,7 @@ for (const [cause, fs_] of [...groups].sort((x, y) => y[1].length - x[1].length)
   for (const [k, list] of byUnit) {
     const f = list[0]; const kn = isKnown(f, 'disagree');
     if (!kn) unknown += 1;
-    console.log(`- ${k} (${list.length}: ${[...new Set(list.map((x) => x.side))].join(', ')}; the pair expects lane A ${laneAText(f.laneA)})${kn ? ` [known: ${kn.row}]` : ' [NEW]'}: input ${f.input} ${JSON.stringify(f.args).slice(0, 140)}; Node ${JSON.stringify(f.node).slice(0, 100)}; ${f.diff.slice(0, 200)}`);
+    console.log(`- ${k} (${list.length}: ${[...new Set(list.map((x) => x.side))].join(', ')}; the pair expects lane A ${laneAText(f.laneA)})${kn ? ` [known: ${kn.row}${kn.class ? `; class ${kn.class.split(' (')[0]}` : ''}]` : ' [NEW]'}: input ${f.input} ${JSON.stringify(f.args).slice(0, 140)}; Node ${JSON.stringify(f.node).slice(0, 100)}; ${f.diff.slice(0, 200)}`);
   }
 }
 console.log(`\n## The product check: ${couplings.length} inputs where both models agree under every seed and Node differs, of ${totals.productInputs} inputs that reached a part with no body`);

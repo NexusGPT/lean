@@ -113,6 +113,12 @@ one of the two known causes on a unit the old run never executed; none is a move
 | opaque_values/flowFixed, mapPresent | signed zero | new pair (fea80f88, opaque-values) |
 | proof_hunt_0/thrower, proof_hunt_2/bang | signed zero | pair unchanged; lane A refused `x!` before fea80f88 and translates it since, so the units run |
 
+Each of the 7 carries a named class (`class` in `known-findings.json`, printed beside `[known: ...]`): the five signed-zero
+units are "signed-zero: model collapses -0" (the number model has one zero; the fix is the number-model lane's,
+doubles), the two 2^53 units "2^53: the model is exact, Node rounds to binary64". A class names the cause; it never
+widens the match, which stays per (pair, unit, cause): a unit of the class not listed is NEW. Checked: with
+`proof_hunt_0/thrower` removed from the file, `LEAN_PAIRS=proof_hunt_0` exits 1 with that unit `[NEW]`.
+
 Vanished: none. The rest-parameter entries were retired before (af9678b2); every other old entry was seen again. The
 step lists a known finding of a pair that ran and was not seen ("Known findings not seen"), never as a failure: a fix
 must not fail the step, and the list says the baseline needs rewriting.
