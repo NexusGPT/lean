@@ -475,6 +475,8 @@ add('runtime', 'withdrawal', 'a withdrawn reading refused identically; no proof;
 const translatorCrashes = run('node', [path.join(here, 'translator-crashes.mjs')]);
 if (translatorCrashes.stderr) process.stderr.write(translatorCrashes.stderr);
 add('runtime', 'translator-crashes', 'node shapes read without translator crashes', translatorCrashes.status === 0, `exit ${translatorCrashes.status}: ${translatorCrashes.stdout.trim()}`);
+const listing = run('node', [path.join(here, 'unit-listing.mjs')]); // a module literal's member is named by the path code reaches it by; a same-named class keeps its own units (design/exported-units.md)
+add('runtime', 'unit-listing', 'a class and an exports-property literal sharing a name list two units, each refusal attributed to its own', listing.status === 0, (listing.stdout + listing.stderr).trim().split('\n').pop());
 
 // Every selected pair's parent, the self-pair fixtures, and an optional challenge
 // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane.

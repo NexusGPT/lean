@@ -314,7 +314,7 @@ export function moduleLiterals(st) {
     const isModuleExports = (e) => ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'module' && e.name.text === 'exports';
     if (o && ts.isObjectLiteralExpression(o)) {
       if (isModuleExports(l)) out.push({ binding: 'exports', literal: o, form: 'module-exports' });
-      else if (ts.isPropertyAccessExpression(l) && ts.isIdentifier(l.name) && ((ts.isIdentifier(l.expression) && l.expression.text === 'exports') || isModuleExports(l.expression))) out.push({ binding: l.name.text, literal: o, form: 'exports-property' });
+      else if (ts.isPropertyAccessExpression(l) && ts.isIdentifier(l.name) && ((ts.isIdentifier(l.expression) && l.expression.text === 'exports') || isModuleExports(l.expression))) out.push({ binding: `exports.${l.name.text}`, literal: o, form: 'exports-property' }); // named as code reaches it (`exports.x.m`), never as a module-level `x`, which may be a class or a function of its own
     }
   }
   return out;

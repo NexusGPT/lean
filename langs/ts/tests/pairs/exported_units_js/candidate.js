@@ -11,3 +11,4 @@ module.exports = {
   /** @param {number} n */
   twice(n) { return n + n; },
 };
+module.exports.helpers = { stem(p) { return p.split('.')[0]; } };

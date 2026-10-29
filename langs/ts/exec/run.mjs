@@ -555,7 +555,9 @@ export function pickUnit(exportsObj, spec, env) {
     // a member of an exported or module-const object literal, <binding>.<key> (common.mjs literalMemberUnits): called on the
     // literal itself, so `this` is the literal (design/exported-units.md)
     const at = spec.unit.lastIndexOf('.'), binding = spec.unit.slice(0, at), key = spec.unit.slice(at + 1);
-    const holder = binding === 'exports' ? exportsObj : binding === 'default' ? exportsObj.default : (units[binding] ?? exportsObj[binding]);
+    const [root, ...rest] = binding.split('.'); // `exports` (module.exports = {...}), `exports.x` (exports.x = {...}), `default`, or a module-level const
+    let holder = root === 'exports' ? exportsObj : root === 'default' ? exportsObj.default : (units[root] ?? exportsObj[root]);
+    for (const k of rest) holder = holder && (typeof holder === 'object' || typeof holder === 'function') ? holder[k] : undefined;
     const m = holder && (typeof holder === 'object' || typeof holder === 'function') ? holder[key] : undefined;
     if (typeof m !== 'function') return null;
     return { call: (args) => m.apply(holder, args), receiver: null };

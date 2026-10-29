@@ -17,7 +17,7 @@ the literal; `exports.x = {...}` stores it under `x` of the existing one.
 
 One listing function. `common.mjs` `moduleLiterals(st)` names the literal a module statement exports or binds to a
 module-level const, with its binding: `export const X` and `const X` (X), `export default` (default),
-`module.exports` (exports), `exports.x` and `module.exports.x` (x). `literalMemberUnits(st)` lists its methods and its
+`module.exports` (exports), `exports.x` and `module.exports.x` (exports.x: the path code reaches it by, so a class or function named `x` in the same module keeps its own units). `literalMemberUnits(st)` lists its methods and its
 function- or arrow-valued properties with a static key (an identifier, or a string that is one) as units named
 `<binding>.<key>`. `topLevelFunctions` returns them with the other units, so the census, `pr.mjs`'s changed-unit
 detection, the lint, the translator and lane B's unit spec all read the same list. A getter or setter of a literal is
