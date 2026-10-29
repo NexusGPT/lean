@@ -121,6 +121,8 @@ inlinePromiseStatementKind is the single statement vocabulary used by the lint a
 
 The conditional-state-channels permanent exception records argumentUpdatesInBranch (lint) and worldEffectInPureBranch (emission). They protect different state channels. No predicate is widened and no admission or emission behavior changes.
 
+The receiver-scope-vs-self-type permanent exception records lexicalReceiverAvailable and materializableUnitReceiver. Literal methods have lexical this through a captured field environment, not a unit self type. Both named conditions are linked through the classes reading in the lowering record; no receiver behavior changes.
+
 ## Withdrawal
 
 A reading's last version marked `withdrawn` with a reason, `LEAN_WITHDRAW="<id>=<reason>;..."` in the environment (an
@@ -363,7 +365,7 @@ fails when a site has no reading.
 | lint/lint.mjs:1353 | lint-refuse | delete | mutation | one-decider | delete of this target is outside the subset |
 | lint/lint.mjs:1355 | lint-refuse | void | unread-syntax | one-decider | `void` is outside the subset |
 | lint/lint.mjs:1359 | lint-refuse | generator-use | generators | one-decider | yield is a statement; sent values need a step reading |
-| lint/lint.mjs:1360 | lint-refuse | this | classes | one-decider | `this` outside a class method; a free function declares its receiver as a `this` parameter |
+| lint/lint.mjs:1360 | lint-refuse | this | classes | exception:receiver-scope-vs-self-type | `this` outside a class method; a free function declares its receiver as a `this` parameter |
 | lint/lint.mjs:1361 | lint-refuse | class | classes | one-decider | `super` is read only as `super.m(...)` or `super(...)` in a constructor, a call of the parent's meth |
 | lint/lint.mjs:1362 | lint-refuse | class | classes | one-decider | classes are outside the subset |
 | lint/lint.mjs:1366 | lint-refuse | unsupported-call | library | one-decider | new ${}(...) reads an array, a Map, a Set or one of their iterators; build the entries as an array f |
@@ -585,7 +587,7 @@ fails when a site has no reading.
 | translate/translate.mjs:587 | translate-refuse |  | callbacks | one-decider | ${} has no reading as a callback |
 | translate/translate.mjs:773 | translate-refuse | property-assign | mutation | lowering (INSTALLS_FUNCTION_WHY, installsFunction) | property-assign: ${} |
 | translate/translate.mjs:847 | translate-refuse | this-param | classes | shared (untypedThisParam) | this-param: ${} |
-| translate/translate.mjs:848 | translate-refuse | this | classes | one-decider | this: `this` outside a class method; a free function declares its receiver as a `this` parameter |
+| translate/translate.mjs:848 | translate-refuse | this | classes | exception:receiver-scope-vs-self-type | this: `this` outside a class method; a free function declares its receiver as a `this` parameter |
 | translate/translate.mjs:902 | translate-refuse | internal | translator-internal | one-decider | internal: a static cell read in a pure unit |
 | translate/translate.mjs:1064 | translate-refuse |  | types | one-decider | type nesting too deep |
 | translate/translate.mjs:1076 | translate-refuse |  | types | one-decider | type parameter ${} is not one of this function's |

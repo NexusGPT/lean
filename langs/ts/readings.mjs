@@ -457,6 +457,18 @@ export const READINGS = [
   },
   {
     id: 'classes', construct: 'methods of a class of the file: units with an explicit receiver; fields a method assigns as world cells; `this` in a free function as a declared `this` parameter',
+    decisionExceptions: [{
+      id: 'receiver-scope-vs-self-type',
+      sites: [
+        { who: 'lint', rule: 'this', message: '`this` outside a class method; a free function declares its receiver as a `this` parameter' },
+        { who: 'translate', rule: 'this', message: 'this: `this` outside a class method; a free function declares its receiver as a `this` parameter' },
+      ],
+      conditions: {
+        lexicalReceiverAvailable: 'the lint traversal has a class receiver, an object-literal method receiver, or a declared this parameter',
+        materializableUnitReceiver: 'selfType materializes a unit class receiver or declared this parameter; object-literal methods use their captured field environment instead',
+      },
+      reason: 'Lexical this validity and the availability of a unit self type have different domains. A literal method has lexical this but no unit self type. Combining them would reject valid literal methods or invent a receiver type.',
+    }],
     kinds: ['ThisKeyword', 'SuperKeyword', 'Constructor', 'ClassDeclaration', 'ClassExpression', 'PropertyDeclaration'],
     lint: ['class', 'this', 'static-this', 'this-param', 'implicit-this'],
     translate: rx('^this-param: ', '^this: ', '^`this` outside a class method$'),
