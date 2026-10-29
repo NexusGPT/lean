@@ -405,7 +405,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // depth cutoff and the finding's original site. This table dies with this lint.
   const visitedTypes = new Map();
   function checkType(t, n, depth = 0) {
-    if (depth > 6) return;
+    if (!t || depth > 6) return; // absent checker type: no structural type finding (opaque)
     let sites = visitedTypes.get(t);
     if (!sites) visitedTypes.set(t, sites = new Map());
     const bit = 1 << depth, seen = sites.get(n) ?? 0;

@@ -35,7 +35,7 @@ export function census(root, opts = {}) {
   const reading = (id) => { if (!readings.has(id)) readings.set(id, { id, admitted: 0, refused: 0 }); return readings.get(id); };
   const perPackage = new Map();
   const records = []; // one per file: what the per-file reader needs
-  let files = 0, units = 0, entered = 0, failedFiles = 0;
+  let files = 0, units = 0, entered = 0, failedFiles = 0, oversizedClosures = 0;
   const t0 = Date.now();
   const list = [];
   for (const file of walk(root)) {
@@ -45,13 +45,16 @@ export function census(root, opts = {}) {
   }
   // one program per tsconfig (in chunks), every file of the project as a root: the type checker is built once per
   // chunk, not per file, and a chunk is dropped once its files are linted
-  const chunks = loadManyChunks(list, { log, ...(opts.chunk ? { chunk: opts.chunk } : {}) });
+  const chunks = loadManyChunks(list, { log, ...(opts.chunk ? { chunk: opts.chunk } : {}), ...(opts.sourceByteBudget ? { sourceByteBudget: opts.sourceByteBudget } : {}) });
   const heap = (stage) => { const row = { stage, files, ...process.memoryUsage() }; log(`heap ${stage} ${JSON.stringify(row)}`); opts.onHeap?.(row); };
   function* timedChunks() { while (true) { const next = measureLowering('load census chunk', () => chunks.next()); if (next.done) return; yield next.value; } }
   function consumeChunk(loaded) {
+  const chunkStart = records.length;
   heap('chunk loaded');
   for (const abs of loaded.keys()) {
     const file = abs;
+    const closure = loaded.get(abs)?.closure;
+    if (closure) oversizedClosures++;
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
@@ -65,8 +68,8 @@ export function census(root, opts = {}) {
       const rec = lowerFile(file, null, { project: true, loaded: L }); findings = rec.findings;
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
       for (const u of rec.units) { if (u.refusal) reading(u.refusal.id).refused++; else for (const r of u.readings) reading(r.id).admitted++; }
-    } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
-    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: findings.map((f) => ({ line: f.line, rule: f.rule, msg: f.msg, env: !!f.env })) });
+    } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, ...(closure ? { closure } : {}), error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
+    records.push({ file: path.relative(root, file), pkg, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: findings.map((f) => ({ line: f.line, rule: f.rule, msg: f.msg, env: !!f.env })) });
     const blocked = new Set();
     for (const f of findings) {
       const unit = unitNames.find(([, a, b]) => a <= f.line && f.line <= b)?.[0] ?? null;
@@ -95,6 +98,7 @@ export function census(root, opts = {}) {
     if (files % 50 === 0) heap('files');
     if (files % 50 === 0) log(`${files} files, ${units} units, ${entered} inside, ${Math.round((Date.now() - t0) / 1000)} s`);
   }
+  opts.onChunk?.({ kind: 'chunk', complete: false, files, units, entered, failedFiles, oversizedClosures, readings: [...readings.values()], records: records.slice(chunkStart) });
   heap('chunk processed');
   }
   for (const loaded of timedChunks()) {
@@ -105,7 +109,7 @@ export function census(root, opts = {}) {
     rule: r.rule, units: r.units,
     directories: [...r.directories.values()].sort((a, b) => a.directory.localeCompare(b.directory)),
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
-  return { root, date, depth, refused: units - entered, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  return { complete: true, root, date, depth, oversizedClosures, refused: units - entered, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
 
 // Render only the saved census result. No files are read and no units are linted here.
@@ -145,6 +149,7 @@ export function censusReadingsReport(res) {
 // keyed by its file and its name; it is admitted (using its readings) or refused (by one reading). A gain of a reading is
 // a unit admitted in the second run that uses it and was refused (or absent) in the first; a loss the converse.
 export function censusDiff(a, b) {
+  if (a.complete === false || b.complete === false) throw new Error('cannot compare an incomplete census; its recordsFile journal retains completed chunks');
   const state = (res) => { const m = new Map(); for (const rec of res.records ?? []) for (const u of rec.lowering ?? []) m.set(`${rec.file}:${u.unit}`, u); return m; };
   const A = state(a), B = state(b);
   const ids = [...new Set([...(a.readings ?? []), ...(b.readings ?? [])].map((r) => r.id))].sort();
@@ -174,15 +179,30 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   }
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const root = path.resolve(a[0]);
+  const out = opt('--out', null), journal = out ? out + '.records.jsonl' : null;
+  const writeSummary = (value) => {
+    const next = `${out}.${process.pid}.${process.hrtime.bigint()}.next`;
+    try { fs.writeFileSync(next, JSON.stringify(value, null, 1), { flag: 'wx' }); fs.renameSync(next, out); }
+    finally { if (fs.existsSync(next)) fs.unlinkSync(next); }
+  };
+  if (out) {
+    const pending = { kind: 'census', complete: false, root, recordsFile: journal };
+    fs.writeFileSync(journal, JSON.stringify(pending) + '\n');
+    writeSummary(pending);
+  }
   if (a.includes('--profile')) startLoweringProfile();
-  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), log: (m) => console.error(m) });
+  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), log: (m) => console.error(m),
+    onChunk: journal ? (chunk) => fs.appendFileSync(journal, JSON.stringify(chunk) + '\n') : null });
   if (a.includes('--profile')) { res.profile = loweringProfile(); console.error(loweringProfileTable(res.profile)); }
-  const out = opt('--out', null);
+  if (out) {
+    writeSummary(res);
+    fs.appendFileSync(journal, JSON.stringify({ kind: 'complete', complete: true, files: res.files, units: res.units, entered: res.entered, oversizedClosures: res.oversizedClosures }) + '\n');
+  }
   const report = opt('--report', null);
   if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
   if (report) fs.writeFileSync(report, censusReport(res));
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
-  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.failedFiles} files unreadable, ${res.seconds} s`);
+  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);
   for (const r of res.rules.slice(0, 25)) console.log(`  ${String(r.units).padStart(6)} units  ${r.rule.padEnd(22)} ${r.examples[0] ?? ''}`);
 }

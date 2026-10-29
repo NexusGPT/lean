@@ -3,12 +3,97 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { spawnSync } from 'node:child_process';
-import { ts, loadProgram } from '../common.mjs';
+import { spawn, spawnSync } from 'node:child_process';
+import { ts, loadProgram, loadManyChunks } from '../common.mjs';
 import { translate } from '../translate/translate.mjs';
 import { lowerFile, startLoweringProfile, loweringProfile } from '../lower.mjs';
-import { census } from '../census.mjs';
+import { census, censusDiff } from '../census.mjs';
 import { admissionFindings } from '../lint/lint.mjs';
+
+async function withCensusLock(run) {
+  const lock = '/tmp/claude-501/census.lock', owner = path.join(lock, 'owner');
+  const token = `lowering-cache-test ${process.pid}\n`;
+  for (;;) {
+    try { fs.mkdirSync(lock); fs.writeFileSync(owner, token); break; }
+    catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      try {
+        const text = fs.readFileSync(owner, 'utf8');
+        let pid; try { pid = Number(JSON.parse(text).pid); } catch { pid = Number(/(?:pid[=: ]+)(\d+)/i.exec(text)?.[1] ?? /\b(\d+)\b/.exec(text)?.[1]); }
+        if (pid) try { process.kill(pid, 0); } catch (err) {
+          if (err.code === 'ESRCH' && fs.readFileSync(owner, 'utf8') === text) { fs.unlinkSync(owner); fs.rmdirSync(lock); continue; }
+        }
+      } catch (err) { if (err.code !== 'ENOENT') throw err; }
+      console.log('census lock held; retry in 10 seconds');
+      await new Promise(resolve => setTimeout(resolve, 10_000));
+    }
+  }
+  try { return await run(); } finally { if (fs.readFileSync(owner, 'utf8') === token) { fs.unlinkSync(owner); fs.rmdirSync(lock); } console.log('released census lock; yielding 60 seconds'); await new Promise(resolve => setTimeout(resolve, 60_000)); }
+}
+
+if (process.argv.includes('--checkpoint-test')) {
+  await withCensusLock(async () => {
+    const space = spawnSync('df', ['-k', '/'], { encoding: 'utf8' });
+    process.stdout.write(space.stdout); process.stderr.write(space.stderr); console.log(`df exit ${space.status}`);
+    assert.equal(space.status, 0);
+    assert.ok(Number(space.stdout.trim().split('\n').at(-1).split(/\s+/)[3]) >= 10 * 1024 * 1024);
+    const root = fs.mkdtempSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), '.checkpoint-'));
+    try {
+      for (const dir of ['first', 'second']) {
+        fs.mkdirSync(path.join(root, dir));
+        fs.writeFileSync(path.join(root, dir, 'tsconfig.json'), '{}');
+        fs.writeFileSync(path.join(root, dir, 'input.ts'), (dir === 'first' ? `/*${'x'.repeat(13 * 1024 * 1024)}*/\n` : '') + 'export function unit(n: number): number { return n + 1; }');
+      }
+      const out = path.join(root, 'result.json');
+      const child = spawn(process.execPath, [path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../census.mjs'), root, '--out', out], { env: { ...process.env, LEAN_CACHE: '0' } });
+      let stderr = '', killed = false;
+      child.stdout.on('data', b => process.stdout.write(b));
+      child.stderr.on('data', b => { process.stderr.write(b); stderr += b; if (!killed && stderr.includes('heap chunk processed')) { killed = true; child.kill('SIGTERM'); } });
+      const result = await new Promise((resolve, reject) => { child.on('error', reject); child.on('close', (code, signal) => resolve({ code, signal })); });
+      console.log('interrupted census: ' + JSON.stringify(result));
+      assert.ok(killed); assert.equal(result.signal, 'SIGTERM');
+      assert.ok(fs.existsSync(out + '.records.jsonl'), 'interrupted census preserves an incomplete record journal');
+      const journal = fs.readFileSync(out + '.records.jsonl', 'utf8').trim().split('\n').map(JSON.parse);
+      assert.equal(journal[0].complete, false);
+      assert.ok(journal.some(r => r.records?.length), 'completed first chunk survives');
+      assert.ok(!journal.some(r => r.complete === true));
+      assert.equal(JSON.parse(fs.readFileSync(out, 'utf8')).complete, false, 'an interrupted run never publishes a complete summary');
+      assert.throws(() => censusDiff(JSON.parse(fs.readFileSync(out, 'utf8')), { records: [] }), /incomplete census/);
+      const chunk = journal.find(r => r.records?.length);
+      assert.equal(chunk.oversizedClosures, 1);
+      assert.ok(chunk.records[0].closure.totalBytes > chunk.records[0].closure.budgetBytes);
+      console.log('partial checkpoint: ' + JSON.stringify({ complete: journal[0].complete, files: chunk.files, units: chunk.units, records: chunk.records.length, closure: chunk.records[0].closure }));
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+  process.exit(0);
+}
+
+if (process.argv.includes('--closure-test')) {
+  const root = fs.mkdtempSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '.closure-'));
+  try {
+    fs.writeFileSync(path.join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: { noLib: true } }));
+    fs.writeFileSync(path.join(root, 'shared.d.ts'), `/*${'d'.repeat(16 * 1024)}*/\nexport interface Shared { n: number }`);
+    const files = [12, 12, 12, 36].map((size, i) => {
+      const file = path.join(root, `f${i}.ts`);
+      fs.writeFileSync(file, `/*${'s'.repeat(size * 1024)}*/\nimport type { Shared } from './shared'; export function f(x: Shared): number { return x.n; }`); return file;
+    });
+    const budget = 32 * 1024, chunks = [...loadManyChunks(files, { sourceByteBudget: budget })];
+    assert.equal(chunks.length, 4, 'source plus imported declaration bytes split the multi-root chunk');
+    for (const chunk of chunks) {
+      const L = chunk.values().next().value;
+      const sources = L.program.getSourceFiles();
+      const sourceBytes = sources.filter(s => !s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+      const declarationBytes = sources.filter(s => s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+      if (sourceBytes + declarationBytes > budget) {
+        assert.equal(chunk.size, 1, 'an indivisible closure is read whole');
+        assert.deepEqual(L.closure, { sourceBytes, declarationBytes, totalBytes: sourceBytes + declarationBytes, budgetBytes: budget });
+      } else assert.equal(L.closure, undefined);
+      chunk.clear();
+    }
+    console.log('closure byte budget: four chunks, one indivisible closure, declarations preserved');
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  process.exit(0);
+}
 
 if (process.argv.includes('--type-child')) {
   const root = fs.mkdtempSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '.type-'));
@@ -28,6 +113,10 @@ if (process.argv.includes('--type-child')) {
 // A second live compiler graph costs ~12 MiB in this fixture; allow 8 MiB for
 // compiler warmup and the plain results, but not an overlapping Program.
 if (process.argv.includes('--heap-child')) {
+  const space = spawnSync('df', ['-k', '/'], { encoding: 'utf8' });
+  process.stdout.write(space.stdout); process.stderr.write(space.stderr); console.log(`df exit ${space.status}`);
+  assert.equal(space.status, 0);
+  assert.ok(Number(space.stdout.trim().split('\n').at(-1).split(/\s+/)[3]) >= 10 * 1024 * 1024);
   const root = fs.mkdtempSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), '.heap-'));
   try {
     const files = Array.from({ length: 200 }, (_, i) => {
@@ -37,7 +126,8 @@ if (process.argv.includes('--heap-child')) {
     const curve = [];
     const result = census(root, { chunk: 20, log: message => {
       if (!message.startsWith('project ')) return;
-      global.gc(); const used = process.memoryUsage().heapUsed; curve.push(used);
+      global.gc(); global.gc(); // finish any active collection, then measure retained bytes in a fresh one
+      const used = process.memoryUsage().heapUsed; curve.push(used);
       console.log(JSON.stringify({ chunk: curve.length, heapUsed: used }));
     } });
     assert.equal(result.files, 200);
@@ -52,6 +142,12 @@ if (process.argv.includes('--heap-child')) {
 const here = path.dirname(fileURLToPath(import.meta.url));
 const tmp = fs.mkdtempSync(path.join(here, '.lowering-cache-'));
 try {
+  const missing = path.join(tmp, 'shadowed-promise.ts');
+  fs.writeFileSync(missing, 'export class Promise { constructor(public value: number) {} }');
+  assert.doesNotThrow(() => admissionFindings(missing, null, { project: false }), 'a missing checker type is an opaque walk result, never an exception');
+  const missingRecord = lowerFile(missing, null, { project: false });
+  assert.equal(missingRecord.units.length, 1);
+  assert.ok(missingRecord.units.every(u => u.refusal?.rule !== 'translator-crash'));
   const file = path.join(tmp, 'many.ts');
   const names = ['one', 'two', 'three', 'four'];
   fs.writeFileSync(file, names.map((n, i) => `export function ${n}(n: number): number { return n + ${i}; }`).join('\n'));
@@ -139,11 +235,17 @@ try {
   process.stdout.write(cycle.stdout ?? ''); process.stderr.write(cycle.stderr ?? '');
   console.log(`type cycle child exit ${cycle.status}; signal ${cycle.signal}; error ${cycle.error?.code ?? 'none'}`);
   assert.equal(cycle.status, 0, 'recursive intersection/signature graph finishes within 20 seconds');
+  const closure = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--closure-test'], { encoding: 'utf8' });
+  process.stdout.write(closure.stdout); process.stderr.write(closure.stderr); console.log(`closure child exit ${closure.status}`);
+  assert.equal(closure.status, 0);
   const disk = spawnSync('df', ['-k', '/'], { encoding: 'utf8' });
   process.stdout.write(disk.stdout); process.stderr.write(disk.stderr); console.log(`df exit ${disk.status}`);
   assert.equal(disk.status, 0);
   assert.ok(Number(disk.stdout.trim().split('\n').at(-1).split(/\s+/)[3]) >= 10 * 1024 * 1024, 'stop below 10 GiB free');
-  const heap = spawnSync(process.execPath, ['--expose-gc', fileURLToPath(import.meta.url), '--heap-child'], { encoding: 'utf8', env: { ...process.env, LEAN_CACHE: '0' } });
+  const heap = await withCensusLock(() => spawnSync(process.execPath, ['--expose-gc', fileURLToPath(import.meta.url), '--heap-child'], { encoding: 'utf8', env: { ...process.env, LEAN_CACHE: '0' } }));
   process.stdout.write(heap.stdout); process.stderr.write(heap.stderr); console.log(`heap child exit ${heap.status}`);
   assert.equal(heap.status, 0, 'chunk construction releases the previous compiler graph');
+  const checkpoint = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--checkpoint-test'], { encoding: 'utf8' });
+  process.stdout.write(checkpoint.stdout); process.stderr.write(checkpoint.stderr); console.log(`checkpoint child exit ${checkpoint.status}`);
+  assert.equal(checkpoint.status, 0);
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

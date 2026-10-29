@@ -788,3 +788,27 @@ Unknown options, options that collect side effects, and external decorator-table
 or fixture overrides bypass the cache. This preserves advisory collectors and
 avoids caching an incompletely described context. Filesystem write failures are
 reported and do not change admission.
+
+## Byte budgets and interrupted censuses
+
+Compiler chunks use `PROGRAM_SOURCE_BUDGET_BYTES` (12 MiB), counting actual source
+and declaration text read through the compiler host before checking. This leaves
+space for the type graph and emission in the default heap; the measured 14.8 MB
+Redis closure grew to about 3 GB. A multi-root attempt over budget is split. An
+indivisible single-file import closure is read whole: deleting declarations would
+change its reading. Its census record has `closure: {sourceBytes,
+declarationBytes, totalBytes, budgetBytes}`, and the summary counts oversized
+closures. No per-file peak heap is claimed when it was not measured.
+
+With `--out result.json`, the census first publishes an incomplete marker naming
+`result.json.records.jsonl`. After each completed chunk it appends the plain
+per-file records and cumulative counts to that journal. Only a completed run
+atomically renames its final summary into place and appends a completion marker.
+A failed run therefore retains its completed chunks and an explicit incomplete
+summary. An interrupted final journal line can be discarded; previous complete
+lines remain usable. `--diff` rejects incomplete summaries rather than treating
+missing records as zero coverage.
+
+A missing checker type is an opaque outcome of `checkType`, not an exception. The
+module-local `class Promise` regression reaches the existing named `promise`
+refusal; it no longer dereferences `undefined.flags` in the lint.

@@ -92,7 +92,13 @@ export function loadMany(files, opts = {}) {
   return out;
 }
 
-// loadManyChunks: the same, one Map per chunk of one project, so a caller can lint a chunk and let it go
+// A 12 MiB source/declaration envelope leaves room for the checker and emission
+// inside Node's default heap: the measured 14.8 MB Redis closure grew to ~3 GB.
+// An indivisible import closure is read whole and reported, never truncated.
+export const PROGRAM_SOURCE_BUDGET_BYTES = 12 * 1024 * 1024;
+const CHUNK_OVER_BUDGET = Symbol('compiler source budget');
+
+// loadManyChunks: the same, one Map per byte-bounded chunk of one project.
 export function* loadManyChunks(files, opts = {}) {
   const groups = new Map(); // configFile|'' -> [abs]
   for (const f of files) {
@@ -100,30 +106,61 @@ export function* loadManyChunks(files, opts = {}) {
     const cfg = opts.project === false ? null : (ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null);
     const k = cfg ?? ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(abs);
   }
-  const CHUNK = opts.chunk ?? 1200; // a program over thousands of roots exhausts the heap; chunks share nothing but cost little
-  const chunks = [];
-  for (const [cfg, absList] of groups) for (let i = 0; i < absList.length; i += CHUNK) chunks.push([cfg, absList.slice(i, i + CHUNK)]);
-  for (const [cfg, absList] of chunks) yield loadChunk(cfg, absList, opts);
+  const budget = opts.sourceByteBudget ?? PROGRAM_SOURCE_BUDGET_BYTES;
+  if (!Number.isSafeInteger(budget) || budget <= 0) throw new Error('sourceByteBudget must be a positive integer');
+  const cap = opts.chunk ?? Infinity; // optional test/caller cap, never the memory budget
+  if (cap !== Infinity && (!Number.isSafeInteger(cap) || cap <= 0)) throw new Error('chunk must be a positive integer');
+  for (const [cfg, absList] of groups) {
+    let roots = [], bytes = 0;
+    for (const abs of absList) {
+      let size = 0; try { size = fs.statSync(abs).size; } catch { /* loadChunk reports unreadable sources */ }
+      if (roots.length && (bytes + size > budget || roots.length >= cap)) { yield* boundedChunks(cfg, roots, opts, budget); roots = []; bytes = 0; }
+      roots.push(abs); bytes += size;
+    }
+    if (roots.length) yield* boundedChunks(cfg, roots, opts, budget);
+  }
+}
+function* boundedChunks(cfg, roots, opts, budget) {
+  const loaded = loadChunk(cfg, roots, opts, budget);
+  if (loaded !== CHUNK_OVER_BUDGET) { yield loaded; return; }
+  const half = Math.ceil(roots.length / 2);
+  opts.log?.(`split project ${cfg || '(none)'}: ${roots.length} roots exceed ${budget} source/declaration bytes`);
+  yield* boundedChunks(cfg, roots.slice(0, half), opts, budget);
+  yield* boundedChunks(cfg, roots.slice(half), opts, budget);
 }
 
 // End the compiler/checker construction frame before the generator suspends.
 // The caller owns the returned Map and clears it before requesting another chunk.
-function loadChunk(cfg, absList, opts) {
+function loadChunk(cfg, absList, opts, budget) {
   const out = new Map();
   const first = loadProgramOptions(absList[0], cfg || null);
+  const host = ts.createCompilerHost(first.options);
+  const getSourceFile = host.getSourceFile;
+  const seen = new Set(); let bytes = 0;
+  host.getSourceFile = (...args) => {
+    const sf = getSourceFile.apply(host, args);
+    if (sf && !seen.has(sf.fileName)) {
+      seen.add(sf.fileName); bytes += Buffer.byteLength(sf.text);
+      if (bytes > budget && absList.length > 1) throw CHUNK_OVER_BUDGET;
+    }
+    return sf;
+  };
   let program;
-  try { program = ts.createProgram(absList, first.options); }
-  catch (e) { for (const a of absList) out.set(a, { error: String(e.message) }); return out; }
+  try { program = ts.createProgram(absList, first.options, host); }
+  catch (e) { if (e === CHUNK_OVER_BUDGET) return e; for (const a of absList) out.set(a, { error: String(e.message) }); return out; }
+  const sourceBytes = program.getSourceFiles().filter(s => !s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+  const declarationBytes = program.getSourceFiles().filter(s => s.isDeclarationFile).reduce((n, s) => n + Buffer.byteLength(s.text), 0);
+  const closure = sourceBytes + declarationBytes > budget ? { sourceBytes, declarationBytes, totalBytes: sourceBytes + declarationBytes, budgetBytes: budget } : null;
   const checker = program.getTypeChecker();
   for (const abs of absList) {
     const sf = program.getSourceFile(abs);
-    if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
+    if (!sf) { out.set(abs, { error: `cannot read ${abs}`, ...(closure ? { closure } : {}) }); continue; }
     let diagnostics;
     try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; }
-    catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}` }); continue; }
-    out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null });
+    catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}`, ...(closure ? { closure } : {}) }); continue; }
+    out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: cfg || null, ...(closure ? { closure } : {}) });
   }
-  opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files`);
+  opts.log?.(`project ${cfg || '(none)'}: ${absList.length} files, ${sourceBytes} source + ${declarationBytes} declaration bytes${closure ? ' (indivisible closure over budget)' : ''}`);
   return out;
 }
 
