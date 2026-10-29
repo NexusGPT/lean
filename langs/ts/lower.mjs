@@ -68,7 +68,7 @@ const SHARED_TEXTS = { valueAssignmentWhy: 'write this assignment as a statement
 // the names both deciders import from a shared module (common.mjs and its kin), and the decisions lower.mjs takes for
 // both: a site whose statement calls one is decided once (the named-then pattern); any other is one decider's, which the
 // other reads through the record
-const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy', 'numberSpecial', 'nonemptyMathArgs']);
+const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy', 'numberSpecial', 'nonemptyMathArgs', 'inlinePromiseStatementKind']);
 LOWER_DECISIONS.add('optionalCallShape');
 function importedNames(sf) {
   const out = new Set();
@@ -117,7 +117,10 @@ export function auditSites(root = here) {
         else if (template !== null && !template.startsWith('${}')) reading = readingOfRefusal(template); // the translator's own table: a rule prefix through the lint's, else its patterns
         else reading = rule ? readingOfFinding(rule, '') : template !== null ? readingOfRefusal(template) : null;
         const by = deciders(n, sf);
-        sites.push({ file: `langs/ts/${rel}`, line: line(n), who, kind, rule, message: msgText, reading, decided: kind === 'lint-advice' ? 'advice' : statusOf(by), by });
+        // Permanent exceptions name both different conditions in the catalogue. The lowering record's reading id
+        // links to that contract without changing phase order or admission.
+        const exception = readingById(reading)?.decisionExceptions?.find((e) => e.sites.some((s) => s.who === who && s.rule === rule && (!s.message || s.message === msgText)));
+        sites.push({ file: `langs/ts/${rel}`, line: line(n), who, kind, rule, message: msgText, reading, decided: kind === 'lint-advice' ? 'advice' : exception ? `exception:${exception.id}` : statusOf(by), by, ...(exception ? { conditions: exception.conditions, reason: exception.reason } : {}) });
       }
     };
     const walk = (n) => {
@@ -320,6 +323,15 @@ export function optionalCallShape(checker, e, sf, context = {}) {
   const absentReceiver = !!f.questionDotToken && isOptional(receiverType), absentField = isOptional(declared) || !!(field.flags & ts.SymbolFlags.Optional);
   return { why: null, kind: 'record', callee: f, receiver: recv, name, receiverType, receiverBase, field, declared, absentReceiver, absentField, absent: absentReceiver || absentField, ...fn };
 }
+
+// One inline-promise statement vocabulary; emission dispatch and admission consume the same kind.
+const INLINE_PROMISE_STATEMENTS = new Map([
+  [ts.SyntaxKind.Block, 'block'], [ts.SyntaxKind.EmptyStatement, 'empty'],
+  [ts.SyntaxKind.ReturnStatement, 'return'], [ts.SyntaxKind.ThrowStatement, 'throw'],
+  [ts.SyntaxKind.IfStatement, 'if'], [ts.SyntaxKind.VariableStatement, 'variable'],
+  [ts.SyntaxKind.ExpressionStatement, 'expression'],
+]);
+export const inlinePromiseStatementKind = (node) => INLINE_PROMISE_STATEMENTS.get(node.kind) ?? null;
 
 // ---------- the lowering ----------
 const K = ts.SyntaxKind;

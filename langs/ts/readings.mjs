@@ -406,6 +406,15 @@ export const READINGS = [
   },
   {
     id: 'promises', construct: 'async units and promises: await as a world transition, exact then/catch/finally/new Promise reactions sharing the fault channel, a returned outside promise as a handle',
+    decisionExceptions: [{
+      id: 'promise-opaque-return',
+      sites: [{ who: 'translate', rule: 'promise-handler', message: 'promise-handler: a promise returned from an opaque block of a throwing handler is not read' }],
+      conditions: {
+        inlineStatementAdmission: 'the handler body uses inlinePromiseStatementKind and has no refused same-file mutation',
+        opaqueFaultReturn: 'faultTr takes an opaque block return continuation whose handler return type is Promise',
+      },
+      reason: 'Statement admissibility is syntactic; the fault emitter additionally needs to settle a Promise returned by an opaque block. A valid statement can reach this separate emission limit.',
+    }],
     kinds: ['AwaitExpression'],
     lint: ['promise', 'promise-handler', 'promise-thenable', 'promise-pending', 'promise-executor', 'promise-executor-escape', 'promise-unsettled', 'promise-all-order', 'async'],
     translate: rx('^promise-handler: ', '^promise-pending: ', '^promise-unsettled: ', '^promise-combinator: ', '^promise-executor: ', '^promise-executor-escape: ', '^promise-thenable: ', '^a promise a same-file async unit returns, stored as a handle', '^promise forms require an effectful core unit$', '^an opaque promise call requires an effectful unit$'),

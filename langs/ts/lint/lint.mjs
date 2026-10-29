@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { inlinePromiseStatementKind } from '../lower.mjs';
 // lean-ts lint, version 2: refuses any function outside the TypeScript subset (see langs/ts/subset.md).
 // Version 2 admits real idioms the translator can model: imports and module constants as externals,
 // arrow-const functions, async functions whose awaited calls are externals, null as "absent", literal
@@ -1186,7 +1187,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const w = (x) => {
       if (ts.isFunctionLike(x)) return;
       if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), new Set(), !handler)) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
-      if (ts.isStatement(x) && ![K.Block, K.VariableStatement, K.ExpressionStatement, K.IfStatement, K.ReturnStatement, K.ThrowStatement, K.EmptyStatement].includes(x.kind)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
+      if (ts.isStatement(x) && !inlinePromiseStatementKind(x)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
       ts.forEachChild(x, w);
     };
     w(body);

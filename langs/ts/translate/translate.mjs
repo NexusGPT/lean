@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { inlinePromiseStatementKind } from '../lower.mjs';
 // lean-ts translate, version 2: turns the functions of a TypeScript file into Dafny, the shared core form.
 //
 // What is new in version 2 (the real-code idioms the first trial refused, 0 of 27 functions):
@@ -2274,6 +2275,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const R = dtype(rt, list[0] ?? currentUnit.node);
     if (!list.length) return done();
     const [s, ...rest] = list;
+    const statementKind = inlinePromiseStatementKind(s);
     const more = () => promiseStatements(rest, rt, done, settlement);
     const after = (lines) => `${lines}${lines ? '\n' : ''}${containsEffect(s) ? promiseGuard(more(), R) : more()}`;
     const resolveCall = (e) => settlement && settlement(unparen(e));
@@ -2286,18 +2288,18 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         return value && containsEffect(value) ? promiseGuard(promisePair(code), R) : promisePair(code);
       });
     };
-    if (ts.isBlock(s)) return promiseStatements([...scopedList(s, [...s.statements]), ...rest], rt, done, settlement);
-    if (ts.isEmptyStatement(s)) return more();
-    if (ts.isReturnStatement(s)) return end(s.expression);
-    if (ts.isThrowStatement(s)) return rejectedPromise(s.expression, R);
-    if (ts.isIfStatement(s)) return capture(() => {
+    if (statementKind === 'block') return promiseStatements([...scopedList(s, [...s.statements]), ...rest], rt, done, settlement);
+    if (statementKind === 'empty') return more();
+    if (statementKind === 'return') return end(s.expression);
+    if (statementKind === 'throw') return rejectedPromise(s.expression, R);
+    if (statementKind === 'if') return capture(() => {
       const cond = truthy(s.expression);
       const yes = promiseStatements([...sflatten(s.thenStatement), ...rest], rt, done, settlement);
       const no = promiseStatements([...(s.elseStatement ? sflatten(s.elseStatement) : []), ...rest], rt, done, settlement);
       const branch = `if ${cond} then ${wrapLet(yes)} else ${wrapLet(no)}`;
       return containsEffect(s.expression) ? promiseGuard(branch, R) : branch;
     });
-    if (ts.isVariableStatement(s)) {
+    if (statementKind === 'variable') {
       const decls = [...s.declarationList.declarations];
       const bind = (i) => {
         if (i === decls.length) return more();
@@ -2311,7 +2313,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       };
       return bind(0);
     }
-    if (ts.isExpressionStatement(s)) {
+    if (statementKind === 'expression') {
       if (resolveCall(s.expression)) return end(s.expression);
       const line = capture(() => {
         const nv = newValue(s.expression);
@@ -2319,7 +2321,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       });
       return after(line);
     }
-    return fail(s, 'promise-handler: this statement has no inline continuation reading');
+    return fail(s, statementKind === null ? 'promise-handler: this statement has no inline continuation reading' : 'internal: missing inline promise statement dispatch');
   }
   function rejectedPromise(e, R) {
     return capture(() => {
