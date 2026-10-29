@@ -1,0 +1,17 @@
+claude-chat-clean: 2 files, 75 units, 45 inside the subset (60 percent), 0 files unreadable, 5 s
+      16 units  type-assertion         hooks/feed.ts:78 `obj(input)` calls a function whose result is asserted without a check; its value may be of another type than 
+      11 units  non-null-assertion     hooks/feed.ts:64 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       4 units  toplevel-effect        hooks/register.tsx:138 move the effectful module initializer into a function
+       2 units  spread                 hooks/feed.ts:246 spread works on arrays, sets, maps and their keys(), values() and entries()
+       2 units  property-assign        hooks/register.tsx:237 assignment into `accountCache`, which this function does not own; records it owns are updated in place
+       2 units  async                  hooks/register.tsx:461 an async unit is called without await
+       1 units  number-special         hooks/feed.ts:291 the finite number model has no NaN or infinity; use lane B for special-value arithmetic
+       1 units  closure-mutation       hooks/feed.ts:324 `plain` is declared outside this callback; a callback cannot change it
+       1 units  param-mutation         hooks/feed.ts:327 push on `out`, which is not a local array
+       1 units  dynamic-key            hooks/feed.ts:506 a computed key on a record with declared keys is a literal or a union of literals; give the literal a Record<s
+       1 units  unsupported-syntax     hooks/register.tsx:262 a local component value must be a string tag name or a named component
+       1 units  promise-all-order      hooks/register.tsx:378 Promise.all does not order work after await; use a for-of loop with await for ordered effects
+       1 units  alias-mutation         hooks/register.tsx:530 `run` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module objec
+project /Users/assem/Documents/GitHub/claude-chat-clean/tsconfig.json: 2 files
+
+exit=0 signal=null

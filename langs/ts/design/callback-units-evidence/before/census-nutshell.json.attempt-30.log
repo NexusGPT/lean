@@ -1,0 +1,85 @@
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/carried-claude/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/claude-cli/tsconfig.json: 70 files
+50 files, 378 units, 312 inside, 8 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/cli-link/tsconfig.json: 12 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/electron-updater/tsconfig.json: 7 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/local-files/tsconfig.json: 10 files
+100 files, 652 units, 555 inside, 12 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/local-shell/tsconfig.json: 4 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/mac-dictation/tsconfig.json: 6 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/native-addon/tsconfig.json: 9 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/project-records/tsconfig.json: 17 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/settings-file/tsconfig.json: 4 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/adapters/sqlite-store/tsconfig.json: 62 files
+150 files, 783 units, 664 inside, 20 s
+200 files, 890 units, 746 inside, 20 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/apps/cli/tsconfig.json: 32 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/apps/desktop/core-host/tsconfig.json: 74 files
+250 files, 1097 units, 936 inside, 39 s
+300 files, 1214 units, 1022 inside, 40 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/apps/desktop/tsconfig.json: 3 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/apps/desktop/main/tsconfig.json: 50 files
+350 files, 1347 units, 1120 inside, 47 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/apps/desktop/preload/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/apps/desktop/renderer/tsconfig.json: 50 files
+400 files, 1473 units, 1215 inside, 65 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/apps/desktop/transcript-reader/tsconfig.json: 3 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/agent-access/tsconfig.json: 9 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/claude-wire/tsconfig.json: 110 files
+450 files, 1600 units, 1324 inside, 70 s
+500 files, 1830 units, 1541 inside, 71 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/commands/tsconfig.json: 41 files
+550 files, 2035 units, 1725 inside, 73 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/concurrency/tsconfig.json: 3 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/contract/tsconfig.json: 50 files
+600 files, 2061 units, 1748 inside, 85 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/conversations/tsconfig.json: 160 files
+650 files, 2238 units, 1894 inside, 87 s
+700 files, 2322 units, 1962 inside, 87 s
+750 files, 2328 units, 1968 inside, 87 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/dictation/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/domain/tsconfig.json: 71 files
+800 files, 2451 units, 2069 inside, 88 s
+850 files, 2529 units, 2141 inside, 88 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/extensions/tsconfig.json: 19 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/intro/tsconfig.json: 6 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/models/tsconfig.json: 9 files
+900 files, 2656 units, 2247 inside, 90 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/newer-versions/tsconfig.json: 8 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/projects/tsconfig.json: 36 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/settings/tsconfig.json: 8 files
+950 files, 2798 units, 2367 inside, 92 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/test-support/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/themes/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/core/window/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/tsconfig.json: 13 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/extensions/nexus/src/browser/tsconfig.json: 35 files
+1000 files, 2975 units, 2516 inside, 100 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/extensions/nexus/tsconfig.json: 50 files
+1050 files, 3192 units, 2702 inside, 105 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/extensions/nexus/src/node/tsconfig.json: 34 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/control/tsconfig.json: 4 files
+1100 files, 3421 units, 2894 inside, 108 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/extension-host/tsconfig.json: 7 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/markdown/tsconfig.json: 13 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/process/tsconfig.json: 7 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/proof-driver/tsconfig.json: 16 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/proof-vocabulary/tsconfig.json: 12 files
+1150 files, 3678 units, 3118 inside, 122 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/release-manifest/tsconfig.json: 2 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/rpc/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell/kits/ui/tsconfig.json: 595 files
+1200 files, 3738 units, 3168 inside, 134 s
+1250 files, 3781 units, 3209 inside, 135 s
+1300 files, 3821 units, 3243 inside, 136 s
+1350 files, 3863 units, 3277 inside, 137 s
+1400 files, 3902 units, 3313 inside, 138 s
+1450 files, 3939 units, 3349 inside, 138 s
+1500 files, 3969 units, 3376 inside, 138 s
+1550 files, 4003 units, 3405 inside, 139 s
+1600 files, 4038 units, 3438 inside, 140 s
+1650 files, 4085 units, 3481 inside, 140 s
+1700 files, 4129 units, 3524 inside, 141 s
+1750 files, 4246 units, 3626 inside, 142 s
+
+exit=null signal=SIGTERM

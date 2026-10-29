@@ -1,0 +1,27 @@
+nexus-automations: 36 files, 97 units, 57 inside the subset (58.8 percent), 0 files unreadable, 3 s
+      18 units  type-assertion         automations/daily-docs-sync/index.ts:145 `doc.prUrl ?? ""` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value),
+       9 units  unresolved-module      automations/changelog-owners-backfill/index.ts:24 TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @t
+       7 units  non-null-assertion     scripts/seed-changelog.ts:106 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       6 units  ts-strict              automations/daily-changelog/index.ts:14 TS2339: Property 'dir' does not exist on type 'ImportMeta'.
+       5 units  global-read            scripts/changelog-select.ts:18 `Bun` cannot be resolved
+       3 units  closure-mutation       scripts/seed-changelog.ts:49 `a` is declared outside this callback; a callback cannot change it
+       3 units  spread                 server/changelog-enrichment.ts:100 spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the sub
+       3 units  foreach                server/changelog-pr-match.ts:35 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+       2 units  async                  scripts/changelog-select.ts:25 an async unit is called without await
+       2 units  prototype              sdk/entry.ts:31 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+       2 units  promise-pending        sdk/entry.ts:62 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       2 units  param-mutation         server/changelog-auth.ts:102 map mutation on a non-local
+       2 units  function-value         server/changelog-enrichment.ts:107 a same-file function takes values, not callbacks
+       1 units  toplevel-effect        cli/index.ts:33 code at module level runs on import; it is outside the subset
+       1 units  promise                scripts/changelog-select.ts:25 a same-file async function runs on after its first await; return it from an async function with await
+       1 units  unsupported-operator   scripts/seed-changelog.ts:52 assignment operator is outside the subset
+       1 units  record-rest            sdk/index.ts:65 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+       1 units  in-place-mutation      server/changelog-selection.ts:124 reverse changes `out` in place; write `out = [...out].reverse(...)`
+       1 units  alias-mutation         server/changelog-writer-input.ts:110 `cur` holds the result of `Array.prototype.at`, which may be a field, a parameter, an element or a module obje
+       1 units  optional-chain         server/runner.ts:20 an optional call reads a named callee; bind a computed callee to a local first
+       1 units  unsupported-call       server/runner.ts:20 calls through computed callees are outside the subset
+       1 units  opaque-mutation        server/runner.ts:80 .kill() on `proc` may change it, and `proc` is read later; read it before the call or through a method
+       1 units  property-assign        server/scheduler.ts:9 assignment into `jobs`, which this function does not own; records it owns are updated in place
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations/tsconfig.json: 36 files
+
+exit=0 signal=null

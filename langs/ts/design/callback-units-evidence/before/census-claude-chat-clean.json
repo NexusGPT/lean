@@ -1,0 +1,2067 @@
+{
+ "root": "/Users/assem/Documents/GitHub/claude-chat-clean",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 2,
+   "units": 75,
+   "entered": 45
+  }
+ },
+ "refused": 30,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 12,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 12,
+     "example": {
+      "file": "hooks/feed.ts",
+      "line": 78,
+      "code": "obj(input)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "units": 9,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 9,
+     "example": {
+      "file": "hooks/feed.ts",
+      "line": 64,
+      "code": "m[1]!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 3,
+     "example": {
+      "file": "hooks/register.tsx",
+      "line": 140,
+      "code": "PAD"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "async",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 2,
+     "example": {
+      "file": "hooks/register.tsx",
+      "line": 461,
+      "code": "agentRow($, e, x, c)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 1,
+     "example": {
+      "file": "hooks/register.tsx",
+      "line": 530,
+      "code": "run.calls.push(call)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 1,
+     "example": {
+      "file": "hooks/feed.ts",
+      "line": 324,
+      "code": "plain"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 1,
+     "example": {
+      "file": "hooks/register.tsx",
+      "line": 237,
+      "code": "accountCache.at"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "spread",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "hooks",
+     "units": 1,
+     "example": {
+      "file": "hooks/feed.ts",
+      "line": 246,
+      "code": "...text"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 2,
+ "failedFiles": 0,
+ "units": 75,
+ "entered": 45,
+ "share": 60,
+ "seconds": 5,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 127,
+   "units": 16,
+   "examples": [
+    "hooks/feed.ts:78 `obj(input)` calls a function whose result is asserted without a check; its value may be of another type than ",
+    "hooks/feed.ts:97 `obj(input)` calls a function whose result is asserted without a check; its value may be of another type than ",
+    "hooks/feed.ts:115 `obj(input)` calls a function whose result is asserted without a check; its value may be of another type than "
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "findings": 25,
+   "units": 11,
+   "examples": [
+    "hooks/feed.ts:64 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "hooks/feed.ts:73 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "hooks/feed.ts:73 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 14,
+   "units": 4,
+   "examples": [
+    "hooks/register.tsx:138 move the effectful module initializer into a function",
+    "hooks/register.tsx:140 move the effectful module initializer into a function",
+    "hooks/register.tsx:314 move the effectful module initializer into a function"
+   ]
+  },
+  {
+   "rule": "spread",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "hooks/feed.ts:246 spread works on arrays, sets, maps and their keys(), values() and entries()",
+    "hooks/register.tsx:830 spread works on arrays, sets, maps and their keys(), values() and entries()",
+    "hooks/register.tsx:1001 spread works on arrays, sets, maps and their keys(), values() and entries()"
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 4,
+   "units": 2,
+   "examples": [
+    "hooks/register.tsx:237 assignment into `accountCache`, which this function does not own; records it owns are updated in place",
+    "hooks/register.tsx:241 assignment into `accountCache`, which this function does not own; records it owns are updated in place",
+    "hooks/register.tsx:535 update of a field of `t`, which this function does not own"
+   ]
+  },
+  {
+   "rule": "async",
+   "findings": 6,
+   "units": 2,
+   "examples": [
+    "hooks/register.tsx:461 an async unit is called without await",
+    "hooks/register.tsx:462 an async unit is called without await",
+    "hooks/register.tsx:470 an async unit is called without await"
+   ]
+  },
+  {
+   "rule": "number-special",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "hooks/feed.ts:291 the finite number model has no NaN or infinity; use lane B for special-value arithmetic"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "hooks/feed.ts:324 `plain` is declared outside this callback; a callback cannot change it"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "hooks/feed.ts:327 push on `out`, which is not a local array"
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "hooks/feed.ts:506 a computed key on a record with declared keys is a literal or a union of literals; give the literal a Record<s"
+   ]
+  },
+  {
+   "rule": "unsupported-syntax",
+   "findings": 23,
+   "units": 1,
+   "examples": [
+    "hooks/register.tsx:262 a local component value must be a string tag name or a named component",
+    "hooks/register.tsx:267 a local component value must be a string tag name or a named component",
+    "hooks/register.tsx:269 a local component value must be a string tag name or a named component"
+   ]
+  },
+  {
+   "rule": "promise-all-order",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "hooks/register.tsx:378 Promise.all does not order work after await; use a for-of loop with await for ordered effects"
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "hooks/register.tsx:530 `run` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module objec",
+    "hooks/register.tsx:534 `t` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object "
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "hooks/feed.ts",
+   "pkg": "hooks",
+   "units": [
+    {
+     "name": "isPreset",
+     "lines": [
+      11,
+      11
+     ]
+    },
+    {
+     "name": "modeOf",
+     "lines": [
+      20,
+      26
+     ]
+    },
+    {
+     "name": "str",
+     "lines": [
+      28,
+      28
+     ]
+    },
+    {
+     "name": "firstLine",
+     "lines": [
+      29,
+      29
+     ]
+    },
+    {
+     "name": "baseName",
+     "lines": [
+      30,
+      30
+     ]
+    },
+    {
+     "name": "obj",
+     "lines": [
+      31,
+      31
+     ]
+    },
+    {
+     "name": "isAgentTool",
+     "lines": [
+      33,
+      33
+     ]
+    },
+    {
+     "name": "plain",
+     "lines": [
+      42,
+      55
+     ]
+    },
+    {
+     "name": "desc",
+     "lines": [
+      57,
+      61
+     ]
+    },
+    {
+     "name": "hostOf",
+     "lines": [
+      62,
+      65
+     ]
+    },
+    {
+     "name": "fileOf",
+     "lines": [
+      66,
+      69
+     ]
+    },
+    {
+     "name": "toolName",
+     "lines": [
+      71,
+      74
+     ]
+    },
+    {
+     "name": "stepWords",
+     "lines": [
+      77,
+      93
+     ]
+    },
+    {
+     "name": "pastWords",
+     "lines": [
+      96,
+      111
+     ]
+    },
+    {
+     "name": "questionOf",
+     "lines": [
+      114,
+      118
+     ]
+    },
+    {
+     "name": "answerOf",
+     "lines": [
+      121,
+      127
+     ]
+    },
+    {
+     "name": "runCounts",
+     "lines": [
+      130,
+      138
+     ]
+    },
+    {
+     "name": "kindOf",
+     "lines": [
+      140,
+      140
+     ]
+    },
+    {
+     "name": "countWords",
+     "lines": [
+      141,
+      163
+     ]
+    },
+    {
+     "name": "elapsed",
+     "lines": [
+      166,
+      172
+     ]
+    },
+    {
+     "name": "liveLine",
+     "lines": [
+      179,
+      187
+     ]
+    },
+    {
+     "name": "isRefusal",
+     "lines": [
+      190,
+      190
+     ]
+    },
+    {
+     "name": "clock",
+     "lines": [
+      193,
+      196
+     ]
+    },
+    {
+     "name": "stepsLine",
+     "lines": [
+      199,
+      199
+     ]
+    },
+    {
+     "name": "peerFold",
+     "lines": [
+      202,
+      205
+     ]
+    },
+    {
+     "name": "senderOf",
+     "lines": [
+      208,
+      211
+     ]
+    },
+    {
+     "name": "hookLabel",
+     "lines": [
+      214,
+      222
+     ]
+    },
+    {
+     "name": "isHookText",
+     "lines": [
+      223,
+      223
+     ]
+    },
+    {
+     "name": "verdict",
+     "lines": [
+      234,
+      242
+     ]
+    },
+    {
+     "name": "fit",
+     "lines": [
+      245,
+      253
+     ]
+    },
+    {
+     "name": "headLine",
+     "lines": [
+      256,
+      258
+     ]
+    },
+    {
+     "name": "noPaths",
+     "lines": [
+      261,
+      263
+     ]
+    },
+    {
+     "name": "readable",
+     "lines": [
+      267,
+      276
+     ]
+    },
+    {
+     "name": "frameOf",
+     "lines": [
+      283,
+      302
+     ]
+    },
+    {
+     "name": "framesOfRaw",
+     "lines": [
+      305,
+      313
+     ]
+    },
+    {
+     "name": "framesOfView",
+     "lines": [
+      318,
+      337
+     ]
+    },
+    {
+     "name": "tone",
+     "lines": [
+      351,
+      352
+     ]
+    },
+    {
+     "name": "reportCard",
+     "lines": [
+      353,
+      407
+     ]
+    },
+    {
+     "name": "stripPreamble",
+     "lines": [
+      412,
+      427
+     ]
+    },
+    {
+     "name": "splitJson",
+     "lines": [
+      432,
+      448
+     ]
+    },
+    {
+     "name": "leadOf",
+     "lines": [
+      454,
+      484
+     ]
+    },
+    {
+     "name": "standsAlone",
+     "lines": [
+      487,
+      487
+     ]
+    },
+    {
+     "name": "parseFeed",
+     "lines": [
+      499,
+      511
+     ]
+    },
+    {
+     "name": "errorLine",
+     "lines": [
+      524,
+      549
+     ]
+    },
+    {
+     "name": "pairsOf",
+     "lines": [
+      554,
+      562
+     ]
+    },
+    {
+     "name": "shortQuestion",
+     "lines": [
+      564,
+      568
+     ]
+    },
+    {
+     "name": "iconSvg",
+     "lines": [
+      578,
+      580
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 64,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 73,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 73,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 78,
+     "rule": "type-assertion",
+     "msg": "`obj(input)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 97,
+     "rule": "type-assertion",
+     "msg": "`obj(input)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 115,
+     "rule": "type-assertion",
+     "msg": "`obj(input)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 115,
+     "rule": "type-assertion",
+     "msg": "`obj(input)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 116,
+     "rule": "type-assertion",
+     "msg": "`qs[0].question` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 117,
+     "rule": "type-assertion",
+     "msg": "`q` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 122,
+     "rule": "type-assertion",
+     "msg": "`obj(result)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 123,
+     "rule": "type-assertion",
+     "msg": "`obj(r.answers)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 137,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 210,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 246,
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    },
+    {
+     "line": 273,
+     "rule": "type-assertion",
+     "msg": "`j.summary` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 273,
+     "rule": "type-assertion",
+     "msg": "`j.result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 273,
+     "rule": "type-assertion",
+     "msg": "`j.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 273,
+     "rule": "type-assertion",
+     "msg": "`j.text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 274,
+     "rule": "type-assertion",
+     "msg": "`kind` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 274,
+     "rule": "type-assertion",
+     "msg": "`body` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 290,
+     "rule": "type-assertion",
+     "msg": "`j.type` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 291,
+     "rule": "type-assertion",
+     "msg": "`j.timestamp` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 291,
+     "rule": "type-assertion",
+     "msg": "`j.timestamp` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 291,
+     "rule": "number-special",
+     "msg": "the finite number model has no NaN or infinity; use lane B for special-value arithmetic",
+     "env": false
+    },
+    {
+     "line": 293,
+     "rule": "type-assertion",
+     "msg": "`j.from` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 296,
+     "rule": "type-assertion",
+     "msg": "`j.summary` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 297,
+     "rule": "type-assertion",
+     "msg": "`j.result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 297,
+     "rule": "type-assertion",
+     "msg": "`j.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 297,
+     "rule": "type-assertion",
+     "msg": "`j.text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 297,
+     "rule": "type-assertion",
+     "msg": "`j.reason` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 309,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 309,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 309,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 310,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 324,
+     "rule": "closure-mutation",
+     "msg": "`plain` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 327,
+     "rule": "param-mutation",
+     "msg": "push on `out`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 327,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 365,
+     "rule": "type-assertion",
+     "msg": "`o.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 365,
+     "rule": "type-assertion",
+     "msg": "`o.verdict` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 365,
+     "rule": "type-assertion",
+     "msg": "`o.result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 366,
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 368,
+     "rule": "type-assertion",
+     "msg": "`o.review_status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 368,
+     "rule": "type-assertion",
+     "msg": "`o.summary` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 368,
+     "rule": "type-assertion",
+     "msg": "`o.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 368,
+     "rule": "type-assertion",
+     "msg": "`o.result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 368,
+     "rule": "type-assertion",
+     "msg": "`o.result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 370,
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 373,
+     "rule": "type-assertion",
+     "msg": "`n.name` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 373,
+     "rule": "type-assertion",
+     "msg": "`n.title` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 373,
+     "rule": "type-assertion",
+     "msg": "`n.id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 375,
+     "rule": "type-assertion",
+     "msg": "`n[k]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 377,
+     "rule": "type-assertion",
+     "msg": "`extra` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 382,
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 388,
+     "rule": "type-assertion",
+     "msg": "`it0[f]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 392,
+     "rule": "type-assertion",
+     "msg": "`marks.filter(m => m === 'ok').length` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 394,
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 403,
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 435,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 469,
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 503,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 504,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 505,
+     "rule": "type-assertion",
+     "msg": "`v as Kind` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 506,
+     "rule": "dynamic-key",
+     "msg": "a computed key on a record with declared keys is a literal or a union of literals; give the literal a Record<string, T> type for an open key",
+     "env": false
+    },
+    {
+     "line": 507,
+     "rule": "type-assertion",
+     "msg": "`v as Settings['style']` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 508,
+     "rule": "type-assertion",
+     "msg": "`v as Settings['commands']` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 509,
+     "rule": "type-assertion",
+     "msg": "`v as Settings['after']` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 555,
+     "rule": "type-assertion",
+     "msg": "`obj(obj(result).answers)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 555,
+     "rule": "type-assertion",
+     "msg": "`obj(result)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 567,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "hooks/register.tsx",
+   "pkg": "hooks",
+   "units": [
+    {
+     "name": "liveBg",
+     "lines": [
+      56,
+      62
+     ]
+    },
+    {
+     "name": "readCrew",
+     "lines": [
+      63,
+      83
+     ]
+    },
+    {
+     "name": "hhmm",
+     "lines": [
+      119,
+      122
+     ]
+    },
+    {
+     "name": "settingsOf",
+     "lines": [
+      125,
+      127
+     ]
+    },
+    {
+     "name": "setSettings",
+     "lines": [
+      128,
+      131
+     ]
+    },
+    {
+     "name": "get",
+     "lines": [
+      132,
+      134
+     ]
+    },
+    {
+     "name": "els",
+     "lines": [
+      139,
+      142
+     ]
+    },
+    {
+     "name": "roomOf",
+     "lines": [
+      143,
+      145
+     ]
+    },
+    {
+     "name": "hidden",
+     "lines": [
+      146,
+      146
+     ]
+    },
+    {
+     "name": "isSearch",
+     "lines": [
+      147,
+      147
+     ]
+    },
+    {
+     "name": "note",
+     "lines": [
+      151,
+      161
+     ]
+    },
+    {
+     "name": "seeView",
+     "lines": [
+      168,
+      176
+     ]
+    },
+    {
+     "name": "nothing",
+     "lines": [
+      179,
+      181
+     ]
+    },
+    {
+     "name": "chevron",
+     "lines": [
+      185,
+      188
+     ]
+    },
+    {
+     "name": "palette",
+     "lines": [
+      202,
+      232
+     ]
+    },
+    {
+     "name": "accountEmail",
+     "lines": [
+      234,
+      246
+     ]
+    },
+    {
+     "name": "deskStatus",
+     "lines": [
+      247,
+      308
+     ]
+    },
+    {
+     "name": "line",
+     "lines": [
+      311,
+      325
+     ]
+    },
+    {
+     "name": "callLine",
+     "lines": [
+      328,
+      351
+     ]
+    },
+    {
+     "name": "runLine",
+     "lines": [
+      355,
+      383
+     ]
+    },
+    {
+     "name": "turnLine",
+     "lines": [
+      386,
+      389
+     ]
+    },
+    {
+     "name": "agentRow",
+     "lines": [
+      393,
+      404
+     ]
+    },
+    {
+     "name": "questionRow",
+     "lines": [
+      408,
+      447
+     ]
+    },
+    {
+     "name": "drawCall",
+     "lines": [
+      453,
+      489
+     ]
+    },
+    {
+     "name": "rebuild",
+     "lines": [
+      492,
+      556
+     ]
+    },
+    {
+     "name": "settingsPage",
+     "lines": [
+      561,
+      608
+     ]
+    },
+    {
+     "name": "lanePane",
+     "lines": [
+      611,
+      653
+     ]
+    },
+    {
+     "name": "register",
+     "lines": [
+      655,
+      1415
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 60,
+     "rule": "type-assertion",
+     "msg": "`[a.id, a.description, a.teammateId].filter(Boolean) as strin` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 138,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 140,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 141,
+     "rule": "type-assertion",
+     "msg": "`e as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 237,
+     "rule": "property-assign",
+     "msg": "assignment into `accountCache`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 241,
+     "rule": "property-assign",
+     "msg": "assignment into `accountCache`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 241,
+     "rule": "type-assertion",
+     "msg": "`(j.oauthAccount?.emailAddress ?? '').trim()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 250,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 261,
+     "rule": "type-assertion",
+     "msg": "`x as unknown as { Box: El; Text: El; Svg: El }` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 262,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 267,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 269,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 270,
+     "rule": "type-assertion",
+     "msg": "`first as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 271,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 271,
+     "rule": "type-assertion",
+     "msg": "`spaced as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 277,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 279,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 280,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 281,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 283,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 284,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 289,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 289,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 289,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 290,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 290,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 290,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 290,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 291,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 291,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 291,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 295,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 297,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 302,
+     "rule": "unsupported-syntax",
+     "msg": "a local component value must be a string tag name or a named component",
+     "env": false
+    },
+    {
+     "line": 303,
+     "rule": "type-assertion",
+     "msg": "`workPills as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 314,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 360,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 365,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 365,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 378,
+     "rule": "promise-all-order",
+     "msg": "Promise.all does not order work after await; use a for-of loop with await for ordered effects",
+     "env": false
+    },
+    {
+     "line": 419,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 461,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 462,
+     "rule": "type-assertion",
+     "msg": "`questionRow($, e, x, c)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 462,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 470,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 470,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 478,
+     "rule": "type-assertion",
+     "msg": "`opened as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 485,
+     "rule": "type-assertion",
+     "msg": "`b as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 530,
+     "rule": "alias-mutation",
+     "msg": "`run` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 534,
+     "rule": "alias-mutation",
+     "msg": "`t` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 535,
+     "rule": "property-assign",
+     "msg": "update of a field of `t`, which this function does not own",
+     "env": false
+    },
+    {
+     "line": 536,
+     "rule": "property-assign",
+     "msg": "update of a field of `t`, which this function does not own",
+     "env": false
+    },
+    {
+     "line": 566,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 599,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 762,
+     "rule": "type-assertion",
+     "msg": "`(h ? { ...h, status, endedAt: now } : h) as Helper` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 795,
+     "rule": "type-assertion",
+     "msg": "`[a.id, a.description, a.teammateId].filter(Boolean) as strin` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 797,
+     "rule": "type-assertion",
+     "msg": "`tasks\n            // shells and monitors only: helpers (suba` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 818,
+     "rule": "type-assertion",
+     "msg": "`m.content as { type: string; id?: string; name?: string; inp` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 822,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 830,
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    },
+    {
+     "line": 830,
+     "rule": "type-assertion",
+     "msg": "`text.matchAll(/<(?:tool-use-id|task-id)>([^<]+)<\\/(?:tool-us` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 873,
+     "rule": "type-assertion",
+     "msg": "`(h ? { ...h, now: F.stepWords(tool, e) } : h) as Helper` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 915,
+     "rule": "type-assertion",
+     "msg": "`o.stdout` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 915,
+     "rule": "type-assertion",
+     "msg": "`typeof o.stderr === 'string' ? o.stderr : ''` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 916,
+     "rule": "type-assertion",
+     "msg": "`(r as { deny: string }).deny` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 931,
+     "rule": "type-assertion",
+     "msg": "`(t ? { ...t, first: t.first ?? id, calls: t.calls + 1, done:` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 933,
+     "rule": "type-assertion",
+     "msg": "`(t ? { ...t, done: t.done + 1 } : t) as Turn` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 956,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 958,
+     "rule": "type-assertion",
+     "msg": "`nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 959,
+     "rule": "type-assertion",
+     "msg": "`drawn as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 961,
+     "rule": "type-assertion",
+     "msg": "`(await read($, liveRef)) !== null ? (nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 968,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 997,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1001,
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    },
+    {
+     "line": 1011,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1016,
+     "rule": "type-assertion",
+     "msg": "`(\n        <x.Box flexDirection=\"column\">\n          {line(x, ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1020,
+     "rule": "type-assertion",
+     "msg": "`names as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1031,
+     "rule": "type-assertion",
+     "msg": "`d as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1034,
+     "rule": "type-assertion",
+     "msg": "`(parts.length === 0 ? nothing(x.Box) : <x.Box flexDirection=` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1034,
+     "rule": "type-assertion",
+     "msg": "`parts as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1042,
+     "rule": "type-assertion",
+     "msg": "`runId === undefined ? next(e) : (nothing(els($, e).Box) as n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1042,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1056,
+     "rule": "type-assertion",
+     "msg": "`nothing(els($, e).Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1056,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1064,
+     "rule": "type-assertion",
+     "msg": "`nothing(els($, e).Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1064,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1065,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1070,
+     "rule": "type-assertion",
+     "msg": "`(\n        <x.Box flexDirection=\"row\" marginTop={1}>\n        ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1094,
+     "rule": "type-assertion",
+     "msg": "`row as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1097,
+     "rule": "type-assertion",
+     "msg": "`row as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1098,
+     "rule": "type-assertion",
+     "msg": "`(\n      <x.Box flexDirection=\"column\">\n        {row}\n       ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1101,
+     "rule": "type-assertion",
+     "msg": "`steps as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1112,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1119,
+     "rule": "type-assertion",
+     "msg": "`nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1121,
+     "rule": "type-assertion",
+     "msg": "`(\n        <x.Box flexDirection=\"column\" marginTop={1}>\n     ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1133,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1138,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1176,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1189,
+     "rule": "type-assertion",
+     "msg": "`nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1191,
+     "rule": "type-assertion",
+     "msg": "`(\n        <x.Box flexDirection=\"row\" marginTop={1}>\n        ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1200,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 1209,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 1218,
+     "rule": "type-assertion",
+     "msg": "`line(x, { live: false }, F.hookLabel(e.props.text), room) as` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1229,
+     "rule": "type-assertion",
+     "msg": "`(s.clear && !s.keep ? nothing(x.Box) : line(x, { live: false` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1230,
+     "rule": "type-assertion",
+     "msg": "`nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1232,
+     "rule": "type-assertion",
+     "msg": "`line(x, { live: false, text: '⇄', color: PEER }, `helper${du` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1234,
+     "rule": "type-assertion",
+     "msg": "`nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1240,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 1242,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 1243,
+     "rule": "type-assertion",
+     "msg": "`fold as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1244,
+     "rule": "type-assertion",
+     "msg": "`(\n          <x.Box flexDirection=\"column\">\n            {fold` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1251,
+     "rule": "type-assertion",
+     "msg": "`nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1252,
+     "rule": "type-assertion",
+     "msg": "`(<x.Box paddingLeft={2}>{line(x, { live: false, text: '⇄', c` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1254,
+     "rule": "type-assertion",
+     "msg": "`line(x, { live: false, text: '⇄', color: PEER }, `${from ?? ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1262,
+     "rule": "type-assertion",
+     "msg": "`nothing(els($, e).Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1262,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1264,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1271,
+     "rule": "type-assertion",
+     "msg": "`(\n        <x.Box flexDirection=\"row\" gap={1} paddingLeft={PA` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1272,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1289,
+     "rule": "type-assertion",
+     "msg": "`band === null ? next(e) : (band as never)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1298,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1302,
+     "rule": "type-assertion",
+     "msg": "`m.filter(k => k.state === st).length` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1307,
+     "rule": "type-assertion",
+     "msg": "`m` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1308,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 1311,
+     "rule": "type-assertion",
+     "msg": "`(\n          <x.Box flexDirection=\"column\">\n            <x.Bo` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1313,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1318,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1341,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1344,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 1353,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 1354,
+     "rule": "type-assertion",
+     "msg": "`(\n          <x.Box flexDirection=\"column\">\n            <x.Bo` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1356,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1377,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1380,
+     "rule": "type-assertion",
+     "msg": "`nothing(x.Box) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1381,
+     "rule": "type-assertion",
+     "msg": "`(\n        <x.Box flexDirection=\"row\" paddingLeft={PAD}>\n    ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1382,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 1402,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1403,
+     "rule": "type-assertion",
+     "msg": "`settingsPage($, x, await settingsOf($), e.props.bodyColumns)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 1407,
+     "rule": "type-assertion",
+     "msg": "`els($, e)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 1408,
+     "rule": "type-assertion",
+     "msg": "`(await lanePane($, x, e.props.bodyColumns)) as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "hooks",
+   "files": 2,
+   "units": 75,
+   "entered": 45
+  }
+ ]
+}

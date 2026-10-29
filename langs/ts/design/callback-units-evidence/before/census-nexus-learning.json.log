@@ -1,0 +1,54 @@
+nexus-learning: 733 files, 2519 units, 2146 inside the subset (85.2 percent), 0 files unreadable, 93 s
+      90 units  type-assertion         apps/web/app/(manage)/manage/cohorts/actions.ts:134 `isRedirect(error)` calls a function whose result is asserted without a check; its value may be of another typ
+      73 units  untyped-js             apps/web/scripts/scan-ui-strings.mjs:37 parameter `text` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} text` or TypeScrip
+      28 units  unsupported-call       apps/web/app/(learner)/achievements/page.tsx:9 calls through computed callees are outside the subset
+      24 units  closure-mutation       apps/web/app/api/dev/reset/route.ts:423 `stamp` is declared outside this callback; a callback cannot change it
+      23 units  index-assign           apps/web/app/(learner)/actions.ts:66 compound assignment on an element is outside the subset
+      23 units  param-mutation         apps/web/components/organization/department-tree.tsx:40 set mutation on a non-local
+      19 units  alias-mutation         apps/web/app/(learner)/calendar/page.tsx:133 `held` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module obje
+      16 units  spread                 apps/web/app/(learner)/calendar/actions.ts:51 spread works on arrays, sets, maps and their keys(), values() and entries()
+      14 units  unsupported-syntax     apps/web/app/auth/callback/route.ts:44 assignment target
+      13 units  async                  apps/web/app/(learner)/courses/[uid]/page.tsx:50 an async unit is called without await
+      12 units  prototype              apps/web/components/design-system/questions.tsx:123 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+      12 units  in-place-mutation      apps/web/lib/api/dashboard.ts:358 sort changes `rows` in place; write `rows = [...rows].sort(...)`
+      12 units  foreach                apps/web/lib/credentials/pdf.ts:167 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+      11 units  ts-strict              docs/design/canvas/build.mjs:296 TS2345: Argument of type 'string | number | undefined' is not assignable to parameter of type 'string | undefi
+       9 units  dynamic-key            apps/web/app/api/dev/identity/route.ts:34 key "E2E_SERVER_IDENTITY" is not declared on ProcessEnv
+       9 units  callback-form          apps/web/components/learner/curriculum-tree.tsx:114 an effectful array callback needs an inline arrow so its world transitions are read in array order
+       7 units  void                   apps/web/components/assignment/self-check-card.tsx:103 `void` is outside the subset
+       7 units  react-handler-capture  apps/web/components/learner/lesson-video.tsx:202 a React closure captures a changing local; capture a const value or use a state setter
+       7 units  function-value         packages/core/src/progress/next-up.ts:101 a same-file function takes values, not callbacks
+       6 units  promise                apps/web/lib/api/queue.ts:61 a held promise of this result type has no identity in the reading; return the call itself
+       5 units  definite-assignment    apps/web/app/(learner)/lessons/[uid]/page.tsx:98 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested
+       5 units  unsupported-member     apps/web/lib/api/assignment.ts:337 property .submission on never is outside the subset
+       5 units  non-null-assertion     apps/web/lib/review-form.ts:103 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       5 units  promise-pending        scripts/dev-local.mjs:85 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       4 units  mixed-types            apps/web/app/(learner)/leaderboard/page.tsx:29 a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/apps/web/tsconfig.json: 348 files
+50 files, 177 units, 138 inside, 28 s
+100 files, 192 units, 151 inside, 28 s
+150 files, 280 units, 233 inside, 29 s
+200 files, 365 units, 311 inside, 30 s
+250 files, 558 units, 485 inside, 32 s
+300 files, 877 units, 760 inside, 33 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/tsconfig.json: 38 files
+350 files, 1060 units, 887 inside, 39 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/api-client/tsconfig.json: 8 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/api-contract/tsconfig.json: 24 files
+400 files, 1220 units, 978 inside, 49 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/claude-code-skills/tsconfig.json: 20 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/cli/tsconfig.json: 61 files
+450 files, 1378 units, 1118 inside, 60 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/content/tsconfig.json: 38 files
+500 files, 1719 units, 1440 inside, 70 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/core/tsconfig.json: 93 files
+550 files, 1867 units, 1569 inside, 74 s
+600 files, 2100 units, 1780 inside, 74 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/schema/tsconfig.json: 17 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/storage/tsconfig.json: 28 files
+650 files, 2285 units, 1943 inside, 82 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/telemetry/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning/packages/ui/tsconfig.json: 53 files
+700 files, 2470 units, 2104 inside, 91 s
+
+exit=0 signal=null

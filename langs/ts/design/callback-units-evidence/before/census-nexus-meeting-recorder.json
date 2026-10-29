@@ -1,0 +1,1787 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "js": {
+   "files": 4,
+   "units": 11,
+   "entered": 0
+  },
+  "ts": {
+   "files": 59,
+   "units": 53,
+   "entered": 45
+  }
+ },
+ "refused": 19,
+ "refusalRules": [
+  {
+   "rule": "untyped-js",
+   "units": 10,
+   "directories": [
+    {
+     "directory": "apps/teams-app",
+     "units": 4,
+     "example": {
+      "file": "apps/teams-app/scripts/package.mjs",
+      "line": 21,
+      "code": "size"
+     }
+    },
+    {
+     "directory": "design/tokens",
+     "units": 6,
+     "example": {
+      "file": "design/tokens/build.mjs",
+      "line": 16,
+      "code": "path"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/identity/infrastructure/http/clerk-auth.guard.ts",
+      "line": 22,
+      "code": "token"
+     }
+    },
+    {
+     "directory": "apps/web",
+     "units": 1,
+     "example": {
+      "file": "apps/web/src/lib/api.ts",
+      "line": 11,
+      "code": "body.message ?? `Request failed (${res.status})`"
+     }
+    },
+    {
+     "directory": "packages/intelligence",
+     "units": 1,
+     "example": {
+      "file": "packages/intelligence/src/eval/run-notes-eval.ts",
+      "line": 26,
+      "code": "fixture"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/meetings/application/use-cases/list-meetings.use-case.ts",
+      "line": 18,
+      "code": "page[page.length - 1]!"
+     }
+    },
+    {
+     "directory": "packages/intelligence",
+     "units": 1,
+     "example": {
+      "file": "packages/intelligence/src/templates/built-in-templates.ts",
+      "line": 71,
+      "code": "BUILT_IN_TEMPLATES[BUILT_IN_TEMPLATES.length - 1]!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "packages/intelligence",
+     "units": 1,
+     "example": {
+      "file": "packages/intelligence/src/notes/validate-notes-refs.ts",
+      "line": 15,
+      "code": "total"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/_common/config/env.service.ts",
+      "line": 18,
+      "code": "this.env[key]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "generator-effect",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "design/tokens",
+     "units": 1,
+     "example": {
+      "file": "design/tokens/build.mjs",
+      "line": 37,
+      "code": "function* leaves(node, parts = []) { for (const [key, child] of Object.entries(node)) { if (key.startsWith('$') || !chil"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/_common/persistence/prisma.service.ts",
+      "line": 7,
+      "code": "await this.$disconnect();"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 63,
+ "failedFiles": 0,
+ "units": 64,
+ "entered": 45,
+ "share": 70.3,
+ "seconds": 14,
+ "rules": [
+  {
+   "rule": "untyped-js",
+   "findings": 11,
+   "units": 11,
+   "examples": [
+    "apps/teams-app/scripts/package.mjs:21 parameter `size` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} size` or TypeScrip",
+    "apps/teams-app/scripts/package.mjs:51 parameter `type` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} type` or TypeScrip",
+    "apps/teams-app/scripts/package.mjs:60 parameter `size` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} size` or TypeScrip"
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "findings": 7,
+   "units": 6,
+   "examples": [
+    "apps/api/src/identity/infrastructure/http/clerk-auth.guard.ts:22 `token` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this ",
+    "design/tokens/build.mjs:31 `value` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this ",
+    "design/tokens/build.mjs:38 `node` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this s"
+   ]
+  },
+  {
+   "rule": "unresolved-module",
+   "findings": 38,
+   "units": 4,
+   "examples": [
+    "apps/api/src/_common/persistence/prisma.service.ts:2 TS6059: File '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/r",
+    "apps/api/src/meetings/infrastructure/persistence/meeting-summary.mapper.ts:1 TS2305: Module '\"@recorder/db\"' has no exported member 'Meeting'.",
+    "apps/teams-app/scripts/package.mjs:3 TS2792: Cannot find module 'node:fs'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to a"
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "apps/api/src/meetings/application/use-cases/list-meetings.use-case.ts:18 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "packages/intelligence/src/templates/built-in-templates.ts:71 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "generator-effect",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "design/tokens/build.mjs:37 a sequence generator is top-level with plain scalar parameters",
+    "design/tokens/build.mjs:41 a sequence generator is top-level with plain scalar parameters",
+    "design/tokens/build.mjs:50 a sequence generator is top-level with plain scalar parameters"
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "apps/api/src/_common/config/env.service.ts:18 an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a de"
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 3,
+   "units": 1,
+   "examples": [
+    "apps/api/src/_common/persistence/prisma.service.ts:7 TS2339: Property '$disconnect' does not exist on type 'PrismaService'.",
+    "apps/teams-app/scripts/package.mjs:8 TS2339: Property 'url' does not exist on type 'ImportMeta'.",
+    "design/tokens/build.mjs:9 TS2339: Property 'url' does not exist on type 'ImportMeta'."
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "findings": 3,
+   "units": 1,
+   "examples": [
+    "apps/teams-app/scripts/package.mjs:40 write a record field by name, or use a local Record<string, T> dictionary",
+    "apps/teams-app/scripts/package.mjs:41 write a record field by name, or use a local Record<string, T> dictionary",
+    "apps/teams-app/scripts/package.mjs:44 write a record field by name, or use a local Record<string, T> dictionary"
+   ]
+  },
+  {
+   "rule": "spread",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "design/tokens/build.mjs:50 spread works on arrays, sets, maps and their keys(), values() and entries()"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "packages/intelligence/src/notes/validate-notes-refs.ts:15 `total` is declared outside this callback; a callback cannot change it"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "packages/intelligence/src/notes/validate-notes-refs.ts:17 push on `invalid`, which is not a local array"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 27,
+   "units": 0,
+   "examples": [
+    "apps/api/src/app.e2e-spec.ts:11 code at module level runs on import; it is outside the subset",
+    "apps/api/src/main.ts:14 code at module level runs on import; it is outside the subset",
+    "apps/teams-app/scripts/package.mjs:12 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "apps/api/jest.config.js",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/_common/config/config.module.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/_common/config/env.schema.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/_common/config/env.service.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "EnvService.constructor",
+     "lines": [
+      9,
+      15
+     ]
+    },
+    {
+     "name": "EnvService.get",
+     "lines": [
+      17,
+      19
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 18,
+     "rule": "dynamic-key",
+     "msg": "an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a declared key",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/_common/persistence/prisma.module.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/_common/persistence/prisma.service.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "PrismaService.onModuleDestroy",
+     "lines": [
+      6,
+      8
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 2,
+     "rule": "unresolved-module",
+     "msg": "TS6059: File '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/packages/db/src/index.ts' is not under 'rootDir' '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/apps/api/src'. 'rootDir' is expected to contain all source files.   The file is in the program because:     Imported via '@recorder/db' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/apps/api/src/_common/persistence/prisma.service.ts'     Imported via '@recorder/db' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/apps/api/src/app.e2e-spec.ts'     Imported via '@recorder/db' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/apps/api/src/identity/infrastructure/persistence/prisma/upsert-org.prisma.adapter.ts'     Imported via '@recorder/db' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/apps/api/src/identity/infrastructure/persistence/prisma/upsert-user.prisma.adapter.ts'     Imported via '@recorder/db' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/apps/api/src/meetings/infrastructure/persistence/prisma/list-visible-meetings.prisma.adapter.ts'     Imported via '@recorder/db' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/apps/api/src/meetings/infrastructure/persistence/meeting-summary.mapper.ts'   File is CommonJS module because '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder/packages/db/package.json' does not have field \"type\"",
+     "env": true
+    },
+    {
+     "line": 7,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$disconnect' does not exist on type 'PrismaService'.",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/_common/result.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "Success.of",
+     "lines": [
+      7,
+      7
+     ]
+    },
+    {
+     "name": "Failure.of",
+     "lines": [
+      11,
+      11
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/_testing/clerk-test-keys.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "createClerkTestKeys",
+     "lines": [
+      6,
+      22
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/app.e2e-spec.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": [
+    {
+     "line": 11,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/app.module.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/health/health.controller.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "HealthController.check",
+     "lines": [
+      6,
+      10
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/health/health.module.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/application/use-cases/resolve-current-principal.use-case.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "ResolveCurrentPrincipalUseCase.constructor",
+     "lines": [
+      13,
+      17
+     ]
+    },
+    {
+     "name": "ResolveCurrentPrincipalUseCase.execute",
+     "lines": [
+      19,
+      31
+     ]
+    },
+    {
+     "name": "toRole",
+     "lines": [
+      34,
+      37
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/domain/entities/current-principal.entity.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/domain/entities/session-claims.entity.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/domain/ports/auth/verify-session-token.port.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/domain/ports/writing/upsert-org.port.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/domain/ports/writing/upsert-user.port.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/clerk/clerk-jwks.provider.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "clerkJwksProvider.useFactory",
+     "lines": [
+      9,
+      10
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/clerk/verify-session-token.clerk.adapter.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "VerifySessionTokenClerkAdapter.constructor",
+     "lines": [
+      19,
+      22
+     ]
+    },
+    {
+     "name": "VerifySessionTokenClerkAdapter.execute",
+     "lines": [
+      24,
+      42
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/http/clerk-auth.guard.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "ClerkAuthGuard.constructor",
+     "lines": [
+      9,
+      12
+     ]
+    },
+    {
+     "name": "ClerkAuthGuard.canActivate",
+     "lines": [
+      14,
+      29
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 22,
+     "rule": "type-assertion",
+     "msg": "`token` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/http/current-principal.decorator.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/http/me.controller.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "MeController.me",
+     "lines": [
+      7,
+      10
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/http/public.decorator.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "Public",
+     "lines": [
+      4,
+      4
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/modules/identity.module.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/persistence/prisma/upsert-org.prisma.adapter.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "UpsertOrgPrismaAdapter.constructor",
+     "lines": [
+      10,
+      13
+     ]
+    },
+    {
+     "name": "UpsertOrgPrismaAdapter.execute",
+     "lines": [
+      15,
+      25
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/identity/infrastructure/persistence/prisma/upsert-user.prisma.adapter.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "UpsertUserPrismaAdapter.constructor",
+     "lines": [
+      9,
+      9
+     ]
+    },
+    {
+     "name": "UpsertUserPrismaAdapter.execute",
+     "lines": [
+      11,
+      21
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/main.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "bootstrap",
+     "lines": [
+      6,
+      12
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/meetings/application/use-cases/list-meetings.use-case.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "ListMeetingsUseCase.constructor",
+     "lines": [
+      12,
+      12
+     ]
+    },
+    {
+     "name": "ListMeetingsUseCase.execute",
+     "lines": [
+      14,
+      19
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 18,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/meetings/domain/entities/meeting-summary.entity.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/meetings/domain/ports/reading/list-visible-meetings.port.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/meetings/infrastructure/http/meetings.controller.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "MeetingsController.constructor",
+     "lines": [
+      8,
+      8
+     ]
+    },
+    {
+     "name": "MeetingsController.list",
+     "lines": [
+      10,
+      22
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/meetings/infrastructure/modules/meetings.module.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/meetings/infrastructure/persistence/meeting-summary.mapper.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "toMeetingSummary",
+     "lines": [
+      6,
+      16
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2305: Module '\"@recorder/db\"' has no exported member 'Meeting'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/meetings/infrastructure/persistence/prisma/list-visible-meetings.prisma.adapter.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "ListVisibleMeetingsPrismaAdapter.constructor",
+     "lines": [
+      11,
+      11
+     ]
+    },
+    {
+     "name": "ListVisibleMeetingsPrismaAdapter.execute",
+     "lines": [
+      13,
+      31
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/teams-app/scripts/package.mjs",
+   "pkg": "apps/teams-app",
+   "units": [
+    {
+     "name": "drawMark",
+     "lines": [
+      21,
+      49
+     ]
+    },
+    {
+     "name": "pngChunk",
+     "lines": [
+      51,
+      58
+     ]
+    },
+    {
+     "name": "encodePng",
+     "lines": [
+      60,
+      73
+     ]
+    },
+    {
+     "name": "zip",
+     "lines": [
+      76,
+      111
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'node:fs'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'node:path'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'node:url'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'node:zlib'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 8,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'url' does not exist on type 'ImportMeta'.",
+     "env": false
+    },
+    {
+     "line": 11,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 12,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 13,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    },
+    {
+     "line": 14,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 18,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 21,
+     "rule": "untyped-js",
+     "msg": "parameter `size` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} size` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 27,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 40,
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 44,
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 51,
+     "rule": "untyped-js",
+     "msg": "parameter `type` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} type` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 52,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 54,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 54,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 55,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 57,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 60,
+     "rule": "untyped-js",
+     "msg": "parameter `size` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} size` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 61,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 65,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 67,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 68,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 71,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 76,
+     "rule": "untyped-js",
+     "msg": "parameter `files` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} files` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 81,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 83,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 90,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 103,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 104,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 110,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 114,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 120,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 121,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 123,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 124,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 124,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "design/tokens/build.mjs",
+   "pkg": "design",
+   "units": [
+    {
+     "name": "get",
+     "lines": [
+      16,
+      16
+     ]
+    },
+    {
+     "name": "resolve",
+     "lines": [
+      18,
+      34
+     ]
+    },
+    {
+     "name": "leaves",
+     "lines": [
+      37,
+      43
+     ]
+    },
+    {
+     "name": "fontStack",
+     "lines": [
+      45,
+      45
+     ]
+    },
+    {
+     "name": "bezier",
+     "lines": [
+      46,
+      46
+     ]
+    },
+    {
+     "name": "css",
+     "lines": [
+      47,
+      47
+     ]
+    },
+    {
+     "name": "colorBlock",
+     "lines": [
+      49,
+      51
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'node:fs'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'node:path'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 7,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'node:url'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 9,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'url' does not exist on type 'ImportMeta'.",
+     "env": false
+    },
+    {
+     "line": 12,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 13,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "untyped-js",
+     "msg": "parameter `path` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} path` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 18,
+     "rule": "untyped-js",
+     "msg": "parameter `value` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} value` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 31,
+     "rule": "type-assertion",
+     "msg": "`value` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 37,
+     "rule": "generator-effect",
+     "msg": "a sequence generator is top-level with plain scalar parameters",
+     "env": false
+    },
+    {
+     "line": 37,
+     "rule": "untyped-js",
+     "msg": "parameter `node` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} node` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 38,
+     "rule": "type-assertion",
+     "msg": "`node` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "generator-effect",
+     "msg": "a sequence generator is top-level with plain scalar parameters",
+     "env": false
+    },
+    {
+     "line": 45,
+     "rule": "untyped-js",
+     "msg": "parameter `list` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} list` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 45,
+     "rule": "type-assertion",
+     "msg": "`f` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 46,
+     "rule": "untyped-js",
+     "msg": "parameter `b` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} b` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 47,
+     "rule": "untyped-js",
+     "msg": "parameter `name` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} name` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 49,
+     "rule": "untyped-js",
+     "msg": "parameter `theme` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} theme` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 50,
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    },
+    {
+     "line": 50,
+     "rule": "generator-effect",
+     "msg": "a sequence generator is top-level with plain scalar parameters",
+     "env": false
+    },
+    {
+     "line": 54,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 55,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 65,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 66,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 67,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 68,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 69,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 70,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 71,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 72,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 85,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 88,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 106,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 127,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 129,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 129,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/components/app-shell.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "AppShell",
+     "lines": [
+      13,
+      38
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/components/button.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "Button",
+     "lines": [
+      11,
+      18
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/meetings/meetings-library.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "formatDuration",
+     "lines": [
+      14,
+      22
+     ]
+    },
+    {
+     "name": "MeetingsLibrary",
+     "lines": [
+      25,
+      73
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/meetings/meetings-page.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "MeetingsPage",
+     "lines": [
+      6,
+      10
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/placeholder-page.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "PlaceholderPage",
+     "lines": [
+      1,
+      8
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/lib/api.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "apiGet",
+     "lines": [
+      6,
+      14
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "rule": "type-assertion",
+     "msg": "`body.message ?? `Request failed (${res.status})`` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/main.tsx",
+   "pkg": "apps/web",
+   "units": [],
+   "findings": [
+    {
+     "line": 13,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/router.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "placeholder",
+     "lines": [
+      17,
+      18
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 31,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/test-setup.ts",
+   "pkg": "apps/web",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/web/vite.config.ts",
+   "pkg": "apps/web",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "packages/db/src/ids.ts",
+   "pkg": "packages/db",
+   "units": [
+    {
+     "name": "newId",
+     "lines": [
+      26,
+      28
+     ]
+    },
+    {
+     "name": "idKind",
+     "lines": [
+      30,
+      33
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/db/src/index.ts",
+   "pkg": "packages/db",
+   "units": [],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2305: Module '\"@prisma/client\"' has no exported member 'PrismaClient'.",
+     "env": true
+    },
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2305: Module '\"@prisma/client\"' has no exported member 'Prisma'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "packages/db/src/with-org.ts",
+   "pkg": "packages/db",
+   "units": [
+    {
+     "name": "withOrg",
+     "lines": [
+      6,
+      16
+     ]
+    },
+    {
+     "name": "withRlsBypass",
+     "lines": [
+      19,
+      27
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2305: Module '\"@prisma/client\"' has no exported member 'Prisma'.",
+     "env": true
+    },
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2305: Module '\"@prisma/client\"' has no exported member 'PrismaClient'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "packages/intelligence/jest.config.js",
+   "pkg": "packages/intelligence",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/eval/notes-checks.ts",
+   "pkg": "packages/intelligence",
+   "units": [
+    {
+     "name": "notesText",
+     "lines": [
+      18,
+      25
+     ]
+    },
+    {
+     "name": "normaliseNumber",
+     "lines": [
+      27,
+      27
+     ]
+    },
+    {
+     "name": "checkNotes",
+     "lines": [
+      30,
+      65
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/eval/notes-fixture.ts",
+   "pkg": "packages/intelligence",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/eval/run-notes-eval.ts",
+   "pkg": "packages/intelligence",
+   "units": [
+    {
+     "name": "main",
+     "lines": [
+      11,
+      39
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 26,
+     "rule": "type-assertion",
+     "msg": "`fixture` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 28,
+     "rule": "type-assertion",
+     "msg": "`fixture.id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/intelligence/src/index.ts",
+   "pkg": "packages/intelligence",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/notes/build-notes-prompt.ts",
+   "pkg": "packages/intelligence",
+   "units": [
+    {
+     "name": "buildNotesUserMessage",
+     "lines": [
+      24,
+      49
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/notes/generate-notes.anthropic.adapter.ts",
+   "pkg": "packages/intelligence",
+   "units": [
+    {
+     "name": "GenerateNotesAnthropicAdapter.constructor",
+     "lines": [
+      17,
+      20
+     ]
+    },
+    {
+     "name": "GenerateNotesAnthropicAdapter.execute",
+     "lines": [
+      22,
+      61
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/notes/generate-notes.port.ts",
+   "pkg": "packages/intelligence",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/notes/notes-result.schema.ts",
+   "pkg": "packages/intelligence",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/notes/transcript.ts",
+   "pkg": "packages/intelligence",
+   "units": [
+    {
+     "name": "formatTimestamp",
+     "lines": [
+      16,
+      23
+     ]
+    },
+    {
+     "name": "renderTranscript",
+     "lines": [
+      26,
+      28
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/intelligence/src/notes/validate-notes-refs.ts",
+   "pkg": "packages/intelligence",
+   "units": [
+    {
+     "name": "validateNotesRefs",
+     "lines": [
+      10,
+      31
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 15,
+     "rule": "closure-mutation",
+     "msg": "`total` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 17,
+     "rule": "param-mutation",
+     "msg": "push on `invalid`, which is not a local array",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/intelligence/src/templates/built-in-templates.ts",
+   "pkg": "packages/intelligence",
+   "units": [
+    {
+     "name": "s",
+     "lines": [
+      3,
+      4
+     ]
+    },
+    {
+     "name": "builtInTemplateFor",
+     "lines": [
+      70,
+      72
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 71,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/intelligence/src/templates/template.ts",
+   "pkg": "packages/intelligence",
+   "units": [],
+   "findings": []
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "apps/api",
+   "files": 35,
+   "units": 29,
+   "entered": 25
+  },
+  {
+   "pkg": "packages/intelligence",
+   "files": 13,
+   "units": 12,
+   "entered": 9
+  },
+  {
+   "pkg": "apps/web",
+   "files": 10,
+   "units": 8,
+   "entered": 7
+  },
+  {
+   "pkg": "design",
+   "files": 1,
+   "units": 7,
+   "entered": 0
+  },
+  {
+   "pkg": "apps/teams-app",
+   "files": 1,
+   "units": 4,
+   "entered": 0
+  },
+  {
+   "pkg": "packages/db",
+   "files": 3,
+   "units": 4,
+   "entered": 4
+  }
+ ]
+}

@@ -1,0 +1,829 @@
+[
+  {
+    "name": "agent-nexus",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/agent-nexus-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/agent-nexus",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-agent-nexus.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "apps-starter",
+    "root": "/Users/assem/Documents/GitHub/apps-starter",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/apps-starter-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/Documents/GitHub/apps-starter",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-apps-starter.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "apps-ui",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/apps-ui-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/apps-ui",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-apps-ui.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "blocks",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/blocks-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-blocks.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "blog-studio-lambda",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blog-studio-lambda",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/blog-studio-lambda-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blog-studio-lambda",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-blog-studio-lambda.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "car-select-api",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/car-select-api",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/car-select-api-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/car-select-api",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-car-select-api.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "claude-chat-clean",
+    "root": "/Users/assem/Documents/GitHub/claude-chat-clean",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/claude-chat-clean-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/Documents/GitHub/claude-chat-clean",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-claude-chat-clean.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "claude-skills",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/claude-skills-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-claude-skills.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "cue-status-page",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/cue-status-page",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/cue-status-page-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/cue-status-page",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-cue-status-page.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "driftbench",
+    "root": "/Users/assem/Documents/GitHub/driftbench",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/driftbench-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/Documents/GitHub/driftbench",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-driftbench.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "ftp-server-orange",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/ftp-server-orange",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/ftp-server-orange-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/ftp-server-orange",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-ftp-server-orange.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "itsme-backend",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/itsme-backend",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/itsme-backend-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/itsme-backend",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-itsme-backend.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "langchainjs",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/langchainjs-v2.json",
+    "cohort": "census",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-langchainjs.json"
+    ],
+    "exit": null,
+    "signal": "SIGABRT"
+  },
+  {
+    "name": "linear-status-page",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/linear-status-page",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/linear-status-page-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29661572    30%  458732 296615720    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/linear-status-page",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-linear-status-page.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "lucca-unofficial-api",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/lucca-unofficial-api",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/lucca-unofficial-api-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29669288    30%  458732 296692880    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/lucca-unofficial-api",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-lucca-unofficial-api.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "n8n",
+    "root": "/Users/assem/Documents/GitHub/n8n",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/n8n-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29674712    30%  458732 296747120    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/Documents/GitHub/n8n",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-n8n.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nano-banana",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nano-banana",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nano-banana-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29701596    30%  458732 297015960    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nano-banana",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nano-banana.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-agent-api",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-agent-api-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29700736    30%  458732 297007360    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-agent-api.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-app-starter",
+    "root": "/Users/assem/Documents/GitHub/nexus-app-starter",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-app-starter-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29706504    30%  458732 297065040    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/Documents/GitHub/nexus-app-starter",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-app-starter.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-automations",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-automations-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29720220    30%  458732 297202200    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-automations.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-chat-embed",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-chat-embed",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-chat-embed-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29718688    30%  458732 297186880    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-chat-embed",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-chat-embed.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-landing",
+    "root": "/Users/assem/Documents/GitHub/nexus-landing",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-landing-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29724616    30%  458732 297246160    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/Documents/GitHub/nexus-landing",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-landing.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-learning-landing",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning-landing",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-learning-landing-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29732428    30%  458732 297324280    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning-landing",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-learning-landing.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-learning",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-learning-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29716732    30%  458732 297167320    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-learning.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-linkedin-dashboard",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-linkedin-dashboard-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29755924    30%  458732 297559240    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-linkedin-dashboard.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-meeting-recorder",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-meeting-recorder-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29756420    30%  458732 297564200    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-meeting-recorder",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-meeting-recorder.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-tokens",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-tokens",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-tokens-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29749436    30%  458732 297494360    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-tokens",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-tokens.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus-ui",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-ui",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-ui-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29755232    30%  458732 297552320    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-ui",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus-ui.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nexus",
+    "root": "/Users/assem/Documents/GitHub/nexus",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nexus-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  29757752    30%  458732 297577520    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/Documents/GitHub/nexus",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nexus.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "nutshell",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nutshell-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31009096    29%  458732 310090960    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nutshell.json"
+    ],
+    "exit": null,
+    "signal": "SIGTERM"
+  },
+  {
+    "name": "nutshell",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/nutshell-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31083620    29%  458732 310836200    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nutshell",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-nutshell.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "odoo-unofficial-api",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/odoo-unofficial-api",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/odoo-unofficial-api-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31368580    29%  458732 313685800    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/odoo-unofficial-api",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-odoo-unofficial-api.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "orange-checkout-automation",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-checkout-automation",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/orange-checkout-automation-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31373416    29%  458732 313734160    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-checkout-automation",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-orange-checkout-automation.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "orange-identity-card-collection",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-identity-card-collection",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/orange-identity-card-collection-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31368244    29%  458732 313682440    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-identity-card-collection",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-orange-identity-card-collection.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "pipedream",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/pipedream-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31373620    29%  458732 313736200    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-pipedream.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "pyka",
+    "root": "/Users/assem/promo-app",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/pyka-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31484180    29%  458732 314841800    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/promo-app",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-pyka.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "snitch",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/snitch-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31513280    29%  458732 315132800    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-snitch.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "status",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/status-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31542928    29%  458732 315429280    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-status.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "theirstack-unofficial-api",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/theirstack-unofficial-api",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/theirstack-unofficial-api-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31540228    29%  458732 315402280    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/theirstack-unofficial-api",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-theirstack-unofficial-api.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "workday-unofficial-api",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/workday-unofficial-api",
+    "source": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/workday-unofficial-api-v2.json",
+    "cohort": "census",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31541096    29%  458732 315410960    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/workday-unofficial-api",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-workday-unofficial-api.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "bower",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/bower",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  31549424    29%  458732 315494240    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/bower",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-bower.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "eslint",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  32928348    28%  458732 329283480    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-eslint.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "express",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/express",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  32948956    28%  458732 329489560    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/express",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-express.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "hessian.js",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hessian.js",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  32983580    28%  458732 329835800    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hessian.js",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-hessian.js.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "hexo",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hexo",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  32985832    28%  458732 329858320    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hexo",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-hexo.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "karma",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/karma",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  33037108    28%  458732 330371080    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/karma",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-karma.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "mongoose",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/mongoose",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  33080236    28%  458732 330802360    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/mongoose",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-mongoose.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "node_redis",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/node_redis",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  33111360    28%  458732 331113600    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/node_redis",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-node_redis.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "pencilblue",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/pencilblue",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  33334916    28%  458732 333349160    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/pencilblue",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-pencilblue.json"
+    ],
+    "exit": 0,
+    "signal": null
+  },
+  {
+    "name": "shields",
+    "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/shields",
+    "cohort": "bugsjs",
+    "disk": "Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on\n/dev/disk3s1s1   971350180  12340716  33152716    28%  458732 331527160    0%   /\n",
+    "command": [
+      "/opt/homebrew/Cellar/node@24/24.18.0/bin/node",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs",
+      "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/shields",
+      "--js",
+      "--out",
+      "/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-shields.json"
+    ],
+    "exit": 0,
+    "signal": null
+  }
+]

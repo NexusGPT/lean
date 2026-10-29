@@ -1,0 +1,731 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-tokens",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "js": {
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  "ts": {
+   "files": 17,
+   "units": 44,
+   "entered": 36
+  }
+ },
+ "refused": 8,
+ "refusalRules": [
+  {
+   "rule": "non-null-assertion",
+   "units": 5,
+   "directories": [
+    {
+     "directory": "src/ramp",
+     "units": 3,
+     "example": {
+      "file": "src/ramp/generate.ts",
+      "line": 123,
+      "code": "TEXT_CONTRAST_TARGET[step]!"
+     }
+    },
+    {
+     "directory": "tools",
+     "units": 2,
+     "example": {
+      "file": "tools/analyse-source-palette.ts",
+      "line": 40,
+      "code": "match[1]!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/ramp",
+     "units": 2,
+     "example": {
+      "file": "src/ramp/generate.ts",
+      "line": 100,
+      "code": "spec.overrides?.[theme]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/semantic",
+     "units": 1,
+     "example": {
+      "file": "src/semantic/resolve.ts",
+      "line": 52,
+      "code": "ramps.set(key, ramp)"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 18,
+ "failedFiles": 0,
+ "units": 44,
+ "entered": 36,
+ "share": 81.8,
+ "seconds": 4,
+ "rules": [
+  {
+   "rule": "non-null-assertion",
+   "findings": 12,
+   "units": 5,
+   "examples": [
+    "src/ramp/generate.ts:123 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/ramp/generate.ts:124 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/ramp/generate.ts:147 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "src/ramp/generate.ts:100 narrow the record receiver before indexing it",
+    "src/ramp/generate.ts:105 an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a de"
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "src/ramp/generate.ts:152 `step as Step` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), an",
+    "src/ramp/generate.ts:153 `step as Step` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), an"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/semantic/resolve.ts:52 map mutation on a non-local"
+   ]
+  },
+  {
+   "rule": "unsupported-call",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/semantic/resolve.ts:85 calls through computed callees are outside the subset"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 5,
+   "units": 0,
+   "examples": [
+    "tools/analyse-source-palette.ts:93 code at module level runs on import; it is outside the subset",
+    "tools/analyse-source-palette.ts:98 code at module level runs on import; it is outside the subset",
+    "tools/preview-ramps.ts:57 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "eslint.config.js",
+   "pkg": "eslint.config.js",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/color/contrast.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "wcagLinearise",
+     "lines": [
+      30,
+      34
+     ]
+    },
+    {
+     "name": "relativeLuminance",
+     "lines": [
+      37,
+      41
+     ]
+    },
+    {
+     "name": "wcagContrast",
+     "lines": [
+      49,
+      55
+     ]
+    },
+    {
+     "name": "apcaLuminance",
+     "lines": [
+      92,
+      98
+     ]
+    },
+    {
+     "name": "softClampBlack",
+     "lines": [
+      101,
+      103
+     ]
+    },
+    {
+     "name": "apcaContrast",
+     "lines": [
+      117,
+      132
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/color/convert.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "gamutMap",
+     "lines": [
+      43,
+      51
+     ]
+    },
+    {
+     "name": "isInSrgbGamut",
+     "lines": [
+      54,
+      60
+     ]
+    },
+    {
+     "name": "oklchToSrgb",
+     "lines": [
+      63,
+      66
+     ]
+    },
+    {
+     "name": "oklchToHex",
+     "lines": [
+      69,
+      71
+     ]
+    },
+    {
+     "name": "oklchToCss",
+     "lines": [
+      80,
+      85
+     ]
+    },
+    {
+     "name": "parseToOklch",
+     "lines": [
+      88,
+      101
+     ]
+    },
+    {
+     "name": "parseToSrgbAlpha",
+     "lines": [
+      110,
+      115
+     ]
+    },
+    {
+     "name": "compositeOver",
+     "lines": [
+      125,
+      132
+     ]
+    },
+    {
+     "name": "round",
+     "lines": [
+      134,
+      137
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ramp/curves.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isNumberedStep",
+     "lines": [
+      73,
+      75
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ramp/generate.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "stepOf",
+     "lines": [
+      75,
+      81
+     ]
+    },
+    {
+     "name": "findOverride",
+     "lines": [
+      94,
+      101
+     ]
+    },
+    {
+     "name": "roleOf",
+     "lines": [
+      104,
+      111
+     ]
+    },
+    {
+     "name": "solvedStepsOf",
+     "lines": [
+      114,
+      120
+     ]
+    },
+    {
+     "name": "contrastTargetOf",
+     "lines": [
+      122,
+      125
+     ]
+    },
+    {
+     "name": "intendedColor",
+     "lines": [
+      135,
+      161
+     ]
+    },
+    {
+     "name": "toSrgb",
+     "lines": [
+      163,
+      165
+     ]
+    },
+    {
+     "name": "solveTextLightness",
+     "lines": [
+      180,
+      215
+     ]
+    },
+    {
+     "name": "generateRamp",
+     "lines": [
+      217,
+      282
+     ]
+    },
+    {
+     "name": "enforceGap",
+     "lines": [
+      289,
+      297
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 100,
+     "rule": "dynamic-key",
+     "msg": "narrow the record receiver before indexing it",
+     "env": false
+    },
+    {
+     "line": 105,
+     "rule": "dynamic-key",
+     "msg": "an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a declared key",
+     "env": false
+    },
+    {
+     "line": 123,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 124,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 147,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 150,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 152,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 152,
+     "rule": "type-assertion",
+     "msg": "`step as Step` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 153,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 153,
+     "rule": "type-assertion",
+     "msg": "`step as Step` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 230,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 246,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 246,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ramp/spec.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "anchorOf",
+     "lines": [
+      169,
+      171
+     ]
+    },
+    {
+     "name": "rampByName",
+     "lines": [
+      173,
+      177
+     ]
+    },
+    {
+     "name": "orderedSteps",
+     "lines": [
+      187,
+      195
+     ]
+    },
+    {
+     "name": "extraStepById",
+     "lines": [
+      197,
+      199
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/accents.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/borders.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/effects.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/pairings.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/resolve.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "resolveSemantic",
+     "lines": [
+      38,
+      114
+     ]
+    },
+    {
+     "name": "requireToken",
+     "lines": [
+      117,
+      123
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 52,
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 85,
+     "rule": "unsupported-call",
+     "msg": "calls through computed callees are outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/semantic/spec.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/surfaces.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/text.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/semantic/token.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "resolveStep",
+     "lines": [
+      70,
+      72
+     ]
+    },
+    {
+     "name": "isThemeDependent",
+     "lines": [
+      74,
+      76
+     ]
+    },
+    {
+     "name": "isPerTheme",
+     "lines": [
+      84,
+      88
+     ]
+    },
+    {
+     "name": "resolveAlpha",
+     "lines": [
+      90,
+      93
+     ]
+    },
+    {
+     "name": "emitsLiteral",
+     "lines": [
+      123,
+      125
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "tools/analyse-source-palette.ts",
+   "pkg": "tools",
+   "units": [
+    {
+     "name": "extract",
+     "lines": [
+      35,
+      51
+     ]
+    },
+    {
+     "name": "report",
+     "lines": [
+      56,
+      86
+     ]
+    },
+    {
+     "name": "pct",
+     "lines": [
+      88,
+      90
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 40,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 93,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 98,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "tools/preview-ramps.ts",
+   "pkg": "tools",
+   "units": [
+    {
+     "name": "bg",
+     "lines": [
+      14,
+      17
+     ]
+    },
+    {
+     "name": "fg",
+     "lines": [
+      18,
+      21
+     ]
+    },
+    {
+     "name": "to255",
+     "lines": [
+      23,
+      23
+     ]
+    },
+    {
+     "name": "renderRamp",
+     "lines": [
+      25,
+      52
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 32,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 57,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 62,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 69,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "vitest.config.ts",
+   "pkg": "vitest.config.ts",
+   "units": [],
+   "findings": []
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 14,
+   "units": 37,
+   "entered": 31
+  },
+  {
+   "pkg": "tools",
+   "files": 2,
+   "units": 7,
+   "entered": 5
+  },
+  {
+   "pkg": "eslint.config.js",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  {
+   "pkg": "vitest.config.ts",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

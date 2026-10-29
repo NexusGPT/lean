@@ -1,0 +1,33 @@
+nexus-app-starter: 234 files, 966 units, 522 inside the subset (54 percent), 0 files unreadable, 32 s
+     227 units  untyped-js             journeys/extra/calendar-view.mjs:22 parameter `ROOT` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} ROOT` or TypeScrip
+     172 units  type-assertion         journeys/extra/calendar-view.mjs:53 `k` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot
+     115 units  unresolved-module      journeys/extra/calendar-view.mjs:13 TS2307: Cannot find module 'node:child_process' or its corresponding type declarations.
+      76 units  ts-strict              journeys/extra/copilot.mjs:23 TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string | URL'.   Type 'u
+      67 units  async                  journeys/extra/calendar-view.mjs:34 an async unit is called without await
+      55 units  promise                journeys/extra/calendar-view.mjs:34 a same-file async function runs on after its first await; return it from an async function with await
+      40 units  dynamic-key            server/jobs.mjs:89 an open key may select a method; call a method by its declared name, and index records of data fields
+      24 units  promise-pending        journeys/extra/calendar-view.mjs:30 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+      24 units  spread                 server/server.mjs:262 spread works on arrays, sets, maps and their keys(), values() and entries()
+      20 units  opaque-mutation        server/store.mjs:291 .splice() on `list`, an opaque value this function holds, used as a value: the call may mutate it
+      19 units  global-read            journeys/extra/calendar-view.mjs:27 global `AbortSignal` is outside the subset
+      19 units  index-assign           server/seed.mjs:111 write a record field by name, or use a local Record<string, T> dictionary
+      16 units  closure-mutation       journeys/extra/copilot.mjs:27 a callback cannot change an outer variable
+      16 units  assignment-expression  server/jobs.mjs:99 write this assignment as a statement
+      16 units  unsupported-syntax     src/app/ObjectView.tsx:611 a local component value must be a string tag name or a named component
+      14 units  unsupported-call       server/jobs.mjs:134 method .unref() on number is outside the subset
+      11 units  param-mutation         journeys/extra/copilot.mjs:27 map mutation on a non-local
+      11 units  react-handler-capture  src/app/App.tsx:253 a React closure captures a changing local; capture a const value or use a state setter
+      10 units  property-assign        journeys/extra/editor.mjs:42 assignment into `window`, which this function does not own; records it owns are updated in place
+       9 units  record-rest            server/apikeys.mjs:38 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+       8 units  optional-chain         server/jobs.mjs:134 an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first
+       8 units  prototype              server/store.mjs:178 this file makes an object whose prototype is not Object.prototype (line 131), and it is passed to a call the f
+       6 units  alias-mutation         src/app/pages/Tasks.tsx:133 `list` holds an element of `byBucket.values()`, which may be a field, a parameter, an element or a module obje
+       4 units  foreach                src/app/App.tsx:371 forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x
+       4 units  function-value         src/ui/hooks/useDebouncedSave.ts:35 a same-file function takes values, not callbacks
+project /Users/assem/Documents/GitHub/nexus-app-starter/tsconfig.json: 234 files
+50 files, 256 units, 13 inside, 23 s
+100 files, 440 units, 95 inside, 24 s
+150 files, 679 units, 310 inside, 25 s
+200 files, 825 units, 414 inside, 30 s
+
+exit=0 signal=null

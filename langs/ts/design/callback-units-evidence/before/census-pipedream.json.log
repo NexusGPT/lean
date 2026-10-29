@@ -1,0 +1,525 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-pipedream.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  31373620    29%  458732 313736200    0%   /
+project (none): 1200 files
+50 files, 23 units, 0 inside, 13 s
+100 files, 43 units, 0 inside, 13 s
+150 files, 73 units, 0 inside, 13 s
+200 files, 98 units, 0 inside, 13 s
+250 files, 129 units, 0 inside, 13 s
+300 files, 162 units, 0 inside, 13 s
+350 files, 189 units, 0 inside, 13 s
+400 files, 218 units, 0 inside, 13 s
+450 files, 253 units, 0 inside, 13 s
+500 files, 289 units, 0 inside, 13 s
+550 files, 321 units, 0 inside, 13 s
+600 files, 350 units, 0 inside, 13 s
+650 files, 382 units, 0 inside, 14 s
+700 files, 430 units, 3 inside, 14 s
+750 files, 462 units, 3 inside, 14 s
+800 files, 494 units, 3 inside, 14 s
+850 files, 524 units, 3 inside, 14 s
+900 files, 551 units, 3 inside, 14 s
+950 files, 574 units, 4 inside, 14 s
+1000 files, 605 units, 5 inside, 14 s
+1050 files, 632 units, 6 inside, 14 s
+1100 files, 669 units, 6 inside, 14 s
+1150 files, 702 units, 6 inside, 14 s
+1200 files, 734 units, 6 inside, 15 s
+project (none): 1200 files
+1250 files, 768 units, 6 inside, 22 s
+1300 files, 802 units, 6 inside, 22 s
+1350 files, 828 units, 6 inside, 22 s
+1400 files, 853 units, 6 inside, 22 s
+1450 files, 893 units, 7 inside, 22 s
+1500 files, 932 units, 9 inside, 22 s
+1550 files, 967 units, 9 inside, 22 s
+1600 files, 1017 units, 9 inside, 22 s
+1650 files, 1046 units, 9 inside, 22 s
+1700 files, 1096 units, 9 inside, 22 s
+1750 files, 1136 units, 9 inside, 22 s
+1800 files, 1157 units, 9 inside, 22 s
+1850 files, 1177 units, 9 inside, 22 s
+1900 files, 1202 units, 9 inside, 23 s
+1950 files, 1234 units, 9 inside, 23 s
+2000 files, 1272 units, 9 inside, 23 s
+2050 files, 1306 units, 9 inside, 23 s
+2100 files, 1340 units, 9 inside, 23 s
+2150 files, 1382 units, 9 inside, 23 s
+2200 files, 1417 units, 9 inside, 23 s
+2250 files, 1447 units, 9 inside, 23 s
+2300 files, 1481 units, 9 inside, 23 s
+2350 files, 1518 units, 9 inside, 23 s
+2400 files, 1549 units, 9 inside, 23 s
+project (none): 1200 files
+2450 files, 1596 units, 9 inside, 28 s
+2500 files, 1627 units, 9 inside, 28 s
+2550 files, 1659 units, 10 inside, 28 s
+2600 files, 1690 units, 10 inside, 28 s
+2650 files, 1729 units, 10 inside, 28 s
+2700 files, 1756 units, 11 inside, 28 s
+2750 files, 1785 units, 11 inside, 28 s
+2800 files, 1817 units, 16 inside, 29 s
+2850 files, 1853 units, 16 inside, 29 s
+2900 files, 1878 units, 16 inside, 29 s
+2950 files, 1908 units, 16 inside, 29 s
+3000 files, 1936 units, 16 inside, 29 s
+3050 files, 1961 units, 16 inside, 29 s
+3100 files, 1985 units, 16 inside, 29 s
+3150 files, 2009 units, 16 inside, 29 s
+3200 files, 2041 units, 16 inside, 29 s
+3250 files, 2075 units, 16 inside, 29 s
+3300 files, 2097 units, 16 inside, 29 s
+3350 files, 2128 units, 16 inside, 29 s
+3400 files, 2163 units, 16 inside, 29 s
+3450 files, 2191 units, 16 inside, 29 s
+3500 files, 2232 units, 16 inside, 29 s
+3550 files, 2258 units, 17 inside, 30 s
+3600 files, 2283 units, 17 inside, 30 s
+project (none): 1200 files
+3650 files, 2313 units, 17 inside, 35 s
+3700 files, 2345 units, 17 inside, 36 s
+3750 files, 2375 units, 17 inside, 36 s
+3800 files, 2406 units, 17 inside, 36 s
+3850 files, 2439 units, 17 inside, 36 s
+3900 files, 2478 units, 17 inside, 36 s
+3950 files, 2512 units, 17 inside, 36 s
+4000 files, 2545 units, 18 inside, 36 s
+4050 files, 2564 units, 18 inside, 36 s
+4100 files, 2593 units, 18 inside, 36 s
+4150 files, 2639 units, 18 inside, 36 s
+4200 files, 2666 units, 18 inside, 36 s
+4250 files, 2701 units, 18 inside, 36 s
+4300 files, 2726 units, 18 inside, 36 s
+4350 files, 2763 units, 18 inside, 36 s
+4400 files, 2797 units, 18 inside, 36 s
+4450 files, 2815 units, 18 inside, 36 s
+4500 files, 2849 units, 18 inside, 37 s
+4550 files, 2870 units, 18 inside, 37 s
+4600 files, 2904 units, 19 inside, 37 s
+4650 files, 2954 units, 19 inside, 37 s
+4700 files, 2964 units, 19 inside, 37 s
+4750 files, 3004 units, 19 inside, 37 s
+4800 files, 3052 units, 19 inside, 37 s
+project (none): 1200 files
+4850 files, 3083 units, 19 inside, 43 s
+4900 files, 3110 units, 20 inside, 43 s
+4950 files, 3149 units, 20 inside, 43 s
+5000 files, 3175 units, 20 inside, 43 s
+5050 files, 3201 units, 21 inside, 43 s
+5100 files, 3232 units, 22 inside, 43 s
+5150 files, 3261 units, 22 inside, 43 s
+5200 files, 3297 units, 22 inside, 43 s
+5250 files, 3344 units, 22 inside, 43 s
+5300 files, 3371 units, 22 inside, 43 s
+5350 files, 3399 units, 22 inside, 43 s
+5400 files, 3433 units, 23 inside, 43 s
+5450 files, 3462 units, 23 inside, 43 s
+5500 files, 3491 units, 23 inside, 43 s
+5550 files, 3524 units, 23 inside, 43 s
+5600 files, 3566 units, 25 inside, 43 s
+5650 files, 3601 units, 25 inside, 44 s
+5700 files, 3634 units, 25 inside, 44 s
+5750 files, 3666 units, 25 inside, 44 s
+5800 files, 3689 units, 25 inside, 44 s
+5850 files, 3723 units, 25 inside, 44 s
+5900 files, 3762 units, 25 inside, 44 s
+5950 files, 3794 units, 26 inside, 44 s
+6000 files, 3828 units, 26 inside, 44 s
+project (none): 1200 files
+6050 files, 3867 units, 26 inside, 49 s
+6100 files, 3903 units, 26 inside, 49 s
+6150 files, 3936 units, 26 inside, 49 s
+6200 files, 3961 units, 26 inside, 49 s
+6250 files, 3988 units, 26 inside, 49 s
+6300 files, 4019 units, 26 inside, 49 s
+6350 files, 4047 units, 27 inside, 49 s
+6400 files, 4079 units, 27 inside, 49 s
+6450 files, 4110 units, 28 inside, 49 s
+6500 files, 4140 units, 28 inside, 49 s
+6550 files, 4171 units, 28 inside, 50 s
+6600 files, 4201 units, 28 inside, 50 s
+6650 files, 4236 units, 28 inside, 50 s
+6700 files, 4270 units, 28 inside, 50 s
+6750 files, 4296 units, 28 inside, 50 s
+6800 files, 4325 units, 28 inside, 50 s
+6850 files, 4352 units, 29 inside, 50 s
+6900 files, 4364 units, 30 inside, 50 s
+6950 files, 4403 units, 31 inside, 50 s
+7000 files, 4425 units, 31 inside, 50 s
+7050 files, 4467 units, 31 inside, 50 s
+7100 files, 4511 units, 31 inside, 50 s
+7150 files, 4549 units, 31 inside, 50 s
+7200 files, 4592 units, 31 inside, 50 s
+project (none): 1200 files
+7250 files, 4622 units, 31 inside, 58 s
+7300 files, 4653 units, 31 inside, 58 s
+7350 files, 4688 units, 31 inside, 58 s
+7400 files, 4712 units, 31 inside, 58 s
+7450 files, 4758 units, 31 inside, 58 s
+7500 files, 4803 units, 51 inside, 58 s
+7550 files, 4863 units, 57 inside, 59 s
+7600 files, 4878 units, 57 inside, 59 s
+7650 files, 4925 units, 57 inside, 59 s
+7700 files, 4967 units, 57 inside, 59 s
+7750 files, 5000 units, 57 inside, 59 s
+7800 files, 5049 units, 60 inside, 59 s
+7850 files, 5082 units, 60 inside, 59 s
+7900 files, 5115 units, 60 inside, 59 s
+7950 files, 5141 units, 60 inside, 60 s
+8000 files, 5214 units, 62 inside, 60 s
+8050 files, 5276 units, 70 inside, 60 s
+8100 files, 5303 units, 70 inside, 60 s
+8150 files, 5358 units, 73 inside, 60 s
+8200 files, 5423 units, 73 inside, 61 s
+8250 files, 5483 units, 79 inside, 61 s
+8300 files, 5525 units, 79 inside, 61 s
+8350 files, 5559 units, 80 inside, 61 s
+8400 files, 5580 units, 80 inside, 61 s
+project (none): 1200 files
+8450 files, 5609 units, 80 inside, 66 s
+8500 files, 5630 units, 80 inside, 67 s
+8550 files, 5664 units, 80 inside, 67 s
+8600 files, 5693 units, 80 inside, 67 s
+8650 files, 5722 units, 80 inside, 67 s
+8700 files, 5767 units, 80 inside, 67 s
+8750 files, 5806 units, 80 inside, 67 s
+8800 files, 5834 units, 80 inside, 67 s
+8850 files, 5869 units, 80 inside, 67 s
+8900 files, 5907 units, 80 inside, 67 s
+8950 files, 5949 units, 80 inside, 67 s
+9000 files, 5987 units, 80 inside, 67 s
+9050 files, 6015 units, 80 inside, 67 s
+9100 files, 6046 units, 80 inside, 67 s
+9150 files, 6078 units, 80 inside, 67 s
+9200 files, 6119 units, 80 inside, 67 s
+9250 files, 6164 units, 80 inside, 68 s
+9300 files, 6172 units, 80 inside, 68 s
+9350 files, 6203 units, 80 inside, 68 s
+9400 files, 6238 units, 80 inside, 68 s
+9450 files, 6263 units, 80 inside, 68 s
+9500 files, 6293 units, 80 inside, 68 s
+9550 files, 6336 units, 80 inside, 68 s
+9600 files, 6352 units, 80 inside, 68 s
+project (none): 1200 files
+9650 files, 6369 units, 80 inside, 72 s
+9700 files, 6400 units, 80 inside, 72 s
+9750 files, 6436 units, 80 inside, 72 s
+9800 files, 6468 units, 80 inside, 72 s
+9850 files, 6499 units, 80 inside, 72 s
+9900 files, 6537 units, 80 inside, 72 s
+9950 files, 6563 units, 80 inside, 72 s
+10000 files, 6615 units, 80 inside, 73 s
+10050 files, 6658 units, 80 inside, 73 s
+10100 files, 6696 units, 80 inside, 73 s
+10150 files, 6732 units, 80 inside, 73 s
+10200 files, 6763 units, 80 inside, 73 s
+10250 files, 6790 units, 82 inside, 73 s
+10300 files, 6827 units, 82 inside, 73 s
+10350 files, 6861 units, 82 inside, 73 s
+10400 files, 6883 units, 82 inside, 73 s
+10450 files, 6904 units, 82 inside, 73 s
+10500 files, 6929 units, 82 inside, 73 s
+10550 files, 6958 units, 82 inside, 73 s
+10600 files, 6980 units, 82 inside, 73 s
+10650 files, 7011 units, 82 inside, 73 s
+10700 files, 7037 units, 82 inside, 73 s
+10750 files, 7065 units, 82 inside, 74 s
+10800 files, 7096 units, 82 inside, 74 s
+project (none): 1200 files
+10850 files, 7122 units, 82 inside, 79 s
+10900 files, 7150 units, 82 inside, 79 s
+10950 files, 7163 units, 82 inside, 80 s
+11000 files, 7206 units, 83 inside, 80 s
+11050 files, 7254 units, 83 inside, 80 s
+11100 files, 7291 units, 83 inside, 80 s
+11150 files, 7326 units, 83 inside, 80 s
+11200 files, 7352 units, 83 inside, 80 s
+11250 files, 7375 units, 83 inside, 80 s
+11300 files, 7407 units, 83 inside, 80 s
+11350 files, 7452 units, 86 inside, 80 s
+11400 files, 7489 units, 86 inside, 80 s
+11450 files, 7535 units, 86 inside, 80 s
+11500 files, 7561 units, 86 inside, 80 s
+11550 files, 7587 units, 86 inside, 81 s
+11600 files, 7613 units, 86 inside, 81 s
+11650 files, 7650 units, 86 inside, 81 s
+11700 files, 7695 units, 86 inside, 81 s
+11750 files, 7726 units, 86 inside, 81 s
+11800 files, 7753 units, 86 inside, 81 s
+11850 files, 7795 units, 86 inside, 81 s
+11900 files, 7829 units, 86 inside, 81 s
+11950 files, 7867 units, 90 inside, 81 s
+12000 files, 7897 units, 90 inside, 81 s
+project (none): 1200 files
+12050 files, 7960 units, 96 inside, 87 s
+12100 files, 8002 units, 96 inside, 87 s
+12150 files, 8029 units, 96 inside, 87 s
+12200 files, 8066 units, 96 inside, 87 s
+12250 files, 8096 units, 96 inside, 87 s
+12300 files, 8123 units, 96 inside, 87 s
+12350 files, 8154 units, 96 inside, 87 s
+12400 files, 8181 units, 96 inside, 87 s
+12450 files, 8217 units, 96 inside, 87 s
+12500 files, 8266 units, 96 inside, 87 s
+12550 files, 8301 units, 96 inside, 87 s
+12600 files, 8331 units, 96 inside, 87 s
+12650 files, 8356 units, 96 inside, 87 s
+12700 files, 8393 units, 96 inside, 87 s
+12750 files, 8415 units, 96 inside, 87 s
+12800 files, 8444 units, 96 inside, 88 s
+12850 files, 8475 units, 96 inside, 88 s
+12900 files, 8509 units, 96 inside, 88 s
+12950 files, 8541 units, 96 inside, 88 s
+13000 files, 8565 units, 96 inside, 88 s
+13050 files, 8603 units, 96 inside, 88 s
+13100 files, 8626 units, 98 inside, 88 s
+13150 files, 8659 units, 98 inside, 88 s
+13200 files, 8697 units, 98 inside, 88 s
+project (none): 1200 files
+13250 files, 8737 units, 98 inside, 92 s
+13300 files, 8769 units, 98 inside, 92 s
+13350 files, 8792 units, 98 inside, 92 s
+13400 files, 8825 units, 98 inside, 92 s
+13450 files, 8857 units, 98 inside, 93 s
+13500 files, 8896 units, 98 inside, 93 s
+13550 files, 8933 units, 98 inside, 93 s
+13600 files, 8978 units, 98 inside, 93 s
+13650 files, 9008 units, 98 inside, 93 s
+13700 files, 9036 units, 98 inside, 93 s
+13750 files, 9063 units, 99 inside, 93 s
+13800 files, 9087 units, 99 inside, 93 s
+13850 files, 9130 units, 99 inside, 93 s
+13900 files, 9168 units, 99 inside, 93 s
+13950 files, 9209 units, 99 inside, 93 s
+14000 files, 9243 units, 99 inside, 93 s
+14050 files, 9268 units, 99 inside, 93 s
+14100 files, 9292 units, 99 inside, 93 s
+14150 files, 9315 units, 99 inside, 93 s
+14200 files, 9358 units, 99 inside, 94 s
+14250 files, 9397 units, 99 inside, 94 s
+14300 files, 9435 units, 99 inside, 94 s
+14350 files, 9465 units, 99 inside, 94 s
+14400 files, 9495 units, 101 inside, 94 s
+project (none): 1200 files
+14450 files, 9526 units, 101 inside, 99 s
+14500 files, 9565 units, 101 inside, 99 s
+14550 files, 9600 units, 101 inside, 99 s
+14600 files, 9644 units, 101 inside, 99 s
+14650 files, 9685 units, 101 inside, 99 s
+14700 files, 9723 units, 101 inside, 99 s
+14750 files, 9757 units, 101 inside, 99 s
+14800 files, 9796 units, 101 inside, 99 s
+14850 files, 9823 units, 101 inside, 99 s
+14900 files, 9866 units, 102 inside, 99 s
+14950 files, 9901 units, 102 inside, 100 s
+15000 files, 9937 units, 102 inside, 100 s
+15050 files, 9961 units, 102 inside, 100 s
+15100 files, 10002 units, 102 inside, 100 s
+15150 files, 10029 units, 102 inside, 100 s
+15200 files, 10055 units, 102 inside, 100 s
+15250 files, 10094 units, 102 inside, 100 s
+15300 files, 10114 units, 102 inside, 100 s
+15350 files, 10146 units, 102 inside, 100 s
+15400 files, 10178 units, 103 inside, 100 s
+15450 files, 10201 units, 103 inside, 100 s
+15500 files, 10245 units, 103 inside, 100 s
+15550 files, 10282 units, 104 inside, 100 s
+15600 files, 10311 units, 104 inside, 100 s
+project (none): 1200 files
+15650 files, 10342 units, 104 inside, 107 s
+15700 files, 10391 units, 104 inside, 107 s
+15750 files, 10441 units, 104 inside, 107 s
+15800 files, 10441 units, 104 inside, 107 s
+15850 files, 10458 units, 104 inside, 107 s
+15900 files, 10495 units, 104 inside, 107 s
+15950 files, 10504 units, 104 inside, 107 s
+16000 files, 10532 units, 104 inside, 107 s
+16050 files, 10569 units, 104 inside, 107 s
+16100 files, 10602 units, 104 inside, 107 s
+16150 files, 10632 units, 104 inside, 107 s
+16200 files, 10657 units, 104 inside, 107 s
+16250 files, 10697 units, 104 inside, 108 s
+16300 files, 10741 units, 104 inside, 108 s
+16350 files, 10766 units, 104 inside, 108 s
+16400 files, 10797 units, 104 inside, 108 s
+16450 files, 10831 units, 104 inside, 108 s
+16500 files, 10856 units, 104 inside, 108 s
+16550 files, 10885 units, 104 inside, 108 s
+16600 files, 10914 units, 104 inside, 108 s
+16650 files, 10949 units, 104 inside, 108 s
+16700 files, 10983 units, 104 inside, 108 s
+16750 files, 11015 units, 104 inside, 108 s
+16800 files, 11047 units, 104 inside, 108 s
+project (none): 1200 files
+16850 files, 11078 units, 104 inside, 115 s
+16900 files, 11125 units, 104 inside, 115 s
+16950 files, 11159 units, 108 inside, 115 s
+17000 files, 11188 units, 110 inside, 115 s
+17050 files, 11216 units, 110 inside, 115 s
+17100 files, 11248 units, 110 inside, 115 s
+17150 files, 11290 units, 110 inside, 115 s
+17200 files, 11324 units, 116 inside, 115 s
+17250 files, 11359 units, 116 inside, 115 s
+17300 files, 11396 units, 116 inside, 115 s
+17350 files, 11433 units, 116 inside, 115 s
+17400 files, 11471 units, 116 inside, 115 s
+17450 files, 11503 units, 116 inside, 116 s
+17500 files, 11540 units, 117 inside, 116 s
+17550 files, 11586 units, 117 inside, 116 s
+17600 files, 11654 units, 128 inside, 116 s
+17650 files, 11709 units, 128 inside, 116 s
+17700 files, 11741 units, 128 inside, 116 s
+17750 files, 11792 units, 134 inside, 116 s
+17800 files, 11811 units, 134 inside, 116 s
+17850 files, 11859 units, 134 inside, 116 s
+17900 files, 11887 units, 134 inside, 116 s
+17950 files, 11903 units, 134 inside, 116 s
+18000 files, 11919 units, 134 inside, 116 s
+project (none): 1200 files
+18050 files, 11959 units, 136 inside, 122 s
+18100 files, 11989 units, 136 inside, 122 s
+18150 files, 12022 units, 136 inside, 122 s
+18200 files, 12049 units, 136 inside, 122 s
+18250 files, 12074 units, 136 inside, 123 s
+18300 files, 12098 units, 136 inside, 123 s
+18350 files, 12148 units, 139 inside, 123 s
+18400 files, 12168 units, 139 inside, 123 s
+18450 files, 12216 units, 139 inside, 123 s
+18500 files, 12240 units, 139 inside, 123 s
+18550 files, 12278 units, 139 inside, 123 s
+18600 files, 12316 units, 139 inside, 123 s
+18650 files, 12346 units, 139 inside, 123 s
+18700 files, 12391 units, 147 inside, 123 s
+18750 files, 12420 units, 147 inside, 123 s
+18800 files, 12455 units, 147 inside, 124 s
+18850 files, 12494 units, 147 inside, 124 s
+18900 files, 12530 units, 147 inside, 124 s
+18950 files, 12565 units, 147 inside, 124 s
+19000 files, 12589 units, 147 inside, 124 s
+19050 files, 12619 units, 147 inside, 124 s
+19100 files, 12660 units, 147 inside, 124 s
+19150 files, 12694 units, 147 inside, 124 s
+19200 files, 12726 units, 147 inside, 124 s
+project (none): 1200 files
+19250 files, 12772 units, 147 inside, 130 s
+19300 files, 12808 units, 147 inside, 131 s
+19350 files, 12858 units, 147 inside, 131 s
+19400 files, 12864 units, 147 inside, 131 s
+19450 files, 12891 units, 149 inside, 131 s
+19500 files, 12921 units, 149 inside, 131 s
+19550 files, 12954 units, 149 inside, 131 s
+19600 files, 12984 units, 149 inside, 131 s
+19650 files, 13016 units, 149 inside, 131 s
+19700 files, 13038 units, 149 inside, 131 s
+19750 files, 13073 units, 150 inside, 131 s
+19800 files, 13108 units, 150 inside, 132 s
+19850 files, 13139 units, 150 inside, 132 s
+19900 files, 13183 units, 150 inside, 132 s
+19950 files, 13213 units, 151 inside, 132 s
+20000 files, 13246 units, 151 inside, 132 s
+20050 files, 13276 units, 151 inside, 132 s
+20100 files, 13308 units, 151 inside, 132 s
+20150 files, 13336 units, 151 inside, 132 s
+20200 files, 13371 units, 151 inside, 132 s
+20250 files, 13406 units, 151 inside, 133 s
+20300 files, 13433 units, 151 inside, 133 s
+20350 files, 13476 units, 151 inside, 133 s
+20400 files, 13526 units, 151 inside, 133 s
+project (none): 1200 files
+20450 files, 13571 units, 151 inside, 138 s
+20500 files, 13604 units, 151 inside, 138 s
+20550 files, 13626 units, 151 inside, 138 s
+20600 files, 13665 units, 151 inside, 138 s
+20650 files, 13683 units, 151 inside, 138 s
+20700 files, 13719 units, 151 inside, 138 s
+20750 files, 13751 units, 151 inside, 138 s
+20800 files, 13792 units, 157 inside, 138 s
+20850 files, 13837 units, 160 inside, 139 s
+20900 files, 13874 units, 160 inside, 139 s
+20950 files, 13895 units, 170 inside, 139 s
+21000 files, 13925 units, 170 inside, 139 s
+21050 files, 13955 units, 170 inside, 139 s
+21100 files, 13993 units, 170 inside, 139 s
+21150 files, 14034 units, 170 inside, 139 s
+21200 files, 14066 units, 170 inside, 139 s
+21250 files, 14099 units, 170 inside, 139 s
+21300 files, 14140 units, 170 inside, 139 s
+21350 files, 14170 units, 170 inside, 139 s
+21400 files, 14197 units, 170 inside, 139 s
+21450 files, 14225 units, 170 inside, 139 s
+21500 files, 14247 units, 170 inside, 139 s
+21550 files, 14277 units, 170 inside, 139 s
+21600 files, 14316 units, 171 inside, 139 s
+project (none): 1200 files
+21650 files, 14340 units, 171 inside, 143 s
+21700 files, 14356 units, 171 inside, 143 s
+21750 files, 14380 units, 172 inside, 144 s
+21800 files, 14411 units, 172 inside, 144 s
+21850 files, 14443 units, 172 inside, 144 s
+21900 files, 14469 units, 172 inside, 144 s
+21950 files, 14495 units, 172 inside, 144 s
+22000 files, 14530 units, 172 inside, 144 s
+22050 files, 14557 units, 172 inside, 144 s
+22100 files, 14593 units, 172 inside, 144 s
+22150 files, 14620 units, 172 inside, 144 s
+22200 files, 14655 units, 172 inside, 144 s
+22250 files, 14690 units, 173 inside, 144 s
+22300 files, 14726 units, 173 inside, 144 s
+22350 files, 14762 units, 174 inside, 144 s
+22400 files, 14819 units, 174 inside, 144 s
+22450 files, 14835 units, 174 inside, 144 s
+22500 files, 14858 units, 174 inside, 144 s
+22550 files, 14888 units, 174 inside, 144 s
+22600 files, 14917 units, 174 inside, 145 s
+22650 files, 14940 units, 174 inside, 145 s
+22700 files, 14979 units, 174 inside, 145 s
+22750 files, 15015 units, 174 inside, 145 s
+22800 files, 15047 units, 174 inside, 145 s
+project (none): 586 files
+22850 files, 15075 units, 174 inside, 149 s
+22900 files, 15112 units, 175 inside, 149 s
+22950 files, 15145 units, 175 inside, 149 s
+23000 files, 15180 units, 181 inside, 149 s
+23050 files, 15223 units, 181 inside, 149 s
+23100 files, 15247 units, 181 inside, 149 s
+23150 files, 15285 units, 181 inside, 149 s
+23200 files, 15314 units, 181 inside, 149 s
+23250 files, 15357 units, 181 inside, 149 s
+23300 files, 15401 units, 181 inside, 150 s
+23350 files, 15440 units, 181 inside, 150 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream/helpers/tsconfig.json: 4 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream/packages/connect-react/tsconfig.json: 50 files
+23400 files, 15597 units, 237 inside, 164 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream/packages/prompts/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream/platform/tsconfig.json: 9 files
+23450 files, 15698 units, 294 inside, 173 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/pipedream/types/tsconfig.json: 1 files
+pipedream: 23451 files, 15701 units, 297 inside the subset (1.9 percent), 0 files unreadable, 176 s
+   13722 units  untyped-js             components/_0codekit/actions/compress-pdf/compress-pdf.mjs:36 parameter `{ $ }` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} { $ }` or TypeScr
+   13649 units  ts-strict              components/_0codekit/_0codekit.app.mjs:19 TS2339: Property '$auth' does not exist on type '{ _baseUrl(): string; _makeRequest({ $, path, ...opts }: { [x
+   13479 units  object-method-mutation components/_0codekit/actions/compress-pdf/compress-pdf.mjs:37 literal this reads scalar fields; reference-valued receiver state needs a class
+    1579 units  type-assertion         components/_1crm/actions/common/base.mjs:101 `response.errors` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value),
+     471 units  record-rest            components/_1crm/actions/common/base.mjs:82 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+     360 units  index-assign           components/_1crm/actions/common/base.mjs:66 write a record field by name, or use a local Record<string, T> dictionary
+     348 units  unresolved-module      components/_0codekit/_0codekit.app.mjs:1 TS2792: Cannot find module '@pipedream/platform'. Did you mean to set the 'moduleResolution' option to 'nodene
+     261 units  dynamic-key            components/activecampaign/actions/common/base-contact.mjs:67 narrow the literal (any) to one record type before a computed key
+     207 units  spread                 components/activecampaign/actions/common/base-contact.mjs:56 spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the sub
+     186 units  callback-control       components/activecalculator/common/utils.mjs:7 try, throw or a return from an inner loop in a callback needs an explicit for-of loop
+     140 units  loose-equality         components/aero_workflow/actions/find-company/find-company.mjs:37 use === and !== with an object, bigint or symbol operand; between primitives == follows the coercion table
+     120 units  opaque-mutation        components/activecampaign/actions/get-contact-by-email/get-contact-by-email.mjs:30 .shift() on `contacts`, an opaque value this function holds, used as a value: the call may mutate it
+     111 units  unary-coercion         components/aws/sources/new-records-returned-by-cloudwatch-logs-insights-query/new-records-returned-by-cloudwatch-logs-insights-query.mjs:44 unary + coerces; it is outside the subset
+     101 units  unsupported-syntax     components/actitime/sources/common/webhook.mjs:92 only assignments, ++/--, calls, and await may stand as statements
+      87 units  destructuring          components/boldsign/actions/send-document-template/send-document-template.mjs:272 catch binds one name
+      80 units  param-mutation         components/aws/sources/redshift-new-row/redshift-new-row.mjs:93 .reverse() on `records.map((record) => record[uniqueCol`, an opaque value, used as a value: the call may mutat
+      73 units  unsupported-member     components/_twocaptcha/actions/submit-captcha/submit-captcha.mjs:75 property .sscUserId is not declared on { key: string; name: string; description: string; version: string; anno
+      48 units  promise-pending        components/_2markdown/actions/pdf-to-markdown/pdf-to-markdown.mjs:57 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+      44 units  callback-form          components/agiled/common/utils.mjs:25 the callback must be an arrow function
+      44 units  assign-target          components/algolia/common/utils.mjs:16 `Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources 
+      41 units  foreach                components/agiled/sources/common/polling.mjs:46 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+      38 units  optional-chain         components/addressfinder/actions/verify-address-au/verify-address-au.mjs:63 an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first
+      36 units  key-order              components/apollo_io/common/utils.mjs:10 a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this object is n
+      33 units  prototype              components/airtable_oauth/common/utils.mjs:186 this file makes an object whose prototype is not Object.prototype (line 142), and `makeRecord` hands it to cod
+      28 units  property-assign        components/acuity_scheduling/actions/book-appointment/book-appointment.mjs:123 assignment into `props[`${field.id}`]`: a field of an element is written when the path from a parameter takes 
+
+exit=0 signal=null

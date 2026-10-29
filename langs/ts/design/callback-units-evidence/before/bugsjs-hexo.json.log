@@ -1,0 +1,29 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hexo","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-hexo.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  32985832    28%  458732 329858320    0%   /
+project (none): 136 files
+50 files, 64 units, 11 inside, 3 s
+100 files, 121 units, 11 inside, 3 s
+hexo: 136 files, 144 units, 11 inside the subset (7.6 percent), 0 files unreadable, 3 s
+     121 units  untyped-js             lib/box/file.js:5 parameter `data` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} data` or TypeScrip
+      55 units  implicit-this          lib/models/asset.js:15 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter
+      49 units  this                   lib/box/index.js:19 `this` outside a class method; a free function declares its receiver as a `this` parameter
+      26 units  type-assertion         lib/hexo/load_plugins.js:27 `content` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and thi
+      17 units  ts-strict              lib/box/index.js:81 TS2339: Property 'source' does not exist on type '_File'.
+      16 units  unresolved-module      lib/box/file.js:3 TS2792: Cannot find module 'hexo-fs'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to a
+      15 units  param-mutation         lib/hexo/post.js:21 .push() on `cache`, an opaque value, used as a value: the call may mutate it
+       9 units  index-assign           lib/hexo/post.js:90 write a record field by name, or use a local Record<string, T> dictionary
+       9 units  closure-mutation       lib/plugins/console/deploy.js:42 `config` is declared outside this callback; a callback cannot change it
+       8 units  opaque-mutation        lib/plugins/console/config.js:62 .pop() on `split`, an opaque value this function holds, used as a value: the call may mutate it
+       7 units  param-assign           lib/plugins/console/config.js:31 `config` is a parameter of a callback or a local function; copy it to a local first
+       5 units  dynamic-key            lib/plugins/console/generate.js:28 use a finite union of declared string keys, or a Record<string, T> dictionary
+       5 units  callback-form          lib/plugins/filter/after_post_render/external_link.js:15 the callback must be an arrow function
+       4 units  unsupported-member     lib/plugins/generator/asset.js:49 property .concat on any[] is outside the subset
+       3 units  unsupported-call       lib/plugins/helper/css.js:13 `apply` takes its arguments as one array literal
+       2 units  prototype              lib/plugins/filter/post_permalink.js:44 `Object.defineProperty` reaches the prototype chain or the property descriptors; no transition models it
+       1 units  global-read            lib/hexo/index.js:69 `cloneDeep` is module state that can change; the subset reads constants only
+       1 units  unary-coercion         lib/plugins/helper/paginator.js:6 unary + coerces; it is outside the subset
+       1 units  definite-assignment    lib/plugins/helper/tagcloud.js:220 `startColor` may be read here before its first assignment (TypeScript does not check this read), and lean test
+       0 units  toplevel-effect        lib/box/file.js:12 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

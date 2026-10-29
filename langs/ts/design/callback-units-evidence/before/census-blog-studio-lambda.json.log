@@ -1,0 +1,31 @@
+blog-studio-lambda: 123 files, 660 units, 364 inside the subset (55.2 percent), 0 files unreadable, 39 s
+     153 units  untyped-js             journeys/run.mjs:33 parameter `u` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} u` or TypeScript) or 
+     135 units  type-assertion         server/apikeys.mjs:45 `role` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this s
+      63 units  async                  server/jobs.mjs:110 awaited callee form is outside the subset
+      53 units  ts-strict              journeys/run.mjs:200 TS2339: Property 'value' does not exist on type 'Element'.
+      52 units  promise                src/app/api.ts:49 a same-file async function runs on after its first await; return it from an async function with await
+      31 units  dynamic-key            server/jobs.mjs:89 an open key may select a method; call a method by its declared name, and index records of data fields
+      17 units  index-assign           server/seed.mjs:85 write a record field by name, or use a local Record<string, T> dictionary
+      16 units  assignment-expression  server/jobs.mjs:99 write this assignment as a statement
+      12 units  unsupported-syntax     src/app/App.tsx:402 only assignments, ++/--, calls, and await may stand as statements
+      11 units  unsupported-call       server/jobs.mjs:134 method .unref() on number is outside the subset
+      10 units  unresolved-module      journeys/run.mjs:13 TS2307: Cannot find module 'node:child_process' or its corresponding type declarations.
+      10 units  spread                 server/server.mjs:277 spread works on arrays, sets, maps and their keys(), values() and entries()
+      10 units  closure-mutation       src/app/App.tsx:103 a callback cannot change an outer record
+       9 units  record-rest            server/apikeys.mjs:38 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+       9 units  property-assign        src/app/App.tsx:40 assignment into `window`, which this function does not own; records it owns are updated in place
+       7 units  param-mutation         server/auth.mjs:78 .pop() on `url.pathname.split("/")`, an opaque value, used as a value: the call may mutate it
+       7 units  react-handler-capture  src/app/App.tsx:103 a React closure captures a changing local; capture a const value or use a state setter
+       5 units  opaque-mutation        server/store.mjs:286 .splice() on `list`, an opaque value this function holds, used as a value: the call may mutate it
+       4 units  promise-pending        server/server.mjs:261 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       4 units  reference-equality     src/app/App.tsx:892 === on arrays and records compares references; compare fields
+       4 units  non-null-assertion     src/app/pages/Builder.tsx:135 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       3 units  global-read            journeys/run.mjs:34 global `AbortSignal` is outside the subset
+       3 units  optional-chain         server/jobs.mjs:134 an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first
+       3 units  prototype              server/store.mjs:173 this file makes an object whose prototype is not Object.prototype (line 126), and it is passed to a call the f
+       3 units  operator-value-context server/store.mjs:425 move this value step into an explicit statement and conditional branch
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blog-studio-lambda/tsconfig.json: 123 files
+50 files, 319 units, 62 inside, 31 s
+100 files, 573 units, 293 inside, 35 s
+
+exit=0 signal=null

@@ -1,0 +1,30 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-status.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  31542928    29%  458732 315429280    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status/tsconfig.json: 100 files
+50 files, 138 units, 95 inside, 4 s
+100 files, 352 units, 287 inside, 5 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status/web/tsconfig.json: 14 files
+status: 114 files, 423 units, 335 inside the subset (79.2 percent), 0 files unreadable, 8 s
+      25 units  type-assertion         scripts/build-examples.ts:184 `out` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl
+      18 units  property-assign        web/app/detail-main.ts:91 assignment into `liveLabelEl`, which this function does not own; records it owns are updated in place
+      17 units  non-null-assertion     scripts/build-examples.ts:302 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      11 units  untyped-js             scripts/build-pages.mjs:76 parameter `entry` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} entry` or TypeScr
+       9 units  async                  scripts/drive-retention.ts:86 an async unit is called without await
+       4 units  index-assign           scripts/build-examples.ts:182 write a record field by name, or use a local Record<string, T> dictionary
+       4 units  param-mutation         scripts/build-examples.ts:260 push on `grouped.get(t.groupId)!`, which is not a local array
+       4 units  promise                scripts/drive-retention.ts:86 a same-file async function runs on after its first await; return it from an async function with await
+       4 units  alias-mutation         src/api/summary.ts:261 `list` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module obje
+       3 units  string-code-unit       scripts/manifest-to-sql.ts:236 use BMP scalar literals within the string model; astral and surrogate strings need lane B
+       3 units  promise-pending        scripts/migrate-remote.ts:47 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       3 units  spread                 scripts/verdicts.mjs:123 spread works on arrays, sets, maps and their keys(), values() and entries()
+       2 units  global-read            scripts/verify-deploy.ts:94 global `AbortSignal` is outside the subset
+       1 units  ts-strict              scripts/negative-control.mjs:259 TS2345: Argument of type 'string[]' is not assignable to parameter of type 'readonly Verdict[]'.   Type 'strin
+       1 units  object-method-capture  scripts/retention-plan.ts:50 a literal method captures an unchanging value; copy mutable data before capturing it
+       1 units  unsupported-operator   src/domain/schema-fingerprint.ts:82 assignment operator is outside the subset
+       1 units  promise-all-order      src/probe/http.ts:112 Promise.all does not order work after await; use a for-of loop with await for ordered effects
+       1 units  dynamic-key            src/ui/overview.ts:346 bind the computed key before reading the record; a key call may mutate its receiver
+       1 units  closure-mutation       web/app/tooltip.ts:38 a callback cannot change an outer record
+       0 units  toplevel-effect        scripts/build-examples.ts:665 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

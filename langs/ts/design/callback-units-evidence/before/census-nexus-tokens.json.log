@@ -1,0 +1,10 @@
+nexus-tokens: 18 files, 44 units, 36 inside the subset (81.8 percent), 0 files unreadable, 4 s
+       5 units  non-null-assertion     src/ramp/generate.ts:123 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       2 units  dynamic-key            src/ramp/generate.ts:100 narrow the record receiver before indexing it
+       1 units  type-assertion         src/ramp/generate.ts:152 `step as Step` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), an
+       1 units  param-mutation         src/semantic/resolve.ts:52 map mutation on a non-local
+       1 units  unsupported-call       src/semantic/resolve.ts:85 calls through computed callees are outside the subset
+       0 units  toplevel-effect        tools/analyse-source-palette.ts:93 code at module level runs on import; it is outside the subset
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-tokens/tsconfig.json: 18 files
+
+exit=0 signal=null

@@ -1,0 +1,10 @@
+nexus-agent-api: 18 files, 14 units, 10 inside the subset (71.4 percent), 0 files unreadable, 4 s
+       2 units  prototype              src/allowlist/projector.ts:28 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+       2 units  type-assertion         src/allowlist/redactor.ts:56 `obj as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or 
+       2 units  ts-strict              src/middleware/auth.ts:10 TS7030: Not all code paths return a value.
+       1 units  property-assign        src/middleware/rate-limit.ts:31 update of a field of `window`, which this function does not own
+       0 units  unresolved-module      src/db.ts:1 TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+       0 units  toplevel-effect        src/index.ts:22 code at module level runs on import; it is outside the subset
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api/tsconfig.json: 18 files
+
+exit=0 signal=null
