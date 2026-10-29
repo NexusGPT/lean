@@ -107,3 +107,21 @@ Tsconfigs whose `extends` did not read:
 - `libs/providers/langchain-typesafe/tsconfig.json`: File '@langchain/tsconfig/base.json' not found.
 - `libs/providers/langchain-weaviate/tsconfig.json`: File '@langchain/tsconfig/base.json' not found.
 - `libs/providers/langchain-xai/tsconfig.json`: File '@langchain/tsconfig/base.json' not found.
+
+## The environment rungs (what lean now does, and why)
+
+1. A project's own configuration (`common.mjs`). An `extends` naming a package of the repository's own workspace reads
+   that package's folder, as the workspace link would (`parseProjectConfig`, `workspaceLinkHost`); an installed entry
+   wins and nothing outside the workspace is invented. `rootDir` is dropped (an emit layout; lean reads workspace
+   packages from their source). The `.d.ts` files a project's `include` names join its programs
+   (`projectDeclarations`). A file with no tsconfig resolves as a bundler does instead of TypeScript's Classic walk,
+   and sees the `node_modules/@types` folders above it when an install provides them (`projectless`); with no install
+   above it nothing changes. Strict stays forced.
+2. The repository's pinned graph (`census-env.mjs install`, `census.mjs --install-under <dir>`). The lockfile's own
+   package manager (a `packageManager` pin through corepack), frozen, `--ignore-scripts`, once per lockfile content
+   (a sha256 stamp in `node_modules/.lean-census-install.json`), only for a root inside `<dir>`. A failed install
+   is kept with its exit and stderr, and its units are counted under `install-failed`.
+3. Accounting. The census JSON's `environment` field carries the install stamp and, per kind, the units an
+   `unresolved-module` finding reaches (each unit once, under its first finding's kind); each such finding names its
+   module and package state. `census-env.mjs diff <before> <after>` reports per rule the units before, after, left
+   and joined, and the units that left `unresolved-module` clean versus still stopped by another rule.

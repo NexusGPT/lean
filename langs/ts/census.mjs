@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 // lean census: every TypeScript function of a repository through the gate, the blockers counted.
 //   node census.mjs <repo-root> [--out census.json] [--report census.md] [--depth N] [--limit N] [--include <prefix>]
+//                   [--install-under <dir>] [--npm-cache <dir>]
+// With --install-under, a root inside that folder first gets its own pinned dependency graph (census-env.mjs
+// ensureInstalled: the lockfile's package manager, frozen, --ignore-scripts, once per lockfile content); a root outside
+// it is read as it stands. Every unit an `unresolved-module` finding reaches is counted once more, in `environment`,
+// under the kind of its first such finding (census-env.mjs), or under `install-failed` when the install failed.
 // Walks .ts/.tsx/.mts under the root (skipping node_modules, dist, build, .next, coverage, tests, stories,
 // declarations), lints each file inside its project, and reports: units, units inside the subset, the rule counts
 // with three examples each, per package and in total. Read-only: nothing is written into the repository.
@@ -8,6 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { lintFile } from './lint/lint.mjs';
 import { loadManyChunks, topLevelFunctions, lineOf } from './common.mjs';
+import { classifier, ensureInstalled } from './census-env.mjs';
 
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
 const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
@@ -25,8 +31,13 @@ function packageOf(root, file) {
 }
 
 export function census(root, opts = {}) {
-  const { limit = 0, include = null, depth = 2, log = () => {} } = opts;
+  const { limit = 0, include = null, depth = 2, log = () => {}, installUnder = null, npmCache = null } = opts;
   if (!Number.isSafeInteger(depth) || depth < 0) throw new Error('depth must be a nonnegative integer');
+  // the environment first: an install changes what every later read resolves
+  const install = installUnder ? ensureInstalled(root, { under: installUnder, cache: npmCache, log }) : { status: 'not-requested' };
+  if (install.status === 'install-failed') log(`! install failed (exit ${install.exit}): ${install.stderr?.split('\n').slice(-1)[0] ?? ''}`);
+  const env = classifier(root);
+  const envUnits = new Map(); // bucket -> units
   const refusalGroups = new Map();
   const date = new Date().toISOString().slice(0, 10);
   const rules = new Map(); // rule -> {count, units:Set, examples:[]}
@@ -56,7 +67,20 @@ export function census(root, opts = {}) {
       unitNames = [...topLevelFunctions(sf).values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
       findings = lintFile(file, null, { project: true, loaded: L });
     } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
-    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), findings: findings.map((f) => ({ line: f.line, rule: f.rule, msg: f.msg, env: !!f.env })) });
+    // an unresolved-module finding names its module (or global) and its kind; the unit it falls in is counted once
+    const envSeen = new Set();
+    const named = findings.map((f) => {
+      const o = { line: f.line, rule: f.rule, msg: f.msg, env: !!f.env };
+      if (f.rule !== 'unresolved-module') return o;
+      const c = env.classify(file, f.msg);
+      o.kind = install.status === 'install-failed' ? 'install-failed' : c.kind + (c.generated ? ' (generated)' : '');
+      if (c.name) o.module = c.name;
+      if (c.install) o.packageState = c.install;
+      const unit = unitNames.find(([, a, b]) => a <= f.line && f.line <= b);
+      if (unit && !envSeen.has(unit)) { envSeen.add(unit); envUnits.set(o.kind, (envUnits.get(o.kind) ?? 0) + 1); }
+      return o;
+    });
+    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), findings: named });
     const blocked = new Set();
     for (const f of findings) {
       const unit = unitNames.find(([, a, b]) => a <= f.line && f.line <= b)?.[0] ?? null;
@@ -89,7 +113,8 @@ export function census(root, opts = {}) {
     rule: r.rule, units: r.units,
     directories: [...r.directories.values()].sort((a, b) => a.directory.localeCompare(b.directory)),
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
-  return { root, date, depth, refused: units - entered, refusalRules, files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])) };
+  return { root, date, depth, refused: units - entered, refusalRules, files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), environment, rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
 
 // Render only the saved census result. No files are read and no units are linted here.
@@ -123,11 +148,13 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const root = path.resolve(a[0]);
-  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), log: (m) => console.error(m) });
+  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m) });
   const out = opt('--out', null);
   const report = opt('--report', null);
   if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
   if (report) fs.writeFileSync(report, censusReport(res));
   console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.failedFiles} files unreadable, ${res.seconds} s`);
+  const st = res.environment.install;
+  console.log(`  environment: install ${st.status}${st.exit !== undefined ? ` (exit ${st.exit}, ${st.command})` : ''}; ${res.environment.units} units reach an unresolved module or global: ${Object.entries(res.environment.kinds).map(([k, n]) => `${k} ${n}`).join(', ') || 'none'}`);
   for (const r of res.rules.slice(0, 25)) console.log(`  ${String(r.units).padStart(6)} units  ${r.rule.padEnd(22)} ${r.examples[0] ?? ''}`);
 }
