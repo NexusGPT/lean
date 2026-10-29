@@ -1,0 +1,35 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "An escaping function is observed by what it does when called, never by its text (design/callbacks.md). Each function a unit hands out (to a fake, inside an options object or a list, returned, given to a fake's .catch) is shown by its handle and driven once at the end of the observation on drawn arguments, the same on both sides. mapRefactor: an arrow against a function expression, PASS-bounded (it was a WITNESS by text on 92eebd9). mapDiffers: x + 1 against x + 2, WITNESS by the drive. fetchItems: a renamed parameter in an options callback, PASS-bounded. ask: the eslint promptUser shape (when-callbacks inside a list of questions), a renamed parameter, PASS-bounded. askDiffers: the compared constant changed, WITNESS on a drive whose drawn argument meets the unit's own constant. adder: a returned closure rewritten, PASS-bounded. load: a .catch handler rewritten, PASS-bounded. many: seventy callbacks, more than one observation drives: undecided on both sides, ASK callback-undriven, never a WITNESS. deep: a function handed out by three nested drives is undriven (ASK callback-undriven in lane B), and lane A proves the unit: PASS-proved stands. The units hand functions to an unresolved module and use function expressions, so lane A refuses most of them by design and the pair checks lane B alone, plus check.mjs on many and deep. counter3: a returned counter whose third call differs, WITNESS on the drive's third call (a drive calls a function three times, as the world that keeps it may). ticket: a closure over module state the unit advances on each call; one call and its drives agree, the environment programs call the unit twice and the second command's drive of its closure differs: WITNESS in 2 commands (each command is an observation window whose functions are driven).",
+ "b": {
+  "mapRefactor": "PASS-bounded",
+  "mapDiffers": "WITNESS",
+  "fetchItems": "PASS-bounded",
+  "ask": "PASS-bounded",
+  "askDiffers": "WITNESS",
+  "adder": "PASS-bounded",
+  "load": "PASS-bounded",
+  "many": "ASK",
+  "deep": "ASK",
+  "counter3": "WITNESS",
+  "ticket": "WITNESS"
+ },
+ "check": {
+  "many": {
+   "verdict": "ASK",
+   "reason": "callback-undriven"
+  },
+  "deep": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  }
+ },
+ "envPrograms": {
+  "ticket": {
+   "verdict": "WITNESS",
+   "commands": 2
+  }
+ }
+}

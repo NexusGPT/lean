@@ -68,7 +68,6 @@ const OUT = [/^tests\//, /^design\//, /^vendor\//, /^translate\//, /^lint\//, /^
 // exception that went away and should leave this list.
 const EXCEPT = {
   'patch.mjs': [2, 'renderTree: a shape-preserving copy of exec/run.mjs renderTree (it renders, it does not iterate a non-array); the two copies are merged under row ce68c002'],
-  'exec/handlers-interp.mjs': [3, 'keyHandlers: shape-preserving (a non-array is passed through, never iterated); lane callback-behaviour removes keyHandlers'],
   'exec/run.mjs': [12, 'deepExpand, renderTree, observeJsx, eraseHandlers, treeHandlers read the sandbox jsxValue output, an array by jsxChildren; run.mjs is lane callback-behaviour\'s (a finding for the lead)'],
 };
 const files = [];

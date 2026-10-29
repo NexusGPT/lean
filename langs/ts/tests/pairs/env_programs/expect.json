@@ -1,7 +1,7 @@
 {
  "scope": [],
  "equal": {},
- "why": "Lane B's environment programs (program.mjs on fast-check's model-based commands, vendored): a returned or handed-over function renders by its source, so a candidate that changes the closure's text is a one-call witness; these candidates change only the captured state. makeCounter's closure starts at 1 instead of 0: one call agrees, the program call, invoke shows it. subscribe's handler doubles from the second event with a limit of 2 instead of 1: the single call's one invocation agrees, the environment's first invocation happens as the handler is handed over, so the program call, fire shows it. countTo yields the same values by another loop: twelve programs agree, PASS-bounded. Lane A refuses every unit here by design (a closure that changes a captured cell, a push on a parameter array), so the pair checks lane B alone (laneBOnly).",
+ "why": "Lane B's environment programs (program.mjs on fast-check's model-based commands, vendored): a returned or handed-over function renders by its source, so a candidate that changes the closure's text is a one-call witness; these candidates change only the captured state. makeCounter's closure starts at 1 instead of 0: one call agrees, the program call, invoke shows it. subscribe's handler doubles from the second event with a limit of 2 instead of 1: the single call's one invocation agrees, the environment's first invocation happens as the handler is handed over, so the program call, fire shows it. countTo yields the same values by another loop: twelve programs agree, PASS-bounded. Lane A refuses every unit here by design (a closure that changes a captured cell, a push on a parameter array), so the pair checks lane B alone (laneBOnly). Since design/callbacks.md the call's own observation drives every function the unit hands out, three calls each: makeCounter's returned closure and subscribe's handler differ on those drives, so both are a WITNESS of the first rung and the environment programs do not run for them; countTo keeps the programs' clean run.",
  "heap": false,
  "b": {
   "makeCounter": "WITNESS",
@@ -9,14 +9,6 @@
   "countTo": "PASS-bounded"
  },
  "envPrograms": {
-  "makeCounter": {
-   "verdict": "WITNESS",
-   "commands": 2
-  },
-  "subscribe": {
-   "verdict": "WITNESS",
-   "commands": 2
-  },
   "countTo": {
    "verdict": "PASS-bounded"
   }

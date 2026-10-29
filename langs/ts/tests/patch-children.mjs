@@ -4,7 +4,6 @@
 // total: an op whose value cannot be printed falls back to its JSON with a note, so a verdict's report never kills a run.
 import assert from 'node:assert/strict';
 import { formatOp, witnessPatch, patch, kidsOf } from '../patch.mjs';
-import { handlerDifference } from '../exec/handlers-interp.mjs';
 
 const el = (tag, props, children) => ({ $el: tag, props, children });
 
@@ -38,10 +37,7 @@ assert.equal(w2.patch[0].path, 'div[0]/p[0]');
 assert.deepEqual(patch(single('a'), single('a')), []);
 assert.deepEqual(patch(text('same'), el('div', {}, [el('p', {}, ['same'])])), []);
 
-// a handler difference inside a single-object child is found (handlers-interp reads children the same way)
-const fnTree = (d) => el('div', {}, el('button', { onClick: { $fn: 'handler', descriptor: d } }, []));
-const hd = handlerDifference(fnTree('[{"return":{"v":1}}]'), fnTree('[{"return":{"v":2}}]'));
-assert(hd && hd.prop === '/div[0]/button:onClick', JSON.stringify(hd));
+// (the handler key and its tree difference left with lane callback-behaviour: a held function is driven, never keyed by a reading of its text)
 
 // totality: a value the line printer cannot print (a bigint prop) falls back to its JSON with a note; a cycle is printed
 // up to the line's room and stops there
@@ -51,4 +47,4 @@ const cyc = el('b', {}, []); cyc.children.push(cyc);
 const c = formatOp({ kind: 'remove', path: 'c', before: cyc, after: null });
 assert.match(c, /^c remove <b><b><b>/, c);
 assert(c.length < 400, c);
-console.log('children shape: one reading for arrays, single objects and strings; diffed, printed, handler-compared; the printer is total PASS');
+console.log('children shape: one reading for arrays, single objects and strings; diffed, printed; the printer is total PASS');
