@@ -18,6 +18,8 @@ try {
   const rows = await prReport({ repo: tmp, base, head: 'WORKTREE', preview: true, project: false, runsDir: path.join(tmp, '.runs'), cacheDir: path.join(tmp, '.cache') });
   assert(rows.some(r => r.unit === 'added' && r.coverage === 'skipped:preview'), 'staged added source is present in the private WORKTREE snapshot');
   assert.equal(rows.reconciliation.complete, true);
+  assert(!fs.existsSync(path.join(rows.runDir, 'sources')), 'the private source snapshot is removed once the run is terminal');
+  assert(fs.existsSync(path.join(rows.runDir, 'terminal.json')), 'the durable ledger stays');
   assert(!fs.readdirSync(tmp).some(f => f.startsWith('.lean_')), 'no temporary source siblings in the input checkout');
   assert(git('status', '--porcelain').includes(before));
   console.log('worktree.test: all assertions pass');

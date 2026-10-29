@@ -405,6 +405,9 @@ export async function prReport(opts) {
   const unitSeconds = Number(opts.unitSeconds ?? UNIT_SECONDS), dafnySeconds = Number(opts.dafnySeconds ?? 30);
   const timeoutMs = Math.max(1000, 1000 * (opts.timeBudget == null ? taskMap.size * (unitSeconds + dafnySeconds + 30) + 60 : Number(opts.timeBudget) + unitSeconds + dafnySeconds + 60));
   const terminal = [...taskMap.values()].every(t => !t.lanes.length) ? reconcileTasks(dir) : await supervise(dir, { command: process.execPath, args: [fileURLToPath(import.meta.url), '--ledger-worker', path.join(dir, 'options.json')], timeoutMs });
+  // The snapshot is a copy of git blobs named by options.json (repo, head); once every task is terminal it is only a
+  // cache. Kept, it cost 11 GB over the 616 benchmark cases and filled the disk.
+  fs.rmSync(path.join(dir, 'sources'), { recursive: true, force: true });
   let metadata = {};
   try { metadata = JSON.parse(fs.readFileSync(path.join(dir, 'worker-report.json'), 'utf8')); }
   catch (e) { if (e.code !== 'ENOENT') console.error('Worker metadata unreadable: ' + e.name); }
