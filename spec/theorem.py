@@ -177,7 +177,9 @@ def split_helpers(funcs_defined, scoped, suffix, label, nested=()):
     """Functions named <scoped>_<x>_<suffix> are private helpers. Return the
     helper names; refuse a helper that no scoped function reaches. A nested unit is never a helper."""
     helpers = [b for b in funcs_defined if b not in scoped and b not in nested and any(b.startswith(f + '_') for f in scoped)]
-    reached, todo = set(), list(scoped)
+    # a nested unit (a callback emitted as a unit, `// NESTED`) is reached through its enclosing unit's body; its own
+    # helpers (a loop body, a branch) are reached from it, so the walk starts from the scoped and the nested units alike
+    reached, todo = set(), list(scoped) + [n for n in nested if n in funcs_defined]
     while todo:
         cur = todo.pop()
         body = funcs_defined[cur]['body']

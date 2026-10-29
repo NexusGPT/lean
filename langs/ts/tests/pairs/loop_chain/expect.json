@@ -10,7 +10,7 @@
  ],
  "equal": {
   "labels": true,
-  "doubled": false,
+  "doubled": true,
   "positives": false,
   "large": false,
   "numbered": false,

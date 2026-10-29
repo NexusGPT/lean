@@ -53,29 +53,30 @@ export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, di
 export function cachedRun(run, cmd, args, { root, files = [], outs = [], env = null, normalise = [] } = {}) {
   if (!stepCacheOn) return run(cmd, args, env ?? undefined);
   const norm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(from).join(to) : t), String(s));
+  const denorm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(to).join(from) : t), String(s)); // a stored output names this run's paths again: a result replayed in another checkout or temp folder must point at that checkout (the witness-lines check compares the site's file to the pair's)
   const inputs = files.map((f) => { try { return [norm(f), sha(fs.readFileSync(f))]; } catch { return [norm(f), null]; } });
   if (env) for (const v of Object.values(env)) { if (typeof v === 'string' && fs.existsSync(v) && fs.statSync(v).isFile()) inputs.push([norm(v), sha(fs.readFileSync(v))]); } // a table or fixture named by the environment
   const kind = producerKind(cmd, args);
-  const keyObj = { cmd, args: args.map(norm), env: env ?? {}, inputs, kind, producer: kind === 'dafny' ? dafnyVersionString() : producerHash(root, kind) };
+  const keyObj = { v: 2, cmd, args: args.map(norm), env: env ?? {}, inputs, kind, producer: kind === 'dafny' ? dafnyVersionString() : producerHash(root, kind) }; // v2: outputs stored normalised
   const key = sha(JSON.stringify(keyObj)), file = path.join(CACHE_DIR, key.slice(0, 2), key + '.json');
   try {
     const e = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (e.key === key && e.digest === sha(JSON.stringify(e.outs))) {
-      for (const [rel, content] of Object.entries(e.outs)) { const p = outs.find((o) => norm(o) === rel); if (p) { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, content); } }
-      hits++; return { status: e.status, stdout: e.stdout, stderr: e.stderr, signal: null, cached: true };
+      for (const [rel, content] of Object.entries(e.outs)) { const p = outs.find((o) => norm(o) === rel); if (p) { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, denorm(content)); } }
+      hits++; return { status: e.status, stdout: denorm(e.stdout), stderr: denorm(e.stderr), signal: null, cached: true };
     }
   } catch (err) { if (err.code && err.code !== 'ENOENT') console.error(`step cache read ${err.code}: ${file}`); }
   const r = run(cmd, args, env ?? undefined);
   misses++;
   const text = (r.stdout ?? '') + (r.stderr ?? '');
   const outContents = {}; let complete = true;
-  for (const o of outs) { try { outContents[norm(o)] = fs.readFileSync(o, 'utf8'); } catch { complete = false; } }
+  for (const o of outs) { try { outContents[norm(o)] = norm(fs.readFileSync(o, 'utf8')); } catch { complete = false; } }
   const stable = complete && !r.signal && !r.error && r.status !== null && !UNSTABLE.test(text) && Object.values(outContents).every((c) => !UNSTABLE.test(c));
   if (stable) {
     try {
       fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
       const next = `${file}.${process.pid}.next`;
-      fs.writeFileSync(next, JSON.stringify({ key, cmd, args: keyObj.args, status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '', outs: outContents, digest: sha(JSON.stringify(outContents)), date: new Date().toISOString() }), { mode: 0o600, flag: 'wx' });
+      fs.writeFileSync(next, JSON.stringify({ key, cmd, args: keyObj.args, status: r.status, stdout: norm(r.stdout ?? ''), stderr: norm(r.stderr ?? ''), outs: outContents, digest: sha(JSON.stringify(outContents)), date: new Date().toISOString() }), { mode: 0o600, flag: 'wx' });
       fs.renameSync(next, file); stored++;
     } catch (err) { console.error(`step cache write ${err.code ?? err.message}: ${file}`); }
   }

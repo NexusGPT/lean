@@ -610,7 +610,7 @@ function guardedCall(env, fn, ms) {
   if (!env.ctx) return fn();
   env.ctx.__leanCall = fn;
   const w = openWindow(env);
-  const t0 = Date.now(), u0 = process.cpuUsage();
+  const t0 = Date.now(), u0 = cpuNow();
   try { const r = vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, wallAllowance(ms)) }); if (Date.now() - t0 > ms && cpuSpentMs(u0) > ms) throw new CallTimeout(ms); return r; } // past the bound both ways: a timeout, as on an idle machine
   catch (e) { if (e && e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') throw new CallTimeout(ms); throw e; }
   finally { delete env.ctx.__leanCall; closeWindow(w); }
@@ -943,21 +943,44 @@ export const CPU_POLL_MS = 1000, FAR_GUARD = 10;
 const cpuWatched = new Map(); // pid -> { bound (s), onSample, onBound, onUnavailable }
 let cpuPoll = null, psUnavailable = false;
 const psSeconds = (t) => { const [dd, rest] = t.includes('-') ? t.split('-') : ['0', t]; const parts = rest.split(':').map(Number); return Number(dd) * 86400 + parts.reduce((acc, x) => acc * 60 + x, 0); }; // mm:ss.cc (BSD) or [dd-]hh:mm:ss (procps)
+// The time read is the worker's MAIN THREAD: the unit's JavaScript runs there, while V8's garbage collector and
+// compiler run on helper threads whose time is the engine's, not the unit's (a unit at full speed on an idle machine
+// read 121 s of process time in 90 s of wall time). Linux: /proc/<pid>/task/<pid>/stat, fields 14 and 15 in clock
+// ticks; macOS: `ps -M -p <pid>`, whose first thread row carries the main thread's user and system time; elsewhere the
+// process total (`ps -o time=`).
+const CLK_TCK = (() => { try { return Number(execFileSyncQuiet('getconf', ['CLK_TCK'])) || 100; } catch { return 100; } })();
+function execFileSyncQuiet(cmd, args) { const r = spawnSync(cmd, args, { encoding: 'utf8' }); return r.status === 0 ? r.stdout.trim() : ''; }
+function mainThreadSeconds(pid, cb) {
+  if (process.platform === 'linux') {
+    fs.readFile(`/proc/${pid}/task/${pid}/stat`, 'utf8', (err, text) => {
+      if (err) return cb(err, null);
+      const after = text.slice(text.lastIndexOf(')') + 2).split(' '); // fields from 3 on, after the command name
+      cb(null, (Number(after[11]) + Number(after[12])) / CLK_TCK); // utime and stime are fields 14 and 15 of the stat line
+    });
+    return;
+  }
+  const bsd = process.platform === 'darwin';
+  execFile('ps', bsd ? ['-M', '-p', String(pid)] : ['-o', 'time=', '-p', String(pid)], { encoding: 'utf8' }, (err, out) => {
+    if (err && !out) return cb(err, null);
+    const lines = String(out ?? '').trim().split('\n');
+    if (!bsd) return cb(null, lines.length ? psSeconds(lines[lines.length - 1].trim()) : null);
+    const row = lines.find((l) => new RegExp(`^\\S+\\s+${pid}\\s`).test(l)); // the process's first thread row carries the pid
+    if (!row) return cb(null, null);
+    const m = row.match(/(\d+:\d+(?:\.\d+)?)\s+(\d+:\d+(?:\.\d+)?)\s/); // STIME UTIME
+    cb(null, m ? psSeconds(m[1]) + psSeconds(m[2]) : null);
+  });
+}
 function pollCpu() {
   const pids = [...cpuWatched.keys()];
   if (!pids.length) { clearInterval(cpuPoll); cpuPoll = null; return; }
-  execFile('ps', ['-o', 'pid=,time=', '-p', pids.join(',')], { encoding: 'utf8' }, (err, out) => {
-    if (err && !/exit code 1/.test(String(err.message)) && !out) { // ps itself failing (absent, refused): the wall bound at the CPU bound takes over, once
-      if (!psUnavailable) { psUnavailable = true; process.stderr.write(`lean: no CPU reading of the lane B worker (ps: ${String(err.message).slice(0, 120)}); the unit bound is wall-clock on this host\n`); }
-      for (const w of cpuWatched.values()) w.onUnavailable();
+  for (const pid of pids) mainThreadSeconds(pid, (err, cpu) => {
+    const w = cpuWatched.get(pid); if (!w) return;
+    if (err || cpu === null) { // the reading itself failing (ps absent, refused; a worker already gone is no failure): the wall bound at the CPU bound takes over, once
+      if (err && !/exit code 1|ENOENT/.test(String(err.message)) && !psUnavailable) { psUnavailable = true; process.stderr.write(`lean: no CPU reading of the lane B worker (${String(err.message).slice(0, 120)}); the unit bound is wall-clock on this host\n`); for (const x of cpuWatched.values()) x.onUnavailable(); }
       return;
     }
-    for (const line of String(out ?? '').trim().split('\n')) {
-      const m = line.trim().match(/^(\d+)\s+(\S+)$/); if (!m) continue;
-      const w = cpuWatched.get(Number(m[1])); if (!w) continue;
-      const cpu = psSeconds(m[2]); w.onSample(cpu);
-      if (cpu >= w.bound) w.onBound(cpu);
-    }
+    w.onSample(cpu);
+    if (cpu >= w.bound) w.onBound(cpu);
   });
 }
 function watchCpu(pid, bound, handlers) {
@@ -973,7 +996,8 @@ function watchCpu(pid, bound, handlers) {
 let loadFactor = 1;
 export function readLoadFactor() { const cores = os.cpus().length || 1; const load = os.loadavg()[0] || 0; loadFactor = Math.min(FAR_GUARD, Math.max(1, load / cores)); return loadFactor; }
 const wallAllowance = (ms) => Math.round(ms * loadFactor);
-const cpuSpentMs = (u0) => { const u = process.cpuUsage(u0); return (u.user + u.system) / 1000; };
+const cpuNow = () => (typeof process.threadCpuUsage === 'function' ? process.threadCpuUsage() : process.cpuUsage()); // the main thread's own time when Node exposes it, else the process's
+const cpuSpentMs = (u0) => { const u = cpuNow(); return (u.user - u0.user + u.system - u0.system) / 1000; };
 let unitSecondsDefault = UNIT_SECONDS;
 export const setUnitSeconds = (s) => { unitSecondsDefault = unitSecondsValue(s); }; // pr.mjs: the run's per-unit bound
 export function unitSecondsValue(s) {

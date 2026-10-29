@@ -6,7 +6,7 @@
   "type_"
  ],
  "equal": {
-  "label_": false,
+  "label_": true,
   "print_": false,
   "map_": true,
   "type_": true
@@ -19,9 +19,20 @@
   "type": "PASS-bounded"
  },
  "check": {
-  "label": { "verdict": "PASS-bounded", "laneA": "ASK:doubles-unknown" },
-  "map": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
-  "type": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
-  "print": { "verdict": "WITNESS" }
+  "label": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "map": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "type": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  "print": {
+   "verdict": "WITNESS"
+  }
  }
 }

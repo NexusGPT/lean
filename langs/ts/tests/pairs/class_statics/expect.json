@@ -10,7 +10,7 @@
  "equal": {
   "pricing_unit": true,
   "pricing_fee": false,
-  "pricing_total": false,
+  "pricing_total": true,
   "pricing_track": true,
   "pricing_describe": true,
   "quote": true

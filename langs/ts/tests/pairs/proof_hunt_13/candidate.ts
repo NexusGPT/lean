@@ -3,4 +3,3 @@
 // prove any of them against the declared fields written one by one
 export function spreadCopy(a: { x: number }): { x: number } { return { x: a.x }; }
 export function assignNew(a: { x: number }, b: { y: number }): { x: number; y: number } { return { x: a.x, y: b.y }; }
-export function assignInto(t: { x: number }, s: { x: number }): { x: number } { t.x = s.x; return t; }
