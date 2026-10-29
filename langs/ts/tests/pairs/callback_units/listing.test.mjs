@@ -15,3 +15,7 @@ test('identity survives unrelated insertion and canonicalizes quotes; collisions
   assert.deepEqual(names(`f('new',()=>3); f("a",()=>1); f('b',()=>2);`).slice(1), a);
   assert.deepEqual(names(`f('a',()=>1); f('a',()=>2); f(()=>3); f(()=>4);`), ["f('a')#1@1", "f('a')#1@2", 'f()#0@1', 'f()#0@2']);
 });
+test('quoted literal identities escape control characters for command-line transport', () => {
+  const listed = names(String.raw`f('\0', () => 1); f('\t', () => 2);`);
+  assert.deepEqual(listed, [String.raw`f('\u0000')#1`, String.raw`f('\t')#1`]);
+});

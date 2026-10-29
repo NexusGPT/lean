@@ -2283,7 +2283,7 @@ export function callbackUnits(sf, existing) {
   const byFn = new Map([...existing.values()].filter((u) => u.form !== 'callback').map((u) => [u.fn, u]));
   const candidates = [], groups = new Map();
   const literal = (n) => ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)
-    ? `'${n.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r/g, '\\r').replace(/\n/g, '\\n')}'`
+    ? `'${JSON.stringify(n.text).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'")}'`
     : ts.isNumericLiteral(n) || ts.isBigIntLiteral(n) || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(n.kind)
       || ts.isPrefixUnaryExpression(n) && [ts.SyntaxKind.MinusToken, ts.SyntaxKind.PlusToken].includes(n.operator) && ts.isNumericLiteral(n.operand) ? n.getText(sf) : null;
   const visit = (fn) => {

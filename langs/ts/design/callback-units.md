@@ -65,3 +65,50 @@ and readers use it for b_, deep_, check_, lib_, libw_, and libc_ results. The re
 `b_app.get('/changed')#1.json`; the helper test failed before the helper existed. Green tests round-trip `/`, `'`,
 `(`, `#`, distinguish a slash from its encoded spelling, retain `plain` and `ops.add`, and write/read every existing
 pair's unit artifact. Counts and exact site line numbers are in the lane report.
+
+## Catalogue rows for readings.mjs
+
+Paste this row into `READINGS` after merging the admission contract. `ArrowFunction` and `FunctionExpression`
+already belong to `callbacks`; `Parameter` to `declarations`; `Identifier` to `names`; `Block` and return statements
+to `control-flow`. This row claims the listed callback-unit form within those kinds, without duplicating a kind owner.
+The gate already resolves `captured-mutable` through `readingOfFinding`, so there is no extra translator-message
+pattern. This lane's base has no `readings.mjs`; no partial catalogue is created here.
+
+```javascript
+{
+  id: 'callback-units',
+  construct: 'a direct function argument listed as a unit, with stable bindings of enclosing units made explicit inputs',
+  kinds: [],
+  uses: (n, ts, ctx) => ctx.unit?.form === 'callback' && n === ctx.unit.body,
+  lint: ['captured-mutable'],
+  translate: [],
+  assumptions: {
+    runtime: 'identity comes from the original source call, its preceding literal arguments and argument index; callback parameters use their checker types; captured enclosing-unit bindings become explicit inputs, while module bindings retain the module-state reading; lane B records the single closure created at module load and refuses in-body, absent or multiply instantiated callbacks',
+    aliasing: 'a const binding is stable; a let or parameter is an input only if no possible write follows closure creation, including writes in another closure or a containing loop; object inputs retain the ordinary parameter and heap alias rules, not a deep-immutability assumption',
+    exceptions: 'the callback body uses the ordinary unit exception reading; no capture operation invokes the callback or changes the surrounding call evaluation order; a mutable capture is refused before emission',
+    termination: 'the callback body uses ordinary unit termination obligations; capturing a module-load argument terminates immediately and runs no callback body; lane B never invokes an enclosing unit to manufacture a closure',
+  },
+  refusal: 'an enclosing-unit binding may be written after this callback is created; capture a stable value',
+  design: ['design/callback-units.md'],
+  versions: [{ version: 1, status: 'current' }],
+},
+```
+
+Phase 2 (`lower.mjs`, `unitReadings`): add this field to the existing `ctx` object. The existing traversal visits every
+callback body, including an empty block, so its `USES` loop records the row even for a callback without parameters.
+No syntax kinds need a second owner, and the existing callback-expression reading stays intact for enclosing units.
+
+```javascript
+unit: u,
+```
+
+The post-merge refusal attribution must also use the shared rule: the admission contract's `lowerFile` currently
+selects a finding by line containment, which would charge the callback's refusal to its enclosing unit. In that
+function, create `const inventory = topLevelFunctions(L.sf);` before constructing the per-unit records, import
+`findingUnit` from `common.mjs`, and replace the existing `findings.find(...)` with:
+
+```javascript
+const f = findings.find(x => refusing(x) && findingUnit(L.sf, inventory, x)?.name === r.unit);
+```
+
+This is merge guidance only; `lower.mjs` remains untouched in this lane.
