@@ -292,6 +292,7 @@ export function topLevelFunctions(sf) {
     for (const m of classMethodUnits(st)) map.set(m.name, m);
     for (const m of literalMemberUnits(st)) if (!map.has(m.name)) map.set(m.name, m); // a declared function or class method keeps its name
   }
+  for (const u of callbackUnits(sf, map)) map.set(u.name, u);
   return map;
 }
 
@@ -2310,4 +2311,25 @@ export function callbackUnits(sf, existing) {
     out.push(u);
   }
   return out;
+}
+
+// The checker supplies a callback's input type from the receiving signature. Unknown/any is not a type promise.
+export function callbackUntypedJsUnit(sf, u, checker) {
+  if (u.form !== 'callback') return untypedJsUnit(sf, u);
+  return untypedJsUnit(sf, { ...u, params: u.params.filter(p => {
+    const t = checker.getTypeAtLocation(p.name);
+    return !!(t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown));
+  }) });
+}
+
+// Findings belong to the named unit, otherwise to the smallest containing source range. Columns distinguish units
+// sharing one line and keep an import-time call's finding outside the callback argument it contains.
+export function findingUnit(sf, units, finding) {
+  const values = [...units.values()];
+  if (finding.unit) return values.find(u => u.name === finding.unit) ?? null;
+  const lines = sf.getLineStarts();
+  const start = (lines[finding.line - 1] ?? sf.end) + (finding.col ?? 1) - 1;
+  const end = (lines[(finding.endLine ?? finding.line) - 1] ?? sf.end) + (finding.endCol ?? finding.col ?? 1) - 1;
+  return values.filter(u => u.node.getStart(sf) <= start && end <= u.node.getEnd())
+    .sort((a, b) => (a.node.getEnd() - a.node.getStart(sf)) - (b.node.getEnd() - b.node.getStart(sf)))[0] ?? null;
 }

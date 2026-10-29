@@ -83,8 +83,8 @@ const callbackCounts = () => Object.fromEntries([
 ].map((k) => [k, 0]));
 
 /** Every function-like node with a body, of one parsed file, against the listed units. */
-export function gapOfFile(sf) {
-  const units = topLevelFunctions(sf);
+export function gapOfFile(sf, listing = topLevelFunctions) {
+  const units = listing(sf);
   const listed = new Set([...units.values()].map((u) => u.fn));
   const callbacks = callbackCounts(), predicted = callbackUnits(sf, units), eligible = new Set(predicted.map((u) => u.fn));
   for (const u of predicted) if (!listed.has(u.fn)) {

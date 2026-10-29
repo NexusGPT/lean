@@ -14,6 +14,6 @@ const { sf } = loadProgram(path.resolve(file), { project });
 const out = [];
 for (const [name, u] of topLevelFunctions(sf)) {
   const start = lineOf(sf, u.node.getStart(sf)), end = lineOf(sf, u.node.getEnd());
-  out.push({ name, form: u.cls ? 'method' : u.literal ? 'literal-method' : 'function', top: !u.cls && !u.literal, start, end, lines: end - start + 1 });
+  out.push({ name, form: u.form === 'callback' ? 'callback' : u.cls ? 'method' : u.literal ? 'literal-method' : 'function', top: !u.cls && !u.literal, start, end, lines: end - start + 1 });
 }
 process.stdout.write(JSON.stringify(out));

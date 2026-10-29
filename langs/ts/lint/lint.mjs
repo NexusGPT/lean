@@ -11,7 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
@@ -211,6 +211,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   const ownText = given.sf.text; // what the owner wrote: the normalised text has the same length, so a finding quotes this at the same positions
   const out = [];
   const units = topLevelFunctions(sf);
+  const unitByNode = new Map([...units.values()].map(u => [u.node, u]));
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
   const generators = generatorReading(checker, sf, units);
   let current = null; // current unit's declaration statement, for locality tests
@@ -273,7 +274,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
   };
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
@@ -2382,6 +2383,25 @@ export function lintFile(file, ranges = null, opts = {}) {
     else if (ts.isExpressionStatement(st) && (ts.isStringLiteral(st.expression) || ts.isNoSubstitutionTemplateLiteral(st.expression))) continue; // a directive ("use client", "use strict") is not code
     else v(st, 'toplevel-effect', 'code at module level runs on import; it is outside the subset');
   }
+  // Callbacks use the same signature/body checks as other units, including contextual parameter types.
+  for (const u of units.values()) if (u.form === 'callback' && overlaps(sf, u.node, ranges)) {
+    checkedDiagSpans.push(u.node);
+    current = u.node; currentFn = u.fn; currentClass = null; literalUnit = null; objectMethod = null; thisParam = null;
+    const why = callbackUntypedJsUnit(sf, u, checker);
+    if (why) v(u.node, 'untyped-js', why);
+    if (u.fn.asteriskToken) { const shape = generators.shape(u); if (shape.rule) v(u.node, shape.rule, shape.message); }
+    const sig = checker.getSignatureFromDeclaration(u.fn), rt = sig.getReturnType();
+    if (!u.isAsync && isPromiseT(rt)) promiseHandle(u, u.node);
+    checkType(isPromiseT(rt) ? checker.getTypeArguments(rt)[0] : rt, u.typeNode ?? u.node);
+    for (const p of u.params) {
+      if (p.dotDotDotToken && !isArrayExpr(p.name)) v(p, 'param-form', 'a rest parameter is an array');
+      if (p.initializer) expr(p.initializer);
+      checkType(tOf(p.name), p);
+    }
+    checkStringLiterals(u.node);
+    if (ts.isBlock(u.body)) stmts(u.body.statements); else expr(u.body);
+    current = null; currentFn = null;
+  }
   // only a finally that reads an alias or a shadowed binding needs these refusals
   const finallyGate = (n) => {
     if (ts.isTryStatement(n) && n.finallyBlock && overlaps(sf, n, ranges)) {
@@ -2504,14 +2524,14 @@ export function lintFile(file, ranges = null, opts = {}) {
     walkAdvice(sf);
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
-  for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
+  for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
   // the unit each finding sits in, and the advice for its rule
   const unitSpans = [...units.values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
   for (const st of sf.statements) for (const m of classMethodUnits(st)) unitSpans.push([m.name, lineOf(sf, m.node.getStart(sf)), lineOf(sf, m.node.getEnd())]);
   // the label of the advised rewrite: decided at the site for the three deciding rules (labelDecided), else the rule's own;
   // a rule with no advice entry suggests nothing, so its label is migration
   for (const f of out) {
-    const u = unitSpans.find(([, a, b]) => a <= f.line && f.line <= b); f.unit = u ? u[0] : null;
+    f.unit = findingUnit(sf, units, f)?.name ?? null;
     const a = ADVICE[f.rule], site = f.site; delete f.site;
     f.label = site?.label ?? a?.label ?? 'migration'; f.labelDecided = !!site;
     if (f.label === 'conditional') f.precondition = site?.precondition ?? a.precondition;
