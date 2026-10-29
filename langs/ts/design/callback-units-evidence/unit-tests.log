@@ -1,0 +1,67 @@
+node --test langs/ts/tests/pairs/callback_units/artifact.test.mjs langs/ts/tests/pairs/callback_units/captures.test.mjs langs/ts/tests/pairs/callback_units/context.test.mjs langs/ts/tests/pairs/callback_units/listing.test.mjs langs/ts/tests/pairs/callback_units/normalized.test.mjs langs/ts/tests/pairs/callback_units/only.test.mjs langs/ts/tests/pairs/callback_units/prediction.test.mjs langs/ts/tests/pairs/callback_units/runtime.test.mjs
+{"pairsRead":222,"distinctUnits":1079}
+✔ unit artifact names round-trip punctuation without creating directories (2.459375ms)
+✔ every existing pair unit still finds the artifact it wrote (500.806083ms)
+census lock held by callback-units 19909; retry in 60 s
+✔ captured input is explicit; a later write refuses only the callback (1781.054959ms)
+census lock held by callback-units 19909; retry in 60 s
+census lock held by callback-units 53916; retry in 60 s
+census lock held by callback-units 53916; retry in 60 s
+census lock held by callback-units 53916; retry in 60 s
+census lock held by callback-units 83400; retry in 60 s
+census lock held by lead 50451; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by translator-sites 25624; retry in 60 s
+census lock held by callback-units 86212; retry in 60 s
+census lock held by translator-sites 86734; retry in 60 s
+census lock held by callback-units 2358; retry in 60 s
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  32986088    28%  458732 329860880    0%   /
+exit=0
+✔ census respects the named finding and keeps the enclosing unit admitted (2100309.581458ms)
+✔ --only splits lists at top-level commas, including a name in any position (6382.042125ms)
+✔ contextual JavaScript inputs are typed; an untyped callback is refused by name (827.551042ms)
+✔ a contextual JS callback reads an opaque capture without reclassifying it as an untyped own argument (710.766458ms)
+✔ one inventory lists module and enclosing-unit callbacks (160.494542ms)
+✔ identity survives unrelated insertion and canonicalizes quotes; collisions alone get ordinal suffixes (0.703542ms)
+✔ quoted literal identities escape control characters for command-line transport (0.275791ms)
+✔ units CLI reports callback form and actual module placement (1483.98575ms)
+✔ normalizing call/apply preserves callback source identity (1378.427625ms)
+✔ --only tokenization protects parentheses and quoted commas in every position (1.283542ms)
+✔ prediction partitions the five call shapes and nested callback (116.989375ms)
+✔ only colliding names in the same scope are order named (0.727583ms)
+✔ module callbacks are reachable; in-body callbacks have a named refusal (2903.767417ms)
+✔ callback capture does not add observable module exports (1.202625ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2109403.425333
+
+EXIT 0
