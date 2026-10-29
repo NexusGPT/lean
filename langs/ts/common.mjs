@@ -2268,3 +2268,46 @@ export function strandedLetReads(checker, d) {
   if (!absenceCarried(checker, d)) return [];
   return letRefs(checker, d).map((r) => r.node).filter((x) => payloadRead(checker, x) === x && !payloadStatement(checker, x, x));
 }
+// A callback's identity comes from its call, not its position among unrelated calls.
+// This is also the prediction's inventory; topLevelFunctions supplies its existing units.
+export function callbackUnits(sf, existing) {
+  const byFn = new Map([...existing.values()].filter((u) => u.form !== 'callback').map((u) => [u.fn, u]));
+  const candidates = [], groups = new Map();
+  const literal = (n) => ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)
+    ? `'${n.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r/g, '\\r').replace(/\n/g, '\\n')}'`
+    : ts.isNumericLiteral(n) || ts.isBigIntLiteral(n) || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(n.kind)
+      || ts.isPrefixUnaryExpression(n) && [ts.SyntaxKind.MinusToken, ts.SyntaxKind.PlusToken].includes(n.operator) && ts.isNumericLiteral(n.operand) ? n.getText(sf) : null;
+  const visit = (fn) => {
+    if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
+      let arg = fn;
+      while (arg.parent && (ts.isParenthesizedExpression(arg.parent) || ts.isAsExpression(arg.parent) || ts.isSatisfiesExpression(arg.parent) || ts.isTypeAssertionExpression(arg.parent) || ts.isNonNullExpression(arg.parent))) arg = arg.parent;
+      const call = arg.parent;
+      if ((ts.isCallExpression(call) || ts.isNewExpression(call)) && call.arguments?.includes(arg)) {
+        let scope = null;
+        for (let p = call.parent; p && p !== sf; p = p.parent) {
+          if (ts.isFunctionLike(p) || ts.isClassStaticBlockDeclaration(p) || ts.isPropertyDeclaration(p)) { scope = p; break; }
+        }
+        const index = call.arguments.indexOf(arg);
+        const key = `${call.expression.getText(sf)}(${call.arguments.slice(0, index).map(literal).filter((x) => x !== null).join(',')})#${index}`;
+        const u = { name: key, node: fn, fn, params: fn.parameters, body: fn.body, typeNode: fn.type, isAsync: !!fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: fn.typeParameters, form: 'callback', call, argumentIndex: index, scope, orderNamed: false };
+        candidates.push(u); byFn.set(fn, u);
+        if (!groups.has(scope)) groups.set(scope, new Map());
+        const group = groups.get(scope);
+        if (!group.has(key)) group.set(key, []);
+        group.get(key).push(u);
+      }
+    }
+    ts.forEachChild(fn, visit);
+  };
+  visit(sf);
+  for (const group of groups.values()) for (const us of group.values()) if (us.length > 1) us.forEach((u, i) => { u.name += `@${i + 1}`; u.orderNamed = true; });
+  const out = [];
+  for (const u of candidates) {
+    const parent = u.scope && byFn.get(u.scope);
+    if (u.scope && (!parent || parent.form === 'callback' && !out.includes(parent))) continue;
+    u.enclosingUnit = parent ?? null;
+    if (parent) u.name = `${parent.name}/${u.name}`;
+    out.push(u);
+  }
+  return out;
+}
