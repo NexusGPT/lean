@@ -1,15 +1,6 @@
 {
- "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity).",
+ "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity). Re-baselined on the admission head of 2026-10-29 (the doubles merge, all 204 pairs, --jobs 4): 118 entries not seen in a pair that ran were retired (70 an integer past 2^53: the model is exact, Node rounds to binary64, 43 signed zero: Node -0, the model 0, 3 real arithmetic: the model is exact, Node rounds to binary64, 2 aliased arguments: one object at two places of the input): the faithful number reading makes a unit's inexact operations uninterpreted, so those units no longer execute against Node; 2 added (signed zero on a pass-through unit: proof_hunt_13/spreadCopy, reach_absent/Changed.f). The retired entries are in the git history of this file at e2c729a0.",
  "findings": [
-  {
-   "kind": "disagree",
-   "pair": "element_writes",
-   "unit": "bump",
-   "cause": "aliased arguments: one object at two places of the input",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 2, parent: result: model 9007199254741411 against 9007199254741412"
-  },
   {
    "kind": "disagree",
    "pair": "heap_enumerated",
@@ -18,515 +9,6 @@
    "row": "d7e54baf",
    "laneA": "withheld",
    "first": "input 0, parent: result: model 9007199254740991 against 1"
-  },
-  {
-   "kind": "disagree",
-   "pair": "recursion",
-   "unit": "total",
-   "cause": "aliased arguments: one object at two places of the input",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 24, parent: result: model 27021597764222973 against 27021597764222972"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callee_witness",
-   "unit": "Caller",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 18014398509481986 against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callee_witness",
-   "unit": "helper",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callee_witness",
-   "unit": "Total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 18014398509481983 against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "class_statics",
-   "unit": "Pricing.fee",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, parent: result: model 27021597764222974 against 27021597764222972",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "class_statics",
-   "unit": "Pricing.total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, candidate: result: model 9007202254740991 against 9007202254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "clock",
-   "unit": "pureOnly",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "comma_operator",
-   "unit": "commaDrop",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "comma_operator",
-   "unit": "commaLast",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "comma_operator",
-   "unit": "commaSplit",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "comma_operator",
-   "unit": "commaSwap",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 8, parent: result: model 18014400509481982 against 18014400509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "comma_operator",
-   "unit": "untouched",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 26, parent: result: model -9007199254741090 against -9007199254741092",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "dict_order",
-   "unit": "lookup",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, parent: result: model 9007209254740991 against 9007209254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "element_writes",
-   "unit": "bump",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 1, parent: result: model 9007199254741411 against 9007199254741412",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "element_writes",
-   "unit": "settle",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 18, parent: result: model 9007199254741091 against 9007199254741092",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exception_callback",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_scope",
-   "unit": "caller",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, parent: result: model 9007199254740997 against 9007199254740996",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_scope",
-   "unit": "helper",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 17, parent: result: model 9007200254740993 against 9007200254740994",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "for_desugar",
-   "unit": "sumPositive",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "for_each",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "function_values",
-   "unit": "apply",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 12, parent: result[0]: model 9007199254741001 against 9007199254741000",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "generators",
-   "unit": "collectCounted",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result[1]: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "generators",
-   "unit": "composition",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result[2]: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "generators",
-   "unit": "consume",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result[1]: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "generators",
-   "unit": "producerStep",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap_enumerated",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 3, parent: result: model 9007199254741091 against 9007199254741092",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap_loops",
-   "unit": "raise",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, parent: argument a after the call: .1: model {\"$bigint\":\"18014398509481983\"} against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap_loops",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 8, candidate: result: model 9007199254740995 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap_loops",
-   "unit": "weight",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 6, parent: result: model 9007199254742053 against 9007199254742052",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap5_arith",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 19, candidate: result: model 18014398509481983 against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap5_tuples",
-   "unit": "width",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 26, parent: result: model -9007199254741091 against -9007199254741092",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap5_void",
-   "unit": "add",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: argument c after the call: .total: model {\"$bigint\":\"9007199254741091\"} against 9007199254741092",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap5_void",
-   "unit": "addTwice",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 0, parent: argument c after the call: .total: model {\"$bigint\":\"9007199254740993\"} against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "known_values",
-   "unit": "freeSeats",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 26, parent: result: model 9007199254741091 against 9007199254741092",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "lint_small",
-   "unit": "untouched",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "local_declarations",
-   "unit": "summary",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 17, parent: result.total: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "local_declarations",
-   "unit": "widen",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result: model 18014398509481983 against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "local_procedures",
-   "unit": "tagged",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 17, parent: result: model 900720025474099303 against 900720025474099200",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "loop_chain",
-   "unit": "totalQty",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result: model 9007199254742337 against 9007199254742336",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "loop_forms",
-   "unit": "doUpdate",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result: model 9007199254740997 against 9007199254740996",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "map_block",
-   "unit": "sizes",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 5, candidate: result[1]: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "module_forms",
-   "unit": "untouched",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "mutual_summaries",
-   "unit": "scale",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 27021597764222973 against 27021597764222972",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "mutual_summaries",
-   "unit": "useScale",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, parent: result: model 18014398509481983 against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "named_then",
-   "unit": "changedUnit",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "named_then",
-   "unit": "inc",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "numbers_bits",
-   "unit": "divide",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 0, candidate: result: model 1/420 (0.0023809523809523807) against 0.002380952380952381",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "numbers",
-   "unit": "discounted",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 8, parent: result: model -9007199254740891000000000/100 (-9.007199254740891e+22) against -9.00719925474089e+22",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "object_methods",
-   "unit": "literalGetter",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "object_methods",
-   "unit": "strategy",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, parent: result: model 36028797018963966 against 36028797018963964",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "object_methods",
-   "unit": "strategyRefactor",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
   {
    "kind": "disagree",
@@ -550,193 +32,6 @@
   },
   {
    "kind": "disagree",
-   "pair": "operators_values",
-   "unit": "order",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 18014398509481983 against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "operators",
-   "unit": "sum",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 17, parent: result: model 9007200254740991 against \"01000000000,9007199254740991\"",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "operators",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "ordered_collections",
-   "unit": "weighted",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 17, candidate: result: model 90071992547409207 against 90071992547409200",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "param_rebind",
-   "unit": "bumped",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 0, parent: result: model 90071992547414110 against 90071992547414110",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "param_rebind",
-   "unit": "drained",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 17, parent: result: model -9007200254740891 against -9007200254740892",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "param_rebind",
-   "unit": "spread",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result: model 27021597764222973 against 27021597764222972",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "proof_hunt_9",
-   "unit": "make",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: .x: model {\"$bigint\":\"9007199254740993\"} against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "receiver_write",
-   "unit": "hitTwice",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: argument t after the call.n: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "rename_parameter",
-   "unit": "bump",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 3, parent: result: model 9007199254741091 against 9007199254741092",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "rename_parameter",
-   "unit": "fieldname",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 3, parent: result: model 9007199254741551 against 9007199254741552",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "rename_parameter",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 24, parent: result: model -4269412446746818302 against -4269412446746818600",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "signed_zero",
-   "unit": "untouched",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 8, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "special_numbers",
-   "unit": "total",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 17, parent: result: model 9007200254740991 against 9007200254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "special_numbers",
-   "unit": "untouched",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 9, parent: result: model 18014398509481983 against 18014398509481984",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "witness_args",
-   "unit": "scaled",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 8, candidate: result: model 9007199254740995 against 9007199254740996",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "numbers_bits",
-   "unit": "divide",
-   "cause": "real arithmetic: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 1/9007199254740991 (1.1102e-16) against 1.1102230246251568e-16"
-  },
-  {
-   "kind": "disagree",
-   "pair": "numbers",
-   "unit": "discounted",
-   "cause": "real arithmetic: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 10, candidate: result: model 434112/100 (4341.12) against 4341.120000000001"
-  },
-  {
-   "kind": "disagree",
-   "pair": "numbers",
-   "unit": "vat",
-   "cause": "real arithmetic: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 4, parent: result: model 42350/100 (423.5) against 423.50000000000006"
-  },
-  {
-   "kind": "disagree",
    "pair": "adapters",
    "unit": "pick",
    "cause": "signed zero: Node -0, the model 0",
@@ -753,46 +48,6 @@
    "row": "d7e54baf",
    "laneA": "withheld",
    "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "adapters",
-   "unit": "twice",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "bench_drops",
-   "unit": "twice",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callee_witness",
-   "unit": "double",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callee_witness",
-   "unit": "Total",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
   {
@@ -843,156 +98,6 @@
    "row": "d7e54baf",
    "laneA": "withheld",
    "first": "input 15, parent: result[1]: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exception_callback",
-   "unit": "check",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exception_callback",
-   "unit": "scaled",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 0, parent: result[0]: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_across",
-   "unit": "caller",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_across",
-   "unit": "Finalizer.cleanup",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_across",
-   "unit": "leaf",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_across",
-   "unit": "moved",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_across",
-   "unit": "stable",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_rebase",
-   "unit": "Guard.read",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_scope",
-   "unit": "lazyLeaf",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "gen_walk",
-   "unit": "clampUnit",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0/1 (0) against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "gen_walk",
-   "unit": "scale",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0/1 (0) against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "gen_walk",
-   "unit": "toStep",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 2, candidate: result: model 0/1 (0) against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "generators",
-   "unit": "composition",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result[0]: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "generators",
-   "unit": "consume",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 15, parent: result[0]: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "generators",
-   "unit": "refactor",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "withheld",
-   "first": "input 15, parent: result[0]: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
   {
@@ -1127,26 +232,6 @@
   },
   {
    "kind": "disagree",
-   "pair": "heap5_conditional",
-   "unit": "pick",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap5_conditional",
-   "unit": "size",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 16, parent: argument i after the call: .qty: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
    "pair": "heap5_literals",
    "unit": "clear",
    "cause": "signed zero: Node -0, the model 0",
@@ -1177,38 +262,8 @@
   },
   {
    "kind": "disagree",
-   "pair": "heap5_literals",
-   "unit": "twice",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap5_module",
-   "unit": "capped",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
    "pair": "heap5_module",
    "unit": "key",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 16, parent: argument i after the call: .id: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "heap5_module",
-   "unit": "room",
    "cause": "signed zero: Node -0, the model 0",
    "row": "d7e54baf",
    "laneA": "proved",
@@ -1337,31 +392,11 @@
   },
   {
    "kind": "disagree",
-   "pair": "microtask_worker",
-   "unit": "double",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
    "pair": "mixed_logic_values",
    "unit": "nullishNumber",
    "cause": "signed zero: Node -0, the model 0",
    "row": "d7e54baf",
    "laneA": "not proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "module_const_deps",
-   "unit": "twice",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
    "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
@@ -1403,46 +438,6 @@
    "row": "d7e54baf",
    "laneA": "not proved",
    "first": "input 16, parent: argument user after the call: .visits: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "mutual_summaries",
-   "unit": "double",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "mutual_summaries",
-   "unit": "scale",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "named_then",
-   "unit": "double",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "named_then",
-   "unit": "unitHandler",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
   {
@@ -1588,30 +583,10 @@
   {
    "kind": "disagree",
    "pair": "operators_values",
-   "unit": "compound",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "operators_values",
    "unit": "localPostfix",
    "cause": "signed zero: Node -0, the model 0",
    "row": "d7e54baf",
    "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "operators_values",
-   "unit": "order",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
    "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
@@ -1629,16 +604,6 @@
    "kind": "disagree",
    "pair": "param_rebind",
    "unit": "drained",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "param_rebind",
-   "unit": "spread",
    "cause": "signed zero: Node -0, the model 0",
    "row": "d7e54baf",
    "laneA": "proved",
@@ -1677,52 +642,12 @@
   },
   {
    "kind": "disagree",
-   "pair": "reach_keys",
-   "unit": "build",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: .y: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "read_shaped_inputs",
-   "unit": "clampLimit",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
    "pair": "rename_parameter",
    "unit": "width",
    "cause": "signed zero: Node -0, the model 0",
    "row": "d7e54baf",
    "laneA": "withheld",
    "first": "input 11, candidate: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "signed_zero",
-   "unit": "doubled",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "signed_zero",
-   "unit": "magnitude",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
   {
@@ -1767,88 +692,12 @@
   },
   {
    "kind": "disagree",
-   "pair": "throwing_callbacks",
-   "unit": "check",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
    "pair": "small_forms",
    "unit": "build",
    "cause": "value",
    "row": "d7e54baf",
    "laneA": "proved",
    "first": "input 15, parent: result: model dictionary entry \"vh6y1\" has no match"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exported_object_methods",
-   "unit": "ops.add",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
-   "added": "600dd759: new pair (merge 600dd759, exported-units)",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exported_object_methods",
-   "unit": "ops.scale",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "added": "600dd759: new pair (merge 600dd759, exported-units)",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exported_object_methods",
-   "unit": "ops.viaSibling",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 27021597764222979 against 27021597764222976",
-   "added": "600dd759: new pair (merge 600dd759, exported-units)",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "opaque_values",
-   "unit": "flowFixed",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "added": "600dd759: new pair (merge fea80f88, opaque-values)",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "opaque_values",
-   "unit": "mapPresent",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "added": "600dd759: new pair (merge fea80f88, opaque-values)",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "proof_hunt_0",
-   "unit": "thrower",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
-   "added": "600dd759: pair unchanged; lane A translates x! since merge fea80f88 (opaque-values), refused before",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
   {
    "kind": "disagree",
@@ -1859,36 +708,6 @@
    "laneA": "not proved",
    "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "added": "600dd759: pair unchanged; lane A translates x! since merge fea80f88 (opaque-values), refused before",
-   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callback_units",
-   "unit": "outer",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "a94d702e",
-   "laneA": "proved",
-   "first": "input 8, parent: result: .1: model {\"$bigint\":\"9007199254740993\"} against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callback_units",
-   "unit": "app.get('/changed')#1",
-   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
-   "row": "a94d702e",
-   "laneA": "not proved",
-   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
-   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
-  },
-  {
-   "kind": "disagree",
-   "pair": "callback_units",
-   "unit": "app.get('/same')#1",
-   "cause": "signed zero: Node -0, the model 0",
-   "row": "a94d702e",
-   "laneA": "proved",
-   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   },
   {
@@ -1937,6 +756,26 @@
    "first": "input 0 [[0,1,-1]]: Node {\"returned\":false}; result: model true against false",
    "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
    "added": "29 Oct 2026, the lead at the merge of lane copy-override-readings (387e56bb): the pair array_copy_identity is new; its copies are compared by identity in Node and by value in the model"
+  },
+  {
+   "kind": "disagree",
+   "pair": "proof_hunt_13",
+   "unit": "spreadCopy",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: result.x: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "reach_absent",
+   "unit": "Changed.f",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "unlisted",
+   "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   }
  ]
 }

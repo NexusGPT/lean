@@ -949,14 +949,15 @@ const psSeconds = (t) => { const [dd, rest] = t.includes('-') ? t.split('-') : [
 // read 121 s of process time in 90 s of wall time). Linux: /proc/<pid>/task/<pid>/stat, fields 14 and 15 in clock
 // ticks; macOS: `ps -M -p <pid>`, whose first thread row carries the main thread's user and system time; elsewhere the
 // process total (`ps -o time=`).
-const CLK_TCK = (() => { try { return Number(execFileSyncQuiet('getconf', ['CLK_TCK'])) || 100; } catch { return 100; } })();
+let clkTck = 0; // Linux clock ticks per second, read on the first poll (never at load: a preview spawns no process)
+const CLK_TCK = () => clkTck || (clkTck = (() => { try { return Number(execFileSyncQuiet('getconf', ['CLK_TCK'])) || 100; } catch { return 100; } })());
 function execFileSyncQuiet(cmd, args) { const r = spawnSync(cmd, args, { encoding: 'utf8' }); return r.status === 0 ? r.stdout.trim() : ''; }
 function mainThreadSeconds(pid, cb) {
   if (process.platform === 'linux') {
     fs.readFile(`/proc/${pid}/task/${pid}/stat`, 'utf8', (err, text) => {
       if (err) return cb(err, null);
       const after = text.slice(text.lastIndexOf(')') + 2).split(' '); // fields from 3 on, after the command name
-      cb(null, (Number(after[11]) + Number(after[12])) / CLK_TCK); // utime and stime are fields 14 and 15 of the stat line
+      cb(null, (Number(after[11]) + Number(after[12])) / CLK_TCK()); // utime and stime are fields 14 and 15 of the stat line
     });
     return;
   }

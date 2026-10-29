@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { normaliseApplyCalls, applyCall } from '../common.mjs';
+import { normaliseApplyCalls, applyCall, faithfulOp } from '../common.mjs';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
@@ -111,7 +111,7 @@ function translateOnce(file, fnName, opts = {}) {
   const faithful = core && !opts.exactNumbers ? analyze('faithful', () => faithfulNumbers(normalised)) : { loaded: normalised, units: new Map() };
   const loaded = faithful.loaded;
   const { sf, checker } = loaded;
-  let real = realFlag || analyze('number-mode', () => fileUsesReals(sf)); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
+  let real = realFlag || analyze('number-mode', () => fileUsesReals(normalised.sf)); // read on the file as written: the faithful rewrite replaces a float literal or a `/` on one side and not the other, and the two sides must share one number type // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
   // the units, with a callback unit's captured inputs appended to its parameters: once per analysis context, since a
   // cached inventory must not gain them a second time (callback-units; lowering-cache's shared file analyses)
   const { fns, callbackInputs } = analyze('units', () => {
@@ -322,7 +322,11 @@ function translateOnce(file, fnName, opts = {}) {
   const fold = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
   const sigOf = (u) => { const fn = u.fn; const decs = (n) => (ts.canHaveDecorators && ts.canHaveDecorators(n) ? (ts.getDecorators(n) ?? []) : []).map((d) => fold(d.getText(sf))); const isThis = (p) => ts.isIdentifier(p.name) && p.name.text === 'this'; const thisP = fn.parameters.find(isThis); const ps = (u.form === 'callback' ? u.params : fn.parameters).filter((p) => !isThis(p)); return JSON.stringify({ decorators: decs(fn), ...(thisP ? { this: thisP.type ? fold(thisP.type.getText(sf)) : null } : {}), params: ps.map((p) => ({ decorators: decs(p), type: p.type ? fold(p.type.getText(sf)) : null, optional: !!p.questionToken, rest: !!p.dotDotDotToken, init: p.initializer ? fold(p.initializer.getText(sf)) : null })), ret: fn.type ? fold(fn.type.getText(sf)) : null, names: ps.map((p) => fold(p.name.getText(sf))), ...(promiseHandleUnit(u) ? { handle: true } : {}) }); };
   // a promise handle unit returns the promise an outside call returned, unsettled: a caller sees another interface than an async unit's adopted result
-  const promiseHandleUnit = (u) => !u.isAsync && !u.isCtor && !u.accessor && !!u.fn.body && isPromiseT(checker.getSignatureFromDeclaration(u.fn).getReturnType());
+  // a unit that builds the promise it returns (`Promise.reject(e)`, `Promise.resolve(v)`, `new Promise(...)`, a `.then`
+  // chain) returns no handle: the term that names the object is made inside, and the reader lowers the form to its
+  // settlement (promiseExpression); a `.finally` callback returning `Promise.reject(n + 1)` is read as the rejection
+  const returnsPromiseForm = (u) => { const out = []; if (ts.isBlock(u.fn.body)) { const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) out.push(x.expression); ts.forEachChild(x, w); }; w(u.fn.body); } else out.push(u.fn.body); return out.some((e) => !!promiseForm(e, checker, sf)); };
+  const promiseHandleUnit = (u) => !u.isAsync && !u.isCtor && !u.accessor && !!u.fn.body && isPromiseT(checker.getSignatureFromDeclaration(u.fn).getReturnType()) && !returnsPromiseForm(u);
   // its result is a handle: the term of the outside transition (or the input) that produced it names that one object, so
   // equal terms are the same promise; the lint keeps out the handles whose term could not tell two objects apart
   const promiseHandleGuard = (u, g) => promiseHandleUnit(u) ? { ...g, exposed: g.exposed.filter((r) => r !== 'result may carry an input or shared reference') } : g;
@@ -369,6 +373,7 @@ function translateOnce(file, fnName, opts = {}) {
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
   const localEffectScan = new Set();
   function isEffectCall(n) {
+    if (faithfulOp(n)) return false; // an uninterpreted number operation (translate/faithful.mjs): the operator it stands for, no transition
     if (n.__namedStep) return true; // one step of a named callback loop calls a function that makes a transition
     if (mayFaultPure(n, checker, sf)) return true;
     if (ts.isCallExpression(n) && ownKeyTest(checker, n, sf)?.kind) return false; // the own-key test reads its operands only
@@ -713,7 +718,7 @@ function translateOnce(file, fnName, opts = {}) {
   // a lib or runtime global read as a value (not a callee, not the receiver of a called method, not a type): a world read
   const libValueRead = (x) => { if (!ts.isIdentifier(x) || !x.parent || ts.isTypeNode(x.parent) || ts.isQualifiedName(x.parent)) return false; const p = x.parent; if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === x) return false; if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return false; if (ts.isBinaryExpression(p) && p.right === x && p.operatorToken.kind === K.InstanceOfKeyword) return false; return libGlobalRoot(checker, x, sf, currentUnit?.node ?? null); };
   const libWorldRead = (n) => { if (!n || !(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n))) return false; let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root) || ts.isAsExpression(root) || ts.isNonNullExpression(root)) root = root.expression; return libGlobalRoot(checker, root, sf, currentUnit?.node ?? null); };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || staticCell(x) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isMetaProperty(x) && x.keywordToken === K.ImportKeyword) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (faithfulOp(x)) { for (const a of x.arguments) w(a); return; } if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || staticCell(x) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isMetaProperty(x) && x.keywordToken === K.ImportKeyword) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -1472,7 +1477,12 @@ function translateOnce(file, fnName, opts = {}) {
     const fields = props.map((p) => ({ name: p.name, type: checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional) })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     if (t.symbol?.declarations?.some((d) => ts.isBindingElement(d) && d.dotDotDotToken)) name = `Rest_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     if (literalRecord(t)) name = `Literal_${hash(fields.map((f) => f.name + ':' + checker.typeToString(f.type)).join(','))}`;
-    if (!name) name = `Rec_${hash(fields.map((f) => f.name).join(','))}`;
+    // a record's name carries its field types as well as their names (as Literal_ and Rest_ do): two records with the
+    // same keys and different values (`useRef(0)` and `useRef("")`, both `{current}`) are two datatypes; a generic
+    // record's name carries its type arguments, one datatype per instantiation (`Box<number>`, `Box<string>`)
+    const typeArgs = (t.flags & TF.Object) && (t.objectFlags & ts.ObjectFlags.Reference) ? (checker.getTypeArguments(t) ?? []) : [];
+    if (name && typeArgs.length) name = `${name}_${hash(typeArgs.map((x) => checker.typeToString(x)).join(','))}`;
+    if (!name) name = `Rec_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     name = dn(mangle(name));
     if (recordAlias.has(name)) return recordAlias.get(name);
     const key = `datatype ${name}`;
@@ -6227,7 +6237,11 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     }
     if (numericOpaque.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
     const sp = sigParams(u);
-    const bodyList = ts.isBlock(u.body) ? [...u.body.statements] : null;
+    // ECMA-262 15.3.4 ConciseBody: an expression body is evaluated and its value returned; a unit whose return type is void
+    // (`x => [x].forEach(f)`, `x => count++`) returns undefined whatever the expression yields, so its body is the one
+    // statement it is, read by the statement forms (the loop lowering, effects, faults), its result Unit
+    const conciseVoid = !!u.body && !ts.isBlock(u.body) && !!(retType(u).flags & TF.Void);
+    const bodyList = ts.isBlock(u.body) ? [...u.body.statements] : conciseVoid ? [{ kind: K.ExpressionStatement, expression: u.body, parent: u.fn, pos: u.body.pos, end: u.body.end, getStart: () => u.body.getStart(sf), getEnd: () => u.body.getEnd(), getText: () => u.body.getText(sf), getFullStart: () => u.body.getFullStart() }] : null;
     reassignedParams(u); // refuses a parameter both rebound and changed in place
     if (core) {
       const eff = effectfulUnits.has(u.name);

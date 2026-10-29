@@ -1,5 +1,5 @@
 // react imports and closure facts shared by the lint and translator
-import { ts, isArrayLike } from './common.mjs';
+import { ts, isArrayLike, faithfulOp } from './common.mjs';
 const K = ts.SyntaxKind;
 export function reactHook(checker, n) {
   if (!ts.isCallExpression(n)) return null;
@@ -58,6 +58,7 @@ export function renderPure(checker, n) {
   if (ts.isPrefixUnaryExpression(n)) return [K.MinusToken, K.ExclamationToken].includes(n.operator) && renderPure(checker, n.operand);
   if (ts.isBinaryExpression(n)) return [K.PlusToken, K.MinusToken, K.AsteriskToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.AmpersandAmpersandToken, K.BarBarToken, K.QuestionQuestionToken].includes(n.operatorToken.kind) && renderPure(checker, n.left) && renderPure(checker, n.right);
   if (ts.isConditionalExpression(n)) return [n.condition, n.whenTrue, n.whenFalse].every((e) => renderPure(checker, e));
+  if (faithfulOp(n)) return n.arguments.every((a) => renderPure(checker, a)); // an uninterpreted number operation of the faithful reading: the operator it stands for
   if (ts.isTemplateExpression(n)) return n.templateSpans.every((s) => renderPure(checker, s.expression));
   return false;
 }

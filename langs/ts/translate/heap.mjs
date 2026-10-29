@@ -782,6 +782,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       w(u.body); if (hit) { own.delete(u.name); whyNot.get(u.name)?.add('writes the discriminant of a union alternative'); }
     }
     const graph = new Map(order.map((u) => [u.name, callsOf(u)]));
+    // a nested unit (a callback) is called by the unit that encloses it, through the library method it is handed to
+    // (`.then(r => ...)`, `xs.map(x => ...)`): an edge of the call graph the body's call sites do not show, so the two
+    // conventions never meet there (an async unit, out of the core, running a callback read in the core; a core unit
+    // handing a callback the core refuses)
+    for (const u of order) if (u.enclosingUnit && graph.has(u.enclosingUnit.name)) graph.get(u.enclosingUnit.name).add(u.name);
     const grows = new Set(order.filter(growsOwn).map((u) => u.name));
     for (let more = true; more;) { more = false; for (const u of order) if (!grows.has(u.name) && [...graph.get(u.name)].some((c) => grows.has(c))) { grows.add(u.name); more = true; } }
     for (const [name, cs] of loopCallsOf) if (own.has(name) && [...cs].some((c) => grows.has(c))) { own.delete(name); whyNot.get(name)?.add('a loop body calls a unit that may grow an array'); }

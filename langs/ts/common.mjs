@@ -2122,6 +2122,12 @@ export function payloadRead(checker, n) {
 // identifier is a parameter or a local of the unit, the read sits in a return, an expression statement, a declaration or
 // an if condition reached through blocks and if branches only (no loop, try, switch, label or nested function), the
 // unit is neither async nor a generator and returns a value, and the statement does not write the variable
+// The faithful number reading (translate/faithful.mjs, design/doubles.md) rewrites a number operation whose operands the
+// model does not hold exactly into a call of `Math.__lean_<op>(...)`, an uninterpreted function of its operands. To every
+// reader that classifies calls (an effect, a throw, a render-pure argument, a payload position, a loop body) that call
+// IS the operator it replaced: pure, total, reading only its operands. One predicate names it; a reader that treats a
+// call as an effect, an outside call or an impurity asks it first.
+export const faithfulOp = (n) => !!n && ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Math' && n.expression.name.text.startsWith('__lean_');
 export function payloadStatement(checker, n, id) {
   const unit = fnOf(n);
   if (!unit || !ts.isFunctionLike(unit) || !unit.body || !ts.isBlock(unit.body)) return null;
@@ -2155,6 +2161,7 @@ function pureReadOf(checker, e, unit, top) {
   const w = (x) => {
     if (!ok) return;
     if (ts.isArrowFunction(x)) { if (ts.isBlock(x.body) || x.parameters.some((p) => !ts.isIdentifier(p.name))) ok = false; else w(x.body); return; }
+    if (faithfulOp(x)) { for (const a of x.arguments) w(a); return; } // an uninterpreted number operation: the operator it stands for, pure
     if (ts.isFunctionLike(x) || ts.isNewExpression(x) || ts.isAwaitExpression(x) || ts.isYieldExpression(x) || ts.isDeleteExpression(x) || ts.isTaggedTemplateExpression(x) || ts.isClassExpression(x)) { ok = false; return; }
     if (ts.isBinaryExpression(x) && x.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && x.operatorToken.kind <= ts.SyntaxKind.LastAssignment) { ok = false; return; }
     if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(x.operator)) { ok = false; return; }

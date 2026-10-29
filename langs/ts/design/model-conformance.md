@@ -124,6 +124,17 @@ Vanished: none. The rest-parameter entries were retired before (af9678b2); every
 step lists a known finding of a pair that ran and was not seen ("Known findings not seen"), never as a failure: a fix
 must not fail the step, and the list says the baseline needs rewriting.
 
+The full run at the admission head of 2026-10-29 (the doubles merge, `--jobs 4`, all 204 pairs): 1344 units, 531
+executable (454 agree, 77 disagree), 2 new findings, both signed zero on a unit that returns an input number untouched:
+proof_hunt_13/spreadCopy (`{ ...a }` copies `x`) and reach_absent/Changed.f (`return x`). The faithful reading leaves a
+pass-through unit with no number operation, so its model is the int model and collapses a -0 input; the executable model
+is unchanged by that reading (design/doubles.md "The executable model"). Both are listed with the class against row
+d7e54baf. Of the 193 entries of the baseline, 118 were not seen in a pair that ran (70 past 2^53, 43 signed zero, 3 real
+arithmetic, 2 aliased arguments): the faithful reading passes a number the model does not hold through uninterpreted
+operations, so those units reach a part with no body and no longer execute against Node. They are retired, the file's
+`about` says why, and the retired entries stay in the file's git history at e2c729a0; 77 remain (69 signed zero, 5 value,
+2 past 2^53, 1 aliased), every one seen in this run.
+
 ## Measurement
 
 See the lane reports under W: `harness/lanes/model-conformance.md` (the step) and `harness/lanes/oracle-cost.md` (its
