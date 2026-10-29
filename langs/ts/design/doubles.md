@@ -96,3 +96,39 @@ A sound way to keep the real proofs of units the emitter cannot read is a transl
 number operation is an uninterpreted Dafny function, the same on both sides. A proof there uses congruence only, and
 IEEE doubles are a model of it. Comparing the multiset of number-operation texts on the two sides is not enough:
 `return (a + b) - b` against `const t = (a + b) - b; return a` has the same sites and differs in doubles.
+
+## The faithful-number rule (C): designed, not built
+
+The lead's rule (29 Oct): the reading is exact where the model is provably faithful, FP where the unit is pure numeric,
+and opaque where the model forgets. (A), the FP reading, is built. (D), the fallback, is built: a number-bearing unit
+the doubles reading does not prove is PASS-bounded, and its certificate says `lanes.A.numberModel: "unproved"` with the
+reason "number model: unproved (doubles ...)". (C) is designed here, measured over the 305 expected-proved rows the
+emitter cannot read whole (/private/tmp/claude-501/dbl/drop.mjs).
+
+### What makes an integer reading faithful, and what it costs
+An int-typed Dafny operation equals the double operation only when all three of these hold:
+1. **Integral operands.** A double input may be 0.5, NaN or an infinity. signed_zero `positive` (`n > 0` against
+   `n >= 1`) differs at 0.5, though the integer reading proved it. An operand is integral only when it is built from
+   literals, lengths (`.length`, below 2^32 by ECMA-262 23.1.2 and 22.1.3, the axiom `|s| < 4294967296` on every
+   translated sequence), index results (`indexOf`, `findIndex`) and counters over these. Measured: 236 of the 305 rows
+   carry a number input into an operation, so at most 69 can keep an exact integer reading.
+2. **The range.** `|r| <= 2^53`, discharged by Dafny from the context. It is emitted as a `requires` on a helper
+   `SafeInt(r)` at each operation site. A failure anywhere in the unit's functions, not only inside the lemma's span,
+   makes the unit unproved; check.mjs and the pair step read only lemma spans today, so both need the function spans too.
+3. **The sign of zero.** An integral operand still makes a -0: `-(xs.length)` on an empty array, `0 * -k`, `-k % k`.
+   Either the reading carries a sign bit on zero results, or an operation that can make a -0 stays out of the exact
+   reading. The second is the signed-zero predicate this lane removed, restored for the exact integer reading alone.
+
+### The congruence reading for everything else
+Every JavaScript number operation becomes an uninterpreted Dafny function, the same symbol on both sides
+(`JsAdd(a, b): N` over an opaque `type N`). Doubles are a model of it, so a proof there is sound. The cost is one switch
+at each of about 40 operator emission sites in translate.mjs and heap.mjs, with N replacing real/int in signatures.
+Loop and index reasoning that rests on arithmetic (`i < |xs|`, `i + 1`) then needs the faithful-integer reading of
+condition 1, or that proof falls.
+
+### The executable model
+The conformance step runs the Dafny model and compares it with Node. Lane reach-absent reproduced three
+disagreements: opaque_values flowFixed, opaque_values mapPresent and proof_hunt_2 bang, where the model answers 0 and
+Node answers -0. The FP reading decides proofs but does not change the executable model. An executable model that
+agrees with Node needs a number type that carries -0 (the congruence type N, made executable with a double
+representation), or a refusal where a -0 can reach the result.

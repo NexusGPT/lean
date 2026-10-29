@@ -194,7 +194,8 @@ export async function check(opts) {
   if (doubles && !adapter && m && !unguarded) {
     if (doubles.verdict === 'proved') { cert.lanes.A.verdict = 'PASS-proved'; cert.lanes.A.reading = 'doubles (IEEE-754 binary64, SMT-LIB QF_FP)'; return finish('PASS-proved', cert, {}); }
     cert.lanes.A.verdict = doubles.verdict === 'finding' ? 'ASK:doubles-finding' : 'ASK:doubles-unknown';
-    return finish(rung(), cert, unreached({ reason: `doubles: ${doubles.verdict}${doubles.reason ? ': ' + doubles.reason : ''}` }));
+    cert.lanes.A.numberModel = 'unproved'; // the fallback (design/doubles.md): a number-bearing unit the doubles reading does not prove is PASS-bounded at best, named
+    return finish(rung(), cert, unreached({ reason: `number model: unproved (doubles ${doubles.verdict}${doubles.reason ? ': ' + doubles.reason : ''})` }));
   }
   if (m && lemmas[main] && !unguarded) return finish('PASS-proved', cert, adapter ? { reason: `proved through the declared adapter: ${adapterLine}` } : {});
   if (m && through.length && !unguarded) return finish(rung(), cert, unreached({ reason: `unproved through ${through.join(', ')}` })); // its own lemma holds given summaries that are not proved
