@@ -461,6 +461,15 @@ export const READINGS = [
   },
   {
     id: 'optional-chain', construct: '`a?.b` and `f?.(x)`: an Option of the read, the call and its transition only when the callee or receiver is present',
+    decisionExceptions: [{
+      id: 'optional-source-vs-emitted-callee',
+      sites: [{ who: 'lint', rule: 'optional-chain', message: '<shape.why>' }, { who: 'translate', rule: 'optional-chain', message: 'optional-chain: ${}' }],
+      conditions: {
+        sourcePathAdmission: 'the directly walked source callee has an admissible local/plain-record path, one nongeneric signature and no surrounding value step',
+        emittedCalleeShape: 'the lowered value has a declared field or local callee, with a nongeneric signature only when it can be absent, and no active synthetic value step',
+      },
+      reason: 'Source path admission and lowered field emission have different domains. Indirect class receiver paths can reach emission without that source walk; imposing the source path restriction there loses admitted units. Required callees need no optional branch signature. Both conditions share the type and signature facts.',
+    }],
     uses: (n, ts) => !!n.questionDotToken,
     lint: ['optional-chain'],
     translate: rx('^optional-chain: ', '^\\?\\. on a type parameter is not translated$'),

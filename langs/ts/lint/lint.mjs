@@ -15,7 +15,7 @@ import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
-import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
+import { elementWritePath, plainDataRecord } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
@@ -1526,7 +1526,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
     { const md = metadataCall(checker, e, sf); if (md) { if (!(ts.isIdentifier(f.expression) && f.expression.text === 'Reflect')) expr(f.expression); return e.arguments.forEach((a) => expr(a)); } } // a metadata API of the decorator table (translate/decorators.json): the one admitted use of Reflect, a cell of the world
     { const ok = ownKeyTest(checker, e, sf); if (ok) { if (ok.refuse) return v(e, 'prototype', ok.refuse); expr(ok.obj); return expr(ok.key); } } // the own-key test on a dictionary or a record of required fields
-    if (e.questionDotToken) { const shape = optionalCallShape(checker, e, sf, { current, currentClass, objectMethod, thisParam, units }); if (shape.why) v(e, 'optional-chain', shape.why); }
+    if (e.questionDotToken) { const shape = optionalCallShape(checker, e, sf, { current, currentClass, objectMethod, thisParam, units }).sourcePathAdmission; if (shape.why) v(e, 'optional-chain', shape.why); }
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);
@@ -1980,12 +1980,6 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (ts.isIdentifier(r) && r.text === 'Math' && ['floor', 'trunc', 'abs'].includes(f.name.text)) return false;
     return !nonNull(tOf(r)).some((t) => isArrayLike(checker, t) || isStr(t) || isSetT(t) || isMapT(t));
   }
-  // a directly enclosing conditional proves a sole array spread nonempty on the chosen branch
-  // Math.min/max over a spread is read on a nonempty list (MinSeq/MaxSeq require it): the spread's length is the length of
-  // a name (the name itself, `xs.map(f)`, `xs.slice()`, `[...xs]`), and a test that dominates the call says that length is
-  // not zero: a conditional, an if, `&&` / `||`, or an earlier `if (...) return` (or throw, break, continue) in the same
-  // statement list, in any equivalent form (`xs.length`, `> 0`, `>= 1`, `!== 0`, `0 < xs.length`, `!xs.length` and
-  // `=== 0` on the other branch); the name is not written between the test and the call
   const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
     const name = e.name.text;

@@ -69,7 +69,6 @@ import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../c
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { typeAssertion, assertionHeld } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
 import { signedZero } from '../common.mjs'; // the sign of zero: one test with the lint
-import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const indentBlock = (s, n = 1) => s.split('\n').map((l) => '  '.repeat(n) + l).join('\n');
@@ -3732,7 +3731,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // the value of an optional chain that stopped, in the chain's own type: a void call's result is Unit either way
   function absentIn(t, n) { const none = checker.getUndefinedType(); return dtype(t, n) === 'Unit' ? 'Unit' : convert(absentValue(none), none, t, n); }
   function optionalCall(n, awaited) {
-    const shape = optionalCallShape(checker, n, sf, { current: currentUnit?.node, currentClass: currentUnit?.cls, thisParam: thisParamOf(currentUnit), units: fns, valueOperands });
+    const shape = optionalCallShape(checker, n, sf, { current: currentUnit?.node, currentClass: currentUnit?.cls, thisParam: thisParamOf(currentUnit), units: fns, valueOperands, valueType: typeOf, materializeReceiver: dtype }).emittedCalleeShape;
     if (shape.why) fail(n, `optional-chain: ${shape.why}`);
     if (!shape.absent) return null;
     const f = shape.callee, calleeT = shape.calleeType;
@@ -3757,7 +3756,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         const T = selfType(currentUnit);
         present = () => externalCall('invoke_bound', n, [...n.arguments], `(${v}.value, ${SELF})`, `(${dtype(calleeT, f)}, ${T})`, true);
       } else {
-        const recvT = shape.receiverType, base = shape.receiverBase, T = dtype(base, n);
+        const recvT = shape.receiverType, base = shape.receiverBase, T = shape.receiverDafnyType;
         const absentRecv = shape.absentReceiver, absentField = shape.absentField;
         let rc;
         const parts = [];

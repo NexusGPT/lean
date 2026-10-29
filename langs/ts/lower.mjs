@@ -190,7 +190,12 @@ export function numberSpecial(form, value, origin = null) {
   throw new Error(`unknown number form: ${form}`);
 }
 
-// Math.min/max require a provably nonempty sequence, including dominance and intervening writes.
+// a directly enclosing conditional proves a sole array spread nonempty on the chosen branch
+// Math.min/max over a spread is read on a nonempty list (MinSeq/MaxSeq require it): the spread's length is the length of
+// a name (the name itself, `xs.map(f)`, `xs.slice()`, `[...xs]`), and a test that dominates the call says that length is
+// not zero: a conditional, an if, `&&` / `||`, or an earlier `if (...) return` (or throw, break, continue) in the same
+// statement list, in any equivalent form (`xs.length`, `> 0`, `>= 1`, `!== 0`, `0 < xs.length`, `!xs.length` and
+// `=== 0` on the other branch); the name is not written between the test and the call
 export function nonemptyMathArgs(checker, e) {
   const K = ts.SyntaxKind, TF = ts.TypeFlags;
   const tOf = (n) => checker.getTypeAtLocation(n);
@@ -259,15 +264,30 @@ export function nonemptyMathArgs(checker, e) {
   return false;
 }
 
-// One optional-call decision: the lint reads why; emission reads kind, absence, field and signature.
-// Context carries lexical facts from the caller, never a second callee classifier. valueOperands records an
-// active synthetic value-step context; source contexts are checked below by the same rule.
+// One optional-call record, with the two different domains named. Source admission restricts the path it walks;
+// emission reads a declared field reached through lowering, including indirect class-receiver paths. Computing a
+// condition lazily preserves each consumer's evaluation order and avoids materializing emission types in admission.
 export function optionalCallShape(checker, e, sf, context = {}) {
-  const K = ts.SyntaxKind, TF = ts.TypeFlags;
-  const tOf = (n) => checker.getTypeAtLocation(n);
+  const types = optionalCalleeTypes(checker);
+  return {
+    conditions: readingById('optional-chain').decisionExceptions[0].conditions,
+    get sourcePathAdmission() { return sourceOptionalCallShape(checker, e, sf, context, types); },
+    get emittedCalleeShape() { return emittedOptionalCallShape(checker, e, sf, context, types); },
+  };
+}
+function optionalCalleeTypes(checker) {
+  const TF = ts.TypeFlags;
   const nonNull = (t) => t.flags & TF.Union ? t.types.filter((x) => !(x.flags & (TF.Undefined | TF.Null))) : [t];
+  const baseOf = (t) => { const p = nonNull(t); if (p.length === 1) return p[0]; if (p.every((x) => x.flags & TF.BooleanLiteral)) return checker.getBooleanType ? checker.getBooleanType() : p[0]; return t; };
   const isAny = (t) => !!(t.flags & (TF.Any | TF.Unknown));
   const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
+  const signatureOf = (t) => { const sigs = checker.getSignaturesOfType(t, ts.SignatureKind.Call); return sigs.length === 1 && !sigs[0].typeParameters?.length ? sigs[0] : null; };
+  return { nonNull, baseOf, isAny, isOptional, signatureOf };
+}
+function sourceOptionalCallShape(checker, e, sf, context, types) {
+  const K = ts.SyntaxKind, TF = ts.TypeFlags;
+  const tOf = (n) => checker.getTypeAtLocation(n);
+  const { nonNull, isAny, isOptional, signatureOf } = types;
   const local = (n) => originOf(checker, n, sf, context.current ?? null).kind === 'local';
   const refuse = (why) => ({ why });
   const valueStepIn = (n) => {
@@ -289,8 +309,8 @@ export function optionalCallShape(checker, e, sf, context = {}) {
   };
   const functionShape = (t) => {
     const parts = nonNull(t); if (parts.length !== 1 || isAny(parts[0])) return null;
-    const sigs = checker.getSignaturesOfType(parts[0], ts.SignatureKind.Call);
-    return sigs.length === 1 && !sigs[0].typeParameters?.length ? { calleeType: parts[0], signature: sigs[0] } : null;
+    const signature = signatureOf(parts[0]);
+    return signature ? { calleeType: parts[0], signature } : null;
   };
   const f = e.expression;
   if (ts.isIdentifier(f)) {
@@ -324,6 +344,43 @@ export function optionalCallShape(checker, e, sf, context = {}) {
   if (!fn) return refuse('an optional call reads a declared function field of the record');
   const absentReceiver = !!f.questionDotToken && isOptional(receiverType), absentField = isOptional(declared) || !!(field.flags & ts.SymbolFlags.Optional);
   return { why: null, kind: 'record', callee: f, receiver: recv, name, receiverType, receiverBase, field, declared, absentReceiver, absentField, absent: absentReceiver || absentField, ...fn };
+}
+
+// The emission condition retains the original translator's absence-first decision. A required field needs no
+// optional-call signature at all. valueType and materializeReceiver are the caller's existing value/type readers;
+// they do not classify callees. Receiver materialization keeps its original order before declared-field lookup.
+function emittedOptionalCallShape(checker, e, sf, context, types) {
+  const { baseOf, isAny, isOptional, signatureOf } = types;
+  const typeOf = context.valueType ?? ((n) => checker.getTypeAtLocation(n));
+  const refuse = (why) => ({ why });
+  if (context.valueOperands) return refuse('an optional call beside an assignment, update or comma is not read');
+  const f = e.expression;
+  let shape;
+  if (ts.isIdentifier(f)) {
+    const declared = typeOf(f);
+    if (originOf(checker, f, sf, context.current ?? null).kind !== 'local' || isAny(baseOf(declared))) return refuse('the callee is not a local function value');
+    shape = { kind: 'local', callee: f, declared, absent: isOptional(declared), calleeType: baseOf(declared) };
+  } else if (ts.isPropertyAccessExpression(f)) {
+    const receiver = f.expression, name = f.name.text;
+    if (receiver.kind === ts.SyntaxKind.ThisKeyword && context.currentClass) {
+      if (context.units?.has(`${context.currentClass.name?.text}.${name}`)) return { why: null, kind: 'method', callee: f, absent: false };
+      const field = checker.getPropertyOfType(checker.getTypeAtLocation(context.currentClass.name), name);
+      const declared = field ? checker.getTypeOfSymbolAtLocation(field, f) : typeOf(f);
+      shape = { kind: 'receiver', callee: f, receiver, name, field, declared, absent: isOptional(declared) || !!(field && field.flags & ts.SymbolFlags.Optional), calleeType: baseOf(declared) };
+    } else {
+      const receiverType = typeOf(receiver), receiverBase = baseOf(receiverType);
+      const receiverDafnyType = context.materializeReceiver?.(receiverBase, e);
+      const field = checker.getPropertyOfType(receiverBase, name);
+      if (!field) return refuse('the callee is not a declared field');
+      const declared = checker.getTypeOfSymbolAtLocation(field, f);
+      const absentReceiver = !!f.questionDotToken && isOptional(receiverType), absentField = isOptional(declared) || !!(field.flags & ts.SymbolFlags.Optional);
+      shape = { kind: 'record', callee: f, receiver, name, receiverType, receiverBase, receiverDafnyType, field, declared, absentReceiver, absentField, absent: absentReceiver || absentField, calleeType: baseOf(declared) };
+    }
+  } else return refuse('a computed callee is not read');
+  if (!shape.absent) return { why: null, ...shape };
+  const signature = signatureOf(shape.calleeType);
+  if (!signature) return refuse('an overloaded or generic optional callee is not read');
+  return { why: null, ...shape, signature };
 }
 
 // One inline-promise statement vocabulary; emission dispatch and admission consume the same kind.
