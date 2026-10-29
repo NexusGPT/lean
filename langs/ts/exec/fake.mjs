@@ -184,7 +184,7 @@ export class Environment {
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
-        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }
+        if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); programBuilt.add(error); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }
         // at run time a callback argument is invoked once with fakes, so its own reads reach the trace
         if (!env.loading) {
           const cbs = [];
@@ -273,31 +273,23 @@ export function namePromise(env, p, path, settled) {
 // the name of a promise the world or the input made, or null (not a promise, or one the unit made)
 export const promiseName = (v) => (v && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function' ? promiseNames.get(v)?.label ?? null : null);
 
-// An Error of the sandbox's own realm (a TypeError the engine raises for `null.size`) is not an `instanceof` the host's
-// Error; the internal [[ErrorData]] slot is what the tag reads, in either realm.
+// An error is observed by its class and own fields, and by its message only when the PROGRAM built it (owner, 29 Oct):
+// an error the engine raises (`null.size`, a failed JSON.parse, a bad RegExp) carries a message ECMA-262 leaves to the
+// implementation, V8 prints source text into it (its CallPrinter: `n.toUpperCase is not a function`), so the text is no
+// outcome; a message a `new Error(m)` wrote is program data. The sandbox hands the unit its Error classes wrapped in
+// programConstructor (exec/run.mjs sandbox): an error made through them, `new`, called, or as the `super()` of a class
+// extending them, is marked program-built; every other value with the internal [[ErrorData]] slot was raised by the
+// engine, in either realm (the context's intrinsics raise `TypeError`s of their own realm; a host built-in handed to the
+// unit, JSON or RegExp, raises the host's). The fake world's own faults (a drawn `fault:` error) are lean's text and are
+// marked too. The wrapper forwards everything else: `instanceof`, the prototype chain, the statics; `Error.prototype.constructor`
+// stays the engine's own class, so `e.constructor === Error` inside the unit reads false where a bare engine reads true.
+export const programBuilt = new WeakSet();
 const isError = (v) => v instanceof Error || Object.prototype.toString.call(v) === '[object Error]';
-// An error the engine raised while the unit's own code ran (a call of a value that is no function, a spread of one that
-// is not iterable) is an instance of the sandbox realm's intrinsic class, never of the host's, which the sandbox hands the
-// unit as its `TypeError`, `Error` and the rest (exec/run.mjs sandbox): so the unit's own `new TypeError(m)` keeps its
-// message, and an engine message is read without the source text V8 prints into it. V8 renders the callee or the
-// operand of a failed operation from the source (its CallPrinter: `n.toUpperCase is not a function`), so a renamed local
-// changes the message though nothing the language defines differs (ECMA-262 leaves an engine error's message to the
-// implementation); the printed expression is replaced by `<expression>`, the class and the rest of the template stay.
-const engineRaised = (v) => !(v instanceof Error) && Object.prototype.toString.call(v) === '[object Error]';
-const PRINTED_SOURCE = [
-  /^(.+?)( is not a function or its return value is not (?:async )?iterable)$/s,
-  /^(.+?)( is not (?:a function|a constructor|iterable|async iterable)(?: \(cannot read property Symbol\(Symbol\.(?:async)?[iI]terator\)\))?)$/s,
-];
-const DESTRUCTURE = /^(Cannot destructure )'(.+?)'( as it is (?:undefined|null)\.)$/s;
-// a property access on undefined or null prints the key the source names: `Cannot read properties of undefined (reading 'x')`,
-// `Cannot set properties of null (setting 'x')`; which of undefined and null it was is the value's, and stays
-const PROPERTY = /^(Cannot (?:read|set) properties of (?:undefined|null) \((?:reading|setting) )'(.+)'(\))$/s;
-export function withoutPrintedSource(m) {
-  for (const re of PRINTED_SOURCE) { const x = re.exec(m); if (x) return `<expression>${x[2]}`; }
-  const d = DESTRUCTURE.exec(m); if (d) return `${d[1]}'<expression>'${d[3]}`;
-  const p = PROPERTY.exec(m); if (p) return `${p[1]}'<expression>'${p[3]}`;
-  return m;
-}
+export const programConstructor = (C) => new Proxy(C, {
+  construct(t, args, nt) { const e = Reflect.construct(t, args, nt); if (isError(e)) programBuilt.add(e); return e; },
+  apply(t, self, args) { const e = Reflect.apply(t, self, args); if (isError(e)) programBuilt.add(e); return e; },
+});
+const engineRaised = (v) => !programBuilt.has(v);
 // A V8 stack frame line: four spaces, `at`, then a location the engine writes (`file:line:column`, `<anonymous>`,
 // `native`, `index N`, `unknown location`). A stack names the file and the columns of the copy that ran, which differ
 // between a parent and a candidate by construction; the header (class and message) is the Error's behaviour, the frames

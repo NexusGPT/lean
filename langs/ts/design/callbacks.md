@@ -86,16 +86,7 @@ sequences mask them; an environment program does not diverge on them. When no ru
 undriven, lane B's verdict is `ASK` kind `callback-undriven` naming why and where (`runPairInFlight`); `check.mjs`
 gives that reason too, unless lane A proves the unit, in which case PASS-proved stands (lane A reads the body).
 
-**Engine messages** (`exec/fake.mjs` withoutPrintedSource). A drive on drawn arguments meets many errors the engine
-raises (`n.toUpperCase is not a function`), and V8 prints the source expression into the message (its CallPrinter), so a
-renamed local inside a callback changed a drive's throw. ECMA-262 leaves an engine error's message to the
-implementation, so the printed expression is text, not behaviour. An error the engine raised in the unit's code is an
-instance of the sandbox realm's intrinsic class, while the unit's own `new TypeError(m)` uses the host's class the
-sandbox hands it: only the former is read through the templates that print source (`<expr> is not a function`, `is not
-a constructor`, `is not iterable`, `is not async iterable`, `is not a function or its return value is not iterable`,
-`Cannot destructure '<expr>' as it is undefined.`), the expression replaced by `<expression>`. The same leak existed
-for the unit's own throw on 92eebd9 (`const n = o.name; return n.toUpperCase()` against a renamed `label`: WITNESS);
-it is now PASS-bounded.
+**Engine messages** (`exec/fake.mjs` programConstructor, engineRaised; owner's rule of 29 Oct). A drive on drawn arguments meets many errors the engine raises (`n.toUpperCase is not a function`), and V8 prints the source expression into the message (its CallPrinter), so a renamed local inside a callback changed a drive's throw. ECMA-262 leaves an engine error's message to the implementation, so the message is text, not behaviour: an error is observed by its class and own fields, and by its message only when the program built it. The sandbox hands the unit its error classes (`Error`, `TypeError`, `RangeError`, `SyntaxError`, `ReferenceError`, `EvalError`, `URIError`, `AggregateError`) wrapped so that an error made through them, with `new`, called, or as the `super()` of a class extending them, is marked program-built; every other value with the internal [[ErrorData]] slot was raised by the engine, in either realm (the context's intrinsics raise their own `TypeError`; a host built-in handed to the unit, `JSON.parse` or `new RegExp`, raises the host's), and is rendered as its class alone. The fake world's drawn `fault:` errors are lean's own text and keep it. Until 29 Oct the realm of the error told the two apart and the printed expression was replaced in known templates; a host built-in's error then read as program-built with the engine's text. Pair `error_text`: two `JSON.parse` failures with different engine texts are no difference; two program-written messages are.
 
 **The error rule (decided by the lead; owner row f0d879ac).** An error is observed by its provenance, tagged at its
 construction in the sandbox. An error the engine raised while the unit's code ran is an instance of the sandbox realm's

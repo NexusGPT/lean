@@ -8,8 +8,8 @@
   "user_text": false
  },
  "b": {
-  "engineOnly": "WITNESS",
+  "engineOnly": "PASS-bounded",
   "userText": "WITNESS"
  },
- "why": "owner 29 Oct (row f0d879ac): an error is observed by its class and own fields; a program-built message counts; an engine-made message never. engineOnly: on a present `a` the two read different fields (a real difference, WITNESS on the value); on an absent `a` both throw the engine's TypeError and only its text differs, so that input alone separates nothing (the witness lane B finds names a present `a`, never the throw). userText: the program built both messages, 'negative' against 'below zero', a real difference."
+ "why": "owner 29 Oct (row f0d879ac): an error is observed by its class and own fields; a program-built message counts; an engine-made message never. engineOnly: both sides throw the engine's SyntaxError on a non-positive input and only the engine's text differs, so lane B observes {$error: 'SyntaxError'} on both and finds no witness (PASS-bounded). userText: the program built both messages, 'negative' against 'below zero', a real difference (WITNESS)."
 }

@@ -1,7 +1,8 @@
-// a thrown error is observed by its class and, when the program built it, its message (design: the owner's rule of 29 Oct)
-type Box = { a?: { b: number; c: number } };
-export function engineOnly(o: Box): number {
-  return o.a!.b; // on an absent `a` the engine throws a TypeError whose text quotes the source
+// a thrown error is observed by its class and, when the program built it, its message (owner 29 Oct, row f0d879ac):
+// an engine-made message is implementation-defined (ECMA-262) and no outcome; a message the program wrote is program data
+export function engineOnly(n: number): number {
+  if (n > 0) return n;
+  return JSON.parse("{x") as number; // the engine's SyntaxError, its text the engine's own
 }
 export function userText(n: number): number {
   if (n < 0) throw new Error('negative');
