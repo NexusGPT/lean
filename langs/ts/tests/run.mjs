@@ -810,7 +810,9 @@ if (!PAIR_ONLY) mark("convert: each transform's fixture throug");
     const g = [['init', '-q'], ['add', '-A'], ['-c', 'user.email=lean@local', '-c', 'user.name=lean', 'commit', '-qm', 'before']].map((a) => spawnSync('git', ['-C', work, ...a], { encoding: 'utf8' }));
     if (g.some((r) => r.status !== 0)) { add('convert', name, 'scratch repository', false, g.map((r) => r.stderr).join(' ').trim().slice(0, 160)); continue; }
     const json = path.join(tmp, `convert-${name}.json`);
-    const c = run('node', [converter, work, '--no-project', '--n', '30', '--dafny-seconds', '30', '--cache-dir', cache, '--json', json]);
+    // expect.json may name the converter's options for the fixture ({"args": ["--narrowed"]}: a door a person opens)
+    const opts_ = fs.existsSync(path.join(d, 'expect.json')) ? JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')).args ?? [] : [];
+    const c = run('node', [converter, work, '--no-project', ...opts_, '--n', '30', '--dafny-seconds', '30', '--cache-dir', cache, '--json', json]);
     const got = fs.readFileSync(unit, 'utf8'), want = fs.readFileSync(path.join(d, 'after.ts'), 'utf8');
     const at = got.split('\n').findIndex((l, i) => l !== want.split('\n')[i]);
     add('convert', name, 'before converts to after.ts', got === want, got === want ? 'same text' : `differs at line ${at + 1}: ${JSON.stringify(got.split('\n')[at] ?? '')}`);
@@ -819,7 +821,7 @@ if (!PAIR_ONLY) mark("convert: each transform's fixture throug");
     // an optional expect.json per fixture holds the counts ({"applied": N, "listed": M}): 0 applied is a pass when the lint admits every site
     const want_ = fs.existsSync(path.join(d, 'expect.json')) ? JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')) : null;
     const nApplied = file?.applied?.length ?? 0;
-    const counted = want_ ? nApplied === want_.applied && (file?.listed?.length ?? 0) === want_.listed && (nApplied === 0 || rs.length > 0) : nApplied > 0 && rs.length > 0;
+    const counted = want_ && 'applied' in want_ ? nApplied === want_.applied && (file?.listed?.length ?? 0) === want_.listed && (nApplied === 0 || rs.length > 0) : nApplied > 0 && rs.length > 0;
     const ok = c.status === 0 && counted && !file?.reverted && rs.every((r) => r.verdict === 'PASS-proved' || r.verdict === 'PASS-bounded');
     add('convert', name, 'applied and proved, no WITNESS', ok, rep ? `${file?.applied?.length ?? 0} applied, ${file?.listed?.length ?? 0} listed; ${count(rs)}${file?.reverted ? '; reverted: ' + file.reverted : ''}` : (c.stderr || c.stdout).trim().slice(-160));
     fs.writeFileSync(unit, fs.readFileSync(path.join(d, 'wrong.ts'), 'utf8'));
