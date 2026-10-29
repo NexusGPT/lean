@@ -254,6 +254,24 @@ export function ensureInstalled(root, { under, cache, log = () => {}, force = fa
   return { ...stamp, status: stamp.exit === 0 ? 'installed' : 'install-failed' };
 }
 
+// remove every node_modules folder of a root the install step may write (a root inside `under`): the disk budget keeps
+// one installed root at a time. Returns the folders removed.
+export function cleanInstall(root, under) {
+  const abs = path.resolve(root);
+  if (!under || !(abs + path.sep).startsWith(path.resolve(under) + path.sep)) return [];
+  const removed = [];
+  const walk = (dir) => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!e.isDirectory() || e.isSymbolicLink()) continue;
+      const p = path.join(dir, e.name);
+      if (e.name === 'node_modules') { fs.rmSync(p, { recursive: true, force: true }); removed.push(p); }
+      else if (e.name !== '.git') walk(p);
+    }
+  };
+  walk(abs);
+  return removed;
+}
+
 // the rules each unit carries in one census: file:name:line -> Set(rule); env marks the environment-only rules
 export function unitRules(census) {
   const out = new Map();
@@ -325,6 +343,9 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
     const st = ensureInstalled(a[1], { under: opt('--under', null), cache: opt('--cache', null), force: a.includes('--force'), log: (m) => console.error(m) });
     console.log(JSON.stringify(st, null, 1));
     process.exit(st.status === 'installed' || st.status === 'no-lockfile' || st.status === 'outside-install-folder' ? 0 : 1);
+  } else if (a[0] === 'clean') {
+    const removed = cleanInstall(a[1], opt('--under', null));
+    console.log(`removed ${removed.length} node_modules folders under ${a[1]}`);
   } else if (a[0] === 'diff') {
     const d = diff(JSON.parse(fs.readFileSync(a[1], 'utf8')), JSON.parse(fs.readFileSync(a[2], 'utf8')));
     if (opt('--out', null)) fs.writeFileSync(opt('--out'), JSON.stringify(d, null, 1));

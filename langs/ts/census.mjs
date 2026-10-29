@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // lean census: every TypeScript function of a repository through the gate, the blockers counted.
 //   node census.mjs <repo-root> [--out census.json] [--report census.md] [--depth N] [--limit N] [--include <prefix>]
-//                   [--install-under <dir>] [--npm-cache <dir>]
+//                   [--install-under <dir>] [--npm-cache <dir>] [--clean-after]
 // With --install-under, a root inside that folder first gets its own pinned dependency graph (census-env.mjs
 // ensureInstalled: the lockfile's package manager, frozen, --ignore-scripts, once per lockfile content); a root outside
 // it is read as it stands. Every unit an `unresolved-module` finding reaches is counted once more, in `environment`,
@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { lintFile } from './lint/lint.mjs';
 import { loadManyChunks, topLevelFunctions, lineOf } from './common.mjs';
-import { classifier, ensureInstalled } from './census-env.mjs';
+import { classifier, ensureInstalled, cleanInstall } from './census-env.mjs';
 
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
 const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
@@ -163,6 +163,8 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const root = path.resolve(a[0]);
   const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m) });
+  // --clean-after: the disk budget keeps one installed root at a time; the root's node_modules go once it is read
+  if (a.includes('--clean-after')) { const removed = cleanInstall(root, opt('--install-under', null)); res.environment.cleaned = removed.length; }
   const out = opt('--out', null);
   const report = opt('--report', null);
   if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
