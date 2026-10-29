@@ -64,6 +64,7 @@ import { elementWritePath } from '../common.mjs'; // a field write through a par
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
 import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
+import { sealedMember } from '../common.mjs'; // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
 import { typeAssertion, assertionHeld } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
 import { signedZero } from '../common.mjs'; // the sign of zero: one test with the lint
 import { reduceAccumulator } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
@@ -255,6 +256,7 @@ export function translate(file, fnName, opts = {}) {
   };
   const fnIdsOf = new Map(); // unit name -> the code ids of the function values it emits (`// FN <unit>: [...]`)
   const fnLines = [];
+  const assumeLines = new Set(); // `// ASSUME <unit>: sealed receiver <Class>.<m> (<why>)`: a `this.m()` read as the class's own m on a fact the file declares and TypeScript does not check (common.mjs sealedMember)
   const decoLines = []; // `// DECORATORS <unit>: <row ids>`: the decorator-table rows a unit's reading used (check.mjs withholds the proof when the framework contradicts one)
   const sigLines = []; // `// SIG <unit>: <json>`: the TypeScript signature a caller sees (the method's decorators, the `this` type if declared, per position the parameter's decorators, type, optionality, rest-ness and default, the return type); the theorem compares it across the two sides before writing a lemma. Parameter names sit in `names`, which the theorem never compares: a caller passes by position
   const fold = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
@@ -339,7 +341,7 @@ export function translate(file, fnName, opts = {}) {
       if (om) return !exactObjectMethod(om);
       if (recv.kind === K.SuperKeyword) return true; // the parent's method: a transition on the receiver
       if (ts.isIdentifier(recv) && (f.name.text === 'call' || f.name.text === 'apply') && fns.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'unit') return effectfulUnits.has(recv.text); // `h.call(o, a)` on a same-file function is the call of h: its own unit's flag
-      if (recv.kind === K.ThisKeyword && (currentUnit?.cls || literalOf(currentUnit))) { const callee = ownUnit(currentUnit, f.name.text); if (callee) return effectfulUnits.has(callee.name); return true; }
+      if (recv.kind === K.ThisKeyword && (currentUnit?.cls || literalOf(currentUnit))) { const callee = ownUnit(currentUnit, f.name.text); if (callee && !thisRequest(currentUnit, f.name.text)) return effectfulUnits.has(callee.name); return true; } // a this call a subclass may override is a request of the world
       if (moduleState(checker, recv, sf) && MUTATORS.has(f.name.text)) return true;
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
       if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
@@ -845,6 +847,17 @@ export function translate(file, fnName, opts = {}) {
   const readsThisMemo = new Map();
   const readsThis = (u) => { if (!readsThisMemo.has(u)) { let found = false; const w = (n) => { if (found) return; if (n.kind === K.ThisKeyword) { found = true; return; } if (ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n) || ts.isMethodDeclaration(n) || ts.isClassLike(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n)) return; ts.forEachChild(n, w); }; ts.forEachChild(u.fn, w); readsThisMemo.set(u, found); } return readsThisMemo.get(u); };
   const hasSelf = (u) => !!u && ((!!u.cls && !u.isStatic) || (!!literalOf(u) && readsThis(u))); // the unit takes the self operand
+  // `this.m()` in an instance method or constructor of a class of this file: the class's own unit only when sealedMember
+  // says no subclass can hold another m; otherwise the receiver may be an instance of a subclass another file declares,
+  // and the call is a request of the world named by the code of every class of this file the receiver's type admits
+  // (heldKey), exactly as a call on a receiver this file did not make (design/conformance-readings.md)
+  const thisRequest = (u, name) => {
+    const callee = ownUnit(u, name);
+    if (!callee || !u?.cls || callee.isStatic || u.isStatic || callee.accessor) return false;
+    const s = sealedMember(checker, sf, u.cls, name);
+    if (s) { if (s.assumed) assumeLines.add(`// ASSUME ${fname(u.name)}: sealed receiver ${u.className}.${name} (${s.why})`); return false; }
+    return true;
+  };
   const ownUnit = (u, name) => (u && (u.cls || literalOf(u)) ? fns.get(`${u.cls ? u.className : u.binding}.${name}`) ?? null : null); // `this.name()` inside u: the sibling unit of its class or literal
   // the receiver's Dafny type: the class instance type, opaque (its methods make it so); a free function's declared `this`
   // parameter (TypeScript's this parameter) is its receiver, so its self type is that parameter's type, read as the
@@ -1365,6 +1378,12 @@ export function translate(file, fnName, opts = {}) {
   // the name of a request on a held receiver carries the code a made instance of its type would run: the reach of every
   // class of this file whose instances its type admits (a subclass overriding the member included), never the call
   // site's own text, so two sides reaching the receiver by other locals name one request
+  // an instance method a same-file class inherits: the nearest same-file class above c declaring a non-static method
+  // named name (the chain's first declaring class), or null when c declares it, or no same-file base does
+  function inheritedSameFileMethod(c, name) {
+    const ch = chainOf(c); const owner = ch.classes.find((k) => k.members.some((m) => ts.isMethodDeclaration(m) && m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === K.StaticKeyword)));
+    return owner && owner !== c ? owner : null;
+  }
   function heldKey(t) {
     if (isOptional(t)) t = baseOf(t);
     const cs = [...classDecls.values()].filter((c) => { try { return checker.isTypeAssignableTo(checker.getTypeAtLocation(c.name), t); } catch { return false; } });
@@ -4117,6 +4136,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     if (recv.kind === K.ThisKeyword && (classOf(currentUnit) || literalOf(currentUnit))) {
       const callee = ownUnit(currentUnit, name);
+      if (callee && thisRequest(currentUnit, name)) { const T = selfType(currentUnit); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_held${heldKey(checker.getTypeAtLocation(currentUnit.cls.name))}`, n, [...n.arguments], SELF, T, true); } // the m the receiver's chain finds: a subclass another file declares may hold it
       if (callee) {
         const args = unitArgs(callee, n);
         const selfArg = callee.cls ? (callee.isStatic ? [] : [SELF]) : hasSelf(callee) ? [SELF] : []; // a literal sibling takes the receiver when it reads it
@@ -4147,6 +4167,14 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         // that object holds (10.1.8.1), a request of the world with the argument values whether or not its result is
         // read (design/conformance-readings.md); named by the code a made instance would run (the call's reach), so a
         // changed method is another transition
+        const T = classTypeD(sfc);
+        return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_held${heldKey(typeOf(recv))}`, n, [...n.arguments], outerParens(expr(recv)), T, true);
+      }
+      if (sfc && !asClass && !callee && inheritedSameFileMethod(sfc, name)) {
+        // an instance method the receiver's class inherits from a class of this file (`new Quiet().run(x)`, run declared
+        // by Greeter): the code that runs is the base's method and whatever it reaches, the subclass's overrides included,
+        // so the request is named by the code of every class of this file the receiver's type admits (heldKey), never by
+        // the bare name, which would stay one name across a changed base method
         const T = classTypeD(sfc);
         return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_held${heldKey(typeOf(recv))}`, n, [...n.arguments], outerParens(expr(recv)), T, true);
       }
@@ -6296,7 +6324,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     for (const [k, text] of prelude) pre.push(qualify(text));
     for (const text of heapPre) pre.push(text);
   }
-  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
+  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${assumeLines.size ? '\n' + [...assumeLines].sort().join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
   if (opts.preludeOut) {
     const preludeText = `// Generated by lean-ts translate (version 2): shared declarations. Identical for parent and candidate, or the gate refuses.\n` + pre.map((t) => `// PRELUDE ${t.match(/^(?:datatype|type|function|predicate)\s+([A-Za-z0-9_]+)/)?.[1] ?? hash(t)}\n${t}\n// END PRELUDE`).join('\n') + '\n';
     return { main: `${header}\ninclude "${path.basename(opts.preludeOut)}"\n\n${main}\n`, prelude: preludeText };
