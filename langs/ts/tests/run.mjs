@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts, dn } from '../common.mjs';
 import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
+import { restsOnFunctionText } from '../exec/fake.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -389,6 +390,29 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
   add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, special numbers incl. -0)`);
   console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers incl. -0) |`);
+}
+
+// ----- text-only witnesses: a WITNESS rests on an observable the specification defines (design/callbacks.md) -----
+// A lane B WITNESS must carry a difference in the outcome, the trace, the tree, the heap or a drive; a function's source
+// text is none of these. Every WITNESS the pair step wrote is read: with the `src` of every `$fn` rendering removed, the
+// parent's and the candidate's observations must still differ. A planted witness that differs only there must be caught.
+{
+  const textOnly = (w) => restsOnFunctionText(w.parent ?? null, w.candidate ?? null);
+  const planted = { parent: { outcome: { returned: { $undefined: true } }, trace: [{ op: 'call', path: 'module:lib.on', args: [{ $fn: 'anonymous', src: 'aaaaaaaaaaaa' }] }] }, candidate: { outcome: { returned: { $undefined: true } }, trace: [{ op: 'call', path: 'module:lib.on', args: [{ $fn: 'anonymous', src: 'bbbbbbbbbbbb' }] }] } };
+  const real = { parent: { trace: [{ op: 'call', path: 'module:lib.on', args: [1, { $fn: 'anonymous', src: 'aaaaaaaaaaaa' }] }] }, candidate: { trace: [{ op: 'call', path: 'module:lib.on', args: [2, { $fn: 'anonymous', src: 'bbbbbbbbbbbb' }] }] } };
+  add('text-only witness', 'planted', 'a witness resting on $fn.src alone is caught', textOnly(planted) === true, textOnly(planted) ? 'caught' : 'MISSED: the detector accepted a text-only witness');
+  add('text-only witness', 'planted', 'a witness with another difference beside the text is kept', textOnly(real) === false, textOnly(real) ? 'WRONG: a real difference read as text-only' : 'kept');
+  let read = 0, bad = 0;
+  for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : []) {
+    let exp = null; try { exp = JSON.parse(fs.readFileSync(path.join(pairsDir, name, 'expect.json'), 'utf8')); } catch { continue; }
+    for (const unit of Object.keys(exp.b ?? {})) {
+      let B = null; try { B = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}`, `b_${unit}.json`), 'utf8')); } catch { continue; }
+      if (B.verdict !== 'WITNESS') continue;
+      for (const w of B.witnesses ?? []) { read++; if (textOnly(w)) { bad++; add('text-only witness', name, `${unit}: a witness rests on function text alone`, false, `input ${JSON.stringify(w.input)}`); } }
+    }
+  }
+  add('text-only witness', 'all pairs', `${read} witnesses read`, bad === 0, `${bad} rest on function text alone`);
+  console.log(`| TEXT-ONLY WITNESS TOTAL | ${read} witnesses read | ${bad === 0 ? 'NONE RESTS ON FUNCTION TEXT' : `${bad} REST ON FUNCTION TEXT`} |`);
 }
 
 // ----- escapes -----
