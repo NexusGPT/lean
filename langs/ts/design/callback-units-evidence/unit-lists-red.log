@@ -1,0 +1,85 @@
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/parent.dfy
+exit=0
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/candidate.dfy
+exit=0
+✖ one shared parser reads emitted unit names and ordinary lists (49.383583ms)
+✖ translator heap/effect flags and agreeCore round-trip the HEAP writer (5148.438833ms)
+✖ certificate heapCore retains the source unit name emitted in HEAP (6469.381625ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12688.581416
+
+✖ failing tests:
+
+test at langs/ts/tests/pairs/callback_units/unit-lists.test.mjs:12:1
+✖ one shared parser reads emitted unit names and ordinary lists (49.383583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'undefined'
+  - 'function'
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/tests/pairs/callback_units/unit-lists.test.mjs:13:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'undefined',
+    expected: 'function',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/callback_units/unit-lists.test.mjs:17:1
+✖ translator heap/effect flags and agreeCore round-trip the HEAP writer (5148.438833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   "app.get('/a',1)#2"
+  - ]
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/tests/pairs/callback_units/unit-lists.test.mjs:26:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
+      at Test.postRun (node:internal/test_runner/test:1465:19)
+      at Test.run (node:internal/test_runner/test:1390:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ "app.get('/a',1)#2" ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at langs/ts/tests/pairs/callback_units/unit-lists.test.mjs:31:1
+✖ certificate heapCore retains the source unit name emitted in HEAP (6469.381625ms)
+  AssertionError [ERR_ASSERTION]: {"verdict":"ASK:interface","detail":"theorem: refused: app_get___a__1__2: hypothesis differs between parent and candidate"}
+  + actual - expected
+  
+  + undefined
+  - [
+  -   "app.get('/a',1)#2"
+  - ]
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/tests/pairs/callback_units/unit-lists.test.mjs:36:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1332:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ "app.get('/a',1)#2" ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

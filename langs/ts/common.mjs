@@ -2398,3 +2398,22 @@ export function callbackEnvironment(checker, u) {
 
 // Artifact filenames are an encoding of identity, never a replacement for the unit/certificate name.
 export const artifactName = unit => encodeURIComponent(unit);
+
+// Unit names contain the call's literals and callee source. Only commas outside brackets and quotes separate units.
+export function parseUnitList(text) {
+  const out = []; let start = 0, depth = 0, quote = null, escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === quote) quote = null;
+    } else if (c === "'" || c === '"' || c === '`') quote = c;
+    else if ('([{'.includes(c)) depth++;
+    else if (')]}'.includes(c)) depth--;
+    else if (c === ',' && depth === 0) { out.push(text.slice(start, i).trim()); start = i + 1; }
+  }
+  out.push(text.slice(start).trim());
+  return out.filter(Boolean);
+}
+

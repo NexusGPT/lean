@@ -123,3 +123,7 @@ const f = findings.find(x => refusing(x) && findingUnit(L.sf, inventory, x)?.nam
 ```
 
 This is merge guidance only; `lower.mjs` remains untouched in this lane.
+
+## Raw unit-name lists
+
+`common.mjs parseUnitList(text)` is the sole reader of raw unit-name lists. It splits only at commas outside quotes and balanced parentheses/brackets/braces (a callee itself can contain an array literal). Translate's `--only`, `--heap-units`, and `--effectful`, and check's heap agreement and certificate use it. The HEAP/EFFECTFUL writers keep the original names joined by commas: the parser round-trips them without changing source identities. Dafny identifier and decorator lists retain their separate meaning. `unit-lists.test.mjs` exercises actual translator emission, agreement, and the certificate with `app.get('/a',1)#2`; `unit-list-readers-red.log` records the split name and consequent interface refusal before the reader substitutions, and `unit-lists-green.log` records all four checks passing.

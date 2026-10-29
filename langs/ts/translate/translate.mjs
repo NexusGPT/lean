@@ -64,7 +64,7 @@ import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../c
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { typeAssertion, assertionHeld } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
 import { signedZero } from '../common.mjs'; // the sign of zero: one test with the lint
-import { reduceAccumulator, callbackEnvironment, callbackUntypedJsUnit, findingUnit } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
+import { reduceAccumulator, callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList } from '../common.mjs'; // reduce's accumulator, built by the call, is no element: one test with the lint
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const indentBlock = (s, n = 1) => s.split('\n').map((l) => '  '.repeat(n) + l).join('\n');
@@ -6176,24 +6176,6 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   return { main: [header, ...pre, main].join('\n\n') + '\n', prelude: null };
 }
 
-// Unit names contain the call's literals. Only commas outside parentheses and quotes separate units.
-export function splitUnitNames(text) {
-  const out = []; let start = 0, depth = 0, quote = null, escaped = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (c === '\\') escaped = true;
-      else if (c === quote) quote = null;
-    } else if (c === "'" || c === '"' || c === '`') quote = c;
-    else if (c === '(') depth++;
-    else if (c === ')') depth--;
-    else if (c === ',' && depth === 0) { out.push(text.slice(start, i).trim()); start = i + 1; }
-  }
-  out.push(text.slice(start).trim());
-  return out.filter(Boolean);
-}
-
 const isMain = path.resolve(process.argv[1] ?? '') === new URL(import.meta.url).pathname;
 if (isMain) {
   const args = process.argv.slice(2);
@@ -6207,13 +6189,13 @@ if (isMain) {
     else if (a === '--real') opts.real = true;
     else if (a === '--core') opts.core = true;
     else if (a === '--suffix') opts.suffix = args[++i] ?? '';
-    else if (a === '--only') opts.only = splitUnitNames(args[++i]);
-    else if (a === '--effectful') opts.effectful = args[++i].split(',').map((s) => s.trim()).filter(Boolean);
+    else if (a === '--only') opts.only = parseUnitList(args[++i]);
+    else if (a === '--effectful') opts.effectful = parseUnitList(args[++i]);
     else if (a === '--project') opts.project = args[++i];
     else if (a === '--no-project') opts.project = false;
     else if (a === '--tolerant') opts.tolerant = true;
     else if (a === '--heap') opts.heap = true;
-    else if (a === '--heap-units') { opts.heap = true; opts.heapUnits = args[++i].split(',').map((s) => s.trim()).filter(Boolean); }
+    else if (a === '--heap-units') { opts.heap = true; opts.heapUnits = parseUnitList(args[++i]); }
     else if (a === '--report') opts.reportOut = args[++i];
     else if (a === '--requires') opts.requires.push(args[++i]);
     else if (a === '--ensures') opts.ensures.push(args[++i]);
