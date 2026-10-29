@@ -9,7 +9,7 @@
  "equal": {
   "display": true,
   "greeting": false,
-  "pad": true,
+  "pad": false,
   "forget": true,
   "visit": true
  },

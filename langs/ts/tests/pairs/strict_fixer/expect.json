@@ -35,7 +35,7 @@
       "file": "candidate.ts",
       "parent": "parent.ts",
       "unit": "label",
-      "verdict": "PASS-bounded"
+      "verdict": "PASS-proved"
     },
     {
       "file": "candidate.ts",

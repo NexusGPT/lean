@@ -7,7 +7,7 @@
  ],
  "equal": {
   "toggle": true,
-  "weight": false,
+  "weight": "witness",
   "mark": true,
   "finished": true
  },

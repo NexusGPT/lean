@@ -8,12 +8,12 @@
   "flip"
  ],
  "equal": {
-  "total": false,
+  "total": "witness",
   "even_qty": true,
-  "bump": true,
-  "share": false,
+  "bump": false,
+  "share": true,
   "debt": true,
-  "flip": false
+  "flip": "witness"
  },
  "why": "arithmetic: total adds one to the product (unproved, WITNESS); evenQty negates the opposite test (proved); bump writes the update as += 1 and the bitwise or with its operands swapped (proved); share names the divisor before the remainder: equal in JavaScript, and unproved here because the lemma must show that neither side divides by zero (a zero divisor marks the world, as an index out of range does); debt is untouched, a negation. flip negates the price for zero minus it: equal on every price but zero, where the negation is a negative zero that JavaScript tells from zero (unproved: a negation that may be a negative zero marks the world; WITNESS at a price of 0).",
  "b": {

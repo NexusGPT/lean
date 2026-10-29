@@ -16,6 +16,9 @@ import { lintFile } from '../lint/lint.mjs';
 import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
 import { restsOnFunctionText } from '../exec/fake.mjs';
 import { cachedRun, stepCacheStats } from './stepcache.mjs'; // the step cache: a command keyed by what it reads (design: the owner's rule, the tests run fast on merges)
+import { faithfulPlacement } from '../check.mjs';
+import { solveUnit } from '../solve/fp.mjs';
+import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -27,7 +30,7 @@ const theorems = JSON.parse(fs.readFileSync(path.join(here, 'theorems.json'), 'u
 const argvAt = (k) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : null; };
 const PAIR_ONLY = argvAt('--pair');
 const RESULT_FILE = argvAt('--result');
-const JOBS = Math.max(1, Number(process.env.JOBS ?? Math.max(1, os.cpus().length - 1)) || 1);
+const JOBS = Math.max(1, Number(process.env.JOBS ?? Math.max(1, Math.min(8, os.cpus().length - 1))) || 1); // the owner's cap (29 Oct): up to 8 in parallel
 const tmp = argvAt('--tmp') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-'));
 const t0 = Date.now();
 
@@ -57,8 +60,11 @@ function lscAccepts(file) {
 }
 const rows = [];
 const add = (kind, name, check, ok, detail, lsc = '') => rows.push({ kind, name, check, ok, detail, lsc });
+// the wall time of each section, a row of its own: where a run spends its time is read off the table
+const mark = (() => { let last = Date.now(), prev = null; return (name) => { if (prev) add('time', prev, 'wall', true, `${Math.round((Date.now() - last) / 1000)} s`); last = Date.now(); prev = name; }; })();
 
 // ----- shared fixtures -----
+if (!PAIR_ONLY) mark('shared fixtures');
 const sharedDir = path.join(root, 'fixtures/shared');
 if (!PAIR_ONLY) for (const name of fs.readdirSync(sharedDir).sort()) {
   const ts = path.join(sharedDir, name, 'ts.ts');
@@ -86,6 +92,7 @@ if (!PAIR_ONLY) for (const name of fs.readdirSync(sharedDir).sort()) {
 }
 
 // ----- constructs: one small function per construct, translated both ways -----
+if (!PAIR_ONLY) mark('constructs: one small function per const');
 const pairFile = (d, side) => fs.existsSync(path.join(d, side + '.tsx')) ? path.join(d, side + '.tsx') : path.join(d, side + '.ts');
 const casesDir = path.join(here, 'cases');
 const cases = JSON.parse(fs.readFileSync(path.join(here, 'cases.json'), 'utf8'));
@@ -110,7 +117,7 @@ if (!PAIR_ONLY) for (const c of cases) {
   }
   if (c.core) {
     const oc = path.join(tmp, `case_${c.name}_core.dfy`);
-    const tc = run('node', [translate, file, '--core', '--fn', c.fn, '--out', oc, ...tflags(c, false)]);
+    const tc = run('node', [translate, file, '--core', '--exact-numbers', '--fn', c.fn, '--out', oc, ...tflags(c, false)]); // a spec proof of one program: the exact reading (design/doubles.md)
     if (tc.status !== 0) { add('construct', c.name, 'translate --core', false, (tc.stderr || tc.stdout).trim().split('\n')[0]); continue; }
     const dc = dafny(oc);
     add('construct', c.name, 'verify (--core)', dc.ok, dc.summary);
@@ -118,6 +125,7 @@ if (!PAIR_ONLY) for (const c of cases) {
 }
 
 // ----- numbers per file: a float literal makes the file real; --real forces it -----
+if (!PAIR_ONLY) mark('numbers per file: a float literal makes ');
 if (!PAIR_ONLY) {
   const f = path.join(casesDir, 'float_literal.ts');
   const t = run('node', [translate, f, '--fn', 'drift', '--out', path.join(tmp, 'drift.dfy')]);
@@ -128,6 +136,7 @@ if (!PAIR_ONLY) {
 }
 
 // ----- differential run: the translation and the TypeScript give the same answers on sample inputs -----
+if (!PAIR_ONLY) mark('differential run: the translation and th');
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const dfyLit = (v) => (Array.isArray(v) ? `[${v.map(dfyLit).join(', ')}]` : typeof v === 'string' ? JSON.stringify(v) : String(v));
 const show = (v) => (Array.isArray(v) ? `[${v.map(show).join(', ')}]` : String(v));
@@ -137,7 +146,7 @@ function differential(label, tsFile, entries) {
   const mod = { exports: {} };
   new Function('exports', 'module', js)(mod.exports, mod);
   const dfy = path.join(tmp, `diff_${label}.dfy`);
-  const t = run('node', [translate, tsFile, '--core', '--only', formatUnitList(entries.map(e => e.fn)), '--out', dfy]);
+  const t = run('node', [translate, tsFile, '--core', '--exact-numbers', '--only', formatUnitList(entries.map(e => e.fn)), '--out', dfy]); // executed by Dafny: the exact reading
   if (t.status !== 0) { add('differential', label, 'translate --core', false, (t.stderr || t.stdout).trim().split('\n')[0]); return; }
   const lines = [], want = [];
   for (const { fn, samples } of entries) for (const args of samples) {
@@ -168,6 +177,7 @@ if (!PAIR_ONLY) {
 }
 
 // ----- negative controls: a false theorem must NOT verify, in both shapes -----
+if (!PAIR_ONLY) mark('negative controls: a false theorem must ');
 if (!PAIR_ONLY) {
   const ts = path.join(root, 'fixtures/shared/sum_positive/ts.ts');
   const out = path.join(tmp, 'neg_sum.dfy');
@@ -175,7 +185,7 @@ if (!PAIR_ONLY) {
   const d1 = dafny(out);
   add('control', 'false theorem', 'proof shape refuted', !d1.ok, d1.ok ? 'VERIFIED A FALSE THEOREM' : d1.summary);
   const outc = path.join(tmp, 'neg_sum_core.dfy');
-  run('node', [translate, ts, '--core', '--fn', 'sumPositive', '--out', outc, '--ensures', 'result > 0']);
+  run('node', [translate, ts, '--core', '--exact-numbers', '--fn', 'sumPositive', '--out', outc, '--ensures', 'result > 0']);
   const d2 = dafny(outc);
   add('control', 'false theorem', '--core refuted', !d2.ok, d2.ok ? 'VERIFIED A FALSE THEOREM' : d2.summary);
   // an invariant that the proof needs: without it the loop proof must fail
@@ -189,6 +199,7 @@ if (!PAIR_ONLY) {
 }
 
 // ----- --changed: only the changed functions are checked -----
+if (!PAIR_ONLY) mark('--changed: only the changed functions ar');
 if (!PAIR_ONLY) {
   const f = path.join(casesDir, 'mixed.ts');
   const unchanged = run('node', [lint, f, '--changed', path.join(casesDir, 'mixed_good.json')]);
@@ -200,12 +211,13 @@ if (!PAIR_ONLY) {
 }
 
 // ----- pairs: parent against candidate through the theorem and Dafny -----
+if (!PAIR_ONLY) mark('pairs: parent against candidate through ');
 const pairsDir = path.join(here, 'pairs');
 // LEAN_PAIRS=a,b runs these pairs only (a merge smoke); the full suite is the gate, this is never it
 const huntA = new Map(); // pair name -> lane A's reading of each lemma, for the proof-hunt step
 const onlyPairs = process.env.LEAN_PAIRS ? new Set(process.env.LEAN_PAIRS.split(',').map((x) => x.trim()).filter(Boolean)) : null;
 const pairNames = fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().filter((n) => !onlyPairs || onlyPairs.has(n)) : [];
-function runPairStep(name) {
+async function runPairStep(name) {
   const d = path.join(pairsDir, name);
   const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
   const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
@@ -240,6 +252,11 @@ function runPairStep(name) {
   const finished = /finished with \d+ verified/.test(text); // no verdict line: a resolution error, nothing is proved
   const rests = restsOf(lines); // a caller's lemma rests on its callees' summaries: proved only when every lemma it rests on is proved
   const spanClean = (k) => finished && !!spans[k] && !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]);
+  // the doubles reading (check.mjs, design/doubles.md): a number-bearing unit's lemma is decided over IEEE-754 binary64,
+  // the real lemma alone proves it no longer; `witness` in expect.json: the solver's counterexample, replayed in Node
+  const unitByLemma = (() => { try { return new Map([...unitsOfFile(loadForUnits(pairFile(d, 'candidate'), { project: false }).sf).keys()].map((u) => [dafnyName(u), u])); } catch { return new Map(); } })();
+  const doublesOf = new Map();
+  const doubles = async (f) => { if (!doublesOf.has(f)) { const u = unitByLemma.get(f); doublesOf.set(f, u ? await solveUnit({ parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate'), unit: u, project: false, keep: tmpd }) : { bearing: null }); } return doublesOf.get(f); };
   for (const [f, want] of Object.entries(exp.equal)) {
     const sp = spans[`Equal_${f}`];
     const viaRests = provedLemma(`Equal_${f}`, spanClean, rests);
@@ -247,15 +264,23 @@ function runPairStep(name) {
     const whole = finished && !!sp && viaRests;
     const parts = canonPartsOf(Object.keys(spans), f); // the canonical-heap certificate: every part must hold (check.mjs canonPartsOf: this unit's parts only)
     const canon = finished && parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]));
-    const proved = whole || canon;
+    const real = whole || canon;
     const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));
-    const got = sp ? (proved ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : 'not proved') : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
-    const ok = want === 'withheld' ? !!withheld : proved === want && !(want && withheld); // "withheld": the identity guard must have withheld the lemma
-    add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want ? 'proved' : 'not proved'}`, ok, got);
+    const fp = await doubles(f);
+    const faithful = faithfulPlacement(tmpd, f); // rule C: the real lemma was read faithfully; placed on both sides, it decides a unit the doubles reading leaves unknown
+    const proved = fp.bearing ? finished && !!sp && (fp.verdict === 'proved' || (fp.verdict === 'unknown' && faithful.placed && real)) : real;
+    const realText = real ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : 'not proved';
+    const got = sp ? (fp.bearing ? `${fp.verdict === 'unknown' && faithful.placed && real ? `faithful ${faithful.congruence ? 'congruence' : 'exact'} proved; ` : fp.verdict === 'unknown' && !faithful.placed ? `unplaced (${(faithful.reasons ?? [])[0] ?? ''}); ` : ''}doubles ${fp.verdict}${fp.verdict === 'witness' ? ' at ' + JSON.stringify(fp.input).slice(0, 60) : fp.reason ? ': ' + fp.reason.slice(0, 80) : ''} (${fp.seconds ?? 0} s); real lemma ${realText}` : realText) : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
+    // "withheld": the identity guard must have withheld the lemma; "witness": the doubles reading's replayed counterexample;
+    // "real-only": the real lemma proves, the doubles reading does not read the unit whole (unknown) and the faithful
+    // reading does not place it, so lane A does not prove it (design/doubles.md): the row keeps the proof under test
+    const ok = want === 'withheld' ? !!withheld : want === 'witness' ? !!sp && fp.verdict === 'witness' : want === 'real-only' ? real && fp.bearing && fp.verdict === 'unknown' && !faithful.placed && !withheld : proved === want && !(want && withheld);
+    add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want === 'witness' ? 'witness (doubles)' : want === 'real-only' ? 'real only (doubles unknown)' : want ? 'proved' : 'not proved'}`, ok, got);
     if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
   }
   // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
-  huntA.set(name, { adapters: Object.keys(allAdapters), proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
+  for (const unit of Object.keys(exp.b ?? {})) if (finished && spans[`Equal_${dafnyName(unit)}`]) await doubles(dafnyName(unit)); // the proof-hunt step reads the doubles reading of every unit lane B ran
+  huntA.set(name, { adapters: Object.keys(allAdapters), bearing: (f) => !!doublesOf.get(f)?.bearing, proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const fp = doublesOf.get(f); if (fp?.bearing && fp.verdict !== 'unknown') return fp.verdict === 'proved'; if (fp?.bearing && !faithfulPlacement(tmpd, f).placed) return false; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
@@ -379,7 +404,7 @@ function runPairStep(name) {
 
 // one pair in this process (`--pair`): its rows and its lane A reading go to the result file, nothing else runs
 if (PAIR_ONLY) {
-  runPairStep(PAIR_ONLY);
+  await runPairStep(PAIR_ONLY);
   const A = huntA.get(PAIR_ONLY) ?? null;
   let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(pairsDir, PAIR_ONLY, 'expect.json'), 'utf8')); } catch { /* a pair without expectations has no hunt */ }
   const provedBy = A ? Object.fromEntries(Object.keys(exp.b ?? {}).map((u) => [dafnyName(u), A.proved(dafnyName(u))])) : null;
@@ -399,9 +424,10 @@ if (JOBS > 1 && pairNames.length > 1) {
     if (res.hunt) huntA.set(name, { adapters: res.hunt.adapters, proved: (f) => (f in res.hunt.provedBy ? res.hunt.provedBy[f] : null) });
     childCache.hits += res.cache?.hits ?? 0; childCache.misses += res.cache?.misses ?? 0;
   }
-} else for (const name of pairNames) runPairStep(name);
+} else for (const name of pairNames) await runPairStep(name);
 
 // ----- proof hunt: lane A beside lane B on every unit the pair step ran (langs/ts/design/proof-hunt.md) -----
+if (!PAIR_ONLY) mark('proof hunt: lane A beside lane B on ever');
 // check.mjs answers lane B first, so a lane A proof of two different behaviours is hidden whenever lane B witnesses.
 // Here both are read: a unit lane B witnessed whose lemma lane A proved is a hidden false proof and fails, unless the
 // pair declares an adapter for that unit (the scope file's adapters or a // lean-adapter comment: the adapted claim
@@ -417,19 +443,21 @@ if (JOBS > 1 && pairNames.length > 1) {
       if (!b || a === null) continue;
       both++;
       if (!(a && b === 'WITNESS')) continue;
-      // two doors only: a declared adapter, and a witness whose every input holds NaN, an infinity or a negative zero
-      // (lane A's number model is finite and holds no -0 input, so its hypothesis excludes them: design/special-numbers.md,
-      // design/signed-zero.md; the doubles reading, row 0d8976c3, closes this door); any other witness is hidden
-      const door = A.adapters.includes(f) ? 'the pair declares an adapter door for this unit' : (B.witnesses ?? []).length && B.witnesses.every((w) => /"\$(nan|infinity|negativeZero)"/.test(JSON.stringify(w.args ?? w.input ?? null))) ? 'every witness input holds NaN, an infinity or -0, outside the finite number model (-0: row 0d8976c3)' : null;
+      // two doors only: a declared adapter, and, on a unit the doubles reading does not decide (no number operation:
+      // its lemma is the real one), a witness whose every input holds NaN or an infinity (design/special-numbers.md). A
+      // number-bearing unit is decided over binary64, which holds -0, NaN and the infinities, so it has no door; the -0
+      // door (row 0d8976c3) is closed by the doubles reading (design/doubles.md); any other witness is hidden
+      const door = A.adapters.includes(f) ? 'the pair declares an adapter door for this unit' : !A.bearing(f) && (B.witnesses ?? []).length && B.witnesses.every((w) => /"\$(nan|infinity)"/.test(JSON.stringify(w.args ?? w.input ?? null))) ? 'every witness input holds NaN or an infinity, and the unit has no number operation (its lemma is the real reading)' : null;
       if (door) exempt++; else hidden++;
       add('proof-hunt', name, `${unit}: lane A proved, lane B WITNESS`, !!door, door ? `exempt: ${door}` : `HIDDEN FALSE PROOF: lane A proved a unit lane B witnessed at ${JSON.stringify(B.witnesses?.[0]?.args ?? null).slice(0, 120)}`);
     }
   }
-  add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, special numbers incl. -0)`);
-  console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, special numbers incl. -0) |`);
+  add('proof-hunt', 'all pairs', `${both} units read by both lanes`, hidden === 0, `${hidden} hidden false proofs, ${exempt} exempt by a door (adapter, NaN or infinity on a unit with no number operation)`);
+  console.log(`| PROOF-HUNT TOTAL | ${both} units read by both lanes | ${hidden === 0 ? 'NO HIDDEN FALSE PROOF' : `${hidden} HIDDEN FALSE PROOFS`} | ${exempt} exempt by a door (adapter, NaN or infinity on a unit with no number operation) |`);
 }
 
 // ----- model conformance (design/model-conformance.md): its running rule (conformance/select.mjs), tested first, then the
+if (!PAIR_ONLY) mark('model conformance (design/model-conforma');
 // step on the pairs the rule selects: LEAN_PAIRS as given, every pair under LEAN_CONFORMANCE=full (the admission suite),
 // else the pairs changed since the baseline commit; the selection is printed and stands in the row's detail -----
 {
@@ -450,6 +478,7 @@ if (JOBS > 1 && pairNames.length > 1) {
 }
 
 // ----- text-only witnesses: a WITNESS rests on an observable the specification defines (design/callbacks.md) -----
+if (!PAIR_ONLY) mark('text-only witnesses: a WITNESS rests on ');
 // A lane B WITNESS must carry a difference in the outcome, the trace, the tree, the heap or a drive; a function's source
 // text is none of these. Every WITNESS the pair step wrote is read: with the `src` of every `$fn` rendering removed, the
 // parent's and the candidate's observations must still differ. A planted witness that differs only there must be caught.
@@ -473,6 +502,7 @@ if (JOBS > 1 && pairNames.length > 1) {
 }
 
 // ----- escapes -----
+if (!PAIR_ONLY) mark('escapes');
 const escDir = path.join(root, 'fixtures/escapes/ts');
 for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) {
   const file = path.join(escDir, f);
@@ -492,6 +522,7 @@ for (const f of fs.readdirSync(escDir).filter((x) => x.endsWith('.ts')).sort()) 
 }
 
 // ----- advice labels: the label of the rewrite the lint advises, as --json reports it (first line `// expect: <rule> <label>`) -----
+if (!PAIR_ONLY) mark('advice labels: the label of the rewrite ');
 const advDir = path.join(here, 'fixtures/advice');
 for (const f of fs.existsSync(advDir) ? fs.readdirSync(advDir).filter((x) => x.endsWith('.ts')).sort() : []) {
   const src = fs.readFileSync(path.join(advDir, f), 'utf8');
@@ -569,25 +600,30 @@ add('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the 
 }
 
 // ----- the repository's own conformance run, when present -----
+if (!PAIR_ONLY) mark("the repository's own conformance run, wh");
 // ----- lane B's hook runtime against React-tRace's scenarios (langs/ts/exec/react-trace.mjs) -----
+if (!PAIR_ONLY) mark("lane B's hook runtime against React-tRac");
 {
   const r = run('node', [path.join(here, '../exec/react-trace.mjs'), '--json']);
   let summary = null; try { summary = JSON.parse(r.stdout).summary; } catch { /* no JSON: the runner crashed */ }
   add('repo', 'react-trace scenarios', 'runner', !!summary && summary.disagree.length === 0, summary ? `${summary.agree} of ${summary.scenarios} agree${summary.disagree.length ? '; ' + summary.disagree.map((d) => d.scenario).join(', ') : ''}` : (r.stderr || r.stdout).trim().slice(-160));
 }
 // ----- the element-tree patch of a front-end WITNESS on hand-built trees (langs/ts/patch.test.mjs, node:test) -----
+if (!PAIR_ONLY) mark('the element-tree patch of a front-end WI');
 {
   const r = run('node', ['--test', path.join(here, '../patch.test.mjs')]);
   const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
   add('repo', 'patch.test.mjs', 'node:test', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : text.trim().slice(-160));
 }
 // ----- the same-file callees of a unit and its normalised text (langs/ts/exec/callees.test.mjs, node:test) -----
+if (!PAIR_ONLY) mark('the same-file callees of a unit and its ');
 {
   const r = run('node', ['--test', path.join(here, '../exec/callees.test.mjs')]);
   const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
   add('repo', 'callees.test.mjs', 'node:test', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : text.trim().slice(-160));
 }
 // ----- what a unit reads off its inputs and compares against, on hand-written units (langs/ts/exec/usage.test.mjs, node:test) -----
+if (!PAIR_ONLY) mark('what a unit reads off its inputs and com');
 {
   const r = run('node', ['--test', path.join(here, '../exec/usage.test.mjs')]);
   const text = (r.stdout ?? '') + (r.stderr ?? ''); const pass = text.match(/^\S+ pass (\d+)$/m), fail = text.match(/^\S+ fail (\d+)$/m);
@@ -689,6 +725,7 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
 }
 
 // ----- witness args: a WITNESS's args are the input as drawn, before either side ran (langs/ts/design/witness-args.md) -----
+if (!PAIR_ONLY) mark("witness args: a WITNESS's args are the i");
 // every witness lane B wrote above for a listed unit is replayed (exec/replay-args.mjs): input i drawn again as the
 // parent's side drew it, the parent run on it; the args must equal the draw, the replay must give the parent's
 // observation, and every argument the parent's call wrote must show its value before the write. `witnessArgs` in a
@@ -757,6 +794,7 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
 }
 
 // ----- convert: each transform's fixture through the converter and pr.mjs (langs/ts/design/converter.md) -----
+if (!PAIR_ONLY) mark("convert: each transform's fixture throug");
 // before.ts is committed in a scratch repository and converted; the result must be after.ts, applied with every
 // changed function PASS-proved or PASS-bounded; then wrong.ts (a near rewrite that changes behaviour) must be a WITNESS
 {
@@ -794,6 +832,7 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
 }
 
 // ----- table -----
+if (!PAIR_ONLY) mark('table');
 const w = (k, s) => Math.max(s.length, ...rows.map((r) => String(r[k]).length));
 const cols = ['kind', 'name', 'check'];
 const widths = Object.fromEntries(cols.map((c) => [c, w(c, c)]));
@@ -801,6 +840,7 @@ const line = (r) => `| ${cols.map((c) => String(r[c]).padEnd(widths[c])).join(' 
 console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | lsc accepts | detail`);
 for (const r of rows) console.log(line(r));
 const failed = rows.filter((r) => !r.ok).length;
+if (!PAIR_ONLY) mark('end');
 const sc = stepCacheStats();
 console.log(`| STEP CACHE | ${sc.on ? `${sc.hits + childCache.hits} hits, ${sc.misses + childCache.misses} misses` : 'off'} | ${sc.dir} |`);
 console.log(`| WALL | ${Math.round((Date.now() - t0) / 1000)} s | JOBS ${JOBS} |`);

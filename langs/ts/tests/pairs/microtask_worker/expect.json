@@ -19,7 +19,7 @@
  "check": {
   "drain": {
    "verdict": "ASK",
-   "laneA": "ASK:unproved",
+   "laneA": "ASK:doubles-unknown",
    "reason": "spin-bound"
   }
  },

@@ -10,8 +10,8 @@
  ],
  "equal": {
   "labels": true,
-  "doubled": true,
-  "positives": true,
+  "doubled": false,
+  "positives": false,
   "large": false,
   "numbered": false,
   "open_names": true,

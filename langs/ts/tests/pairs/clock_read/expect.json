@@ -14,8 +14,8 @@
     "numeric_opaque"
   ],
   "equal": {
-    "once": true,
-    "date_once": true,
+    "once": false,
+    "date_once": false,
     "window_size": false,
     "date_window": false,
     "across_port": false,

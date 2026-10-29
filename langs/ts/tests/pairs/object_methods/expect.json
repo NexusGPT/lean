@@ -28,7 +28,7 @@
  ],
  "equal": {
   "strategy": false,
-  "strategy_refactor": true,
+  "strategy_refactor": false,
   "changed_get_total": false,
   "changed_read": false,
   "inlined_get_total": true,
@@ -36,7 +36,7 @@
   "counter_constructor": true,
   "counter_bump": false,
   "counter_refactor": false,
-  "record_refactor": true,
+  "record_refactor": false,
   "writable_get_total": true,
   "writable_set_total": true,
   "writable_assign": true,
@@ -49,7 +49,7 @@
   "effect_getter": false,
   "sibling_capture": false,
   "counter_value": false,
-  "counter_value_refactor": true,
+  "counter_value_refactor": false,
   "writable_post": false,
   "writable_value_refactor": true
  },

@@ -23,7 +23,7 @@
     "ordinary": true,
     "lazy": false,
     "lazy_leaf": true,
-    "switch_fallback": true
+    "switch_fallback": "real-only"
   },
   "why": "ordinary effectful helpers keep their loop and callback reading; complex catches are local opaque transitions; terminal throws and dropped finalizers stay observable; opaque calls retain dependency guards",
   "b": {

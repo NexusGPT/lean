@@ -28,6 +28,7 @@ export function generatorReading(checker, sf, units) {
       if (ts.isBinaryExpression(n) && n.operatorToken.kind < K.FirstAssignment) { if ((checker.getTypeAtLocation(n.left).flags & TF.BigIntLike) && [K.SlashToken, K.PercentToken, K.AsteriskAsteriskToken].includes(n.operatorToken.kind)) return bad('generator-effect', 'potentially throwing bigint arithmetic needs a step reading'); expression(n.left); expression(n.right); return; }
       if (ts.isPrefixUnaryExpression(n) && [K.MinusToken, K.ExclamationToken].includes(n.operator)) return expression(n.operand);
       if (ts.isConditionalExpression(n)) { expression(n.condition); expression(n.whenTrue); expression(n.whenFalse); return; }
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Math' && n.expression.name.text.startsWith('__lean_')) { n.arguments.forEach(expression); return; } // an uninterpreted number operation of the faithful reading (translate/faithful.mjs): a scalar expression of its operands
       bad('generator-effect', 'a sequence generator uses scalar expressions without calls or property reads');
     };
     const sequence = (n) => {

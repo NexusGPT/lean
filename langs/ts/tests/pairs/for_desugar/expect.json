@@ -7,11 +7,11 @@
   "occurrences"
  ],
  "equal": {
-  "chunks": true,
-  "sum_positive": true,
+  "chunks": "real-only",
+  "sum_positive": "real-only",
   "first_negative": false,
   "mirrored": false,
-  "occurrences": true
+  "occurrences": "real-only"
  },
  "why": "Stage 5 rank 15: a for header outside the counted form (let i = e; i < limit; i++ and its mirror forms, the counter never assigned in the body) is read as init; while (cond) { body; step }, with continue running the step. chunks steps by a variable, so no bound follows and the whole statement is one opaque block, identical on both sides (proved by identity). sumPositive steps by i = i + 1 against the array's length, a derived bound, and its continue runs the step; the candidate writes the accumulation as += (proved: the same new value). firstNegative has no condition and exits through its first statement's break; the candidate counts a zero as negative (unproved; lane B WITNESS on an array holding 0 before any negative). mirrored carries two counters and a comma step, an opaque block; the candidate starts j past the end (unproved; WITNESS on any non-empty array, the first read being undefined). occurrences is untouched.",
  "b": {

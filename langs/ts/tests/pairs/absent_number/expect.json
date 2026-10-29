@@ -18,7 +18,7 @@
     "entryLet": "PASS-bounded"
   },
   "check": {
-    "readMechanic": { "verdict": "PASS-bounded", "laneA": "ASK:unproved" },
+    "readMechanic": { "verdict": "PASS-bounded", "laneA": "ASK:doubles-unknown" },
     "entryLet": { "verdict": "PASS-bounded", "laneA": "ASK:unproved" }
   }
 }

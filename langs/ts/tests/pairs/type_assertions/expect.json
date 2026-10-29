@@ -21,10 +21,10 @@
     "widen": true,
     "rank": true,
     "bump": true,
-    "twice": true,
+    "twice": "real-only",
     "plain": true,
     "opt_any": false,
-    "opt_checked": true
+    "opt_checked": "real-only"
   },
   "b": {
     "anyAs": "WITNESS",

@@ -2,7 +2,7 @@
  "scope": ["order", "clamp", "total", "untouched"],
  "equal": {
   "order": "withheld",
-  "clamp": true,
+  "clamp": "witness",
   "total": true,
   "untouched": true
  },

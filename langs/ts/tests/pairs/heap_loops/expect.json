@@ -7,7 +7,7 @@
  ],
  "equal": {
   "total": false,
-  "raise": true,
+  "raise": false,
   "positives": true,
   "weight": true
  },

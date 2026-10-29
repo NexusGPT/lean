@@ -4,7 +4,7 @@
   "make"
  ],
  "equal": {
-  "make": false,
+  "make": "witness",
   "cfg_x": false
  },
  "why": "class 9, a module cell named by its declaration text, whose initializer calls a same-file function whose body changed. Failing on 1e55e21: Equal_cfg_x proved and the proof-hunt row cfgX (lane B WITNESS); make itself is not proved (changed).",

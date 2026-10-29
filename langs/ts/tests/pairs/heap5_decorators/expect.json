@@ -6,7 +6,7 @@
   "counter_clear"
  ],
  "equal": {
-  "counter_bump": true,
+  "counter_bump": false,
   "counter_reset": false,
   "counter_twice": false,
   "counter_clear": false

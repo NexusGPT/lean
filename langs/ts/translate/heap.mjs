@@ -44,7 +44,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 export const HW = 'hw_';
 const OBJECT_PROTO = Object.getOwnPropertyNames(Object.prototype).sort(); // the keys `in` finds on an ordinary object it does not own
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null }) {
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -362,6 +362,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const m = c.name.text;
     if (isGlobalName(c.expression, 'Math')) {
       if ((m === 'max' || m === 'min') && a.length >= 1 && a.every(num)) return `Math.${m}`;
+      if (m.startsWith('__lean_') && external && a.every(num)) return `Math.${m}`; // an uninterpreted number operation of the faithful reading (translate/faithful.mjs): the ordinary lane's external, the same symbol
       if (['abs', 'sign', 'ceil', 'round', 'floor', 'trunc'].includes(m) && a.length === 1 && (num(a[0]) || (['floor', 'trunc'].includes(m) && !isReal && ts.isBinaryExpression(unparen(a[0])) && unparen(a[0]).operatorToken.kind === K.SlashToken && num(unparen(a[0]).left) && num(unparen(a[0]).right)))) return `Math.${m}`;
       return null;
     }
@@ -369,20 +370,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (isGlobalName(c.expression, 'Object') && m === 'keys' && a.length === 1 && shapeOf(typeOf(a[0]))?.kind === 'dict' && shapeOf(typeOf(e))?.kind === 'arr') return 'Object.keys';
     return null;
   };
-  // a negative zero: `-x` of a zero, `a * b` of a zero and a negative, a remainder or a quotient of zero with a negative
-  // operand, a real rounded up to zero from below. JavaScript tells it from zero (Object.is, a division by it; lane B's
-  // observation names it) and the int or real reading does not, so where it may escape the world is marked; a
-  // comparison, a truthiness test or a conversion to a string absorbs it (-0 === 0, "0"), and there no mark is needed.
-  // (A negative zero handed in as an input is the reading's general gap: a number is read as its value.)
-  const absorbed = (e) => { let x = e; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; if (!p) return false; if (ts.isBinaryExpression(p) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken].includes(p.operatorToken.kind)) return true; if (ts.isTemplateSpan(p)) return true; if ((ts.isIfStatement(p) || ts.isConditionalExpression(p)) && p.expression === x || (ts.isConditionalExpression(p) && p.condition === x)) return true; if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true; if (ts.isCallExpression(p) && isGlobalName(p.expression, 'String')) return true; return false; };
-  const negZeroRisk = (e) => {
-    if (absorbed(e)) return false;
-    if (ts.isPrefixUnaryExpression(e) && e.operator === K.MinusToken) { const o = unparen(e.operand); return !(ts.isNumericLiteral(o) && Number(o.text.replace(/_/g, '')) !== 0); }
-    if (ts.isBinaryExpression(e) && [K.AsteriskToken, K.PercentToken, K.SlashToken].includes(e.operatorToken.kind)) return true;
-    const g = globalCall(e); if (g === 'Math.floor' || g === 'Math.trunc') return !!floorDiv(e) || (isReal && g === 'Math.trunc');
-    if (g === 'Math.round' || g === 'Math.ceil') return isReal;
-    return false;
-  };
+  const negZeroRisk = () => false; // the doubles reading decides a number-bearing unit over binary64 (design/doubles.md): no -0 mark
   const floorDiv = (e) => { const a = unparen(e.arguments[0]); return !isReal && ts.isBinaryExpression(a) && a.operatorToken.kind === K.SlashToken ? a : null; }; // Math.floor(x / y) of an int file
   // a call of an imported function: a world transition, a bodiless `Call_<name>_<key>(hw, args): (HWorld, result)`
   // keyed by the module specifier, the exported name and the Dafny types of its arguments and result. It takes the
@@ -1137,6 +1125,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (globalCall(e)) { // a pure global: its arguments in order, then the operation
         const g = globalCall(e); const a = e.arguments;
         if (g === 'String') return toStr(a[0]);
+        if (g.startsWith('Math.__lean_')) { const vs = a.map((x) => expr(x)); return `${external(`call_args_${g}`, vs.map(() => NUM), /__lean_(lt|le|gt|ge|eq|truthy)$/.test(g) ? 'bool' : NUM)}(${vs.join(', ')})`; }
         if (g === 'Array.isArray') { expr(a[0]); return shapeOf(typeOf(a[0])).kind === 'arr' ? 'true' : 'false'; } // the argument is read (a pure read) and its shape decides
         if (g === 'Object.keys') { const s = shapeOf(typeOf(a[0])); const r = bind(expr(a[0]), 'o'); const rs = shapeOf(typeOf(e)); strUsed.add('dictkeys'); const out = fresh('r'); lines.push(`var (${HW}, ${out}) := Alloc_${rs.key}(${HW}, DictKeysJs(if Is${s.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${s.key} else []));`); return out; }
         if (g === 'Math.max' || g === 'Math.min') { const vs = a.map((x) => expr(x)); const h = helper(g === 'Math.max' ? 'Max' : 'Min', [NUM]); return vs.reduceRight((acc, v) => (acc === null ? v : `${h}(${v}, ${acc})`), null); }

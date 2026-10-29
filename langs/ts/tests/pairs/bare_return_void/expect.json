@@ -8,7 +8,7 @@
   "loose"
  ],
  "equal": {
-  "gate_constructor": true,
+  "gate_constructor": false,
   "gate_admits": true,
   "notify": false,
   "badge": true,

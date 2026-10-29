@@ -19,7 +19,7 @@
   "total": true,
   "later": false,
   "ordered": true,
-  "guarded": true,
+  "guarded": false,
   "times": true,
   "via_call": true,
   "call_one": false,
@@ -56,7 +56,7 @@
    "verdict": "PASS-proved"
   },
   "guarded": {
-   "verdict": "PASS-proved"
+   "verdict": "PASS-bounded"
   },
   "viaCall": {
    "verdict": "PASS-proved"

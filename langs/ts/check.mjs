@@ -19,6 +19,10 @@
 //   PASS-decided: a component whose state and props are finite by its types, the product of both state spaces explored to the end.
 //   NEW and REFUSE(load) are candidate-only observations, outside the equality ordering.
 // A PASS-bounded never becomes a proof; a proof lemma that fails is ASK:unproved (not a refutation).
+// A number-bearing unit (solve/fp.mjs, translate/smt-fp.mjs) is decided by the doubles reading: unsat PASS-proved,
+// a counterexample replayed in Node WITNESS, unknown PASS-bounded at best; the certificate's lanes.A.doubles names the
+// solver, its version, the seconds, the operations encoded exactly and those read uninterpreted. --fp-seconds bounds
+// one query (60 s by default).
 // The certificate lists what was checked: file hashes, the unit, the bound, the theorem and prelude hashes, the
 // time limit, and the lemma results, so a reader can re-run every step. Its `tools` record holds the Node version
 // (always) and, once lane A has run Dafny, the text of `dafny --version` and the text of the version Z3 reports,
@@ -37,6 +41,7 @@ import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, 
 import { lintFile } from './lint/lint.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
+import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -120,12 +125,23 @@ export async function check(opts) {
   }
   // ---- lane A ----
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-check-'));
+  // the doubles reading (design/doubles.md): a number-bearing unit is read over IEEE-754 binary64 (SMT-LIB QF_FP, Z3),
+  // and that reading decides its number result: unsat proves it, a replayed counterexample is a WITNESS, unknown leaves
+  // it unproved. Under an adapter the claim is f_candidate(A(x)) == f_parent(x), not the raw same-input comparison
+  // this query asks, so the reading is recorded as not applicable and the unit is not proved through it.
+  const fp = witnessed ? null : await solveUnit({ parent, candidate, unit, seconds: opts.fpSeconds ?? FP_SECONDS, project, keep: tmp });
+  const doubles = fp && fp.bearing ? { verdict: adapter ? 'not applicable: an adapter' : fp.verdict, ...(fp.reason ? { reason: fp.reason } : {}), bearing: fp.bearing, solver: fp.solver, solverVersion: fp.solverVersion, seconds: fp.seconds, timeoutSeconds: fp.timeoutSeconds, encoded: fp.encoded, uninterpreted: fp.uninterpreted, query: fp.query, ...(fp.input ? { input: fp.input } : {}), ...(fp.cross ? { cross: fp.cross } : {}) } : null;
+  if (doubles && !adapter && fp.verdict === 'witness') {
+    cert.lanes.A = { verdict: 'WITNESS', doubles };
+    return finish('WITNESS', cert, { witness: { input: 'doubles counterexample', args: fp.input, parent: fp.parentObservation, candidate: fp.candidateObservation, where: { lane: 'A', reading: 'doubles: the solver\'s input replayed in Node through lane B\'s runner' } } });
+  }
+  const noteDoubles = () => { if (doubles && cert.lanes.A) cert.lanes.A.doubles = doubles; };
   // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature (agreeCore: on the units both translations hold)
   const tr = (file, suffix, eff, heapUnits) => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', formatUnitList([unit]), '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000);
   const headerOf = (suffix, key) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm')); return m ? m[1].trim() : ''; };
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
-  if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; return finish(rung(), cert, unreached({})); }
+  if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; noteDoubles(); return finish(rung(), cert, unreached({})); }
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
   // The translator states how it keyed this unit's opaque absent result; expose both sides without re-reading reach.
   const absentKey = Object.fromEntries(['parent', 'candidate'].map((side) => {
@@ -146,7 +162,7 @@ export async function check(opts) {
     if (witnessed) return witnessOut();
     const why = th.out.trim().slice(-400);
     const iface = /differs|does not define|opaque block calls/.test(why);
-    cert.lanes.A = { verdict: iface ? 'ASK:interface' : 'ASK:theorem', detail: why };
+    cert.lanes.A = { verdict: iface ? 'ASK:interface' : 'ASK:theorem', detail: why }; noteDoubles();
     return finish(iface || adapter ? 'ASK' : (rung()), cert, iface ? {} : unreached({}));
   }
   const withheldLine = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED Equal_${dafnyName(unit)}: (interface differs: .*)$`, 'm')) || [])[1] ?? null;
@@ -187,6 +203,7 @@ export async function check(opts) {
   const assumed = [...new Set(['parent', 'candidate'].flatMap((x) => { const p = path.join(tmp, `${x}.dfy`); return fs.existsSync(p) ? [...fs.readFileSync(p, 'utf8').matchAll(/^\/\/ ASSUME \S+: (.*)$/gm)].map((mm) => mm[1]) : []; }))];
   if (assumed.length) cert.lanes.A.assumptions = assumed;
   cert.tools = { node: process.version, dafny: cert.lanes.A.dafnyVersion, ...z3Record() }; // the toolchain that produced this lane A result
+  noteDoubles();
   const cellsLine = cand.match(new RegExp(`^// CELLS ${dafnyName(unit)}_candidate: (.*)$`, 'm')); // the state-completeness audit: every persistent cell the unit touches, each matched to its transition
   if (cellsLine) { try { cert.lanes.A.cells = JSON.parse(cellsLine[1]); } catch { cert.lanes.A.cells = null; } }
   if (cert.lanes.A.cells && cert.lanes.A.cells.obligations.length && m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:obligation'; return finish('ASK', cert, { reason: `obligation: ${cert.lanes.A.cells.obligations.join('; ')}` }); } // a cell the unit touches without a transition: the lemma proves nothing about it
@@ -199,11 +216,47 @@ export async function check(opts) {
   const hd = b.bound?.frontEnd?.handlers; // lane B's interpreter applied each readable handler descriptor at every fire: a defect is a descriptor the engine contradicts, and the proof read that descriptor
   if (hd && typeof hd === 'object' && hd.defects?.length) { cert.lanes.A.handlerDefects = hd.defects; if (m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:handler-model'; return finish('ASK', cert, { reason: `handler-model: the engine contradicts the descriptor on ${[...new Set(hd.defects.map((x) => x.handler))].join('; ')}; the proof lane refuses the reading until it is corrected` }); } }
   if (unguarded && unguarded.startsWith('interface')) return finish('ASK', cert, { reason: `interface: ${unguarded.replace(/^interface differs: /, '').slice(0, 600)}` }); // a changed decorator, a changed type: never a proof, and the bounded run drew its inputs from one side's types
+  // a number-bearing unit: the Dafny lemma reads numbers as exact reals, so it no longer proves the unit alone; the
+  // doubles reading decides. Proved there (the emitter reads the whole unit: its parameters, its pure body, its result)
+  // it is PASS-proved, whatever the real lemma said (recorded beside); unknown or an encoding finding: PASS-bounded at best
+  if (doubles && !adapter && m && !unguarded) {
+    if (doubles.verdict === 'proved') { cert.lanes.A.verdict = 'PASS-proved'; cert.lanes.A.reading = 'doubles (IEEE-754 binary64, SMT-LIB QF_FP)'; return finish('PASS-proved', cert, assumed.length ? { reason: `proved under ${assumed.length} declared assumption(s): ${assumed.join('; ')}` } : {}); }
+    // rule C (translate/faithful.mjs): the Dafny lemma read numbers faithfully, exact integers in the safe range and
+    // every other number through uninterpreted operations; placed on both sides and proved, it proves the unit
+    const placed = faithfulPlacement(tmp, dafnyName(unit));
+    cert.lanes.A.faithful = placed;
+    if (doubles.verdict === 'unknown' && placed.placed && lemmas[main]) { cert.lanes.A.verdict = 'PASS-proved'; cert.lanes.A.reading = placed.congruence ? 'faithful numbers: exact integers in the safe range, congruence on every other number' : 'faithful numbers: exact integers in the safe range'; return finish('PASS-proved', cert, assumed.length ? { reason: `proved under ${assumed.length} declared assumption(s): ${assumed.join('; ')}` } : {}); }
+    cert.lanes.A.verdict = doubles.verdict === 'finding' ? 'ASK:doubles-finding' : 'ASK:doubles-unknown';
+    cert.lanes.A.numberModel = 'unproved'; // the fallback (design/doubles.md): a number-bearing unit the doubles reading does not prove is PASS-bounded at best, named
+    return finish(rung(), cert, unreached({ reason: `number model: unproved (doubles ${doubles.verdict}${doubles.reason ? ': ' + doubles.reason : ''})` }));
+  }
   if (m && lemmas[main] && !unguarded) { cert.provedBy = 'dafny'; cert.lanes.A.provedBy = 'dafny'; return finish('PASS-proved', cert, adapter ? { reason: `proved through the declared adapter: ${adapterLine}` } : assumed.length ? { reason: `proved under ${assumed.length} declared assumption(s): ${assumed.join('; ')}` } : {}); }
   if (m && through.length && !unguarded) return finish(rung(), cert, unreached({ reason: `unproved through ${through.join(', ')}` })); // its own lemma holds given summaries that are not proved
   return finish(rung(), cert, unreached({}));
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
+// lane A's number decision for one unit, as check.mjs takes it (for a reader that runs lane A without lane B, such
+// as harness/proof_hunt.py): a unit with no number operation keeps its lemma's result; a number-bearing unit is proved
+// by the doubles reading (unsat), refuted by it (a replayed counterexample), or, when that reading is unknown, proved
+// by its lemma read faithfully only when the faithful reading places it on both sides. `dir` holds parent.dfy and
+// candidate.dfy as the translator wrote them.
+export async function numberDecision({ parent, candidate, unit, project = true, dir, lemmaProved }) {
+  const fp = await solveUnit({ parent, candidate, unit, project, keep: dir });
+  if (!fp.bearing) return { proved: lemmaProved, reading: 'no number operation' };
+  if (fp.verdict === 'proved') return { proved: true, reading: 'doubles' };
+  if (fp.verdict === 'witness') return { proved: false, reading: 'doubles witness', input: fp.input };
+  const placed = faithfulPlacement(dir, dafnyName(unit));
+  return { proved: fp.verdict === 'unknown' && placed.placed && lemmaProved, reading: placed.placed ? 'faithful numbers' : 'number model: unproved', ...(placed.reasons ? { reasons: placed.reasons } : {}) };
+}
+// the faithful number reading of a unit on both sides (translate/faithful.mjs): placed when no number the model does not
+// hold reaches a place the rewrite cannot make opaque, on either side; congruence when its text uses an uninterpreted
+// number operation in it or its same-file callees (translate/faithful.mjs units). `dir` holds parent.dfy and candidate.dfy
+export function faithfulPlacement(dir, f) {
+  const side = (s) => { const p = path.join(dir, `${s}.dfy`); const t = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : ''; const m = t.match(new RegExp(`^// NUMBERS ${f}_${s}: (.*)$`, 'm')); let v = null; try { v = m ? JSON.parse(m[1]) : null; } catch { v = null; } return { v }; };
+  const P = side('parent'), C = side('candidate');
+  const reasons = [...(P.v?.reasons ?? []).map((r) => `parent: ${r}`), ...(C.v?.reasons ?? []).map((r) => `candidate: ${r}`), ...(!P.v || !C.v ? ['no NUMBERS line'] : [])];
+  return { placed: !!P.v?.placed && !!C.v?.placed, congruence: !!P.v?.congruence || !!C.v?.congruence, ...(reasons.length ? { reasons: reasons.slice(0, 4) } : {}) };
+}
 
 // the summaries a lemma rests on (`// RESTS Equal_f: Equal_g,Equal_h`, written by spec/theorem.py): a caller's lemma uses
 // each callee's lemma at the call sites, so it is proved only when every lemma it reaches this way is proved
@@ -285,7 +338,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const files = { parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit') };
   const guard = verdictGuard(opt('--out', null), (r) => harnessAsk(r.reason, files));
-  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
+  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined), fpSeconds: Number(opt('--fp-seconds', FP_SECONDS)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
   guard.settle();
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);

@@ -11,7 +11,7 @@
   "beat_constructor": true,
   "beat_heartbeat": false,
   "beat_refresh": false,
-  "beat_total": true,
+  "beat_total": false,
   "beat_next": true,
   "beat_label": true
  },

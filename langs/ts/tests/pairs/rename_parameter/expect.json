@@ -15,8 +15,8 @@
   "total": true,
   "width": "withheld",
   "bump": true,
-  "diff": false,
-  "shadow": false,
+  "diff": "witness",
+  "shadow": "witness",
   "fieldname": true,
   "routes_close": "withheld",
   "routes_open": true
