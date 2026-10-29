@@ -175,23 +175,36 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
     }
     if (r.verdict === 'WITNESS') { reverted.set(r.file, `WITNESS on ${r.unit}${r.caller ? ' (an unchanged caller)' : ''}: input ${r.witness?.input ?? '?'}`); continue; }
     if (r.verdict === 'ASK' || r.verdict === 'REFUSE' || r.verdict === null) {
-      // the control: the parent against itself; an ASK it shares is lean's own limit, not the rewrite's
-      const abs = path.join(repo, r.file);
-      const ctl = path.join(path.dirname(abs), `.lean_ctl_${process.pid}_${path.basename(abs)}`);
-      let same = false;
-      try {
-        fs.writeFileSync(ctl, git(repo, ['show', `${base}:${r.file}`]));
-        const res = await check({ parent: ctl, candidate: ctl, unit: r.unit, n, project, dafnySeconds });
-        same = res.verdict === r.verdict;
-      } catch { same = false; } finally { fs.rmSync(ctl, { force: true }); }
-      if (!same) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit} that the parent against itself does not share: ${String(r.reason ?? '').slice(0, 120)}`);
-      else r.control = 'the parent against itself asks the same';
+      // the control, lane by lane: an ASK is lean's own when every lane that did not pass failed on the parent alone.
+      // Lane A: a refusal to translate the parent (stage translate-parent), or no lane A run, depends on the parent's
+      // text only; any other lane A answer (the candidate's translation, an unproved lemma) is about the rewrite.
+      // Lane B: the parent against itself must give lane B's same verdict and reason. The two lanes are judged apart
+      // because a self pair's combined verdict is lane A's identity on equal texts, which says nothing of lane B.
+      const A = r.certificate?.lanes?.A ?? null, B = r.certificate?.lanes?.B ?? null;
+      const passed = (v) => typeof v === 'string' && v.startsWith('PASS');
+      const aOwn = !A || passed(A.verdict) || A.stage === 'translate-parent';
+      let bOwn = !B || passed(B.verdict), ctlB = null;
+      if (!bOwn) {
+        const abs = path.join(repo, r.file);
+        const ctl = path.join(path.dirname(abs), `.lean_ctl_${process.pid}_${path.basename(abs)}`);
+        try {
+          fs.writeFileSync(ctl, git(repo, ['show', `${base}:${r.file}`]));
+          const res = await check({ parent: ctl, candidate: ctl, unit: r.unit, n, project, dafnySeconds });
+          ctlB = res.certificate?.lanes?.B ?? null;
+          bOwn = !!ctlB && ctlB.verdict === B.verdict && (ctlB.reason ?? null) === (B.reason ?? null);
+        } catch { bOwn = false; } finally { fs.rmSync(ctl, { force: true }); }
+      }
+      if (!aOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane A ${A.verdict}${A.stage ? ` at ${A.stage}` : ''}, an answer about the rewrite, not the parent: ${String(A.detail ?? r.reason ?? '').slice(0, 120)}`);
+      else if (!bOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane B ${B.verdict} that the parent against itself does not share (${ctlB ? `${ctlB.verdict}: ${String(ctlB.reason ?? '').slice(0, 80)}` : 'no control'}): ${String(B.reason ?? '').slice(0, 120)}`);
+      else r.control = `lean's own: lane A ${A ? `${A.verdict}${A.stage ? ` at ${A.stage}` : ''}` : 'not run'}, lane B ${B?.verdict ?? 'not run'}${ctlB ? ', the same on the parent against itself' : ''}`;
     }
   }
   for (const f of reverted.keys()) fs.writeFileSync(path.join(repo, f), git(repo, ['show', `${base}:${f}`]));
   if (reverted.size) {
+    // the rows of a reverted file stay in the report, marked, so the reason a rewrite was refused is readable
+    const gone = rows.filter((r) => reverted.has(r.file)).map((r) => ({ ...r, reverted: true }));
     const keptFiles = [...rel].filter((f) => !reverted.has(f));
-    rows = keptFiles.length ? await prReport({ repo, base, head: 'WORKTREE', n, dafnySeconds, project, cacheDir, paths: (f) => keptFiles.includes(f) }) : [];
+    rows = [...(keptFiles.length ? await prReport({ repo, base, head: 'WORKTREE', n, dafnySeconds, project, cacheDir, paths: (f) => keptFiles.includes(f) }) : []), ...gone];
   }
   return { rows, reverted };
 }
@@ -235,7 +248,7 @@ export function table(folder, results, proof, repo) {
   }
   const tot = (k) => results.reduce((s, r) => s + k(r), 0);
   const kept = results.filter((r) => !proof?.reverted.has(path.relative(repo, r.file)));
-  lines.push(`| total | ${tot((r) => r.before)} | ${kept.reduce((s, r) => s + r.applied.length, 0)} | ${tot((r) => (proof?.reverted.has(path.relative(repo, r.file)) ? r.before : r.listed.length))} | ${proof ? verdictCell(proof.rows.filter((x) => results.some((r) => path.relative(repo, r.file) === x.file))) : ''} |`);
+  lines.push(`| total | ${tot((r) => r.before)} | ${kept.reduce((s, r) => s + r.applied.length, 0)} | ${tot((r) => (proof?.reverted.has(path.relative(repo, r.file)) ? r.before : r.listed.length))} | ${proof ? verdictCell(proof.rows.filter((x) => !x.reverted && results.some((r) => path.relative(repo, r.file) === x.file))) : ''} |`);
   return lines.join('\n');
 }
 
@@ -287,11 +300,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     const changed = changedAll.filter((r) => !byErasure.includes(r)).map((r) => r.file);
     let proof = noProve || !changed.length ? null : await prove({ repo, base, files: changed, project, n, dafnySeconds, cacheDir });
     if (!noProve && byErasure.length) { proof ??= { rows: [], reverted: new Map() }; for (const r of byErasure) proof.rows.push(...await erasureRows(repo, r, { n, project, dafnySeconds })); }
-    if (proof) witness += proof.rows.filter((r) => r.verdict === 'WITNESS').length;
+    if (proof) witness += proof.rows.filter((r) => r.verdict === 'WITNESS' && !r.reverted).length; // a WITNESS on a reverted file was answered by the revert
     md.push(table(path.relative(repo, abs) || '.', results, proof, repo), '', detail(results, repo));
     // the strict family's proof, named per file: the emitted JavaScript compared under each setting erased() reads
     if (!noProve && byErasure.length) md.push('#### PASS-erased: the emitted JavaScript is identical', '', ...byErasure.map((r) => `- ${path.relative(repo, r.file)}: identical under ${ERASURE_SETTINGS}`), '');
-    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null, erasure: !noProve && byErasure.includes(r) ? ERASURE_SETTINGS : null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null, ...(r.verdict === 'PASS-erased' ? { certificate: r.certificate } : {}) })) ?? null });
+    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null, erasure: !noProve && byErasure.includes(r) ? ERASURE_SETTINGS : null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null, reverted: !!r.reverted, ...(r.witness ? { witness: { input: r.witness.input ?? null } } : {}), ...(r.verdict === 'PASS-erased' ? { certificate: r.certificate } : {}) })) ?? null });
   }
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(json, null, 1));
   if (opt('--out')) fs.writeFileSync(opt('--out'), md.join('\n'));
