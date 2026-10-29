@@ -16,11 +16,12 @@
 //   REFUSE       a repository-owned local source link failed (kind: load)
 //   ASK          a side could not be loaded or run (the reason), or the unit is not found
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
-import { fork, spawnSync } from 'node:child_process';
+import { fork, spawnSync, execFile } from 'node:child_process';
 import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
 import { Environment, render, renderTree, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles } from './fake.mjs';
@@ -608,14 +609,15 @@ function guardedCall(env, fn, ms) {
   if (!env.ctx) return fn();
   env.ctx.__leanCall = fn;
   const w = openWindow(env);
-  try { return vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, ms) }); }
+  const t0 = Date.now(), u0 = process.cpuUsage();
+  try { const r = vm.runInContext('__leanCall()', env.ctx, { timeout: Math.max(1, wallAllowance(ms)) }); if (Date.now() - t0 > ms && cpuSpentMs(u0) > ms) throw new CallTimeout(ms); return r; } // past the bound both ways: a timeout, as on an idle machine
   catch (e) { if (e && e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') throw new CallTimeout(ms); throw e; }
   finally { delete env.ctx.__leanCall; closeWindow(w); }
 }
 const callUnit = (env, fn) => { const w = openWindow(env); try { return fn(); } finally { closeWindow(w); } }; // an effect or a cleanup called directly: unit code, inside a window
 async function withTimeout(p, ms) {
   let timer;
-  const t = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('__timeout__')), ms); });
+  const t = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('__timeout__')), wallAllowance(ms)); });
   try { return await Promise.race([p, t]); } finally { clearTimeout(timer); }
 }
 
@@ -930,6 +932,47 @@ export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 // nothing (LEAN_LIBRARY_CASES excepted), and starts no process, worker or addon; the network is the sandbox's fakes
 // only, since this Node's permission model has no network switch: a network deny is the gate's profile, not lean's.
 export const UNIT_SECONDS = 120; // the bound of one unit when no flag and no run budget names one
+// The bound counts the unit's OWN CPU time, so that a verdict does not depend on how loaded the machine is (lane
+// bench-scoring: 15 of 21 clean-lane refusals were units a wall bound killed under a load of 100; the benchmark
+// degraded with the machine). The parent reads the child's CPU time from the OS every CPU_POLL_MS (ps: the one
+// portable read of another process's time) and kills it past the bound. A wall bound FAR_GUARD times longer stays as
+// the far guard, for a child that burns no CPU and never answers; a host whose ps answers nothing keeps the wall bound
+// at the CPU bound, the old rule, said once on stderr.
+export const CPU_POLL_MS = 1000, FAR_GUARD = 10;
+const cpuWatched = new Map(); // pid -> { bound (s), onSample, onBound, onUnavailable }
+let cpuPoll = null, psUnavailable = false;
+const psSeconds = (t) => { const [dd, rest] = t.includes('-') ? t.split('-') : ['0', t]; const parts = rest.split(':').map(Number); return Number(dd) * 86400 + parts.reduce((acc, x) => acc * 60 + x, 0); }; // mm:ss.cc (BSD) or [dd-]hh:mm:ss (procps)
+function pollCpu() {
+  const pids = [...cpuWatched.keys()];
+  if (!pids.length) { clearInterval(cpuPoll); cpuPoll = null; return; }
+  execFile('ps', ['-o', 'pid=,time=', '-p', pids.join(',')], { encoding: 'utf8' }, (err, out) => {
+    if (err && !/exit code 1/.test(String(err.message)) && !out) { // ps itself failing (absent, refused): the wall bound at the CPU bound takes over, once
+      if (!psUnavailable) { psUnavailable = true; process.stderr.write(`lean: no CPU reading of the lane B worker (ps: ${String(err.message).slice(0, 120)}); the unit bound is wall-clock on this host\n`); }
+      for (const w of cpuWatched.values()) w.onUnavailable();
+      return;
+    }
+    for (const line of String(out ?? '').trim().split('\n')) {
+      const m = line.trim().match(/^(\d+)\s+(\S+)$/); if (!m) continue;
+      const w = cpuWatched.get(Number(m[1])); if (!w) continue;
+      const cpu = psSeconds(m[2]); w.onSample(cpu);
+      if (cpu >= w.bound) w.onBound(cpu);
+    }
+  });
+}
+function watchCpu(pid, bound, handlers) {
+  cpuWatched.set(pid, { bound, ...handlers });
+  if (psUnavailable) handlers.onUnavailable();
+  else if (!cpuPoll) { cpuPoll = setInterval(pollCpu, CPU_POLL_MS); cpuPoll.unref(); }
+  return { stop: () => { cpuWatched.delete(pid); if (!cpuWatched.size && cpuPoll) { clearInterval(cpuPoll); cpuPoll = null; } } };
+}
+// The in-process watchdogs (guardedCall, withTimeout) are wall clocks too: a call's bound of ms is allowed the wall
+// time ms of CPU takes on this machine, read from the load average at the start of the unit (os.loadavg: the
+// 1-minute run queue over the cores), floored at 1 and capped at FAR_GUARD; a call that ran past ms both ways is a
+// timeout whether or not the watchdog interrupted it, as on an idle machine
+let loadFactor = 1;
+export function readLoadFactor() { const cores = os.cpus().length || 1; const load = os.loadavg()[0] || 0; loadFactor = Math.min(FAR_GUARD, Math.max(1, load / cores)); return loadFactor; }
+const wallAllowance = (ms) => Math.round(ms * loadFactor);
+const cpuSpentMs = (u0) => { const u = process.cpuUsage(u0); return (u.user + u.system) / 1000; };
 let unitSecondsDefault = UNIT_SECONDS;
 export const setUnitSeconds = (s) => { unitSecondsDefault = unitSecondsValue(s); }; // pr.mjs: the run's per-unit bound
 export function unitSecondsValue(s) {
@@ -980,15 +1023,20 @@ export async function runPair(opts) {
   return new Promise((resolve) => {
     let last = null, done = false;
     const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
-    const end = (res) => { if (done) return; done = true; clearTimeout(timer); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
-    const timer = setTimeout(() => {
+    const end = (res) => { if (done) return; done = true; clearTimeout(timer); cpuWatch.stop(); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
+    const started = Date.now();
+    let cpuSeen = 0;
+    const killAt = (why) => {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
-      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its wall-clock bound (timeout) of ${seconds} s per unit (--unit-seconds); the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
-    }, seconds * 1000);
+      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
+    };
+    let timer = setTimeout(() => killAt(psUnavailable ? 'wall-clock' : `far wall-clock guard (${FAR_GUARD} times the CPU-time)`), seconds * 1000 * (psUnavailable ? 1 : FAR_GUARD));
+    const cpuWatch = watchCpu(child.pid, seconds, { onSample: (cpu) => { cpuSeen = cpu; }, onBound: (cpu) => { cpuSeen = cpu; killAt('CPU-time'); },
+      onUnavailable: () => { clearTimeout(timer); timer = setTimeout(() => killAt('wall-clock'), Math.max(0, seconds * 1000 - (Date.now() - started))); } });
     child.on('message', (m) => {
       if (m && m.crumb) { last = m.crumb; return; }
       if (!m || !Object.hasOwn(m, 'result')) return;
-      if (m.drained && guarded) { done = true; clearTimeout(timer); Object.assign(crumb, { phase: last?.phase ?? crumb.phase, input: last?.input ?? null, loading: last?.loading ?? null }); return; } // the child's event loop drained before a verdict: the caller's loop drains as the in-process run's did, and its guard names what was pending
+      if (m.drained && guarded) { done = true; clearTimeout(timer); cpuWatch.stop(); Object.assign(crumb, { phase: last?.phase ?? crumb.phase, input: last?.input ?? null, loading: last?.loading ?? null }); return; } // the child's event loop drained before a verdict: the caller's loop drains as the in-process run's did, and its guard names what was pending
       end(m.result);
     });
     child.on('error', (e) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker failed to start: ${String(e && e.message).slice(0, 200)}` }));
@@ -1000,6 +1048,7 @@ export async function runPair(opts) {
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
 export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
 async function runPairInFlight(opts) {
+  readLoadFactor(); // the machine's share of a core for this unit: the wall allowance of every in-process watchdog
   const owner = enclosingUnitName(opts.candidate, opts.unit);
   if (owner) return { ...await runPairInFlight({ ...opts, unit: owner }), unit: opts.unit, 'covered-by': owner };
   const unitRecord = { schema: 'witness-record/v2', version: 2, invocation: { kind: 'unit' }, unit: opts.unit, seed: opts.seed ?? 1, leanHead: opts.recordHead ?? 'unknown', drawDomain: { parameters: [], status: 'not recorded', reason: 'input plan not reached' }, draws: [], reach: { status: 'not recorded', reason: 'sandbox statement markers retain only current/completed sites; no per-line visit accumulator or diff bitmap' } };
