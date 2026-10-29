@@ -477,6 +477,8 @@ if (translatorCrashes.stderr) process.stderr.write(translatorCrashes.stderr);
 add('runtime', 'translator-crashes', 'node shapes read without translator crashes', translatorCrashes.status === 0, `exit ${translatorCrashes.status}: ${translatorCrashes.stdout.trim()}`);
 const listing = run('node', [path.join(here, 'unit-listing.mjs')]); // a module literal's member is named by the path code reaches it by; a same-named class keeps its own units (design/exported-units.md)
 add('runtime', 'unit-listing', 'a class and an exports-property literal sharing a name list two units, each refusal attributed to its own', listing.status === 0, (listing.stdout + listing.stderr).trim().split('\n').pop());
+const sealed = run('node', [path.join(here, 'sealed-assumption.mjs')]); // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
+add('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', sealed.status === 0, (sealed.stdout + sealed.stderr).trim().split('\n').pop());
 
 // Every selected pair's parent, the self-pair fixtures, and an optional challenge
 // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane.

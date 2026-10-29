@@ -1,6 +1,7 @@
 // The heap core, stage 4: an instance method reads and writes the fields of `this` through the heap.
 type Item = { id: string; n: number };
 
+/** @sealed */
 export class Bag {
   count: number;
   items: Item[];

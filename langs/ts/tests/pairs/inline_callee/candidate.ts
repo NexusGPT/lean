@@ -19,6 +19,7 @@ export function nameOf(user: User): string {
 }
 
 // the helper method inlined: the same field reads and write, in the same order
+/** @sealed */
 export class Counter {
   count = 0;
   step = 1;
