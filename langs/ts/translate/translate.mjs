@@ -44,7 +44,7 @@ import { spreadReadWhy } from '../common.mjs'; // the spreads of a record litera
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { admitUnits } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
-import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial } from '../lower.mjs'; // decisions taken once for the lint and the translator
+import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
@@ -4049,7 +4049,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       if (['ceil', 'round', 'sign'].includes(name) && n.arguments.length === 1 && (typeOf(a).flags & TF.NumberLike)) return `${helper({ ceil: 'JsCeil', round: 'JsRound', sign: 'JsSign' }[name], [NUM])}(${expr(a)})`;
       if (name === 'min' || name === 'max') {
-        if (!n.arguments.length) fail(n, 'math-empty: provide a nonempty argument list');
+        if (!nonemptyMathArgs(checker, n)) fail(n, 'math-empty: provide a nonempty argument list');
         if (n.arguments.length === 2 && !n.arguments.some(ts.isSpreadElement)) return `${helper(name === 'min' ? 'Min' : 'Max', [NUM])}(${expr(a)}, ${expr(b)})`;
         if (n.arguments.length === 1 && !ts.isSpreadElement(a)) return expr(a);
         return `${helper(name === 'min' ? 'MinSeq' : 'MaxSeq', [NUM])}(${callSequence([...n.arguments], NUM).code})`;

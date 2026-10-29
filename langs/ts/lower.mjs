@@ -67,7 +67,7 @@ const SHARED_TEXTS = { valueAssignmentWhy: 'write this assignment as a statement
 // the names both deciders import from a shared module (common.mjs and its kin), and the decisions lower.mjs takes for
 // both: a site whose statement calls one is decided once (the named-then pattern); any other is one decider's, which the
 // other reads through the record
-const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy', 'numberSpecial']);
+const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy', 'numberSpecial', 'nonemptyMathArgs']);
 function importedNames(sf) {
   const out = new Set();
   for (const st of sf.statements) if (ts.isImportDeclaration(st) && st.importClause?.namedBindings && ts.isNamedImports(st.importClause.namedBindings) && !/lint\.mjs|translate\.mjs/.test(st.moduleSpecifier.text)) for (const e of st.importClause.namedBindings.elements) out.add(e.name.text);
@@ -181,6 +181,75 @@ export function numberSpecial(form, value, origin = null) {
   if (form === 'literal') return !Number.isFinite(Number(value));
   if (form === 'global') return origin === 'global' && ['NaN', 'Infinity'].includes(value);
   throw new Error(`unknown number form: ${form}`);
+}
+
+// Math.min/max require a provably nonempty sequence, including dominance and intervening writes.
+export function nonemptyMathArgs(checker, e) {
+  const K = ts.SyntaxKind, TF = ts.TypeFlags;
+  const tOf = (n) => checker.getTypeAtLocation(n);
+  const nonNull = (t) => t.flags & TF.Union ? t.types.filter(x => !(x.flags & (TF.Null | TF.Undefined))) : [t];
+  const unparenX = (n) => { while (ts.isParenthesizedExpression(n)) n = n.expression; return n; };
+  const isArrayExpr = (n) => nonNull(tOf(n)).every(t => isArrayLike(checker, t));
+  const MUT_NAMES = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
+  const filled = (a) => !ts.isSpreadElement(a) || (ts.isArrayLiteralExpression(a.expression) && a.expression.elements.some(filled));
+  if (e.arguments.some(filled)) return true;
+  if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0])) return false;
+  const lengthName = (x) => { // the name whose length the value's length is
+    x = unparenX(x);
+    if (ts.isIdentifier(x)) return isArrayExpr(x) ? checker.getSymbolAtLocation(x) : null;
+    if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && !x.expression.questionDotToken && isArrayExpr(x.expression.expression) && ((x.expression.name.text === 'map' && x.arguments.length === 1) || (x.expression.name.text === 'slice' && !x.arguments.length))) return lengthName(x.expression.expression);
+    if (ts.isArrayLiteralExpression(x) && x.elements.length === 1 && ts.isSpreadElement(x.elements[0])) return lengthName(x.elements[0].expression);
+    return null;
+  };
+  const sym = lengthName(e.arguments[0].expression);
+  if (!sym) return false;
+  const isLen = (x) => { x = unparenX(x); return ts.isPropertyAccessExpression(x) && x.name.text === 'length' && !x.questionDotToken && ts.isIdentifier(unparenX(x.expression)) && checker.getSymbolAtLocation(unparenX(x.expression)) === sym; };
+  // the test c, known to be `truth`, says the length is above zero
+  const implies = (c, truth) => {
+    c = unparenX(c);
+    if (ts.isPrefixUnaryExpression(c) && c.operator === K.ExclamationToken) return implies(c.operand, !truth);
+    if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.AmpersandAmpersandToken) return truth && (implies(c.left, true) || implies(c.right, true));
+    if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.BarBarToken) return !truth && (implies(c.left, false) || implies(c.right, false));
+    if (isLen(c)) return truth;
+    if (!ts.isBinaryExpression(c)) return false;
+    let op = c.operatorToken.kind, lit = unparenX(c.right);
+    if (!isLen(c.left)) { if (!isLen(c.right)) return false; lit = unparenX(c.left); op = { [K.LessThanToken]: K.GreaterThanToken, [K.LessThanEqualsToken]: K.GreaterThanEqualsToken, [K.GreaterThanToken]: K.LessThanToken, [K.GreaterThanEqualsToken]: K.LessThanEqualsToken }[op] ?? op; }
+    if (!ts.isNumericLiteral(lit)) return false;
+    const n = Number(lit.text);
+    if (truth) return (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || ((op === K.ExclamationEqualsEqualsToken || op === K.ExclamationEqualsToken) && n === 0);
+    return (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || ((op === K.EqualsEqualsEqualsToken || op === K.EqualsEqualsToken) && n === 0);
+  };
+  const writes = (node, from, to) => { // a write of the name inside node between two positions
+    let hit = false;
+    const w = (x) => {
+      if (hit || x.end <= from || x.pos >= to) return;
+      if (ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym) {
+        let top = x; while (top.parent && (ts.isParenthesizedExpression(top.parent) || ts.isNonNullExpression(top.parent))) top = top.parent;
+        const p = top.parent;
+        if (p && ts.isBinaryExpression(p) && p.left === top && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) hit = true;
+        if (p && ts.isPropertyAccessExpression(p) && p.expression === top && (MUT_NAMES.has(p.name.text) || (p.name.text === 'length' && p.parent && ts.isBinaryExpression(p.parent) && p.parent.left === p))) hit = true;
+      }
+      ts.forEachChild(x, w);
+    };
+    w(node);
+    return hit;
+  };
+  // a statement that never completes normally: a jump, or a block ending in one (the statements before it cannot reach the end)
+  const exits = (st) => { if (ts.isBlock(st)) return st.statements.length > 0 && exits(st.statements[st.statements.length - 1]); return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
+  // a loop around the call runs it again after the statements that follow it: a write of the list anywhere in the loop can empty it for the next pass
+  let loopEnd = 0;
+  for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
+    const upto = Math.max(e.pos, loopEnd);
+    if (ts.isConditionalExpression(p) && child !== p.condition && implies(p.condition, p.whenTrue === child) && !writes(p, p.condition.end, upto)) return true;
+    if (ts.isIfStatement(p) && child !== p.expression && implies(p.expression, p.thenStatement === child) && !writes(p, p.expression.end, upto)) return true;
+    if (ts.isBinaryExpression(p) && child === p.right && ((p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, true)) || (p.operatorToken.kind === K.BarBarToken && implies(p.left, false))) && !writes(p, p.left.end, upto)) return true;
+    if ((ts.isBlock(p) || ts.isSourceFile(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) && p.statements) {
+      const k = p.statements.indexOf(child);
+      for (let i = k - 1; i >= 0; i--) { const g = p.statements[i]; if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement) && implies(g.expression, false) && !writes(p, g.end, upto)) return true; }
+    }
+    if (ts.isIterationStatement(p, false)) loopEnd = Math.max(loopEnd, p.end);
+  }
+  return false;
 }
 
 // ---------- the lowering ----------
