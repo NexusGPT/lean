@@ -1,0 +1,1155 @@
+{
+ "kinds": [
+  [
+   "objlit-exported",
+   "a direct method or function-valued property of an object literal that is exported (export const X = {...}, export default {...}, module.exports = {...}, exports.x = {...})"
+  ],
+  [
+   "objlit-module-const",
+   "the same, of an object literal bound to a module-level const that is not exported"
+  ],
+  [
+   "objlit-other",
+   "a method or function-valued property of any other object literal (nested literal, local literal, argument, let)"
+  ],
+  [
+   "exports-assign",
+   "the right side of module.exports = f, exports.x = f, module.exports.x = f"
+  ],
+  [
+   "prop-assign",
+   "the right side of any other property assignment a.b = f, a[k] = f"
+  ],
+  [
+   "class-field",
+   "a class field initialised with a function or arrow"
+  ],
+  [
+   "class-other",
+   "a class member not listed (a class expression, a nested or unnamed class, a computed or private name)"
+  ],
+  [
+   "callback",
+   "an argument of a call or new"
+  ],
+  [
+   "iife",
+   "the callee of a call (an immediately invoked function)"
+  ],
+  [
+   "nested",
+   "a function declaration or a variable initialiser inside another function"
+  ],
+  [
+   "top-other",
+   "a module-level declaration not listed (let or var, several declarators, an anonymous default export)"
+  ],
+  [
+   "other",
+   "anything else (a return value, an array element, a JSX attribute, a default parameter, a conditional)"
+  ]
+ ],
+ "rows": [
+  {
+   "name": "bugsjs-bower",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/bower",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 94,
+    "unreadable": 0,
+    "functions": 988,
+    "listed": 167,
+    "unlisted": 821,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 8,
+     "exports-assign": 10,
+     "prop-assign": 222,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 523,
+     "iife": 0,
+     "nested": 19,
+     "top-other": 4,
+     "other": 35
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "Gruntfile.js:124",
+      "lib/commands/version.js:85",
+      "lib/commands/version.js:150"
+     ],
+     "exports-assign": [
+      "Gruntfile.js:9",
+      "lib/util/abbreviations.js:21",
+      "lib/util/fs.js:8"
+     ],
+     "prop-assign": [
+      "lib/commands/cache/clean.js:185",
+      "lib/commands/cache/list.js:32",
+      "lib/commands/help.js:33"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "Gruntfile.js:77",
+      "Gruntfile.js:217",
+      "lib/bin/bower.js:98"
+     ],
+     "iife": [],
+     "nested": [
+      "lib/commands/index.js:13",
+      "lib/commands/index.js:24",
+      "lib/commands/index.js:37"
+     ],
+     "top-other": [
+      "lib/core/scripts.js:6",
+      "lib/core/scripts.js:59",
+      "lib/core/scripts.js:86"
+     ],
+     "other": [
+      "lib/core/Manager.js:132",
+      "lib/core/Manager.js:307",
+      "lib/core/Manager.js:510"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-eslint",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 368,
+    "unreadable": 0,
+    "functions": 3126,
+    "listed": 679,
+    "unlisted": 2447,
+    "listable": 323,
+    "kinds": {
+     "objlit-exported": 307,
+     "objlit-module-const": 16,
+     "objlit-other": 632,
+     "exports-assign": 27,
+     "prop-assign": 40,
+     "class-field": 0,
+     "class-other": 76,
+     "callback": 516,
+     "iife": 6,
+     "nested": 783,
+     "top-other": 0,
+     "other": 44
+    },
+    "examples": {
+     "objlit-exported": [
+      "lib/code-path-analysis/debug-helpers.js:147",
+      "lib/config/config-file.js:614",
+      "lib/config/config-ops.js:38"
+     ],
+     "objlit-module-const": [
+      "lib/cli.js:134",
+      "lib/config/config-initializer.js:642",
+      "lib/rules/no-misleading-character-class.js:55"
+     ],
+     "objlit-other": [
+      "lib/api.js:21",
+      "lib/code-path-analysis/code-path.js:160",
+      "lib/code-path-analysis/code-path.js:167"
+     ],
+     "exports-assign": [
+      "karma.conf.js:3",
+      "lib/formatters/checkstyle.js:31",
+      "lib/formatters/codeframe.js:115"
+     ],
+     "prop-assign": [
+      "Makefile.js:500",
+      "Makefile.js:504",
+      "Makefile.js:546"
+     ],
+     "class-field": [],
+     "class-other": [
+      "lib/config/config-cache.js:31",
+      "lib/config/config-cache.js:45",
+      "lib/config/config-cache.js:57"
+     ],
+     "callback": [
+      "Makefile.js:88",
+      "Makefile.js:88",
+      "Makefile.js:131"
+     ],
+     "iife": [
+      "lib/rules/generator-star-spacing.js:93",
+      "lib/rules/keyword-spacing.js:29",
+      "lib/rules/no-useless-escape.js:21"
+     ],
+     "nested": [
+      "Makefile.js:861",
+      "Makefile.js:871",
+      "Makefile.js:925"
+     ],
+     "top-other": [],
+     "other": [
+      "Makefile.js:115",
+      "lib/cli-engine.js:183",
+      "lib/cli-engine.js:184"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-express",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/express",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 57,
+    "unreadable": 0,
+    "functions": 325,
+    "listed": 42,
+    "unlisted": 283,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 20,
+     "exports-assign": 32,
+     "prop-assign": 71,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 136,
+     "iife": 0,
+     "nested": 14,
+     "top-other": 0,
+     "other": 10
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "examples/content-negotiation/index.js:9",
+      "examples/content-negotiation/index.js:15",
+      "examples/content-negotiation/index.js:21"
+     ],
+     "exports-assign": [
+      "examples/content-negotiation/users.js:4",
+      "examples/content-negotiation/users.js:10",
+      "examples/content-negotiation/users.js:16"
+     ],
+     "prop-assign": [
+      "examples/mvc/index.js:22",
+      "examples/resource/index.js:11",
+      "examples/route-map/index.js:11"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "benchmarks/middleware.js:11",
+      "benchmarks/middleware.js:16",
+      "examples/auth/index.js:28"
+     ],
+     "iife": [],
+     "nested": [
+      "lib/express.js:38",
+      "lib/response.js:1017",
+      "lib/response.js:1027"
+     ],
+     "top-other": [],
+     "other": [
+      "examples/content-negotiation/index.js:33",
+      "examples/route-middleware/index.js:49",
+      "lib/middleware/init.js:29"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-hessian.js",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hessian.js",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 17,
+    "unreadable": 0,
+    "functions": 174,
+    "listed": 9,
+    "unlisted": 165,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 8,
+     "prop-assign": 76,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 81,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [
+      "index.js:12",
+      "index.js:38",
+      "lib/convert/java.util.locale.js:3"
+     ],
+     "prop-assign": [
+      "lib/v1/decoder.js:26",
+      "lib/v1/decoder.js:30",
+      "lib/v1/decoder.js:39"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "benchmark/cache.js:20",
+      "benchmark/cache.js:23",
+      "benchmark/cache.js:27"
+     ],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  },
+  {
+   "name": "bugsjs-hexo",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hexo",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 136,
+    "unreadable": 0,
+    "functions": 675,
+    "listed": 144,
+    "unlisted": 531,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 4,
+     "exports-assign": 53,
+     "prop-assign": 137,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 291,
+     "iife": 0,
+     "nested": 30,
+     "top-other": 0,
+     "other": 16
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "lib/hexo/post.js:276",
+      "lib/plugins/processor/asset.js:122",
+      "lib/plugins/processor/data.js:10"
+     ],
+     "exports-assign": [
+      "lib/hexo/load_config.js:13",
+      "lib/hexo/load_database.js:6",
+      "lib/hexo/load_plugins.js:8"
+     ],
+     "prop-assign": [
+      "lib/box/file.js:12",
+      "lib/box/file.js:16",
+      "lib/box/file.js:20"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "lib/box/index.js:16",
+      "lib/box/index.js:51",
+      "lib/box/index.js:56"
+     ],
+     "iife": [],
+     "nested": [
+      "lib/box/index.js:66",
+      "lib/box/index.js:226",
+      "lib/extend/tag.js:58"
+     ],
+     "top-other": [],
+     "other": [
+      "lib/extend/tag.js:180",
+      "lib/hexo/locals.js:32",
+      "lib/hexo/multi_config_path.js:8"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-karma",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/karma",
+   "ts": {
+    "files": 1,
+    "unreadable": 0,
+    "functions": 1,
+    "listed": 0,
+    "unlisted": 1,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 1,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [
+      "config.tpl.ts:4"
+     ],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 70,
+    "unreadable": 0,
+    "functions": 628,
+    "listed": 198,
+    "unlisted": 430,
+    "listable": 18,
+    "kinds": {
+     "objlit-exported": 3,
+     "objlit-module-const": 15,
+     "objlit-other": 9,
+     "exports-assign": 34,
+     "prop-assign": 89,
+     "class-field": 0,
+     "class-other": 1,
+     "callback": 219,
+     "iife": 2,
+     "nested": 28,
+     "top-other": 0,
+     "other": 30
+    },
+    "examples": {
+     "objlit-exported": [
+      "lib/temp_dir.js:11",
+      "lib/temp_dir.js:15",
+      "lib/temp_dir.js:27"
+     ],
+     "objlit-module-const": [
+      "lib/index.js:12",
+      "lib/init/color_schemes.js:6",
+      "lib/init/color_schemes.js:9"
+     ],
+     "objlit-other": [
+      "context/karma.js:107",
+      "context/karma.js:108",
+      "context/karma.js:109"
+     ],
+     "exports-assign": [
+      "common/util.js:1",
+      "common/util.js:5",
+      "common/util.js:9"
+     ],
+     "prop-assign": [
+      "client/karma.js:66",
+      "client/karma.js:82",
+      "client/karma.js:89"
+     ],
+     "class-field": [],
+     "class-other": [
+      "lib/server.js:115"
+     ],
+     "callback": [
+      "client/karma.js:28",
+      "client/karma.js:190",
+      "client/karma.js:195"
+     ],
+     "iife": [
+      "context/karma.js:58",
+      "static/debug.js:19"
+     ],
+     "nested": [
+      "client/karma.js:50",
+      "client/karma.js:62",
+      "client/karma.js:101"
+     ],
+     "top-other": [],
+     "other": [
+      "client/karma.js:226",
+      "client/updater.js:18",
+      "context/karma.js:141"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-mongoose",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/mongoose",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 269,
+    "unreadable": 0,
+    "functions": 3591,
+    "listed": 268,
+    "unlisted": 3323,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 446,
+     "exports-assign": 120,
+     "prop-assign": 852,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 1314,
+     "iife": 69,
+     "nested": 446,
+     "top-other": 1,
+     "other": 75
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "benchmarks/benchjs/casting.js:96",
+      "benchmarks/benchjs/casting.js:102",
+      "benchmarks/benchjs/casting.js:108"
+     ],
+     "exports-assign": [
+      "docs/3.0.x/docs/helpers/filters.js:5",
+      "docs/3.0.x/docs/helpers/href.js:3",
+      "docs/3.0.x/docs/helpers/klass.js:3"
+     ],
+     "prop-assign": [
+      "docs/3.0.x/docs/helpers/filters.js:8",
+      "docs/3.0.x/docs/helpers/filters.js:15",
+      "docs/3.0.x/docs/js/zepto.min.js:4"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "benchmarks/benchjs/casting.js:126",
+      "benchmarks/benchjs/casting.js:130",
+      "benchmarks/benchjs/casting.js:133"
+     ],
+     "iife": [
+      "docs/3.0.x/docs/js/zepto.min.js:4",
+      "docs/3.0.x/docs/js/zepto.min.js:4",
+      "docs/3.0.x/docs/js/zepto.min.js:4"
+     ],
+     "nested": [
+      "benchmarks/benchjs/delete.js:73",
+      "benchmarks/benchjs/delete.js:130",
+      "benchmarks/benchjs/insert.js:108"
+     ],
+     "top-other": [
+      "docs/js/native.js:58"
+     ],
+     "other": [
+      "benchmarks/populationHeavyLoad.js:416",
+      "benchmarks/populationHeavyLoad.js:459",
+      "docs/3.0.x/docs/js/zepto.min.js:4"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-node_redis",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/node_redis",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 30,
+    "unreadable": 0,
+    "functions": 233,
+    "listed": 38,
+    "unlisted": 195,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 14,
+     "exports-assign": 2,
+     "prop-assign": 66,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 82,
+     "iife": 1,
+     "nested": 17,
+     "top-other": 3,
+     "other": 10
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "index.js:191",
+      "index.js:194",
+      "index.js:198"
+     ],
+     "exports-assign": [
+      "index.js:1088",
+      "lib/createClient.js:6"
+     ],
+     "prop-assign": [
+      "benchmarks/multi_bench.js:43",
+      "benchmarks/multi_bench.js:69",
+      "benchmarks/multi_bench.js:77"
+     ],
+     "class-field": [],
+     "class-other": [],
+     "callback": [
+      "benchmarks/diff_multi_bench_output.js:60",
+      "benchmarks/diff_multi_bench_output.js:69",
+      "benchmarks/diff_multi_bench_output.js:72"
+     ],
+     "iife": [
+      "lib/commands.js:8"
+     ],
+     "nested": [
+      "index.js:470",
+      "lib/commands.js:9",
+      "lib/extendedApi.js:100"
+     ],
+     "top-other": [
+      "index.js:548",
+      "lib/commands.js:20",
+      "lib/extendedApi.js:7"
+     ],
+     "other": [
+      "lib/individualCommands.js:36",
+      "lib/individualCommands.js:83",
+      "lib/individualCommands.js:125"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-pencilblue",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/pencilblue",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 327,
+    "unreadable": 0,
+    "functions": 4573,
+    "listed": 37,
+    "unlisted": 4536,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 264,
+     "exports-assign": 277,
+     "prop-assign": 1922,
+     "class-field": 0,
+     "class-other": 60,
+     "callback": 1315,
+     "iife": 22,
+     "nested": 455,
+     "top-other": 1,
+     "other": 220
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "controllers/base_controller.js:265",
+      "controllers/base_controller.js:269",
+      "controllers/base_controller.js:273"
+     ],
+     "exports-assign": [
+      "controllers/admin/base_admin_controller.js:18",
+      "controllers/api/api_action_controller.js:22",
+      "controllers/api/base_api_controller.js:18"
+     ],
+     "prop-assign": [
+      "controllers/admin/base_admin_controller.js:39",
+      "controllers/admin/base_admin_controller.js:51",
+      "controllers/admin/base_admin_controller.js:66"
+     ],
+     "class-field": [],
+     "class-other": [
+      "include/http/middleware/index.js:60",
+      "include/http/middleware/index.js:74",
+      "include/http/middleware/index.js:88"
+     ],
+     "callback": [
+      "controllers/admin/base_admin_controller.js:41",
+      "controllers/api/api_action_controller.js:58",
+      "controllers/api/api_action_controller.js:108"
+     ],
+     "iife": [
+      "include/service/entities/article_service.js:508",
+      "public/js/angular/directives/wysiwyg.js:1",
+      "public/js/angular/factories/admin/article.js:1"
+     ],
+     "nested": [
+      "controllers/admin/base_admin_controller.js:30",
+      "controllers/api/api_action_controller.js:35",
+      "controllers/api/base_api_controller.js:29"
+     ],
+     "top-other": [
+      "public/js/lib/to_markdown/to-markdown.js:13"
+     ],
+     "other": [
+      "controllers/api/api_action_controller.js:98",
+      "controllers/api/api_action_controller.js:101",
+      "controllers/api/api_action_controller.js:104"
+     ]
+    }
+   }
+  },
+  {
+   "name": "bugsjs-shields",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/shields",
+   "ts": {
+    "files": 0,
+    "unreadable": 0,
+    "functions": 0,
+    "listed": 0,
+    "unlisted": 0,
+    "listable": 0,
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 0,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 0,
+     "iife": 0,
+     "nested": 0,
+     "top-other": 0,
+     "other": 0
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 400,
+    "unreadable": 0,
+    "functions": 1718,
+    "listed": 456,
+    "unlisted": 1262,
+    "listable": 6,
+    "kinds": {
+     "objlit-exported": 6,
+     "objlit-module-const": 0,
+     "objlit-other": 28,
+     "exports-assign": 4,
+     "prop-assign": 5,
+     "class-field": 0,
+     "class-other": 361,
+     "callback": 802,
+     "iife": 3,
+     "nested": 17,
+     "top-other": 2,
+     "other": 34
+    },
+    "examples": {
+     "objlit-exported": [
+      "lib/make-badge-test-helpers.js:18",
+      "lib/make-badge-test-helpers.js:21",
+      "lib/make-badge.js:205"
+     ],
+     "objlit-module-const": [],
+     "objlit-other": [
+      "dangerfile.js:165",
+      "frontend/lib/prepare-examples.js:37",
+      "lib/lru-cache.js:30"
+     ],
+     "exports-assign": [
+      "lib/log.js:27",
+      "lib/log.js:37",
+      "lib/log.js:51"
+     ],
+     "prop-assign": [
+      "lib/error-helper.js:31",
+      "lib/request-handler.js:197",
+      "lib/result-sender.js:9"
+     ],
+     "class-field": [],
+     "class-other": [
+      "lib/sys/rate-limit.js:6",
+      "lib/sys/rate-limit.js:17",
+      "lib/sys/rate-limit.js:23"
+     ],
+     "callback": [
+      "dangerfile.js:118",
+      "dangerfile.js:119",
+      "dangerfile.js:137"
+     ],
+     "iife": [
+      "lib/badge-cli.js:89",
+      "lib/service-test-runner/pull-request-services-cli.js:55",
+      "services/lgtm/lgtm-grade.service.js:17"
+     ],
+     "nested": [
+      "frontend/components/usage.js:73",
+      "lib/php-version.js:100",
+      "lib/request-handler.js:164"
+     ],
+     "top-other": [
+      "frontend/components/header.js:4",
+      "frontend/components/meta.js:8"
+     ],
+     "other": [
+      "frontend/components/badge-examples.js:15",
+      "frontend/components/badge-examples.js:19",
+      "frontend/components/dynamic-badge-maker.js:42"
+     ]
+    }
+   }
+  }
+ ],
+ "totals": {
+  "ts": {
+   "files": 1,
+   "listed": 0,
+   "unlisted": 1,
+   "listable": 0,
+   "kinds": {
+    "objlit-exported": 0,
+    "objlit-module-const": 0,
+    "objlit-other": 0,
+    "exports-assign": 1,
+    "prop-assign": 0,
+    "class-field": 0,
+    "class-other": 0,
+    "callback": 0,
+    "iife": 0,
+    "nested": 0,
+    "top-other": 0,
+    "other": 0
+   }
+  },
+  "js": {
+   "files": 1768,
+   "listed": 2038,
+   "unlisted": 13993,
+   "listable": 347,
+   "kinds": {
+    "objlit-exported": 316,
+    "objlit-module-const": 31,
+    "objlit-other": 1425,
+    "exports-assign": 567,
+    "prop-assign": 3480,
+    "class-field": 0,
+    "class-other": 498,
+    "callback": 5279,
+    "iife": 103,
+    "nested": 1809,
+    "top-other": 11,
+    "other": 474
+   }
+  }
+ }
+}

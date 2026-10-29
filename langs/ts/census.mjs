@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // lean census: every TypeScript function of a repository through the gate, the blockers counted.
-//   node census.mjs <repo-root> [--out census.json] [--report census.md] [--depth N] [--limit N] [--include <prefix>]
+//   node census.mjs <repo-root> [--out census.json] [--report census.md] [--depth N] [--limit N] [--include <prefix>] [--js]
 // Walks .ts/.tsx/.mts under the root (skipping node_modules, dist, build, .next, coverage, tests, stories,
-// declarations), lints each file inside its project, and reports: units, units inside the subset, the rule counts
+// declarations; --js also walks .js/.jsx/.mjs/.cjs, counted apart under `languages`), lints each file inside its project, and reports: units, units inside the subset, the rule counts
 // with three examples each, per package and in total. Read-only: nothing is written into the repository.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,12 +10,14 @@ import { lintFile } from './lint/lint.mjs';
 import { loadManyChunks, topLevelFunctions, lineOf } from './common.mjs';
 
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
-const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
+const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts|js|jsx|mjs|cjs)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
 
-function* walk(dir) {
+// the files the census reads: TypeScript by default; `ext` widens it (the reach-gap count reads JavaScript files too)
+export const TS_EXT = /\.(ts|tsx|mts)$/, JS_EXT = /\.(js|jsx|mjs|cjs)$/, ANY_EXT = /\.(ts|tsx|mts|js|jsx|mjs|cjs)$/;
+export function* walk(dir, ext = TS_EXT) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (e.isDirectory()) { if (!SKIP_DIR.has(e.name) && !e.name.startsWith('.')) yield* walk(path.join(dir, e.name)); continue; }
-    if (/\.(ts|tsx|mts)$/.test(e.name)) { const p = path.join(dir, e.name); if (!SKIP_FILE.test(p)) yield p; }
+    if (e.isDirectory()) { if (!SKIP_DIR.has(e.name) && !e.name.startsWith('.')) yield* walk(path.join(dir, e.name), ext); continue; }
+    if (ext.test(e.name)) { const p = path.join(dir, e.name); if (!SKIP_FILE.test(p)) yield p; }
   }
 }
 function packageOf(root, file) {
@@ -25,17 +27,18 @@ function packageOf(root, file) {
 }
 
 export function census(root, opts = {}) {
-  const { limit = 0, include = null, depth = 2, log = () => {} } = opts;
+  const { limit = 0, include = null, depth = 2, log = () => {}, js = false } = opts;
   if (!Number.isSafeInteger(depth) || depth < 0) throw new Error('depth must be a nonnegative integer');
   const refusalGroups = new Map();
   const date = new Date().toISOString().slice(0, 10);
   const rules = new Map(); // rule -> {count, units:Set, examples:[]}
   const perPackage = new Map();
+  const languages = {}; // ts and (with --js) js: files, units, units inside the subset
   const records = []; // one per file: what the per-file reader needs
   let files = 0, units = 0, entered = 0, failedFiles = 0;
   const t0 = Date.now();
   const list = [];
-  for (const file of walk(root)) {
+  for (const file of walk(root, js ? ANY_EXT : TS_EXT)) {
     if (include && !path.relative(root, file).startsWith(include)) continue;
     if (limit && list.length >= limit) break;
     list.push(file);
@@ -81,6 +84,7 @@ export function census(root, opts = {}) {
       rules.set(f.rule, r);
     }
     units += unitNames.length; entered += unitNames.length - blocked.size;
+    { const lang = JS_EXT.test(file) ? 'js' : 'ts'; const Lg = languages[lang] ??= { files: 0, units: 0, entered: 0 }; Lg.files++; Lg.units += unitNames.length; Lg.entered += unitNames.length - blocked.size; }
     P.units += unitNames.length; P.entered += unitNames.length - blocked.size;
     if (files % 50 === 0) log(`${files} files, ${units} units, ${entered} inside, ${Math.round((Date.now() - t0) / 1000)} s`);
   }
@@ -89,7 +93,7 @@ export function census(root, opts = {}) {
     rule: r.rule, units: r.units,
     directories: [...r.directories.values()].sort((a, b) => a.directory.localeCompare(b.directory)),
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
-  return { root, date, depth, refused: units - entered, refusalRules, files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  return { root, date, depth, languages, refused: units - entered, refusalRules, files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
 
 // Render only the saved census result. No files are read and no units are linted here.
@@ -100,6 +104,7 @@ export function censusReport(res) {
     `# Census: ${code(path.basename(res.root))}`, '',
     `Date: ${res.date} (UTC)`, '',
     `Units: ${res.units}. Inside the subset: ${res.entered} (${res.share ?? 'n/a'} percent). Refused: ${res.refused}. Files unreadable: ${res.failedFiles}.`, '',
+    ...(res.languages?.js ? [`By language: TypeScript ${res.languages.ts?.units ?? 0} units (${res.languages.ts?.entered ?? 0} inside, ${res.languages.ts?.files ?? 0} files); JavaScript ${res.languages.js.units} units (${res.languages.js.entered} inside, ${res.languages.js.files} files).`, ''] : []),
     'Each refused unit is counted once, under the first rule the lint names for it. Environment findings do not refuse units.', '',
     `Directory depth: ${res.depth}. A dot means the repository root.`, '',
     '## Top five rules by units stopped', '',
@@ -123,7 +128,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const root = path.resolve(a[0]);
-  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), log: (m) => console.error(m) });
+  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), js: a.includes('--js'), log: (m) => console.error(m) });
   const out = opt('--out', null);
   const report = opt('--report', null);
   if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));

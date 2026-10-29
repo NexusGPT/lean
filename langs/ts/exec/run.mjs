@@ -21,7 +21,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork } from 'node:child_process';
-import { ts, loadProgram, topLevelFunctions, aliasTarget } from '../common.mjs';
+import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength } from './gen.mjs';
@@ -109,7 +109,7 @@ function unitShim(src, abs) {
   for (const st of sf.statements) {
     if (ts.isFunctionDeclaration(st) && st.name) names.push(st.name.text);
     else if (ts.isClassDeclaration(st) && st.name) names.push(st.name.text);
-    else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))) names.push(d.name.text);
+    else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer) || (st.declarationList.flags & ts.NodeFlags.Const && literalMemberUnits(st).some((u) => u.binding === d.name.text)))) names.push(d.name.text); // a module const object literal holds literal units (design/exported-units.md)
   }
   return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n`;
 }
@@ -523,6 +523,15 @@ export function sandbox(env, root) {
 
 export function pickUnit(exportsObj, spec, env) {
   const units = exportsObj.__lean_units ?? {};
+  if (!spec.isMethod && !(spec.unit in units) && !(spec.unit in exportsObj) && spec.unit.includes('.')) {
+    // a member of an exported or module-const object literal, <binding>.<key> (common.mjs literalMemberUnits): called on the
+    // literal itself, so `this` is the literal (design/exported-units.md)
+    const at = spec.unit.lastIndexOf('.'), binding = spec.unit.slice(0, at), key = spec.unit.slice(at + 1);
+    const holder = binding === 'exports' ? exportsObj : binding === 'default' ? exportsObj.default : (units[binding] ?? exportsObj[binding]);
+    const m = holder && (typeof holder === 'object' || typeof holder === 'function') ? holder[key] : undefined;
+    if (typeof m !== 'function') return null;
+    return { call: (args) => m.apply(holder, args), receiver: null };
+  }
   if (!spec.isMethod) {
     const f = units[spec.unit] ?? exportsObj[spec.unit];
     if (typeof f !== 'function') return null;

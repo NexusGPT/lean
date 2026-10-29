@@ -109,7 +109,7 @@ try {
   ok(intakeRun.code === 0 && intakeBody.startsWith(MARKER) && intakeBody.length <= MAX_BODY, 'intake comment has marker and fits the cap');
   ok(intakeBody.indexOf('## Intake') < intakeBody.indexOf('## Verdicts'), 'intake comes before verdicts');
   ok((intakeTable.match(/^\| \x60/gm) ?? []).length === 6, 'intake comment has all six units');
-  ok(['checked', 'refused:alias-mutation', 'failed:loader', 'skipped:not-typescript', 'skipped:binary', 'skipped:secret-path'].every((c) => intakeTable.includes(c)), 'intake comment has all six coverage values');
+  ok(['checked', 'refused:alias-mutation', 'failed:loader', 'refused:untyped-js', 'skipped:binary', 'skipped:secret-path'].every((c) => intakeTable.includes(c)), 'intake comment has all six coverage values'); // a JavaScript unit is listed and refused by name (design/exported-units.md)
   const longIntake = commentBody('# lean report', { rows: Array.from({ length: 4000 }, (_, i) => ({ file: `source${i}.ts`, unit: 'f', coverage: 'checked' })) });
   ok(longIntake.length <= MAX_BODY && longIntake.includes('longer than one comment holds'), 'long intake respects the character cap');
   const cappedIntake = commentBody('# lean report\n\none verdict', { capped: true, rows: [{ file: 'later.ts', unit: 'later', coverage: 'checked' }] });

@@ -25,7 +25,7 @@ Reviewers read the declared scope and the asks, not the diff. A function nobody 
 
 ## Every changed function has a row
 
-The `coverage` column says what lean did with it: `checked` (a verdict exists), `refused:<rule>` (the lint's first rule; lane B's verdict is kept in the row), `failed:loader`, `failed:timeout`, `failed:translation-defect` or `failed:harness` (no usable verdict), `skipped:not-typescript`, `skipped:binary` or `skipped:secret-path` (never read: `.env`, keys, certificates). The intake is one pure function, `selectUnits`, used by the run and by `--preview`, which prints the intake table and runs no lane:
+The `coverage` column says what lean did with it: `checked` (a verdict exists), `refused:<rule>` (the lint's first rule; lane B's verdict is kept in the row), `failed:loader`, `failed:timeout`, `failed:translation-defect` or `failed:harness` (no usable verdict), `skipped:binary` or `skipped:secret-path` (never read: `.env`, keys, certificates). A JavaScript file is read unit by unit like a TypeScript file; a unit whose parameters carry no declared type is `refused:untyped-js`. The intake is one pure function, `selectUnits`, used by the run and by `--preview`, which prints the intake table and runs no lane:
 
 ```
 $ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --preview

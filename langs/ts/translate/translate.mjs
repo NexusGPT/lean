@@ -31,7 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
@@ -337,7 +337,7 @@ export function translate(file, fnName, opts = {}) {
       if (om) return !exactObjectMethod(om);
       if (recv.kind === K.SuperKeyword) return true; // the parent's method: a transition on the receiver
       if (ts.isIdentifier(recv) && (f.name.text === 'call' || f.name.text === 'apply') && fns.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'unit') return effectfulUnits.has(recv.text); // `h.call(o, a)` on a same-file function is the call of h: its own unit's flag
-      if (recv.kind === K.ThisKeyword && currentUnit?.cls) { const callee = fns.get(`${currentUnit.className}.${f.name.text}`); if (callee) return effectfulUnits.has(callee.name); return true; }
+      if (recv.kind === K.ThisKeyword && (currentUnit?.cls || literalOf(currentUnit))) { const callee = ownUnit(currentUnit, f.name.text); if (callee) return effectfulUnits.has(callee.name); return true; }
       if (moduleState(checker, recv, sf) && MUTATORS.has(f.name.text)) return true;
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
       if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
@@ -834,11 +834,22 @@ export function translate(file, fnName, opts = {}) {
   const fname = (tsName) => (core ? dn(snake(tsName.replace('.', '_'))) + sfx : dn(tsName.replace('.', '_')));
   const SELF = 'self';
   const classOf = (u) => (u && u.cls ? u : null);
+  // a unit of an exported or module-const object literal (common.mjs literalMemberUnits): its receiver is the literal, read
+  // as a class method's receiver is read: a self operand of the literal's type, `this.m()` the sibling unit <binding>.m
+  // (design/exported-units.md)
+  const literalOf = (u) => (u && u.literal && !u.isArrow ? u : null); // an arrow held by a property has no own `this`: the literal is not its receiver
+  // a literal unit takes the self operand only when its code reads `this` (a nested function other than an arrow binds its
+  // own): one that never reads it is a plain function of its parameters, as a free function is
+  const readsThisMemo = new Map();
+  const readsThis = (u) => { if (!readsThisMemo.has(u)) { let found = false; const w = (n) => { if (found) return; if (n.kind === K.ThisKeyword) { found = true; return; } if (ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n) || ts.isMethodDeclaration(n) || ts.isClassLike(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n)) return; ts.forEachChild(n, w); }; ts.forEachChild(u.fn, w); readsThisMemo.set(u, found); } return readsThisMemo.get(u); };
+  const hasSelf = (u) => !!u && ((!!u.cls && !u.isStatic) || (!!literalOf(u) && readsThis(u))); // the unit takes the self operand
+  const ownUnit = (u, name) => (u && (u.cls || literalOf(u)) ? fns.get(`${u.cls ? u.className : u.binding}.${name}`) ?? null : null); // `this.name()` inside u: the sibling unit of its class or literal
   // the receiver's Dafny type: the class instance type, opaque (its methods make it so); a free function's declared `this`
   // parameter (TypeScript's this parameter) is its receiver, so its self type is that parameter's type, read as the
   // parameter list reads it; a unit with neither has no receiver and `this` in it is refused by name
   const selfType = (u) => {
     if (u?.cls) return dtype(checker.getTypeAtLocation(u.cls.name), u.node);
+    if (literalOf(u)) return dtype(checker.getTypeAtLocation(u.literal), u.literal);
     const tp = thisParamOf(u);
     if (tp) { const why = untypedThisParam(checker, u.fn); if (why) fail(tp, `this-param: ${why}`); return dtype(typeOf(tp.name), tp); }
     return fail(u?.node ?? sf, 'this: `this` outside a class method; a free function declares its receiver as a `this` parameter');
@@ -2115,7 +2126,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       case K.TrueKeyword: return 'true';
       case K.FalseKeyword: return 'false';
       case K.NullKeyword: return absentValue(typeOf(n));
-      case K.ThisKeyword: if (thisParamOf(currentUnit)) return dn('this'); if (!classOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF; // a free function's declared `this` parameter is its receiver operand, an ordinary first parameter
+      case K.ThisKeyword: if (thisParamOf(currentUnit)) return dn('this'); if (!classOf(currentUnit) && !literalOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF; // a free function's declared `this` parameter is its receiver operand, an ordinary first parameter
       case K.SatisfiesExpression: return expr(n.expression, expected);
       case K.AsExpression: case K.TypeAssertionExpression: {
         // identity at run time; the types may differ, so the value is converted (opaque when they do)
@@ -2229,7 +2240,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const scan = (x) => {
       if (x.kind === K.ThisKeyword) usesSelf = true;
       if (ts.isIdentifier(x) && originOf(checker, x, sf, currentUnit?.node ?? null).kind === 'unit' && fns.has(x.text)) calls.add(x.text);
-      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && ownUnit(currentUnit, x.expression.name.text)) calls.add(ownUnit(currentUnit, x.expression.name.text).name);
       ts.forEachChild(x, scan);
     };
     scan(n);
@@ -2374,7 +2385,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const scan = (x) => {
       if (x.kind === K.ThisKeyword) usesSelf = true;
       if (ts.isIdentifier(x) && originOf(checker, x, sf, currentUnit?.node ?? null).kind === 'unit' && fns.has(x.text)) calls.add(x.text);
-      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && ownUnit(currentUnit, x.expression.name.text)) calls.add(ownUnit(currentUnit, x.expression.name.text).name);
       ts.forEachChild(x, scan);
     };
     scan(n);
@@ -3063,7 +3074,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (calls.size) addPrelude(`fn_calls_${hash(text)}`, `// CALLS: ${[...calls].sort().join(',')}`);
     const captures = reads.map((r) => expr(r, anyTarget()));
     if (capturesThis && objectData) for (const f of objectData.values()) captures.push(convertD(f.code, f.d, anyType()));
-    else if (capturesThis && classOf(currentUnit)) captures.push(convertD(SELF, selfType(currentUnit), anyType()));
+    else if (capturesThis && (classOf(currentUnit) || literalOf(currentUnit))) captures.push(convertD(SELF, selfType(currentUnit), anyType()));
     // a function value is its code and its captured cells (research 15 §5, Fn(code, env)): the code id is the closure's
     // text with the imports and accessors it reaches; two closures are equal when their code ids and captured cells
     // agree, and nothing else makes them so. The unit's code ids are listed in its `// FN` header, which the theorem
@@ -3976,11 +3987,11 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (inherited.key) { if (!inherited.admitted) superObligations.add(`${currentUnit.name}\u0000${name}`); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_of_${inherited.base}_${createHash('sha256').update(inherited.key).digest('hex').slice(0, 16)}`, n, [...n.arguments], SELF, T, true); }
       return externalCall(`${awaited ? 'await_' : ''}super_${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
     }
-    if (recv.kind === K.ThisKeyword && classOf(currentUnit)) {
-      const callee = fns.get(`${currentUnit.className}.${name}`);
+    if (recv.kind === K.ThisKeyword && (classOf(currentUnit) || literalOf(currentUnit))) {
+      const callee = ownUnit(currentUnit, name);
       if (callee) {
         const args = unitArgs(callee, n);
-        const selfArg = callee.isStatic ? [] : [SELF];
+        const selfArg = callee.cls ? (callee.isStatic ? [] : [SELF]) : hasSelf(callee) ? [SELF] : []; // a literal sibling takes the receiver when it reads it
         if (effectfulUnits.has(callee.name)) {
           if (!unitEffectful()) fail(n, 'internal: effectful method called from a pure method');
           let rt = checker.getSignatureFromDeclaration(callee.fn).getReturnType(); if (isPromiseT(rt) && !(isHandleT(rt) && promiseHandleUnit(callee))) rt = checker.getTypeArguments(rt)[0];
@@ -5281,7 +5292,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (x.kind === K.ThisKeyword) usesSelf = true;
       if (ts.isCallExpression(x) || ts.isNewExpression(x)) { const name = unitNameOfCall(x); if (name) calls.add(name); }
       if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && fns.has(x.expression.text) && originOf(checker, x.expression, sf, currentUnit?.node ?? null).kind === 'unit') calls.add(x.expression.text);
-      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && currentUnit?.cls && fns.has(`${currentUnit.className}.${x.expression.name.text}`)) calls.add(`${currentUnit.className}.${x.expression.name.text}`);
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && x.expression.expression.kind === K.ThisKeyword && ownUnit(currentUnit, x.expression.name.text)) calls.add(ownUnit(currentUnit, x.expression.name.text).name);
       ts.forEachChild(x, w);
     };
     w(s);
@@ -5417,7 +5428,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   function emitAsyncGenerator(u) {
     addPrelude('World', 'type World');
     const sp = sigParams(u), D = dtype(retType(u), u.node);
-    const self = u.cls && !u.isStatic ? [`${SELF}: ${selfType(u)}`] : [];
+    const self = hasSelf(u) ? [`${SELF}: ${selfType(u)}`] : [];
     const params = [...self, ...(sp.text ? [sp.text] : [])];
     const names = [...(self.length ? [SELF] : []), ...u.params.map((p, i) => ts.isIdentifier(p.name) ? dn(p.name.text) : `arg${i}_`)];
     const types = [...(self.length ? [selfType(u)] : []), ...u.params.map((p) => dtype(typeOf(p.name), p))];
@@ -5432,7 +5443,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const iter = fresh(`iter${id}_`), remaining = fresh(`remaining${id}_`), answer = fresh(`next${id}_`);
     const M = assignedOutside(s).map((m) => m.synthetic ? m : { ...m, d: letTypeOf(m.sym) ?? dtype(symType(m.sym, m.node), m.node) });
     const free = freeVars(s, s.expression).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }));
-    if (u.cls && !u.isStatic) free.unshift({ name: SELF, d: selfType(u) });
+    if (hasSelf(u)) free.unshift({ name: SELF, d: selfType(u) });
     if (fuelInScope()) free.unshift({ name: FUEL, d: 'nat' }); // the unit's fuel, as in coreLoop
     const vars = [...free, ...M], names = vars.map((v) => dn(v.name));
     const state = () => tupleOf(M.map((v) => dn(v.name)));
@@ -5617,7 +5628,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     // passes it decremented as the unit itself does, and the helper decreases the fuel first, then its own measure
     const fuelled = fuelInScope();
     // a free function's declared receiver read in the loop is a const operand of the helper, as `self` is in a method; written there, it is loop state already
-    const selfIn = loopUsesSelf && (!!classOf(u) || (!!thisParamOf(u) && !M.some((m) => m.name === 'this') && !free.some((v) => v.name === 'this')));
+    const selfIn = loopUsesSelf && (!!classOf(u) || !!literalOf(u) || (!!thisParamOf(u) && !M.some((m) => m.name === 'this') && !free.some((v) => v.name === 'this')));
     const constParams = [...(fuelled ? [`${FUEL}: nat`] : []), ...(selfIn ? [`${selfValue(u)}: ${selfType(u)}`] : []), ...free.map((v) => `${dn(v.name)}: ${v.d}`)];
     const stateParams = M.map((m) => `${dn(m.name)}: ${m.d}`);
     const constArgs = [...(fuelled ? [FUEL] : []), ...(selfIn ? [selfValue(u)] : []), ...free.map((v) => dn(v.name))];
@@ -5869,7 +5880,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const eff = core && effectfulUnits.has(u.name);
     if (eff) { addPrelude('World', 'type World'); add(WORLD, 'World'); }
     if (core && recursiveUnits.has(u.name)) add(FUEL, 'nat');
-    if (classOf(u) && !u.isStatic) add(SELF, selfType(u));
+    if (hasSelf(u)) add(SELF, selfType(u));
     u.params.forEach((p, i) => {
       let d = dtype(typeOf(p.name), p), name = ts.isIdentifier(p.name) ? dn(p.name.text) : `arg${i}_`;
       if (p.initializer && ts.isIdentifier(p.name)) { usesOption = true; d = hasAbsence(typeOf(p.name), TF.Null) ? dtype(inputType(p), p) : `Option<${d}>`; name += '_opt'; }
@@ -6004,8 +6015,8 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     return { reads, opaque: reads && (guarded || globalAlias || nestedRead || (moduleData && moduleCall) || u.params.some((p) => p.initializer) || (collection && (outsideEffect || (alias && effects)))) };
   }
   function opaqueModuleBody(u) {
-    const inputs = [WORLD, ...(u.cls && !u.isStatic ? [SELF] : []), ...u.params.map((p, i) => ts.isIdentifier(p.name) ? `${dn(p.name.text)}${p.initializer ? '_opt' : ''}` : `arg${i}_`)];
-    const types = ['World', ...(u.cls && !u.isStatic ? [selfType(u)] : []), ...u.params.map((p) => { const d = dtype(typeOf(p.name), p); return p.initializer ? `Option<${d}>` : p.questionToken && !d.startsWith('Option<') ? `Option<${d}>` : d; })];
+    const inputs = [WORLD, ...(hasSelf(u) ? [SELF] : []), ...u.params.map((p, i) => ts.isIdentifier(p.name) ? `${dn(p.name.text)}${p.initializer ? '_opt' : ''}` : `arg${i}_`)];
+    const types = ['World', ...(hasSelf(u) ? [selfType(u)] : []), ...u.params.map((p) => { const d = dtype(typeOf(p.name), p); return p.initializer ? `Option<${d}>` : p.questionToken && !d.startsWith('Option<') ? `Option<${d}>` : d; })];
     const outputs = ['World', u.isCtor ? 'Unit' : dtype(retType(u), u.node), ...mutatedOf(u).map((m) => dtype(typeOf(u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m).name), u.node))];
     // the identity is the code the unit's run reaches (reach.mjs): its own text, the module bindings and same-file
     // declarations it names, transitively, and the code of every value it may hand the outside. A changed reachable
@@ -6034,6 +6045,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   }
   function emitUnit(u) {
     currentUnit = u;
+    { const why = untypedJsUnit(sf, u); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = loopElementWriteOf(u); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
     tempCount = 0; // a unit's temporaries are numbered from its own start: an edit elsewhere in the file leaves its text unchanged, so the theorem's identity shortcut still reads it
@@ -6076,7 +6088,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;
       const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
       const full = usedModuleOpaque ? body : [...sp.lets, ...mutLets].length ? `${[...sp.lets, ...mutLets].join('\n')}\n${body}` : body;
-      const selfParam = classOf(u) && !u.isStatic ? `${SELF}: ${selfType(u)}` : '';
+      const selfParam = hasSelf(u) ? `${SELF}: ${selfType(u)}` : '';
       const plain = [selfParam, sp.text, ...(currentSlots ? [`slots: ${currentSlots.T}`] : [])].filter(Boolean).join(', ');
       const rec = recursiveUnits.has(u.name);
       const plain2 = rec ? [`${FUEL}: nat`, plain].filter(Boolean).join(', ') : plain;
