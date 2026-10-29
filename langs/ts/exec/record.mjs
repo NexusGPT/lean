@@ -11,6 +11,7 @@ export function finishUnitRecord(record) {
     return { seed: env.seed, ...answered(c.events, [...c.imports]), invocation: { status: 'not recorded', reason: 'auxiliary program/sequence generator outside the single-draw output boundary' } };
   });
 }
+const KEY_QUERY = 'key query on a fake: wrapping it would query the fake twice (Proxy invariant check), so its answer is not recorded';
 const knownHandles = new WeakMap();
 const special = new Set(['__isFake', '__fakePath', 'then', 'valueOf', 'toString', 'constructor']);
 const keyOf = p => typeof p === 'symbol' ? `@@${p.description}` : String(p);
@@ -96,7 +97,9 @@ export function captureEnvironment(env) {
       set: (t, k, v, r) => event('set', path, [keyOf(k), v], () => Reflect.set(t, k, v, r)),
       has: (t, k) => event('has', path, [keyOf(k)], () => Reflect.has(t, k)),
       deleteProperty: (t, k) => event('delete', path, [keyOf(k)], () => Reflect.deleteProperty(t, k)),
-      ownKeys: t => event('keys', path, [], () => Reflect.ownKeys(t)),
+      // no ownKeys trap: after an ownKeys trap the engine queries the target's keys again to check the Proxy invariants,
+      // and the target is the fake, which logs every query, so a trap here doubled `keys` in the v1 trace. A key query
+      // reaches the fake once; witnessRecord marks it unrecorded from the trace (KEY_QUERY).
     });
     knownHandles.set(p, path); env.cache.set(path, p); return p;
   };
@@ -123,7 +126,7 @@ export function witnessRecord({ seed, leanHead, input, sides, invocation = { kin
       return [name, { graphScope: 'environment', seed: side.env.seed, ...(side.commands ? { commands: side.commands } : {}), args: side.args ?? snapshot(side.env, side.inputs), events, imports: [...(c?.imports ?? [])],
         clock: events.filter(e => e.op === 'clock'), random: events.filter(e => e.op === 'rng'),
         timeline: side.env.trace.filter(e => e.op === 'fire').map(e => ({ ...e })),
-        unrecorded: c ? [] : [{ site: 'environment setup', reason: 'capture not installed' }] }];
+        unrecorded: c ? side.env.trace.filter(e => e.op === 'keys').map(e => ({ site: `record.mjs fake wrapper: keys ${e.path}`, reason: KEY_QUERY })) : [{ site: 'environment setup', reason: 'capture not installed' }] }];
     })) };
   if (invocation.kind === 'program' && currentUnit) (currentUnit.record.programRuns ??= []).push(drawSummary(record));
   return record;

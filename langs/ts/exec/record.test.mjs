@@ -150,3 +150,17 @@ test('checked rows carry the unit certificate once, bounded and asked alike', as
     assert.equal(JSON.stringify(row).split('"kind":"unit"').length - 1, 1);
   } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });
+
+test('a key query on a captured fake reaches the fake once, and the record says it is unrecorded', () => {
+  const run = capture => {
+    const env = new Environment(3); if (capture) captureEnvironment(env);
+    const x = env.fake('arg0', { kind: 'record', fields: { size: { kind: 'number' } } });
+    const keys = Object.keys(x); const spread = { ...x };
+    return { env, trace: JSON.stringify(env.trace), keys: JSON.stringify(keys), spread: Object.keys(spread).length };
+  };
+  const a = run(false), b = run(true);
+  assert.equal(b.trace, a.trace); assert.equal(b.keys, a.keys); assert.equal(b.spread, a.spread);
+  const r = witnessRecord({ seed: 1, leanHead: 'h', input: 0, sides: { parent: { env: b.env, args: null }, candidate: { env: b.env, args: null } } });
+  assert.ok(r.sides.parent.unrecorded.some(u => /key query/.test(u.reason)), JSON.stringify(r.sides.parent.unrecorded));
+  assert.ok(!r.sides.parent.events.some(e => e.op === 'keys'));
+});

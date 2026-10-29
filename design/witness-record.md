@@ -56,3 +56,12 @@ the phase, not how that one parameter was produced.
 Red controls: the bounded test failed on `r.record` (undefined: the record was only in `bound`), the refused-row test
 counted the unit certificate twice, the program test found full records instead of summaries, and the new checked-row
 test found no `record` in `certificate.lanes.B`.
+
+## Key queries are not wrapped
+
+The capture wrapper has no `ownKeys` trap. After an `ownKeys` trap returns, the engine asks the target for its keys
+again to check the Proxy invariants; the target is the fake, which logs every query, so the trap put a second `keys`
+entry in the v1 trace (`record_rest_any` `Sized`, found by the v1 comparison over 1,345 pair units). A key query now
+reaches the fake once, and `witnessRecord` lists each `keys` entry of the side's trace under `unrecorded` with that
+reason, so a replayer refuses the row instead of meeting an unexplained gap. Red control: the trace with capture had 4
+`keys` entries against 2 without.
