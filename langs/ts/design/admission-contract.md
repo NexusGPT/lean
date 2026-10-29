@@ -761,3 +761,30 @@ depths. An intersection/signature cycle is a graph, not a tree: repeated visits 
 the same depth cannot produce a new finding. The existing depth cutoff, string
 based object guard, predicates and finding messages are unchanged. This visited
 table lives only for one admission call.
+
+## Persistent lowering records
+
+The memo retains at most 4 MiB of UTF-16 keys and serialized records, not a fixed
+number of arbitrarily large records. Both its hits and the public result are
+plain JSON data. No AST, Program, checker, closure or shared analysis is stored.
+The disk envelope also has a payload checksum; incomplete or damaged entries are
+misses. A writer uses its own `.next` file and renames it atomically.
+
+`LEAN_CACHE=0` disables both caches. `LEAN_CACHE_DIR` overrides the directory;
+otherwise it is `$XDG_CACHE_HOME/lean/lowering` or `~/.cache/lean/lowering`.
+A SHA-256 key covers file identity and contents, project/options/ranges,
+withdrawals, catalogue versions, diagnostics, and the producing source snapshot:
+all top-level TypeScript tooling modules/data, `lint/**`, `translate/**`, the
+any-type usage helper, and the vendored compiler. Producer hashes are fixed for
+the loaded implementation in a process; a new CLI process reads changed sources.
+The compiled Program's options, root names and complete source/declaration texts
+are hashed too (once per Program in a WeakMap). Thus changing an import, an
+ambient declaration, resolution or project settings cannot serve an old record.
+Programs are loaded before lookup: a warm census still pays compiler loading and
+diagnostics, while skipping admission and per-unit translation. Consumers of
+`lowerFile`/`lintFile` need no separate cache implementation.
+
+Unknown options, options that collect side effects, and external decorator-table
+or fixture overrides bypass the cache. This preserves advisory collectors and
+avoids caching an incompletely described context. Filesystem write failures are
+reported and do not change admission.

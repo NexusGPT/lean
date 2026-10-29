@@ -20,7 +20,8 @@
 //        node lower.mjs <file.ts> [--no-project]        the record of each unit, as JSON
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { ts, loadProgram, normaliseApplyCalls, topLevelFunctions, lineOf, colOf, overlaps, isArrayLike, originOf } from './common.mjs';
 import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, readingOfFinding, readingOfRefusal, translatorText, withdrawnReason, withdrawalKey, currentVersion } from './readings.mjs';
@@ -282,14 +283,86 @@ function translatorSite(stack) {
   return null;
 }
 
+// The memo stores JSON strings, never findings arrays, compiler nodes or closures.
+// Four MiB bounds retained UTF-16 payload, independent of unusually large records.
 const memo = new Map();
-const MEMO_MAX = 64;
+const MEMO_BYTES = 4 * 1024 * 1024;
+let memoBytes = 0;
+function remember(key, json) {
+  const bytes = 2 * (key.length + json.length);
+  if (bytes > MEMO_BYTES) return;
+  if (memo.has(key)) { memoBytes -= memo.get(key).bytes; memo.delete(key); }
+  while (memoBytes + bytes > MEMO_BYTES) { const oldest = memo.keys().next().value; memoBytes -= memo.get(oldest).bytes; memo.delete(oldest); }
+  memo.set(key, { json, bytes }); memoBytes += bytes;
+}
+export const loweringCacheStats = () => ({ bytes: memoBytes, limit: MEMO_BYTES, entries: memo.size });
+const sha = (text) => createHash('sha256').update(text).digest('hex');
+let producerHash = null;
+function producers() {
+  if (producerHash) return producerHash;
+  const files = [];
+  const walk = (dir) => { for (const e of fs.readdirSync(path.join(here, dir), { withFileTypes: true })) {
+    const rel = path.join(dir, e.name);
+    if (e.isDirectory()) walk(rel); else if (e.isFile()) files.push(rel);
+  } };
+  for (const e of fs.readdirSync(here, { withFileTypes: true })) if (e.isFile() && /\.(mjs|json|ts)$/.test(e.name)) files.push(e.name);
+  for (const dir of ['lint', 'translate']) walk(dir);
+  files.push('exec/usage.mjs', 'vendor/typescript/lib/typescript.js');
+  const h = createHash('sha256');
+  for (const f of files.sort()) h.update(f).update('\0').update(fs.readFileSync(path.join(here, f))).update('\0');
+  return producerHash = h.digest('hex');
+}
+const programHashes = new WeakMap();
+function programHash(program) {
+  if (!programHashes.has(program)) {
+    const options = { ...program.getCompilerOptions() }; delete options.configFile;
+    const h = createHash('sha256').update(JSON.stringify(options)).update(JSON.stringify(program.getRootFileNames()));
+    for (const sf of [...program.getSourceFiles()].sort((a, b) => a.fileName.localeCompare(b.fileName))) h.update(sf.fileName).update('\0').update(sf.text).update('\0');
+    programHashes.set(program, h.digest('hex'));
+  }
+  return programHashes.get(program);
+}
+const cacheDirectory = () => process.env.LEAN_CACHE_DIR || path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), 'lean', 'lowering');
+function cacheRead(file, key) {
+  try {
+    const entry = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (entry.key !== key || typeof entry.json !== 'string' || entry.digest !== sha(entry.json)) return null;
+    const rec = JSON.parse(entry.json);
+    if (!Array.isArray(rec.units) || !Array.isArray(rec.findings) || typeof rec.file !== 'string') return null;
+    remember(key, entry.json); return rec;
+  } catch (e) { if (e.code && e.code !== 'ENOENT') console.error(`lowering cache read ${e.code}: ${file}`); return null; }
+}
+function cacheWrite(file, key, json) {
+  const next = `${file}.${process.pid}.${randomBytes(6).toString('hex')}.next`;
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+    fs.writeFileSync(next, JSON.stringify({ key, digest: sha(json), json }), { mode: 0o600, flag: 'wx' });
+    fs.renameSync(next, file);
+  } catch (e) { console.error(`lowering cache write ${e.code ?? e.message}: ${file}`); }
+  finally { try { fs.unlinkSync(next); } catch (e) { if (e.code !== 'ENOENT') console.error(`lowering cache cleanup ${e.code}: ${next}`); } }
+}
 // the record of every unit the ranges reach; opts as the lint takes them (project, loaded, advisory, anyType)
 export function lowerFile(file, ranges = null, opts = {}) {
   const abs = path.resolve(file);
   const given = opts.loaded ?? measureLowering('load file', () => loadProgram(file, { project: opts.project ?? true }));
-  const key = [abs, createHash('sha256').update(given.sf.text).digest('hex'), JSON.stringify(opts.project ?? true), JSON.stringify(ranges), !!opts.advisory, !!opts.anyType, opts.emission !== false, withdrawalKey()].join('\0');
-  if (memo.has(key)) return memo.get(key);
+  // Unknown options may alter admission or collect side effects; do not cache them.
+  const cacheable = process.env.LEAN_CACHE !== '0' &&
+    Object.keys(opts).every((k) => ['project', 'loaded', 'advisory', 'anyType', 'emission'].includes(k)) &&
+    !process.env.LEAN_DECORATOR_TABLE && !process.env.LEAN_DECORATOR_FIXTURES;
+  const key = cacheable ? sha(JSON.stringify({ file, abs, text: sha(given.sf.text),
+    project: opts.project ?? true, ranges, advisory: !!opts.advisory, anyType: !!opts.anyType,
+    emission: opts.emission !== false, withdrawals: withdrawalKey(),
+    versions: READINGS.map((r) => [r.id, currentVersion(r)]), producer: producers(),
+    program: programHash(given.program), diagnostics: given.diagnostics.map((d) =>
+      ({ code: d.code, start: d.start, length: d.length, messageText: d.messageText })),
+  })) : null;
+  const cacheFile = key ? path.join(cacheDirectory(), key + '.json') : null;
+  if (key) {
+    const hit = memo.get(key);
+    if (hit) return measureLowering('memory cache hit', () => JSON.parse(hit.json));
+    const disk = measureLowering('disk cache lookup', () => cacheRead(cacheFile, key));
+    if (disk) return measureLowering('disk cache hit', () => disk);
+  }
   const L = normaliseApplyCalls(given);
   const findings = admitUnits(file, ranges, { ...opts, loaded: given }, L);
   const units = admitted.get(findings).map((r) => {
@@ -326,9 +399,9 @@ export function lowerFile(file, ranges = null, opts = {}) {
     findings.sort((x, y) => x.line - y.line || x.col - y.col);
   }
   const rec = { file, units, findings };
-  if (memo.size >= MEMO_MAX) memo.delete(memo.keys().next().value);
-  memo.set(key, rec);
-  return rec;
+  const json = JSON.stringify(rec); // the public and retained record is plain data
+  if (key) { remember(key, json); measureLowering('disk cache write', () => cacheWrite(cacheFile, key, json)); }
+  return JSON.parse(json);
 }
 // the lint's findings read off the record: the lint never admits a unit the translator refuses
 export const lintFindings = (file, ranges = null, opts = {}) => lowerFile(file, ranges, opts).findings.map((f) => ({ ...f }));

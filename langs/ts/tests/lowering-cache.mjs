@@ -71,6 +71,70 @@ try {
   const rows = loweringProfile().filter(r => r.phase.startsWith('analysis '));
   assert.deepEqual(Object.fromEntries(rows.map(r => [r.phase.slice(9), r.calls])), Object.fromEntries(expected.map(name => [name, 1])), 'lowerFile shares the same analyses across its units');
   console.log('lowering-cache: program sharing and per-file analyses pass');
+  // A fresh process must serve the on-disk record, not the in-process memo.
+  const source = path.join(tmp, 'producer'); fs.mkdirSync(source);
+  const tsRoot = path.resolve(here, '..');
+  for (const e of fs.readdirSync(tsRoot, { withFileTypes: true })) {
+    if (e.isFile() && /\.(mjs|json|ts)$/.test(e.name)) fs.copyFileSync(path.join(tsRoot, e.name), path.join(source, e.name));
+  }
+  for (const dir of ['lint', 'translate']) fs.cpSync(path.join(tsRoot, dir), path.join(source, dir), { recursive: true });
+  for (const dir of ['vendor', 'exec']) fs.symlinkSync(path.join(tsRoot, dir), path.join(source, dir), 'dir');
+  const cache = path.join(tmp, 'cache');
+  const probe = (label, { env = {}, options = {}, ranges = null, input = file } = {}) => {
+    const code = `import { lowerFile, startLoweringProfile, loweringProfile, loweringCacheStats } from ${JSON.stringify(pathToFileURL(path.join(source, 'lower.mjs')).href)};
+      startLoweringProfile(); const record = lowerFile(${JSON.stringify(input)}, ${JSON.stringify(ranges)}, ${JSON.stringify({ project: false, ...options })});
+      console.log(JSON.stringify({ record, profile: loweringProfile(), stats: loweringCacheStats() }));`;
+    const r = spawnSync(process.execPath, ['--input-type=module', '-e', code], { encoding: 'utf8', env: { ...process.env, LEAN_CACHE: '1', LEAN_CACHE_DIR: cache, LEAN_WITHDRAW: '', ...env }, maxBuffer: 16 * 1024 * 1024 });
+    process.stderr.write(r.stderr ?? ''); console.log(`${label}: child exit ${r.status}`);
+    assert.equal(r.status, 0, r.stdout + r.stderr);
+    const out = JSON.parse(r.stdout);
+    out.hits = out.profile.find(r => r.phase === 'disk cache hit')?.calls ?? 0;
+    out.emissions = out.profile.find(r => r.phase.startsWith('phase 4 '))?.calls ?? 0;
+    return out;
+  };
+  const cold = probe('cold'), warm = probe('warm');
+  assert.equal(cold.hits, 0);
+  assert.ok(cold.emissions > 0);
+  assert.equal(warm.hits, 1, 'the second process serves the record from disk');
+  assert.equal(warm.emissions, 0, 'a disk hit never translates again');
+  assert.deepEqual(warm.record, cold.record);
+  assert.ok(cold.stats.bytes > 0 && cold.stats.bytes <= cold.stats.limit);
+  const plain = (v) => { if (v === null || typeof v !== 'object') { assert.notEqual(typeof v, 'function'); return; }
+    assert.ok(Array.isArray(v) || Object.getPrototypeOf(v) === Object.prototype);
+    for (const x of Object.values(v)) plain(x);
+  };
+  plain(cold.record);
+  const files = fs.readdirSync(cache).filter(f => f.endsWith('.json'));
+  assert.equal(files.length, 1);
+  fs.writeFileSync(path.join(cache, files[0]), '{broken');
+  const corrupt = probe('corrupt cache'); assert.equal(corrupt.hits, 0); assert.deepEqual(corrupt.record, cold.record);
+  const disabled = probe('disabled', { env: { LEAN_CACHE: '0' } }); assert.equal(disabled.hits, 0); assert.ok(disabled.emissions > 0);
+  const withdrawal = probe('withdrawal', { env: { LEAN_WITHDRAW: 'numbers=cache test' } });
+  assert.equal(withdrawal.hits, 0); assert.ok(withdrawal.record.units.every(u => u.refusal?.rule === 'withdrawn'));
+  assert.equal(probe('restored').hits, 1);
+  const opts = probe('options', { options: { emission: false } }); assert.equal(opts.hits, 0);
+  const range = probe('ranges', { ranges: [[1, 1]] }); assert.equal(range.hits, 0); assert.equal(range.record.units.length, 1);
+  fs.appendFileSync(path.join(source, 'translate/translate.mjs'), '\n// cache source invalidation probe\n');
+  const changedSource = probe('changed translator source'); assert.equal(changedSource.hits, 0); assert.ok(changedSource.emissions > 0); assert.deepEqual(changedSource.record, cold.record);
+  assert.equal(probe('same changed translator source').hits, 1);
+  fs.appendFileSync(file, '\nexport function added(): number { return 5; }\n');
+  const changedText = probe('changed text'); assert.equal(changedText.hits, 0); assert.equal(changedText.record.units.length, names.length + 1);
+  const dep = path.join(tmp, 'dep.ts'), dependent = path.join(tmp, 'dependent.ts');
+  fs.writeFileSync(dep, 'export interface Input { value: string }\n');
+  fs.writeFileSync(dependent, 'import { Input } from "./dep";\nexport function value(x: Input): string { return x.value; }\n');
+  const depCold = probe('dependency cold', { input: dependent }); assert.equal(depCold.hits, 0);
+  assert.equal(probe('dependency warm', { input: dependent }).hits, 1);
+  fs.writeFileSync(dep, 'export interface Input { value: number }\n');
+  const depChanged = probe('dependency changed', { input: dependent }); assert.equal(depChanged.hits, 0); assert.ok(depChanged.record.units[0].refusal);
+  const large = path.join(tmp, 'large.ts');
+  fs.writeFileSync(large, `export function ${'n'.repeat(3 * 1024 * 1024)}(): number { return 1; }`);
+  const oversized = probe('oversized memo record', { input: large, options: { emission: false } });
+  assert.ok(JSON.stringify(oversized.record).length * 2 > oversized.stats.limit);
+  assert.equal(oversized.stats.bytes, 0, 'one oversized record cannot exceed the memo byte budget');
+  assert.equal(oversized.stats.entries, 0);
+  assert.ok(fs.readdirSync(cache).every(f => !f.endsWith('.next')), 'atomic writes leave no next files');
+  console.log('lowering-cache: persistent serve, invalidation, corruption, opt-out and dependency checks pass');
+
   const cycle = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--type-child'], { encoding: 'utf8', timeout: 20_000 });
   process.stdout.write(cycle.stdout ?? ''); process.stderr.write(cycle.stderr ?? '');
   console.log(`type cycle child exit ${cycle.status}; signal ${cycle.signal}; error ${cycle.error?.code ?? 'none'}`);
