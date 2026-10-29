@@ -7,8 +7,8 @@
   "named"
  ],
  "equal": {
-  "scaled": "real-only",
-  "via_call": "real-only",
+  "scaled": false,
+  "via_call": false,
   "via_apply": false,
   "tag_of": true,
   "named": true

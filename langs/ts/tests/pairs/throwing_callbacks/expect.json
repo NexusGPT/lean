@@ -7,11 +7,11 @@
   "via_arrow"
  ],
  "equal": {
-  "check": "real-only",
+  "check": true,
   "doubled": false,
-  "checked": "real-only",
+  "checked": true,
   "via_outside": false,
-  "via_arrow": "real-only"
+  "via_arrow": true
  },
  "why": "Stage 5 rank 20: a throw inside a synchronous array-method callback is the enclosing unit's throw, the statement holding the call one opaque block (as a loop statement with a throw already is); a throwing unit or a throwing arrow handed to an outside call is the opaque function value it already is. check is untouched. doubled throws on zero too (unproved; lane B WITNESS on an array holding 0). checked calls the unit inside an arrow instead of handing it (proved: the same call per element through the named-callback reading). viaOutside hands a different function value (unproved; WITNESS: the outside receives another value). viaArrow is untouched.",
  "b": {

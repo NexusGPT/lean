@@ -5,7 +5,7 @@
  "why": "A unit reads the part of the file it reaches (design/prelude-unit.md). The parent has a float literal in fee, so a whole-file translation reads every number as a real; the candidate deletes fee. balance and tag reach neither fee nor the record Pt: translated alone, each reads the same numbers and the same prelude on both sides, so each is PASS-proved (before this reading balance was ASK:interface, prelude block Obj differs: seq<real> became seq<int>). norm and lift take the record Pt, which the candidate widens by a field: the shape they reach changed, so their interface is ASK:interface, lane B still PASS-bounded (the shape named in the theorem's refusal: {x: int, y: int} became {x: int, y: int, z: int}). triple is new: NEW, no lemma. A pair translates whole files, where the parent is a real file and the candidate an int file, so lane A runs per unit through check.mjs (laneBOnly skips the whole-file theorem).",
  "b": {"balance": "PASS-bounded", "tag": "PASS-bounded", "norm": "PASS-bounded", "lift": "PASS-bounded"},
  "check": {
-  "balance": {"verdict": "PASS-bounded", "laneA": "ASK:doubles-unknown"},
+  "balance": {"verdict": "PASS-proved", "laneA": "PASS-proved"},
   "tag": {"verdict": "PASS-proved", "laneA": "PASS-proved"},
   "norm": {"verdict": "ASK", "laneA": "ASK:interface"},
   "lift": {"verdict": "ASK", "laneA": "ASK:interface"},

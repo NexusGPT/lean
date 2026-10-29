@@ -7,7 +7,7 @@
  "equal": {
   "reach": "withheld",
   "routes_close": "withheld",
-  "routes_open": "real-only"
+  "routes_open": true
  },
  "why": "reach: the parameter type undefined became null and the guard with it; both absences are one Dafny None, so the Dafny signatures agree and the bodies read the same; the TypeScript signature differs, so the lemma is withheld as an interface change (ASK:interface), never a proof. Routes.close: the parameter decorator changed (a framework pipe that runs before the call); the body is identical; withheld the same way. Routes.open: untouched, proved.",
  "heap": false,

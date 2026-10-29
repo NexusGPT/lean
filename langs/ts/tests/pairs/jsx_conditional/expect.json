@@ -1,6 +1,6 @@
 {
  "scope": ["badge"],
- "equal": { "badge": "real-only" },
+ "equal": { "badge": true },
  "why": "`cond ? <b/> : null` and `cond && <b/>` render the same tree: null and false are both nothing",
  "b": { "Badge": "PASS-bounded" }
 }

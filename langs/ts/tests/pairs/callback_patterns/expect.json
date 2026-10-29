@@ -8,7 +8,7 @@
  ],
  "equal": {
   "send_all": false,
-  "note_keys": "real-only",
+  "note_keys": true,
   "labels": true,
   "above": false,
   "ids": true

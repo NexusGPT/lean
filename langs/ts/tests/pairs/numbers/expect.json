@@ -6,7 +6,7 @@
   "pages"
  ],
  "equal": {
-  "average": "real-only",
+  "average": true,
   "vat": "witness",
   "discounted": "witness",
   "pages": false

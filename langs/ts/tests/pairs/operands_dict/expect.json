@@ -1,6 +1,6 @@
 {
  "scope": ["weight", "has"],
- "equal": {"weight": "real-only", "has": "real-only"},
+ "equal": {"weight": true, "has": true},
  "why": "A dictionary read is `if k in m then m[k] else undefined`: the explicit undefined test and ?? state the same default, proved; `d[k] !== undefined` and `k in d` agree on a dictionary of numbers, proved.",
  "heap": false,
  "b": {"weight": "PASS-bounded", "has": "PASS-bounded"}

@@ -8,8 +8,8 @@
   ],
   "equal": {
     "module_number": false,
-    "nullable_default": "real-only",
-    "nullable_optional": "real-only",
+    "nullable_default": true,
+    "nullable_optional": true,
     "null_branch": false,
     "untouched": true
   },

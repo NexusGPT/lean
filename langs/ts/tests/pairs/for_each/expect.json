@@ -6,7 +6,7 @@
   "notifier_constructor"
  ],
  "equal": {
-  "notifier_notify_all": "real-only",
+  "notifier_notify_all": true,
   "total": false,
   "labels": true,
   "notifier_constructor": true

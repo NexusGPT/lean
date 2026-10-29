@@ -8,10 +8,10 @@
  ],
  "equal": {
   "offset_of": "witness",
-  "weight_of": "real-only",
+  "weight_of": false,
   "spread": true,
-  "drained": "real-only",
-  "bumped": "real-only"
+  "drained": true,
+  "bumped": true
  },
  "why": "A parameter reassigned in its own body is read as a local that starts as the argument. offsetOf clamps the page in place and the candidate clamps to 0 instead of 1: a changed behaviour, witnessed and not proved. weightOf gives an optional parameter its default by a rebinding, the candidate copies it to a local and adds instead of doubling: proved. spread reads the parameter before and after its rebinding, two values in order, the candidate returns n * 3: proved. drained rebinds the parameter inside a bounded loop and is untouched: proved. bumped rebinds a record parameter to a fresh record, the candidate reads the fields directly: proved.",
  "b": {

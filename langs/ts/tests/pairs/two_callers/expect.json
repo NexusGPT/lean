@@ -11,9 +11,9 @@
   "beat_constructor": true,
   "beat_heartbeat": false,
   "beat_refresh": false,
-  "beat_total": "real-only",
-  "beat_next": "real-only",
-  "beat_label": "real-only"
+  "beat_total": false,
+  "beat_next": true,
+  "beat_label": true
  },
  "why": "Two callers on one receiver (design/schedules.md). refresh is the check-then-act race: the parent re-checks its turn after the await and an overtaken caller returns -1; the candidate dropped the check, which one call never needs, so every single call agrees and only the race explorer finds it: the second caller arriving before the first ping is released (call2 before call1/1, on this.epoch) gives -1 on the parent and an increment the candidate makes in every order: WITNESS with both orders, replayed. Lane A does not prove it: after the await the field is a read of the world. heartbeat is the in-flight flag set after the await: one call already differs, since the trace orders the field write against the request (a one-call WITNESS, before any race runs). total awaits twice and writes no shared cell; the candidate adds the other way round: every order agrees on both sides, PASS-bounded with its order count, and lane A proves it. next is a refactor (+= against = +1), proved; label and the constructor are untouched.",
  "heap": false,

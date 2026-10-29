@@ -6,7 +6,7 @@
   "tag_of"
  ],
  "equal": {
-  "id_of": "real-only",
+  "id_of": true,
   "total": false,
   "box_flag": false,
   "tag_of": true

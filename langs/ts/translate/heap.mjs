@@ -43,7 +43,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 export const HW = 'hw_';
 const OBJECT_PROTO = Object.getOwnPropertyNames(Object.prototype).sort(); // the keys `in` finds on an ordinary object it does not own
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null }) {
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -360,6 +360,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const m = c.name.text;
     if (isGlobalName(c.expression, 'Math')) {
       if ((m === 'max' || m === 'min') && a.length >= 1 && a.every(num)) return `Math.${m}`;
+      if (m.startsWith('__lean_') && external && a.every(num)) return `Math.${m}`; // an uninterpreted number operation of the faithful reading (translate/faithful.mjs): the ordinary lane's external, the same symbol
       if (['abs', 'sign', 'ceil', 'round', 'floor', 'trunc'].includes(m) && a.length === 1 && (num(a[0]) || (['floor', 'trunc'].includes(m) && !isReal && ts.isBinaryExpression(unparen(a[0])) && unparen(a[0]).operatorToken.kind === K.SlashToken && num(unparen(a[0]).left) && num(unparen(a[0]).right)))) return `Math.${m}`;
       return null;
     }
@@ -1122,6 +1123,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (globalCall(e)) { // a pure global: its arguments in order, then the operation
         const g = globalCall(e); const a = e.arguments;
         if (g === 'String') return toStr(a[0]);
+        if (g.startsWith('Math.__lean_')) { const vs = a.map((x) => expr(x)); return `${external(`call_args_${g}`, vs.map(() => NUM), /__lean_(lt|le|gt|ge|eq|truthy)$/.test(g) ? 'bool' : NUM)}(${vs.join(', ')})`; }
         if (g === 'Array.isArray') { expr(a[0]); return shapeOf(typeOf(a[0])).kind === 'arr' ? 'true' : 'false'; } // the argument is read (a pure read) and its shape decides
         if (g === 'Object.keys') { const s = shapeOf(typeOf(a[0])); const r = bind(expr(a[0]), 'o'); const rs = shapeOf(typeOf(e)); strUsed.add('dictkeys'); const out = fresh('r'); lines.push(`var (${HW}, ${out}) := Alloc_${rs.key}(${HW}, DictKeysJs(if Is${s.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${s.key} else []));`); return out; }
         if (g === 'Math.max' || g === 'Math.min') { const vs = a.map((x) => expr(x)); const h = helper(g === 'Math.max' ? 'Max' : 'Min', [NUM]); return vs.reduceRight((acc, v) => (acc === null ? v : `${h}(${v}, ${acc})`), null); }

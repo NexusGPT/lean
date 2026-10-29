@@ -1,9 +1,9 @@
 {
  "scope": ["lowest", "lowest_bad", "highest", "highest_bad", "untouched"],
  "equal": {
-  "lowest": "real-only",
+  "lowest": true,
   "lowest_bad": false,
-  "highest": "real-only",
+  "highest": true,
   "highest_bad": false,
   "untouched": true
  },

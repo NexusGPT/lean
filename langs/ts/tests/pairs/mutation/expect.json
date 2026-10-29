@@ -9,7 +9,7 @@
  "equal": {
   "add_tag": false,
   "rename": false,
-  "visit": "real-only",
+  "visit": true,
   "tag_twice": false,
   "count_only": true
  },

@@ -9,9 +9,9 @@
  "equal": {
   "merged": true,
   "swapped": false,
-  "sorted_copy": "real-only",
+  "sorted_copy": true,
   "sorted_desc": false,
-  "sorted_in_place": "real-only"
+  "sorted_in_place": true
  },
  "why": "Object.assign with a literal source (field writes on the target; a record-typed source may carry keys its type does not name and is refused, escape assign_record_source) and the sort row of the library table as heap transitions in the proof lane. merged: the target returned through a local alias taken after the write, the same heap and the same reference: proved. swapped: the sources swapped, the target unchanged on one side: refuted and witnessed on the graph. sortedCopy: slice(0) for slice(), the same comparator: proved, the sort an uninterpreted stable sort of the items by the comparator's order. sortedDesc: the comparator reversed: unproved, witnessed on the outcome. sortedInPlace: the receiver sorted in place on both sides, 0 + length for length: proved; lane B sees the same reachable graph.",
  "heap": true,

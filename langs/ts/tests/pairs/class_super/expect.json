@@ -7,7 +7,7 @@
  ],
  "equal": {
   "counter_record": false,
-  "counter_describe": "real-only",
+  "counter_describe": false,
   "counter_name": true,
   "counter_constructor": true
  },

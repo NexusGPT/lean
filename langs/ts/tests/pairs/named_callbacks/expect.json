@@ -16,7 +16,7 @@
   "known_count": true,
   "any_known": true,
   "present": true,
-  "tag": "real-only",
+  "tag": true,
   "tagged": false
  },
  "why": "tagged passes tag by name, so tag receives the index JavaScript passes; the candidate passes 0: the outputs differ from the second element on. labels and knownCount turn a named same-file callee into the arrow with the callee's own parameter name: the same loop, the same transitions in the same order. toLabel, isKnown, tag, anyKnown (an import by name, every argument passed) and present (Boolean by name) are untouched",

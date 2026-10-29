@@ -5,7 +5,7 @@
     "shelf_hold": false,
     "shelf_clear": false,
     "shelf_keep": true,
-    "shelf_bump": "real-only",
+    "shelf_bump": true,
     "park": false
   },
   "why": "a held promise of a value with no identity is a handle, and a handle stored into its optional slot (a field typed Promise<X> | null or | undefined) is Some(handle), never the absent constant its settled value would read as; the absent branch is None only for an actual null or undefined; a Promise<void> in such a slot is the same case; a field of an opaque record (an interface with methods) is written by an uninterpreted update of the record, so the parameter-field form resolves; a renamed local keeps the same transitions",

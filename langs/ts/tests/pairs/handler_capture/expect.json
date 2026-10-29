@@ -15,9 +15,9 @@
  "equal": {
   "row": true,
   "nav": false,
-  "nav_reorder": "real-only",
+  "nav_reorder": true,
   "cell_init": false,
-  "tally": "real-only",
+  "tally": true,
   "write_read": false,
   "write_reorder": true,
   "effect_write": true,

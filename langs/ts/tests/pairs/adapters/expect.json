@@ -10,7 +10,7 @@
  "equal": {
   "pick": true,
   "use_pick": true,
-  "pad": "real-only",
+  "pad": true,
   "shift": "withheld",
   "twice": true
  },

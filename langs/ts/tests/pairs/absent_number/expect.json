@@ -4,7 +4,7 @@
     "pick": true,
     "read_mechanic": false,
     "nth_of": false,
-    "entry_or": "real-only",
+    "entry_or": true,
     "entry_kind": false,
     "entry_let": false
   },

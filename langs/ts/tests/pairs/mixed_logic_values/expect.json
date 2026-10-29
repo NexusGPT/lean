@@ -25,7 +25,7 @@
     "untouched": true,
     "opaque_": true,
     "string_default": true,
-    "mixed": "real-only",
+    "mixed": true,
     "nullable": true,
     "service_constructor": true,
     "service_choose": true,
@@ -39,7 +39,7 @@
     "service_guard": false,
     "service_left_duplicate": false,
     "service_eager_condition": false,
-    "mixed_literal": "real-only",
+    "mixed_literal": true,
     "service_guard_equal": true,
     "service_or_effects": true
   },

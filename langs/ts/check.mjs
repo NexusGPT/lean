@@ -193,6 +193,11 @@ export async function check(opts) {
   // it is PASS-proved, whatever the real lemma said (recorded beside); unknown or an encoding finding: PASS-bounded at best
   if (doubles && !adapter && m && !unguarded) {
     if (doubles.verdict === 'proved') { cert.lanes.A.verdict = 'PASS-proved'; cert.lanes.A.reading = 'doubles (IEEE-754 binary64, SMT-LIB QF_FP)'; return finish('PASS-proved', cert, {}); }
+    // rule C (translate/faithful.mjs): the Dafny lemma read numbers faithfully, exact integers in the safe range and
+    // every other number through uninterpreted operations; placed on both sides and proved, it proves the unit
+    const placed = faithfulPlacement(tmp, dafnyName(unit));
+    cert.lanes.A.faithful = placed;
+    if (doubles.verdict === 'unknown' && placed.placed && lemmas[main]) { cert.lanes.A.verdict = 'PASS-proved'; cert.lanes.A.reading = placed.congruence ? 'faithful numbers: exact integers in the safe range, congruence on every other number' : 'faithful numbers: exact integers in the safe range'; return finish('PASS-proved', cert, {}); }
     cert.lanes.A.verdict = doubles.verdict === 'finding' ? 'ASK:doubles-finding' : 'ASK:doubles-unknown';
     cert.lanes.A.numberModel = 'unproved'; // the fallback (design/doubles.md): a number-bearing unit the doubles reading does not prove is PASS-bounded at best, named
     return finish(rung(), cert, unreached({ reason: `number model: unproved (doubles ${doubles.verdict}${doubles.reason ? ': ' + doubles.reason : ''})` }));
@@ -202,6 +207,28 @@ export async function check(opts) {
   return finish(rung(), cert, unreached({}));
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
+// lane A's number decision for one unit, as check.mjs takes it (for a reader that runs lane A without lane B, such
+// as harness/proof_hunt.py): a unit with no number operation keeps its lemma's result; a number-bearing unit is proved
+// by the doubles reading (unsat), refuted by it (a replayed counterexample), or, when that reading is unknown, proved
+// by its lemma read faithfully only when the faithful reading places it on both sides. `dir` holds parent.dfy and
+// candidate.dfy as the translator wrote them.
+export async function numberDecision({ parent, candidate, unit, project = true, dir, lemmaProved }) {
+  const fp = await solveUnit({ parent, candidate, unit, project, keep: dir });
+  if (!fp.bearing) return { proved: lemmaProved, reading: 'no number operation' };
+  if (fp.verdict === 'proved') return { proved: true, reading: 'doubles' };
+  if (fp.verdict === 'witness') return { proved: false, reading: 'doubles witness', input: fp.input };
+  const placed = faithfulPlacement(dir, dafnyName(unit));
+  return { proved: fp.verdict === 'unknown' && placed.placed && lemmaProved, reading: placed.placed ? 'faithful numbers' : 'number model: unproved', ...(placed.reasons ? { reasons: placed.reasons } : {}) };
+}
+// the faithful number reading of a unit on both sides (translate/faithful.mjs): placed when no number the model does not
+// hold reaches a place the rewrite cannot make opaque, on either side; congruence when its text uses an uninterpreted
+// number operation in it or its same-file callees (translate/faithful.mjs units). `dir` holds parent.dfy and candidate.dfy
+export function faithfulPlacement(dir, f) {
+  const side = (s) => { const p = path.join(dir, `${s}.dfy`); const t = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : ''; const m = t.match(new RegExp(`^// NUMBERS ${f}_${s}: (.*)$`, 'm')); let v = null; try { v = m ? JSON.parse(m[1]) : null; } catch { v = null; } return { v }; };
+  const P = side('parent'), C = side('candidate');
+  const reasons = [...(P.v?.reasons ?? []).map((r) => `parent: ${r}`), ...(C.v?.reasons ?? []).map((r) => `candidate: ${r}`), ...(!P.v || !C.v ? ['no NUMBERS line'] : [])];
+  return { placed: !!P.v?.placed && !!C.v?.placed, congruence: !!P.v?.congruence || !!C.v?.congruence, ...(reasons.length ? { reasons: reasons.slice(0, 4) } : {}) };
+}
 
 // the summaries a lemma rests on (`// RESTS Equal_f: Equal_g,Equal_h`, written by spec/theorem.py): a caller's lemma uses
 // each callee's lemma at the call sites, so it is proved only when every lemma it reaches this way is proved

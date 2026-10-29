@@ -9,9 +9,9 @@
  "equal": {
   "display": true,
   "greeting": false,
-  "pad": "real-only",
+  "pad": false,
   "forget": true,
-  "visit": "real-only"
+  "visit": true
  },
  "why": "A field u.nick?: string is stored as Pres<string> (missing, undefined, or a value) and read as Option<string>; a parameter by?: number is an Option<int>. display writes ?? as a presence test and reads the field again after it: narrowed, the read marks the world if it finds no value, and the lemma shows it does not (proved); greeting changes the default (unproved, WITNESS when the nickname is absent); pad tests the absent amount first (proved); forget and visit are untouched (proved).",
  "b": {

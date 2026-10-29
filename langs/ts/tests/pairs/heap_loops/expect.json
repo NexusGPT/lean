@@ -7,9 +7,9 @@
  ],
  "equal": {
   "total": false,
-  "raise": "real-only",
-  "positives": "real-only",
-  "weight": "real-only"
+  "raise": false,
+  "positives": true,
+  "weight": true
  },
  "why": "A loop over an array is a recursive helper that threads the heap world, measured by the length at entry (nothing in its body grows an array). total adds one more per element (unproved, WITNESS on any non-empty list); raise keeps its loop and computes the step as 1 + k for k + 1, so the two helpers are one function applied to equal arguments (proved); positives writes n = n + 1 as n += 1, the same helper (proved); weight is untouched (proved). The index loop's own a[i] is in range by its guard and carries no out-of-range mark.",
  "b": {

@@ -11,13 +11,13 @@
  ],
  "equal": {
   "account_constructor": true,
-  "account_deposit": "real-only",
-  "account_label": "real-only",
-  "open": "real-only",
+  "account_deposit": true,
+  "account_label": true,
+  "open": true,
   "opening": false,
-  "twice": "real-only",
+  "twice": true,
   "ledger_constructor": false,
-  "ledger_take": "real-only"
+  "ledger_take": true
  },
  "why": "Ledger's constructor writes max + 1 where the parent wrote max; opening adds one to the balance it reads; open binds the deposit's result to a name first (the same transitions); Account's constructor, deposit, label, twice and take are untouched",
  "b": {

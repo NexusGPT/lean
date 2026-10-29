@@ -9,7 +9,7 @@
   "fresh_map"
  ],
  "equal": {
-  "doubled": "real-only",
+  "doubled": true,
   "big_ones": false,
   "tally": true,
   "remember": true,

@@ -3,7 +3,7 @@
  "equal": {
   "order": "withheld",
   "clamp": "witness",
-  "total": "real-only",
+  "total": true,
   "untouched": true
  },
  "why": "NaN and the infinities are numbers a declared number admits; lane B draws them on every fourth generated input. order: a missing price sorts as Number.POSITIVE_INFINITY in the parent, so a null against Infinity or NaN compares as NaN, read as equal, and keeps its place; the candidate's nulls-last helper puts the null after it: WITNESS on an input holding NaN and the infinities. Lane A reads the parent as one opaque unit (a special-number source) and withholds the lemma (the sorted copy may carry an input reference). clamp: x > 0 ? (x < 100 ? x : 100) : 0 against Math.min(Math.max(x, 0), 100): equal on every finite number, so lane A proves it on its finite model, whose hypothesis leaves NaN out; NaN clamps to 0 in the parent and comes back as NaN in the candidate: WITNESS on NaN; check.mjs runs lane B first and a WITNESS ends the question, so the finite proof never answers for it. total: s += x spelled s = s + x, the same additions in the same order, equal on NaN and the infinities too: proved, PASS-bounded. untouched: proved, PASS-bounded.",

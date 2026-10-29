@@ -15,7 +15,7 @@
  ],
  "equal": {
   "copy_rec": false,
-  "bump": "real-only",
+  "bump": false,
   "rest_of": "withheld",
   "agent_of": false,
   "key_of": true,

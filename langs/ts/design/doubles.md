@@ -90,41 +90,68 @@ but lane A does not prove the unit. The doubles reading found 6 rows the real re
 Node: three at -0, two at 0 < n < 1 where the integer reading equated `n > 0` with `n >= 1`, and one at NaN. 33 rows
 expected not proved now carry `witness`, each a replayed counterexample.
 
-## The open choice
+## The faithful-number rule (C), built (translate/faithful.mjs)
 
-A sound way to keep the real proofs of units the emitter cannot read is a translator mode in which every JavaScript
-number operation is an uninterpreted Dafny function, the same on both sides. A proof there uses congruence only, and
-IEEE doubles are a model of it. Comparing the multiset of number-operation texts on the two sides is not enough:
-`return (a + b) - b` against `const t = (a + b) - b; return a` has the same sites and differs in doubles.
+The decision of 29 Oct: the reading is exact where the model is provably faithful, FP where the unit is pure numeric,
+and opaque where the model forgets. A number is read exactly, as a Dafny int or real holding its value, only under two
+discharged obligations:
+1. **Integrality.** The value is built from integral sources: an integer literal, `.length` of a string, array or
+   tuple, an index result (`indexOf`, `findIndex`, `search`), a counter, a bitwise result, Math.trunc/floor/ceil/round
+   of such a value, `+` and `-` of such values, `*` when both are nonnegative or one is a positive literal, `%` with a
+   nonnegative dividend and a divisor that is never 0, `floor(a / b)` with a >= 0 and b > 0.
+2. **The safe range.** `|v| <= 2^53`, discharged by interval arithmetic over those sources. A length lies below 2^32,
+   the lead's axiom (ECMA-262: an array length is a Uint32). A counter is bounded by the iteration bounds of the loops
+   around its step: a for-of 2^32, a counter loop its range, an array callback 2^32, while/do unbounded. A value whose
+   bound is not shown is not exact.
 
-## The faithful-number rule (C): designed, not built
+Neither obligation admits a -0 or a NaN: unary minus only of a value never 0, `*` only as above, `%` only with a
+nonnegative dividend.
 
-The lead's rule (29 Oct): the reading is exact where the model is provably faithful, FP where the unit is pure numeric,
-and opaque where the model forgets. (A), the FP reading, is built. (D), the fallback, is built: a number-bearing unit
-the doubles reading does not prove is PASS-bounded, and its certificate says `lanes.A.numberModel: "unproved"` with the
-reason "number model: unproved (doubles ...)". (C) is designed here, measured over the 305 expected-proved rows the
-emitter cannot read whole (/private/tmp/claude-501/dbl/drop.mjs).
+Every other number is a double the model does not compute. The translator (`--core`, lane A's equivalence path) first
+rewrites the source in memory, line for line, as `common.mjs normaliseApplyCalls` does. Each operation on such a number
+becomes an uninterpreted function `Math.__lean_<op>` (declared in `lean-number.d.ts`). The translator reads it as a
+pure external keyed by name and types, the same symbol on both sides. The rewritten operations:
+- arithmetic, bitwise, relational and equality operators;
+- unary minus and `~`;
+- truthiness (`Math.__lean_truthy`): a condition, `!`, `&&`, `||`;
+- the exact Math functions over an opaque argument;
+- a compound assignment or an update statement, rewritten as `x = Math.__lean_add(x, 1)`.
 
-### What makes an integer reading faithful, and what it costs
-An int-typed Dafny operation equals the double operation only when all three of these hold:
-1. **Integral operands.** A double input may be 0.5, NaN or an infinity. signed_zero `positive` (`n > 0` against
-   `n >= 1`) differs at 0.5, though the integer reading proved it. An operand is integral only when it is built from
-   literals, lengths (`.length`, below 2^32 by ECMA-262 23.1.2 and 22.1.3, the axiom `|s| < 4294967296` on every
-   translated sequence), index results (`indexOf`, `findIndex`) and counters over these. Measured: 236 of the 305 rows
-   carry a number input into an operation, so at most 69 can keep an exact integer reading.
-2. **The range.** `|r| <= 2^53`, discharged by Dafny from the context. It is emitted as a `requires` on a helper
-   `SafeInt(r)` at each operation site. A failure anywhere in the unit's functions, not only inside the lemma's span,
-   makes the unit unproved; check.mjs and the pair step read only lemma spans today, so both need the function spans too.
-3. **The sign of zero.** An integral operand still makes a -0: `-(xs.length)` on an empty array, `0 * -k`, `-k % k`.
-   Either the reading carries a sign bit on zero results, or an operation that can make a -0 stays out of the exact
-   reading. The second is the signed-zero predicate this lane removed, restored for the exact integer reading alone.
+A proof uses exact integers and congruence only; IEEE doubles are a model of it, so the proof is sound.
 
-### The congruence reading for everything else
-Every JavaScript number operation becomes an uninterpreted Dafny function, the same symbol on both sides
-(`JsAdd(a, b): N` over an opaque `type N`). Doubles are a model of it, so a proof there is sound. The cost is one switch
-at each of about 40 operator emission sites in translate.mjs and heap.mjs, with N replacing real/int in signatures.
-Loop and index reasoning that rests on arithmetic (`i < |xs|`, `i + 1`) then needs the faithful-integer reading of
-condition 1, or that proof falls.
+**Pinned equalities.** An equality stays interpreted when one side is a nonzero exact value or a literal of another
+type: the one double equal to a nonzero integer is that integer, with no -0 and no NaN.
+
+**Placement.** A number the model does not hold must reach only places the rewrite makes opaque, or places that carry
+the value: a return, a local, a field, an array element, a template, a conversion, the argument of a same-file unit,
+of an imported function or of a function value, `Map.set`'s value, `push`, `Object.is` (SameValue is identity). The unit
+is UNPLACED when such a number reaches any of these:
+- an index, or a computed key;
+- an argument a default-library operation reads as a number (`splice`, `new Date`, `includes`'s position,
+  `Number.isInteger`, `isNaN`);
+- a switch;
+- an update whose value is used;
+- an equality or truth test over a union that holds number, unless the equality is pinned.
+
+The translator writes `// NUMBERS <unit>: {"placed", "congruence", "reasons"}` for each unit, its same-file callees
+included.
+
+**Decision** (check.mjs, the pair step, `numberDecision` for harness/proof_hunt.py):
+- a unit with no number operation keeps its lemma;
+- a number-bearing unit is decided by the FP reading (unsat proves, a replayed counterexample refutes);
+- when the FP reading is unknown, the lemma proves the unit only if both sides are placed;
+- otherwise the unit is PASS-bounded with "number model: unproved".
+
+**Spec proofs keep the exact reading.** A proof of one program against its own ensures (no `--core`, or
+`--exact-numbers`, which conformance.json passes) keeps the exact reading. Its claims, such as `result >= 0`, are
+statements about the exact model, not equivalences.
+
+### What the rule does not cover yet
+- **Non-bearing units.** An input number read as an integer by a modelled library operation in a unit with no number
+  operation: `splice(i)`, `new Date(n)`, `setFullYear(y)`, `includes(s, pos)`. These are 8 rows of the pair suite,
+  named in the report. They keep their lemma, because the number-bearing test does not select them.
+- **Distinct non-exact literals.** Two different literals that round to the same double, such as 9007199254740993 and
+  9007199254740992, are different constants in the model. The reading is incomplete there, never unsound.
 
 ### The executable model
 The conformance step runs the Dafny model and compares it with Node. Lane reach-absent reproduced three

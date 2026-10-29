@@ -10,7 +10,7 @@
  "equal": {
   "total": "witness",
   "even_qty": true,
-  "bump": "real-only",
+  "bump": false,
   "share": true,
   "debt": true,
   "flip": "witness"

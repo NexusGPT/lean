@@ -387,12 +387,13 @@ export function infinitySign(checker, n, sf, current) {
  * decide by this, so the editor's rule and the proof lane agree. */
 export function fileUsesReals(sf, skip = null) { // skip: a node whose subtree is left out (a unit the reading does not reach)
   let real = false;
-  const underFloor = (n) => { for (let p = n.parent; p; p = p.parent) { if (ts.isCallExpression(p) && ts.isPropertyAccessExpression(p.expression) && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Math' && (p.expression.name.text === 'floor' || p.expression.name.text === 'trunc') && p.arguments[0] && (p.arguments[0] === n || p.arguments[0].pos <= n.pos && n.end <= p.arguments[0].end)) return true; if (ts.isStatement(p) || ts.isFunctionLike(p)) return false; } return false; };
+  const underFloor = (n) => { for (let p = n.parent; p; p = p.parent) { if (ts.isCallExpression(p) && ts.isPropertyAccessExpression(p.expression) && ts.isIdentifier(p.expression.expression) && p.expression.expression.text === 'Math' && ['floor', 'trunc', '__lean_floor1', '__lean_trunc1'].includes(p.expression.name.text) && p.arguments[0] && (p.arguments[0] === n || p.arguments[0].pos <= n.pos && n.end <= p.arguments[0].end)) return true; if (ts.isStatement(p) || ts.isFunctionLike(p)) return false; } return false; };
   const w = (n) => {
     if (real) return;
     if (ts.isTypeNode(n) || ts.isDecorator(n) || (skip && skip(n))) return;
     if (ts.isNumericLiteral(n) && /[.eE]/.test(n.text) && !/^0[xXoObB]/.test(n.text)) { real = true; return; }
     if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.SlashToken && !underFloor(n)) { real = true; return; }
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Math' && n.expression.name.text === '__lean_div' && !underFloor(n)) { real = true; return; } // a division the faithful reading made opaque (translate/faithful.mjs) is still a division: the file keeps its reading
     ts.forEachChild(n, w);
   };
   w(sf);

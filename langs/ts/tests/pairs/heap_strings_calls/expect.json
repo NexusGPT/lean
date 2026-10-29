@@ -6,7 +6,7 @@
   "line"
  ],
  "equal": {
-  "ids": "real-only",
+  "ids": true,
   "busy": false,
   "clean": true,
   "line": true

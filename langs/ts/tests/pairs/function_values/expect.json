@@ -8,7 +8,7 @@
  ],
  "equal": {
   "adder": false,
-  "pick": "real-only",
+  "pick": true,
   "svc_handler": false,
   "apply": false,
   "svc_constructor": true

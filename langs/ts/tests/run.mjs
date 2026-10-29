@@ -12,7 +12,7 @@ import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ts, dn } from '../common.mjs';
-import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
+import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName, faithfulPlacement } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
 
@@ -99,7 +99,7 @@ for (const c of cases) {
   }
   if (c.core) {
     const oc = path.join(tmp, `case_${c.name}_core.dfy`);
-    const tc = run('node', [translate, file, '--core', '--fn', c.fn, '--out', oc, ...tflags(c, false)]);
+    const tc = run('node', [translate, file, '--core', '--exact-numbers', '--fn', c.fn, '--out', oc, ...tflags(c, false)]); // a spec proof of one program: the exact reading (design/doubles.md)
     if (tc.status !== 0) { add('construct', c.name, 'translate --core', false, (tc.stderr || tc.stdout).trim().split('\n')[0]); continue; }
     const dc = dafny(oc);
     add('construct', c.name, 'verify (--core)', dc.ok, dc.summary);
@@ -126,7 +126,7 @@ function differential(label, tsFile, entries) {
   const mod = { exports: {} };
   new Function('exports', 'module', js)(mod.exports, mod);
   const dfy = path.join(tmp, `diff_${label}.dfy`);
-  const t = run('node', [translate, tsFile, '--core', '--out', dfy]);
+  const t = run('node', [translate, tsFile, '--core', '--exact-numbers', '--out', dfy]); // executed by Dafny: the exact reading
   if (t.status !== 0) { add('differential', label, 'translate --core', false, (t.stderr || t.stdout).trim().split('\n')[0]); return; }
   const lines = [], want = [];
   for (const { fn, samples } of entries) for (const args of samples) {
@@ -164,7 +164,7 @@ for (const c of cases.filter((x) => x.samples)) differential(c.name, path.join(c
   const d1 = dafny(out);
   add('control', 'false theorem', 'proof shape refuted', !d1.ok, d1.ok ? 'VERIFIED A FALSE THEOREM' : d1.summary);
   const outc = path.join(tmp, 'neg_sum_core.dfy');
-  run('node', [translate, ts, '--core', '--fn', 'sumPositive', '--out', outc, '--ensures', 'result > 0']);
+  run('node', [translate, ts, '--core', '--exact-numbers', '--fn', 'sumPositive', '--out', outc, '--ensures', 'result > 0']);
   const d2 = dafny(outc);
   add('control', 'false theorem', '--core refuted', !d2.ok, d2.ok ? 'VERIFIED A FALSE THEOREM' : d2.summary);
   // an invariant that the proof needs: without it the loop proof must fail
@@ -243,19 +243,20 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
     const real = whole || canon;
     const withheld = lines.find((ln) => ln.startsWith(`// UNGUARDED Equal_${f}: `));
     const fp = await doubles(f);
-    const proved = fp.bearing ? finished && !!sp && fp.verdict === 'proved' : real;
+    const faithful = faithfulPlacement(tmpd, f); // rule C: the real lemma was read faithfully; placed on both sides, it decides a unit the doubles reading leaves unknown
+    const proved = fp.bearing ? finished && !!sp && (fp.verdict === 'proved' || (fp.verdict === 'unknown' && faithful.placed && real)) : real;
     const realText = real ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : 'not proved';
-    const got = sp ? (fp.bearing ? `doubles ${fp.verdict}${fp.verdict === 'witness' ? ' at ' + JSON.stringify(fp.input).slice(0, 60) : fp.reason ? ': ' + fp.reason.slice(0, 80) : ''} (${fp.seconds ?? 0} s); real lemma ${realText}` : realText) : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
+    const got = sp ? (fp.bearing ? `${fp.verdict === 'unknown' && faithful.placed && real ? `faithful ${faithful.congruence ? 'congruence' : 'exact'} proved; ` : fp.verdict === 'unknown' && !faithful.placed ? `unplaced (${(faithful.reasons ?? [])[0] ?? ''}); ` : ''}doubles ${fp.verdict}${fp.verdict === 'witness' ? ' at ' + JSON.stringify(fp.input).slice(0, 60) : fp.reason ? ': ' + fp.reason.slice(0, 80) : ''} (${fp.seconds ?? 0} s); real lemma ${realText}` : realText) : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
     // "withheld": the identity guard must have withheld the lemma; "witness": the doubles reading's replayed counterexample;
-    // "real-only": the real lemma proves and the doubles reading does not read the unit whole (unknown), so lane A does
-    // not prove it (design/doubles.md): the row keeps the translator's real proof under test and names the gap
-    const ok = want === 'withheld' ? !!withheld : want === 'witness' ? !!sp && fp.verdict === 'witness' : want === 'real-only' ? real && fp.bearing && fp.verdict === 'unknown' && !withheld : proved === want && !(want && withheld);
+    // "real-only": the real lemma proves, the doubles reading does not read the unit whole (unknown) and the faithful
+    // reading does not place it, so lane A does not prove it (design/doubles.md): the row keeps the proof under test
+    const ok = want === 'withheld' ? !!withheld : want === 'witness' ? !!sp && fp.verdict === 'witness' : want === 'real-only' ? real && fp.bearing && fp.verdict === 'unknown' && !faithful.placed && !withheld : proved === want && !(want && withheld);
     add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want === 'witness' ? 'witness (doubles)' : want === 'real-only' ? 'real only (doubles unknown)' : want ? 'proved' : 'not proved'}`, ok, got);
     if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
   }
   // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
   for (const unit of Object.keys(exp.b ?? {})) if (finished && spans[`Equal_${dafnyName(unit)}`]) await doubles(dafnyName(unit)); // the proof-hunt step reads the doubles reading of every unit lane B ran
-  huntA.set(name, { adapters: Object.keys(allAdapters), bearing: (f) => !!doublesOf.get(f)?.bearing, proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const fp = doublesOf.get(f); if (fp?.bearing) return fp.verdict === 'proved'; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
+  huntA.set(name, { adapters: Object.keys(allAdapters), bearing: (f) => !!doublesOf.get(f)?.bearing, proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const fp = doublesOf.get(f); if (fp?.bearing && fp.verdict !== 'unknown') return fp.verdict === 'proved'; if (fp?.bearing && !faithfulPlacement(tmpd, f).placed) return false; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {

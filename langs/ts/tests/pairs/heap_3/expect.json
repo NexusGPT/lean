@@ -17,7 +17,7 @@
   "rename": true,
   "clear": true,
   "mark_read": false,
-  "touch": "real-only",
+  "touch": true,
   "copy_bag": false,
   "bump_bag": false,
   "copy_rec": false,

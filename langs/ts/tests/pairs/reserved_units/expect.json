@@ -6,10 +6,10 @@
   "type_"
  ],
  "equal": {
-  "label_": "real-only",
+  "label_": false,
   "print_": false,
-  "map_": "real-only",
-  "type_": "real-only"
+  "map_": true,
+  "type_": true
  },
  "why": "A unit whose name TypeScript allows and Dafny reserves (label, print, map, type) is the Dafny function of its name with a trailing underscore, and its lemma is Equal_ of that name (Equal_label_): common.mjs dn names it for the translator, check.mjs and the suite alike. label makes the same outside call and writes its sum the other way round (proved through check.mjs, PASS-proved, where the old lemma name read ASK:unproved). print changes its brackets (not proved; lane B WITNESS on any input). map is untouched. type calls map with its own text unchanged (proved: map_ is the same function on both sides).",
  "b": {
@@ -20,8 +20,8 @@
  },
  "check": {
   "label": { "verdict": "PASS-bounded", "laneA": "ASK:doubles-unknown" },
-  "map": { "verdict": "PASS-bounded", "laneA": "ASK:doubles-unknown" },
-  "type": { "verdict": "PASS-bounded", "laneA": "ASK:doubles-unknown" },
+  "map": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
+  "type": { "verdict": "PASS-proved", "laneA": "PASS-proved" },
   "print": { "verdict": "WITNESS" }
  }
 }

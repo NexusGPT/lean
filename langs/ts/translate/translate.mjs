@@ -27,6 +27,7 @@
 //        node translate.mjs <file.ts> --fn <name> --out <file.dfy> [--real] [--requires E]... [--ensures E]...
 //          [--invariant [N:]E]...      (proof shape: one function, loops as a Dafny method; kept for the fixtures)
 // Exit 0: file written. Exit 1: outside the subset, or not covered by the translator.
+import { faithfulNumbers } from './faithful.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -71,9 +72,25 @@ const wrapLet = (s) => (/^\s*var /.test(s) ? `(\n${indentBlock(s)}\n)` : s);
 const hash = (s) => { let h = 5381; for (const c of s) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0; return h.toString(36); };
 
 export function translate(file, fnName, opts = {}) {
+  // the faithful reading first (lane A's equivalence path); when its rewritten text does not translate (a closure the
+  // translator reads only in its exact form, say), the exact text is translated and every unit is marked unplaced, so
+  // a number-bearing unit is not proved through it and a unit with no number operation keeps its reading
+  if (opts.core && !opts.exactNumbers && !opts.faithfulFailed) {
+    try { return translateOnce(file, fnName, opts); }
+    catch (e) { if (process.env.LEAN_FAITHFUL_STRICT === '1') throw e; return translateOnce(file, fnName, { ...opts, exactNumbers: true, faithfulFailed: `${e instanceof Unsupported ? '' : `${e?.name ?? 'Error'}: `}${String(e?.message ?? e).split('\n')[0].slice(0, 200)}` }); } // any failure of the faithful attempt: the exact text, every unit unplaced (the conservative reading); an error of the exact text itself still escapes
+  }
+  return translateOnce(file, fnName, opts);
+}
+function translateOnce(file, fnName, opts = {}) {
   const { real: realFlag = false, requires = [], ensures = [], invariants = [], core = false, suffix = '', only = null, project = true, effectful = [], tolerant = false, reportOut = null, heap = false, heapUnits = null } = opts;
   const sfx = core && suffix ? `_${suffix}` : '';
-  const loaded = normaliseApplyCalls(loadProgram(file, { project })); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
+  // a same-receiver apply/call is read as the direct call (common.mjs applyCall); then the faithful number reading
+  // (faithful.mjs, design/doubles.md): a number the model does not hold exactly passes through uninterpreted operations
+  // A proof of one program against its own ensures (no --core, or --exact-numbers as the conformance runner passes it)
+  // keeps the exact reading; lane A's equivalence translations (--core) take the faithful one.
+  const normalised = normaliseApplyCalls(loadProgram(file, { project }));
+  const faithful = core && !opts.exactNumbers ? faithfulNumbers(normalised) : { loaded: normalised, units: new Map() };
+  const loaded = faithful.loaded;
   const { sf, checker } = loaded;
   let real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
   const fns = topLevelFunctions(sf);
@@ -156,8 +173,9 @@ export function translate(file, fnName, opts = {}) {
   if (only && !target && !realFlag && real) { const reached = new Set(order.map((u) => u.node)), own = new Set([...fns.values()].map((u) => u.node)); real = fileUsesReals(sf, (n) => own.has(n) && !reached.has(n)); }
 
   // ----- the subset gate: refuse before translating -----
-  const promiseReadings = new Set();
-  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const promiseReadings = new Set(), lintReadings = new Set();
+  const gate0 = lintFile(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings: lintReadings }).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  for (const k of lintReadings) { const [a, z] = k.split(':').map(Number); const a2 = faithful.mapOffset ? faithful.mapOffset(a) : a, z2 = faithful.mapOffset ? faithful.mapOffset(z) : z; if (a2 >= 0 && z2 >= 0) promiseReadings.add(`${a2}:${z2}`); } // the lint read the file as written; its offsets move with the faithful rewrite (translate/faithful.mjs mapOffset)
   const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
   const failedUnits = new Set();
   let gate = gate0;
@@ -175,7 +193,7 @@ export function translate(file, fnName, opts = {}) {
   }
   // ----- references, layer 2: the heap core (heap.mjs) is planned over the final order; its units are emitted there -----
   const reachOf = makeReach(checker, sf);
-  const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
+  const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex), external: (n, ps, r) => external(n, ps, r) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
   const heapHyps = [];
   const superObligations = new Set(); // `<unit>\u0000<method>`: a `super.m()` whose base code may change the receiver behind its transition: an obligation (design/inherited-method.md)
   const inheritedReads = new Set(); // `<unit>\u0000<method>`: an inherited method the unit reads through its keyed transition (design/inherited-method.md)
@@ -6111,7 +6129,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     for (const [k, text] of prelude) pre.push(qualify(text));
     for (const text of heapPre) pre.push(text);
   }
-  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
+  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${(opts.faithfulFailed ? order.map((u) => [u.name, { placed: false, congruence: false, reasons: [`the faithful text does not translate: ${opts.faithfulFailed}`] }]) : [...faithful.units].filter(([n]) => order.some((u) => u.name === n))).map(([n, v]) => `\n// NUMBERS ${fname(n)}: ${JSON.stringify(v)}`).join('')}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
   if (opts.preludeOut) {
     const preludeText = `// Generated by lean-ts translate (version 2): shared declarations. Identical for parent and candidate, or the gate refuses.\n` + pre.map((t) => `// PRELUDE ${t.match(/^(?:datatype|type|function|predicate)\s+([A-Za-z0-9_]+)/)?.[1] ?? hash(t)}\n${t}\n// END PRELUDE`).join('\n') + '\n';
     return { main: `${header}\ninclude "${path.basename(opts.preludeOut)}"\n\n${main}\n`, prelude: preludeText };
@@ -6131,6 +6149,7 @@ if (isMain) {
     else if (a === '--prelude') opts.preludeOut = args[++i];
     else if (a === '--real') opts.real = true;
     else if (a === '--core') opts.core = true;
+    else if (a === '--exact-numbers') opts.exactNumbers = true; // the exact reading of every number (a spec proof of one program, conformance.json); lane A's equivalence path never passes it
     else if (a === '--suffix') opts.suffix = args[++i] ?? '';
     else if (a === '--only') opts.only = args[++i].split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--effectful') opts.effectful = args[++i].split(',').map((s) => s.trim()).filter(Boolean);

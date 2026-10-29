@@ -6,10 +6,10 @@
   "any_negative"
  ],
  "equal": {
-  "collect": "real-only",
+  "collect": true,
   "tally": false,
   "first_big": false,
-  "any_negative": "real-only"
+  "any_negative": true
  },
  "why": "Stage 5 rank 19: a synchronous array-method callback that writes a local, an array or a record declared in the enclosing function is read as the loop body it is, the cell as the loop's state, whatever the call's result is used for. collect rewrites the map as a for-of pushing into both arrays (proved: the same loop helper). tally starts its count at one (unproved; lane B WITNESS on any input). firstBig stops counting at the hit (unproved; WITNESS when a hit exists). anyNegative is untouched.",
  "b": {
