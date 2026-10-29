@@ -605,7 +605,8 @@ async function driveCall(env, thunk, ms) { // one call of a drive: returned or t
   return out;
 }
 async function driveOne(env, fn, k, ms) {
-  const mark = env.trace.length, pend = env.pending.length, queued = env.timers.queue.slice(), slots = env.hookSlots ? env.hookSlots.slice() : null, dirty = env.stateDirty;
+  const mark = env.trace.length, pend = env.pending.length, queued = env.timers.queue, slots = env.hookSlots ? env.hookSlots.slice() : null, dirty = env.stateDirty, clock = env.timers.now;
+  env.timers.queue = []; // the drive's own timers only: they fire inside it (below), as the main observation fires the call's
   const args = Array.from({ length: DRIVE_ARGS }, (_, i) => env.drawn(`drive#${k}.arg${i}`)); // drawn as the world draws (fake.mjs drawn): the same on both sides, other values on other inputs
   const rec = { $fn: `#${k}`, args: render(args) }; // the driven input, as drawn
   if (env.siteState) env.siteState.completed = null;
@@ -630,6 +631,7 @@ async function driveOne(env, fn, k, ms) {
       }
     }
   } catch (e) { const stop = driveStop(e); if (stop) rec.undriven = stop; else rec.threw = render(e); }
+  if (!rec.undriven && env.timers.queue.length) { try { await runTimers(env, ms); } catch (e) { const stop = driveStop(e); if (stop) rec.undriven = stop; else throw e; } } // a timer the driven function armed fires, in due order: its callback's requests are the drive's
   await new Promise((r) => setImmediate(r)); // the drive's own continuations settle inside it
   withSite(rec, env.siteState?.completed ?? env.siteState?.current?.site ?? null); // the statement of the driven function the drive completed at: a witness's line
   if (!rec.undriven) {
@@ -637,7 +639,7 @@ async function driveOne(env, fn, k, ms) {
     const armed = env.pending.slice(pend).map(({ id, ...rest }) => rest); if (armed.length) rec.pending = render(armed);
     if (slots) rec.slots = render(env.hookSlots);
   }
-  env.trace.length = mark; env.pending.length = pend; env.timers.queue = queued; env.stateDirty = dirty;
+  env.trace.length = mark; env.pending.length = pend; env.timers.queue = queued; env.timers.now = clock; env.stateDirty = dirty;
   if (slots) { env.hookSlots.length = 0; env.hookSlots.push(...slots); } // the same array: the setters hold it
   return rec;
 }

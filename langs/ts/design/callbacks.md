@@ -64,7 +64,8 @@ arguments `drive#k.call<j>.arg0..2`, so state a function carries between calls s
 event) (a class is constructed on them, then each method of its prototype
 is called on the instance; an awaited result is awaited; an iterator is stepped up to four times). The record is
 `{ $fn, args, returned | threw, trace, pending, slots }`: what it returned or threw, the requests it made, the work it
-armed and the hook slots it left. Then the trace, the pending work, the armed timers and the slots are put back, so a
+armed and the hook slots it left; a timer the drive arms fires inside it, in due order (runTimers on the drive's own
+queue), so a callback handed to `setTimeout` or `requestAnimationFrame` by a driven function is observed too. Then the trace, the pending work, the armed timers and the slots are put back, so a
 drive never becomes part of the window's own observation. A function a drive hands out is driven in turn (breadth
 first, up to DRIVE_DEPTH 3); at most MAX_DRIVES 64 per window. Windows: `observe` (the main loop, the class programs
 through it), each sequence path (`runSequences`, drives after the unmount), each environment-program command
