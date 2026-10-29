@@ -310,7 +310,7 @@ export function translate(file, fnName, opts = {}) {
     if (ts.isPropertyAccessExpression(n)) {
       const literal = literalGetter(n); if (literal) return !exactObjectMethod(literal);
       const get = accessorOf(n, 'get'), set = propertyWrite(n) && accessorOf(n, 'set');
-      if (set || (get && (accessorOpaque.has(get.name) || effectfulUnits.has(get.name)))) return true;
+      if (set || (get && (accessorOpaque.has(get.name) || effectfulUnits.has(get.name) || heldAccess(get, n)))) return true; // a get on a receiver this file did not make is a request (accessorCall)
     }
     if (ts.isAwaitExpression(n) || (ts.isForOfStatement(n) && n.awaitModifier)) return true;
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
@@ -344,7 +344,7 @@ export function translate(file, fnName, opts = {}) {
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
       if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
-      { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag; an inherited method is a transition
+      { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor && (classRef(recv) || madeDispatch(recv, sfc, f.name.text))) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag on a receiver this file made (design/conformance-readings.md); any other receiver, or an inherited method, is a transition
       const t = baseOf(typeOf(recv));
       if (f.name.text === 'toString' && !n.arguments.length && primitiveText(typeOf(recv))) return false; // ToString of a primitive (design/library-rows.md)
       if (LOCALE_READS.has(f.name.text) && (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike))) return true; // the host's locale data decides the text: a world read (design/library-rows.md)
@@ -1289,11 +1289,92 @@ export function translate(file, fnName, opts = {}) {
     const nominal = checker.getPropertiesOfType(t).some((p) => p.declarations?.some((v) => (v.name && ts.isPrivateIdentifier(v.name)) || v.modifiers?.some((m) => m.kind === K.PrivateKeyword || m.kind === K.ProtectedKeyword)));
     return nominal ? d : null;
   }
-  function instanceDecision(t, target, n) {
+  // ----- provenance (design/conformance-readings.md): the same-file classes whose `new` made every value an expression
+  // can hold, or null when a value may come from anywhere else (a parameter, a field, `this`, an outside call, an
+  // assertion). `instanceof` walks the value's prototype chain (ECMA-262 13.10.2, 7.3.22) and a method call runs what
+  // the lookup along that chain finds (10.1.8.1); the chain is fixed by the constructor that made the object. A static
+  // type is a claim about shape only: TypeScript's assignability is structural, so any object of that shape passes for
+  // it (lane B draws a plain record). Followed: parentheses, a conditional's two arms, a variable of this file through
+  // its initializer and every plain `=` that writes it (any other write is unknown), the returns of a same-file
+  // function it calls (the reached code). Anything else is unknown.
+  // a name of one of this file's top-level classes, by the symbol it resolves to (a local of that name is not the class)
+  function fileClass(e) { while (ts.isParenthesizedExpression(e)) e = e.expression; if (!ts.isIdentifier(e) || !classDecls.has(e.text)) return null; const c = classDecls.get(e.text); return checker.getSymbolAtLocation(e)?.valueDeclaration === c ? c : null; }
+  function madeBy(e, seen = new Set()) {
+    while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (ts.isNewExpression(e)) { const c = fileClass(e.expression); return c ? [c] : null; }
+    if (ts.isConditionalExpression(e)) { const a = madeBy(e.whenTrue, seen), b = a && madeBy(e.whenFalse, seen); return a && b ? [...new Set([...a, ...b])] : null; }
+    if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && !e.questionDotToken) {
+      const f = checker.getSymbolAtLocation(e.expression)?.valueDeclaration;
+      if (!f || !ts.isFunctionDeclaration(f) || !f.body || f.asteriskToken || f.modifiers?.some((m) => m.kind === K.AsyncKeyword) || f.getSourceFile() !== sf || seen.has(f)) return null;
+      seen.add(f);
+      const rets = []; let bare = false;
+      const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x)) { if (x.expression) rets.push(x.expression); else bare = true; } ts.forEachChild(x, w); };
+      ts.forEachChild(f.body, w);
+      if (bare || !rets.length) return null;
+      const all = []; for (const r of rets) { const m = madeBy(r, seen); if (!m) return null; all.push(...m); }
+      return [...new Set(all)];
+    }
+    if (!ts.isIdentifier(e)) return null;
+    const sym = checker.getSymbolAtLocation(e), d = sym?.valueDeclaration;
+    if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !d.initializer || d.getSourceFile() !== sf || seen.has(d)) return null;
+    seen.add(d);
+    const sources = [d.initializer]; let ok = true;
+    const w = (x) => {
+      if (!ok) return;
+      if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym) {
+        let c = x, p = x.parent; // climb a destructuring target to its assignment
+        while (p && (ts.isParenthesizedExpression(p) || ts.isArrayLiteralExpression(p) || ts.isObjectLiteralExpression(p) || ts.isShorthandPropertyAssignment(p) || (ts.isPropertyAssignment(p) && p.initializer === c) || ts.isSpreadElement(p) || ts.isSpreadAssignment(p))) { c = p; p = p.parent; }
+        if (p && ts.isBinaryExpression(p) && p.left === c && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) { if (c === x && p.operatorToken.kind === K.EqualsToken) sources.push(p.right); else ok = false; }
+        else if (p && (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && p.operand === c && (p.operator === K.PlusPlusToken || p.operator === K.MinusMinusToken)) ok = false;
+        else if (p && (ts.isForOfStatement(p) || ts.isForInStatement(p)) && p.initializer === c) ok = false;
+      }
+      ts.forEachChild(x, w);
+    };
+    w(sf);
+    if (!ok) return null;
+    const all = []; for (const s0 of sources) { const m = madeBy(s0, seen); if (!m) return null; all.push(...m); }
+    return [...new Set(all)];
+  }
+  // a same-file class and the same-file classes above it, nearest first; `complete` when the chain ends in this file
+  // (no extends), so a class outside it is known not to be on it
+  function chainOf(c) {
+    const out = []; let cur = c;
+    while (cur && !out.includes(cur)) {
+      out.push(cur);
+      const ext = cur.heritageClauses?.find((h) => h.token === K.ExtendsKeyword)?.types[0]?.expression;
+      if (!ext) return { classes: out, complete: true };
+      cur = fileClass(ext);
+    }
+    return { classes: out, complete: false };
+  }
+  // `v instanceof T` for v made by `new C`: true when T is on C's chain, false when the chain is complete without it, else
+  // unknown; a class declaring `static [Symbol.hasInstance]` answers the test itself (13.10.2 step 2), never decided here
+  const hasInstanceHook = (c) => c.members.some((m) => m.name && ts.isComputedPropertyName(m.name) && /^Symbol\.hasInstance$/.test(m.name.expression.getText(sf)));
+  function madeInstanceOf(made, target) {
+    if (!made || !target || hasInstanceHook(target)) return null;
+    const vs = made.map((c) => { const ch = chainOf(c); return ch.classes.includes(target) ? true : ch.complete ? false : null; });
+    return vs.every((v) => v === true) ? 'true' : vs.every((v) => v === false) ? 'false' : null;
+  }
+  // a method call `r.m(args)` runs the class's own unit only when every value r can hold was made by `new` of a class
+  // whose lookup of m finds that class's member: the nearest class on its chain declaring an instance member named m
+  function madeDispatch(recv, cls, name) {
+    const made = madeBy(recv);
+    if (!made) return false;
+    return made.every((c) => { const ch = chainOf(c); const owner = ch.classes.find((k) => k.members.some((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === K.StaticKeyword))); return owner === cls; });
+  }
+  // the name of a request on a held receiver carries the code a made instance of its type would run: the reach of every
+  // class of this file whose instances its type admits (a subclass overriding the member included), never the call
+  // site's own text, so two sides reaching the receiver by other locals name one request
+  function heldKey(t) {
+    if (isOptional(t)) t = baseOf(t);
+    const cs = [...classDecls.values()].filter((c) => { try { return checker.isTypeAssignableTo(checker.getTypeAtLocation(c.name), t); } catch { return false; } });
+    return cs.length ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
+  }
+  function instanceDecision(t, target, n, made = false) {
     if (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined)) return 'false';
     if (!nominalClass(t)) return null;
     const ancestry = (a, b) => a.symbol === b.symbol || (a.getBaseTypes?.() ?? []).some((v) => ancestry(v, b));
-    if (ancestry(t, target)) return 'true';
+    if (ancestry(t, target)) return made ? 'true' : null; // the type says the shape; only a value made by `new` here has the chain
     if (ancestry(target, t)) return null;
     return disjointTags(t, target, n) ? 'false' : null;
   }
@@ -1307,6 +1388,15 @@ export function translate(file, fnName, opts = {}) {
     // uninterpreted accessor, every construction an uninterpreted injection; the proof asks the same calls on both sides
     if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
+  }
+  // the one copy reading (design/conformance-readings.md): a copy of a record the unit did not build (common.mjs copySource
+  // 'copy'; a spread first in its literal, Object.assign onto an empty literal, structuredClone) is its source's value
+  // whole, the rest slot included, inside Copy_T, whose body is the identity: every field and the rest read through it as
+  // the source's, so a copy never equals the declared fields by hand. Its text says a new object was made, so a copy and
+  // its source are two texts and the identity guard, not the text, decides when the result is compared as a graph
+  function copyOf(src, code, d, site = null) {
+    if (copySource(checker, src, site).kind !== 'copy') return code;
+    return `${helper('Copy', [d])}(${outerParens(code)})`;
   }
   // the open record's two slots and the rest's carrier: MoreBuilt for a value a literal made (no key beyond the declared
   // ones), MoreFrom for a value from the outside, its source a name standing for the keys and values its type does not name
@@ -1710,6 +1800,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       case 'Abs': text = `function ${name}(a: ${A}): ${A} { if a < ${A === 'real' ? '0.0' : '0'} then -a else a }`; break;
       case 'Repeat': text = `function ${name}(s: string, n: int): string decreases n { if n <= 0 then "" else s + ${name}(s, n - 1) }`; break;
       case 'Reverse': text = `function ${name}(s: seq<${A}>): seq<${A}> decreases |s| { if |s| == 0 then [] else ${name}(s[1..]) + [s[0]] }`; break;
+      case 'Copy': text = `function ${name}(x: ${A}): ${A} { x }`; break; // a new object holding what its source holds (copyOf)
       case 'ObjectProtoNames': text = `const ${name}: set<string> := {${OBJECT_PROTO_NAMES.map((x) => JSON.stringify(x)).join(', ')}}`; break; // Object.getOwnPropertyNames(Object.prototype): the names \`in\` finds on every plain object
       default: fail(sf, `no helper ${kind}`);
     }
@@ -2589,7 +2680,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const decl = checker.getSymbolAtLocation(n.right)?.valueDeclaration;
       const target = decl && ts.isClassDeclaration(decl) ? checker.getTypeAtLocation(decl.name) : null;
       const reach = reachOf.reachesFile(n) ? `_${hash(reachOf.keyText(n))}` : ''; // the classes of this file the test can meet, the right's and every class the left may be an instance of, with their heritage (design/reach-keys.md)
-      return staticTest(n.left, (t) => target ? instanceDecision(t, target, n) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}${reach}`, [d], 'bool')}(${v})`);
+      // decided only for a value this file made by `new` (design/conformance-readings.md); any other value is the opaque test of the value
+      const made = assertionDerived(n.left) ? null : madeBy(n.left), madeVerdict = madeInstanceOf(made, decl && ts.isClassDeclaration(decl) && decl.getSourceFile() === sf ? decl : null);
+      if (madeVerdict !== null) { expr(n.left); return madeVerdict; }
+      return staticTest(n.left, (t) => target && !hasInstanceHook(decl) ? instanceDecision(t, target, n, !!made) : null, (v, d) => `${external(`instanceof_${mangle(n.right.getText(sf))}${reach}`, [d], 'bool')}(${v})`);
     }
     if (op === K.InKeyword) {
       { const pr = inPrototypeReach(checker, sf, n); if (pr) fail(n, `prototype: this file makes an object whose prototype is not Object.prototype (line ${lineOf(sf, pr.maker.getStart(sf))}), and ${pr.why}; \`in\` reads the prototype; test an own key with Object.prototype.hasOwnProperty.call(o, k)`); }
@@ -2871,7 +2965,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       else if (ts.isPropertyAssignment(p)) fields.push(fieldCode(keyOf(p), p.initializer));
     }
-    const base = merged !== null ? merged : first && ts.isSpreadAssignment(first) ? expr(first.expression) : null; // `{ ...x, ... }` starts from x itself: every record datatype carries an opaque rest slot (open-datatype), so x's undeclared keys travel with it and a hand copy of the declared fields never equals it; heap-3's uninterpreted copy is subsumed // a source the unit did not build: an uninterpreted copy, Spread_T(x), which carries what x carries beyond its declared fields
+    const base = merged !== null ? merged : first && ts.isSpreadAssignment(first) ? copyOf(first.expression, expr(first.expression), rname, first) : null; // `{ ...x, ... }` starts from x itself: every record datatype carries an opaque rest slot (open-datatype), so x's undeclared keys travel with it and a hand copy of the declared fields never equals it; heap-3's uninterpreted copy is subsumed // a source the unit did not build: an uninterpreted copy, Spread_T(x), which carries what x carries beyond its declared fields
     const render = (fs) => { // the fields in source order, a later key winning over an earlier one (a computed key may repeat a named one)
       const seen = new Map(); for (const [k, v] of fs) seen.set(k, v); let list = [...seen];
       // a key the open record's type does not declare is an entry of its dictionary of undeclared keys, in source order
@@ -3741,8 +3835,19 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     });
     return tag + (fields.length ? `{${fields.sort().join(',')}}` : '');
   }
+  // a get or set through an instance accessor on a receiver this file did not make by `new`: [[Get]] and [[Set]] run what
+  // that object holds (10.1.8.1, 10.1.9.2), so the access is a request of the world with the value written, as a method
+  // call on it is (design/conformance-readings.md); named by the code a made instance would run
+  const heldAccess = (u, n) => !u.isStatic && n.expression.kind !== K.ThisKeyword && n.expression.kind !== K.SuperKeyword && !madeDispatch(n.expression, u.cls, n.name.text);
   function accessorCall(u, n, args) {
     if (failedUnits.has(u.name)) fail(n, `callee ${u.name} was not translated`);
+    if (heldAccess(u, n)) {
+      if (!unitEffectful()) fail(n, 'internal: an accessor of a receiver not made here, in a pure unit');
+      const T = classTypeD(u.cls), d = u.accessor === 'set' ? 'Unit' : dtype(retType(u), n);
+      addPrelude('World', 'type World');
+      const f = external(`${mangle(T)}_${u.accessor}_${n.name.text}_held${heldKey(typeOf(n.expression))}`, ['World', T, ...(u.accessor === 'set' ? [dtype(typeOf(u.params[0].name), n)] : [])], `(World, ${d})`);
+      return hoist(`${f}(${[WORLD, outerParens(expr(n.expression)), ...args].join(', ')})`, d);
+    }
     const recv = u.isStatic ? [] : [n.expression.kind === K.ThisKeyword ? SELF : expr(n.expression)];
     const eff = effectfulUnits.has(u.name);
     const code = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...recv, ...args].join(', ')})`;
@@ -3951,7 +4056,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       if (o.kind === 'global' && f.text === 'String' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike)) return stringOf(n.arguments[0]);
       if (o.kind === 'global' && f.text === 'Number' && n.arguments.length === 1 && typeOf(n.arguments[0]).flags & (TF.NumberLike | TF.BooleanLike)) return numberOf(n.arguments[0]);
-      if (o.kind === 'global' && f.text === 'structuredClone' && n.arguments.length === 1) return expr(n.arguments[0]); // HTML 2.7.4: a copy of a value is the value in the value reading (the heap core allocates a fresh cell)
+      if (o.kind === 'global' && f.text === 'structuredClone' && n.arguments.length === 1) { // HTML 2.7.4: a copy of a value is the value in the value reading, through the one copy reading (copyOf); the heap core allocates a fresh cell when the unit built the source
+        const a0 = n.arguments[0], code = expr(a0); let d = null; try { d = dtype(typeOf(a0), a0); } catch { d = null; }
+        return d ? copyOf(a0, code, d) : code;
+      }
       return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
     }
     if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); const key = currentUnit.cls ? reachOf.superInitKeyText(currentUnit.cls) : ''; return externalCall(`super_init_${mangle(Tn)}${key ? '_' + createHash('sha256').update(key).digest('hex').slice(0, 16) : ''}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition named by the code of the classes above (design/inherited-method.md)
@@ -3960,7 +4068,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     // CopyDataProperties), the value `{ ...x }` reads: x itself, its rest included (design/open-datatype.md)
     if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign' && originOf(checker, f.expression, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 2 && ts.isObjectLiteralExpression(n.arguments[0]) && !n.arguments[0].properties.length && !ts.isSpreadElement(n.arguments[1])) {
       const sd = (() => { try { return dtype(typeOf(n.arguments[1]), n.arguments[1]); } catch { return null; } })();
-      if (sd && openSlots(sd).length) return convertD(expr(n.arguments[1]), sd, dtype(typeOf(n), n));
+      if (sd && openSlots(sd).length) return convertD(copyOf(n.arguments[1], expr(n.arguments[1]), sd), sd, dtype(typeOf(n), n));
     }
     const recv = f.expression, name = f.name.text;
     if (ts.isIdentifier(recv) && recv.text === 'Array' && name === 'isArray' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && n.arguments.length === 1) {
@@ -4023,6 +4131,14 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       // a method of a same-file class: on the class itself (static) or on a receiver typed by it; the file's own unit
       const asClass = classRef(recv); const sfc = asClass ?? (isOptional(typeOf(recv)) ? null : sameFileClassOf(typeOf(recv)));
       const callee = sfc ? fns.get(`${sfc.name.text}.${name}`) : null;
+      if (callee && !callee.isCtor && !asClass && !callee.isStatic && !madeDispatch(recv, sfc, name)) {
+        // a receiver this file did not make by `new`: it may be any object of the class's shape, and the call runs what
+        // that object holds (10.1.8.1), a request of the world with the argument values whether or not its result is
+        // read (design/conformance-readings.md); named by the code a made instance would run (the call's reach), so a
+        // changed method is another transition
+        const T = classTypeD(sfc);
+        return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_held${heldKey(typeOf(recv))}`, n, [...n.arguments], outerParens(expr(recv)), T, true);
+      }
       if (callee && !callee.isCtor && !!asClass === !!callee.isStatic) {
         if (failedUnits.has(callee.name)) fail(n, `callee ${callee.name} was not translated`);
         const args = unitArgs(callee, n);

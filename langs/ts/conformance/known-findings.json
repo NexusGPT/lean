@@ -710,24 +710,6 @@
   },
   {
    "kind": "disagree",
-   "pair": "exceptions_rebase",
-   "unit": "ignoredMethod",
-   "cause": "Node asks the outside, the model reaches no transition",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 0, parent: Node made 1 request(s), first {\"args\":[420],\"op\":\"call\",\"path\":\"arg0.read\"}; the model none"
-  },
-  {
-   "kind": "disagree",
-   "pair": "exceptions_rebase",
-   "unit": "ignoredMethod",
-   "cause": "Node throws, the model returns",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 5, parent: Node threw {\"$error\":\"Error\",\"message\":\"fault: arg0.read\"}; the model returned 42"
-  },
-  {
-   "kind": "disagree",
    "pair": "numbers_bits",
    "unit": "divide",
    "cause": "real arithmetic: the model is exact, Node rounds to binary64",
@@ -752,24 +734,6 @@
    "row": "d7e54baf",
    "laneA": "not proved",
    "first": "input 4, parent: result: model 42350/100 (423.5) against 423.50000000000006"
-  },
-  {
-   "kind": "disagree",
-   "pair": "library_more",
-   "unit": "cloned",
-   "cause": "record keys",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 1, parent: result: .k0: the model has no key, Node \"vdow5\""
-  },
-  {
-   "kind": "disagree",
-   "pair": "library_more",
-   "unit": "clonedAlias",
-   "cause": "record keys",
-   "row": "d7e54baf",
-   "laneA": "not proved",
-   "first": "input 1, parent: result: .k0: the model has no key, Node \"vdow5\""
   },
   {
    "kind": "disagree",
@@ -1819,15 +1783,6 @@
    "row": "d7e54baf",
    "laneA": "proved",
    "first": "input 15, parent: result: model dictionary entry \"vh6y1\" has no match"
-  },
-  {
-   "kind": "disagree",
-   "pair": "type_tests",
-   "unit": "baseTest",
-   "cause": "value",
-   "row": "d7e54baf",
-   "laneA": "proved",
-   "first": "input 1, parent: result: model true against false"
   },
   {
    "kind": "disagree",
