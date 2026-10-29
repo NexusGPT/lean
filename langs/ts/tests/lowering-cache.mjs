@@ -12,9 +12,17 @@ import { admissionFindings } from '../lint/lint.mjs';
 
 async function withCensusLock(run) {
   const lock = '/tmp/claude-501/census.lock', owner = path.join(lock, 'owner');
+  const queue = '/tmp/claude-501/census.queue'; fs.mkdirSync(queue, { recursive: true });
+  const ticketName = `${Math.floor(Date.now() / 1000)}-lowering-cache`;
+  const ticket = path.join(queue, ticketName); fs.writeFileSync(ticket, '');
   const token = `lowering-cache-test ${process.pid}\n`;
   for (;;) {
-    try { fs.mkdirSync(lock); fs.writeFileSync(owner, token); break; }
+    const tickets = fs.readdirSync(queue).filter(n => /^\d+(?:\.\d+)?-.+/.test(n)).sort((a, b) => Number(a.split('-')[0]) - Number(b.split('-')[0]) || a.localeCompare(b));
+    if (tickets[0] !== ticketName) {
+      console.log(`census queue: older ticket ${tickets[0]}; retry in 10 seconds`);
+      await new Promise(resolve => setTimeout(resolve, 10_000)); continue;
+    }
+    try { fs.mkdirSync(lock); fs.writeFileSync(owner, token); fs.unlinkSync(ticket); break; }
     catch (e) {
       if (e.code !== 'EEXIST') throw e;
       try {
