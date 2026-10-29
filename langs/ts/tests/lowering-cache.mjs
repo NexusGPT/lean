@@ -31,6 +31,33 @@ async function withCensusLock(run) {
   try { return await run(); } finally { if (fs.readFileSync(owner, 'utf8') === token) { fs.unlinkSync(owner); fs.rmdirSync(lock); } console.log('released census lock; yielding 60 seconds'); await new Promise(resolve => setTimeout(resolve, 60_000)); }
 }
 
+if (process.argv.includes('--summary-test')) {
+  await withCensusLock(() => {
+    const space = spawnSync('df', ['-k', '/'], { encoding: 'utf8' });
+    process.stdout.write(space.stdout); process.stderr.write(space.stderr); console.log(`df exit ${space.status}`);
+    assert.equal(space.status, 0);
+    assert.ok(Number(space.stdout.trim().split('\n').at(-1).split(/\s+/)[3]) >= 10 * 1024 * 1024);
+    const root = fs.mkdtempSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), '.summary-'));
+    try {
+      fs.writeFileSync(path.join(root, 'input.ts'), 'export function unit(n: number): number { return n + 1; }');
+      const out = path.join(root, 'result.json'), guard = path.join(root, 'guard.mjs');
+      // A reader must always see either the incomplete marker or the complete
+      // summary, never an in-place rewrite after publication.
+      fs.writeFileSync(guard, `import fs from 'node:fs'; const write = fs.writeFileSync;
+        fs.writeFileSync = function(file, ...args) { if (String(file) === ${JSON.stringify(out)}) throw new Error('published summary rewritten in place'); return write.call(this, file, ...args); };`);
+      const child = spawnSync(process.execPath, ['--import', guard, path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../census.mjs'), root, '--out', out], { encoding: 'utf8', env: { ...process.env, LEAN_CACHE: '0' } });
+      process.stdout.write(child.stdout); process.stderr.write(child.stderr); console.log(`atomic summary child exit ${child.status}`);
+      assert.equal(child.status, 0, 'all summary publication is atomic');
+      const summary = JSON.parse(fs.readFileSync(out, 'utf8'));
+      assert.equal(summary.complete, true); assert.equal(summary.units, 1);
+      const journal = fs.readFileSync(out + '.records.jsonl', 'utf8').trim().split('\n').map(JSON.parse);
+      assert.equal(journal.at(-1).complete, true);
+      assert.deepEqual(journal.flatMap(r => r.records ?? []), summary.records);
+    } finally { fs.rmSync(root, { recursive: true, force: true }); }
+  });
+  process.exit(0);
+}
+
 if (process.argv.includes('--checkpoint-test')) {
   await withCensusLock(async () => {
     const space = spawnSync('df', ['-k', '/'], { encoding: 'utf8' });
@@ -222,6 +249,23 @@ try {
   assert.equal(probe('dependency warm', { input: dependent }).hits, 1);
   fs.writeFileSync(dep, 'export interface Input { value: number }\n');
   const depChanged = probe('dependency changed', { input: dependent }); assert.equal(depChanged.hits, 0); assert.ok(depChanged.record.units[0].refusal);
+  const pkg = path.join(tmp, 'node_modules/pkg'); fs.mkdirSync(pkg, { recursive: true });
+  fs.writeFileSync(path.join(tmp, 'tsconfig.json'), JSON.stringify({ compilerOptions: { module: 'commonjs', moduleResolution: 'node', target: 'es2020' } }));
+  fs.writeFileSync(path.join(pkg, 'string.d.ts'), 'export interface Input { value: string }');
+  fs.writeFileSync(path.join(pkg, 'map.d.ts'), 'export interface Input { value: Map<any, number> }');
+  const resolved = path.join(tmp, 'resolved.ts');
+  fs.writeFileSync(resolved, 'import type { Input } from "pkg"; import type { Input as S } from "./node_modules/pkg/string"; import type { Input as M } from "./node_modules/pkg/map"; export function value(x: Input) { return x.value; }');
+  const packageFile = path.join(pkg, 'package.json');
+  fs.writeFileSync(packageFile, JSON.stringify({ name: 'pkg', version: '1.0.0', types: 'string.d.ts' }));
+  const resolutionOptions = { input: resolved, options: { project: true } };
+  const resolutionCold = probe('resolution cold', resolutionOptions);
+  assert.equal(resolutionCold.record.units[0].refusal, null);
+  assert.equal(probe('resolution warm', resolutionOptions).hits, 1);
+  fs.writeFileSync(packageFile, JSON.stringify({ name: 'pkg', version: '1.0.0', types: 'map.d.ts' }));
+  const resolutionChanged = probe('resolution changed, same source set', resolutionOptions);
+  assert.equal(resolutionChanged.hits, 0, 'resolved import edges are part of the key even when both declarations were already loaded');
+  assert.deepEqual(resolutionChanged.record, probe('resolution uncached', { ...resolutionOptions, env: { LEAN_CACHE: '0' } }).record);
+  assert.ok(resolutionChanged.record.units[0].refusal);
   const large = path.join(tmp, 'large.ts');
   fs.writeFileSync(large, `export function ${'n'.repeat(3 * 1024 * 1024)}(): number { return 1; }`);
   const oversized = probe('oversized memo record', { input: large, options: { emission: false } });
@@ -230,7 +274,7 @@ try {
   assert.equal(oversized.stats.entries, 0);
   assert.ok(fs.readdirSync(cache).every(f => !f.endsWith('.next')), 'atomic writes leave no next files');
   console.log('lowering-cache: persistent serve, invalidation, corruption, opt-out and dependency checks pass');
-
+  if (!process.argv.includes('--cache-only')) {
   const cycle = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--type-child'], { encoding: 'utf8', timeout: 20_000 });
   process.stdout.write(cycle.stdout ?? ''); process.stderr.write(cycle.stderr ?? '');
   console.log(`type cycle child exit ${cycle.status}; signal ${cycle.signal}; error ${cycle.error?.code ?? 'none'}`);
@@ -248,4 +292,8 @@ try {
   const checkpoint = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--checkpoint-test'], { encoding: 'utf8' });
   process.stdout.write(checkpoint.stdout); process.stderr.write(checkpoint.stderr); console.log(`checkpoint child exit ${checkpoint.status}`);
   assert.equal(checkpoint.status, 0);
+  const summary = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--summary-test'], { encoding: 'utf8' });
+  process.stdout.write(summary.stdout); process.stderr.write(summary.stderr); console.log(`summary child exit ${summary.status}`);
+  assert.equal(summary.status, 0);
+  }
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }

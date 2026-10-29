@@ -317,7 +317,13 @@ function programHash(program) {
   if (!programHashes.has(program)) {
     const options = { ...program.getCompilerOptions() }; delete options.configFile;
     const h = createHash('sha256').update(JSON.stringify(options)).update(JSON.stringify(program.getRootFileNames()));
-    for (const sf of [...program.getSourceFiles()].sort((a, b) => a.fileName.localeCompare(b.fileName))) h.update(sf.fileName).update('\0').update(sf.text).update('\0');
+    for (const sf of [...program.getSourceFiles()].sort((a, b) => a.fileName.localeCompare(b.fileName))) h.update(JSON.stringify([sf.fileName, sf.impliedNodeFormat])).update('\0').update(sf.text).update('\0');
+    // Package exports/types can redirect an import between declarations already
+    // in the Program. The source set alone cannot identify that type graph.
+    const resolutions = [];
+    program.forEachResolvedModule((r, name, mode, file) => resolutions.push(JSON.stringify(['module', file, name, mode, r.resolvedModule])));
+    program.forEachResolvedTypeReferenceDirective((r, name, mode, file) => resolutions.push(JSON.stringify(['type', file, name, mode, r.resolvedTypeReferenceDirective])));
+    for (const edge of resolutions.sort()) h.update(edge).update('\0');
     programHashes.set(program, h.digest('hex'));
   }
   return programHashes.get(program);

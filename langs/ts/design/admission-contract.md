@@ -777,8 +777,11 @@ withdrawals, catalogue versions, diagnostics, and the producing source snapshot:
 all top-level TypeScript tooling modules/data, `lint/**`, `translate/**`, the
 any-type usage helper, and the vendored compiler. Producer hashes are fixed for
 the loaded implementation in a process; a new CLI process reads changed sources.
-The compiled Program's options, root names and complete source/declaration texts
-are hashed too (once per Program in a WeakMap). Thus changing an import, an
+The compiled Program's options, root names, complete source/declaration texts,
+implied module formats, and resolved module/type-reference edges are hashed too
+(once per Program in a WeakMap). A package's `types` or `exports` can redirect an
+import between two declarations already loaded; hashing only the source set
+would miss that change. Thus changing an import, an
 ambient declaration, resolution or project settings cannot serve an old record.
 Programs are loaded before lookup: a warm census still pays compiler loading and
 diagnostics, while skipping admission and per-unit translation. Consumers of

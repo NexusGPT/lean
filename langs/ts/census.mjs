@@ -199,7 +199,6 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
     fs.appendFileSync(journal, JSON.stringify({ kind: 'complete', complete: true, files: res.files, units: res.units, entered: res.entered, oversizedClosures: res.oversizedClosures }) + '\n');
   }
   const report = opt('--report', null);
-  if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
   if (report) fs.writeFileSync(report, censusReport(res));
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
