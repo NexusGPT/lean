@@ -1,0 +1,26 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/express","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-express.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  32948956    28%  458732 329489560    0%   /
+project (none): 57 files
+50 files, 21 units, 0 inside, 3 s
+express: 57 files, 42 units, 2 inside the subset (4.8 percent), 0 files unreadable, 3 s
+      32 units  untyped-js             examples/auth/index.js:58 parameter `name` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} name` or TypeScrip
+      17 units  var                    examples/auth/index.js:60 `var` is outside the subset; use let or const
+      14 units  callback-form          examples/auth/index.js:66 the callback must be an arrow function
+       9 units  ts-strict              examples/auth/index.js:51 TS2339: Property 'salt' does not exist on type '{ name: string; }'.
+       8 units  toplevel-effect        benchmarks/middleware.js:2 move the effectful module initializer into a function
+       8 units  global-read            examples/auth/index.js:59 `module` is module state that can change; the subset reads constants only
+       4 units  unresolved-module      benchmarks/middleware.js:2 TS2792: Cannot find module '..'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add al
+       4 units  type-assertion         examples/params/index.js:21 `message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and thi
+       3 units  implicit-this          lib/application.js:91 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter
+       3 units  this                   lib/application.js:630 `this` outside a class method
+       3 units  prototype              lib/express.js:42 `.prototype` reaches the prototype chain
+       3 units  index-assign           lib/router/index.js:608 write a record field by name, or use a local Record<string, T> dictionary
+       2 units  unsupported-member     examples/auth/index.js:59 property .parent is not declared on { exports: any; }
+       1 units  closure-mutation       lib/response.js:1019 `done` is declared outside this callback; a callback cannot change it
+       1 units  dynamic-key            lib/router/index.js:612 a dictionary key is a string
+       1 units  arguments              lib/router/index.js:621 `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest paramet
+       1 units  receiver-mutation      lib/router/layer.js:48 a receiver path needs nonoptional data records; assign a field itself for class or opaque handles
+       1 units  operator-value-context lib/router/layer.js:176 keep the target root unchanged while evaluating an enclosing assignment
+
+exit=0 signal=null

@@ -28,7 +28,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, loadProgramOptions, topLevelFunctions } from './common.mjs';
+import { ts, loadProgram, loadProgramOptions, topLevelFunctions, findingUnit, parseUnitList, formatUnitList } from './common.mjs';
 import { check } from './check.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { lintFile } from './lint/lint.mjs';
@@ -209,12 +209,12 @@ function changedRanges(repo, base, head, rel, deleted) {
 }
 
 function changedUnits(loaded, ranges, file) {
-  const { sf } = loaded;
-  return [...topLevelFunctions(sf).values()].flatMap((u) => {
+  const { sf } = loaded, units = topLevelFunctions(sf);
+  return [...units.values()].flatMap((u) => {
     const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
     const end = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
     if (!ranges.some(([a, b]) => a <= end && start <= b)) return [];
-    try { return [{ name: u.name, start, end, findings: loaded.checker ? lintFile(file, [[start, end]], { loaded }) : [] }]; }
+    try { return [{ name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), findings: loaded.checker ? lintFile(file, [[start, end]], { loaded }).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }]; }
     catch (e) { return [{ name: u.name, start, end, error: String(e.message).slice(0, 300) }]; }
   });
 }
@@ -225,7 +225,7 @@ function removedUnits(rel, parentText, headText) {
   const read = (text) => ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true);
   const parent = read(parentText), kept = headText === null ? new Map() : topLevelFunctions(read(headText));
   return [...topLevelFunctions(parent).values()].filter((u) => !kept.has(u.name)).map((u) => ({
-    name: u.name, start: parent.getLineAndCharacterOfPosition(u.node.getStart(parent)).line + 1, end: parent.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1 }));
+    name: u.name, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), start: parent.getLineAndCharacterOfPosition(u.node.getStart(parent)).line + 1, end: parent.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1 }));
 }
 
 // Read the change set before selection. Files outside code and secret names need no contents.
@@ -485,9 +485,8 @@ async function prWorker(opts) {
       for (const item of intake) {
         const u = item.unit;
         const index = rows.length;
-        rows.push({ editIds: unitRoutes.filter(e => e.file === rel && e.links.some(link => link.unit === u.name)).map(e => e.id), file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
-        if (!opts.preview && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });
-      }
+        rows.push({ editIds: unitRoutes.filter(e => e.file === rel && e.links.some(link => link.unit === u.name)).map(e => e.id), file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, ...(u.enclosingUnit ? { 'covered-by': u.enclosingUnit } : {}), verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
+        if (!opts.preview && !u.enclosingUnit && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });      }
       if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;
       const changedNames = new Set(units.map((u) => u.name));
       let loaded;
@@ -505,7 +504,8 @@ async function prWorker(opts) {
         callers.push({ entry, u: { name, start, end }, caller: true });
       }
     }
-    for (const row of rows) if (!changed.some(t => rows[t.index] === row)) commitArtifact(opts._runDir, taskId(row.file, row.unit), { ...row, coverage: row.coverage === 'pending' ? 'skipped:preview' : row.coverage });
+    // a nested row (covered-by) waits: it is committed after its enclosing unit's row holds the verdict it inherits
+    for (const row of rows) if (!changed.some(t => rows[t.index] === row) && !(row['covered-by'] && row.decision !== 'removed')) commitArtifact(opts._runDir, taskId(row.file, row.unit), { ...row, coverage: row.coverage === 'pending' ? 'skipped:preview' : row.coverage });
     for (const t of callers) registerTask(opts._runDir, { id: taskId(t.entry.file, t.u.name, true), file: t.entry.file, unit: t.u.name, lines: [t.u.start, t.u.end], caller: true, lanes: ['B'], editIds: [] });
     // The heap group stays empty until discovery supplies extra units.
     const groups = [{ group: 'changed', units: changed }, { group: 'callers', units: callers }, { group: 'heap', units: heap }];
@@ -602,6 +602,21 @@ async function prWorker(opts) {
       save(row);
     }
   } finally { for (const t of temps) { try { fs.rmSync(t, { force: true }); } catch { /* Gone. */ } } }
+  // Nested rows retain their own intake/refusal record, but never run a lane or produce an independent verdict.
+  // Inventory order puts enclosing units first, including a callback enclosed by another callback. The row is committed
+  // here, once its enclosing unit's row holds the verdict (the lanes read the callback inside that unit); its coverage
+  // is its own refusal, else the enclosing unit's, else the preview's skip. The parent process reads committed rows only.
+  for (const r of rows) if (r['covered-by'] && r.decision !== 'removed') {
+    const owner = rows.find(x => x.file === r.file && x.unit === r['covered-by']);
+    if (owner) {
+      r.verdict = owner.verdict;
+      r.laneA = owner.laneA; r.laneB = owner.laneB;
+      r.certificate = { ...owner.certificate, unit: r.unit, verdict: r.verdict, 'covered-by': r['covered-by'] };
+      r.reason = `covered-by: ${r['covered-by']}`;
+    }
+    if (r.coverage === 'pending') r.coverage = owner && owner.coverage !== 'pending' ? owner.coverage : 'skipped:preview';
+    commitArtifact(opts._runDir, taskId(r.file, r.unit), r);
+  }
   rows.callersChecked = callersChecked;
   if (rows.identity) {
     try { rows.refusalsFile = writeRefusals(rows, path.resolve(opts.runsDir ?? path.join(repo, '.lean/runs')), { repo: path.resolve(repo) }); }
@@ -622,9 +637,14 @@ export function calleeNote(r, rows) {
 }
 
 const cell = (value) => String(value ?? '').replace(/[\r\n|]/g, ' ').replace(/`/g, "'");
+// Serialize source identities for one Markdown cell without renaming the stored unit.
+const unitCell = (unit, code = true) => {
+  const text = formatUnitList([unit]);
+  return /[`|&<>]/.test(text) ? `<code>${text.replace(/[&<>|]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '|': '&#124;' })[c])}</code>` : code ? `\`${text}\`` : text;
+};
 export function intakeMarkdown(rows) {
   const lines = ['## Intake', '', '| file | unit | coverage | decision | reason |', '|---|---|---|---|---|'];
-  for (const r of rows.filter((x) => !x.caller)) lines.push(`| \`${cell(r.file)}\` | ${cell(r.unit)} | ${cell(r.coverage)} | ${cell(r.decision ?? (r.coverage === 'checked' ? 'check' : r.coverage?.split(':')[0]))} | ${cell(r.reason ?? (r.coverage === 'checked' ? 'verdict produced' : ''))} |`);
+  for (const r of rows.filter((x) => !x.caller)) lines.push(`| \`${cell(r.file)}\` | ${unitCell(r.unit, false)} | ${cell(r.coverage)} | ${cell(r.decision ?? (r.coverage === 'checked' ? 'check' : r.coverage?.split(':')[0]))} | ${cell(r.reason ?? (r.coverage === 'checked' ? 'verdict produced' : ''))} |`);
   return lines.join('\n');
 }
 
@@ -635,12 +655,14 @@ function displayOp(op) {
 
 export function markdown(rows, base, head) {
   if (process.env.LEAN_LEDGER_TEST_FAULT === 'report-crash') throw new Error('injected report writer crash');
-  const count = (v) => rows.filter((r) => r.verdict === v).length;
-  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const count = (v) => rows.filter((r) => !r['covered-by'] && r.verdict === v).length; // a nested row inherits its enclosing unit's verdict: counted once, on that unit's row
+  const covered = rows.filter((r) => r['covered-by'] && r.decision !== 'removed').length;
+  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
-    if (r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
+    if (r['covered-by']) note = `covered-by: ${unitCell(r['covered-by'], false)}`;
+    if (!r['covered-by'] && r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
       const site = r.witness?.where?.lines?.candidate;
       if (site) {
         const source = String(site.file ?? r.file).replace(/(^|\/)\.lean_head_\d+_/, '$1');
@@ -650,17 +672,15 @@ export function markdown(rows, base, head) {
       }
     }
     // Rendering never mutates the durable result.
-    lines.push(`| ${r.file} | \`${r.unit}\` (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);
-  }
+    lines.push(`| ${r.file} | ${unitCell(r.unit)} (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);  }
   const patched = rows.filter((r) => r.verdict === 'WITNESS' && r.witness?.patch?.length); // a front-end WITNESS: the first three ops of its patch, one per line
   if (patched.length) {
     lines.push('', '## What changed on the page', '');
-    for (const r of patched) { lines.push(`### ${r.file} · \`${r.unit}\`: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${displayOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
-  }
+    for (const r of patched) { lines.push(`### ${r.file} · ${unitCell(r.unit)}: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${displayOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }  }
   const asks = rows.filter((r) => r.advice && r.advice.length);
   if (asks.length) {
     lines.push('', '## What would make the asks provable', '');
-    for (const r of asks) { lines.push(`### ${r.file} · \`${r.unit}\``, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
+    for (const r of asks) { lines.push(`### ${r.file} · ${unitCell(r.unit)}`, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
   }
   lines.push('', 'A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.');
   if (rows.ledger) lines.push('', ledgerMarkdown(rows.ledger));
@@ -676,7 +696,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
-  const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
+  const scope = new Set(parseUnitList(opt('--scope', '') || ''));
   const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   if (opt('--json')) atomicJSON(opt('--json'), a.includes('--preview') ? rows : reportJSON(rows));
   const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);

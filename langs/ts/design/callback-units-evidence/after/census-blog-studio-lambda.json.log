@@ -1,0 +1,34 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blog-studio-lambda","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-blog-studio-lambda.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33058868    28%  458732 330588680    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blog-studio-lambda/tsconfig.json: 123 files
+50 files, 910 units, 420 inside, 41 s
+100 files, 1200 units, 681 inside, 46 s
+blog-studio-lambda: 123 files, 1368 units, 827 inside the subset (60.5 percent), 0 files unreadable, 53 s
+     325 units  untyped-js             journeys/run.mjs:33 parameter `u` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} u` or TypeScript) or 
+     180 units  type-assertion         scripts/generate.mjs:51 `spec.split(":").map((s) => s.trim())` holds a value whose type nothing checked (an `as` that narrows, or an a
+      63 units  async                  server/jobs.mjs:110 awaited callee form is outside the subset
+      59 units  ts-strict              journeys/run.mjs:200 TS2339: Property 'value' does not exist on type 'Element'.
+      54 units  promise                server/store-remote.mjs:75 a same-file async function runs on after its first await; return it from an async function with await
+      36 units  dynamic-key            server/jobs.mjs:89 an open key may select a method; call a method by its declared name, and index records of data fields
+      20 units  index-assign           journeys/run.mjs:3909 write a record field by name, or use a local Record<string, T> dictionary
+      17 units  closure-mutation       src/app/App.tsx:103 a callback cannot change an outer record
+      16 units  assignment-expression  server/jobs.mjs:99 write this assignment as a statement
+      15 units  property-assign        src/app/App.tsx:40 assignment into `window`, which this function does not own; records it owns are updated in place
+      13 units  unsupported-call       server/jobs.mjs:134 method .unref() on number is outside the subset
+      12 units  global-read            journeys/run.mjs:34 global `AbortSignal` is outside the subset
+      12 units  unsupported-syntax     src/app/App.tsx:402 only assignments, ++/--, calls, and await may stand as statements
+      11 units  spread                 server/server.mjs:277 spread works on arrays, sets, maps and their keys(), values() and entries()
+      10 units  unresolved-module      journeys/run.mjs:13 TS2307: Cannot find module 'node:child_process' or its corresponding type declarations.
+       9 units  record-rest            server/apikeys.mjs:38 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+       8 units  param-mutation         journeys/run.mjs:3864 push is a statement on a local only
+       8 units  react-handler-capture  src/app/App.tsx:103 a React closure captures a changing local; capture a const value or use a state setter
+       7 units  this                   server/store-remote.mjs:75 `this` outside a class method
+       7 units  reference-equality     src/app/App.tsx:892 === on arrays and records compares references; compare fields
+       7 units  async-callback         src/app/ObjectView.tsx:215 map does not await its callbacks; use await Promise.all(xs.map(...))
+       6 units  promise-all-order      src/app/CommandPalette.tsx:65 Promise.all does not order work after await; use a for-of loop with await for ordered effects
+       5 units  opaque-mutation        server/store.mjs:286 .splice() on `list`, an opaque value this function holds, used as a value: the call may mutate it
+       5 units  foreach                src/app/App.tsx:304 forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x
+       5 units  non-null-assertion     src/app/pages/Builder.tsx:135 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+
+exit=0 signal=null

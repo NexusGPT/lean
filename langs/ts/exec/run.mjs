@@ -21,7 +21,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork } from 'node:child_process';
-import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits } from '../common.mjs';
+import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
 import { Environment, render, renderDrawn, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength } from './gen.mjs';
@@ -86,9 +86,25 @@ function compileWithSites(src, tsName, abs) {
   const sites = [];
   let stateName = '__lean_site';
   while (src.includes(stateName)) stateName += '_';
+  let callbackName = '__lean_callbacks';
+  while (src.includes(callbackName)) callbackName += '_';
+  const sf = ts.createSourceFile(tsName, src, ts.ScriptTarget.Latest, true, tsName.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const callbacks = [...topLevelFunctions(sf).values()].filter(u => u.form === 'callback');
+  const callbackAt = new Map(callbacks.filter(u => !u.enclosingUnit).map(u => [u.fn.pos, u.name]));
+  // Capture an argument at its evaluation point, returning that very function. The callee, receiver, other arguments
+  // and their evaluation order are unchanged. The one inventory supplies the name, before other transforms add marks.
+  const callbackMarks = context => {
+    const f = context.factory;
+    const visit = n => {
+      const value = ts.visitEachChild(n, visit, context);
+      return callbackAt.has(n.pos) && (ts.isArrowFunction(n) || ts.isFunctionExpression(n))
+        ? f.createCallExpression(f.createPropertyAccessExpression(f.createIdentifier(callbackName), 'capture'), undefined, [f.createStringLiteral(callbackAt.get(n.pos)), value]) : value;
+    };
+    return tree => ts.visitNode(tree, visit);
+  };
   const emit = (before) => ts.transpileModule(src, { compilerOptions: COMPILE, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
-  const marked = emit([statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
+  const marked = emit([callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -97,7 +113,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, sites, stateName, js: marked + unitShim(src, tsName) };
+  const compiled = { src, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -513,15 +529,27 @@ export function sandbox(env, root) {
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
     let wrapper;
-    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName], { parsingContext: ctx, filename: abs }); }
+    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName], { parsingContext: ctx, filename: abs }); }
     catch (e) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); } // the file that failed to compile is named
-    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState);
+    const callbacks = {
+      units: new Map(compiled.callbacks.map(u => [u.name, { inBody: u.inBody, instances: [] }])),
+      capture(name, fn) { callbacks.units.get(name).instances.push(fn); return fn; },
+    };
+    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks);
+    (env.callbackUnits ??= new Map()).set(mod.exports, callbacks);
     return mod.exports;
   }
   return { load, ctx, react, jsxRuntime: jsxRuntimeFor(env) };
 }
 
 export function pickUnit(exportsObj, spec, env) {
+  const callback = env.callbackUnits?.get(exportsObj)?.units.get(spec.unit);
+  if (callback) {
+    if (callback.inBody) return null; // nested callbacks are covered by their enclosing unit before execution
+    if (callback.instances.length !== 1) { env.callbackRefusal = callback.instances.length ? 'callback-multiple-instances' : 'callback-not-created'; return null; }
+    const fn = callback.instances[0];
+    return { call: drawn => fn(...argsFor(spec, drawn)), receiver: null };
+  }
   const units = exportsObj.__lean_units ?? {};
   if (!spec.isMethod && !(spec.unit in units) && !(spec.unit in exportsObj) && spec.unit.includes('.')) {
     // a member of an exported or module-const object literal, <binding>.<key> (common.mjs literalMemberUnits): called on the
@@ -842,6 +870,8 @@ export async function runPair(opts) {
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
 export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
 async function runPairInFlight(opts) {
+  const owner = enclosingUnitName(opts.candidate, opts.unit);
+  if (owner) return { ...await runPairInFlight({ ...opts, unit: owner }), unit: opts.unit, 'covered-by': owner };
   const res = annotateWitness(await runPairOnce(opts), opts.parent, opts.candidate, opts.unit);
   const ht = res?.bound?.heldText; if (ht && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { const e = ht.first.escapes[0]; res.verdict = 'ASK'; res.reason = `held-handler: on ${ht.inputs} input(s) the two sides differ only in a function the tree holds and lean cannot read (parent: ${e.parent}, candidate: ${e.candidate}); a text difference is not a difference lean can show on a run`; } // no rung found a WITNESS: ASK rather than guess
   for (const witness of res.witnesses ?? []) {
@@ -916,7 +946,7 @@ async function runPairOnce(opts) {
       let exportsObj;
       try { exportsObj = sandbox(env, roots[name]).load(file); } catch (e) { harnessAsk = `${name}: load failed: ${String(e && e.message).slice(0, 200)}`; break; }
       const u = pickUnit(exportsObj, spec, env);
-      if (!u) { harnessAsk = `${name}: unit ${unit} not exported`; break; }
+      if (!u) { harnessAsk = env.callbackRefusal ?? `${name}: unit ${unit} not exported`; break; }
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       let inputs;

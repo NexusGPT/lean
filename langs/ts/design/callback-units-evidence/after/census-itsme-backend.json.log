@@ -1,0 +1,9 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/itsme-backend","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-itsme-backend.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33645812    27%  458732 336458120    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/itsme-backend/tsconfig.json: 5 files
+itsme-backend: 5 files, 31 units, 29 inside the subset (93.5 percent), 0 files unreadable, 3 s
+       2 units  type-assertion         src/keys.ts:117 `pub.n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this 
+       0 units  toplevel-effect        scripts/keygen.ts:17 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

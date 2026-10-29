@@ -1,0 +1,2772 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/hessian.js",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "js": {
+   "files": 17,
+   "units": 9,
+   "entered": 0
+  }
+ },
+ "refused": 9,
+ "refusalRules": [
+  {
+   "rule": "untyped-js",
+   "units": 9,
+   "directories": [
+    {
+     "directory": "benchmark",
+     "units": 2,
+     "example": {
+      "file": "benchmark/string.js",
+      "line": 21,
+      "code": "buf"
+     }
+    },
+    {
+     "directory": "lib",
+     "units": 1,
+     "example": {
+      "file": "lib/object.js",
+      "line": 77,
+      "code": "obj"
+     }
+    },
+    {
+     "directory": "lib/v1",
+     "units": 2,
+     "example": {
+      "file": "lib/v1/decoder.js",
+      "line": 13,
+      "code": "buf"
+     }
+    },
+    {
+     "directory": "lib/v2",
+     "units": 2,
+     "example": {
+      "file": "lib/v2/decoder.js",
+      "line": 13,
+      "code": "buf"
+     }
+    },
+    {
+     "directory": "lib/v2_optimize",
+     "units": 2,
+     "example": {
+      "file": "lib/v2_optimize/decoder.js",
+      "line": 7,
+      "code": "buf"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 17,
+ "failedFiles": 0,
+ "units": 9,
+ "entered": 0,
+ "share": 0,
+ "seconds": 2,
+ "rules": [
+  {
+   "rule": "untyped-js",
+   "findings": 9,
+   "units": 9,
+   "examples": [
+    "benchmark/string.js:21 parameter `buf` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} buf` or TypeScript)",
+    "benchmark/string.js:47 parameter `buf` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} buf` or TypeScript)",
+    "lib/object.js:77 parameter `obj` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} obj` or TypeScript)"
+   ]
+  },
+  {
+   "rule": "this",
+   "findings": 6,
+   "units": 5,
+   "examples": [
+    "lib/object.js:78 `this` outside a class method; a free function declares its receiver as a `this` parameter",
+    "lib/object.js:79 `this` outside a class method; a free function declares its receiver as a `this` parameter",
+    "lib/v2/decoder.js:14 `this` outside a class method; a free function declares its receiver as a `this` parameter"
+   ]
+  },
+  {
+   "rule": "bitwise",
+   "findings": 9,
+   "units": 2,
+   "examples": [
+    "benchmark/string.js:28 bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+    "benchmark/string.js:30 bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+    "benchmark/string.js:30 bitwise operands must be numbers; BigInt and opaque coercions need lane B"
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 52,
+   "units": 1,
+   "examples": [
+    "index.js:33 TS2339: Property 'read' does not exist on type 'Decoder'.",
+    "index.js:35 TS2554: Expected 0-1 arguments, but got 2.",
+    "index.js:35 TS2339: Property 'read' does not exist on type 'Decoder'."
+   ]
+  },
+  {
+   "rule": "var",
+   "findings": 10,
+   "units": 1,
+   "examples": [
+    "lib/object.js:88 `var` is outside the subset; use let or const",
+    "lib/object.js:92 `var` is outside the subset; use let or const",
+    "lib/object.js:97 `var` is outside the subset; use let or const"
+   ]
+  },
+  {
+   "rule": "global-read",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "lib/v1/decoder.js:14 `ByteBuffer` is module state that can change; the subset reads constants only"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 248,
+   "units": 0,
+   "examples": [
+    "benchmark/cache.js:3 move the effectful module initializer into a function",
+    "benchmark/cache.js:4 move the effectful module initializer into a function",
+    "benchmark/cache.js:5 move the effectful module initializer into a function"
+   ]
+  },
+  {
+   "rule": "unresolved-module",
+   "findings": 60,
+   "units": 0,
+   "examples": [
+    "benchmark/cache.js:3 TS2792: Cannot find module 'benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to",
+    "benchmark/cache.js:4 TS2792: Cannot find module 'beautify-benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenex",
+    "benchmark/cache.js:5 TS2792: Cannot find module 'path'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add "
+   ]
+  },
+  {
+   "rule": "implicit-this",
+   "findings": 4,
+   "units": 0,
+   "examples": [
+    "lib/v1/encoder.js:260 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+    "lib/v1/encoder.js:261 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+    "lib/v2/encoder.js:588 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": ".autod.conf.js",
+   "pkg": ".autod.conf.js",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "benchmark/cache.js",
+   "pkg": "benchmark",
+   "units": [],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'beautify-benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'path'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'fs'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'assert'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 8,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 8,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module '../'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 11,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 11,
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name '__dirname'.",
+     "env": true
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 15,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 18,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 31,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    },
+    {
+     "line": 32,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "benchmark/decode.js",
+   "pkg": "benchmark",
+   "units": [],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'byte'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'beautify-benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'js-to-java'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module '../'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 21,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 23,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 38,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 39,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 42,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 44,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 45,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 47,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 48,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 50,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 51,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 53,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 54,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 56,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 57,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 59,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 174,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    },
+    {
+     "line": 175,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "benchmark/encode.js",
+   "pkg": "benchmark",
+   "units": [],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'byte'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'beautify-benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'js-to-java'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module '../'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 96,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    },
+    {
+     "line": 97,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "benchmark/reg.js",
+   "pkg": "benchmark",
+   "units": [],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'beautify-benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    },
+    {
+     "line": 36,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "benchmark/string.js",
+   "pkg": "benchmark",
+   "units": [
+    {
+     "name": "getUTF",
+     "lines": [
+      21,
+      42
+     ]
+    },
+    {
+     "name": "getUTF2",
+     "lines": [
+      47,
+      74
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'beautify-benchmark'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'assert'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 7,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'byte'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 11,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 18,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 19,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 21,
+     "rule": "untyped-js",
+     "msg": "parameter `buf` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} buf` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 28,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 30,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 30,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 32,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 44,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 47,
+     "rule": "untyped-js",
+     "msg": "parameter `buf` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} buf` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 51,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 54,
+     "rule": "bitwise",
+     "msg": "bitwise operands must be numbers; BigInt and opaque coercions need lane B",
+     "env": false
+    },
+    {
+     "line": 76,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 77,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 78,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 81,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 103,
+     "rule": "unresolved-module",
+     "msg": "TS2584: Cannot find name 'console'. Do you need to change your target library? Try changing the 'lib' compiler option to include 'dom'.",
+     "env": true
+    },
+    {
+     "line": 104,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "index.js",
+   "pkg": "index.js",
+   "units": [],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 10,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 12,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'read' does not exist on type 'Decoder'.",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "ts-strict",
+     "msg": "TS2554: Expected 0-1 arguments, but got 2.",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'read' does not exist on type 'Decoder'.",
+     "env": false
+    },
+    {
+     "line": 38,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 46,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'reset' does not exist on type 'Encoder | Encoder'.   Property 'reset' does not exist on type 'Encoder'.",
+     "env": false
+    },
+    {
+     "line": 47,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'write' does not exist on type 'Encoder | Encoder'.   Property 'write' does not exist on type 'Encoder'.",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/convert/index.js",
+   "pkg": "lib",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "lib/convert/java.util.locale.js",
+   "pkg": "lib",
+   "units": [],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/object.js",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "JavaExceptionError",
+     "lines": [
+      77,
+      151
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'util'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 20,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 22,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 24,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 32,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 48,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 59,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 70,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 77,
+     "rule": "untyped-js",
+     "msg": "parameter `obj` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} obj` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 78,
+     "rule": "this",
+     "msg": "`this` outside a class method; a free function declares its receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 79,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'captureStackTrace' does not exist on type 'ErrorConstructor'.",
+     "env": false
+    },
+    {
+     "line": 79,
+     "rule": "this",
+     "msg": "`this` outside a class method; a free function declares its receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 88,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 92,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 97,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 131,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 133,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 134,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 135,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 142,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 143,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 144,
+     "rule": "var",
+     "msg": "`var` is outside the subset; use let or const",
+     "env": false
+    },
+    {
+     "line": 153,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 155,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/utils.js",
+   "pkg": "lib",
+   "units": [],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'debug'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'long'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 8,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 10,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 11,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 29,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 42,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 44,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 48,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/v1/decoder.js",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "Decoder",
+     "lines": [
+      13,
+      18
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'debug'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'byte'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'is-type-of'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 8,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 13,
+     "rule": "untyped-js",
+     "msg": "parameter `buf` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} buf` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "global-read",
+     "msg": "`ByteBuffer` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 24,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 26,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 30,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 36,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 39,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 48,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 59,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 69,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 84,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 89,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 105,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 111,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 127,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 133,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 148,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 154,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 169,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 175,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 191,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 199,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 214,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 217,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 231,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 234,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 239,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 262,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 282,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 296,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 310,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 314,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 321,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 329,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 365,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 410,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$map' does not exist on type '{}'.",
+     "env": false
+    },
+    {
+     "line": 423,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 439,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 445,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 457,
+     "rule": "ts-strict",
+     "msg": "TS2322: Type 'any[] | { $class: any; $: any[]; }' is not assignable to type 'any[]'.   Object literal may only specify known properties, and '$class' does not exist in type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 471,
+     "rule": "ts-strict",
+     "msg": "TS2314: Generic type 'Array<T>' requires 1 type argument(s).",
+     "env": false
+    },
+    {
+     "line": 474,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 498,
+     "rule": "ts-strict",
+     "msg": "TS2353: Object literal may only specify known properties, and '$class' does not exist in type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 517,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 521,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 528,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 545,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 550,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 560,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 578,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 587,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/v1/encoder.js",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "Encoder",
+     "lines": [
+      11,
+      18
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'byte'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'debug'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'is-type-of'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 8,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 8,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module '../convert'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 11,
+     "rule": "untyped-js",
+     "msg": "parameter `options` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} options` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 22,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 35,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 42,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 43,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'byteBuffer' does not exist on type 'clean'.",
+     "env": false
+    },
+    {
+     "line": 52,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 62,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 71,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 84,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 95,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 108,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 125,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 149,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 193,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 220,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 228,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 246,
+     "rule": "ts-strict",
+     "msg": "TS2526: A 'this' type is available only in a non-static member of a class or interface.",
+     "env": false
+    },
+    {
+     "line": 248,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 260,
+     "rule": "implicit-this",
+     "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 261,
+     "rule": "implicit-this",
+     "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 277,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 300,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 335,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 337,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 375,
+     "rule": "ts-strict",
+     "msg": "TS2314: Generic type 'Array<T>' requires 1 type argument(s).",
+     "env": false
+    },
+    {
+     "line": 376,
+     "rule": "ts-strict",
+     "msg": "TS2526: A 'this' type is available only in a non-static member of a class or interface.",
+     "env": false
+    },
+    {
+     "line": 379,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 389,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 393,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$class' does not exist on type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 393,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 400,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$class' does not exist on type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 400,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$class' does not exist on type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 401,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 416,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 420,
+     "rule": "ts-strict",
+     "msg": "TS2314: Generic type 'Array<T>' requires 1 type argument(s).",
+     "env": false
+    },
+    {
+     "line": 425,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 453,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'high' does not exist on type 'string | number | boolean | Object | any[]'.   Property 'high' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 453,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'low' does not exist on type 'string | number | boolean | Object | any[]'.   Property 'low' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 463,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'length' does not exist on type 'string | number | boolean | Object | any[]'.   Property 'length' does not exist on type 'number'.",
+     "env": false
+    },
+    {
+     "line": 468,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'length' does not exist on type 'string | number | boolean | Object | any[]'.   Property 'length' does not exist on type 'number'.",
+     "env": false
+    },
+    {
+     "line": 475,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$class' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$class' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 480,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 485,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$class' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$class' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 486,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$class' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$class' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 490,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 493,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 497,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$class' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$class' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 498,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 498,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 499,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '$' does not exist on type 'string | number | boolean | Object | any[]'.   Property '$' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 507,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/v2/decoder.js",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "Decoder",
+     "lines": [
+      13,
+      21
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'util'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'is-type-of'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'debug'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 8,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 13,
+     "rule": "untyped-js",
+     "msg": "parameter `buf` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} buf` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "this",
+     "msg": "`this` outside a class method; a free function declares its receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 23,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 27,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 82,
+     "rule": "ts-strict",
+     "msg": "TS2366: Function lacks ending return statement and return type does not include 'undefined'.",
+     "env": false
+    },
+    {
+     "line": 85,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 112,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 159,
+     "rule": "ts-strict",
+     "msg": "TS2366: Function lacks ending return statement and return type does not include 'undefined'.",
+     "env": false
+    },
+    {
+     "line": 162,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 193,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 236,
+     "rule": "ts-strict",
+     "msg": "TS2366: Function lacks ending return statement and return type does not include 'undefined'.",
+     "env": false
+    },
+    {
+     "line": 239,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 264,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 284,
+     "rule": "ts-strict",
+     "msg": "TS2366: Function lacks ending return statement and return type does not include 'undefined'.",
+     "env": false
+    },
+    {
+     "line": 287,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 299,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 325,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 328,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 359,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 362,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 399,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 401,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'byteBuffer' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 419,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '_readUTF8String' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 424,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'byteBuffer' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 425,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '_readUTF8String' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 432,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '_readUTF8String' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 438,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property '_readUTF8String' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 441,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'readString' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 446,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'throwError' does not exist on type 'readString'.",
+     "env": false
+    },
+    {
+     "line": 452,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 469,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 506,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 578,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 618,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 635,
+     "rule": "ts-strict",
+     "msg": "TS2366: Function lacks ending return statement and return type does not include 'undefined'.",
+     "env": false
+    },
+    {
+     "line": 637,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 646,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 650,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 682,
+     "rule": "ts-strict",
+     "msg": "TS2314: Generic type 'Array<T>' requires 1 type argument(s).",
+     "env": false
+    },
+    {
+     "line": 685,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 708,
+     "rule": "ts-strict",
+     "msg": "TS2322: Type 'any[] | { $class: any; $: any[]; }' is not assignable to type 'any[]'.   Object literal may only specify known properties, and '$class' does not exist in type 'any[]'.",
+     "env": false
+    },
+    {
+     "line": 725,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 732,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 770,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 783,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 811,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 842,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 846,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/v2/encoder.js",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "Encoder",
+     "lines": [
+      12,
+      18
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'debug'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'is-type-of'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 5,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'util'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'long'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'utility'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 8,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 10,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 12,
+     "rule": "untyped-js",
+     "msg": "parameter `options` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} options` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 13,
+     "rule": "this",
+     "msg": "`this` outside a class method; a free function declares its receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 22,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 27,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 65,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 132,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 210,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 228,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.",
+     "env": false
+    },
+    {
+     "line": 249,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 301,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 369,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 440,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 481,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 500,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 541,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 579,
+     "rule": "ts-strict",
+     "msg": "TS2526: A 'this' type is available only in a non-static member of a class or interface.",
+     "env": false
+    },
+    {
+     "line": 581,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 588,
+     "rule": "implicit-this",
+     "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 589,
+     "rule": "implicit-this",
+     "msg": "TS2683: `this` the function does not declare; declare the receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 614,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 643,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/v2_optimize/decoder.js",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "Decoder",
+     "lines": [
+      7,
+      10
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'util'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 7,
+     "rule": "untyped-js",
+     "msg": "parameter `buf` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} buf` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 8,
+     "rule": "this",
+     "msg": "`this` outside a class method; a free function declares its receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 12,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 22,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/v2_optimize/encoder.js",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "Encoder",
+     "lines": [
+      8,
+      14
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 3,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'debug'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 4,
+     "rule": "unresolved-module",
+     "msg": "TS2792: Cannot find module 'util'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 8,
+     "rule": "untyped-js",
+     "msg": "parameter `options` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} options` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 9,
+     "rule": "this",
+     "msg": "`this` outside a class method; a free function declares its receiver as a `this` parameter",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 18,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 23,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 29,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "lib",
+   "files": 10,
+   "units": 7,
+   "entered": 0
+  },
+  {
+   "pkg": "benchmark",
+   "files": 5,
+   "units": 2,
+   "entered": 0
+  },
+  {
+   "pkg": ".autod.conf.js",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  {
+   "pkg": "index.js",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

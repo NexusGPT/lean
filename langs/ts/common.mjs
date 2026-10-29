@@ -292,6 +292,7 @@ export function topLevelFunctions(sf) {
     for (const m of classMethodUnits(st)) map.set(m.name, m);
     for (const m of literalMemberUnits(st)) if (!map.has(m.name)) map.set(m.name, m); // a declared function or class method keeps its name
   }
+  for (const u of callbackUnits(sf, map)) map.set(u.name, u);
   return map;
 }
 
@@ -1909,6 +1910,7 @@ export function normaliseApplyCalls(loaded) {
     const next = ts.createProgram({ rootNames: roots, options, host, oldProgram: program });
     const nsf = next.getSourceFile(sf.fileName);
     if (!nsf) return cur;
+    unitSourceOrigin.set(nsf, unitSourceOrigin.get(sf) ?? sf); // a rewrite carries the source the user wrote
     const diagnostics = [...next.getSyntacticDiagnostics(nsf), ...next.getSemanticDiagnostics(nsf)];
     cur = { ...cur, program: next, sf: nsf, checker: next.getTypeChecker(), diagnostics };
   }
@@ -2267,4 +2269,169 @@ export function absenceHome(checker, d) {
 export function strandedLetReads(checker, d) {
   if (!absenceCarried(checker, d)) return [];
   return letRefs(checker, d).map((r) => r.node).filter((x) => payloadRead(checker, x) === x && !payloadStatement(checker, x, x));
+}
+// A callback's identity comes from its call, not its position among unrelated calls.
+// This is also the prediction's inventory; topLevelFunctions supplies its existing units.
+const unitSourceOrigin = new WeakMap();
+export function callbackUnits(sf, existing) {
+  const source = unitSourceOrigin.get(sf);
+  const sourceUnits = source ? [...topLevelFunctions(source).values()].filter(u => u.form === 'callback') : [];
+  const byOriginal = new Map(sourceUnits.map(u => [u.fn, u]));
+  // normaliseApplyCalls reparses length/line-preserving padded text, so it has no per-node original links. Its
+  // unchanged ranges are the fallback; transforms retaining TypeScript's original link use that link first.
+  const byRange = new Map(sourceUnits.map(u => [`${u.fn.getStart(source)}:${u.fn.end}`, u]));
+  const byFn = new Map([...existing.values()].filter((u) => u.form !== 'callback').map((u) => [u.fn, u]));
+  const candidates = [], groups = new Map();
+  const literal = (n) => ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)
+    ? `'${JSON.stringify(n.text).slice(1, -1).replace(/\\"/g, '"').replace(/'/g, "\\'")}'`
+    : ts.isNumericLiteral(n) || ts.isBigIntLiteral(n) || [ts.SyntaxKind.TrueKeyword, ts.SyntaxKind.FalseKeyword, ts.SyntaxKind.NullKeyword].includes(n.kind)
+      || ts.isPrefixUnaryExpression(n) && [ts.SyntaxKind.MinusToken, ts.SyntaxKind.PlusToken].includes(n.operator) && ts.isNumericLiteral(n.operand) ? n.getText(sf) : null;
+  const visit = (fn) => {
+    if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
+      let arg = fn;
+      while (arg.parent && (ts.isParenthesizedExpression(arg.parent) || ts.isAsExpression(arg.parent) || ts.isSatisfiesExpression(arg.parent) || ts.isTypeAssertionExpression(arg.parent) || ts.isNonNullExpression(arg.parent))) arg = arg.parent;
+      const call = arg.parent;
+      if ((ts.isCallExpression(call) || ts.isNewExpression(call)) && call.arguments?.includes(arg)) {
+        let scope = null;
+        for (let p = call.parent; p && p !== sf; p = p.parent) {
+          if (ts.isFunctionLike(p) || ts.isClassStaticBlockDeclaration(p) || ts.isPropertyDeclaration(p)) { scope = p; break; }
+        }
+        const index = call.arguments.indexOf(arg);
+        const key = `${call.expression.getText(sf)}(${call.arguments.slice(0, index).map(literal).filter((x) => x !== null).join(',')})#${index}`;
+        const u = { name: key, node: fn, fn, params: fn.parameters, body: fn.body, typeNode: fn.type, isAsync: !!fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: fn.typeParameters, form: 'callback', call, argumentIndex: index, scope, orderNamed: false };
+        candidates.push(u); byFn.set(fn, u);
+        if (!groups.has(scope)) groups.set(scope, new Map());
+        const group = groups.get(scope);
+        if (!group.has(key)) group.set(key, []);
+        group.get(key).push(u);
+      }
+    }
+    ts.forEachChild(fn, visit);
+  };
+  visit(sf);
+  for (const group of groups.values()) for (const us of group.values()) if (us.length > 1) us.forEach((u, i) => { u.name += `@${i + 1}`; u.orderNamed = true; });
+  const out = [];
+  for (const u of candidates) {
+    const parent = u.scope && byFn.get(u.scope);
+    if (u.scope && (!parent || parent.form === 'callback' && !out.includes(parent))) continue;
+    u.enclosingUnit = parent ?? null;
+    if (parent) u.name = `${parent.name}/${u.name}`;
+    if (source) {
+      const origin = byOriginal.get(ts.getOriginalNode(u.fn)) ?? byRange.get(`${u.fn.getStart(sf)}:${u.fn.end}`);
+      if (!origin) throw new Error('callback origin lost by internal rewrite');
+      u.name = origin.name; u.orderNamed = origin.orderNamed;
+    }
+    out.push(u);
+  }
+  return out;
+}
+
+// The checker supplies a callback's input type from the receiving signature. Unknown/any is not a type promise.
+export function callbackUntypedJsUnit(sf, u, checker) {
+  if (u.form !== 'callback') return untypedJsUnit(sf, u);
+  return untypedJsUnit(sf, { ...u, params: u.fn.parameters.filter(p => {
+    const t = checker.getTypeAtLocation(p.name);
+    return !!(t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown));
+  }) });
+}
+
+// Findings belong to the named unit, otherwise to the smallest containing source range. Columns distinguish units
+// sharing one line and keep an import-time call's finding outside the callback argument it contains.
+export function findingUnit(sf, units, finding) {
+  const values = [...units.values()];
+  if (finding.unit) return values.find(u => u.name === finding.unit) ?? null;
+  const lines = sf.getLineStarts();
+  const start = (lines[finding.line - 1] ?? sf.end) + (finding.col ?? 1) - 1;
+  const end = (lines[(finding.endLine ?? finding.line) - 1] ?? sf.end) + (finding.endCol ?? finding.col ?? 1) - 1;
+  return values.filter(u => u.node.getStart(sf) <= start && end <= u.node.getEnd())
+    .sort((a, b) => (a.node.getEnd() - a.node.getStart(sf)) - (b.node.getEnd() - b.node.getStart(sf)))[0] ?? null;
+}
+
+const callbackWrites = new WeakMap();
+// A closure input is a binding owned by an enclosing unit. A module binding retains its module-state reading.
+// Symbol identity, not spelling, joins uses and writes; writes in a loop or another closure can happen later even
+// when their source precedes creation. Const bindings are stable; a mutable binding must have no possible later write.
+export function callbackEnvironment(checker, u) {
+  if (u.form !== 'callback') return [];
+  const sf = u.fn.getSourceFile(), owners = new Set();
+  for (let p = u.enclosingUnit; p; p = p.enclosingUnit) owners.add(p.fn);
+  const enclosing = n => { for (let p = n.parent; p; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; };
+  if (!callbackWrites.has(checker)) callbackWrites.set(checker, new WeakMap());
+  const byFile = callbackWrites.get(checker);
+  let writes = byFile.get(sf);
+  if (!writes) {
+    writes = new Map(); byFile.set(sf, writes);
+    const target = n => {
+      if (ts.isIdentifier(n)) {
+        const d = checker.getSymbolAtLocation(n)?.valueDeclaration;
+        if (d) { if (!writes.has(d)) writes.set(d, []); writes.get(d).push(n); }
+      } else if (ts.isArrayLiteralExpression(n)) n.elements.forEach(target);
+      else if (ts.isObjectLiteralExpression(n)) n.properties.forEach(p => target(ts.isPropertyAssignment(p) ? p.initializer : ts.isShorthandPropertyAssignment(p) ? p.name : p.expression));
+      else if (ts.isParenthesizedExpression(n) || ts.isSpreadElement(n) || ts.isSpreadAssignment(n)) target(n.expression);
+      else if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken) target(n.left);
+    };
+    const scan = n => {
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment) target(n.left);
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [ts.SyntaxKind.PlusPlusToken, ts.SyntaxKind.MinusMinusToken].includes(n.operator)) target(n.operand);
+      if ((ts.isForOfStatement(n) || ts.isForInStatement(n)) && !ts.isVariableDeclarationList(n.initializer)) target(n.initializer);
+      ts.forEachChild(n, scan);
+    };
+    scan(sf);
+  }
+  const captures = new Map();
+  const visit = n => {
+    if (ts.isTypeNode(n)) return;
+    if (ts.isIdentifier(n)) {
+      const sym = ts.isShorthandPropertyAssignment(n.parent) ? checker.getShorthandAssignmentValueSymbol(n.parent) : checker.getSymbolAtLocation(n);
+      const decl = sym?.valueDeclaration;
+      if (decl && (ts.isParameter(decl) || ts.isVariableDeclaration(decl) || ts.isBindingElement(decl)) && owners.has(enclosing(decl)) && !captures.has(decl)) {
+        const loop = w => { for (let p = u.fn.parent; p; p = p.parent) if (ts.isIterationStatement(p, false) && p.pos <= w.pos && w.end <= p.end) return true; return false; };
+        const mutable = !(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && (writes.get(decl) ?? []).some(w => w.getStart(sf) >= u.fn.getStart(sf) || enclosing(w) !== enclosing(decl) || loop(w));
+        captures.set(decl, { decl, sym, use: n, mutable });
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(u.fn);
+  return [...captures.values()];
+}
+
+// Artifact filenames are an encoding of identity, never a replacement for the unit/certificate name.
+export const artifactName = unit => encodeURIComponent(unit);
+
+// Unit names contain the call's literals and callee source. Only commas outside brackets and quotes separate units.
+export function parseUnitList(text) {
+  const out = []; let start = 0, depth = 0, quote = null, escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (c === '\\') escaped = true;
+      else if (c === quote) quote = null;
+    } else if (c === "'" || c === '"' || c === '`') quote = c;
+    else if ('([{'.includes(c)) depth++;
+    else if (')]}'.includes(c)) depth--;
+    else if (c === ',' && depth === 0) { out.push(text.slice(start, i).trim()); start = i + 1; }
+  }
+  out.push(text.slice(start).trim());
+  return out.filter(Boolean).map(token => {
+    if (token.startsWith('"')) { try { const name = JSON.parse(token); if (typeof name === 'string') return name; } catch { /* raw source name */ } }
+    return token;
+  });
+}
+
+// Inverse transport for raw source names. Keep ordinary lists unchanged; JSON-quote a name when its source
+// comments/quotes/brackets would consume a separator, or when a newline would break a one-line HEAP header.
+export function formatUnitList(names) {
+  return names.map(name => {
+    const probe = parseUnitList(`${name},__unit_list_end__`);
+    return !/[\r\n\u2028\u2029]/.test(name) && probe.length === 2 && probe[0] === name && probe[1] === '__unit_list_end__' ? name : JSON.stringify(name).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+  }).join(',');
+}
+
+// Execution/check requests for a nested callback are requests for its enclosing unit's verdict.
+export function enclosingUnitName(file, name) {
+  if (!file || !fs.existsSync(file)) return null;
+  const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+  return topLevelFunctions(sf).get(name)?.enclosingUnit?.name ?? null;
 }

@@ -1,0 +1,5771 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-checkout-automation",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "js": {
+   "files": 1,
+   "units": 5,
+   "entered": 1
+  },
+  "ts": {
+   "files": 38,
+   "units": 321,
+   "entered": 254
+  }
+ },
+ "refused": 71,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 37,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 2,
+     "example": {
+      "file": "src/config.ts",
+      "line": 43,
+      "code": "applyDefaults(config)"
+     }
+    },
+    {
+     "directory": "src/pricing",
+     "units": 4,
+     "example": {
+      "file": "src/pricing/compute.ts",
+      "line": 254,
+      "code": "(opt as { element?: string }).element || \"\""
+     }
+    },
+    {
+     "directory": "src/routes",
+     "units": 10,
+     "example": {
+      "file": "src/routes/pricing.ts",
+      "line": 62,
+      "code": "b.clientType"
+     }
+    },
+    {
+     "directory": "src/session",
+     "units": 1,
+     "example": {
+      "file": "src/session/runner.ts",
+      "line": 167,
+      "code": "(err as Error).message"
+     }
+    },
+    {
+     "directory": "src/steps",
+     "units": 20,
+     "example": {
+      "file": "src/steps/coordonnees-audit.ts",
+      "line": 21,
+      "code": "(el as HTMLElement).getBoundingClientRect().height > 0"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "global-read",
+   "units": 13,
+   "directories": [
+    {
+     "directory": "src/pricing",
+     "units": 10,
+     "example": {
+      "file": "src/pricing/compute.ts",
+      "line": 287,
+      "code": "normalize"
+     }
+    },
+    {
+     "directory": "src/routes",
+     "units": 3,
+     "example": {
+      "file": "src/routes/pricing.ts",
+      "line": 158,
+      "code": "validateQuery"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "units": 5,
+   "directories": [
+    {
+     "directory": "src/helpers",
+     "units": 1,
+     "example": {
+      "file": "src/helpers/modals.ts",
+      "line": 12,
+      "code": "c"
+     }
+    },
+    {
+     "directory": "src/pricing",
+     "units": 4,
+     "example": {
+      "file": "src/pricing/compute.ts",
+      "line": 1054,
+      "code": "readable"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "unsupported-member",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "scrapers",
+     "units": 3,
+     "example": {
+      "file": "scrapers/explore-configurator.js",
+      "line": 16,
+      "code": "el.offsetParent"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/helpers",
+     "units": 2,
+     "example": {
+      "file": "src/helpers/modals.ts",
+      "line": 12,
+      "code": "c++"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/helpers",
+     "units": 1,
+     "example": {
+      "file": "src/helpers/fetch-with-retry.ts",
+      "line": 49,
+      "code": "new Promise((r) => setTimeout(r, delay))"
+     }
+    },
+    {
+     "directory": "src/session",
+     "units": 1,
+     "example": {
+      "file": "src/session/runner.ts",
+      "line": 74,
+      "code": "new Promise<void>((resolve) => { session._resumeResolve = resolve; })"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/session",
+     "units": 1,
+     "example": {
+      "file": "src/session/store.ts",
+      "line": 33,
+      "code": "session.lastActivityAt"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "async",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 1,
+     "example": {
+      "file": "src/index.ts",
+      "line": 60,
+      "code": "await stepModules[stepName]()"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/routes",
+     "units": 1,
+     "example": {
+      "file": "src/routes/scan.ts",
+      "line": 88,
+      "code": "out[k]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/steps",
+     "units": 1,
+     "example": {
+      "file": "src/steps/itsme-auth.ts",
+      "line": 47,
+      "code": "config.authentication.phoneNumber!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "param-form",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/pricing",
+     "units": 1,
+     "example": {
+      "file": "src/pricing/compute.ts",
+      "line": 16,
+      "code": "...args: unknown[]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/session",
+     "units": 1,
+     "example": {
+      "file": "src/session/store.ts",
+      "line": 11,
+      "code": "this.cleanup()"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 1,
+     "example": {
+      "file": "src/browserbase.ts",
+      "line": 51,
+      "code": "(browser as any).__bbSessionId"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "prototype",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/pricing",
+     "units": 1,
+     "example": {
+      "file": "src/pricing/compute.ts",
+      "line": 1060,
+      "code": "grouped[li.product]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "untyped-js",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "scrapers",
+     "units": 1,
+     "example": {
+      "file": "scrapers/explore-configurator.js",
+      "line": 8,
+      "code": "page"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 39,
+ "failedFiles": 0,
+ "units": 326,
+ "entered": 255,
+ "share": 78.2,
+ "seconds": 7,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 209,
+   "units": 49,
+   "examples": [
+    "scrapers/explore-configurator.js:11 `text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this s",
+    "src/config.ts:43 `applyDefaults(config)` calls a function whose result is asserted without a check; its value may be of another",
+    "src/config.ts:43 `config` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this"
+   ]
+  },
+  {
+   "rule": "global-read",
+   "findings": 49,
+   "units": 18,
+   "examples": [
+    "scrapers/explore-configurator.js:9 global `path` is outside the subset",
+    "scrapers/explore-configurator.js:11 global `path` is outside the subset",
+    "scrapers/explore-configurator.js:30 global `path` is outside the subset"
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "findings": 7,
+   "units": 7,
+   "examples": [
+    "src/helpers/modals.ts:12 captured binding `c` may be written after this callback is created; capture a stable value",
+    "src/pricing/compute.ts:322 captured binding `activationFees` may be written after this callback is created; capture a stable value",
+    "src/pricing/compute.ts:386 captured binding `oneTimeFees` may be written after this callback is created; capture a stable value"
+   ]
+  },
+  {
+   "rule": "unsupported-member",
+   "findings": 15,
+   "units": 4,
+   "examples": [
+    "scrapers/explore-configurator.js:16 property .offsetParent is not declared on Element",
+    "scrapers/explore-configurator.js:16 property .offsetParent is not declared on Element",
+    "scrapers/explore-configurator.js:16 property .offsetParent is not declared on Element"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 5,
+   "units": 4,
+   "examples": [
+    "src/helpers/modals.ts:12 a callback cannot change an outer variable",
+    "src/helpers/modals.ts:12 a callback cannot change an outer variable",
+    "src/steps/coordonnees-audit.ts:42 a callback cannot change an outer dictionary"
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "findings": 24,
+   "units": 3,
+   "examples": [
+    "src/pricing/compute.ts:493 `mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module objec",
+    "src/pricing/compute.ts:504 `mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module objec",
+    "src/pricing/compute.ts:517 `mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module objec"
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 8,
+   "units": 2,
+   "examples": [
+    "scrapers/explore-configurator.js:16 TS2339: Property 'offsetParent' does not exist on type 'Element'.",
+    "scrapers/explore-configurator.js:19 TS2339: Property 'type' does not exist on type 'Element'.",
+    "scrapers/explore-configurator.js:20 TS2339: Property 'name' does not exist on type 'Element'."
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "src/browserbase.ts:51 assignment into `(browser as any)`, which this function does not own; records it owns are updated in place",
+    "src/browserbase.ts:52 assignment into `(browser as any)`, which this function does not own; records it owns are updated in place",
+    "src/pricing/compute.ts:1030 assignment into `groupedTemps[promo.months]`: a field of an element is written when the path from a parameter "
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "src/helpers/fetch-with-retry.ts:49 await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+    "src/session/runner.ts:74 await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+   ]
+  },
+  {
+   "rule": "async",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "src/index.ts:60 awaited callee form is outside the subset",
+    "src/session/runner.ts:88 awaited callee form is outside the subset"
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "src/pricing/compute.ts:866 write a record field by name, or use a local Record<string, T> dictionary",
+    "src/pricing/compute.ts:867 write a record field by name, or use a local Record<string, T> dictionary",
+    "src/routes/scan.ts:88 write a record field by name, or use a local Record<string, T> dictionary"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "src/pricing/compute.ts:1031 push on `groupedTemps[promo.months].names`, which is not a local array",
+    "src/pricing/compute.ts:1061 push on `grouped[li.product]`, which is not a local array",
+    "src/pricing/compute.ts:1061 push on `grouped[li.product]`, which is not a local array"
+   ]
+  },
+  {
+   "rule": "prototype",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "src/pricing/compute.ts:1060 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of ",
+    "src/pricing/compute.ts:1060 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of "
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "src/steps/itsme-auth.ts:47 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/steps/phone-number-config.ts:97 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/steps/phone-number-config.ts:216 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "untyped-js",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "scrapers/explore-configurator.js:8 parameter `page` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} page` or TypeScrip"
+   ]
+  },
+  {
+   "rule": "param-form",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/pricing/compute.ts:16 rest parameters are outside the subset"
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "findings": 4,
+   "units": 1,
+   "examples": [
+    "src/pricing/compute.ts:866 an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a de",
+    "src/pricing/compute.ts:899 index an array or string by a number, or a record by declared string keys",
+    "src/pricing/compute.ts:1027 use a finite union of declared string keys, or a Record<string, T> dictionary"
+   ]
+  },
+  {
+   "rule": "unsupported-call",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/pricing/compute.ts:951 .toLocaleString() reads the host's locale (a world read); call it in a map, filter, find, findIndex, some, eve"
+   ]
+  },
+  {
+   "rule": "unsupported-syntax",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/pricing/compute.ts:997 only assignments, ++/--, calls, and await may stand as statements"
+   ]
+  },
+  {
+   "rule": "string-code-unit",
+   "findings": 5,
+   "units": 1,
+   "examples": [
+    "src/pricing/compute.ts:1044 use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+    "src/pricing/compute.ts:1046 use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+    "src/pricing/compute.ts:1049 use BMP scalar literals within the string model; astral and surrogate strings need lane B"
+   ]
+  },
+  {
+   "rule": "promise",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/session/store.ts:11 a same-file async function runs on after its first await; return it from an async function with await"
+   ]
+  },
+  {
+   "rule": "this",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/session/store.ts:11 `this` outside a class method"
+   ]
+  },
+  {
+   "rule": "callback-result",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/steps/rendez-vous-datepicker.ts:128 an effectful type-predicate callback needs an explicit for-of loop with a type guard"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 25,
+   "units": 0,
+   "examples": [
+    "scrapers/explore-configurator.js:6 code at module level runs on import; it is outside the subset",
+    "scrapers/explore-configurator.js:34 code at module level runs on import; it is outside the subset",
+    "scripts/smoke-consent.ts:36 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "scrapers/explore-configurator.js",
+   "pkg": "scrapers",
+   "units": [
+    {
+     "name": "captureState",
+     "lines": [
+      8,
+      32
+     ]
+    },
+    {
+     "name": "captureState/page.evaluate()#0@1",
+     "lines": [
+      10,
+      10
+     ]
+    },
+    {
+     "name": "captureState/page.evaluate()#0@2",
+     "lines": [
+      14,
+      29
+     ]
+    },
+    {
+     "name": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter()#0",
+     "lines": [
+      16,
+      16
+     ]
+    },
+    {
+     "name": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "lines": [
+      17,
+      28
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 6,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 8,
+     "unit": "captureState",
+     "rule": "untyped-js",
+     "msg": "parameter `page` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} page` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 9,
+     "unit": "captureState",
+     "rule": "global-read",
+     "msg": "global `path` is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "unit": "captureState",
+     "rule": "global-read",
+     "msg": "global `path` is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "unit": "captureState",
+     "rule": "type-assertion",
+     "msg": "`text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": "captureState",
+     "rule": "unsupported-member",
+     "msg": "property .offsetParent is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": "captureState/page.evaluate()#0@2",
+     "rule": "unsupported-member",
+     "msg": "property .offsetParent is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter()#0",
+     "rule": "unsupported-member",
+     "msg": "property .offsetParent is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter()#0",
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'offsetParent' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": "captureState",
+     "rule": "unsupported-member",
+     "msg": "property .type is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": "captureState/page.evaluate()#0@2",
+     "rule": "unsupported-member",
+     "msg": "property .type is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "unsupported-member",
+     "msg": "property .type is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'type' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 20,
+     "unit": "captureState",
+     "rule": "unsupported-member",
+     "msg": "property .name is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 20,
+     "unit": "captureState/page.evaluate()#0@2",
+     "rule": "unsupported-member",
+     "msg": "property .name is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 20,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "unsupported-member",
+     "msg": "property .name is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 20,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'name' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": "captureState",
+     "rule": "unsupported-member",
+     "msg": "property .checked is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": "captureState/page.evaluate()#0@2",
+     "rule": "unsupported-member",
+     "msg": "property .checked is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "unsupported-member",
+     "msg": "property .checked is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'checked' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": "captureState",
+     "rule": "unsupported-member",
+     "msg": "property .disabled is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": "captureState/page.evaluate()#0@2",
+     "rule": "unsupported-member",
+     "msg": "property .disabled is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "unsupported-member",
+     "msg": "property .disabled is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": "captureState/page.evaluate()#0@2/Array.from(document.querySelectorAll('input, select, textarea, button, [role=\"radio\"], [role=\"checkbox\"], [role=\"switch\"], .obe-toggle-button, .obe-basic-card'))\n      .filter(el => el.offsetParent !== null)\n      .map()#0",
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'disabled' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 30,
+     "unit": "captureState",
+     "rule": "global-read",
+     "msg": "global `path` is outside the subset",
+     "env": false
+    },
+    {
+     "line": 34,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 107,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'offsetParent' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 194,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'offsetParent' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 274,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'offsetParent' does not exist on type 'Element'.",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/smoke-consent.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "main",
+     "lines": [
+      18,
+      34
+     ]
+    },
+    {
+     "name": "main/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      22,
+      22
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 36,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/browser.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "launchBrowser",
+     "lines": [
+      19,
+      45
+     ]
+    },
+    {
+     "name": "localBrowserProvider.close",
+     "lines": [
+      49,
+      49
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/browserbase.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "getProjectId",
+     "lines": [
+      9,
+      18
+     ]
+    },
+    {
+     "name": "launchBrowserbase",
+     "lines": [
+      20,
+      56
+     ]
+    },
+    {
+     "name": "closeBrowserbase",
+     "lines": [
+      58,
+      65
+     ]
+    },
+    {
+     "name": "getBrowserbaseSessionId",
+     "lines": [
+      75,
+      77
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 51,
+     "unit": "launchBrowserbase",
+     "rule": "property-assign",
+     "msg": "assignment into `(browser as any)`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 52,
+     "unit": "launchBrowserbase",
+     "rule": "property-assign",
+     "msg": "assignment into `(browser as any)`, which this function does not own; records it owns are updated in place",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadConfig",
+     "lines": [
+      36,
+      44
+     ]
+    },
+    {
+     "name": "applyDefaults",
+     "lines": [
+      46,
+      87
+     ]
+    },
+    {
+     "name": "validateConfig",
+     "lines": [
+      89,
+      205
+     ]
+    },
+    {
+     "name": "printSummary",
+     "lines": [
+      207,
+      245
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 43,
+     "unit": "loadConfig",
+     "rule": "type-assertion",
+     "msg": "`applyDefaults(config)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 43,
+     "unit": "loadConfig",
+     "rule": "type-assertion",
+     "msg": "`config` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/helpers/click.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "clickButtonByText",
+     "lines": [
+      6,
+      20
+     ]
+    },
+    {
+     "name": "scrollAndClickButton",
+     "lines": [
+      23,
+      40
+     ]
+    },
+    {
+     "name": "clickButtonByText/page.evaluate()#0",
+     "lines": [
+      7,
+      13
+     ]
+    },
+    {
+     "name": "clickButtonByText/page.evaluate()#0/btns.find()#0",
+     "lines": [
+      9,
+      9
+     ]
+    },
+    {
+     "name": "scrollAndClickButton/page.evaluate()#0@1",
+     "lines": [
+      24,
+      24
+     ]
+    },
+    {
+     "name": "scrollAndClickButton/page.evaluate()#0@2",
+     "lines": [
+      27,
+      33
+     ]
+    },
+    {
+     "name": "scrollAndClickButton/page.evaluate()#0@2/btns.find()#0",
+     "lines": [
+      29,
+      29
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/helpers/consent.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "dismissConsent",
+     "lines": [
+      60,
+      85
+     ]
+    },
+    {
+     "name": "dismissConsent/page.waitForFunction(SIGNAL_JS, undefined, { timeout: 6000 }).catch()#0",
+     "lines": [
+      66,
+      66
+     ]
+    },
+    {
+     "name": "dismissConsent/page.waitForFunction(KNOWN_BACKDROP_GONE_JS, undefined, { timeout: 4000 }).catch()#0",
+     "lines": [
+      69,
+      69
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/helpers/fetch-with-retry.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "fetchWithRetry",
+     "lines": [
+      17,
+      56
+     ]
+    },
+    {
+     "name": "fetchWithRetry/Promise()#0",
+     "lines": [
+      49,
+      49
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 49,
+     "unit": "fetchWithRetry",
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/helpers/forms.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "fillVisibleByName",
+     "lines": [
+      6,
+      24
+     ]
+    },
+    {
+     "name": "fillByPlaceholder",
+     "lines": [
+      27,
+      40
+     ]
+    },
+    {
+     "name": "selectCustomDropdown",
+     "lines": [
+      44,
+      79
+     ]
+    },
+    {
+     "name": "fillVisibleByName/field.isVisible().catch()#0",
+     "lines": [
+      11,
+      11
+     ]
+    },
+    {
+     "name": "fillByPlaceholder/input.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      29,
+      29
+     ]
+    },
+    {
+     "name": "selectCustomDropdown/page.evaluate()#0@1",
+     "lines": [
+      46,
+      57
+     ]
+    },
+    {
+     "name": "selectCustomDropdown/page.evaluate()#0@1/allEls.find()#0",
+     "lines": [
+      48,
+      53
+     ]
+    },
+    {
+     "name": "selectCustomDropdown/page.evaluate()#0@2",
+     "lines": [
+      66,
+      75
+     ]
+    },
+    {
+     "name": "selectCustomDropdown/page.evaluate()#0@2/allEls.find()#0",
+     "lines": [
+      68,
+      72
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/helpers/modals.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "dismissModals",
+     "lines": [
+      4,
+      18
+     ]
+    },
+    {
+     "name": "dismissModals/page.evaluate()#0",
+     "lines": [
+      5,
+      15
+     ]
+    },
+    {
+     "name": "dismissModals/page.evaluate()#0/document.querySelectorAll<HTMLElement>(\n      \"app-obe-modal, .obe-modal-backdrop, [class*='modal-backdrop'], .modals-overlay, .modals-wrapper .modal-popup\"\n    ).forEach()#0",
+     "lines": [
+      9,
+      13
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 12,
+     "unit": "dismissModals",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer variable",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": "dismissModals/page.evaluate()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer variable",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": "dismissModals/page.evaluate()#0/document.querySelectorAll<HTMLElement>(\n      \"app-obe-modal, .obe-modal-backdrop, [class*='modal-backdrop'], .modals-overlay, .modals-wrapper .modal-popup\"\n    ).forEach()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `c` may be written after this callback is created; capture a stable value",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/helpers/ttl-cache.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "TtlCache.constructor",
+     "lines": [
+      13,
+      13
+     ]
+    },
+    {
+     "name": "TtlCache.set",
+     "lines": [
+      15,
+      18
+     ]
+    },
+    {
+     "name": "TtlCache.get",
+     "lines": [
+      20,
+      28
+     ]
+    },
+    {
+     "name": "TtlCache.has",
+     "lines": [
+      30,
+      32
+     ]
+    },
+    {
+     "name": "TtlCache.clear",
+     "lines": [
+      34,
+      36
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/helpers/wait.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "waitForUrlChange",
+     "lines": [
+      4,
+      20
+     ]
+    },
+    {
+     "name": "waitForPageReady",
+     "lines": [
+      23,
+      27
+     ]
+    },
+    {
+     "name": "waitForUrlChange/page.evaluate()#0",
+     "lines": [
+      10,
+      10
+     ]
+    },
+    {
+     "name": "waitForPageReady/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      25,
+      25
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/index.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "stepModules.coordonnees",
+     "lines": [
+      17,
+      17
+     ]
+    },
+    {
+     "name": "main",
+     "lines": [
+      23,
+      77
+     ]
+    },
+    {
+     "name": "main/errors.forEach()#0",
+     "lines": [
+      30,
+      30
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 60,
+     "unit": "main",
+     "rule": "async",
+     "msg": "awaited callee form is outside the subset",
+     "env": false
+    },
+    {
+     "line": 71,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`error.stack` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 79,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/pricing/compute.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "compute",
+     "lines": [
+      3,
+      1144
+     ]
+    },
+    {
+     "name": "compute/query.options.find()#0",
+     "lines": [
+      253,
+      254
+     ]
+    },
+    {
+     "name": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "lines": [
+      285,
+      323
+     ]
+    },
+    {
+     "name": "compute/(query.mobile as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "lines": [
+      328,
+      347
+     ]
+    },
+    {
+     "name": "compute/(query.tv as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "lines": [
+      352,
+      369
+     ]
+    },
+    {
+     "name": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "lines": [
+      374,
+      412
+     ]
+    },
+    {
+     "name": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "lines": [
+      419,
+      442
+     ]
+    },
+    {
+     "name": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0/(catalog.options || []).find()#0",
+     "lines": [
+      421,
+      425
+     ]
+    },
+    {
+     "name": "compute/selectedOptions.some()#0",
+     "lines": [
+      446,
+      446
+     ]
+    },
+    {
+     "name": "compute/(catalog.options || []).find()#0",
+     "lines": [
+      447,
+      447
+     ]
+    },
+    {
+     "name": "compute/selectedProducts.map()#0@1",
+     "lines": [
+      465,
+      465
+     ]
+    },
+    {
+     "name": "compute/selectedOptions.map()#0@1",
+     "lines": [
+      466,
+      466
+     ]
+    },
+    {
+     "name": "compute/selectedProducts.map()#0@2",
+     "lines": [
+      467,
+      467
+     ]
+    },
+    {
+     "name": "compute/selectedOptions.map()#0@2",
+     "lines": [
+      468,
+      468
+     ]
+    },
+    {
+     "name": "compute/((catalog.priceRules || []) as PriceRule[]).sort()#0",
+     "lines": [
+      474,
+      474
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@1",
+     "lines": [
+      480,
+      480
+     ]
+    },
+    {
+     "name": "compute/((catalog.promotions || []) as PromoRule[]).sort()#0",
+     "lines": [
+      534,
+      534
+     ]
+    },
+    {
+     "name": "compute/lineItems.some()#0@1",
+     "lines": [
+      544,
+      544
+     ]
+    },
+    {
+     "name": "compute/selectedProducts.map()#0@3",
+     "lines": [
+      554,
+      554
+     ]
+    },
+    {
+     "name": "compute/promo.excludedPromos.some()#0",
+     "lines": [
+      630,
+      630
+     ]
+    },
+    {
+     "name": "compute/promotions.find()#0",
+     "lines": [
+      640,
+      640
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@2",
+     "lines": [
+      658,
+      658
+     ]
+    },
+    {
+     "name": "compute/mli.discounts.filter()#0@1",
+     "lines": [
+      787,
+      787
+     ]
+    },
+    {
+     "name": "compute/mli.discounts.filter()#0@2",
+     "lines": [
+      788,
+      788
+     ]
+    },
+    {
+     "name": "compute/removedPromos.map()#0",
+     "lines": [
+      790,
+      790
+     ]
+    },
+    {
+     "name": "compute/mli.discounts\n          .filter()#0",
+     "lines": [
+      794,
+      794
+     ]
+    },
+    {
+     "name": "compute/mli.discounts\n          .filter(d => d.type === \"permanent\")\n          .reduce()#0",
+     "lines": [
+      795,
+      795
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@3",
+     "lines": [
+      822,
+      824
+     ]
+    },
+    {
+     "name": "compute/mli.discounts\n        .filter()#0",
+     "lines": [
+      832,
+      832
+     ]
+    },
+    {
+     "name": "compute/mli.discounts\n        .filter(d => d.type === \"permanent\")\n        .reduce()#0",
+     "lines": [
+      833,
+      833
+     ]
+    },
+    {
+     "name": "compute/li.discounts\n      .filter()#0",
+     "lines": [
+      860,
+      860
+     ]
+    },
+    {
+     "name": "compute/li.discounts\n      .filter(d => d.type === \"permanent\" || d.type === \"temporary_-1\")\n      .reduce()#0",
+     "lines": [
+      861,
+      861
+     ]
+    },
+    {
+     "name": "compute/Object.entries(temps).map()#0",
+     "lines": [
+      874,
+      874
+     ]
+    },
+    {
+     "name": "compute/Object.entries(temps).map(([m, val]) => [parseInt(m, 10), val] as [number, number]).sort()#0",
+     "lines": [
+      874,
+      874
+     ]
+    },
+    {
+     "name": "compute/sortedTemps.find()#0",
+     "lines": [
+      885,
+      885
+     ]
+    },
+    {
+     "name": "compute/lineItems.flatMap()#0@1",
+     "lines": [
+      903,
+      903
+     ]
+    },
+    {
+     "name": "compute/lineItems.reduce()#0@1",
+     "lines": [
+      904,
+      904
+     ]
+    },
+    {
+     "name": "compute/lineItems.reduce()#0@2",
+     "lines": [
+      905,
+      905
+     ]
+    },
+    {
+     "name": "compute/lineItems.reduce()#0@3",
+     "lines": [
+      906,
+      906
+     ]
+    },
+    {
+     "name": "compute/lineItems.flatMap()#0@2",
+     "lines": [
+      922,
+      922
+     ]
+    },
+    {
+     "name": "compute/selectedProducts.map()#0@4",
+     "lines": [
+      926,
+      926
+     ]
+    },
+    {
+     "name": "compute/selectedOptions.map()#0@3",
+     "lines": [
+      927,
+      927
+     ]
+    },
+    {
+     "name": "compute/appliedPriceRules.map()#0",
+     "lines": [
+      929,
+      929
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@4",
+     "lines": [
+      941,
+      941
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@5",
+     "lines": [
+      942,
+      942
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@6",
+     "lines": [
+      943,
+      943
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@7",
+     "lines": [
+      944,
+      944
+     ]
+    },
+    {
+     "name": "compute/lineItems.filter()#0@8",
+     "lines": [
+      945,
+      947
+     ]
+    },
+    {
+     "name": "compute/internetLines.forEach()#0",
+     "lines": [
+      1053,
+      1055
+     ]
+    },
+    {
+     "name": "compute/mobileLines.forEach()#0",
+     "lines": [
+      1059,
+      1062
+     ]
+    },
+    {
+     "name": "compute/tvLines.forEach()#0",
+     "lines": [
+      1072,
+      1074
+     ]
+    },
+    {
+     "name": "compute/fixedPhoneLines.forEach()#0",
+     "lines": [
+      1076,
+      1078
+     ]
+    },
+    {
+     "name": "compute/optionLines.forEach()#0",
+     "lines": [
+      1080,
+      1082
+     ]
+    },
+    {
+     "name": "compute/lineItems.reduce()#0@4",
+     "lines": [
+      1103,
+      1106
+     ]
+    },
+    {
+     "name": "compute/lineItems.some()#0@2",
+     "lines": [
+      1109,
+      1112
+     ]
+    },
+    {
+     "name": "compute/lineItems.some()#0@2/(li.discounts || []).some()#0",
+     "lines": [
+      1110,
+      1111
+     ]
+    },
+    {
+     "name": "compute/lineItems.some()#0@3",
+     "lines": [
+      1116,
+      1119
+     ]
+    },
+    {
+     "name": "compute/lineItems.some()#0@3/(li.discounts || []).some()#0",
+     "lines": [
+      1117,
+      1118
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 16,
+     "unit": "compute",
+     "rule": "param-form",
+     "msg": "rest parameters are outside the subset",
+     "env": false
+    },
+    {
+     "line": 95,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`prod` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 104,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 110,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 120,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`found` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 133,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`found` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 140,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 145,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`o` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 158,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`match` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 160,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`(catalog.products || []).find((p: CatalogProduct) => normali` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 182,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`params.includes(p.groupID as string)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 182,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p.groupID as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 188,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`params.includes(p.groupID as string)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 188,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p.groupID as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 191,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`params.includes(p.groupID as string)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 191,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p.groupID as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 192,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p.groupID && !params.includes(p.groupID)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 197,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`condition.parameters as [string, string[]]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 199,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 204,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`condition.parameters as [string, string[]]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 206,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 254,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`(opt as { element?: string }).element || \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 254,
+     "unit": "compute/query.options.find()#0",
+     "rule": "type-assertion",
+     "msg": "`(opt as { element?: string }).element || \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 287,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 298,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`findInternetVariant` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 299,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`findProductByName` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 301,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`findInternetVariant` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 302,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`findProductByName` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 307,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 307,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 312,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 312,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 314,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 314,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 316,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`(product.price?.monthlyPrice || 0) * (item.quantity as numbe` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 316,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`(product.price?.monthlyPrice || 0) * (item.quantity as numbe` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 322,
+     "unit": "compute/(query.internet as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `activationFees` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 330,
+     "unit": "compute/(query.mobile as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`findProductByName` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 332,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 332,
+     "unit": "compute/(query.mobile as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 337,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 337,
+     "unit": "compute/(query.mobile as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 354,
+     "unit": "compute/(query.tv as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`findProductByName` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 356,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 356,
+     "unit": "compute/(query.tv as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 360,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 360,
+     "unit": "compute/(query.tv as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`product._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 362,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 362,
+     "unit": "compute/(query.tv as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 364,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`(product.price?.monthlyPrice || 0) * (item.quantity as numbe` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 364,
+     "unit": "compute/(query.tv as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`(product.price?.monthlyPrice || 0) * (item.quantity as numbe` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 376,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`findProductByName` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 378,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 378,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 386,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `oneTimeFees` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 386,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj.price.deviceFee * (item.quantity as number)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 386,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj.price.deviceFee * (item.quantity as number)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 389,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 389,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 391,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 391,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 402,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 402,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 404,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 404,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 406,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`(optionObj.price?.monthlyPrice || 0) * (item.quantity as num` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 406,
+     "unit": "compute/(query.options as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`(optionObj.price?.monthlyPrice || 0) * (item.quantity as num` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 422,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 422,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0/(catalog.options || []).find()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 423,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 423,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0/(catalog.options || []).find()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 424,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 424,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0/(catalog.options || []).find()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 425,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 425,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0/(catalog.options || []).find()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 425,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 425,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0/(catalog.options || []).find()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 428,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 428,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 429,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 429,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 432,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 432,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 434,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 434,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`item.quantity as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 435,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`optionObj.price?.monthlyPrice || 0` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 435,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`optionObj.price?.monthlyPrice || 0` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 436,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`(optionObj.price?.monthlyPrice || 0) * (item.quantity as num` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 436,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`(optionObj.price?.monthlyPrice || 0) * (item.quantity as num` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 441,
+     "unit": "compute/(query.fixedPhone as Array<{ element?: string; quantity?: number }>).forEach()#0",
+     "rule": "global-read",
+     "msg": "`debug` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 446,
+     "unit": "compute/selectedOptions.some()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 447,
+     "unit": "compute/(catalog.options || []).find()#0",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 447,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`o.name as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 447,
+     "unit": "compute/(catalog.options || []).find()#0",
+     "rule": "type-assertion",
+     "msg": "`o.name as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 449,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`netflixOpt` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 452,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`netflixOpt._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 455,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`netflixOpt.price?.monthlyPrice || 0` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 456,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`netflixOpt.price?.monthlyPrice || 0` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 476,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`priceRules` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 493,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 504,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 517,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 539,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promotions` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 546,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 558,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`((catalog.promotions || []) as PromoRule[])` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 587,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`rule.parameters as string[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 592,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`rule.parameters as string[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 595,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`reqProd.groupID` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 596,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`reqProd.groupID` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 603,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`selectedGroup as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 605,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`selectedGroup as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 616,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promotions` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 641,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promo._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 676,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promotions` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 678,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`laterPromo._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 679,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promo._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 691,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`activationFees - ((promo.calculation?.value as number) || ac` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 692,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promo._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 707,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 716,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promo._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 722,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 731,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promo._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 739,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 748,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`promo._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 788,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 799,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 823,
+     "unit": "compute/lineItems.filter()#0@3",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 824,
+     "unit": "compute/lineItems.filter()#0@3",
+     "rule": "global-read",
+     "msg": "`normalize` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 839,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`mli` holds an element of `comfortLineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 866,
+     "unit": "compute",
+     "rule": "dynamic-key",
+     "msg": "an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a declared key",
+     "env": false
+    },
+    {
+     "line": 866,
+     "unit": "compute",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 867,
+     "unit": "compute",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 872,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 876,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 877,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 878,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 882,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 884,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 886,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 888,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 889,
+     "unit": "compute",
+     "rule": "alias-mutation",
+     "msg": "`li` holds an element of `lineItems`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 899,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`s + ((x[key] as number | undefined) || 0)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 899,
+     "unit": "compute",
+     "rule": "dynamic-key",
+     "msg": "index an array or string by a number, or a record by declared string keys",
+     "env": false
+    },
+    {
+     "line": 912,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`lineItems as unknown as LineItem[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 926,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`p._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 926,
+     "unit": "compute/selectedProducts.map()#0@4",
+     "rule": "type-assertion",
+     "msg": "`p._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 927,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`o._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 927,
+     "unit": "compute/selectedOptions.map()#0@3",
+     "rule": "type-assertion",
+     "msg": "`o._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 929,
+     "unit": "compute",
+     "rule": "type-assertion",
+     "msg": "`r.rule._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 929,
+     "unit": "compute/appliedPriceRules.map()#0",
+     "rule": "type-assertion",
+     "msg": "`r.rule._id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 951,
+     "unit": "compute",
+     "rule": "unsupported-call",
+     "msg": ".toLocaleString() reads the host's locale (a world read); call it in a map, filter, find, findIndex, some, every, flatMap or reduce callback, or outside the callback (a sort comparator has no defined order of transitions)",
+     "env": false
+    },
+    {
+     "line": 997,
+     "unit": "compute",
+     "rule": "unsupported-syntax",
+     "msg": "only assignments, ++/--, calls, and await may stand as statements",
+     "env": false
+    },
+    {
+     "line": 1027,
+     "unit": "compute",
+     "rule": "dynamic-key",
+     "msg": "use a finite union of declared string keys, or a Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 1028,
+     "unit": "compute",
+     "rule": "dynamic-key",
+     "msg": "a dictionary key is a string",
+     "env": false
+    },
+    {
+     "line": 1030,
+     "unit": "compute",
+     "rule": "property-assign",
+     "msg": "assignment into `groupedTemps[promo.months]`: a field of an element is written when the path from a parameter takes field and array-element steps only, each index a number that calls nothing (name it first: `const k = ...`), and `!` or `as T` stand only on an element, T its own type",
+     "env": false
+    },
+    {
+     "line": 1031,
+     "unit": "compute",
+     "rule": "param-mutation",
+     "msg": "push on `groupedTemps[promo.months].names`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 1044,
+     "unit": "compute",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 1046,
+     "unit": "compute",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 1049,
+     "unit": "compute",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 1054,
+     "unit": "compute/internetLines.forEach()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `readable` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 1054,
+     "unit": "compute/internetLines.forEach()#0",
+     "rule": "global-read",
+     "msg": "`renderLine` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 1060,
+     "unit": "compute",
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 1060,
+     "unit": "compute/mobileLines.forEach()#0",
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 1061,
+     "unit": "compute",
+     "rule": "param-mutation",
+     "msg": "push on `grouped[li.product]`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 1061,
+     "unit": "compute/mobileLines.forEach()#0",
+     "rule": "param-mutation",
+     "msg": "push on `grouped[li.product]`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 1073,
+     "unit": "compute/tvLines.forEach()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `readable` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 1073,
+     "unit": "compute/tvLines.forEach()#0",
+     "rule": "global-read",
+     "msg": "`renderLine` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 1077,
+     "unit": "compute/fixedPhoneLines.forEach()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `readable` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 1077,
+     "unit": "compute/fixedPhoneLines.forEach()#0",
+     "rule": "global-read",
+     "msg": "`renderLine` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 1081,
+     "unit": "compute/optionLines.forEach()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `readable` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 1081,
+     "unit": "compute/optionLines.forEach()#0",
+     "rule": "global-read",
+     "msg": "`renderLine` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 1084,
+     "unit": "compute",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 1099,
+     "unit": "compute",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 1104,
+     "unit": "compute/lineItems.reduce()#0@4",
+     "rule": "global-read",
+     "msg": "`getPromotionData` is module state that can change; the subset reads constants only",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/pricing/types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/router.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "buildSteps",
+     "lines": [
+      16,
+      42
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/routes/pricing.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "createPricingRouter",
+     "lines": [
+      12,
+      195
+     ]
+    },
+    {
+     "name": "createPricingRouter/router.get('/health')#1",
+     "lines": [
+      134,
+      142
+     ]
+    },
+    {
+     "name": "createPricingRouter/router.post('/')#2",
+     "lines": [
+      157,
+      192
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 62,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`b.clientType` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 63,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`b.promocode` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 64,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`b.promoCode` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 69,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`b[k]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 71,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`b as PricingQuery` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 87,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`json` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 88,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`json` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 149,
+     "unit": "createPricingRouter",
+     "rule": "type-assertion",
+     "msg": "`(arr as any[]).map((item: any) => {\n      if (item && typeof` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 158,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`validateQuery` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 160,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 168,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`normalizeProductArray` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 169,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`normalizeProductArray` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`normalizeProductArray` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 171,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`normalizeProductArray` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 172,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`normalizeProductArray` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 176,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`getCatalog` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 183,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 187,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 190,
+     "unit": "createPricingRouter/router.post('/')#2",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/scan.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "sanitize",
+     "lines": [
+      84,
+      93
+     ]
+    },
+    {
+     "name": "createScanRouter",
+     "lines": [
+      95,
+      414
+     ]
+    },
+    {
+     "name": "createScanRouter/router.get('/health')#1",
+     "lines": [
+      280,
+      291
+     ]
+    },
+    {
+     "name": "createScanRouter/router.post('/')#4",
+     "lines": [
+      318,
+      402
+     ]
+    },
+    {
+     "name": "createScanRouter/router.use()#0",
+     "lines": [
+      407,
+      410
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 88,
+     "unit": "sanitize",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 91,
+     "unit": "sanitize",
+     "rule": "type-assertion",
+     "msg": "`[\"M\", \"F\", \"X\"].includes(g) ? g : \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 91,
+     "unit": "sanitize",
+     "rule": "type-assertion",
+     "msg": "`g` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 133,
+     "unit": "createScanRouter",
+     "rule": "type-assertion",
+     "msg": "`project!` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 136,
+     "unit": "createScanRouter",
+     "rule": "type-assertion",
+     "msg": "`serviceAccount as {\n              client_email: string;\n    ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 185,
+     "unit": "createScanRouter",
+     "rule": "type-assertion",
+     "msg": "`mode === \"vertex\" ? project : undefined` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 189,
+     "unit": "createScanRouter",
+     "rule": "type-assertion",
+     "msg": "`serviceAccount?.client_email` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 285,
+     "unit": "createScanRouter",
+     "rule": "type-assertion",
+     "msg": "`mode === \"vertex\" ? project : undefined` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 285,
+     "unit": "createScanRouter/router.get('/health')#1",
+     "rule": "type-assertion",
+     "msg": "`mode === \"vertex\" ? project : undefined` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 320,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 330,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 365,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 376,
+     "unit": "createScanRouter",
+     "rule": "type-assertion",
+     "msg": "`sanitize(parsed as Record<string, unknown>)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 376,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "type-assertion",
+     "msg": "`sanitize(parsed as Record<string, unknown>)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 376,
+     "unit": "createScanRouter",
+     "rule": "type-assertion",
+     "msg": "`parsed as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 376,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "type-assertion",
+     "msg": "`parsed as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 378,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "global-read",
+     "msg": "`debugContext` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 385,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 394,
+     "unit": "createScanRouter/router.post('/')#4",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 409,
+     "unit": "createScanRouter/router.use()#0",
+     "rule": "global-read",
+     "msg": "`errorResponse` is module state that can change; the subset reads constants only",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/sessions.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "getBrowserProvider",
+     "lines": [
+      13,
+      20
+     ]
+    },
+    {
+     "name": "launchSession",
+     "lines": [
+      23,
+      69
+     ]
+    },
+    {
+     "name": "createSessionRouter",
+     "lines": [
+      71,
+      243
+     ]
+    },
+    {
+     "name": "launchSession/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      35,
+      35
+     ]
+    },
+    {
+     "name": "launchSession/runSteps(session, store).catch()#0",
+     "lines": [
+      64,
+      66
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.post('/')#1",
+     "lines": [
+      75,
+      96
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.post('/from-url')#1",
+     "lines": [
+      101,
+      162
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.post('/from-url')#1/urlSubs.map()#0",
+     "lines": [
+      141,
+      144
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.get('/:id')#1",
+     "lines": [
+      165,
+      176
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.get('/:id')#1/response.stepHistory.filter()#0",
+     "lines": [
+      174,
+      174
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.post('/:id/continue')#1",
+     "lines": [
+      179,
+      204
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.get('/:id/screenshot')#1",
+     "lines": [
+      207,
+      221
+     ]
+    },
+    {
+     "name": "createSessionRouter/router.delete('/:id')#1",
+     "lines": [
+      224,
+      240
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 92,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 92,
+     "unit": "createSessionRouter/router.post('/')#1",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 93,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`error.stack` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 93,
+     "unit": "createSessionRouter/router.post('/')#1",
+     "rule": "type-assertion",
+     "msg": "`error.stack` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 94,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 94,
+     "unit": "createSessionRouter/router.post('/')#1",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 103,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`req.body` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 103,
+     "unit": "createSessionRouter/router.post('/from-url')#1",
+     "rule": "type-assertion",
+     "msg": "`req.body` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 118,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`(err as Error).message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 118,
+     "unit": "createSessionRouter/router.post('/from-url')#1",
+     "rule": "type-assertion",
+     "msg": "`(err as Error).message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 159,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 159,
+     "unit": "createSessionRouter/router.post('/from-url')#1",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 160,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 160,
+     "unit": "createSessionRouter/router.post('/from-url')#1",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "createSessionRouter/router.get('/:id')#1",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 181,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 181,
+     "unit": "createSessionRouter/router.post('/:id/continue')#1",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 208,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 208,
+     "unit": "createSessionRouter/router.get('/:id/screenshot')#1",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 225,
+     "unit": "createSessionRouter",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 225,
+     "unit": "createSessionRouter/router.delete('/:id')#1",
+     "rule": "type-assertion",
+     "msg": "`req.params.id as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/s3-upload.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "getS3Client",
+     "lines": [
+      7,
+      23
+     ]
+    },
+    {
+     "name": "uploadVideoToS3",
+     "lines": [
+      28,
+      52
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/server.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "requireAuth",
+     "lines": [
+      45,
+      63
+     ]
+    },
+    {
+     "name": "shutdown",
+     "lines": [
+      112,
+      119
+     ]
+    },
+    {
+     "name": "app.use()#0@1",
+     "lines": [
+      29,
+      32
+     ]
+    },
+    {
+     "name": "app.use()#0@2",
+     "lines": [
+      36,
+      42
+     ]
+    },
+    {
+     "name": "app.get('/health')#1",
+     "lines": [
+      66,
+      68
+     ]
+    },
+    {
+     "name": "app.listen()#1",
+     "lines": [
+      98,
+      109
+     ]
+    },
+    {
+     "name": "shutdown/server.close()#0",
+     "lines": [
+      115,
+      118
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 20,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 26,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 29,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 36,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 66,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 77,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 80,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 82,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 86,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 87,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 89,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 90,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 91,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 92,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 93,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 94,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 95,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 96,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 121,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 122,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/session/runner.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "stepModules.coordonnees",
+     "lines": [
+      19,
+      19
+     ]
+    },
+    {
+     "name": "runSteps",
+     "lines": [
+      25,
+      146
+     ]
+    },
+    {
+     "name": "saveRecording",
+     "lines": [
+      148,
+      169
+     ]
+    },
+    {
+     "name": "runSteps/page.title().catch()#0",
+     "lines": [
+      43,
+      43
+     ]
+    },
+    {
+     "name": "runSteps/Promise()#0",
+     "lines": [
+      74,
+      76
+     ]
+    },
+    {
+     "name": "runSteps/page.screenshot({ fullPage: true }).then()#0",
+     "lines": [
+      136,
+      136
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 74,
+     "unit": "runSteps",
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 88,
+     "unit": "runSteps",
+     "rule": "async",
+     "msg": "awaited callee form is outside the subset",
+     "env": false
+    },
+    {
+     "line": 114,
+     "unit": "runSteps",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 121,
+     "unit": "runSteps",
+     "rule": "alias-mutation",
+     "msg": "`lastResult` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 122,
+     "unit": "runSteps",
+     "rule": "alias-mutation",
+     "msg": "`lastResult` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 122,
+     "unit": "runSteps",
+     "rule": "type-assertion",
+     "msg": "`error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 123,
+     "unit": "runSteps",
+     "rule": "alias-mutation",
+     "msg": "`lastResult` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 124,
+     "unit": "runSteps",
+     "rule": "alias-mutation",
+     "msg": "`lastResult` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 125,
+     "unit": "runSteps",
+     "rule": "alias-mutation",
+     "msg": "`lastResult` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "saveRecording",
+     "rule": "type-assertion",
+     "msg": "`(err as Error).message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/session/store.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "SessionStore.constructor",
+     "lines": [
+      10,
+      12
+     ]
+    },
+    {
+     "name": "SessionStore.create",
+     "lines": [
+      14,
+      16
+     ]
+    },
+    {
+     "name": "SessionStore.get",
+     "lines": [
+      18,
+      20
+     ]
+    },
+    {
+     "name": "SessionStore.delete",
+     "lines": [
+      22,
+      24
+     ]
+    },
+    {
+     "name": "SessionStore.list",
+     "lines": [
+      26,
+      28
+     ]
+    },
+    {
+     "name": "SessionStore.touch",
+     "lines": [
+      30,
+      35
+     ]
+    },
+    {
+     "name": "SessionStore.cleanup",
+     "lines": [
+      37,
+      51
+     ]
+    },
+    {
+     "name": "SessionStore.shutdown",
+     "lines": [
+      53,
+      64
+     ]
+    },
+    {
+     "name": "SessionStore.constructor/setInterval()#0",
+     "lines": [
+      11,
+      11
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "unit": "SessionStore.constructor/setInterval()#0",
+     "rule": "promise",
+     "msg": "a same-file async function runs on after its first await; return it from an async function with await",
+     "env": false
+    },
+    {
+     "line": 11,
+     "unit": "SessionStore.constructor/setInterval()#0",
+     "rule": "this",
+     "msg": "`this` outside a class method",
+     "env": false
+    },
+    {
+     "line": 33,
+     "unit": "SessionStore.touch",
+     "rule": "alias-mutation",
+     "msg": "`session` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/session/types.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "toSessionResponse",
+     "lines": [
+      76,
+      93
+     ]
+    },
+    {
+     "name": "classifyError",
+     "lines": [
+      96,
+      154
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/steps/coordonnees-audit.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "disabledFormAudit",
+     "lines": [
+      20,
+      83
+     ]
+    },
+    {
+     "name": "buildDisabledFormError",
+     "lines": [
+      91,
+      102
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll('[class*=\"error-msg\"], [class*=\"error-message\"], [role=\"alert\"]'))\n    .filter()#0",
+     "lines": [
+      23,
+      26
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll('[class*=\"error-msg\"], [class*=\"error-message\"], [role=\"alert\"]'))\n    .filter(el => {\n      const text = el.textContent?.trim() || \"\";\n      return isVisible(el) && text.length > 3 && text.length < 200;\n    })\n    .map()#0",
+     "lines": [
+      27,
+      27
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll(\"input\"))\n    .filter()#0",
+     "lines": [
+      29,
+      33
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll(\"input\"))\n    .filter(input => {\n      const i = input as HTMLInputElement;\n      return isVisible(i) && !i.value &&\n        ![\"radio\", \"checkbox\", \"hidden\", \"submit\", \"button\"].includes(i.type);\n    })\n    .map()#0",
+     "lines": [
+      34,
+      37
+     ]
+    },
+    {
+     "name": "disabledFormAudit/document.querySelectorAll('input[type=\"radio\"]').forEach()#0",
+     "lines": [
+      39,
+      43
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Object.entries(radioGroups)\n    .filter()#0",
+     "lines": [
+      45,
+      45
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Object.entries(radioGroups)\n    .filter(([, checked]) => !checked)\n    .map()#0",
+     "lines": [
+      46,
+      46
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll(\"label, span, button\"))\n    .filter()#0",
+     "lines": [
+      53,
+      54
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll(\"label, span, button\"))\n    .filter(el => /\\b(maison|appartement|huis)\\b/i.test(el.textContent || \"\") &&\n      (el.textContent || \"\").trim().length < 40 && isVisible(el))\n    .map()#0",
+     "lines": [
+      55,
+      55
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll(\"label, span, div, button, p\"))\n    .find()#0",
+     "lines": [
+      57,
+      58
+     ]
+    },
+    {
+     "name": "disabledFormAudit/uncheckedGroups.slice(0, 4).map()#0",
+     "lines": [
+      65,
+      69
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll(\"input\"))\n    .map()#0",
+     "lines": [
+      71,
+      71
+     ]
+    },
+    {
+     "name": "disabledFormAudit/Array.from(document.querySelectorAll(\"input\"))\n    .map(i => (i as HTMLInputElement).name)\n    .filter()#0",
+     "lines": [
+      72,
+      72
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 21,
+     "unit": "disabledFormAudit",
+     "rule": "type-assertion",
+     "msg": "`(el as HTMLElement).getBoundingClientRect().height > 0` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 41,
+     "unit": "disabledFormAudit",
+     "rule": "type-assertion",
+     "msg": "`input` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 41,
+     "unit": "disabledFormAudit/document.querySelectorAll('input[type=\"radio\"]').forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`input` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "disabledFormAudit",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer dictionary",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "disabledFormAudit",
+     "rule": "type-assertion",
+     "msg": "`input.name` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "disabledFormAudit/document.querySelectorAll('input[type=\"radio\"]').forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`input.name` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "disabledFormAudit",
+     "rule": "type-assertion",
+     "msg": "`radioGroups[input.name] || input.checked` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "disabledFormAudit/document.querySelectorAll('input[type=\"radio\"]').forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`radioGroups[input.name] || input.checked` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "disabledFormAudit",
+     "rule": "type-assertion",
+     "msg": "`input.name` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "disabledFormAudit/document.querySelectorAll('input[type=\"radio\"]').forEach()#0",
+     "rule": "type-assertion",
+     "msg": "`input.name` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 63,
+     "unit": "disabledFormAudit",
+     "rule": "type-assertion",
+     "msg": "`(box as HTMLElement).outerHTML` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 68,
+     "unit": "disabledFormAudit",
+     "rule": "type-assertion",
+     "msg": "`box ? (box as HTMLElement).outerHTML : \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 68,
+     "unit": "disabledFormAudit/uncheckedGroups.slice(0, 4).map()#0",
+     "rule": "type-assertion",
+     "msg": "`box ? (box as HTMLElement).outerHTML : \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/coordonnees-scoring.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "parseScoring",
+     "lines": [
+      27,
+      40
+     ]
+    },
+    {
+     "name": "buildScoringError",
+     "lines": [
+      42,
+      59
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 32,
+     "unit": "parseScoring",
+     "rule": "type-assertion",
+     "msg": "`raw.isScoringResultAcceptable` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 33,
+     "unit": "parseScoring",
+     "rule": "type-assertion",
+     "msg": "`typeof raw.scoringResult === \"string\" ? raw.scoringResult : ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 34,
+     "unit": "parseScoring",
+     "rule": "type-assertion",
+     "msg": "`typeof raw.scoringReason === \"string\" ? raw.scoringReason : ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 35,
+     "unit": "parseScoring",
+     "rule": "type-assertion",
+     "msg": "`typeof raw.scoringCode === \"number\" ? raw.scoringCode : unde` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/coordonnees.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "fillGigyaField",
+     "lines": [
+      71,
+      87
+     ]
+    },
+    {
+     "name": "coordonnees",
+     "lines": [
+      89,
+      633
+     ]
+    },
+    {
+     "name": "fillGigyaField/field.isVisible().catch()#0",
+     "lines": [
+      76,
+      76
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@1",
+     "lines": [
+      124,
+      159
+     ]
+    },
+    {
+     "name": "coordonnees/noText.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      166,
+      166
+     ]
+    },
+    {
+     "name": "coordonnees/emailInput.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      178,
+      178
+     ]
+    },
+    {
+     "name": "coordonnees/mmeLabel.isVisible().catch()#0",
+     "lines": [
+      187,
+      187
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@2",
+     "lines": [
+      200,
+      209
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@2/labels.find()#0",
+     "lines": [
+      202,
+      202
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@3",
+     "lines": [
+      282,
+      287
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@3/Array.from(document.querySelectorAll('[class*=\"error-msg\"], [class*=\"error-message\"]'))\n      .filter()#0",
+     "lines": [
+      284,
+      284
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@3/Array.from(document.querySelectorAll('[class*=\"error-msg\"], [class*=\"error-message\"]'))\n      .filter(el => (el as HTMLElement).getBoundingClientRect().height > 0 && el.textContent?.trim())\n      .map()#0",
+     "lines": [
+      285,
+      285
+     ]
+    },
+    {
+     "name": "coordonnees/cb.isVisible().catch()#0",
+     "lines": [
+      305,
+      305
+     ]
+    },
+    {
+     "name": "coordonnees/statusSelect.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      343,
+      343
+     ]
+    },
+    {
+     "name": "coordonnees/aptLabel.isVisible().catch()#0",
+     "lines": [
+      382,
+      382
+     ]
+    },
+    {
+     "name": "coordonnees/floorByPlaceholder.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      394,
+      394
+     ]
+    },
+    {
+     "name": "coordonnees/floorByLabel.isVisible({ timeout: 1000 }).catch()#0",
+     "lines": [
+      404,
+      404
+     ]
+    },
+    {
+     "name": "coordonnees/posSelect.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      421,
+      421
+     ]
+    },
+    {
+     "name": "coordonnees/posDropdown.isVisible({ timeout: 1000 }).catch()#0",
+     "lines": [
+      428,
+      428
+     ]
+    },
+    {
+     "name": "coordonnees/posOption.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      432,
+      432
+     ]
+    },
+    {
+     "name": "coordonnees/houseLabel.isVisible().catch()#0",
+     "lines": [
+      445,
+      445
+     ]
+    },
+    {
+     "name": "coordonnees/noLabel.isVisible().catch()#0",
+     "lines": [
+      454,
+      454
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@4",
+     "lines": [
+      467,
+      467
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate(disabledFormAudit).catch()#0",
+     "lines": [
+      479,
+      479
+     ]
+    },
+    {
+     "name": "coordonnees/page.locator(radioSelector).click({ timeout: 5000 }).catch()#0",
+     "lines": [
+      528,
+      528
+     ]
+    },
+    {
+     "name": "coordonnees/page.locator(btnSelector).click({ timeout: 5000 }).catch()#0",
+     "lines": [
+      531,
+      531
+     ]
+    },
+    {
+     "name": "coordonnees/page\n          .locator('#js-voo-modal-root')\n          .getByText(t.confirmAddressRegex)\n          .isVisible({ timeout: 8000 })\n          .catch()#0",
+     "lines": [
+      544,
+      544
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@5",
+     "lines": [
+      574,
+      591
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@5/Array.from(document.querySelectorAll('[class*=\"error\"]'))\n          .filter()#0",
+     "lines": [
+      581,
+      589
+     ]
+    },
+    {
+     "name": "coordonnees/page.evaluate()#0@5/[...serverErrors, ...allErrors].map()#0",
+     "lines": [
+      590,
+      590
+     ]
+    },
+    {
+     "name": "coordonnees/errors.forEach()#0",
+     "lines": [
+      595,
+      595
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 93,
+     "unit": "coordonnees",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 206,
+     "unit": "coordonnees",
+     "rule": "type-assertion",
+     "msg": "`(input as HTMLInputElement).id || null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 206,
+     "unit": "coordonnees/page.evaluate()#0@2",
+     "rule": "type-assertion",
+     "msg": "`(input as HTMLInputElement).id || null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 284,
+     "unit": "coordonnees",
+     "rule": "type-assertion",
+     "msg": "`(el as HTMLElement).getBoundingClientRect().height > 0 && el` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 284,
+     "unit": "coordonnees/page.evaluate()#0@3",
+     "rule": "type-assertion",
+     "msg": "`(el as HTMLElement).getBoundingClientRect().height > 0 && el` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 284,
+     "unit": "coordonnees/page.evaluate()#0@3/Array.from(document.querySelectorAll('[class*=\"error-msg\"], [class*=\"error-message\"]'))\n      .filter()#0",
+     "rule": "type-assertion",
+     "msg": "`(el as HTMLElement).getBoundingClientRect().height > 0 && el` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 419,
+     "unit": "coordonnees",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 492,
+     "unit": "coordonnees",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 493,
+     "unit": "coordonnees",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 586,
+     "unit": "coordonnees",
+     "rule": "type-assertion",
+     "msg": "`rect.height > 0 && text.length > 10 && text.length < 300 &&\n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 586,
+     "unit": "coordonnees/page.evaluate()#0@5",
+     "rule": "type-assertion",
+     "msg": "`rect.height > 0 && text.length > 10 && text.length < 300 &&\n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 586,
+     "unit": "coordonnees/page.evaluate()#0@5/Array.from(document.querySelectorAll('[class*=\"error\"]'))\n          .filter()#0",
+     "rule": "type-assertion",
+     "msg": "`rect.height > 0 && text.length > 10 && text.length < 300 &&\n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/identification-eshop.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "identificationEshop",
+     "lines": [
+      4,
+      39
+     ]
+    },
+    {
+     "name": "identificationEshop/manualRadio.isDisabled().catch()#0",
+     "lines": [
+      14,
+      14
+     ]
+    },
+    {
+     "name": "identificationEshop/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      35,
+      35
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/steps/identification-orders.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "identificationOrders",
+     "lines": [
+      5,
+      43
+     ]
+    },
+    {
+     "name": "identificationOrders/noItsme.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      16,
+      16
+     ]
+    },
+    {
+     "name": "identificationOrders/page.evaluate()#0",
+     "lines": [
+      33,
+      37
+     ]
+    },
+    {
+     "name": "identificationOrders/page.evaluate()#0/inputs.find()#0",
+     "lines": [
+      35,
+      35
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/steps/itsme-auth.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "sendItsmeRequest",
+     "lines": [
+      12,
+      98
+     ]
+    },
+    {
+     "name": "waitForItsmeRedirect",
+     "lines": [
+      101,
+      131
+     ]
+    },
+    {
+     "name": "itsmeAuth",
+     "lines": [
+      134,
+      137
+     ]
+    },
+    {
+     "name": "sendItsmeRequest/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      17,
+      17
+     ]
+    },
+    {
+     "name": "sendItsmeRequest/page.evaluate()#0@1",
+     "lines": [
+      25,
+      35
+     ]
+    },
+    {
+     "name": "sendItsmeRequest/phoneSection.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      41,
+      41
+     ]
+    },
+    {
+     "name": "sendItsmeRequest/btn.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      67,
+      67
+     ]
+    },
+    {
+     "name": "sendItsmeRequest/page.evaluate()#0@2",
+     "lines": [
+      77,
+      81
+     ]
+    },
+    {
+     "name": "sendItsmeRequest/page.evaluate()#0@2/btns.find()#0",
+     "lines": [
+      79,
+      79
+     ]
+    },
+    {
+     "name": "waitForItsmeRedirect/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      129,
+      129
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 47,
+     "unit": "sendItsmeRequest",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/order-summary.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "orderSummary",
+     "lines": [
+      20,
+      142
+     ]
+    },
+    {
+     "name": "orderSummary/domLabel.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      40,
+      40
+     ]
+    },
+    {
+     "name": "orderSummary/ibanInput.isVisible().catch()#0",
+     "lines": [
+      46,
+      46
+     ]
+    },
+    {
+     "name": "orderSummary/altIban.isVisible().catch()#0",
+     "lines": [
+      53,
+      53
+     ]
+    },
+    {
+     "name": "orderSummary/virLabel.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      63,
+      63
+     ]
+    },
+    {
+     "name": "orderSummary/page.evaluate()#0@1",
+     "lines": [
+      73,
+      73
+     ]
+    },
+    {
+     "name": "orderSummary/page.evaluate()#0@2",
+     "lines": [
+      77,
+      92
+     ]
+    },
+    {
+     "name": "orderSummary/cb.isVisible({ timeout: 1000 }).catch()#0",
+     "lines": [
+      100,
+      100
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 30,
+     "unit": "orderSummary",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/pack-config-url.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "packConfigUrl",
+     "lines": [
+      13,
+      48
+     ]
+    },
+    {
+     "name": "packConfigUrl/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      22,
+      22
+     ]
+    },
+    {
+     "name": "packConfigUrl/orderButton.first().waitFor({ state: \"visible\", timeout: 30000 }).catch()#0",
+     "lines": [
+      31,
+      31
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/steps/pack-config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "addExtraCard",
+     "lines": [
+      33,
+      65
+     ]
+    },
+    {
+     "name": "packConfig",
+     "lines": [
+      67,
+      220
+     ]
+    },
+    {
+     "name": "addExtraCard/card.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      36,
+      36
+     ]
+    },
+    {
+     "name": "addExtraCard/checkbox.isDisabled().catch()#0",
+     "lines": [
+      44,
+      44
+     ]
+    },
+    {
+     "name": "addExtraCard/checkbox.isChecked().catch()#0",
+     "lines": [
+      57,
+      57
+     ]
+    },
+    {
+     "name": "packConfig/page.waitForLoadState(\"networkidle\").catch()#0",
+     "lines": [
+      78,
+      78
+     ]
+    },
+    {
+     "name": "packConfig/tierCard.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      100,
+      100
+     ]
+    },
+    {
+     "name": "packConfig/mobileToggle.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      130,
+      130
+     ]
+    },
+    {
+     "name": "packConfig/tvToggle.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      165,
+      165
+     ]
+    },
+    {
+     "name": "packConfig/tvCard.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      176,
+      176
+     ]
+    },
+    {
+     "name": "packConfig/extrasToggle.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      199,
+      199
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 69,
+     "unit": "packConfig",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/phone-number-config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "phoneNumberConfig",
+     "lines": [
+      18,
+      324
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/label.isVisible({ timeout: 2000 }).catch()#0@1",
+     "lines": [
+      40,
+      40
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/label.isVisible({ timeout: 2000 }).catch()#0@2",
+     "lines": [
+      72,
+      72
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/phoneInput.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      99,
+      99
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@1",
+     "lines": [
+      104,
+      112
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@2",
+     "lines": [
+      116,
+      121
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@2/Array.from(document.querySelectorAll(\"label\")).find()#0",
+     "lines": [
+      118,
+      118
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/validateBtn.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      134,
+      134
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@3",
+     "lines": [
+      142,
+      215
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@3/options.find()#0",
+     "lines": [
+      150,
+      150
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@3/options.map()#0",
+     "lines": [
+      157,
+      157
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/mnpResult.forEach()#0",
+     "lines": [
+      222,
+      222
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@4",
+     "lines": [
+      226,
+      233
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@4/document.querySelectorAll<HTMLElement>('.modals-overlay, .modal-popup._show, .modal-popup.mnp-details').forEach()#0",
+     "lines": [
+      227,
+      231
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/acheterBtn.isDisabled().catch()#0@1",
+     "lines": [
+      249,
+      249
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/acheterBtn.isDisabled().catch()#0@2",
+     "lines": [
+      257,
+      257
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@5",
+     "lines": [
+      260,
+      273
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.waitForLoadState(\"networkidle\").catch()#0@1",
+     "lines": [
+      280,
+      280
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.evaluate()#0@6",
+     "lines": [
+      290,
+      293
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.waitForLoadState(\"networkidle\").catch()#0@2",
+     "lines": [
+      299,
+      299
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.waitForLoadState(\"networkidle\").catch()#0@3",
+     "lines": [
+      306,
+      306
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/reloadedBtn.isVisible({ timeout: 5000 }).catch()#0",
+     "lines": [
+      311,
+      311
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/reloadedBtn.isDisabled().catch()#0",
+     "lines": [
+      312,
+      312
+     ]
+    },
+    {
+     "name": "phoneNumberConfig/page.waitForLoadState(\"networkidle\").catch()#0@4",
+     "lines": [
+      316,
+      316
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 20,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 97,
+     "unit": "phoneNumberConfig",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 110,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`el` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 110,
+     "unit": "phoneNumberConfig/page.evaluate()#0@1",
+     "rule": "type-assertion",
+     "msg": "`el` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 149,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`providerEl.options` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 149,
+     "unit": "phoneNumberConfig/page.evaluate()#0@3",
+     "rule": "type-assertion",
+     "msg": "`providerEl.options` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 154,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`providerEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 154,
+     "unit": "phoneNumberConfig/page.evaluate()#0@3",
+     "rule": "type-assertion",
+     "msg": "`providerEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`subTypeEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": "phoneNumberConfig/page.evaluate()#0@3",
+     "rule": "type-assertion",
+     "msg": "`subTypeEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 187,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`radioEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 187,
+     "unit": "phoneNumberConfig/page.evaluate()#0@3",
+     "rule": "type-assertion",
+     "msg": "`radioEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 196,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`inputEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 196,
+     "unit": "phoneNumberConfig/page.evaluate()#0@3",
+     "rule": "type-assertion",
+     "msg": "`inputEl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 208,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`mnpSubmit` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 208,
+     "unit": "phoneNumberConfig/page.evaluate()#0@3",
+     "rule": "type-assertion",
+     "msg": "`mnpSubmit` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 216,
+     "unit": "phoneNumberConfig",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 292,
+     "unit": "phoneNumberConfig",
+     "rule": "type-assertion",
+     "msg": "`btn?.href || null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 292,
+     "unit": "phoneNumberConfig/page.evaluate()#0@6",
+     "rule": "type-assertion",
+     "msg": "`btn?.href || null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/rendez-vous-datepicker.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "fmt",
+     "lines": [
+      28,
+      31
+     ]
+    },
+    {
+     "name": "parseAria",
+     "lines": [
+      35,
+      43
+     ]
+    },
+    {
+     "name": "clickNextMonth",
+     "lines": [
+      58,
+      70
+     ]
+    },
+    {
+     "name": "pickerDump",
+     "lines": [
+      72,
+      80
+     ]
+    },
+    {
+     "name": "selectDatepickerDate",
+     "lines": [
+      88,
+      170
+     ]
+    },
+    {
+     "name": "clickNextMonth/page.evaluate()#0",
+     "lines": [
+      59,
+      69
+     ]
+    },
+    {
+     "name": "clickNextMonth/page.evaluate()#0/Array.from(header.querySelectorAll(\"button\"))\n      .filter()#0",
+     "lines": [
+      64,
+      64
+     ]
+    },
+    {
+     "name": "clickNextMonth/page.evaluate()#0/btns.sort()#0",
+     "lines": [
+      66,
+      66
+     ]
+    },
+    {
+     "name": "clickNextMonth/page.evaluate(() => {\n    const pop = document.querySelector(\".react-datepicker\");\n    if (!pop) return false;\n    const header = pop.querySelector('[class*=\"header\"]') || pop;\n    const btns = Array.from(header.querySelectorAll(\"button\"))\n      .filter(b => !(b as HTMLButtonElement).disabled && b.getBoundingClientRect().width > 0);\n    if (!btns.length) return false;\n    btns.sort((a, b) => b.getBoundingClientRect().x - a.getBoundingClientRect().x);\n    (btns[0] as HTMLElement).click();\n    return true;\n  }).catch()#0",
+     "lines": [
+      69,
+      69
+     ]
+    },
+    {
+     "name": "pickerDump/page.evaluate(`(() => {\n    const pop = document.querySelector('.react-datepicker');\n    if (!pop) return '(no .react-datepicker popup)';\n    const days = Array.from(pop.querySelectorAll('.react-datepicker__day'));\n    const enabled = days.filter(x => !x.className.toString().includes('--disabled') && !x.className.toString().includes('--outside-month'));\n    return JSON.stringify({ enabled: enabled.slice(0, 8).map(x => x.getAttribute('aria-label') || (x.textContent || '').trim()), html: pop.outerHTML.replace(/\\\\s+/g, ' ').slice(0, 400) });\n  })()`).catch()#0",
+     "lines": [
+      79,
+      79
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/page.evaluate(OPEN_CHECK_JS).catch()#0@1",
+     "lines": [
+      103,
+      103
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/icon.isVisible({ timeout: 1500 }).catch()#0",
+     "lines": [
+      106,
+      106
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/page.evaluate(OPEN_CHECK_JS).catch()#0@2",
+     "lines": [
+      109,
+      109
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/page.evaluate(ENABLED_ARIAS_JS).catch()#0",
+     "lines": [
+      125,
+      125
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/arias\n      .map()#0",
+     "lines": [
+      127,
+      127
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/arias\n      .map(a => ({ aria: a, date: parseAria(a) }))\n      .filter()#0",
+     "lines": [
+      128,
+      129
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/cands.sort()#0",
+     "lines": [
+      131,
+      131
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/page.evaluate()#0",
+     "lines": [
+      143,
+      150
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/page.evaluate()#0/Array.from(document.querySelectorAll(\".react-datepicker__day\"))\n      .find()#0",
+     "lines": [
+      145,
+      147
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/page.evaluate((aria) => {\n    const cell = Array.from(document.querySelectorAll(\".react-datepicker__day\"))\n      .find(x => (x.getAttribute(\"aria-label\") || \"\") === aria\n        && !x.className.toString().includes(\"--disabled\")\n        && !x.className.toString().includes(\"--outside-month\"));\n    if (cell) { (cell as HTMLElement).click(); return true; }\n    return false;\n  }, pick.aria).catch()#0",
+     "lines": [
+      150,
+      150
+     ]
+    },
+    {
+     "name": "selectDatepickerDate/input.inputValue().catch()#0",
+     "lines": [
+      154,
+      154
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 119,
+     "unit": "selectDatepickerDate",
+     "rule": "type-assertion",
+     "msg": "`hop < 6 && !pick` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 128,
+     "unit": "selectDatepickerDate",
+     "rule": "callback-result",
+     "msg": "an effectful type-predicate callback needs an explicit for-of loop with a type guard",
+     "env": false
+    },
+    {
+     "line": 150,
+     "unit": "selectDatepickerDate",
+     "rule": "type-assertion",
+     "msg": "`pick.aria` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 155,
+     "unit": "selectDatepickerDate",
+     "rule": "type-assertion",
+     "msg": "`pick.date` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 158,
+     "unit": "selectDatepickerDate",
+     "rule": "type-assertion",
+     "msg": "`pick.date` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 163,
+     "unit": "selectDatepickerDate",
+     "rule": "type-assertion",
+     "msg": "`pick.date` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/rendez-vous.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "rendezVous",
+     "lines": [
+      22,
+      170
+     ]
+    },
+    {
+     "name": "rendezVous/committed.some()#0",
+     "lines": [
+      70,
+      70
+     ]
+    },
+    {
+     "name": "rendezVous/Object.values(TIME_SLOTS).map()#0",
+     "lines": [
+      88,
+      88
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@1",
+     "lines": [
+      97,
+      107
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@1/Array.from(document.querySelectorAll(\"div\"))\n        .filter()#0",
+     "lines": [
+      99,
+      106
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@1/Array.from(document.querySelectorAll(\"div\"))\n        .filter()#0/prefixes.some()#0",
+     "lines": [
+      102,
+      102
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@2",
+     "lines": [
+      114,
+      129
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@2/Array.from(document.querySelectorAll(\"div\"))\n        .filter()#0",
+     "lines": [
+      116,
+      123
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@2/Array.from(document.querySelectorAll(\"div\"))\n        .filter()#0/prefixes.some()#0",
+     "lines": [
+      119,
+      119
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@3",
+     "lines": [
+      140,
+      150
+     ]
+    },
+    {
+     "name": "rendezVous/page.evaluate()#0@3/allEls.find()#0",
+     "lines": [
+      142,
+      147
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 24,
+     "unit": "rendezVous",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 78,
+     "unit": "rendezVous",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 88,
+     "unit": "rendezVous",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 88,
+     "unit": "rendezVous/Object.values(TIME_SLOTS).map()#0",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 107,
+     "unit": "rendezVous",
+     "rule": "type-assertion",
+     "msg": "`allPrefixes as string[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 129,
+     "unit": "rendezVous",
+     "rule": "type-assertion",
+     "msg": "`allPrefixes as string[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/steps/services-transfer.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "servicesTransfer",
+     "lines": [
+      39,
+      326
+     ]
+    },
+    {
+     "name": "servicesTransfer/newLabel.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      59,
+      59
+     ]
+    },
+    {
+     "name": "servicesTransfer/keepLabel.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      70,
+      70
+     ]
+    },
+    {
+     "name": "servicesTransfer/phoneInput.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      102,
+      102
+     ]
+    },
+    {
+     "name": "servicesTransfer/validerBtn.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      112,
+      112
+     ]
+    },
+    {
+     "name": "servicesTransfer/prepaidRadio.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      126,
+      126
+     ]
+    },
+    {
+     "name": "servicesTransfer/simRadio.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      138,
+      138
+     ]
+    },
+    {
+     "name": "servicesTransfer/idInput.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      152,
+      152
+     ]
+    },
+    {
+     "name": "servicesTransfer/modalValider.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      168,
+      168
+     ]
+    },
+    {
+     "name": "servicesTransfer/ddTrigger.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      233,
+      233
+     ]
+    },
+    {
+     "name": "servicesTransfer/option.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      239,
+      239
+     ]
+    },
+    {
+     "name": "servicesTransfer/esInput.isVisible().catch()#0",
+     "lines": [
+      260,
+      260
+     ]
+    },
+    {
+     "name": "servicesTransfer/cnInput.isVisible().catch()#0",
+     "lines": [
+      268,
+      268
+     ]
+    },
+    {
+     "name": "servicesTransfer/label.isVisible().catch()#0",
+     "lines": [
+      277,
+      277
+     ]
+    },
+    {
+     "name": "servicesTransfer/feeAckLabel.isVisible({ timeout: 2000 }).catch()#0",
+     "lines": [
+      291,
+      291
+     ]
+    },
+    {
+     "name": "servicesTransfer/noLabel.isVisible({ timeout: 3000 }).catch()#0",
+     "lines": [
+      302,
+      302
+     ]
+    },
+    {
+     "name": "servicesTransfer/nextBtn.scrollIntoViewIfNeeded().catch()#0",
+     "lines": [
+      317,
+      317
+     ]
+    },
+    {
+     "name": "servicesTransfer/nextBtn.isDisabled().catch()#0",
+     "lines": [
+      318,
+      318
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 47,
+     "unit": "servicesTransfer",
+     "rule": "type-assertion",
+     "msg": "`lang` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/url-parser.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "parseConfiguratorUrl",
+     "lines": [
+      64,
+      145
+     ]
+    },
+    {
+     "name": "buildConfiguratorUrl",
+     "lines": [
+      150,
+      210
+     ]
+    },
+    {
+     "name": "Object.entries(INTERNET_PARAM_MAP).map()#0",
+     "lines": [
+      38,
+      38
+     ]
+    },
+    {
+     "name": "Object.entries(MOBILE_PARAM_MAP).map()#0",
+     "lines": [
+      41,
+      41
+     ]
+    },
+    {
+     "name": "Object.entries(TV_PARAM_MAP).map()#0",
+     "lines": [
+      44,
+      44
+     ]
+    },
+    {
+     "name": "Object.entries(OPTION_MAP).map()#0",
+     "lines": [
+      47,
+      47
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 205,
+     "unit": "buildConfiguratorUrl",
+     "rule": "type-assertion",
+     "msg": "`(config as any).promocode` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 37,
+   "units": 319,
+   "entered": 252
+  },
+  {
+   "pkg": "scrapers",
+   "files": 1,
+   "units": 5,
+   "entered": 1
+  },
+  {
+   "pkg": "scripts",
+   "files": 1,
+   "units": 2,
+   "entered": 2
+  }
+ ]
+}

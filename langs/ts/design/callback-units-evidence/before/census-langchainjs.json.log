@@ -1,0 +1,158 @@
+project (none): 18 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-bun/tsconfig.json: 6 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-cf/tsconfig.json: 2 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-cjs/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-esbuild/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-esm/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-node-classic/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-tsc/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-vercel/tsconfig.json: 8 files
+50 files, 53 units, 20 inside, 37 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-exports-vite/tsconfig.json: 4 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-zod-compat/zod-mismatch/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-zod-compat/zod-v3/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/environment_tests/test-zod-compat/zod-v4/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/examples/tsconfig.json: 368 files
+100 files, 81 units, 39 inside, 80 s
+150 files, 88 units, 46 inside, 81 s
+200 files, 95 units, 53 inside, 81 s
+250 files, 110 units, 66 inside, 81 s
+300 files, 114 units, 70 inside, 81 s
+350 files, 128 units, 83 inside, 81 s
+400 files, 148 units, 101 inside, 81 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/internal/standard-tests/tsconfig.json: 11 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/internal/test-helpers/tsconfig.json: 2 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/create-langchain-integration/tsconfig.json: 10 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/create-langchain-integration/template/tsconfig.json: 7 files
+450 files, 249 units, 166 inside, 92 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain/tsconfig.json: 80 files
+500 files, 433 units, 291 inside, 106 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-classic/tsconfig.json: 316 files
+550 files, 608 units, 418 inside, 120 s
+600 files, 731 units, 519 inside, 120 s
+650 files, 947 units, 680 inside, 121 s
+700 files, 1166 units, 846 inside, 122 s
+750 files, 1319 units, 967 inside, 122 s
+800 files, 1503 units, 1103 inside, 123 s
+850 files, 1673 units, 1223 inside, 124 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-core/tsconfig.json: 257 files
+900 files, 1993 units, 1414 inside, 134 s
+950 files, 2311 units, 1649 inside, 135 s
+1000 files, 2726 units, 1899 inside, 136 s
+1050 files, 2981 units, 2054 inside, 138 s
+1100 files, 3050 units, 2097 inside, 140 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-mcp-adapters/examples/tsconfig.json: 13 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-mcp-adapters/tsconfig.json: 12 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/langchain-textsplitters/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-anthropic/tsconfig.json: 29 files
+1150 files, 3207 units, 2207 inside, 169 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-aws/tsconfig.json: 17 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-cloudflare/tsconfig.json: 11 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-cohere/tsconfig.json: 10 files
+1200 files, 3435 units, 2344 inside, 188 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-deepseek/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-exa/tsconfig.json: 6 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-fireworks/tsconfig.json: 7 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google/tsconfig.json: 30 files
+1250 files, 3623 units, 2482 inside, 210 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google-common/tsconfig.json: 24 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google-gauth/tsconfig.json: 10 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google-genai/tsconfig.json: 15 files
+1300 files, 4028 units, 2801 inside, 226 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google-vertexai/tsconfig.json: 8 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google-vertexai-web/tsconfig.json: 8 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-google-webauth/tsconfig.json: 11 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-groq/tsconfig.json: 6 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-ibm/tsconfig.json: 11 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-mistralai/tsconfig.json: 8 files
+1350 files, 4193 units, 2905 inside, 256 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-mongodb/tsconfig.json: 8 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-neo4j/tsconfig.json: 14 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-ollama/tsconfig.json: 9 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-openai/tsconfig.json: 43 files
+1400 files, 4484 units, 3080 inside, 279 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-openrouter/tsconfig.json: 13 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-perplexity/tsconfig.json: 7 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-pgvector/tsconfig.json: 5 files
+1450 files, 4629 units, 3177 inside, 296 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-pinecone/tsconfig.json: 8 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-qdrant/tsconfig.json: 5 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs/libs/providers/langchain-redis/tsconfig.json: 11 files
+
+<--- Last few GCs --->
+
+[35933:0xaaa000000]   516270 ms: Mark-Compact 4070.4 (4116.4) -> 4056.1 (4119.1) MB, pooled: 0 MB, 3347.71 / 0.00 ms  (average mu = 0.102, current mu = 0.036) allocation failure; scavenge might not succeed
+[35933:0xaaa000000]   520017 ms: Mark-Compact (reduce) 4067.3 (4119.9) -> 4060.2 (4091.1) MB, pooled: 0 MB, 2752.29 / 0.00 ms  (+ 296.2 ms in 66 steps since start of marking, biggest step 29.2 ms, walltime since start of marking 3274 ms) (average mu = 0.1
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 0x108fb1da4 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 2: 0x108380d08 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 3: 0x108380cc0 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 4: 0x10853e254 v8::internal::Heap::ShouldOptimizeForLoadTime() const [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 5: 0x1085408ec v8::internal::Heap::OldGenerationConsumedBytes() const [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 6: 0x10854078c v8::internal::Heap::RecomputeLimits(v8::internal::GarbageCollector, v8::base::TimeTicks) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 7: 0x10854d968 v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags)::$_1::operator()() const [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 8: 0x10854d60c void heap::base::Stack::SetMarkerAndCallbackImpl<v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags)::$_1>(heap::base::Stack*, void*, void const*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+ 9: 0x108b953c0 PushAllRegistersAndIterateStack [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+10: 0x10853c998 v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+11: 0x108534c7c v8::internal::HeapAllocator::AllocateRawWithRetryOrFailSlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+12: 0x10850c1fc v8::internal::FactoryBase<v8::internal::Factory>::AllocateRawArray(int, v8::internal::AllocationType, v8::internal::AllocationAlignment) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+13: 0x10850bf78 v8::internal::FactoryBase<v8::internal::Factory>::NewFixedArrayWithFiller(v8::internal::DirectHandle<v8::internal::Map>, int, v8::internal::DirectHandle<v8::internal::HeapObject>, v8::internal::AllocationType) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+14: 0x10878b1a4 v8::internal::OrderedHashTable<v8::internal::OrderedHashMap, 2>::Allocate(v8::internal::Isolate*, int, v8::internal::AllocationType) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+15: 0x10878aa04 v8::internal::DirectHandle<v8::internal::OrderedHashMap>::MaybeType v8::internal::OrderedHashTable<v8::internal::OrderedHashMap, 2>::Rehash<v8::internal::DirectHandle>(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::OrderedHashMap>, int) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+16: 0x10878ca9c v8::internal::Handle<v8::internal::OrderedHashMap>::MaybeType v8::internal::OrderedHashTable<v8::internal::OrderedHashMap, 2>::EnsureCapacityForAdding<v8::internal::Handle>(v8::internal::Isolate*, v8::internal::Handle<v8::internal::OrderedHashMap>) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+17: 0x10883ee98 v8::internal::Runtime_MapGrow(int, unsigned long*, v8::internal::Isolate*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+18: 0x107f96234 Builtins_CEntry_Return1_ArgvOnStack_NoBuiltinExit [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+19: 0x107f5db60 Builtins_MapPrototypeSet [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+20: 0x1328b8080 
+21: 0x1326a3610 
+22: 0x132ea69d8 
+23: 0x13272028c 
+24: 0x1328b8024 
+25: 0x1320bb930 
+26: 0x13271fe18 
+27: 0x131f812a0 
+28: 0x13324d948 
+29: 0x1326f2570 
+30: 0x1326f13d4 
+31: 0x1326f260c 
+32: 0x1326f13d4 
+33: 0x1326f260c 
+34: 0x1326f13d4 
+35: 0x131eab020 
+36: 0x1326f2ba0 
+37: 0x131c8ff78 
+38: 0x131c7aca4 
+39: 0x131c6a9e0 
+40: 0x131c9efa8 
+41: 0x1320e14f4 
+42: 0x107ef8bec Builtins_InterpreterEntryTrampoline [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+43: 0x107f39e88 Builtins_GeneratorPrototypeNext [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+44: 0x107ef68cc Builtins_JSEntryTrampoline [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+45: 0x107ef6570 Builtins_JSEntry [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+46: 0x1084a8d78 v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+47: 0x1084a93f0 v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+48: 0x1084a9490 v8::internal::Execution::TryCall(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHandle<v8::internal::Object> const>, v8::internal::Execution::MessageHandling, v8::internal::MaybeDirectHandle<v8::internal::Object>*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+49: 0x10879b888 v8::internal::SourceTextModule::ExecuteModule(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::SourceTextModule>, v8::internal::MaybeDirectHandle<v8::internal::Object>*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+50: 0x10879b4b8 v8::internal::SourceTextModule::AsyncModuleExecutionFulfilled(v8::internal::Isolate*, v8::internal::Handle<v8::internal::SourceTextModule>) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+51: 0x1083c8430 v8::internal::Builtin_CallAsyncModuleFulfilled(int, unsigned long*, v8::internal::Isolate*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+52: 0x107f96154 Builtins_CEntry_Return1_ArgvOnStack_BuiltinExit [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+53: 0x10800ce58 Builtins_PromiseFulfillReactionJob [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+54: 0x107f26bd0 Builtins_RunMicrotasks [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+55: 0x107ef67b0 Builtins_JSRunMicrotasksEntry [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+56: 0x1084a8d48 v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+57: 0x1084a93f0 v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+58: 0x1084a94e0 v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+59: 0x1084c9e34 v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+60: 0x1084c9c50 v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+61: 0x1080d3c3c node::InternalCallbackScope::Close() [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+62: 0x1080d3ad4 node::InternalCallbackScope::~InternalCallbackScope() [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+63: 0x10814d3f0 node::StartExecution(node::Environment*, std::__1::function<v8::MaybeLocal<v8::Value> (node::StartExecutionCallbackInfoWithModule const&)>) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+64: 0x1080d8e58 node::LoadEnvironment(node::Environment*, std::__1::function<v8::MaybeLocal<v8::Value> (node::StartExecutionCallbackInfoWithModule const&)>, std::__1::function<void (node::Environment*, v8::Local<v8::Value>, v8::Local<v8::Value>)>) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+65: 0x1081afb84 node::NodeMainInstance::Run(node::ExitCode*, node::Environment*) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+66: 0x1081af974 node::NodeMainInstance::Run() [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+67: 0x108150098 node::Start(int, char**) [/opt/homebrew/Cellar/node@24/24.18.0/lib/libnode.137.dylib]
+68: 0x183c984e4 start [/usr/lib/dyld]
+
+exit=null signal=SIGABRT

@@ -1,0 +1,102 @@
+n8n: 3111 files, 5063 units, 2752 inside the subset (54.4 percent), 0 files unreadable, 130 s
+    1466 units  type-assertion         packages/@n8n/nodes-langchain/nodes/agents/Agent/Agent.node.ts:55 `type as NodeConnectionType` holds a value whose type nothing checked (an `as` that narrows, or an any or unkn
+     372 units  ts-strict              packages/@n8n/chat/.eslintrc.cjs:4 TS6137: Cannot import type declaration files. Consider importing 'eslint' instead of '@types/eslint'.
+     320 units  unresolved-module      jest.config.js:3 TS2307: Cannot find module 'ts-jest' or its corresponding type declarations.
+     229 units  assign-target          packages/@n8n/nodes-langchain/nodes/vendors/OpenAi/transport/index.ts:33 `Object.assign` copies every own key of its source, and a value of a record type may carry keys its type does 
+     201 units  prototype              packages/@n8n/nodes-langchain/utils/logWrapper.ts:124 `new Proxy` is outside the subset
+     166 units  index-assign           packages/@n8n/nodes-langchain/nodes/memory/MemoryManager/MemoryManager.node.ts:32 write a record field by name, or use a local Record<string, T> dictionary
+     107 units  alias-mutation         packages/@n8n/nodes-langchain/nodes/llms/N8nLlmTracing.ts:182 `errorWithHeaders` is another name for a value this function was handed
+     103 units  property-assign        packages/editor-ui/src/composables/useContextMenu.ts:84 assignment into `target`, which this function does not own; records it owns are updated in place
+     100 units  non-null-assertion     packages/editor-ui/src/components/Node/NodeCreator/viewsData.ts:125 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      83 units  param-mutation         packages/editor-ui/src/components/AssignmentCollection/utils.ts:45 push on `assignments`, which is not a local array
+      76 units  unsupported-call       packages/@n8n/nodes-langchain/nodes/vendors/OpenAi/actions/audio/transcribe.operation.ts:71 .toString() on string | number | true | object | IDataObject | GenericValue[] | IDataObject[] reads Object.pro
+      71 units  dynamic-key            packages/@n8n/nodes-langchain/nodes/memory/MemoryManager/MemoryManager.node.ts:28 bind the computed key before the literal; a key call may mutate its receiver
+      65 units  spread                 packages/@n8n/nodes-langchain/nodes/agents/Agent/agents/ConversationalAgent/execute.ts:67 spread arguments need an outside callee or a supported sequence operation
+      63 units  global-read            packages/@n8n/nodes-langchain/nodes/output_parser/OutputParserStructured/OutputParserStructured.node.ts:85 `N8nStructuredOutputParser` is module state that can change; the subset reads constants only
+      58 units  opaque-mutation        packages/@n8n/chat/src/plugins/chat.ts:12 .provide() on `app` may change it, and `app` is read later; read it before the call or through a method
+      54 units  unsupported-member     packages/@n8n/chat/src/composables/useI18n.ts:11 property .value on string is outside the subset
+      51 units  record-rest            packages/@n8n/nodes-langchain/utils/schemaParsing.ts:50 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+      49 units  foreach                packages/editor-ui/src/components/AssignmentCollection/utils.ts:29 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+      43 units  param-assign           packages/editor-ui/src/composables/useExpressionEditor.ts:428 `pos` is a parameter of a callback or a local function; copy it to a local first
+      39 units  closure-mutation       packages/@n8n/chat/src/plugins/chat.ts:36 a callback cannot change an outer record
+      37 units  callback-form          packages/@n8n/nodes-langchain/utils/sharedFields.ts:131 an effectful array callback takes the element (and an index), or the accumulator and the element; an extra par
+      36 units  unsupported-syntax     packages/editor-ui/src/utils/apiUtils.ts:87 `import.meta.env` is injected at build time; read it outside the subset
+      27 units  mixed-types            packages/editor-ui/src/composables/useNodeHelpers.ts:701 a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal
+      23 units  promise-executor-escape packages/@n8n/imap/src/helpers/getMessage.ts:16 a deferred resolver needs a single outside callback bridge; stored resolvers are not read
+      23 units  delete                 packages/cli/src/ExternalHooks.ts:66 delete on `require`, which this function does not own
+project /Users/assem/Documents/GitHub/n8n/tsconfig.json: 382 files
+50 files, 13 units, 4 inside, 8 s
+100 files, 81 units, 28 inside, 9 s
+150 files, 147 units, 61 inside, 9 s
+200 files, 306 units, 215 inside, 10 s
+250 files, 385 units, 257 inside, 11 s
+300 files, 568 units, 401 inside, 12 s
+350 files, 661 units, 467 inside, 12 s
+project /Users/assem/Documents/GitHub/n8n/packages/@n8n/client-oauth2/tsconfig.json: 10 files
+project /Users/assem/Documents/GitHub/n8n/packages/@n8n/codemirror-lang/tsconfig.json: 1 files
+project /Users/assem/Documents/GitHub/n8n/packages/@n8n/imap/tsconfig.json: 7 files
+400 files, 762 units, 541 inside, 15 s
+project /Users/assem/Documents/GitHub/n8n/packages/@n8n/permissions/tsconfig.json: 3 files
+project /Users/assem/Documents/GitHub/n8n/packages/cli/tsconfig.json: 469 files
+450 files, 1147 units, 833 inside, 22 s
+500 files, 1381 units, 952 inside, 23 s
+550 files, 1560 units, 1074 inside, 23 s
+600 files, 1639 units, 1151 inside, 24 s
+650 files, 1721 units, 1232 inside, 24 s
+700 files, 1890 units, 1302 inside, 24 s
+750 files, 2103 units, 1471 inside, 24 s
+800 files, 2220 units, 1552 inside, 25 s
+850 files, 2487 units, 1745 inside, 25 s
+project /Users/assem/Documents/GitHub/n8n/packages/core/tsconfig.json: 32 files
+900 files, 2749 units, 1924 inside, 28 s
+project /Users/assem/Documents/GitHub/n8n/packages/design-system/tsconfig.json: 77 files
+950 files, 2753 units, 1926 inside, 29 s
+project /Users/assem/Documents/GitHub/n8n/packages/node-dev/tsconfig.json: 8 files
+project /Users/assem/Documents/GitHub/n8n/packages/nodes-base/tsconfig.json: 1200 files
+1000 files, 2773 units, 1936 inside, 52 s
+1050 files, 2780 units, 1937 inside, 52 s
+1100 files, 2783 units, 1938 inside, 52 s
+1150 files, 2785 units, 1938 inside, 52 s
+1200 files, 2789 units, 1939 inside, 52 s
+1250 files, 2791 units, 1940 inside, 52 s
+1300 files, 2815 units, 1953 inside, 52 s
+1350 files, 2844 units, 1960 inside, 53 s
+1400 files, 2930 units, 1981 inside, 57 s
+1450 files, 2967 units, 1993 inside, 58 s
+1500 files, 3023 units, 2011 inside, 60 s
+1550 files, 3070 units, 2032 inside, 61 s
+1600 files, 3106 units, 2053 inside, 62 s
+1650 files, 3155 units, 2063 inside, 63 s
+1700 files, 3229 units, 2089 inside, 64 s
+1750 files, 3287 units, 2117 inside, 65 s
+1800 files, 3345 units, 2133 inside, 67 s
+1850 files, 3393 units, 2145 inside, 69 s
+1900 files, 3517 units, 2204 inside, 71 s
+1950 files, 3554 units, 2212 inside, 74 s
+2000 files, 3653 units, 2256 inside, 79 s
+2050 files, 3730 units, 2281 inside, 82 s
+2100 files, 3767 units, 2293 inside, 83 s
+2150 files, 3818 units, 2309 inside, 85 s
+project /Users/assem/Documents/GitHub/n8n/packages/nodes-base/tsconfig.json: 876 files
+2200 files, 3842 units, 2311 inside, 104 s
+2250 files, 3896 units, 2321 inside, 107 s
+2300 files, 3950 units, 2333 inside, 107 s
+2350 files, 4011 units, 2351 inside, 108 s
+2400 files, 4059 units, 2366 inside, 109 s
+2450 files, 4144 units, 2382 inside, 111 s
+2500 files, 4184 units, 2388 inside, 112 s
+2550 files, 4281 units, 2419 inside, 113 s
+2600 files, 4334 units, 2434 inside, 117 s
+2650 files, 4391 units, 2452 inside, 119 s
+2700 files, 4449 units, 2466 inside, 121 s
+2750 files, 4497 units, 2483 inside, 122 s
+2800 files, 4516 units, 2483 inside, 122 s
+2850 files, 4578 units, 2524 inside, 124 s
+2900 files, 4647 units, 2553 inside, 124 s
+2950 files, 4737 units, 2586 inside, 126 s
+3000 files, 4795 units, 2604 inside, 127 s
+3050 files, 4845 units, 2628 inside, 128 s
+project /Users/assem/Documents/GitHub/n8n/packages/workflow/tsconfig.json: 46 files
+3100 files, 5035 units, 2737 inside, 130 s
+
+exit=0 signal=null

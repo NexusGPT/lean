@@ -1,0 +1,6 @@
+itsme-backend: 5 files, 25 units, 23 inside the subset (92 percent), 0 files unreadable, 2 s
+       2 units  type-assertion         src/keys.ts:117 `pub.n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this 
+       0 units  toplevel-effect        scripts/keygen.ts:17 code at module level runs on import; it is outside the subset
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/itsme-backend/tsconfig.json: 5 files
+
+exit=0 signal=null

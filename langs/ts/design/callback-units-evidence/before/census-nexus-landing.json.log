@@ -1,0 +1,38 @@
+nexus-landing: 439 files, 1388 units, 1049 inside the subset (75.6 percent), 0 files unreadable, 43 s
+      97 units  foreach                app/dieteren-workshop/scene.ts:499 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+      88 units  unresolved-module      app/(site)/(legal)/layout.tsx:4 TS2503: Cannot find namespace 'React'.
+      66 units  closure-mutation       app/dieteren-workshop/Deck.tsx:111 a callback cannot change an outer record
+      62 units  untyped-js             scripts/build-competitive-report 2.mjs:31 parameter `md` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} md` or TypeScript) o
+      47 units  type-assertion         app/api/generate-role/route.ts:124 `text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this s
+      42 units  unsupported-syntax     app/(site)/roles/middle-lab/page 2.tsx:41 a local component value must be a string tag name or a named component
+      23 units  promise-pending        components/generate/GenerateFleetClient.tsx:55 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+      22 units  promise                shot-all 2.cjs:4 a promise built with new Promise is not a handle; make the function async
+      21 units  react-handler-capture  app/dieteren-workshop/Deck.tsx:111 a React closure captures a changing local; capture a const value or use a state setter
+      21 units  property-assign        app/dieteren-workshop/Deck.tsx:125 assignment into `RECT`, which this function does not own; records it owns are updated in place
+      17 units  opaque-mutation        app/dieteren-workshop/Gate.tsx:26 .preventDefault() on `e` may change it, and `e` is read later; read it before the call or through a method
+      15 units  spread                 app/dieteren-workshop/Hundred.tsx:83 a spread argument goes to a rest parameter, as the last argument
+      12 units  non-null-assertion     components/customer-support/SupportSystem.tsx:16 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      11 units  alias-mutation         app/dieteren-workshop/Hundred.tsx:515 `u` is another name for a value this function was handed; change it through that name, or copy it first
+      11 units  index-assign           app/dieteren-workshop/scene.ts:11408 index assignment into `MORPH_PANES`, which this function does not own
+       9 units  unsupported-call       components/compare/CompareHubContent.tsx:68 calls through computed callees are outside the subset
+       8 units  param-assign           app/dieteren-workshop/Hundred.tsx:39 parameter `seed` is assigned inside a callback or a local function; a callback cannot change it
+       6 units  ts-strict              app/(site)/blog/[slug]/page.tsx:117 TS18047: 'post' is possibly 'null'.
+       6 units  unsupported-operator   app/dieteren-workshop/Hundred.tsx:38 assignment operator is outside the subset
+       5 units  param-mutation         components/customer-support/lab/variations/arch/RoleArchMembrane.tsx:756 push on `drops`, which is not a local array
+       4 units  async                  lib/blog-md.ts:66 an async unit is called without await
+       4 units  global-read            scripts/transform-all.js:39 global `path` is outside the subset
+       3 units  operator-value-context app/dieteren-workshop/scene.ts:4088 move this value step into an explicit statement and conditional branch
+       3 units  prototype              components/customer-support/SupportDiagram.tsx:66 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+       3 units  dynamic-key            components/customer-support/lab/variations/V7Hub.tsx:149 key "right", "left" is not declared on { [x: string]: string | number; position: string; top: string; width: n
+project /Users/assem/Documents/GitHub/nexus-landing/tsconfig.json: 436 files
+50 files, 61 units, 56 inside, 18 s
+100 files, 385 units, 240 inside, 27 s
+150 files, 551 units, 384 inside, 29 s
+200 files, 871 units, 670 inside, 33 s
+250 files, 928 units, 717 inside, 34 s
+300 files, 1145 units, 905 inside, 39 s
+350 files, 1251 units, 996 inside, 40 s
+400 files, 1365 units, 1047 inside, 41 s
+project /Users/assem/Documents/GitHub/nexus-landing/public/voice_ai_assistant/tsconfig.json: 3 files
+
+exit=0 signal=null

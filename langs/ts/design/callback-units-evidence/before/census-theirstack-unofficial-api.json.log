@@ -1,0 +1,11 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/theirstack-unofficial-api","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-theirstack-unofficial-api.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  31540228    29%  458732 315402280    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/theirstack-unofficial-api/tsconfig.json: 9 files
+theirstack-unofficial-api: 9 files, 11 units, 9 inside the subset (81.8 percent), 0 files unreadable, 2 s
+       2 units  type-assertion         src/middleware/error-handler.ts:67 `anyErr.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), a
+       1 units  assign-target          src/services/jobs.service.ts:46 `Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources 
+       1 units  non-null-assertion     src/services/jobs.service.ts:50 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       0 units  toplevel-effect        src/index.ts:15 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

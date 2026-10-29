@@ -1,0 +1,32 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/node_redis","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/bugsjs-node_redis.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  34555196    27%  458732 345551960    0%   /
+project (none): 30 files
+node_redis: 30 files, 93 units, 8 inside the subset (8.6 percent), 0 files unreadable, 1 s
+      76 units  untyped-js             benchmarks/diff_multi_bench_output.js:26 parameter `s` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} s` or TypeScript) or 
+      44 units  unresolved-module      benchmarks/diff_multi_bench_output.js:3 TS2792: Cannot find module 'fs'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add al
+      26 units  toplevel-effect        benchmarks/diff_multi_bench_output.js:3 move the effectful module initializer into a function
+      24 units  var                    benchmarks/diff_multi_bench_output.js:31 `var` is outside the subset; use let or const
+      22 units  callback-form          benchmarks/diff_multi_bench_output.js:69 the callback must be an arrow function
+      10 units  global-read            benchmarks/multi_bench.js:64 `metrics` is module state that can change; the subset reads constants only
+       8 units  ts-strict              benchmarks/diff_multi_bench_output.js:17 TS1108: A 'return' statement can only be used within a function body.
+       8 units  index-assign           examples/subquery.js:11 write a record field by name, or use a local Record<string, T> dictionary
+       6 units  type-assertion         benchmarks/diff_multi_bench_output.js:52 `num` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl
+       5 units  this                   index.js:49 `this` outside a class method; a free function declares its receiver as a `this` parameter
+       4 units  unsupported-call       benchmarks/diff_multi_bench_output.js:50 pad takes 4 arguments
+       4 units  prototype              index.js:76 this file makes an object whose prototype is not Object.prototype (line 54), and its new prototype (line 54) m
+       3 units  unary-coercion         benchmarks/multi_bench.js:56 unary + coerces; it is outside the subset
+       3 units  captured-mutable       examples/web_server.js:16 captured binding `redis_info` may be written after this callback is created; capture a stable value
+       3 units  opaque-mutation        index.js:743 .emit() on `self` may change it, and `self` is read later; read it before the call or through a method
+       3 units  mutator-value          lib/customErrors.js:21 .pop() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind it to a con
+       2 units  bitwise                benchmarks/diff_multi_bench_output.js:71 bitwise operands must be numbers; BigInt and opaque coercions need lane B
+       2 units  receiver-mutation      benchmarks/multi_bench.js:50 a receiver path needs nonoptional data records; assign a field itself for class or opaque handles
+       2 units  param-assign           index.js:48 parameter `options` is rebound and also changed in place, which hands the change back to the caller; copy it t
+       2 units  property-assign        index.js:89 update of a field of `RedisClient`, which this function does not own
+       2 units  param-mutation         index.js:721 .shift() on `self.command_queue`, an opaque value, used as a value: the call may mutate it
+       1 units  foreach                examples/web_server.js:28 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+       1 units  implicit-this          index.js:30 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter
+       1 units  key-order              index.js:53 a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this object is n
+       1 units  arguments              lib/debug.js:7 `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest paramet
+
+exit=0 signal=null

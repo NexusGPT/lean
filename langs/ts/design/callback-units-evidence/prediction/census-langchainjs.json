@@ -1,0 +1,224 @@
+{
+ "kinds": [
+  [
+   "objlit-exported",
+   "a direct method or function-valued property of an object literal that is exported (export const X = {...}, export default {...}, module.exports = {...}, exports.x = {...})"
+  ],
+  [
+   "objlit-module-const",
+   "the same, of an object literal bound to a module-level const that is not exported"
+  ],
+  [
+   "objlit-other",
+   "a method or function-valued property of any other object literal (nested literal, local literal, argument, let)"
+  ],
+  [
+   "exports-assign",
+   "the right side of module.exports = f, exports.x = f, module.exports.x = f"
+  ],
+  [
+   "prop-assign",
+   "the right side of any other property assignment a.b = f, a[k] = f"
+  ],
+  [
+   "class-field",
+   "a class field initialised with a function or arrow"
+  ],
+  [
+   "class-other",
+   "a class member not listed (a class expression, a nested or unnamed class, a computed or private name)"
+  ],
+  [
+   "callback",
+   "an argument of a call or new"
+  ],
+  [
+   "iife",
+   "the callee of a call (an immediately invoked function)"
+  ],
+  [
+   "nested",
+   "a function declaration or a variable initialiser inside another function"
+  ],
+  [
+   "top-other",
+   "a module-level declaration not listed (let or var, several declarators, an anonymous default export)"
+  ],
+  [
+   "other",
+   "anything else (a return value, an array element, a JSX attribute, a default parameter, a conditional)"
+  ]
+ ],
+ "rows": [
+  {
+   "name": "langchainjs",
+   "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/langchainjs",
+   "ts": {
+    "files": 1486,
+    "unreadable": 0,
+    "functions": 7757,
+    "listed": 4907,
+    "unlisted": 2850,
+    "listable": 0,
+    "callbacks": {
+     "moduleArrowBlock": 142,
+     "moduleArrowExpression": 80,
+     "moduleFunctionBlock": 0,
+     "moduleFunctionExpression": 0,
+     "bodyArrowBlock": 475,
+     "bodyArrowExpression": 1102,
+     "bodyFunctionBlock": 3,
+     "bodyFunctionExpression": 0,
+     "orderNamed": 257,
+     "otherScope": 201,
+     "predicted": 1802
+    },
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 282,
+     "exports-assign": 0,
+     "prop-assign": 25,
+     "class-field": 5,
+     "class-other": 70,
+     "callback": 2003,
+     "iife": 18,
+     "nested": 366,
+     "top-other": 1,
+     "other": 80
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   },
+   "js": {
+    "files": 46,
+    "unreadable": 0,
+    "functions": 75,
+    "listed": 38,
+    "unlisted": 37,
+    "listable": 0,
+    "callbacks": {
+     "moduleArrowBlock": 8,
+     "moduleArrowExpression": 8,
+     "moduleFunctionBlock": 0,
+     "moduleFunctionExpression": 0,
+     "bodyArrowBlock": 4,
+     "bodyArrowExpression": 4,
+     "bodyFunctionBlock": 0,
+     "bodyFunctionExpression": 0,
+     "orderNamed": 0,
+     "otherScope": 2,
+     "predicted": 24
+    },
+    "kinds": {
+     "objlit-exported": 0,
+     "objlit-module-const": 0,
+     "objlit-other": 1,
+     "exports-assign": 0,
+     "prop-assign": 0,
+     "class-field": 0,
+     "class-other": 0,
+     "callback": 26,
+     "iife": 0,
+     "nested": 2,
+     "top-other": 0,
+     "other": 8
+    },
+    "examples": {
+     "objlit-exported": [],
+     "objlit-module-const": [],
+     "objlit-other": [],
+     "exports-assign": [],
+     "prop-assign": [],
+     "class-field": [],
+     "class-other": [],
+     "callback": [],
+     "iife": [],
+     "nested": [],
+     "top-other": [],
+     "other": []
+    }
+   }
+  }
+ ],
+ "totals": {
+  "ts": {
+   "files": 1486,
+   "listed": 4907,
+   "unlisted": 2850,
+   "listable": 0,
+   "callbacks": {
+    "moduleArrowBlock": 142,
+    "moduleArrowExpression": 80,
+    "moduleFunctionBlock": 0,
+    "moduleFunctionExpression": 0,
+    "bodyArrowBlock": 475,
+    "bodyArrowExpression": 1102,
+    "bodyFunctionBlock": 3,
+    "bodyFunctionExpression": 0,
+    "orderNamed": 257,
+    "otherScope": 201,
+    "predicted": 1802
+   },
+   "kinds": {
+    "objlit-exported": 0,
+    "objlit-module-const": 0,
+    "objlit-other": 282,
+    "exports-assign": 0,
+    "prop-assign": 25,
+    "class-field": 5,
+    "class-other": 70,
+    "callback": 2003,
+    "iife": 18,
+    "nested": 366,
+    "top-other": 1,
+    "other": 80
+   }
+  },
+  "js": {
+   "files": 46,
+   "listed": 38,
+   "unlisted": 37,
+   "listable": 0,
+   "callbacks": {
+    "moduleArrowBlock": 8,
+    "moduleArrowExpression": 8,
+    "moduleFunctionBlock": 0,
+    "moduleFunctionExpression": 0,
+    "bodyArrowBlock": 4,
+    "bodyArrowExpression": 4,
+    "bodyFunctionBlock": 0,
+    "bodyFunctionExpression": 0,
+    "orderNamed": 0,
+    "otherScope": 2,
+    "predicted": 24
+   },
+   "kinds": {
+    "objlit-exported": 0,
+    "objlit-module-const": 0,
+    "objlit-other": 1,
+    "exports-assign": 0,
+    "prop-assign": 0,
+    "class-field": 0,
+    "class-other": 0,
+    "callback": 26,
+    "iife": 0,
+    "nested": 2,
+    "top-other": 0,
+    "other": 8
+   }
+  }
+ }
+}

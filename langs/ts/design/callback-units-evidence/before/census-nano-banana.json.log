@@ -1,0 +1,6 @@
+nano-banana: 2 files, 11 units, 5 inside the subset (45.5 percent), 0 files unreadable, 3 s
+       5 units  toplevel-effect        src/index.ts:234 code at module level runs on import; it is outside the subset
+       4 units  type-assertion         src/index.ts:171 `error.response?.status || 500` holds a value whose type nothing checked (an `as` that narrows, or an any or u
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nano-banana/tsconfig.json: 2 files
+
+exit=0 signal=null

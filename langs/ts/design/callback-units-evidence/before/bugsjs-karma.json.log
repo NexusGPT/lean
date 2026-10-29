@@ -1,0 +1,33 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/karma","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-karma.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33037108    28%  458732 330371080    0%   /
+project (none): 71 files
+50 files, 172 units, 33 inside, 3 s
+karma: 71 files, 216 units, 36 inside the subset (16.7 percent), 0 files unreadable, 3 s
+     171 units  untyped-js             client/karma.js:5 parameter `socket` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} socket` or TypeS
+      32 units  callback-form          client/karma.js:28 the callback must be an arrow function
+      26 units  unresolved-module      client/karma.js:64 TS2584: Cannot find name 'document'. Do you need to change your target library? Try changing the 'lib' compile
+      23 units  ts-strict              client/karma.js:10 TS2339: Property 'id' does not exist on type '{}'.
+      19 units  type-assertion         common/stringify.js:68 `constructor` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and
+      11 units  this                   client/karma.js:8 `this` outside a class method; a free function declares its receiver as a `this` parameter
+      10 units  param-mutation         lib/cli.js:113 .shift() on `argv._`, an opaque value, used as a value: the call may mutate it
+       9 units  global-read            common/stringify.js:59 `serialize` is module state that can change; the subset reads constants only
+       8 units  closure-mutation       client/updater.js:14 a callback cannot change an outer record
+       7 units  dynamic-key            client/karma.js:12 use a finite union of declared string keys, or a Record<string, T> dictionary
+       6 units  opaque-mutation        client/karma.js:212 .on() on `socket` may change it, and `socket` is read later; read it before the call or through a method
+       6 units  prototype              common/stringify.js:64 `.constructor` reaches the prototype chain
+       6 units  index-assign           lib/emitter_wrapper.js:13 write a record field by name, or use a local Record<string, T> dictionary
+       5 units  unsupported-call       common/stringify.js:19 .toString() on symbol reads Object.prototype.toString or the object's own toString, a prototype this unit does
+       5 units  receiver-mutation      lib/browser.js:46 a receiver path needs nonoptional data records; assign a field itself for class or opaque handles
+       5 units  foreach                lib/browser_collection.js:84 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+       4 units  var                    client/karma.js:6 `var` is outside the subset; use let or const
+       4 units  implicit-this          client/karma.js:227 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter
+       4 units  param-assign           lib/file-list.js:108 `files` is a parameter of a callback or a local function; copy it to a local first
+       3 units  definite-assignment    lib/launcher.js:44 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested
+       2 units  key-order              common/stringify.js:71 a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this object is n
+       2 units  update-expression      lib/events.js:53 increment a numeric local or numeric field
+       2 units  unsupported-syntax     lib/file-list.js:41 only assignments, ++/--, calls, and await may stand as statements
+       2 units  property-assign        lib/init/log-queue.js:6 assignment into `logQueue`, which this function does not own; records it owns are updated in place
+       1 units  toplevel-effect        client/karma.js:1 move the effectful module initializer into a function
+
+exit=0 signal=null

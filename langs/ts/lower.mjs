@@ -24,7 +24,7 @@ import { asyncGenerator } from './generators.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, normaliseApplyCalls, topLevelFunctions, lineOf, colOf, overlaps, isArrayLike, originOf } from './common.mjs';
+import { ts, loadProgram, normaliseApplyCalls, topLevelFunctions, lineOf, colOf, overlaps, isArrayLike, originOf, findingUnit } from './common.mjs';
 import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, readingOfFinding, readingOfRefusal, translatorText, withdrawnReason, withdrawalKey, currentVersion } from './readings.mjs';
 import { memberRow } from './library-rows.mjs';
 import { methodLiteralOf } from './common.mjs';
@@ -543,6 +543,7 @@ const LIB_NAMESPACES = new Set(['Math', 'Object', 'JSON', 'Array', 'Number', 'St
 export function unitReadings(u, sf, checker) {
   const used = new Set(ALWAYS), unread = [];
   const ctx = {
+    unit: u, // the unit whose body is walked: a reading of a unit form (a callback) reads it through this
     moduleState: (id) => { try { return moduleState(checker, id, sf); } catch { return null; } },
     libraryReceiver: (e) => {
       if (ts.isIdentifier(e) && LIB_NAMESPACES.has(e.text)) return true;
@@ -612,9 +613,9 @@ export function lowerFile(file, ranges = null, opts = {}) {
   if (memo.has(key)) return memo.get(key);
   const L = normaliseApplyCalls(given);
   const findings = admitUnits(file, ranges, { ...opts, loaded: given }, L);
+  const inventory = topLevelFunctions(L.sf); // the unit a finding belongs to: the lint's named unit, else the innermost containing one
   const units = admitted.get(findings).map((r) => {
-    const [a, b] = r.lines;
-    const f = findings.find((x) => refusing(x) && x.line >= a && x.line <= b);
+    const f = findings.find((x) => refusing(x) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit
     return { ...r, refusal: f ? { id: f.reading?.id ?? 'uncatalogued', version: f.reading?.version ?? null, rule: f.rule, reason: f.msg, line: f.line, by: ['no-reading', 'withdrawn'].includes(f.rule) ? 'catalogue' : 'lint' } : null };
   });
   // phase 4: the translator reads each unit phases 1-3 admitted exactly as the proof lane runs it (check.mjs: --core --heap

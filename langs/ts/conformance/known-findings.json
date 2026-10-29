@@ -1860,6 +1860,36 @@
    "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
    "added": "600dd759: pair unchanged; lane A translates x! since merge fea80f88 (opaque-values), refused before",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callback_units",
+   "unit": "outer",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "a94d702e",
+   "laneA": "proved",
+   "first": "input 8, parent: result: .1: model {\"$bigint\":\"9007199254740993\"} against 9007199254740992",
+   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callback_units",
+   "unit": "app.get('/changed')#1",
+   "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+   "row": "a94d702e",
+   "laneA": "not proved",
+   "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
+   "class": "2^53: the model is exact, Node rounds to binary64 (the number model reads number as an exact integer; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "callback_units",
+   "unit": "app.get('/same')#1",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "a94d702e",
+   "laneA": "proved",
+   "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   }
  ]
 }

@@ -1,0 +1,30 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/node_redis","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/bugsjs-node_redis.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33111360    28%  458732 331113600    0%   /
+project (none): 30 files
+node_redis: 30 files, 38 units, 1 inside the subset (2.6 percent), 0 files unreadable, 2 s
+      32 units  untyped-js             benchmarks/diff_multi_bench_output.js:26 parameter `s` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} s` or TypeScript) or 
+      19 units  var                    benchmarks/diff_multi_bench_output.js:31 `var` is outside the subset; use let or const
+      12 units  callback-form          benchmarks/multi_bench.js:16 the callback must be an arrow function
+      11 units  unresolved-module      benchmarks/diff_multi_bench_output.js:3 TS2792: Cannot find module 'fs'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add al
+       7 units  index-assign           index.js:54 write a record field by name, or use a local Record<string, T> dictionary
+       6 units  ts-strict              benchmarks/diff_multi_bench_output.js:17 TS1108: A 'return' statement can only be used within a function body.
+       5 units  toplevel-effect        benchmarks/diff_multi_bench_output.js:3 move the effectful module initializer into a function
+       5 units  global-read            benchmarks/multi_bench.js:64 `metrics` is module state that can change; the subset reads constants only
+       4 units  type-assertion         benchmarks/diff_multi_bench_output.js:52 `num` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl
+       4 units  this                   index.js:49 `this` outside a class method; a free function declares its receiver as a `this` parameter
+       4 units  prototype              index.js:76 this file makes an object whose prototype is not Object.prototype (line 54), and its new prototype (line 54) m
+       3 units  unsupported-call       benchmarks/diff_multi_bench_output.js:50 pad takes 4 arguments
+       3 units  unary-coercion         benchmarks/multi_bench.js:56 unary + coerces; it is outside the subset
+       3 units  opaque-mutation        index.js:743 .emit() on `self` may change it, and `self` is read later; read it before the call or through a method
+       3 units  mutator-value          lib/customErrors.js:21 .pop() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind it to a con
+       2 units  param-assign           index.js:48 parameter `options` is rebound and also changed in place, which hands the change back to the caller; copy it t
+       2 units  property-assign        index.js:89 update of a field of `RedisClient`, which this function does not own
+       2 units  param-mutation         index.js:721 .shift() on `self.command_queue`, an opaque value, used as a value: the call may mutate it
+       1 units  receiver-mutation      benchmarks/multi_bench.js:50 a receiver path needs nonoptional data records; assign a field itself for class or opaque handles
+       1 units  implicit-this          index.js:30 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter
+       1 units  key-order              index.js:53 a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this object is n
+       1 units  bitwise                index.js:119 bitwise operands must be numbers; BigInt and opaque coercions need lane B
+       1 units  arguments              lib/debug.js:7 `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest paramet
+
+exit=0 signal=null

@@ -1,0 +1,16 @@
+✔ --only tokenization protects parentheses and quoted commas in every position (1.338875ms)
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/parent.dfy
+exit=0
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/candidate.dfy
+exit=0
+✔ one shared parser reads emitted unit names and ordinary lists (1.327875ms)
+✔ translator heap/effect flags and agreeCore round-trip the HEAP writer (4424.656916ms)
+✔ certificate heapCore retains the source unit name emitted in HEAP (10425.020292ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15844.650125

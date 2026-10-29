@@ -1,0 +1,31 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-status.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  32290184    28%  458732 322901840    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status/tsconfig.json: 100 files
+50 files, 228 units, 175 inside, 3 s
+100 files, 563 units, 483 inside, 4 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status/web/tsconfig.json: 14 files
+status: 114 files, 677 units, 565 inside the subset (83.5 percent), 0 files unreadable, 6 s
+      32 units  type-assertion         scripts/build-examples.ts:184 `out` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl
+      22 units  property-assign        web/app/detail-main.ts:91 assignment into `liveLabelEl`, which this function does not own; records it owns are updated in place
+      19 units  non-null-assertion     scripts/build-examples.ts:302 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      14 units  async                  scripts/drive-retention.ts:86 an async unit is called without await
+      12 units  untyped-js             scripts/build-pages.mjs:76 parameter `entry` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} entry` or TypeScr
+       5 units  index-assign           scripts/build-examples.ts:182 write a record field by name, or use a local Record<string, T> dictionary
+       4 units  param-mutation         scripts/build-examples.ts:260 push on `grouped.get(t.groupId)!`, which is not a local array
+       4 units  promise                scripts/drive-retention.ts:86 a same-file async function runs on after its first await; return it from an async function with await
+       4 units  alias-mutation         src/api/summary.ts:261 `list` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module obje
+       3 units  string-code-unit       scripts/manifest-to-sql.ts:236 use BMP scalar literals within the string model; astral and surrogate strings need lane B
+       3 units  promise-pending        scripts/migrate-remote.ts:47 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       3 units  captured-mutable       scripts/migrate-remote.ts:68 captured binding `output` may be written after this callback is created; capture a stable value
+       3 units  spread                 scripts/verdicts.mjs:123 spread works on arrays, sets, maps and their keys(), values() and entries()
+       2 units  closure-mutation       scripts/migrate-remote.ts:56 `output` is declared outside this callback; a callback cannot change it
+       2 units  global-read            scripts/verify-deploy.ts:94 global `AbortSignal` is outside the subset
+       1 units  ts-strict              scripts/negative-control.mjs:259 TS2345: Argument of type 'string[]' is not assignable to parameter of type 'readonly Verdict[]'.   Type 'strin
+       1 units  object-method-capture  scripts/retention-plan.ts:50 a literal method captures an unchanging value; copy mutable data before capturing it
+       1 units  unsupported-operator   src/domain/schema-fingerprint.ts:82 assignment operator is outside the subset
+       1 units  promise-all-order      src/probe/http.ts:112 Promise.all does not order work after await; use a for-of loop with await for ordered effects
+       1 units  dynamic-key            src/ui/overview.ts:346 bind the computed key before reading the record; a key call may mutate its receiver
+       0 units  toplevel-effect        scripts/build-examples.ts:665 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

@@ -1,0 +1,547 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nano-banana",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 2,
+   "units": 14,
+   "entered": 8
+  }
+ },
+ "refused": 6,
+ "refusalRules": [
+  {
+   "rule": "toplevel-effect",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 3,
+     "example": {
+      "file": "src/openai-image.ts",
+      "line": 12,
+      "code": "http"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 3,
+     "example": {
+      "file": "src/index.ts",
+      "line": 171,
+      "code": "error.response?.status || 500"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 2,
+ "failedFiles": 0,
+ "units": 14,
+ "entered": 8,
+ "share": 57.1,
+ "seconds": 4,
+ "rules": [
+  {
+   "rule": "toplevel-effect",
+   "findings": 13,
+   "units": 5,
+   "examples": [
+    "src/index.ts:234 code at module level runs on import; it is outside the subset",
+    "src/index.ts:236 code at module level runs on import; it is outside the subset",
+    "src/index.ts:247 code at module level runs on import; it is outside the subset"
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "findings": 37,
+   "units": 4,
+   "examples": [
+    "src/index.ts:171 `error.response?.status || 500` holds a value whose type nothing checked (an `as` that narrows, or an any or u",
+    "src/index.ts:191 `imageData.data` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), ",
+    "src/index.ts:198 `imageData.mimeType` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown valu"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "src/index.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "generateImage",
+     "lines": [
+      48,
+      229
+     ]
+    },
+    {
+     "name": "generateImage/geminiData.candidates?.[0]?.content?.parts?.find()#0",
+     "lines": [
+      182,
+      182
+     ]
+    },
+    {
+     "name": "app.get('/health')#1",
+     "lines": [
+      236,
+      244
+     ]
+    },
+    {
+     "name": "app.listen('0.0.0.0')#2",
+     "lines": [
+      253,
+      255
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 171,
+     "unit": "generateImage",
+     "rule": "type-assertion",
+     "msg": "`error.response?.status || 500` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 191,
+     "unit": "generateImage",
+     "rule": "type-assertion",
+     "msg": "`imageData.data` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 198,
+     "unit": "generateImage",
+     "rule": "type-assertion",
+     "msg": "`imageData.mimeType` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 234,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 236,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 247,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 250,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 251,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 253,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/openai-image.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "__setHttpClient",
+     "lines": [
+      11,
+      13
+     ]
+    },
+    {
+     "name": "__resetHttpClient",
+     "lines": [
+      14,
+      16
+     ]
+    },
+    {
+     "name": "getMimeTypeFromUrl",
+     "lines": [
+      51,
+      70
+     ]
+    },
+    {
+     "name": "extFromMime",
+     "lines": [
+      72,
+      77
+     ]
+    },
+    {
+     "name": "uploadToS3",
+     "lines": [
+      79,
+      101
+     ]
+    },
+    {
+     "name": "readApiKey",
+     "lines": [
+      103,
+      108
+     ]
+    },
+    {
+     "name": "extractB64",
+     "lines": [
+      110,
+      114
+     ]
+    },
+    {
+     "name": "inferContentType",
+     "lines": [
+      116,
+      125
+     ]
+    },
+    {
+     "name": "generateOpenAIImage",
+     "lines": [
+      127,
+      207
+     ]
+    },
+    {
+     "name": "editOpenAIImage",
+     "lines": [
+      209,
+      327
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 10,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": "__setHttpClient",
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 15,
+     "unit": "__resetHttpClient",
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 15,
+     "unit": "__resetHttpClient",
+     "rule": "type-assertion",
+     "msg": "`axiosDefault as unknown as HttpClient` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 89,
+     "unit": "uploadToS3",
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 152,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.model || DEFAULT_MODEL` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 153,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.prompt` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 155,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.size` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 156,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.quality` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 157,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.background` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 158,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.output_format` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 159,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.output_compression` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 160,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.moderation` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 161,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 162,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.user` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 166,
+     "unit": "generateOpenAIImage",
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 176,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`error.response?.status || 500` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 184,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`data` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 186,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`data` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 191,
+     "unit": "generateOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.output_format` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 234,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.referenceImages` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 254,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.model || DEFAULT_MODEL` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 255,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.prompt` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 256,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.size` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 257,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.quality` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 258,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.background` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 259,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.output_format` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 261,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.output_compression` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 263,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.moderation` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 264,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.input_fidelity` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 265,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 266,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.user` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 268,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.referenceImages` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 270,
+     "unit": "editOpenAIImage",
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 274,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`mimeType` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 275,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`mimeType` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 284,
+     "unit": "editOpenAIImage",
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 296,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`error.response?.status || 500` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 304,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`data` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 306,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`data` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 311,
+     "unit": "editOpenAIImage",
+     "rule": "type-assertion",
+     "msg": "`body.output_format` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 2,
+   "units": 14,
+   "entered": 8
+  }
+ ]
+}

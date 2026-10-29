@@ -1,0 +1,1235 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/ftp-server-orange",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "js": {
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  "ts": {
+   "files": 16,
+   "units": 70,
+   "entered": 59
+  }
+ },
+ "refused": 11,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 4,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 4,
+     "example": {
+      "file": "src/auth.ts",
+      "line": 93,
+      "code": "req.cookies?.[SESSION_COOKIE]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 2,
+     "example": {
+      "file": "src/store.ts",
+      "line": 59,
+      "code": "getFile(id)!"
+     }
+    },
+    {
+     "directory": "src/routes",
+     "units": 1,
+     "example": {
+      "file": "src/routes/web.ts",
+      "line": 89,
+      "code": "({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' })[c]!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 1,
+     "example": {
+      "file": "src/crypto.ts",
+      "line": 31,
+      "code": "size"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "global-read",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/cli",
+     "units": 1,
+     "example": {
+      "file": "src/cli/manage-users.ts",
+      "line": 98,
+      "code": "username"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 1,
+     "example": {
+      "file": "src/totp.ts",
+      "line": 81,
+      "code": "codes.push(display)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/cli",
+     "units": 1,
+     "example": {
+      "file": "src/cli/manage-users.ts",
+      "line": 70,
+      "code": "new Promise((resolve) => { const rl = readline.createInterface({ input: process.stdin, output: process.stdout }); const "
+     }
+    }
+   ]
+  }
+ ],
+ "files": 17,
+ "failedFiles": 0,
+ "units": 70,
+ "entered": 59,
+ "share": 84.3,
+ "seconds": 3,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 4,
+   "units": 4,
+   "examples": [
+    "src/auth.ts:93 `req.cookies?.[SESSION_COOKIE]` holds a value whose type nothing checked (an `as` that narrows, or an any or u",
+    "src/auth.ts:97 `req.cookies?.[PENDING_COOKIE]` holds a value whose type nothing checked (an `as` that narrows, or an any or u",
+    "src/cleanup.ts:26 `(err as Error).message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown "
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "src/routes/web.ts:89 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/store.ts:59 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/store.ts:83 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "promise",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/cli/manage-users.ts:70 a promise built with new Promise is not a handle; make the function async"
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/cli/manage-users.ts:70 await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+   ]
+  },
+  {
+   "rule": "global-read",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "src/cli/manage-users.ts:98 `username` is module state that can change; the subset reads constants only",
+    "src/cli/manage-users.ts:102 `username` is module state that can change; the subset reads constants only"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/crypto.ts:31 `size` is declared outside this callback; a callback cannot change it"
+   ]
+  },
+  {
+   "rule": "unsupported-member",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/crypto.ts:31 property .length on string is outside the subset"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/totp.ts:81 push on `codes`, which is not a local array"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 48,
+   "units": 0,
+   "examples": [
+    "scripts/webhook-receiver.mjs:8 code at module level runs on import; it is outside the subset",
+    "src/auth.ts:9 code at module level runs on import; it is outside the subset",
+    "src/cli/keygen.ts:10 code at module level runs on import; it is outside the subset"
+   ]
+  },
+  {
+   "rule": "unsupported-syntax",
+   "findings": 2,
+   "units": 0,
+   "examples": [
+    "src/config.ts:18 function without a body",
+    "src/config.ts:19 function without a body"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "scripts/webhook-receiver.mjs",
+   "pkg": "scripts",
+   "units": [],
+   "findings": [
+    {
+     "line": 8,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/audit.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "audit",
+     "lines": [
+      17,
+      32
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/auth.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "getUser",
+     "lines": [
+      22,
+      24
+     ]
+    },
+    {
+     "name": "verifyCredentials",
+     "lines": [
+      26,
+      34
+     ]
+    },
+    {
+     "name": "sign",
+     "lines": [
+      41,
+      46
+     ]
+    },
+    {
+     "name": "makeToken",
+     "lines": [
+      48,
+      51
+     ]
+    },
+    {
+     "name": "readToken",
+     "lines": [
+      53,
+      63
+     ]
+    },
+    {
+     "name": "issueSession",
+     "lines": [
+      65,
+      72
+     ]
+    },
+    {
+     "name": "clearSession",
+     "lines": [
+      74,
+      76
+     ]
+    },
+    {
+     "name": "issuePending",
+     "lines": [
+      79,
+      86
+     ]
+    },
+    {
+     "name": "clearPending",
+     "lines": [
+      88,
+      90
+     ]
+    },
+    {
+     "name": "readSession",
+     "lines": [
+      92,
+      94
+     ]
+    },
+    {
+     "name": "readPending",
+     "lines": [
+      96,
+      98
+     ]
+    },
+    {
+     "name": "currentWebUser",
+     "lines": [
+      100,
+      102
+     ]
+    },
+    {
+     "name": "basicAuth",
+     "lines": [
+      106,
+      113
+     ]
+    },
+    {
+     "name": "extractUploadToken",
+     "lines": [
+      116,
+      125
+     ]
+    },
+    {
+     "name": "requireUploader",
+     "lines": [
+      134,
+      154
+     ]
+    },
+    {
+     "name": "requireWebSession",
+     "lines": [
+      157,
+      164
+     ]
+    },
+    {
+     "name": "requireApiToken",
+     "lines": [
+      167,
+      177
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 93,
+     "rule": "type-assertion",
+     "msg": "`req.cookies?.[SESSION_COOKIE]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 97,
+     "rule": "type-assertion",
+     "msg": "`req.cookies?.[PENDING_COOKIE]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/cleanup.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "runRetention",
+     "lines": [
+      16,
+      36
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 26,
+     "rule": "type-assertion",
+     "msg": "`(err as Error).message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/cli/keygen.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "hex32",
+     "lines": [
+      7,
+      7
+     ]
+    },
+    {
+     "name": "urlSafe",
+     "lines": [
+      8,
+      8
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 10,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 12,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 13,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/cli/manage-users.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "sha256",
+     "lines": [
+      67,
+      67
+     ]
+    },
+    {
+     "name": "promptHidden",
+     "lines": [
+      69,
+      83
+     ]
+    },
+    {
+     "name": "getPassword",
+     "lines": [
+      85,
+      93
+     ]
+    },
+    {
+     "name": "requireUsername",
+     "lines": [
+      97,
+      103
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 24,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 27,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 28,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 55,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 70,
+     "rule": "promise",
+     "msg": "a promise built with new Promise is not a handle; make the function async",
+     "env": false
+    },
+    {
+     "line": 70,
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 98,
+     "rule": "global-read",
+     "msg": "`username` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 102,
+     "rule": "global-read",
+     "msg": "`username` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 105,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 237,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "required",
+     "lines": [
+      7,
+      16
+     ]
+    },
+    {
+     "name": "optional",
+     "lines": [
+      20,
+      23
+     ]
+    },
+    {
+     "name": "parseKey",
+     "lines": [
+      25,
+      38
+     ]
+    },
+    {
+     "name": "constantTimeEquals",
+     "lines": [
+      81,
+      86
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 5,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 18,
+     "rule": "unsupported-syntax",
+     "msg": "function without a body",
+     "env": false
+    },
+    {
+     "line": 19,
+     "rule": "unsupported-syntax",
+     "msg": "function without a body",
+     "env": false
+    },
+    {
+     "line": 77,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/crypto.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "encryptFile",
+     "lines": [
+      22,
+      43
+     ]
+    },
+    {
+     "name": "decryptFileToStream",
+     "lines": [
+      49,
+      62
+     ]
+    },
+    {
+     "name": "randomToken",
+     "lines": [
+      64,
+      66
+     ]
+    },
+    {
+     "name": "hmacSha256Hex",
+     "lines": [
+      68,
+      70
+     ]
+    },
+    {
+     "name": "sha256Hex",
+     "lines": [
+      72,
+      74
+     ]
+    },
+    {
+     "name": "encryptSecret",
+     "lines": [
+      80,
+      85
+     ]
+    },
+    {
+     "name": "decryptSecret",
+     "lines": [
+      87,
+      95
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 31,
+     "rule": "closure-mutation",
+     "msg": "`size` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 31,
+     "rule": "unsupported-member",
+     "msg": "property .length on string is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/db.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 12,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 87,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/api.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 26,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 50,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 96,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/upload.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 22,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/web.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "layout",
+     "lines": [
+      47,
+      79
+     ]
+    },
+    {
+     "name": "fmtSize",
+     "lines": [
+      81,
+      85
+     ]
+    },
+    {
+     "name": "escapeHtml",
+     "lines": [
+      87,
+      91
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 89,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 95,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 115,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 134,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 156,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 175,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 185,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 230,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 292,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 313,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 341,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 355,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 372,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/server.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "shutdown",
+     "lines": [
+      89,
+      95
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 19,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 34,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 37,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 42,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 45,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 48,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 51,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 81,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 96,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 97,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/store.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "createFile",
+     "lines": [
+      45,
+      60
+     ]
+    },
+    {
+     "name": "getFile",
+     "lines": [
+      62,
+      64
+     ]
+    },
+    {
+     "name": "listByStatus",
+     "lines": [
+      66,
+      68
+     ]
+    },
+    {
+     "name": "markRetrieved",
+     "lines": [
+      70,
+      72
+     ]
+    },
+    {
+     "name": "archiveFile",
+     "lines": [
+      75,
+      84
+     ]
+    },
+    {
+     "name": "mintToken",
+     "lines": [
+      108,
+      118
+     ]
+    },
+    {
+     "name": "getOrMintToken",
+     "lines": [
+      121,
+      125
+     ]
+    },
+    {
+     "name": "resolveToken",
+     "lines": [
+      127,
+      129
+     ]
+    },
+    {
+     "name": "markTokenUsed",
+     "lines": [
+      131,
+      133
+     ]
+    },
+    {
+     "name": "downloadUrl",
+     "lines": [
+      135,
+      137
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 59,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 83,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/tokens.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "createToken",
+     "lines": [
+      24,
+      34
+     ]
+    },
+    {
+     "name": "verifyToken",
+     "lines": [
+      37,
+      43
+     ]
+    },
+    {
+     "name": "listTokens",
+     "lines": [
+      45,
+      47
+     ]
+    },
+    {
+     "name": "revokeToken",
+     "lines": [
+      49,
+      51
+     ]
+    },
+    {
+     "name": "revokeTokenById",
+     "lines": [
+      53,
+      55
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/totp.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "currentStep",
+     "lines": [
+      11,
+      13
+     ]
+    },
+    {
+     "name": "provisionSecret",
+     "lines": [
+      25,
+      29
+     ]
+    },
+    {
+     "name": "getSecret",
+     "lines": [
+      31,
+      33
+     ]
+    },
+    {
+     "name": "verifyTotp",
+     "lines": [
+      36,
+      46
+     ]
+    },
+    {
+     "name": "enableTotp",
+     "lines": [
+      48,
+      50
+     ]
+    },
+    {
+     "name": "disableTotp",
+     "lines": [
+      52,
+      55
+     ]
+    },
+    {
+     "name": "normalizeCode",
+     "lines": [
+      69,
+      71
+     ]
+    },
+    {
+     "name": "regenerateBackupCodes",
+     "lines": [
+      74,
+      87
+     ]
+    },
+    {
+     "name": "clearBackupCodes",
+     "lines": [
+      89,
+      91
+     ]
+    },
+    {
+     "name": "consumeBackupCode",
+     "lines": [
+      93,
+      98
+     ]
+    },
+    {
+     "name": "remainingBackupCodes",
+     "lines": [
+      100,
+      102
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 81,
+     "rule": "param-mutation",
+     "msg": "push on `codes`, which is not a local array",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/webhook.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "buildPayload",
+     "lines": [
+      23,
+      43
+     ]
+    },
+    {
+     "name": "deliverWebhook",
+     "lines": [
+      46,
+      80
+     ]
+    },
+    {
+     "name": "scheduleRetry",
+     "lines": [
+      82,
+      97
+     ]
+    },
+    {
+     "name": "processWebhookQueue",
+     "lines": [
+      100,
+      109
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 77,
+     "rule": "type-assertion",
+     "msg": "`(err as Error).message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 16,
+   "units": 70,
+   "entered": 59
+  },
+  {
+   "pkg": "scripts",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

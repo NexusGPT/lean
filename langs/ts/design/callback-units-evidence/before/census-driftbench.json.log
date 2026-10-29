@@ -1,0 +1,37 @@
+driftbench: 405 files, 2631 units, 2059 inside the subset (78.3 percent), 0 files unreadable, 32 s
+     191 units  type-assertion         examples/acme/families/price-sheet/oracle.mjs:106 `text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this s
+     119 units  foreach                packages/adapters/src/claude-code/format.ts:42 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+      58 units  untyped-js             examples/acme/families/price-sheet/oracle.mjs:84 parameter `category` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} category` or T
+      47 units  param-mutation         examples/acme/ops/agent.mjs:384 push on `problems`, which is not a local array
+      43 units  alias-mutation         packages/adapters/src/anthropic/messages.ts:90 `last` holds the result of `Array.prototype.at`, which may be a field, a parameter, an element or a module obj
+      37 units  closure-mutation       examples/acme/src/agent.ts:86 .splice() as a value inside a callback changes `queue`; use a for-of loop
+      36 units  prototype              packages/adapters/src/claude-code/live/states.ts:289 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+      25 units  function-value         packages/cli/src/commands/campaign.ts:391 a same-file function takes values, not callbacks
+      22 units  unsupported-call       examples/acme/src/parse.ts:143 calls through computed callees are outside the subset
+      19 units  object-method-capture  examples/acme/faults/sales.ts:27 a literal method captures an unchanging value; copy mutable data before capturing it
+      19 units  dynamic-key            examples/acme/ops/agent.mjs:172 index an array or string by a number, or a record by declared string keys
+      19 units  in-place-mutation      packages/adapters/src/anthropic/common.ts:141 reverse changes `copy` in place; write `copy = [...copy].reverse(...)`
+      19 units  index-assign           packages/cli/src/commands/campaign.ts:572 write a record field by name, or use a local Record<string, T> dictionary
+      17 units  definite-assignment    packages/adapters/src/claude-code/session.ts:595 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested
+      16 units  record-rest            examples/acme/src/policy.ts:291 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+      13 units  spread-source          packages/adapters/src/claude-code/replay.ts:52 a method or a function value beside a later spread is not read; spread first, or build the record in steps
+      12 units  math-empty             packages/adapters/src/traces/otel.ts:360 Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback
+      10 units  spread                 examples/acme/ops/agent.mjs:115 spread works on arrays, sets, maps and their keys(), values() and entries()
+      10 units  promise-pending        packages/adapters/src/claude-code/live/adapter.ts:652 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       9 units  operator-value-context packages/adapters/src/claude-code/session.ts:384 move this value step into an explicit statement and conditional branch
+       9 units  unsupported-syntax     packages/cli/src/commands/campaign.ts:853 assignment target
+       8 units  promise                packages/adapters/src/claude-code/live/adapter.ts:652 a promise built with new Promise is not a handle; make the function async
+       8 units  generator-effect       packages/adapters/src/process/protocol.ts:23 a sequence generator is top-level with plain scalar parameters
+       6 units  ts-strict              examples/acme/faults/ops/wrong-price.mjs:14 TS2345: Argument of type 'NonSharedBuffer' is not assignable to parameter of type 'Buffer'.   The types of 'sl
+       6 units  unsupported-member     examples/acme/ops/agent.mjs:77 property .problem is not declared on { plans: { name: any; category: any; allowance: any; monthly: number; }[]
+project /Users/assem/Documents/GitHub/driftbench/tsconfig.json: 405 files
+50 files, 299 units, 215 inside, 18 s
+100 files, 582 units, 455 inside, 19 s
+150 files, 1014 units, 821 inside, 22 s
+200 files, 1238 units, 999 inside, 24 s
+250 files, 1544 units, 1249 inside, 27 s
+300 files, 1932 units, 1533 inside, 30 s
+350 files, 2239 units, 1774 inside, 31 s
+400 files, 2553 units, 2017 inside, 32 s
+
+exit=0 signal=null

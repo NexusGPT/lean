@@ -1,0 +1,1661 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/car-select-api",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "js": {
+   "files": 2,
+   "units": 0,
+   "entered": 0
+  },
+  "ts": {
+   "files": 8,
+   "units": 82,
+   "entered": 45
+  }
+ },
+ "refused": 37,
+ "refusalRules": [
+  {
+   "rule": "non-null-assertion",
+   "units": 21,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 21,
+     "example": {
+      "file": "src/services/vehicleService.ts",
+      "line": 221,
+      "code": "priceFilter.minPrice!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "units": 8,
+   "directories": [
+    {
+     "directory": "src/middleware",
+     "units": 1,
+     "example": {
+      "file": "src/middleware/auth.ts",
+      "line": 38,
+      "code": "apiKey"
+     }
+    },
+    {
+     "directory": "src/routes",
+     "units": 1,
+     "example": {
+      "file": "src/routes/vehicleRoutes.ts",
+      "line": 89,
+      "code": "query.sortField as any || 'price'"
+     }
+    },
+    {
+     "directory": "src/services",
+     "units": 6,
+     "example": {
+      "file": "src/services/vehicleService.ts",
+      "line": 38,
+      "code": "letter.toUpperCase()"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "assignment-expression",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 2,
+     "example": {
+      "file": "src/services/vehicleService.ts",
+      "line": 132,
+      "code": "data += chunk"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 2,
+     "example": {
+      "file": "src/services/vehicleService.ts",
+      "line": 132,
+      "code": "data"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/middleware",
+     "units": 1,
+     "example": {
+      "file": "src/middleware/validation.ts",
+      "line": 138,
+      "code": "query[field]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise-executor-escape",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 1,
+     "example": {
+      "file": "src/services/vehicleService.ts",
+      "line": 128,
+      "code": "new Promise((resolve, reject) => { const client = url.startsWith('https') ? https : http; client.get(url, (res) => { let"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/middleware",
+     "units": 1,
+     "example": {
+      "file": "src/middleware/auth.ts",
+      "line": 86,
+      "code": "limitData.count++"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "unsupported-syntax",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 1,
+     "example": {
+      "file": "src/services/vehicleService.ts",
+      "line": 372,
+      "code": "priceRanges[\"0-10000\"]++"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 10,
+ "failedFiles": 0,
+ "units": 82,
+ "entered": 45,
+ "share": 54.9,
+ "seconds": 5,
+ "rules": [
+  {
+   "rule": "non-null-assertion",
+   "findings": 40,
+   "units": 21,
+   "examples": [
+    "src/services/vehicleService.ts:221 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/services/vehicleService.ts:221 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/services/vehicleService.ts:224 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "findings": 21,
+   "units": 9,
+   "examples": [
+    "src/middleware/auth.ts:38 `apiKey` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this",
+    "src/middleware/auth.ts:47 `apiKey` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this",
+    "src/middleware/validation.ts:168 `value` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this "
+   ]
+  },
+  {
+   "rule": "assignment-expression",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "src/services/vehicleService.ts:132 use numeric compound assignment or string += with a string value",
+    "src/services/vehicleService.ts:132 use numeric compound assignment or string += with a string value",
+    "src/services/vehicleService.ts:132 use numeric compound assignment or string += with a string value"
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "findings": 9,
+   "units": 2,
+   "examples": [
+    "src/middleware/validation.ts:138 write a record field by name, or use a local Record<string, T> dictionary",
+    "src/middleware/validation.ts:145 write a record field by name, or use a local Record<string, T> dictionary",
+    "src/middleware/validation.ts:152 write a record field by name, or use a local Record<string, T> dictionary"
+   ]
+  },
+  {
+   "rule": "unsupported-syntax",
+   "findings": 7,
+   "units": 2,
+   "examples": [
+    "src/routes/vehicleRoutes.ts:114 assignment target",
+    "src/services/vehicleService.ts:372 increment of a non-name",
+    "src/services/vehicleService.ts:373 increment of a non-name"
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "src/services/vehicleService.ts:132 captured binding `data` may be written after this callback is created; capture a stable value",
+    "src/services/vehicleService.ts:133 captured binding `data` may be written after this callback is created; capture a stable value"
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/middleware/auth.ts:86 update of a field of `limitData`, which this function does not own"
+   ]
+  },
+  {
+   "rule": "promise-executor-escape",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/services/vehicleService.ts:128 resolve and reject cannot be stored or passed away; call them at the end of each executor path"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 22,
+   "units": 0,
+   "examples": [
+    "src/index.ts:12 code at module level runs on import; it is outside the subset",
+    "src/index.ts:18 code at module level runs on import; it is outside the subset",
+    "src/index.ts:19 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "ecosystem.config.js",
+   "pkg": "ecosystem.config.js",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "jest.config.js",
+   "pkg": "jest.config.js",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/data/belgianPostalCodes.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "getPostalCodeCoordinates",
+     "lines": [
+      641,
+      643
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/index.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "startServer",
+     "lines": [
+      146,
+      175
+     ]
+    },
+    {
+     "name": "app.get('/')#2",
+     "lines": [
+      83,
+      114
+     ]
+    },
+    {
+     "name": "app.get('/health')#2",
+     "lines": [
+      116,
+      123
+     ]
+    },
+    {
+     "name": "app.use()#0@1",
+     "lines": [
+      129,
+      135
+     ]
+    },
+    {
+     "name": "app.use()#0@2",
+     "lines": [
+      138,
+      143
+     ]
+    },
+    {
+     "name": "startServer/app.listen()#1",
+     "lines": [
+      163,
+      170
+     ]
+    },
+    {
+     "name": "process.on('SIGTERM')#1",
+     "lines": [
+      180,
+      183
+     ]
+    },
+    {
+     "name": "process.on('SIGINT')#1",
+     "lines": [
+      185,
+      188
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 18,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 26,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 83,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 116,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 126,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 129,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 138,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 180,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 185,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/middleware/auth.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "authenticateApiKey",
+     "lines": [
+      22,
+      50
+     ]
+    },
+    {
+     "name": "rateLimitByApiKey",
+     "lines": [
+      57,
+      88
+     ]
+    },
+    {
+     "name": "publicEndpoint",
+     "lines": [
+      91,
+      93
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 14,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 38,
+     "unit": "authenticateApiKey",
+     "rule": "type-assertion",
+     "msg": "`apiKey` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 47,
+     "unit": "authenticateApiKey",
+     "rule": "type-assertion",
+     "msg": "`apiKey` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 86,
+     "unit": "rateLimitByApiKey",
+     "rule": "property-assign",
+     "msg": "update of a field of `limitData`, which this function does not own",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/middleware/validation.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isNullish",
+     "lines": [
+      84,
+      86
+     ]
+    },
+    {
+     "name": "isEmptyArrayValue",
+     "lines": [
+      88,
+      94
+     ]
+    },
+    {
+     "name": "stripUnsetFilters",
+     "lines": [
+      103,
+      129
+     ]
+    },
+    {
+     "name": "validateSearchQuery",
+     "lines": [
+      131,
+      170
+     ]
+    },
+    {
+     "name": "isEmptyArrayValue/value.every()#0",
+     "lines": [
+      91,
+      91
+     ]
+    },
+    {
+     "name": "validateSearchQuery/(query[field] as string).split(',').map()#0",
+     "lines": [
+      138,
+      138
+     ]
+    },
+    {
+     "name": "validateSearchQuery/error.details.map()#0",
+     "lines": [
+      163,
+      163
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 138,
+     "unit": "validateSearchQuery",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 145,
+     "unit": "validateSearchQuery",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 152,
+     "unit": "validateSearchQuery",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 168,
+     "unit": "validateSearchQuery",
+     "rule": "type-assertion",
+     "msg": "`value` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/vehicleRoutes.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "router.get('/search')#2",
+     "lines": [
+      34,
+      145
+     ]
+    },
+    {
+     "name": "router.get('/brands')#1",
+     "lines": [
+      147,
+      155
+     ]
+    },
+    {
+     "name": "router.get('/body-types')#1",
+     "lines": [
+      157,
+      165
+     ]
+    },
+    {
+     "name": "router.get('/fuel-types')#1",
+     "lines": [
+      167,
+      175
+     ]
+    },
+    {
+     "name": "router.get('/transmission-types')#1",
+     "lines": [
+      177,
+      185
+     ]
+    },
+    {
+     "name": "router.get('/dealers')#1",
+     "lines": [
+      187,
+      195
+     ]
+    },
+    {
+     "name": "router.post('/refresh')#1",
+     "lines": [
+      198,
+      223
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 34,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 89,
+     "unit": "router.get('/search')#2",
+     "rule": "type-assertion",
+     "msg": "`query.sortField as any || 'price'` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 90,
+     "unit": "router.get('/search')#2",
+     "rule": "type-assertion",
+     "msg": "`query.sortOrder as any || 'asc'` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 114,
+     "unit": "router.get('/search')#2",
+     "rule": "unsupported-syntax",
+     "msg": "assignment target",
+     "env": false
+    },
+    {
+     "line": 147,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 157,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 187,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 198,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/scheduler.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "initializeScheduler",
+     "lines": [
+      11,
+      53
+     ]
+    },
+    {
+     "name": "stopScheduler",
+     "lines": [
+      55,
+      61
+     ]
+    },
+    {
+     "name": "getScheduleDescription",
+     "lines": [
+      64,
+      88
+     ]
+    },
+    {
+     "name": "initializeScheduler/cron.schedule()#1",
+     "lines": [
+      30,
+      42
+     ]
+    },
+    {
+     "name": "initializeScheduler/refreshVehicles().catch()#0",
+     "lines": [
+      49,
+      51
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/services/vehicleService.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "parseVehicle",
+     "lines": [
+      26,
+      125
+     ]
+    },
+    {
+     "name": "fetchFromUrl",
+     "lines": [
+      127,
+      137
+     ]
+    },
+    {
+     "name": "loadVehicles",
+     "lines": [
+      139,
+      189
+     ]
+    },
+    {
+     "name": "refreshVehicles",
+     "lines": [
+      191,
+      194
+     ]
+    },
+    {
+     "name": "getLastRefreshTime",
+     "lines": [
+      196,
+      198
+     ]
+    },
+    {
+     "name": "applyFilters",
+     "lines": [
+      200,
+      317
+     ]
+    },
+    {
+     "name": "calculateMetadata",
+     "lines": [
+      319,
+      401
+     ]
+    },
+    {
+     "name": "calculateDistance",
+     "lines": [
+      403,
+      422
+     ]
+    },
+    {
+     "name": "addDistanceToVehicles",
+     "lines": [
+      424,
+      444
+     ]
+    },
+    {
+     "name": "sortVehicles",
+     "lines": [
+      446,
+      476
+     ]
+    },
+    {
+     "name": "applyResultLimit",
+     "lines": [
+      480,
+      487
+     ]
+    },
+    {
+     "name": "getVehiclesData",
+     "lines": [
+      489,
+      491
+     ]
+    },
+    {
+     "name": "getAvailableBrands",
+     "lines": [
+      493,
+      499
+     ]
+    },
+    {
+     "name": "getAvailableBodyTypes",
+     "lines": [
+      501,
+      507
+     ]
+    },
+    {
+     "name": "getAvailableFuelTypes",
+     "lines": [
+      509,
+      515
+     ]
+    },
+    {
+     "name": "getAvailableTransmissionTypes",
+     "lines": [
+      517,
+      523
+     ]
+    },
+    {
+     "name": "getAvailableDealers",
+     "lines": [
+      525,
+      539
+     ]
+    },
+    {
+     "name": "parseVehicle/field.replace()#1@1",
+     "lines": [
+      38,
+      38
+     ]
+    },
+    {
+     "name": "parseVehicle/field.replace()#1@2",
+     "lines": [
+      47,
+      47
+     ]
+    },
+    {
+     "name": "parseVehicle/field.replace()#1@3",
+     "lines": [
+      64,
+      64
+     ]
+    },
+    {
+     "name": "parseVehicle/field.replace()#1@4",
+     "lines": [
+      87,
+      87
+     ]
+    },
+    {
+     "name": "fetchFromUrl/Promise()#0",
+     "lines": [
+      128,
+      136
+     ]
+    },
+    {
+     "name": "fetchFromUrl/Promise()#0/client.get()#1",
+     "lines": [
+      130,
+      135
+     ]
+    },
+    {
+     "name": "fetchFromUrl/Promise()#0/client.get()#1/res.on('data')#1",
+     "lines": [
+      132,
+      132
+     ]
+    },
+    {
+     "name": "fetchFromUrl/Promise()#0/client.get()#1/res.on('end')#1",
+     "lines": [
+      133,
+      133
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@1",
+     "lines": [
+      216,
+      216
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@2",
+     "lines": [
+      221,
+      221
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@3",
+     "lines": [
+      224,
+      224
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@4",
+     "lines": [
+      227,
+      227
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@5",
+     "lines": [
+      230,
+      236
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@6",
+     "lines": [
+      241,
+      241
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@7",
+     "lines": [
+      244,
+      244
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@8",
+     "lines": [
+      247,
+      247
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@9",
+     "lines": [
+      250,
+      250
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@10",
+     "lines": [
+      253,
+      253
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@11",
+     "lines": [
+      258,
+      258
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@12",
+     "lines": [
+      261,
+      261
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@13",
+     "lines": [
+      264,
+      264
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@14",
+     "lines": [
+      267,
+      267
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@15",
+     "lines": [
+      272,
+      272
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@16",
+     "lines": [
+      275,
+      276
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@17",
+     "lines": [
+      280,
+      281
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@18",
+     "lines": [
+      287,
+      288
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@19",
+     "lines": [
+      292,
+      293
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@20",
+     "lines": [
+      297,
+      298
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@21",
+     "lines": [
+      304,
+      304
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@22",
+     "lines": [
+      307,
+      307
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@23",
+     "lines": [
+      310,
+      310
+     ]
+    },
+    {
+     "name": "applyFilters/filtered.filter()#0@24",
+     "lines": [
+      313,
+      313
+     ]
+    },
+    {
+     "name": "addDistanceToVehicles/vehicles.map()#0",
+     "lines": [
+      425,
+      443
+     ]
+    },
+    {
+     "name": "sortVehicles/[...vehicles].sort()#0",
+     "lines": [
+      459,
+      475
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 38,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 38,
+     "unit": "parseVehicle/field.replace()#1@1",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 39,
+     "unit": "parseVehicle",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 47,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 47,
+     "unit": "parseVehicle/field.replace()#1@2",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 48,
+     "unit": "parseVehicle",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 48,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`vehicleElem[field][0]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "parseVehicle",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`vehicleElem[field][0]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 64,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 64,
+     "unit": "parseVehicle/field.replace()#1@3",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 65,
+     "unit": "parseVehicle",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 71,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`vehicleElem.mileage[0].value[0]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 78,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`priceText` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 87,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 87,
+     "unit": "parseVehicle/field.replace()#1@4",
+     "rule": "type-assertion",
+     "msg": "`letter.toUpperCase()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 88,
+     "unit": "parseVehicle",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 99,
+     "unit": "parseVehicle",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 109,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`vehicleElem.financing[0].rate_per_month[0].value[0].replace(` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 114,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`vehicleElem.financing[0].advanced_payment[0].value[0].replac` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 119,
+     "unit": "parseVehicle",
+     "rule": "type-assertion",
+     "msg": "`vehicleElem.financing[0].number_of_months[0]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 128,
+     "unit": "fetchFromUrl",
+     "rule": "promise-executor-escape",
+     "msg": "resolve and reject cannot be stored or passed away; call them at the end of each executor path",
+     "env": false
+    },
+    {
+     "line": 132,
+     "unit": "fetchFromUrl/Promise()#0",
+     "rule": "assignment-expression",
+     "msg": "use numeric compound assignment or string += with a string value",
+     "env": false
+    },
+    {
+     "line": 132,
+     "unit": "fetchFromUrl/Promise()#0/client.get()#1",
+     "rule": "assignment-expression",
+     "msg": "use numeric compound assignment or string += with a string value",
+     "env": false
+    },
+    {
+     "line": 132,
+     "unit": "fetchFromUrl/Promise()#0/client.get()#1/res.on('data')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `data` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 132,
+     "unit": "fetchFromUrl/Promise()#0/client.get()#1/res.on('data')#1",
+     "rule": "assignment-expression",
+     "msg": "use numeric compound assignment or string += with a string value",
+     "env": false
+    },
+    {
+     "line": 133,
+     "unit": "fetchFromUrl/Promise()#0/client.get()#1/res.on('end')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `data` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 169,
+     "unit": "loadVehicles",
+     "rule": "type-assertion",
+     "msg": "`parseVehicle(vehicleElem)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 221,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 221,
+     "unit": "applyFilters/filtered.filter()#0@2",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 224,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 224,
+     "unit": "applyFilters/filtered.filter()#0@3",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 241,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 241,
+     "unit": "applyFilters/filtered.filter()#0@6",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 244,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 244,
+     "unit": "applyFilters/filtered.filter()#0@7",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 247,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 247,
+     "unit": "applyFilters/filtered.filter()#0@8",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 250,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 250,
+     "unit": "applyFilters/filtered.filter()#0@9",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 253,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 253,
+     "unit": "applyFilters/filtered.filter()#0@10",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 258,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 258,
+     "unit": "applyFilters/filtered.filter()#0@11",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 261,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 261,
+     "unit": "applyFilters/filtered.filter()#0@12",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 264,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 264,
+     "unit": "applyFilters/filtered.filter()#0@13",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 267,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 267,
+     "unit": "applyFilters/filtered.filter()#0@14",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 276,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 276,
+     "unit": "applyFilters/filtered.filter()#0@16",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 281,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 281,
+     "unit": "applyFilters/filtered.filter()#0@17",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 288,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 288,
+     "unit": "applyFilters/filtered.filter()#0@18",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 293,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 293,
+     "unit": "applyFilters/filtered.filter()#0@19",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 298,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 298,
+     "unit": "applyFilters/filtered.filter()#0@20",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 304,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 304,
+     "unit": "applyFilters/filtered.filter()#0@21",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 307,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 307,
+     "unit": "applyFilters/filtered.filter()#0@22",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 310,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 310,
+     "unit": "applyFilters/filtered.filter()#0@23",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 313,
+     "unit": "applyFilters",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 313,
+     "unit": "applyFilters/filtered.filter()#0@24",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 372,
+     "unit": "calculateMetadata",
+     "rule": "unsupported-syntax",
+     "msg": "increment of a non-name",
+     "env": false
+    },
+    {
+     "line": 373,
+     "unit": "calculateMetadata",
+     "rule": "unsupported-syntax",
+     "msg": "increment of a non-name",
+     "env": false
+    },
+    {
+     "line": 374,
+     "unit": "calculateMetadata",
+     "rule": "unsupported-syntax",
+     "msg": "increment of a non-name",
+     "env": false
+    },
+    {
+     "line": 375,
+     "unit": "calculateMetadata",
+     "rule": "unsupported-syntax",
+     "msg": "increment of a non-name",
+     "env": false
+    },
+    {
+     "line": 376,
+     "unit": "calculateMetadata",
+     "rule": "unsupported-syntax",
+     "msg": "increment of a non-name",
+     "env": false
+    },
+    {
+     "line": 377,
+     "unit": "calculateMetadata",
+     "rule": "unsupported-syntax",
+     "msg": "increment of a non-name",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/types/index.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 8,
+   "units": 82,
+   "entered": 45
+  },
+  {
+   "pkg": "ecosystem.config.js",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  {
+   "pkg": "jest.config.js",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

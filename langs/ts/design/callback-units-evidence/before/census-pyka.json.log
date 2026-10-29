@@ -1,0 +1,41 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/promo-app","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-pyka.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  31484180    29%  458732 314841800    0%   /
+project /Users/assem/promo-app/tsconfig.json: 493 files
+50 files, 86 units, 18 inside, 22 s
+100 files, 123 units, 21 inside, 22 s
+150 files, 348 units, 49 inside, 23 s
+200 files, 584 units, 60 inside, 24 s
+250 files, 889 units, 289 inside, 26 s
+300 files, 1199 units, 505 inside, 27 s
+350 files, 1379 units, 634 inside, 29 s
+400 files, 1589 units, 814 inside, 30 s
+450 files, 1825 units, 984 inside, 33 s
+promo-app: 493 files, 1997 units, 1113 inside the subset (55.7 percent), 0 files unreadable, 34 s
+     479 units  untyped-js             _captures/home-redesign/informed/build.mjs:47 parameter `s` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} s` or TypeScript) or 
+     340 units  type-assertion         _captures/home-redesign/informed/build.mjs:163 `n` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot
+      85 units  ts-strict              _captures/fix-r2/S/checks/m8-chrome.mjs:45 TS18048: 'w' is possibly 'undefined'.
+      48 units  param-mutation         _captures/intermarche/drive.mjs:15 push on `log.steps`, which is not a local array
+      47 units  async                  _captures/round2/performance-and-speed/measure.mjs:133 an async unit is called without await
+      43 units  promise                _fix/pf/http-plumbing.mjs:25 a promise built with new Promise is not a handle; make the function async
+      41 units  closure-mutation       _fix/pf/jev-boot.mjs:20 `dirty` is declared outside this callback; a callback cannot change it
+      39 units  spread                 _captures/home-redesign/informed-style/build.mjs:103 spread works on arrays, sets, maps and their keys(), values() and entries()
+      36 units  non-null-assertion     _fix/timing/superset.ts:17 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      34 units  promise-pending        _fix/pf/http-plumbing.mjs:25 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+      30 units  toplevel-effect        _captures/clerk-live.mjs:9 code at module level runs on import; it is outside the subset
+      30 units  foreach                _captures/plan/harness.tsx:155 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+      29 units  alias-mutation         scripts/search-eval.mjs:354 `s` is another name for a value this function was handed; change it through that name, or copy it first
+      28 units  global-read            _captures/list-v2/drive.mjs:11 `out` is module state that can change; the subset reads constants only
+      26 units  unsupported-call       _captures/round2/performance-and-speed/measure.mjs:136 summarise takes 2 arguments
+      24 units  property-assign        _captures/round2/performance-and-speed/measure.mjs:47 assignment into `window`, which this function does not own; records it owns are updated in place
+      22 units  index-assign           _captures/round2/copy-and-language/drive2.mjs:31 write a record field by name, or use a local Record<string, T> dictionary
+      20 units  dynamic-key            _captures/round2/performance-and-speed/measure.mjs:96 use a finite union of declared string keys, or a Record<string, T> dictionary
+      17 units  reference-equality     src/search/match.ts:652 === on arrays and records compares references; compare fields
+      13 units  void                   src/views/ProductMenu.tsx:47 `void` is outside the subset
+      11 units  unsupported-member     _captures/round2/copy-and-language/drive4.mjs:21 property .validationMessage is not declared on Element
+      11 units  prototype              _fix/timing/picks.ts:12 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+       8 units  unsupported-syntax     scripts/engine-check.mjs:423 increment of a non-name
+       8 units  unary-coercion         scripts/ingest-aldi.mjs:76 unary + coerces; it is outside the subset
+       8 units  react-handler-capture  src/ui/map/LiveMap.tsx:48 a React closure captures a changing local; capture a const value or use a state setter
+
+exit=0 signal=null

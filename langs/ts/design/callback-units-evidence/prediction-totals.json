@@ -1,0 +1,70 @@
+{
+  "census ts": {
+    "roots": 39,
+    "listed": 55252,
+    "callbacks": {
+      "moduleArrowBlock": 872,
+      "moduleArrowExpression": 1227,
+      "moduleFunctionBlock": 722,
+      "moduleFunctionExpression": 0,
+      "bodyArrowBlock": 11123,
+      "bodyArrowExpression": 22137,
+      "bodyFunctionBlock": 11,
+      "bodyFunctionExpression": 0,
+      "orderNamed": 8020,
+      "otherScope": 4517,
+      "predicted": 36092
+    }
+  },
+  "census js": {
+    "roots": 29,
+    "listed": 19185,
+    "callbacks": {
+      "moduleArrowBlock": 411,
+      "moduleArrowExpression": 892,
+      "moduleFunctionBlock": 16,
+      "moduleFunctionExpression": 0,
+      "bodyArrowBlock": 954,
+      "bodyArrowExpression": 3847,
+      "bodyFunctionBlock": 41,
+      "bodyFunctionExpression": 0,
+      "orderNamed": 947,
+      "otherScope": 12576,
+      "predicted": 6161
+    }
+  },
+  "bugsjs js": {
+    "roots": 10,
+    "listed": 2385,
+    "callbacks": {
+      "moduleArrowBlock": 38,
+      "moduleArrowExpression": 268,
+      "moduleFunctionBlock": 325,
+      "moduleFunctionExpression": 0,
+      "bodyArrowBlock": 318,
+      "bodyArrowExpression": 223,
+      "bodyFunctionBlock": 597,
+      "bodyFunctionExpression": 0,
+      "orderNamed": 95,
+      "otherScope": 3510,
+      "predicted": 1769
+    }
+  },
+  "bugsjs ts": {
+    "roots": 1,
+    "listed": 0,
+    "callbacks": {
+      "moduleArrowBlock": 0,
+      "moduleArrowExpression": 0,
+      "moduleFunctionBlock": 0,
+      "moduleFunctionExpression": 0,
+      "bodyArrowBlock": 0,
+      "bodyArrowExpression": 0,
+      "bodyFunctionBlock": 0,
+      "bodyFunctionExpression": 0,
+      "orderNamed": 0,
+      "otherScope": 0,
+      "predicted": 0
+    }
+  }
+}

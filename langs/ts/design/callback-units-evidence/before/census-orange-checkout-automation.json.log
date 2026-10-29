@@ -1,0 +1,28 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/base/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-checkout-automation","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/before/census-orange-checkout-automation.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  31373416    29%  458732 313734160    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-checkout-automation/tsconfig.json: 39 files
+orange-checkout-automation: 39 files, 79 units, 54 inside the subset (68.4 percent), 0 files unreadable, 8 s
+      20 units  type-assertion         scrapers/explore-configurator.js:11 `text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this s
+       3 units  closure-mutation       src/helpers/modals.ts:12 a callback cannot change an outer variable
+       3 units  alias-mutation         src/pricing/compute.ts:493 `mli` holds an element of `matchingLineItems`, which may be a field, a parameter, an element or a module objec
+       2 units  property-assign        src/browserbase.ts:51 assignment into `(browser as any)`, which this function does not own; records it owns are updated in place
+       2 units  promise-pending        src/helpers/fetch-with-retry.ts:49 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       2 units  async                  src/index.ts:60 awaited callee form is outside the subset
+       2 units  index-assign           src/pricing/compute.ts:866 write a record field by name, or use a local Record<string, T> dictionary
+       2 units  non-null-assertion     src/steps/itsme-auth.ts:47 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       1 units  untyped-js             scrapers/explore-configurator.js:8 parameter `page` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} page` or TypeScrip
+       1 units  global-read            scrapers/explore-configurator.js:9 global `path` is outside the subset
+       1 units  unsupported-member     scrapers/explore-configurator.js:16 property .offsetParent is not declared on Element
+       1 units  ts-strict              scrapers/explore-configurator.js:16 TS2339: Property 'offsetParent' does not exist on type 'Element'.
+       1 units  param-form             src/pricing/compute.ts:16 rest parameters are outside the subset
+       1 units  dynamic-key            src/pricing/compute.ts:866 an absent key reads undefined, which this value type leaves out; type the values `T | undefined`, or read a de
+       1 units  unsupported-call       src/pricing/compute.ts:951 .toLocaleString() reads the host's locale (a world read); call it in a map, filter, find, findIndex, some, eve
+       1 units  unsupported-syntax     src/pricing/compute.ts:997 only assignments, ++/--, calls, and await may stand as statements
+       1 units  param-mutation         src/pricing/compute.ts:1031 push on `groupedTemps[promo.months].names`, which is not a local array
+       1 units  string-code-unit       src/pricing/compute.ts:1044 use BMP scalar literals within the string model; astral and surrogate strings need lane B
+       1 units  prototype              src/pricing/compute.ts:1060 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+       1 units  callback-result        src/steps/rendez-vous-datepicker.ts:128 an effectful type-predicate callback needs an explicit for-of loop with a type guard
+       0 units  toplevel-effect        scrapers/explore-configurator.js:6 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

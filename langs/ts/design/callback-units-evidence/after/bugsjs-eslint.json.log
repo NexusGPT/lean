@@ -1,0 +1,41 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/eslint","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/bugsjs-eslint.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33587284    27%  458732 335872840    0%   /
+project (none): 368 files
+50 files, 450 units, 137 inside, 5 s
+100 files, 556 units, 173 inside, 6 s
+150 files, 632 units, 187 inside, 6 s
+200 files, 715 units, 206 inside, 6 s
+250 files, 830 units, 246 inside, 7 s
+300 files, 968 units, 298 inside, 7 s
+350 files, 1195 units, 411 inside, 8 s
+eslint: 368 files, 1226 units, 420 inside the subset (34.3 percent), 0 files unreadable, 8 s
+     433 units  untyped-js             Makefile.js:88 parameter `pathToCheck` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} pathToCheck
+     291 units  ts-strict              Makefile.js:138 TS2339: Property 'to' does not exist on type 'string'.
+     220 units  unresolved-module      .eslintrc.js:3 TS2792: Cannot find module 'path'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add 
+     207 units  type-assertion         lib/cli-engine.js:399 `options` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and thi
+     164 units  unsupported-member     Makefile.js:178 property .version is not declared on Object
+      91 units  index-assign           Makefile.js:479 write a record field by name, or use a local Record<string, T> dictionary
+      65 units  dynamic-key            lib/code-path-analysis/debug-helpers.js:158 an open key may select a method; call a method by its declared name, and index records of data fields
+      54 units  object-method-capture  lib/code-path-analysis/code-path.js:161 a literal method captures an unchanging value; copy mutable data before capturing it
+      53 units  closure-mutation       Makefile.js:134 `output` is declared outside this callback; a callback cannot change it
+      49 units  global-read            Makefile.js:88 `ls` is module state that can change; the subset reads constants only
+      42 units  param-mutation         Makefile.js:157 .sort() on `ls("lib/rules")
+
+        // Strip the .j`, an opaque value, used as a value: the call may mutate i
+      42 units  prototype              lib/cli-engine.js:374 `Object.create(null)` makes an object without a prototype; a plain object's reads and `in` go through Object.p
+      30 units  callback-form          Makefile.js:115 the callback must be an arrow function
+      23 units  unsupported-call       Makefile.js:138 method .to() on string is outside the subset
+      22 units  alias-mutation         lib/code-path-analysis/code-path-segment.js:186 `prevSegment` is another name for a value this function was handed; change it through that name, or copy it fi
+      20 units  assign-target          lib/cli-engine.js:373 `Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources 
+      15 units  this                   lib/config/config-ops.js:266 `this` outside a class method
+      14 units  property-assign        bin/eslint.js:54 assignment into `process`, which this function does not own; records it owns are updated in place
+      14 units  definite-assignment    lib/cli-engine.js:183 `processor` may be read here before its first assignment (TypeScript does not check this read), and lean tests
+      13 units  object-method-mutation lib/code-path-analysis/code-path.js:214 pass a fresh literal handler or keep calls on the local object; sharing a named method object needs a heap
+      12 units  opaque-mutation        Makefile.js:1059 .sort() on `results` may change it, and `results` is read later; read it before the call or through a method
+       9 units  captured-mutable       Makefile.js:134 captured binding `output` may be written after this callback is created; capture a stable value
+       9 units  void                   lib/code-path-analysis/code-path-analyzer.js:85 `void` is outside the subset
+       7 units  spread                 Makefile.js:991 spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the sub
+       7 units  unsupported-syntax     lib/linter.js:738 literal setters and computed methods need a class accessor or a named method
+
+exit=0 signal=null

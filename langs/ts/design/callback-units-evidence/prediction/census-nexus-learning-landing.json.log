@@ -1,0 +1,32 @@
+## TypeScript files (the census walk)
+
+| repository | files | listed | unlisted | objlit-exported | objlit-module-const | objlit-other | exports-assign | prop-assign | class-field | class-other | callback | iife | nested | top-other | other | objlit static key | moduleArrowBlock | moduleArrowExpression | moduleFunctionBlock | moduleFunctionExpression | bodyArrowBlock | bodyArrowExpression | bodyFunctionBlock | bodyFunctionExpression | orderNamed | otherScope | predicted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| nexus-learning-landing | 63 | 170 | 138 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 89 | 0 | 21 | 0 | 28 | 0 | 0 | 8 | 0 | 0 | 12 | 64 | 0 | 0 | 19 | 5 | 84 |
+| TOTAL | 63 | 170 | 138 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 89 | 0 | 21 | 0 | 28 | 0 | 0 | 8 | 0 | 0 | 12 | 64 | 0 | 0 | 19 | 5 | 84 |
+
+## JavaScript files (the same walk, .js/.jsx/.mjs/.cjs)
+
+| repository | files | listed | unlisted | objlit-exported | objlit-module-const | objlit-other | exports-assign | prop-assign | class-field | class-other | callback | iife | nested | top-other | other | objlit static key | moduleArrowBlock | moduleArrowExpression | moduleFunctionBlock | moduleFunctionExpression | bodyArrowBlock | bodyArrowExpression | bodyFunctionBlock | bodyFunctionExpression | orderNamed | otherScope | predicted |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| nexus-learning-landing | 8 | 3 | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 8 | 0 | 2 | 2 | 0 | 0 | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 0 | 8 |
+| TOTAL | 8 | 3 | 12 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 8 | 0 | 2 | 2 | 0 | 0 | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 0 | 8 |
+
+## Kinds
+
+- `objlit-exported`: a direct method or function-valued property of an object literal that is exported (export const X = {...}, export default {...}, module.exports = {...}, exports.x = {...}).
+- `objlit-module-const`: the same, of an object literal bound to a module-level const that is not exported.
+- `objlit-other`: a method or function-valued property of any other object literal (nested literal, local literal, argument, let).
+- `exports-assign`: the right side of module.exports = f, exports.x = f, module.exports.x = f.
+- `prop-assign`: the right side of any other property assignment a.b = f, a[k] = f.
+- `class-field`: a class field initialised with a function or arrow.
+- `class-other`: a class member not listed (a class expression, a nested or unnamed class, a computed or private name).
+- `callback`: an argument of a call or new.
+- `iife`: the callee of a call (an immediately invoked function).
+- `nested`: a function declaration or a variable initialiser inside another function.
+- `top-other`: a module-level declaration not listed (let or var, several declarators, an anonymous default export).
+- `other`: anything else (a return value, an array element, a JSX attribute, a default parameter, a conditional).
+- `objlit static key`: of `objlit-exported` and `objlit-module-const`, the methods and function-valued properties whose key is a static name (an identifier, or a string that is one; getters and setters excluded): what the exported-units reading lists.
+nexus-learning-landing: ts 63 files 170 listed 138 unlisted; js 8 files 3 listed 12 unlisted
+
+exit=0 signal=null

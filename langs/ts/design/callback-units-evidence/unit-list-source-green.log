@@ -1,0 +1,19 @@
+✔ --only tokenization protects parentheses and quoted commas in every position (1.349916ms)
+✔ unit-list inverse preserves callee source comments and newlines without changing ordinary names (1.423ms)
+✔ HEAP and certificate round-trip the exact multiline source identity (14998.907541ms)
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/parent.dfy
+exit=0
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/candidate.dfy
+exit=0
+✔ one shared parser reads emitted unit names and ordinary lists (173.227917ms)
+✔ translator heap/effect flags and agreeCore round-trip the HEAP writer (6308.512542ms)
+✔ certificate heapCore retains the source unit name emitted in HEAP (14719.824459ms)
+✔ PR --scope reads a raw callback name containing a comma (12569.169375ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35980.856917

@@ -1,0 +1,540 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 18,
+   "units": 14,
+   "entered": 10
+  }
+ },
+ "refused": 4,
+ "refusalRules": [
+  {
+   "rule": "ts-strict",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/middleware",
+     "units": 2,
+     "example": {
+      "file": "src/middleware/auth.ts",
+      "line": 10,
+      "code": "export const auth: MiddlewareHandler = async (c, next) => {"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "prototype",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/allowlist",
+     "units": 1,
+     "example": {
+      "file": "src/allowlist/projector.ts",
+      "line": 28,
+      "code": "projected[key]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/allowlist",
+     "units": 1,
+     "example": {
+      "file": "src/allowlist/redactor.ts",
+      "line": 56,
+      "code": "obj as Record<string, unknown>"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 18,
+ "failedFiles": 0,
+ "units": 14,
+ "entered": 10,
+ "share": 71.4,
+ "seconds": 4,
+ "rules": [
+  {
+   "rule": "prototype",
+   "findings": 4,
+   "units": 2,
+   "examples": [
+    "src/allowlist/projector.ts:28 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of ",
+    "src/allowlist/projector.ts:31 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of ",
+    "src/allowlist/redactor.ts:67 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of "
+   ]
+  },
+  {
+   "rule": "type-assertion",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "src/allowlist/redactor.ts:56 `obj as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or ",
+    "src/middleware/rate-limit.ts:25 `key` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl",
+    "src/middleware/rate-limit.ts:28 `key` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl"
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "src/middleware/auth.ts:10 TS7030: Not all code paths return a value.",
+    "src/middleware/rate-limit.ts:19 TS7030: Not all code paths return a value."
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/middleware/rate-limit.ts:31 update of a field of `window`, which this function does not own"
+   ]
+  },
+  {
+   "rule": "unresolved-module",
+   "findings": 1,
+   "units": 0,
+   "examples": [
+    "src/db.ts:1 TS2305: Module '\"@prisma/client\"' has no exported member 'PrismaClient'."
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 19,
+   "units": 0,
+   "examples": [
+    "src/index.ts:22 code at module level runs on import; it is outside the subset",
+    "src/index.ts:25 code at module level runs on import; it is outside the subset",
+    "src/index.ts:28 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "src/allowlist/definitions.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/allowlist/projector.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "projectEntity",
+     "lines": [
+      11,
+      36
+     ]
+    },
+    {
+     "name": "projectEntities",
+     "lines": [
+      41,
+      53
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 28,
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 31,
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/allowlist/redactor.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isSecretKey",
+     "lines": [
+      24,
+      26
+     ]
+    },
+    {
+     "name": "redactSecrets",
+     "lines": [
+      32,
+      77
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 56,
+     "rule": "type-assertion",
+     "msg": "`obj as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 70,
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadConfig",
+     "lines": [
+      21,
+      35
+     ]
+    },
+    {
+     "name": "getConfig",
+     "lines": [
+      37,
+      40
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/db.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "getPrisma",
+     "lines": [
+      5,
+      12
+     ]
+    },
+    {
+     "name": "disconnectPrisma",
+     "lines": [
+      14,
+      19
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2305: Module '\"@prisma/client\"' has no exported member 'PrismaClient'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "src/index.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 22,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 28,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 31,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 32,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 36,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 37,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 38,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 39,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/lib/logger.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/lib/response.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "createApiResponse",
+     "lines": [
+      21,
+      36
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/middleware/audit.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "audit",
+     "lines": [
+      8,
+      27
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/middleware/auth.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "auth",
+     "lines": [
+      10,
+      44
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 10,
+     "rule": "ts-strict",
+     "msg": "TS7030: Not all code paths return a value.",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/middleware/error-handler.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "errorHandler",
+     "lines": [
+      9,
+      34
+     ]
+    },
+    {
+     "name": "isPrismaError",
+     "lines": [
+      36,
+      38
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/middleware/rate-limit.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "rateLimit",
+     "lines": [
+      16,
+      44
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 19,
+     "rule": "ts-strict",
+     "msg": "TS7030: Not all code paths return a value.",
+     "env": false
+    },
+    {
+     "line": 25,
+     "rule": "type-assertion",
+     "msg": "`key` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 28,
+     "rule": "type-assertion",
+     "msg": "`key` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 31,
+     "rule": "property-assign",
+     "msg": "update of a field of `window`, which this function does not own",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/agent.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/deployment.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/health.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 6,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/org.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/seed.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 12,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/workflow.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 18,
+   "units": 14,
+   "entered": 10
+  }
+ ]
+}

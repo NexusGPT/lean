@@ -608,6 +608,22 @@ export const READINGS = [
     design: ['langs/ts/translate/translate.mjs'],
     versions: [{ version: 1, status: 'current' }],
   },
+  {
+    id: 'callback-units', construct: 'a direct function argument listed as a unit, with stable bindings of enclosing units made explicit inputs',
+    kinds: [],
+    uses: (n, ts, ctx) => ctx.unit?.form === 'callback' && n === ctx.unit.body,
+    lint: ['captured-mutable'],
+    translate: [],
+    assumptions: {
+      runtime: 'identity comes from the original source call, its preceding literal arguments and argument index; callback parameters use their checker types; captured enclosing-unit bindings become explicit inputs, while module bindings retain the module-state reading',
+      aliasing: 'a const binding is stable; a let or parameter is an input only if no possible write follows closure creation, including writes in another closure or a containing loop; object inputs retain the ordinary parameter and heap aliasing readings',
+      exceptions: 'the callback body uses the ordinary unit exception reading; no capture operation invokes the callback or changes the surrounding call evaluation order; a mutable capture is refused before emission',
+      termination: 'the callback body uses ordinary unit termination obligations; capturing a module-load argument terminates immediately and runs no callback body; lane B never invokes an enclosing unit to manufacture a closure',
+    },
+    refusal: 'an enclosing-unit binding may be written after this callback is created; capture a stable value',
+    design: ['design/callback-units.md'],
+    versions: [{ version: 1, status: 'current' }],
+  },
 ];
 
 // findings that never refuse: advice the lint attaches beside the gate (`--advice`, `--any-type`); no reading owns them

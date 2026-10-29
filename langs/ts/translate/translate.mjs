@@ -33,7 +33,7 @@ import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, first
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
@@ -69,6 +69,7 @@ import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../c
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { typeAssertion, assertionHeld } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
 import { signedZero } from '../common.mjs'; // the sign of zero: one test with the lint
+import { callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList, formatUnitList } from '../common.mjs'; // a callback unit's captured inputs and its contextual types; a finding's unit; the one unit-list parser and its inverse
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
 const indentBlock = (s, n = 1) => s.split('\n').map((l) => '  '.repeat(n) + l).join('\n');
@@ -82,6 +83,17 @@ export function translate(file, fnName, opts = {}) {
   const { sf, checker } = loaded;
   let real = realFlag || fileUsesReals(sf); // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
   const fns = topLevelFunctions(sf);
+  const callbackInputs = new Map();
+  for (const u of fns.values()) if (u.form === 'callback') {
+    const captures = callbackEnvironment(checker, u);
+    callbackInputs.set(u.node, captures);
+    // Declaration identifiers keep the checker's exact type; captured inputs have no default or optional marker.
+    u.params = [...u.params, ...captures.map(c => Object.assign(Object.create(c.decl), { name: c.decl.name, initializer: undefined, questionToken: undefined, dotDotDotToken: undefined, modifiers: undefined }))];
+  }
+  const originOf = (checker, id, sf, node) => {
+    const o = sourceOriginOf(checker, id, sf, node);
+    return callbackInputs.get(node)?.some(c => c.decl === o.decl) ? { ...o, kind: 'local' } : o;
+  };
   const exceptionUnits = exceptionUnitsOf(sf, checker, fns);
   const generators = generatorReading(checker, sf, fns);
   let yieldState = null;
@@ -162,14 +174,13 @@ export function translate(file, fnName, opts = {}) {
 
   // ----- the subset gate: refuse before translating -----
   const promiseReadings = new Set();
-  const gate0 = admitUnits(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, loaded).filter((g) => !g.env); // an unresolved module is the checkout's finding, not the code's: its values are opaque
+  const gate0 = admitUnits(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, loaded).filter((g) => !g.env && order.some((u) => u.name === findingUnit(sf, fns, g)?.name)); // a finding stops the unit it belongs to (the lint's named unit, else the innermost containing one), never a neighbour; an unresolved module is the checkout's finding, not the code's: its values are opaque
   const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
   const failedUnits = new Set();
   let gate = gate0;
   if (tolerant) {
     for (const u of order) {
-      const a = lineOf(sf, u.node.getStart(sf)), b = lineOf(sf, u.node.getEnd());
-      const hits = gate0.filter((g) => g.line >= a && g.line <= b);
+      const hits = gate0.filter((g) => findingUnit(sf, fns, g)?.name === u.name);
       if (hits.length) { report.lintedOut.push({ unit: u.name, rule: hits[0].rule, msg: String(hits[0].msg).slice(0, 140) }); failedUnits.add(u.name); }
     }
     order = order.filter((u) => !failedUnits.has(u.name));
@@ -260,7 +271,7 @@ export function translate(file, fnName, opts = {}) {
   const decoLines = []; // `// DECORATORS <unit>: <row ids>`: the decorator-table rows a unit's reading used (check.mjs withholds the proof when the framework contradicts one)
   const sigLines = []; // `// SIG <unit>: <json>`: the TypeScript signature a caller sees (the method's decorators, the `this` type if declared, per position the parameter's decorators, type, optionality, rest-ness and default, the return type); the theorem compares it across the two sides before writing a lemma. Parameter names sit in `names`, which the theorem never compares: a caller passes by position
   const fold = (t) => String(t ?? '').replace(/\s+/g, ' ').trim();
-  const sigOf = (u) => { const fn = u.fn; const decs = (n) => (ts.canHaveDecorators && ts.canHaveDecorators(n) ? (ts.getDecorators(n) ?? []) : []).map((d) => fold(d.getText(sf))); const isThis = (p) => ts.isIdentifier(p.name) && p.name.text === 'this'; const thisP = fn.parameters.find(isThis); const ps = fn.parameters.filter((p) => !isThis(p)); return JSON.stringify({ decorators: decs(fn), ...(thisP ? { this: thisP.type ? fold(thisP.type.getText(sf)) : null } : {}), params: ps.map((p) => ({ decorators: decs(p), type: p.type ? fold(p.type.getText(sf)) : null, optional: !!p.questionToken, rest: !!p.dotDotDotToken, init: p.initializer ? fold(p.initializer.getText(sf)) : null })), ret: fn.type ? fold(fn.type.getText(sf)) : null, names: ps.map((p) => fold(p.name.getText(sf))), ...(promiseHandleUnit(u) ? { handle: true } : {}) }); };
+  const sigOf = (u) => { const fn = u.fn; const decs = (n) => (ts.canHaveDecorators && ts.canHaveDecorators(n) ? (ts.getDecorators(n) ?? []) : []).map((d) => fold(d.getText(sf))); const isThis = (p) => ts.isIdentifier(p.name) && p.name.text === 'this'; const thisP = fn.parameters.find(isThis); const ps = (u.form === 'callback' ? u.params : fn.parameters).filter((p) => !isThis(p)); return JSON.stringify({ decorators: decs(fn), ...(thisP ? { this: thisP.type ? fold(thisP.type.getText(sf)) : null } : {}), params: ps.map((p) => ({ decorators: decs(p), type: p.type ? fold(p.type.getText(sf)) : null, optional: !!p.questionToken, rest: !!p.dotDotDotToken, init: p.initializer ? fold(p.initializer.getText(sf)) : null })), ret: fn.type ? fold(fn.type.getText(sf)) : null, names: ps.map((p) => fold(p.name.getText(sf))), ...(promiseHandleUnit(u) ? { handle: true } : {}) }); };
   // a promise handle unit returns the promise an outside call returned, unsettled: a caller sees another interface than an async unit's adopted result
   const promiseHandleUnit = (u) => !u.isAsync && !u.isCtor && !u.accessor && !!u.fn.body && isPromiseT(checker.getSignatureFromDeclaration(u.fn).getReturnType());
   // its result is a handle: the term of the outside transition (or the input) that produced it names that one object, so
@@ -6092,7 +6103,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // core that holds one is refused by name, never translated without its write
   function emitUnit(u) {
     currentUnit = u;
-    { const why = untypedJsUnit(sf, u); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
+    { const why = callbackUntypedJsUnit(sf, u, checker); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
     tempCount = 0; // a unit's temporaries are numbered from its own start: an edit elsewhere in the file leaves its text unchanged, so the theorem's identity shortcut still reads it
@@ -6205,7 +6216,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     for (const [k, text] of prelude) pre.push(qualify(text));
     for (const text of heapPre) pre.push(text);
   }
-  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${fnName}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${[...effectfulUnits].sort().join(',')}${heapT ? `\n// HEAP: ${[...heapT.core()].sort().join(',')}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
+  const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${formatUnitList([fnName])}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${formatUnitList([...effectfulUnits].sort())}${heapT ? `\n// HEAP: ${formatUnitList([...heapT.core()].sort())}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
   if (opts.preludeOut) {
     const preludeText = `// Generated by lean-ts translate (version 2): shared declarations. Identical for parent and candidate, or the gate refuses.\n` + pre.map((t) => `// PRELUDE ${t.match(/^(?:datatype|type|function|predicate)\s+([A-Za-z0-9_]+)/)?.[1] ?? hash(t)}\n${t}\n// END PRELUDE`).join('\n') + '\n';
     return { main: `${header}\ninclude "${path.basename(opts.preludeOut)}"\n\n${main}\n`, prelude: preludeText };
@@ -6226,13 +6237,13 @@ if (isMain) {
     else if (a === '--real') opts.real = true;
     else if (a === '--core') opts.core = true;
     else if (a === '--suffix') opts.suffix = args[++i] ?? '';
-    else if (a === '--only') opts.only = args[++i].split(',').map((s) => s.trim()).filter(Boolean);
-    else if (a === '--effectful') opts.effectful = args[++i].split(',').map((s) => s.trim()).filter(Boolean);
+    else if (a === '--only') opts.only = parseUnitList(args[++i]);
+    else if (a === '--effectful') opts.effectful = parseUnitList(args[++i]);
     else if (a === '--project') opts.project = args[++i];
     else if (a === '--no-project') opts.project = false;
     else if (a === '--tolerant') opts.tolerant = true;
     else if (a === '--heap') opts.heap = true;
-    else if (a === '--heap-units') { opts.heap = true; opts.heapUnits = args[++i].split(',').map((s) => s.trim()).filter(Boolean); }
+    else if (a === '--heap-units') { opts.heap = true; opts.heapUnits = parseUnitList(args[++i]); }
     else if (a === '--report') opts.reportOut = args[++i];
     else if (a === '--requires') opts.requires.push(args[++i]);
     else if (a === '--ensures') opts.ensures.push(args[++i]);

@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { check } from '../../../check.mjs';
+import { prReport } from '../../../pr.mjs';
+const scratch = path.resolve('.lean/cache/callback-units/covered');
+fs.mkdirSync(scratch, { recursive: true });
+const parent = new URL('./parent.ts', import.meta.url).pathname;
+const candidate = new URL('./candidate.ts', import.meta.url).pathname;
+test('certificate inherits the enclosing verdict and labels its source', async () => {
+  const outer = await check({ parent, candidate, unit: 'outer', n: 3, project: false, dafnySeconds: 30 });
+  const inner = await check({ parent, candidate, unit: 'outer/xs.map()#0', n: 3, project: false, dafnySeconds: 30 });
+  assert.equal(inner.verdict, outer.verdict);
+  assert.equal(inner.certificate['covered-by'], 'outer');
+  assert.equal(inner.certificate.unit, 'outer/xs.map()#0');
+  assert.deepEqual(inner.certificate.lanes.B.bound, outer.certificate.lanes.B.bound);
+});
+test('PR retains nested lint findings but inherits the enclosing verdict', async () => {
+  const repo = fs.mkdtempSync(path.join(scratch, 'repo-'));
+  const git = (...args) => { const r = spawnSync('git', ['-C', repo, '-c', 'user.name=lean', '-c', 'user.email=lean@example.invalid', ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, `${r.stdout}${r.stderr}\nexit=${r.status}`); };
+  const source = n => `export function outer(xs: number[]): number { let k = ${n}; xs.forEach(x => { k += x; }); return k; }\n`;
+  git('init', '-q'); fs.writeFileSync(path.join(repo, 'a.ts'), source(1)); git('add', 'a.ts'); git('commit', '-qm', 'base');
+  fs.writeFileSync(path.join(repo, 'a.ts'), source(2));
+  const rows = await prReport({ repo, base: 'HEAD', head: 'WORKTREE', n: 3, project: false, dafnySeconds: 30, fresh: true });
+  fs.writeFileSync(path.join(scratch, 'pr.json'), JSON.stringify(rows, null, 2));
+  const outer = rows.find(r => r.unit === 'outer'), inner = rows.find(r => r.unit === 'outer/xs.forEach()#0');
+  assert.equal(outer.verdict, 'WITNESS');
+  assert.equal(inner.verdict, outer.verdict);
+  assert.equal(inner['covered-by'], 'outer');
+  assert.equal(inner.certificate['covered-by'], 'outer');
+});

@@ -1,0 +1,48 @@
+{
+  "complete": true,
+  "totals": {
+    "census ts": {
+      "roots": 38,
+      "files": 21873,
+      "before": 50345,
+      "after": 84635,
+      "predicted": 34290,
+      "insideBefore": 40069,
+      "insideAfter": 68686
+    },
+    "census js": {
+      "roots": 38,
+      "files": 23735,
+      "before": 19147,
+      "after": 25284,
+      "predicted": 6137,
+      "insideBefore": 2087,
+      "insideAfter": 2211
+    },
+    "bugsjs ts": {
+      "roots": 10,
+      "files": 1,
+      "before": 0,
+      "after": 0,
+      "predicted": 0,
+      "insideBefore": 0,
+      "insideAfter": 0
+    },
+    "bugsjs js": {
+      "roots": 10,
+      "files": 1768,
+      "before": 2385,
+      "after": 4154,
+      "predicted": 1769,
+      "insideBefore": 608,
+      "insideAfter": 778
+    }
+  },
+  "admissionMoves": 1742,
+  "attributionMoves": 65,
+  "sharedLineMoves": 1677,
+  "firstRuleChanges": 82,
+  "sharedLineRuleChanges": 61,
+  "unexplainedMoves": 0,
+  "unexplainedRuleChanges": 0
+}

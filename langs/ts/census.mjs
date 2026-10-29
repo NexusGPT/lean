@@ -8,8 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { lowerFile } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
-import { loadManyChunks, topLevelFunctions, lineOf } from './common.mjs';
-
+import { loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
 const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts|js|jsx|mjs|cjs)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
 
@@ -38,7 +37,7 @@ export function census(root, opts = {}) {
   const perPackage = new Map();
   const languages = {}; // ts and (with --js) js: files, units, units inside the subset
   const records = []; // one per file: what the per-file reader needs
-  let files = 0, units = 0, entered = 0, failedFiles = 0;
+  let files = 0, units = 0, entered = 0, failedFiles = 0, nested = 0, nestedEntered = 0; // nested: units inside another unit's body (callbacks), covered by it
   const t0 = Date.now();
   const list = [];
   for (const file of walk(root, js ? ANY_EXT : TS_EXT)) {
@@ -53,21 +52,23 @@ export function census(root, opts = {}) {
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
-    let findings, unitNames, sourceLines, lowered;
+    let findings, unitNames, sourceLines, lowered, inventory;
     try {
       const L = loaded.get(path.resolve(file));
       if (!L || L.error) throw new Error(L?.error ?? 'not loaded');
       const { sf } = L;
       sourceLines = sf.text.split(/\r?\n/);
-      unitNames = [...topLevelFunctions(sf).values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
+      inventory = topLevelFunctions(sf);
+      unitNames = [...inventory.values()].map((u) => [u.name, lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
       const rec = lowerFile(file, null, { project: true, loaded: L }); findings = rec.findings;
+      for (const f of findings) f.unit = findingUnit(sf, inventory, f)?.name ?? null; // a finding belongs to the unit the lint named, else the innermost containing unit
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
       for (const u of rec.units) { if (u.refusal) reading(u.refusal.id).refused++; else for (const r of u.readings) reading(r.id).admitted++; }
     } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
-    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: findings.map((f) => ({ line: f.line, rule: f.rule, msg: f.msg, env: !!f.env })) });
+    records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: findings.map((f) => ({ line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env })) });
     const blocked = new Set();
     for (const f of findings) {
-      const unit = unitNames.find(([, a, b]) => a <= f.line && f.line <= b)?.[0] ?? null;
+      const unit = f.unit;
       if (unit && !f.env && !blocked.has(unit)) {
         // Count each stopped unit under its first refusal. Environment findings do not stop a unit.
         blocked.add(unit);
@@ -88,6 +89,9 @@ export function census(root, opts = {}) {
       if (r.examples.length < 3) r.examples.push(`${path.relative(root, file)}:${f.line} ${f.msg.slice(0, 110)}`);
       rules.set(f.rule, r);
     }
+    // a nested unit is covered by its enclosing unit (pr.mjs, check.mjs): a stopped enclosing unit stops it too, counted under covered-by
+    for (const u of inventory.values()) if (u.enclosingUnit && !blocked.has(u.name)) { let p = u.enclosingUnit; while (p && !blocked.has(p.name)) p = p.enclosingUnit; if (p) { blocked.add(u.name); const r = rules.get('covered-by') ?? { count: 0, units: new Set(), examples: [] }; r.count++; r.units.add(`${file}:${u.name}`); rules.set('covered-by', r); } }
+    { const ns = [...inventory.values()].filter((u) => u.enclosingUnit); nested += ns.length; nestedEntered += ns.filter((u) => !blocked.has(u.name)).length; }
     units += unitNames.length; entered += unitNames.length - blocked.size;
     { const lang = JS_EXT.test(file) ? 'js' : 'ts'; const Lg = languages[lang] ??= { files: 0, units: 0, entered: 0 }; Lg.files++; Lg.units += unitNames.length; Lg.entered += unitNames.length - blocked.size; }
     P.units += unitNames.length; P.entered += unitNames.length - blocked.size;
@@ -98,7 +102,7 @@ export function census(root, opts = {}) {
     rule: r.rule, units: r.units,
     directories: [...r.directories.values()].sort((a, b) => a.directory.localeCompare(b.directory)),
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
-  return { root, date, depth, languages, refused: units - entered, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  return { root, date, depth, languages, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
 
 // Render only the saved census result. No files are read and no units are linted here.

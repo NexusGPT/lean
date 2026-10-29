@@ -9,7 +9,7 @@
 // Read-only: nothing is written into a repository.
 import fs from 'node:fs';
 import path from 'node:path';
-import { ts, topLevelFunctions as ownListing } from './common.mjs';
+import { ts, topLevelFunctions as ownListing, callbackUnits } from './common.mjs';
 import { pathToFileURL } from 'node:url';
 import { walk, TS_EXT, JS_EXT } from './census.mjs';
 
@@ -77,28 +77,39 @@ export function kindOf(fn) {
 // whose key is read, not called) whose key is a static name (an identifier, or a string that is one)
 export const staticKey = (fn) => { if (ts.isGetAccessorDeclaration(fn) || ts.isSetAccessorDeclaration(fn)) return null; const m = ts.isPropertyAssignment(upParens(fn).parent) ? upParens(fn).parent : fn; const n = m.name; return n && (ts.isIdentifier(n) || (ts.isStringLiteral(n) && /^[A-Za-z_$][\w$]*$/.test(n.text))) ? n.text : null; };
 let topLevelFunctions = ownListing;
+const callbackCounts = () => Object.fromEntries([
+  ...['module', 'body'].flatMap((scope) => ['Arrow', 'Function'].flatMap((form) => ['Block', 'Expression'].map((body) => scope + form + body))),
+  'orderNamed', 'otherScope', 'predicted',
+].map((k) => [k, 0]));
 
 /** Every function-like node with a body, of one parsed file, against the listed units. */
-export function gapOfFile(sf) {
-  const listed = new Set([...topLevelFunctions(sf).values()].map((u) => u.fn));
+export function gapOfFile(sf, listing = topLevelFunctions) {
+  const units = listing(sf);
+  const listed = new Set([...units.values()].map((u) => u.fn));
+  const callbacks = callbackCounts(), predicted = callbackUnits(sf, units), eligible = new Set(predicted.map((u) => u.fn));
+  for (const u of predicted) if (!listed.has(u.fn)) {
+    callbacks.predicted++;
+    callbacks[(u.enclosingUnit ? 'body' : 'module') + (u.isArrow ? 'Arrow' : 'Function') + (ts.isBlock(u.body) ? 'Block' : 'Expression')]++;
+    if (u.orderNamed) callbacks.orderNamed++;
+  }
   const counts = Object.fromEntries(KINDS.map(([k]) => [k, 0]));
   const examples = [];
   let functions = 0, listable = 0; // listable: the exported and module-const literal members with a static key (the reading of design/exported-units.md)
   const visit = (n) => {
     if (isFunctionLike(n) && n.body) {
       functions++;
-      if (!listed.has(n)) { const k = kindOf(n); counts[k]++; if ((k === 'objlit-exported' || k === 'objlit-module-const') && staticKey(n)) listable++; examples.push({ kind: k, line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1 }); }
+      if (!listed.has(n)) { const k = kindOf(n); counts[k]++; if (k === 'callback' && !eligible.has(n)) callbacks.otherScope++; if ((k === 'objlit-exported' || k === 'objlit-module-const') && staticKey(n)) listable++; examples.push({ kind: k, line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1 }); }
     }
     ts.forEachChild(n, visit);
   };
   visit(sf);
-  return { listed: listed.size, functions, listable, counts, examples };
+  return { listed: listed.size, functions, listable, counts, examples, callbacks };
 }
 
 const kindOfFile = (f) => (/\.tsx$/.test(f) ? ts.ScriptKind.TSX : /\.(ts|mts|cts)$/.test(f) ? ts.ScriptKind.TS : /\.jsx$/.test(f) ? ts.ScriptKind.JSX : ts.ScriptKind.JS);
 
 export function reachGap(root, { js = false, examples: keep = 3 } = {}) {
-  const side = () => ({ files: 0, unreadable: 0, functions: 0, listed: 0, unlisted: 0, listable: 0, kinds: Object.fromEntries(KINDS.map(([k]) => [k, 0])), examples: Object.fromEntries(KINDS.map(([k]) => [k, []])) });
+  const side = () => ({ files: 0, unreadable: 0, functions: 0, listed: 0, unlisted: 0, listable: 0, callbacks: callbackCounts(), kinds: Object.fromEntries(KINDS.map(([k]) => [k, 0])), examples: Object.fromEntries(KINDS.map(([k]) => [k, []])) });
   const out = { root, ts: side(), ...(js ? { js: side() } : {}) };
   const sides = [['ts', TS_EXT], ...(js ? [['js', JS_EXT]] : [])];
   for (const [lang, ext] of sides) for (const file of walk(root, ext)) {
@@ -106,6 +117,7 @@ export function reachGap(root, { js = false, examples: keep = 3 } = {}) {
     let text; try { text = fs.readFileSync(file, 'utf8'); } catch { S.unreadable++; continue; }
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kindOfFile(file));
     const g = gapOfFile(sf);
+    for (const [k, v] of Object.entries(g.callbacks)) S.callbacks[k] += v;
     S.files++; S.functions += g.functions; S.listed += g.listed; S.listable += g.listable;
     for (const [k, v] of Object.entries(g.counts)) { S.kinds[k] += v; S.unlisted += v; }
     for (const e of g.examples) if (S.examples[e.kind].length < keep) S.examples[e.kind].push(`${path.relative(root, file)}:${e.line}`);
@@ -114,16 +126,17 @@ export function reachGap(root, { js = false, examples: keep = 3 } = {}) {
 }
 
 export function gapReport(rows, lang) {
-  const head = ['repository', 'files', 'listed', 'unlisted', ...KINDS.map(([k]) => k), 'objlit static key'];
+  const head = ['repository', 'files', 'listed', 'unlisted', ...KINDS.map(([k]) => k), 'objlit static key', ...Object.keys(callbackCounts())];
   const lines = [`| ${head.join(' | ')} |`, `| --- |${head.slice(1).map(() => ' ---: |').join('')}`];
-  const total = { files: 0, listed: 0, unlisted: 0, listable: 0, kinds: Object.fromEntries(KINDS.map(([k]) => [k, 0])) };
+  const total = { files: 0, listed: 0, unlisted: 0, listable: 0, callbacks: callbackCounts(), kinds: Object.fromEntries(KINDS.map(([k]) => [k, 0])) };
   for (const r of rows) {
     const S = r[lang]; if (!S || !S.files) continue;
+    for (const [k, v] of Object.entries(S.callbacks)) total.callbacks[k] += v;
     total.files += S.files; total.listed += S.listed; total.unlisted += S.unlisted; total.listable += S.listable;
     for (const [k] of KINDS) total.kinds[k] += S.kinds[k];
-    lines.push(`| ${r.name ?? path.basename(r.root)} | ${S.files} | ${S.listed} | ${S.unlisted} | ${KINDS.map(([k]) => S.kinds[k]).join(' | ')} | ${S.listable} |`);
+    lines.push(`| ${r.name ?? path.basename(r.root)} | ${S.files} | ${S.listed} | ${S.unlisted} | ${KINDS.map(([k]) => S.kinds[k]).join(' | ')} | ${S.listable} | ${Object.values(S.callbacks).join(' | ')} |`);
   }
-  lines.push(`| TOTAL | ${total.files} | ${total.listed} | ${total.unlisted} | ${KINDS.map(([k]) => total.kinds[k]).join(' | ')} | ${total.listable} |`);
+  lines.push(`| TOTAL | ${total.files} | ${total.listed} | ${total.unlisted} | ${KINDS.map(([k]) => total.kinds[k]).join(' | ')} | ${total.listable} | ${Object.values(total.callbacks).join(' | ')} |`);
   return { table: lines.join('\n'), total };
 }
 

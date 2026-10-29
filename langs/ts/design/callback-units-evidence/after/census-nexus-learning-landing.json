@@ -1,0 +1,4172 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning-landing",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 63,
+   "units": 254,
+   "entered": 219
+  },
+  "js": {
+   "files": 8,
+   "units": 11,
+   "entered": 1
+  }
+ },
+ "refused": 45,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 21,
+   "directories": [
+    {
+     "directory": "app/admin",
+     "units": 3,
+     "example": {
+      "file": "app/admin/funnel/page.tsx",
+      "line": 39,
+      "code": "r[key] as number"
+     }
+    },
+    {
+     "directory": "app/api",
+     "units": 8,
+     "example": {
+      "file": "app/api/cal/webhook/route.ts",
+      "line": 32,
+      "code": "uid"
+     }
+    },
+    {
+     "directory": "components/form",
+     "units": 5,
+     "example": {
+      "file": "components/form/CallNow.tsx",
+      "line": 43,
+      "code": "data.reason ?? ''"
+     }
+    },
+    {
+     "directory": "lib/attribution",
+     "units": 1,
+     "example": {
+      "file": "lib/attribution/parse.ts",
+      "line": 84,
+      "code": "Object.entries(PARAMS) as [AttributionField, string][]"
+     }
+    },
+    {
+     "directory": "lib/db",
+     "units": 2,
+     "example": {
+      "file": "lib/db/client.ts",
+      "line": 50,
+      "code": "db as unknown as Parameters<typeof migrate>[0]"
+     }
+    },
+    {
+     "directory": "lib/requests",
+     "units": 1,
+     "example": {
+      "file": "lib/requests/submit.ts",
+      "line": 249,
+      "code": "merged"
+     }
+    },
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/measure-fold.mjs",
+      "line": 29,
+      "code": "rect(submit).bottom + window.scrollY"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 3,
+     "example": {
+      "file": "scripts/e2e-smoke.mjs",
+      "line": 47,
+      "code": "const journey = await page.evaluate(() => JSON.parse(sessionStorage.getItem('nx.journey')));"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "untyped-js",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 3,
+     "example": {
+      "file": "scripts/db-peek.mjs",
+      "line": 4,
+      "code": "sql"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "components",
+     "units": 2,
+     "example": {
+      "file": "components/InsightTag.tsx",
+      "line": 30,
+      "code": "w._linkedin_partner_id"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "global-read",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "components/form",
+     "units": 2,
+     "example": {
+      "file": "components/form/StepForm.tsx",
+      "line": 190,
+      "code": "renderField"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "lib/requests",
+     "units": 1,
+     "example": {
+      "file": "lib/requests/submit.ts",
+      "line": 66,
+      "code": "(raw as Record<string, string>)[k]"
+     }
+    },
+    {
+     "directory": "lib/server",
+     "units": 1,
+     "example": {
+      "file": "lib/server/landing-claim.ts",
+      "line": 16,
+      "code": "(raw as Record<string, string>)[`__duplicate_${duplicate}`]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "mixed-types",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "components/form",
+     "units": 2,
+     "example": {
+      "file": "components/form/controls.tsx",
+      "line": 52,
+      "code": "value === o.value"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 2,
+     "example": {
+      "file": "scripts/measure-fold.mjs",
+      "line": 22,
+      "code": "document.fonts.ready"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "unsupported-call",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "lib/requests",
+     "units": 2,
+     "example": {
+      "file": "lib/requests/facts.ts",
+      "line": 52,
+      "code": "(ctx.now ?? (() => new Date()))()"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "components/form",
+     "units": 1,
+     "example": {
+      "file": "components/form/useSubmission.ts",
+      "line": 80,
+      "code": "cache.current"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "definite-assignment",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "app/api",
+     "units": 1,
+     "example": {
+      "file": "app/api/requests/route.ts",
+      "line": 30,
+      "code": "body: Record<string, unknown>"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "global-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/e2e-smoke.mjs",
+      "line": 56,
+      "code": "posts++"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "lib/admin",
+     "units": 1,
+     "example": {
+      "file": "lib/admin/queries.ts",
+      "line": 27,
+      "code": "or(ilike(requests.company_name, like), ilike(requests.name, like), ilike(requests.email, like))!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "lib/admin",
+     "units": 1,
+     "example": {
+      "file": "lib/admin/queries.ts",
+      "line": 71,
+      "code": "rows.set(id, { landing_variant_id: id, label, landing_views: 0, form_started: 0, step_1: 0, step_2: 0, contacts_saved: 0"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "prototype",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "components/form",
+     "units": 1,
+     "example": {
+      "file": "components/form/StepForm.tsx",
+      "line": 120,
+      "code": "out[f.name]"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 71,
+ "failedFiles": 0,
+ "units": 265,
+ "entered": 220,
+ "share": 83,
+ "seconds": 20,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 75,
+   "units": 27,
+   "examples": [
+    "app/admin/funnel/page.tsx:39 `r[key] as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value)",
+    "app/admin/funnel/page.tsx:39 `r[key] as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value)",
+    "app/admin/funnel/page.tsx:39 `r[key] as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value)"
+   ]
+  },
+  {
+   "rule": "unresolved-module",
+   "findings": 10,
+   "units": 10,
+   "examples": [
+    "app/admin/funnel/page.tsx:9 TS2304: Cannot find name 'PageProps'.",
+    "app/admin/layout.tsx:11 TS2304: Cannot find name 'LayoutProps'.",
+    "app/admin/login/page.tsx:5 TS2304: Cannot find name 'PageProps'."
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 16,
+   "units": 4,
+   "examples": [
+    "scripts/admin-shots.mjs:11 TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.   Type 'undefin",
+    "scripts/e2e-smoke.mjs:42 TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.   Type 'null' is not",
+    "scripts/e2e-smoke.mjs:47 TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.   Type 'null' is not"
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "findings": 5,
+   "units": 3,
+   "examples": [
+    "components/InsightTag.tsx:30 `w` is another name for a value this function was handed; change it through that name, or copy it first",
+    "components/InsightTag.tsx:30 `w` is another name for a value this function was handed; change it through that name, or copy it first",
+    "components/InsightTag.tsx:31 `w` is another name for a value this function was handed; change it through that name, or copy it first"
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "lib/attribution/parse.ts:87 write a record field by name, or use a local Record<string, T> dictionary",
+    "lib/requests/submit.ts:66 write a record field by name, or use a local Record<string, T> dictionary",
+    "lib/server/landing-claim.ts:16 write a record field by name, or use a local Record<string, T> dictionary"
+   ]
+  },
+  {
+   "rule": "promise",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "lib/db/client.ts:62 a held promise of this result type has no identity in the reading; return the call itself",
+    "scripts/measure-fold.mjs:22 return the promise from a call, a name or a conditional, or make the function async",
+    "scripts/screenshots.mjs:16 return the promise from a call, a name or a conditional, or make the function async"
+   ]
+  },
+  {
+   "rule": "untyped-js",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "scripts/db-peek.mjs:4 parameter `sql` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} sql` or TypeScript)",
+    "scripts/e2e-smoke.mjs:12 parameter `cond` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} cond` or TypeScrip",
+    "scripts/e2e-smoke.mjs:13 parameter `page` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} page` or TypeScrip"
+   ]
+  },
+  {
+   "rule": "global-read",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "components/form/StepForm.tsx:190 `renderField` is module state that can change; the subset reads constants only",
+    "components/form/StepForm.tsx:190 `renderField` is module state that can change; the subset reads constants only"
+   ]
+  },
+  {
+   "rule": "mixed-types",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "components/form/controls.tsx:52 a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal",
+    "components/form/controls.tsx:52 a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal"
+   ]
+  },
+  {
+   "rule": "unsupported-call",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "lib/requests/facts.ts:52 calls through computed callees are outside the subset",
+    "lib/requests/submit.ts:129 calls through computed callees are outside the subset"
+   ]
+  },
+  {
+   "rule": "definite-assignment",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "app/api/requests/route.ts:30 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested",
+    "app/api/requests/route.ts:58 `body` may be read here before its first assignment (TypeScript does not check this read), and lean tests it o"
+   ]
+  },
+  {
+   "rule": "prototype",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "components/form/StepForm.tsx:120 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of ",
+    "components/form/StepForm.tsx:125 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of "
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "components/form/useSubmission.ts:80 a callback cannot change an outer record"
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "lib/admin/queries.ts:27 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "lib/admin/queries.ts:71 map mutation on a non-local"
+   ]
+  },
+  {
+   "rule": "async",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "lib/db/client.ts:61 an async unit is called without await"
+   ]
+  },
+  {
+   "rule": "number-special",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "lib/requests/submit.ts:68 the finite number model has no NaN or infinity; use lane B for special-value arithmetic"
+   ]
+  },
+  {
+   "rule": "global-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "scripts/e2e-smoke.mjs:56 update of `posts`, which this function does not own"
+   ]
+  },
+  {
+   "rule": "unsupported-member",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "scripts/measure-fold.mjs:35 property .name is not declared on Element"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 44,
+   "units": 0,
+   "examples": [
+    "scripts/admin-shots.mjs:6 code at module level runs on import; it is outside the subset",
+    "scripts/admin-shots.mjs:7 code at module level runs on import; it is outside the subset",
+    "scripts/admin-shots.mjs:8 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "app/admin/actions.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "loginAction",
+     "lines": [
+      9,
+      15
+     ]
+    },
+    {
+     "name": "logoutAction",
+     "lines": [
+      17,
+      20
+     ]
+    },
+    {
+     "name": "updateCrmAction",
+     "lines": [
+      22,
+      34
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "app/admin/funnel/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "pct",
+     "lines": [
+      7,
+      7
+     ]
+    },
+    {
+     "name": "FunnelPage",
+     "lines": [
+      9,
+      48
+     ]
+    },
+    {
+     "name": "FunnelPage/cols.map()#0",
+     "lines": [
+      33,
+      33
+     ]
+    },
+    {
+     "name": "FunnelPage/rows.map()#0",
+     "lines": [
+      36,
+      42
+     ]
+    },
+    {
+     "name": "FunnelPage/rows.map()#0/cols.map()#0",
+     "lines": [
+      39,
+      39
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 9,
+     "unit": "FunnelPage",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    },
+    {
+     "line": 39,
+     "unit": "FunnelPage",
+     "rule": "type-assertion",
+     "msg": "`r[key] as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 39,
+     "unit": "FunnelPage/rows.map()#0",
+     "rule": "type-assertion",
+     "msg": "`r[key] as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 39,
+     "unit": "FunnelPage/rows.map()#0/cols.map()#0",
+     "rule": "type-assertion",
+     "msg": "`r[key] as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/admin/layout.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "AdminLayout",
+     "lines": [
+      11,
+      28
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "unit": "AdminLayout",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'LayoutProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/admin/login/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "LoginPage",
+     "lines": [
+      5,
+      23
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 5,
+     "unit": "LoginPage",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/admin/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "AdminIndex",
+     "lines": [
+      4,
+      6
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "app/admin/requests/[id]/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "RequestDetail",
+     "lines": [
+      11,
+      103
+     ]
+    },
+    {
+     "name": "RequestDetail/Object.values(LANDINGS).find()#0",
+     "lines": [
+      19,
+      19
+     ]
+    },
+    {
+     "name": "RequestDetail/answers.map()#0",
+     "lines": [
+      49,
+      49
+     ]
+    },
+    {
+     "name": "RequestDetail/evs.map()#0",
+     "lines": [
+      63,
+      63
+     ]
+    },
+    {
+     "name": "RequestDetail/CRM_STATUSES.map()#0",
+     "lines": [
+      74,
+      74
+     ]
+    },
+    {
+     "name": "RequestDetail/OWNERS.map()#0",
+     "lines": [
+      86,
+      86
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "unit": "RequestDetail",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/admin/requests/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "RequestsPage",
+     "lines": [
+      11,
+      78
+     ]
+    },
+    {
+     "name": "RequestsPage/CRM_STATUSES.map()#0",
+     "lines": [
+      37,
+      37
+     ]
+    },
+    {
+     "name": "RequestsPage/rows.map()#0",
+     "lines": [
+      58,
+      72
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "unit": "RequestsPage",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/api/cal/webhook/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "POST",
+     "lines": [
+      17,
+      68
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 32,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`uid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 48,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.payload.startTime` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 48,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.payload.startTime` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`uid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/api/call-outcome/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "json",
+     "lines": [
+      29,
+      30
+     ]
+    },
+    {
+     "name": "verify",
+     "lines": [
+      32,
+      41
+     ]
+    },
+    {
+     "name": "POST",
+     "lines": [
+      43,
+      100
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 58,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`phone` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.auth_ts` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.auth_sig` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 64,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.duration_seconds` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 84,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`typeof body.call_ended_at === 'string' ? body.call_ended_at ` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 86,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`outcome` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 87,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`summary || null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/api/call-request/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "json",
+     "lines": [
+      27,
+      28
+     ]
+    },
+    {
+     "name": "refuse",
+     "lines": [
+      30,
+      30
+     ]
+    },
+    {
+     "name": "POST",
+     "lines": [
+      35,
+      99
+     ]
+    },
+    {
+     "name": "POST/after()#0",
+     "lines": [
+      90,
+      91
+     ]
+    },
+    {
+     "name": "POST/after()#0/requestAgentCall({ ...contact, phone, consent_at: nowIso, known_context: '' }).catch()#0",
+     "lines": [
+      91,
+      91
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 56,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`phone` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/api/contact-facts/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "json",
+     "lines": [
+      27,
+      28
+     ]
+    },
+    {
+     "name": "verify",
+     "lines": [
+      30,
+      39
+     ]
+    },
+    {
+     "name": "POST",
+     "lines": [
+      41,
+      94
+     ]
+    },
+    {
+     "name": "POST/raw.map()#0",
+     "lines": [
+      65,
+      68
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 56,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`email` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.auth_ts` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.auth_sig` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`o.key ?? ''` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "POST/raw.map()#0",
+     "rule": "type-assertion",
+     "msg": "`o.key ?? ''` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`o.value ?? ''` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "POST/raw.map()#0",
+     "rule": "type-assertion",
+     "msg": "`o.value ?? ''` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`typeof o.basis === 'string' ? o.basis : undefined` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "POST/raw.map()#0",
+     "rule": "type-assertion",
+     "msg": "`typeof o.basis === 'string' ? o.basis : undefined` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 82,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`email` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 85,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`typeof body.author === 'string' && body.author ? body.author` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 86,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`typeof body.conversation_ref === 'string' ? body.conversatio` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/api/contact-lookup/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "json",
+     "lines": [
+      29,
+      30
+     ]
+    },
+    {
+     "name": "verify",
+     "lines": [
+      32,
+      41
+     ]
+    },
+    {
+     "name": "POST",
+     "lines": [
+      43,
+      103
+     ]
+    },
+    {
+     "name": "POST/(await currentFacts(db, email)).map()#0",
+     "lines": [
+      68,
+      70
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 55,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`email` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 55,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.auth_ts` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 55,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.auth_sig` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/api/diagnostics/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "POST",
+     "lines": [
+      17,
+      50
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 24,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.event_name` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.failure_category` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 39,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`isUuid(body.journey_id) ? body.journey_id : null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`failure` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 43,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`Number.isInteger(body.step) && (body.step as number) >= 0 &&` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 43,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.step` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/api/requests/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "json",
+     "lines": [
+      17,
+      18
+     ]
+    },
+    {
+     "name": "POST",
+     "lines": [
+      26,
+      79
+     ]
+    },
+    {
+     "name": "POST/after()#0@1",
+     "lines": [
+      58,
+      58
+     ]
+    },
+    {
+     "name": "POST/after()#0@2",
+     "lines": [
+      65,
+      65
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 30,
+     "unit": "POST",
+     "rule": "definite-assignment",
+     "msg": "this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested function), and here its absence is not carried (a try, a switch, an async or nested function); assign it where it is declared or give it a start value",
+     "env": false
+    },
+    {
+     "line": 52,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.landing` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 52,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.submission_key ?? ''` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 52,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.journey` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 52,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.fields` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": "POST",
+     "rule": "definite-assignment",
+     "msg": "`body` may be read here before its first assignment (TypeScript does not check this read), and lean tests it only in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions; assign it before this read or give it a start value",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": "POST",
+     "rule": "type-assertion",
+     "msg": "`body.landing as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": "POST/after()#0@1",
+     "rule": "type-assertion",
+     "msg": "`body.landing as never` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "app/extract/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "ExtractPage",
+     "lines": [
+      9,
+      52
+     ]
+    },
+    {
+     "name": "ExtractPage/x.steps.map()#0",
+     "lines": [
+      21,
+      30
+     ]
+    },
+    {
+     "name": "ExtractPage/x.sheet.cols.map()#0",
+     "lines": [
+      36,
+      36
+     ]
+    },
+    {
+     "name": "ExtractPage/x.sheet.rows.map()#0",
+     "lines": [
+      37,
+      37
+     ]
+    },
+    {
+     "name": "ExtractPage/x.sheet.rows.map()#0/r.map()#0",
+     "lines": [
+      37,
+      37
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "app/layout.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "RootLayout",
+     "lines": [
+      38,
+      44
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 38,
+     "unit": "RootLayout",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'LayoutProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "Index",
+     "lines": [
+      6,
+      23
+     ]
+    },
+    {
+     "name": "Index/Object.values(LANDINGS).filter()#0",
+     "lines": [
+      13,
+      13
+     ]
+    },
+    {
+     "name": "Index/Object.values(LANDINGS).filter((l) => l.intent === 'workshop').map()#0",
+     "lines": [
+      13,
+      18
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "app/preview/route.ts",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "GET",
+     "lines": [
+      13,
+      25
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "app/privacy/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "PrivacyPage",
+     "lines": [
+      8,
+      23
+     ]
+    },
+    {
+     "name": "PrivacyPage/privacy.sections.map()#0",
+     "lines": [
+      14,
+      19
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "app/training/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "Page",
+     "lines": [
+      7,
+      9
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "unit": "Page",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/training/questions-first/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "Page",
+     "lines": [
+      7,
+      9
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "unit": "Page",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/unsubscribe/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "optOut",
+     "lines": [
+      17,
+      33
+     ]
+    },
+    {
+     "name": "UnsubscribePage",
+     "lines": [
+      35,
+      47
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "app/workshop/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "Page",
+     "lines": [
+      7,
+      9
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "unit": "Page",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "app/workshop/questions-first/page.tsx",
+   "pkg": "app",
+   "units": [
+    {
+     "name": "Page",
+     "lines": [
+      7,
+      9
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "unit": "Page",
+     "rule": "unresolved-module",
+     "msg": "TS2304: Cannot find name 'PageProps'.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "components/Chrome.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "Header",
+     "lines": [
+      6,
+      14
+     ]
+    },
+    {
+     "name": "PreviewRibbon",
+     "lines": [
+      16,
+      18
+     ]
+    },
+    {
+     "name": "Footer",
+     "lines": [
+      20,
+      36
+     ]
+    },
+    {
+     "name": "LogoRow",
+     "lines": [
+      42,
+      54
+     ]
+    },
+    {
+     "name": "Metrics",
+     "lines": [
+      56,
+      68
+     ]
+    },
+    {
+     "name": "Check",
+     "lines": [
+      70,
+      76
+     ]
+    },
+    {
+     "name": "Checklist",
+     "lines": [
+      78,
+      86
+     ]
+    },
+    {
+     "name": "Footer/FOOTER.signals.map()#0",
+     "lines": [
+      24,
+      29
+     ]
+    },
+    {
+     "name": "LogoRow/CLIENT_LOGOS.map()#0",
+     "lines": [
+      47,
+      50
+     ]
+    },
+    {
+     "name": "Metrics/items.map()#0",
+     "lines": [
+      59,
+      65
+     ]
+    },
+    {
+     "name": "Checklist/items.map()#0",
+     "lines": [
+      81,
+      83
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "components/Illustrations.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "Dots",
+     "lines": [
+      9,
+      11
+     ]
+    },
+    {
+     "name": "ShortlistFigure",
+     "lines": [
+      14,
+      28
+     ]
+    },
+    {
+     "name": "DayStrip",
+     "lines": [
+      40,
+      52
+     ]
+    },
+    {
+     "name": "PledgeLine",
+     "lines": [
+      54,
+      56
+     ]
+    },
+    {
+     "name": "Dots/[1, 2, 3].map()#0",
+     "lines": [
+      10,
+      10
+     ]
+    },
+    {
+     "name": "ShortlistFigure/rows.map()#0",
+     "lines": [
+      19,
+      23
+     ]
+    },
+    {
+     "name": "DayStrip/steps.map()#0",
+     "lines": [
+      43,
+      49
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "components/InsightTag.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "read",
+     "lines": [
+      13,
+      15
+     ]
+    },
+    {
+     "name": "write",
+     "lines": [
+      16,
+      19
+     ]
+    },
+    {
+     "name": "subscribe",
+     "lines": [
+      20,
+      20
+     ]
+    },
+    {
+     "name": "InsightTag",
+     "lines": [
+      22,
+      49
+     ]
+    },
+    {
+     "name": "InsightTag/useSyncExternalStore()#2@1",
+     "lines": [
+      23,
+      23
+     ]
+    },
+    {
+     "name": "InsightTag/useSyncExternalStore()#0",
+     "lines": [
+      24,
+      24
+     ]
+    },
+    {
+     "name": "InsightTag/useSyncExternalStore()#1",
+     "lines": [
+      24,
+      24
+     ]
+    },
+    {
+     "name": "InsightTag/useSyncExternalStore()#2@2",
+     "lines": [
+      24,
+      24
+     ]
+    },
+    {
+     "name": "InsightTag/useEffect()#0",
+     "lines": [
+      26,
+      37
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 30,
+     "unit": "InsightTag",
+     "rule": "alias-mutation",
+     "msg": "`w` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 30,
+     "unit": "InsightTag/useEffect()#0",
+     "rule": "alias-mutation",
+     "msg": "`w` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": "InsightTag",
+     "rule": "alias-mutation",
+     "msg": "`w` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": "InsightTag/useEffect()#0",
+     "rule": "alias-mutation",
+     "msg": "`w` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": "InsightTag",
+     "rule": "type-assertion",
+     "msg": "`(w._linkedin_data_partner_ids ?? [])` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": "InsightTag/useEffect()#0",
+     "rule": "type-assertion",
+     "msg": "`(w._linkedin_data_partner_ids ?? [])` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "components/LandingPage.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "LandingPage",
+     "lines": [
+      22,
+      64
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "components/Logo.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "Logo",
+     "lines": [
+      6,
+      16
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "components/Wordmark.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "Wordmark",
+     "lines": [
+      3,
+      13
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "components/WorkshopPages.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "FormColumn",
+     "lines": [
+      26,
+      33
+     ]
+    },
+    {
+     "name": "DurationCards",
+     "lines": [
+      35,
+      45
+     ]
+    },
+    {
+     "name": "WorkshopRegister",
+     "lines": [
+      48,
+      75
+     ]
+    },
+    {
+     "name": "ShapesScale",
+     "lines": [
+      78,
+      93
+     ]
+    },
+    {
+     "name": "WorkshopEditorial",
+     "lines": [
+      96,
+      132
+     ]
+    },
+    {
+     "name": "DurationCards/content.durations.map()#0",
+     "lines": [
+      37,
+      43
+     ]
+    },
+    {
+     "name": "ShapesScale/content.durations.map()#0",
+     "lines": [
+      83,
+      89
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "components/form/CallNow.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "CallNow",
+     "lines": [
+      15,
+      83
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 43,
+     "unit": "CallNow",
+     "rule": "type-assertion",
+     "msg": "`data.reason ?? ''` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "components/form/StepForm.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "StepForm",
+     "lines": [
+      69,
+      74
+     ]
+    },
+    {
+     "name": "StepFormInner",
+     "lines": [
+      76,
+      272
+     ]
+    },
+    {
+     "name": "StepFormInner/useState()#0@1",
+     "lines": [
+      79,
+      79
+     ]
+    },
+    {
+     "name": "StepFormInner/useState()#0@2",
+     "lines": [
+      80,
+      80
+     ]
+    },
+    {
+     "name": "StepFormInner/content.steps.every()#0",
+     "lines": [
+      166,
+      166
+     ]
+    },
+    {
+     "name": "StepFormInner/content.steps.map()#0",
+     "lines": [
+      172,
+      172
+     ]
+    },
+    {
+     "name": "StepFormInner/rows.map()#0",
+     "lines": [
+      186,
+      193
+     ]
+    },
+    {
+     "name": "StepFormInner/rows.map()#0/row.map()#0@1",
+     "lines": [
+      187,
+      187
+     ]
+    },
+    {
+     "name": "StepFormInner/rows.map()#0/row.map()#0@2",
+     "lines": [
+      190,
+      190
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 120,
+     "unit": "StepFormInner",
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 124,
+     "unit": "StepFormInner",
+     "rule": "type-assertion",
+     "msg": "`f.multiple ? labels.join(', ') : labels[0]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 125,
+     "unit": "StepFormInner",
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 162,
+     "unit": "StepFormInner",
+     "rule": "alias-mutation",
+     "msg": "`last` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 190,
+     "unit": "StepFormInner/rows.map()#0",
+     "rule": "global-read",
+     "msg": "`renderField` is module state that can change; the subset reads constants only",
+     "env": false
+    },
+    {
+     "line": 190,
+     "unit": "StepFormInner/rows.map()#0/row.map()#0@2",
+     "rule": "global-read",
+     "msg": "`renderField` is module state that can change; the subset reads constants only",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "components/form/controls.tsx",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "Field",
+     "lines": [
+      7,
+      19
+     ]
+    },
+    {
+     "name": "Stepper",
+     "lines": [
+      25,
+      43
+     ]
+    },
+    {
+     "name": "Segmented",
+     "lines": [
+      45,
+      58
+     ]
+    },
+    {
+     "name": "Chips",
+     "lines": [
+      61,
+      83
+     ]
+    },
+    {
+     "name": "Rail",
+     "lines": [
+      86,
+      97
+     ]
+    },
+    {
+     "name": "Progress",
+     "lines": [
+      99,
+      106
+     ]
+    },
+    {
+     "name": "SubmitButton",
+     "lines": [
+      108,
+      119
+     ]
+    },
+    {
+     "name": "Saved",
+     "lines": [
+      121,
+      134
+     ]
+    },
+    {
+     "name": "Failed",
+     "lines": [
+      136,
+      155
+     ]
+    },
+    {
+     "name": "Segmented/options.map()#0",
+     "lines": [
+      50,
+      55
+     ]
+    },
+    {
+     "name": "Chips/options.map()#0",
+     "lines": [
+      71,
+      80
+     ]
+    },
+    {
+     "name": "Rail/steps.map()#0",
+     "lines": [
+      89,
+      94
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 52,
+     "unit": "Segmented",
+     "rule": "mixed-types",
+     "msg": "a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal; narrow it before comparing it with another value",
+     "env": false
+    },
+    {
+     "line": 52,
+     "unit": "Segmented/options.map()#0",
+     "rule": "mixed-types",
+     "msg": "a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal; narrow it before comparing it with another value",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "components/form/useSubmission.ts",
+   "pkg": "components",
+   "units": [
+    {
+     "name": "submissionKeyFor",
+     "lines": [
+      18,
+      18
+     ]
+    },
+    {
+     "name": "resultKeyFor",
+     "lines": [
+      19,
+      19
+     ]
+    },
+    {
+     "name": "draftKeyFor",
+     "lines": [
+      20,
+      20
+     ]
+    },
+    {
+     "name": "rawGet",
+     "lines": [
+      38,
+      40
+     ]
+    },
+    {
+     "name": "readSession",
+     "lines": [
+      41,
+      45
+     ]
+    },
+    {
+     "name": "writeSession",
+     "lines": [
+      46,
+      49
+     ]
+    },
+    {
+     "name": "removeSession",
+     "lines": [
+      50,
+      53
+     ]
+    },
+    {
+     "name": "uuid",
+     "lines": [
+      55,
+      62
+     ]
+    },
+    {
+     "name": "subscribe",
+     "lines": [
+      64,
+      68
+     ]
+    },
+    {
+     "name": "useSessionValue",
+     "lines": [
+      71,
+      86
+     ]
+    },
+    {
+     "name": "useMounted",
+     "lines": [
+      89,
+      91
+     ]
+    },
+    {
+     "name": "ensureJourney",
+     "lines": [
+      94,
+      109
+     ]
+    },
+    {
+     "name": "useSubmission",
+     "lines": [
+      111,
+      200
+     ]
+    },
+    {
+     "name": "uuid/'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace()#1",
+     "lines": [
+      58,
+      61
+     ]
+    },
+    {
+     "name": "useSessionValue/useSyncExternalStore()#1",
+     "lines": [
+      75,
+      83
+     ]
+    },
+    {
+     "name": "useSessionValue/useSyncExternalStore()#2",
+     "lines": [
+      84,
+      84
+     ]
+    },
+    {
+     "name": "useMounted/useSyncExternalStore()#0",
+     "lines": [
+      90,
+      90
+     ]
+    },
+    {
+     "name": "useMounted/useSyncExternalStore()#1",
+     "lines": [
+      90,
+      90
+     ]
+    },
+    {
+     "name": "useMounted/useSyncExternalStore()#2",
+     "lines": [
+      90,
+      90
+     ]
+    },
+    {
+     "name": "ensureJourney/journey.touches.some()#0",
+     "lines": [
+      101,
+      101
+     ]
+    },
+    {
+     "name": "useSubmission/useCallback()#0@1",
+     "lines": [
+      119,
+      125
+     ]
+    },
+    {
+     "name": "useSubmission/useEffect()#0",
+     "lines": [
+      128,
+      135
+     ]
+    },
+    {
+     "name": "useSubmission/useCallback()#0@2",
+     "lines": [
+      137,
+      141
+     ]
+    },
+    {
+     "name": "useSubmission/useCallback()#0@3",
+     "lines": [
+      144,
+      183
+     ]
+    },
+    {
+     "name": "useSubmission/useCallback()#0@4",
+     "lines": [
+      186,
+      191
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 80,
+     "unit": "useSessionValue",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 95,
+     "unit": "ensureJourney",
+     "rule": "type-assertion",
+     "msg": "`readSession<ClientJourney>(JOURNEY_KEY)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 131,
+     "unit": "useSubmission",
+     "rule": "type-assertion",
+     "msg": "`readSession<string>(submissionKeyFor(landing))` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 131,
+     "unit": "useSubmission/useEffect()#0",
+     "rule": "type-assertion",
+     "msg": "`readSession<string>(submissionKeyFor(landing))` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 145,
+     "unit": "useSubmission",
+     "rule": "type-assertion",
+     "msg": "`readSession<string>(submissionKeyFor(landing))` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 145,
+     "unit": "useSubmission/useCallback()#0@3",
+     "rule": "type-assertion",
+     "msg": "`readSession<string>(submissionKeyFor(landing))` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 163,
+     "unit": "useSubmission",
+     "rule": "type-assertion",
+     "msg": "`data.request_id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 163,
+     "unit": "useSubmission/useCallback()#0@3",
+     "rule": "type-assertion",
+     "msg": "`data.request_id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 164,
+     "unit": "useSubmission",
+     "rule": "type-assertion",
+     "msg": "`data.request_id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 164,
+     "unit": "useSubmission/useCallback()#0@3",
+     "rule": "type-assertion",
+     "msg": "`data.request_id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 168,
+     "unit": "useSubmission",
+     "rule": "type-assertion",
+     "msg": "`data.request_id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 168,
+     "unit": "useSubmission/useCallback()#0@3",
+     "rule": "type-assertion",
+     "msg": "`data.request_id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": "useSubmission",
+     "rule": "type-assertion",
+     "msg": "`(data.errors as Record<string, string>) ?? {}` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": "useSubmission/useCallback()#0@3",
+     "rule": "type-assertion",
+     "msg": "`(data.errors as Record<string, string>) ?? {}` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "content/extract.ts",
+   "pkg": "content",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "content/privacy.ts",
+   "pkg": "content",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "content/shared.ts",
+   "pkg": "content",
+   "units": [
+    {
+     "name": "agentEmailWired",
+     "lines": [
+      147,
+      149
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "content/training.ts",
+   "pkg": "content",
+   "units": [
+    {
+     "name": "trainingForm",
+     "lines": [
+      101,
+      111
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "content/workshop.ts",
+   "pkg": "content",
+   "units": [
+    {
+     "name": "visuals",
+     "lines": [
+      22,
+      36
+     ]
+    },
+    {
+     "name": "activeWorkshopRegister",
+     "lines": [
+      167,
+      170
+     ]
+    },
+    {
+     "name": "workshopContent",
+     "lines": [
+      172,
+      174
+     ]
+    },
+    {
+     "name": "workshopForm",
+     "lines": [
+      178,
+      205
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "drizzle.config.ts",
+   "pkg": "drizzle.config.ts",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "eslint.config.mjs",
+   "pkg": "eslint.config.mjs",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "lib/admin/crm.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "updateCrm",
+     "lines": [
+      9,
+      23
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/admin/labels.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "labelFor",
+     "lines": [
+      11,
+      14
+     ]
+    },
+    {
+     "name": "fmtDate",
+     "lines": [
+      15,
+      18
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/admin/queries.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "listRequests",
+     "lines": [
+      19,
+      30
+     ]
+    },
+    {
+     "name": "getRequest",
+     "lines": [
+      32,
+      35
+     ]
+    },
+    {
+     "name": "eventsFor",
+     "lines": [
+      37,
+      39
+     ]
+    },
+    {
+     "name": "funnel",
+     "lines": [
+      54,
+      91
+     ]
+    },
+    {
+     "name": "funnel/[...rows.values()].filter()#0",
+     "lines": [
+      90,
+      90
+     ]
+    },
+    {
+     "name": "funnel/[...rows.values()].filter((r) => r.landing_variant_id.startsWith('F04_')).sort()#0",
+     "lines": [
+      90,
+      90
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 27,
+     "unit": "listRequests",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 71,
+     "unit": "funnel",
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/attribution/parse.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "acceptedStatuses",
+     "lines": [
+      74,
+      78
+     ]
+    },
+    {
+     "name": "extractClaim",
+     "lines": [
+      81,
+      92
+     ]
+    },
+    {
+     "name": "classifyClaim",
+     "lines": [
+      95,
+      150
+     ]
+    },
+    {
+     "name": "parseLandingQuery",
+     "lines": [
+      153,
+      156
+     ]
+    },
+    {
+     "name": "searchParamsToURLSearchParams",
+     "lines": [
+      159,
+      166
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 84,
+     "unit": "extractClaim",
+     "rule": "type-assertion",
+     "msg": "`Object.entries(PARAMS) as [AttributionField, string][]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 87,
+     "unit": "extractClaim",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/config/designs.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "isDesign",
+     "lines": [
+      25,
+      27
+     ]
+    },
+    {
+     "name": "pickDesign",
+     "lines": [
+      30,
+      32
+     ]
+    },
+    {
+     "name": "resolveLanding",
+     "lines": [
+      35,
+      45
+     ]
+    },
+    {
+     "name": "describeVariant",
+     "lines": [
+      48,
+      56
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/config/landings.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "isLandingKey",
+     "lines": [
+      44,
+      46
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/db/client.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "databaseUrl",
+     "lines": [
+      18,
+      20
+     ]
+    },
+    {
+     "name": "migrationUrl",
+     "lines": [
+      23,
+      25
+     ]
+    },
+    {
+     "name": "sslFor",
+     "lines": [
+      27,
+      30
+     ]
+    },
+    {
+     "name": "createDb",
+     "lines": [
+      32,
+      45
+     ]
+    },
+    {
+     "name": "migrateDb",
+     "lines": [
+      47,
+      55
+     ]
+    },
+    {
+     "name": "getDb",
+     "lines": [
+      60,
+      63
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 50,
+     "unit": "migrateDb",
+     "rule": "type-assertion",
+     "msg": "`db as unknown as Parameters<typeof migrate>[0]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 53,
+     "unit": "migrateDb",
+     "rule": "type-assertion",
+     "msg": "`db as unknown as Parameters<typeof migrate>[0]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 61,
+     "unit": "getDb",
+     "rule": "type-assertion",
+     "msg": "`createDb(databaseUrl())` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 61,
+     "unit": "getDb",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 62,
+     "unit": "getDb",
+     "rule": "promise",
+     "msg": "a held promise of this result type has no identity in the reading; return the call itself",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/db/schema.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "pgTable('requests')#2",
+     "lines": [
+      84,
+      89
+     ]
+    },
+    {
+     "name": "pgTable('contact_facts')#2",
+     "lines": [
+      130,
+      134
+     ]
+    },
+    {
+     "name": "pgTable('touches')#2",
+     "lines": [
+      153,
+      153
+     ]
+    },
+    {
+     "name": "pgTable('events')#2",
+     "lines": [
+      184,
+      184
+     ]
+    },
+    {
+     "name": "pgTable('diagnostics')#2",
+     "lines": [
+      203,
+      203
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/domain/journey.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "isUuid",
+     "lines": [
+      27,
+      29
+     ]
+    },
+    {
+     "name": "isId",
+     "lines": [
+      31,
+      33
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/domain/requests.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "isCallOutcome",
+     "lines": [
+      24,
+      24
+     ]
+    },
+    {
+     "name": "isFactKey",
+     "lines": [
+      38,
+      38
+     ]
+    },
+    {
+     "name": "isFactSource",
+     "lines": [
+      41,
+      42
+     ]
+    },
+    {
+     "name": "isFactBasis",
+     "lines": [
+      46,
+      47
+     ]
+    },
+    {
+     "name": "isForbiddenFact",
+     "lines": [
+      64,
+      66
+     ]
+    },
+    {
+     "name": "suggestedPath",
+     "lines": [
+      74,
+      74
+     ]
+    },
+    {
+     "name": "cleanText",
+     "lines": [
+      83,
+      87
+     ]
+    },
+    {
+     "name": "parseParticipantCount",
+     "lines": [
+      94,
+      101
+     ]
+    },
+    {
+     "name": "text",
+     "lines": [
+      108,
+      108
+     ]
+    },
+    {
+     "name": "optionalText",
+     "lines": [
+      109,
+      109
+     ]
+    },
+    {
+     "name": "validateSave",
+     "lines": [
+      173,
+      189
+     ]
+    },
+    {
+     "name": "missingRequired",
+     "lines": [
+      191,
+      193
+     ]
+    },
+    {
+     "name": "isForbiddenFact/FORBIDDEN.some()#0",
+     "lines": [
+      65,
+      65
+     ]
+    },
+    {
+     "name": "z.preprocess()#0@1",
+     "lines": [
+      104,
+      104
+     ]
+    },
+    {
+     "name": "z.preprocess()#0@2",
+     "lines": [
+      111,
+      111
+     ]
+    },
+    {
+     "name": "z.preprocess()#0@3",
+     "lines": [
+      114,
+      114
+     ]
+    },
+    {
+     "name": "missingRequired/REQUIRED_FIELDS[request_type].filter()#0",
+     "lines": [
+      192,
+      192
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/notify/nexus.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "emailUrl",
+     "lines": [
+      40,
+      40
+     ]
+    },
+    {
+     "name": "callUrl",
+     "lines": [
+      41,
+      41
+     ]
+    },
+    {
+     "name": "secret",
+     "lines": [
+      42,
+      42
+     ]
+    },
+    {
+     "name": "agentEmailEnabled",
+     "lines": [
+      45,
+      45
+     ]
+    },
+    {
+     "name": "agentCallEnabled",
+     "lines": [
+      46,
+      46
+     ]
+    },
+    {
+     "name": "headerSafeSubject",
+     "lines": [
+      55,
+      59
+     ]
+    },
+    {
+     "name": "sign",
+     "lines": [
+      61,
+      63
+     ]
+    },
+    {
+     "name": "answersSummary",
+     "lines": [
+      83,
+      92
+     ]
+    },
+    {
+     "name": "post",
+     "lines": [
+      94,
+      115
+     ]
+    },
+    {
+     "name": "envelope",
+     "lines": [
+      117,
+      134
+     ]
+    },
+    {
+     "name": "sendAgentEmail",
+     "lines": [
+      137,
+      141
+     ]
+    },
+    {
+     "name": "requestAgentCall",
+     "lines": [
+      144,
+      155
+     ]
+    },
+    {
+     "name": "post/setTimeout()#0",
+     "lines": [
+      96,
+      96
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/notify/slack.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "shouldNotify",
+     "lines": [
+      25,
+      29
+     ]
+    },
+    {
+     "name": "pretty",
+     "lines": [
+      41,
+      41
+     ]
+    },
+    {
+     "name": "buildSlackMessage",
+     "lines": [
+      43,
+      80
+     ]
+    },
+    {
+     "name": "notifySlack",
+     "lines": [
+      82,
+      96
+     ]
+    },
+    {
+     "name": "buildSlackMessage/Object.entries(LABELS)\n    .filter()#0",
+     "lines": [
+      58,
+      58
+     ]
+    },
+    {
+     "name": "buildSlackMessage/Object.entries(LABELS)\n    .filter(([k]) => fields[k] !== undefined && fields[k] !== null && fields[k] !== '')\n    .map()#0",
+     "lines": [
+      59,
+      59
+     ]
+    },
+    {
+     "name": "notifySlack/setTimeout()#0",
+     "lines": [
+      87,
+      87
+     ]
+    },
+    {
+     "name": "notifySlack/res.text().catch()#0",
+     "lines": [
+      90,
+      90
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/requests/agent-handoff.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "unsubscribeUrl",
+     "lines": [
+      18,
+      21
+     ]
+    },
+    {
+     "name": "contactFromRow",
+     "lines": [
+      23,
+      42
+     ]
+    },
+    {
+     "name": "handOffToAgent",
+     "lines": [
+      49,
+      73
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/requests/facts.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "validateFact",
+     "lines": [
+      41,
+      49
+     ]
+    },
+    {
+     "name": "recordFacts",
+     "lines": [
+      51,
+      89
+     ]
+    },
+    {
+     "name": "currentFacts",
+     "lines": [
+      92,
+      98
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 52,
+     "unit": "recordFacts",
+     "rule": "unsupported-call",
+     "msg": "calls through computed callees are outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/requests/submit.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "sanitiseJourney",
+     "lines": [
+      52,
+      76
+     ]
+    },
+    {
+     "name": "isUniqueViolation",
+     "lines": [
+      78,
+      83
+     ]
+    },
+    {
+     "name": "rowFields",
+     "lines": [
+      88,
+      101
+     ]
+    },
+    {
+     "name": "fieldColumns",
+     "lines": [
+      103,
+      117
+     ]
+    },
+    {
+     "name": "saveRequest",
+     "lines": [
+      119,
+      276
+     ]
+    },
+    {
+     "name": "sanitiseJourney/out.sort()#0",
+     "lines": [
+      74,
+      74
+     ]
+    },
+    {
+     "name": "saveRequest/journey.touches.filter()#0@1",
+     "lines": [
+      133,
+      133
+     ]
+    },
+    {
+     "name": "saveRequest/journey.touches.some()#0",
+     "lines": [
+      146,
+      146
+     ]
+    },
+    {
+     "name": "saveRequest/journey.touches.filter()#0@2",
+     "lines": [
+      148,
+      148
+     ]
+    },
+    {
+     "name": "saveRequest/db.transaction()#0",
+     "lines": [
+      188,
+      270
+     ]
+    },
+    {
+     "name": "saveRequest/db.transaction()#0/missing.map()#0@1",
+     "lines": [
+      193,
+      193
+     ]
+    },
+    {
+     "name": "saveRequest/db.transaction()#0/journey.touches.map()#0",
+     "lines": [
+      213,
+      213
+     ]
+    },
+    {
+     "name": "saveRequest/db.transaction()#0/missing.map()#0@2",
+     "lines": [
+      257,
+      257
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 66,
+     "unit": "sanitiseJourney",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 68,
+     "unit": "sanitiseJourney",
+     "rule": "number-special",
+     "msg": "the finite number model has no NaN or infinity; use lane B for special-value arithmetic",
+     "env": false
+    },
+    {
+     "line": 129,
+     "unit": "saveRequest",
+     "rule": "unsupported-call",
+     "msg": "calls through computed callees are outside the subset",
+     "env": false
+    },
+    {
+     "line": 249,
+     "unit": "saveRequest",
+     "rule": "type-assertion",
+     "msg": "`merged` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 249,
+     "unit": "saveRequest/db.transaction()#0",
+     "rule": "type-assertion",
+     "msg": "`merged` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 250,
+     "unit": "saveRequest",
+     "rule": "type-assertion",
+     "msg": "`merged` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 250,
+     "unit": "saveRequest/db.transaction()#0",
+     "rule": "type-assertion",
+     "msg": "`merged` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 260,
+     "unit": "saveRequest",
+     "rule": "type-assertion",
+     "msg": "`merged` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 260,
+     "unit": "saveRequest/db.transaction()#0",
+     "rule": "type-assertion",
+     "msg": "`merged` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "lib/server/admin-auth.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "secret",
+     "lines": [
+      12,
+      16
+     ]
+    },
+    {
+     "name": "adminConfigured",
+     "lines": [
+      18,
+      20
+     ]
+    },
+    {
+     "name": "expectedCookie",
+     "lines": [
+      22,
+      25
+     ]
+    },
+    {
+     "name": "safeEqual",
+     "lines": [
+      27,
+      29
+     ]
+    },
+    {
+     "name": "passwordMatches",
+     "lines": [
+      31,
+      34
+     ]
+    },
+    {
+     "name": "isAdmin",
+     "lines": [
+      36,
+      41
+     ]
+    },
+    {
+     "name": "setAdminCookie",
+     "lines": [
+      43,
+      47
+     ]
+    },
+    {
+     "name": "clearAdminCookie",
+     "lines": [
+      49,
+      51
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/server/design.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "resolveDesign",
+     "lines": [
+      10,
+      16
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/server/environment.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "configuredEnvironment",
+     "lines": [
+      11,
+      13
+     ]
+    },
+    {
+     "name": "previewCookieValue",
+     "lines": [
+      16,
+      20
+     ]
+    },
+    {
+     "name": "isPreviewCookie",
+     "lines": [
+      22,
+      26
+     ]
+    },
+    {
+     "name": "resolveEnvironment",
+     "lines": [
+      30,
+      33
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "lib/server/landing-claim.ts",
+   "pkg": "lib",
+   "units": [
+    {
+     "name": "landingClaimFromSearchParams",
+     "lines": [
+      10,
+      20
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 16,
+     "unit": "landingClaimFromSearchParams",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "next.config.ts",
+   "pkg": "next.config.ts",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "proxy.ts",
+   "pkg": "proxy.ts",
+   "units": [
+    {
+     "name": "proxy",
+     "lines": [
+      12,
+      24
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "scripts/admin-shots.mjs",
+   "pkg": "scripts",
+   "units": [],
+   "findings": [
+    {
+     "line": 6,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 7,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 8,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 9,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 10,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.   Type 'undefined' is not assignable to type 'string'.",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 13,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 14,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 15,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 17,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 18,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 20,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 21,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 22,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 23,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 26,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 27,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 28,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 29,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 32,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 34,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/cleanup-test-data.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "sql.begin()#0",
+     "lines": [
+      76,
+      83
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 30,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 41,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/db-peek.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "q",
+     "lines": [
+      4,
+      4
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 4,
+     "unit": "q",
+     "rule": "untyped-js",
+     "msg": "parameter `sql` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} sql` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 4,
+     "unit": "q",
+     "rule": "type-assertion",
+     "msg": "`sql` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 5,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 6,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 7,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 8,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/e2e-smoke.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "check",
+     "lines": [
+      12,
+      12
+     ]
+    },
+    {
+     "name": "stepOf",
+     "lines": [
+      13,
+      13
+     ]
+    },
+    {
+     "name": "page.evaluate()#0",
+     "lines": [
+      47,
+      47
+     ]
+    },
+    {
+     "name": "page.on('request')#1",
+     "lines": [
+      56,
+      56
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 12,
+     "unit": "check",
+     "rule": "untyped-js",
+     "msg": "parameter `cond` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} cond` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 13,
+     "unit": "stepOf",
+     "rule": "untyped-js",
+     "msg": "parameter `page` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} page` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.   Type 'null' is not assignable to type 'string'.",
+     "env": false
+    },
+    {
+     "line": 47,
+     "unit": "page.evaluate()#0",
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.   Type 'null' is not assignable to type 'string'.",
+     "env": false
+    },
+    {
+     "line": 53,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "page.on('request')#1",
+     "rule": "global-mutation",
+     "msg": "update of `posts`, which this function does not own",
+     "env": false
+    },
+    {
+     "line": 77,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.   Type 'null' is not assignable to type 'string'.",
+     "env": false
+    },
+    {
+     "line": 82,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 93,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 94,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/measure-fold.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "page.evaluate()#0@1",
+     "lines": [
+      22,
+      22
+     ]
+    },
+    {
+     "name": "page.evaluate()#0@2",
+     "lines": [
+      23,
+      45
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 19,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 22,
+     "unit": "page.evaluate()#0@1",
+     "rule": "promise",
+     "msg": "return the promise from a call, a name or a conditional, or make the function async",
+     "env": false
+    },
+    {
+     "line": 29,
+     "unit": "page.evaluate()#0@2",
+     "rule": "type-assertion",
+     "msg": "`rect(submit).bottom + window.scrollY` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": "page.evaluate()#0@2",
+     "rule": "type-assertion",
+     "msg": "`el` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 35,
+     "unit": "page.evaluate()#0@2",
+     "rule": "unsupported-member",
+     "msg": "property .name is not declared on Element",
+     "env": false
+    },
+    {
+     "line": 35,
+     "unit": "page.evaluate()#0@2",
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'name' does not exist on type 'Element'.",
+     "env": false
+    },
+    {
+     "line": 37,
+     "unit": "page.evaluate()#0@2",
+     "rule": "type-assertion",
+     "msg": "`h` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "page.evaluate()#0@2",
+     "rule": "type-assertion",
+     "msg": "`r.width` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": "page.evaluate()#0@2",
+     "rule": "type-assertion",
+     "msg": "`r.height` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 53,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 54,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/migrate.mjs",
+   "pkg": "scripts",
+   "units": [],
+   "findings": [
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 37,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'cause' does not exist on type '{}'.",
+     "env": false
+    },
+    {
+     "line": 37,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'code' does not exist on type '{}'.",
+     "env": false
+    },
+    {
+     "line": 45,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/screenshots.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "page.evaluate()#0@1",
+     "lines": [
+      16,
+      16
+     ]
+    },
+    {
+     "name": "page.evaluate()#0@2",
+     "lines": [
+      17,
+      17
+     ]
+    },
+    {
+     "name": "page.evaluate()#0@3",
+     "lines": [
+      19,
+      19
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2322: Type 'string | number | boolean | { width: number; height: number; }' is not assignable to type 'ViewportSize | null | undefined'.   Type 'string' is not assignable to type 'ViewportSize'.",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2322: Type 'string | number | boolean | { width: number; height: number; }' is not assignable to type 'boolean | undefined'.   Type 'string' is not assignable to type 'boolean | undefined'.",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2322: Type 'string | number | boolean | { width: number; height: number; }' is not assignable to type 'boolean | undefined'.   Type 'string' is not assignable to type 'boolean | undefined'.",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": "page.evaluate()#0@1",
+     "rule": "promise",
+     "msg": "return the promise from a call, a name or a conditional, or make the function async",
+     "env": false
+    },
+    {
+     "line": 17,
+     "unit": "page.evaluate()#0@2",
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string | number | true | { width: number; height: number; }' is not assignable to parameter of type 'number'.   Type 'string' is not assignable to type 'number'.",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": "page.evaluate()#0@3",
+     "rule": "ts-strict",
+     "msg": "TS18047: 'c' is possibly 'null'.",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": "page.evaluate()#0@3",
+     "rule": "ts-strict",
+     "msg": "TS18047: 'b' is possibly 'null'.",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": "page.evaluate()#0@3",
+     "rule": "ts-strict",
+     "msg": "TS18047: 'c' is possibly 'null'.",
+     "env": false
+    },
+    {
+     "line": 20,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'height' does not exist on type 'string | number | boolean | { width: number; height: number; }'.   Property 'height' does not exist on type 'string'.",
+     "env": false
+    },
+    {
+     "line": 22,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2322: Type 'string | number | boolean | { width: number; height: number; }' is not assignable to type 'boolean | undefined'.   Type 'string' is not assignable to type 'boolean | undefined'.",
+     "env": false
+    },
+    {
+     "line": 27,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "vitest.config.ts",
+   "pkg": "vitest.config.ts",
+   "units": [],
+   "findings": []
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "lib",
+   "files": 19,
+   "units": 103,
+   "entered": 93
+  },
+  {
+   "pkg": "components",
+   "files": 11,
+   "units": 84,
+   "entered": 71
+  },
+  {
+   "pkg": "app",
+   "files": 24,
+   "units": 60,
+   "entered": 48
+  },
+  {
+   "pkg": "scripts",
+   "files": 7,
+   "units": 11,
+   "entered": 1
+  },
+  {
+   "pkg": "content",
+   "files": 5,
+   "units": 6,
+   "entered": 6
+  },
+  {
+   "pkg": "proxy.ts",
+   "files": 1,
+   "units": 1,
+   "entered": 1
+  },
+  {
+   "pkg": "drizzle.config.ts",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  {
+   "pkg": "eslint.config.mjs",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  {
+   "pkg": "next.config.ts",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  },
+  {
+   "pkg": "vitest.config.ts",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

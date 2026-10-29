@@ -1,0 +1,36 @@
+✖ independent units on one source line own their own findings (504.038334ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1354.323709
+
+✖ failing tests:
+
+test at langs/ts/tests/pairs/callback_units/shared-line.test.mjs:8:1
+✖ independent units on one source line own their own findings (504.038334ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'first'
+  -   'second'
+    ]
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/tests/pairs/callback_units/shared-line.test.mjs:14:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'first' ],
+    expected: [ 'second' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+EXIT 1

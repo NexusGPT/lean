@@ -1,0 +1,30 @@
+✖ unit-list inverse preserves callee source comments and newlines without changing ordinary names (317.451709ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1033.424791
+
+✖ failing tests:
+
+test at langs/ts/tests/pairs/callback_units/unit-list-source.test.mjs:11:1
+✖ unit-list inverse preserves callee source comments and newlines without changing ordinary names (317.451709ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /[\r\n\u2028\u2029]/. Input:
+  
+  `a,"app\\n  // A callee comment may contain an unmatched quote ' or parenthesis (\\n  .get('/a',1)#2",app.get('/a',1)#2,"call .get()#0","call .get()#0",b`
+  
+      at TestContext.<anonymous> (file:///Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/tests/pairs/callback_units/unit-list-source.test.mjs:15:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1325:25)
+      at Test.start (node:internal/test_runner/test:1191:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: `a,"app\\n  // A callee comment may contain an unmatched quote ' or parenthesis (\\n  .get('/a',1)#2",app.get('/a',1)#2,"call .get()#0","call .get()#0",b`,
+    expected: /[\r\n\u2028\u2029]/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }

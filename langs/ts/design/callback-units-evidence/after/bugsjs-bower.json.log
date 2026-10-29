@@ -1,0 +1,33 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/bower","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/bugsjs-bower.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33135352    28%  458732 331353520    0%   /
+project (none): 94 files
+50 files, 201 units, 19 inside, 2 s
+bower: 94 files, 406 units, 26 inside the subset (6.4 percent), 0 files unreadable, 2 s
+     339 units  untyped-js             lib/bin/bower.js:96 parameter `logger` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} logger` or TypeS
+     186 units  global-read            lib/bin/bower.js:99 `bower` is module state that can change; the subset reads constants only
+     145 units  callback-form          lib/bin/bower.js:98 the callback must be an arrow function
+     143 units  var                    lib/commands/cache/clean.js:12 `var` is outside the subset; use let or const
+      44 units  captured-mutable       lib/bin/bower.js:100 captured binding `renderer` may be written after this callback is created; capture a stable value
+      42 units  ts-strict              Gruntfile.js:94 TS2339: Property 'exit' does not exist on type 'typeof process'.
+      30 units  type-assertion         lib/commands/login.js:87 `error.message` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), a
+      22 units  index-assign           lib/commands/info.js:14 write a record field by name, or use a local Record<string, T> dictionary
+      21 units  implicit-this          Gruntfile.js:215 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter
+      21 units  this                   lib/core/Manager.js:20 `this` outside a class method
+      17 units  param-assign           lib/bin/bower.js:108 `logger` is a parameter of a callback or a local function; copy it to a local first
+      12 units  unsupported-call       lib/commands/init.js:266 toArray takes 2 arguments
+      11 units  toplevel-effect        Gruntfile.js:1 move the effectful module initializer into a function
+       7 units  dynamic-key            lib/commands/init.js:68 a dictionary key is a string
+       5 units  unsupported-member     lib/commands/index.js:15 property .slice on never[] is outside the subset
+       4 units  bound-function         lib/commands/init.js:37 `bind` fixes a receiver for a later call; call the function with its receiver instead
+       4 units  opaque-mutation        lib/commands/init.js:72 .info() on `logger` may change it, and `logger` is read later; read it before the call or through a method
+       4 units  foreach                lib/commands/uninstall.js:98 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+       4 units  for-in                 lib/core/Project.js:268 for-in takes `const k`
+       4 units  prototype              lib/core/ResolveCache.js:28 `this.constructor` is the run-time class of the receiver, a subclass too; name the class to read its statics
+       3 units  unresolved-module      Gruntfile.js:1 TS2792: Cannot find module 'tmp'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add a
+       1 units  arguments              lib/commands/index.js:15 `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest paramet
+       1 units  exception-callback     lib/core/resolvers/GitHubResolver.js:17 call the throwing unit directly, or pass it to a call; a stored function value has no fault channel
+       1 units  property-assign        lib/core/resolvers/GitResolver.js:28 assignment into `process`, which this function does not own; records it owns are updated in place
+       1 units  bitwise                lib/util/extract.js:228 bitwise operands must be numbers; BigInt and opaque coercions need lane B
+
+exit=0 signal=null

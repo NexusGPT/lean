@@ -1,0 +1,2876 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-automations",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 36,
+   "units": 97,
+   "entered": 57
+  }
+ },
+ "refused": 40,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 16,
+   "directories": [
+    {
+     "directory": "automations/daily-docs-sync",
+     "units": 1,
+     "example": {
+      "file": "automations/daily-docs-sync/index.ts",
+      "line": 145,
+      "code": "doc.prUrl ?? \"\""
+     }
+    },
+    {
+     "directory": "server",
+     "units": 15,
+     "example": {
+      "file": "server/changelog-artifacts.ts",
+      "line": 18,
+      "code": "(a as Artifact).url"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "global-read",
+   "units": 4,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/changelog-select.ts",
+      "line": 18,
+      "code": "Bun"
+     }
+    },
+    {
+     "directory": "sdk",
+     "units": 1,
+     "example": {
+      "file": "sdk/entry.ts",
+      "line": 17,
+      "code": "Bun"
+     }
+    },
+    {
+     "directory": "server",
+     "units": 1,
+     "example": {
+      "file": "server/changelog-writer.ts",
+      "line": 50,
+      "code": "Bun"
+     }
+    },
+    {
+     "directory": "worker",
+     "units": 1,
+     "example": {
+      "file": "worker/index.ts",
+      "line": 67,
+      "code": "Bun"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/seed-changelog.ts",
+      "line": 106,
+      "code": "deck.pop()!"
+     }
+    },
+    {
+     "directory": "server",
+     "units": 2,
+     "example": {
+      "file": "server/changelog-selection.ts",
+      "line": 229,
+      "code": "details.get(n)!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "foreach",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 2,
+     "example": {
+      "file": "server/changelog-pr-match.ts",
+      "line": 35,
+      "code": "batch.forEach((s, j) => { const a = data?.repository?.[`c${j}`]?.associatedPullRequests; if (!a) throw new Error(`commit"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 2,
+     "example": {
+      "file": "server/changelog-auth.ts",
+      "line": 102,
+      "code": "emails.set(sub, { email: email ? email.toLowerCase() : null, at: Date.now() })"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "spread",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 2,
+     "example": {
+      "file": "server/changelog-enrichment.ts",
+      "line": 100,
+      "code": "...body.results"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "async",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 1,
+     "example": {
+      "file": "server/runner.ts",
+      "line": 38,
+      "code": "runInBackground(automation, trigger, event, runId)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/seed-changelog.ts",
+      "line": 49,
+      "code": "a"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "function-value",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "worker",
+     "units": 1,
+     "example": {
+      "file": "worker/index.ts",
+      "line": 47,
+      "code": "async () => { const job = jobs.get(jobId)!; job.status = \"running\"; try { const result = await runClaude(req); Object.as"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "optional-chain",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 1,
+     "example": {
+      "file": "server/runner.ts",
+      "line": 20,
+      "code": "waiters.shift()?.()"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/changelog-select.ts",
+      "line": 25,
+      "code": "gh([\"api\", path])"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 1,
+     "example": {
+      "file": "server/runner.ts",
+      "line": 15,
+      "code": "new Promise<void>((r) => waiters.push(r))"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 1,
+     "example": {
+      "file": "server/scheduler.ts",
+      "line": 9,
+      "code": "jobs.length"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "prototype",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "server",
+     "units": 1,
+     "example": {
+      "file": "server/runner.ts",
+      "line": 64,
+      "code": "env[key]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "record-rest",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "sdk",
+     "units": 1,
+     "example": {
+      "file": "sdk/index.ts",
+      "line": 65,
+      "code": "...config"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "worker",
+     "units": 1,
+     "example": {
+      "file": "worker/index.ts",
+      "line": 41,
+      "code": "queue"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "cli",
+     "units": 1,
+     "example": {
+      "file": "cli/index.ts",
+      "line": 84,
+      "code": "function usage(): never {"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 36,
+ "failedFiles": 0,
+ "units": 97,
+ "entered": 57,
+ "share": 58.8,
+ "seconds": 3,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 37,
+   "units": 18,
+   "examples": [
+    "automations/daily-docs-sync/index.ts:145 `doc.prUrl ?? \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value),",
+    "sdk/entry.ts:28 `automation.config.secrets ?? []` holds a value whose type nothing checked (an `as` that narrows, or an any or",
+    "sdk/entry.ts:38 `input.runId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and"
+   ]
+  },
+  {
+   "rule": "unresolved-module",
+   "findings": 72,
+   "units": 9,
+   "examples": [
+    "automations/changelog-owners-backfill/index.ts:24 TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @t",
+    "automations/daily-changelog/index.ts:42 TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @t",
+    "automations/daily-changelog/index.ts:43 TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @t"
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "findings": 9,
+   "units": 7,
+   "examples": [
+    "scripts/seed-changelog.ts:106 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "scripts/seed-changelog.ts:125 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "server/changelog-auth.ts:112 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 16,
+   "units": 6,
+   "examples": [
+    "automations/daily-changelog/index.ts:14 TS2339: Property 'dir' does not exist on type 'ImportMeta'.",
+    "cli/index.ts:84 TS2534: A function returning 'never' cannot have a reachable end point.",
+    "scripts/changelog-select.ts:18 TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/"
+   ]
+  },
+  {
+   "rule": "global-read",
+   "findings": 5,
+   "units": 5,
+   "examples": [
+    "scripts/changelog-select.ts:18 `Bun` cannot be resolved",
+    "sdk/entry.ts:17 `Bun` cannot be resolved",
+    "server/changelog-writer.ts:50 `Bun` cannot be resolved"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "scripts/seed-changelog.ts:49 `a` is declared outside this callback; a callback cannot change it",
+    "scripts/seed-changelog.ts:120 a callback cannot change an outer variable",
+    "server/runner.ts:79 `timedOut` is declared outside this callback; a callback cannot change it"
+   ]
+  },
+  {
+   "rule": "spread",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "server/changelog-enrichment.ts:100 spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the sub",
+    "server/changelog-selection.ts:155 spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the sub",
+    "server/changelog-writer-input.ts:24 spread works on arrays, sets, maps and their keys(), values() and entries()"
+   ]
+  },
+  {
+   "rule": "foreach",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "server/changelog-pr-match.ts:35 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa",
+    "server/changelog-selection.ts:180 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa",
+    "server/changelog-writer-input.ts:112 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa"
+   ]
+  },
+  {
+   "rule": "async",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "scripts/changelog-select.ts:25 an async unit is called without await",
+    "server/runner.ts:38 an async unit is called without await"
+   ]
+  },
+  {
+   "rule": "prototype",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "sdk/entry.ts:31 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of ",
+    "server/runner.ts:64 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of "
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "sdk/entry.ts:62 await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+    "server/runner.ts:15 await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "server/changelog-auth.ts:102 map mutation on a non-local",
+    "server/changelog-writer.ts:122 map mutation on a non-local"
+   ]
+  },
+  {
+   "rule": "function-value",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "server/changelog-enrichment.ts:107 a same-file function takes values, not callbacks",
+    "worker/index.ts:47 a same-file function takes values, not callbacks"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 58,
+   "units": 1,
+   "examples": [
+    "cli/index.ts:33 code at module level runs on import; it is outside the subset",
+    "scripts/changelog-select.ts:35 code at module level runs on import; it is outside the subset",
+    "scripts/changelog-select.ts:47 code at module level runs on import; it is outside the subset"
+   ]
+  },
+  {
+   "rule": "promise",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "scripts/changelog-select.ts:25 a same-file async function runs on after its first await; return it from an async function with await"
+   ]
+  },
+  {
+   "rule": "unsupported-operator",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "scripts/seed-changelog.ts:52 assignment operator is outside the subset"
+   ]
+  },
+  {
+   "rule": "record-rest",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "sdk/index.ts:65 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d"
+   ]
+  },
+  {
+   "rule": "in-place-mutation",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "server/changelog-selection.ts:124 reverse changes `out` in place; write `out = [...out].reverse(...)`",
+    "server/changelog-selection.ts:139 reverse changes `out` in place; write `out = [...out].reverse(...)`"
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "server/changelog-writer-input.ts:110 `cur` holds the result of `Array.prototype.at`, which may be a field, a parameter, an element or a module obje"
+   ]
+  },
+  {
+   "rule": "optional-chain",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "server/runner.ts:20 an optional call reads a named callee; bind a computed callee to a local first"
+   ]
+  },
+  {
+   "rule": "unsupported-call",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "server/runner.ts:20 calls through computed callees are outside the subset"
+   ]
+  },
+  {
+   "rule": "opaque-mutation",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "server/runner.ts:80 .kill() on `proc` may change it, and `proc` is read later; read it before the call or through a method"
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "server/scheduler.ts:9 assignment into `jobs`, which this function does not own; records it owns are updated in place"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "automations/_template/index.ts",
+   "pkg": "automations",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "automations/changelog-owners-backfill/index.ts",
+   "pkg": "automations",
+   "units": [],
+   "findings": [
+    {
+     "line": 24,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "automations/claude-hello/index.ts",
+   "pkg": "automations",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "automations/daily-changelog/index.ts",
+   "pkg": "automations",
+   "units": [],
+   "findings": [
+    {
+     "line": 14,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'dir' does not exist on type 'ImportMeta'.",
+     "env": false
+    },
+    {
+     "line": 42,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 43,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "automations/daily-docs-sync/index.ts",
+   "pkg": "automations",
+   "units": [
+    {
+     "name": "parseVerdict",
+     "lines": [
+      139,
+      149
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 26,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 65,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 145,
+     "rule": "type-assertion",
+     "msg": "`doc.prUrl ?? \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "automations/pr-merged-to-linear/index.ts",
+   "pkg": "automations",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "automations/pr-merged-to-slack/index.ts",
+   "pkg": "automations",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "cli/index.ts",
+   "pkg": "cli",
+   "units": [
+    {
+     "name": "call",
+     "lines": [
+      17,
+      27
+     ]
+    },
+    {
+     "name": "fmtMs",
+     "lines": [
+      29,
+      29
+     ]
+    },
+    {
+     "name": "usage",
+     "lines": [
+      84,
+      87
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 14,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 15,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 24,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 31,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 33,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 84,
+     "rule": "ts-strict",
+     "msg": "TS2534: A function returning 'never' cannot have a reachable end point.",
+     "env": false
+    },
+    {
+     "line": 86,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "scripts/changelog-select.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "gh",
+     "lines": [
+      17,
+      22
+     ]
+    },
+    {
+     "name": "overGh.rest",
+     "lines": [
+      25,
+      25
+     ]
+    },
+    {
+     "name": "overGh.graphql",
+     "lines": [
+      26,
+      30
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 15,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 18,
+     "rule": "global-read",
+     "msg": "`Bun` cannot be resolved",
+     "env": false
+    },
+    {
+     "line": 18,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 25,
+     "rule": "promise",
+     "msg": "a same-file async function runs on after its first await; return it from an async function with await",
+     "env": false
+    },
+    {
+     "line": 25,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 33,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 34,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 35,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 37,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 47,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 56,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 57,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 57,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 57,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "scripts/seed-changelog.fixtures.ts",
+   "pkg": "scripts",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "scripts/seed-changelog.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "rng",
+     "lines": [
+      46,
+      55
+     ]
+    },
+    {
+     "name": "chance",
+     "lines": [
+      57,
+      57
+     ]
+    },
+    {
+     "name": "between",
+     "lines": [
+      58,
+      58
+     ]
+    },
+    {
+     "name": "releaseDays",
+     "lines": [
+      61,
+      72
+     ]
+    },
+    {
+     "name": "generate",
+     "lines": [
+      95,
+      133
+     ]
+    },
+    {
+     "name": "main",
+     "lines": [
+      135,
+      161
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 19,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'postgres' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 31,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 32,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 33,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 35,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 38,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 40,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 49,
+     "rule": "closure-mutation",
+     "msg": "`a` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 52,
+     "rule": "unsupported-operator",
+     "msg": "assignment operator is outside the subset",
+     "env": false
+    },
+    {
+     "line": 106,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 120,
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer variable",
+     "env": false
+    },
+    {
+     "line": 125,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 163,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "sdk/entry.ts",
+   "pkg": "sdk",
+   "units": [
+    {
+     "name": "main",
+     "lines": [
+      11,
+      81
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'node:path' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 12,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 15,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 17,
+     "rule": "global-read",
+     "msg": "`Bun` cannot be resolved",
+     "env": false
+    },
+    {
+     "line": 17,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 28,
+     "rule": "type-assertion",
+     "msg": "`automation.config.secrets ?? []` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 29,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 31,
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 34,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 35,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 38,
+     "rule": "type-assertion",
+     "msg": "`input.runId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 39,
+     "rule": "type-assertion",
+     "msg": "`input.trigger` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 40,
+     "rule": "type-assertion",
+     "msg": "`input.event` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 58,
+     "rule": "type-assertion",
+     "msg": "`(await created.json()) as { jobId: string }` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 62,
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 70,
+     "rule": "type-assertion",
+     "msg": "`job.output ?? \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 80,
+     "rule": "type-assertion",
+     "msg": "`result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 83,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 83,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'main' does not exist on type 'ImportMeta'.",
+     "env": false
+    },
+    {
+     "line": 86,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "sdk/index.ts",
+   "pkg": "sdk",
+   "units": [
+    {
+     "name": "defineAutomation",
+     "lines": [
+      62,
+      68
+     ]
+    },
+    {
+     "name": "triggersOf",
+     "lines": [
+      70,
+      72
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 65,
+     "rule": "record-rest",
+     "msg": "record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without defaults; copy named fields explicitly",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/api.ts",
+   "pkg": "server",
+   "units": [],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'hono' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 9,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 51,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 60,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 67,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 72,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 82,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-artifacts.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "isArtifactList",
+     "lines": [
+      9,
+      19
+     ]
+    },
+    {
+     "name": "oneUpLinks",
+     "lines": [
+      27,
+      31
+     ]
+    },
+    {
+     "name": "mergeArtifacts",
+     "lines": [
+      34,
+      38
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 18,
+     "rule": "type-assertion",
+     "msg": "`(a as Artifact).url` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-auth.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "clerkFrontendApi",
+     "lines": [
+      34,
+      43
+     ]
+    },
+    {
+     "name": "readChangelogAuthConfig",
+     "lines": [
+      45,
+      61
+     ]
+    },
+    {
+     "name": "isChangelogAuthConfigured",
+     "lines": [
+      63,
+      65
+     ]
+    },
+    {
+     "name": "describeChangelogAuth",
+     "lines": [
+      68,
+      80
+     ]
+    },
+    {
+     "name": "createChangelogGate",
+     "lines": [
+      87,
+      133
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 17,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'hono' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 18,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'jose' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 45,
+     "rule": "unresolved-module",
+     "msg": "TS2503: Cannot find namespace 'NodeJS'.",
+     "env": true
+    },
+    {
+     "line": 45,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 102,
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 102,
+     "rule": "type-assertion",
+     "msg": "`email ? email.toLowerCase() : null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 103,
+     "rule": "type-assertion",
+     "msg": "`email ? email.toLowerCase() : null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 112,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-days.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "dayIn",
+     "lines": [
+      4,
+      5
+     ]
+    },
+    {
+     "name": "dayStart",
+     "lines": [
+      8,
+      23
+     ]
+    },
+    {
+     "name": "chainByDay",
+     "lines": [
+      26,
+      33
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 9,
+     "rule": "type-assertion",
+     "msg": "`day.split(\"-\").map(Number) as [number, number, number]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-enrichment.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "notesFromLookup",
+     "lines": [
+      40,
+      69
+     ]
+    },
+    {
+     "name": "lookupFeatureNotes",
+     "lines": [
+      72,
+      110
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 100,
+     "rule": "spread",
+     "msg": "spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the subset",
+     "env": false
+    },
+    {
+     "line": 107,
+     "rule": "function-value",
+     "msg": "a same-file function takes values, not callbacks",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-features.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "parseFeatures",
+     "lines": [
+      36,
+      55
+     ]
+    },
+    {
+     "name": "notesFor",
+     "lines": [
+      58,
+      63
+     ]
+    },
+    {
+     "name": "applyFeatures",
+     "lines": [
+      66,
+      80
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 49,
+     "rule": "type-assertion",
+     "msg": "`Number.isInteger(p) && (p as number) > 0` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-feed.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "feedLimit",
+     "lines": [
+      13,
+      18
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "server/changelog-owners.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "isBot",
+     "lines": [
+      57,
+      58
+     ]
+    },
+    {
+     "name": "deriveOwner",
+     "lines": [
+      60,
+      65
+     ]
+    },
+    {
+     "name": "fetchPrFacts",
+     "lines": [
+      68,
+      84
+     ]
+    },
+    {
+     "name": "ownersOfEntry",
+     "lines": [
+      87,
+      92
+     ]
+    },
+    {
+     "name": "citedPrs",
+     "lines": [
+      95,
+      97
+     ]
+    },
+    {
+     "name": "readCitedOwners",
+     "lines": [
+      108,
+      125
+     ]
+    },
+    {
+     "name": "ownersCover",
+     "lines": [
+      128,
+      131
+     ]
+    },
+    {
+     "name": "labelOwners",
+     "lines": [
+      143,
+      161
+     ]
+    },
+    {
+     "name": "isPrOwnerList",
+     "lines": [
+      164,
+      176
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 79,
+     "rule": "type-assertion",
+     "msg": "`pr.number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 80,
+     "rule": "type-assertion",
+     "msg": "`pr.user?.login ?? null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 81,
+     "rule": "type-assertion",
+     "msg": "`pr.user?.type ?? null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 82,
+     "rule": "type-assertion",
+     "msg": "`pr.merged_by?.login ?? null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 171,
+     "rule": "type-assertion",
+     "msg": "`(o as PrOwner).pr` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-pr-match.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "splitRepo",
+     "lines": [
+      8,
+      12
+     ]
+    },
+    {
+     "name": "lit",
+     "lines": [
+      13,
+      13
+     ]
+    },
+    {
+     "name": "prsMergedAs",
+     "lines": [
+      23,
+      47
+     ]
+    },
+    {
+     "name": "prsMergedSince",
+     "lines": [
+      63,
+      83
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 35,
+     "rule": "foreach",
+     "msg": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter",
+     "env": false
+    },
+    {
+     "line": 69,
+     "rule": "type-assertion",
+     "msg": "`after` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 76,
+     "rule": "type-assertion",
+     "msg": "`oid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 76,
+     "rule": "type-assertion",
+     "msg": "`oid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 76,
+     "rule": "type-assertion",
+     "msg": "`n.number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-run-mode.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "runMode",
+     "lines": [
+      19,
+      27
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "server/changelog-selection.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "splitRepo",
+     "lines": [
+      64,
+      68
+     ]
+    },
+    {
+     "name": "lit",
+     "lines": [
+      71,
+      71
+     ]
+    },
+    {
+     "name": "chainSelection",
+     "lines": [
+      77,
+      80
+     ]
+    },
+    {
+     "name": "resolveCommit",
+     "lines": [
+      83,
+      87
+     ]
+    },
+    {
+     "name": "firstParentChain",
+     "lines": [
+      98,
+      140
+     ]
+    },
+    {
+     "name": "comparedCommits",
+     "lines": [
+      143,
+      163
+     ]
+    },
+    {
+     "name": "prDetails",
+     "lines": [
+      168,
+      203
+     ]
+    },
+    {
+     "name": "arrivalsOf",
+     "lines": [
+      206,
+      235
+     ]
+    },
+    {
+     "name": "arrivalsOfDay",
+     "lines": [
+      238,
+      249
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 85,
+     "rule": "type-assertion",
+     "msg": "`c?.sha ?? \"\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 86,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 119,
+     "rule": "type-assertion",
+     "msg": "`node.oid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 120,
+     "rule": "type-assertion",
+     "msg": "`node.committedDate` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 121,
+     "rule": "type-assertion",
+     "msg": "`node.messageHeadline` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 122,
+     "rule": "type-assertion",
+     "msg": "`(node.parents?.nodes ?? []).map((p: any) => p.oid)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 124,
+     "rule": "in-place-mutation",
+     "msg": "reverse changes `out` in place; write `out = [...out].reverse(...)`",
+     "env": false
+    },
+    {
+     "line": 139,
+     "rule": "in-place-mutation",
+     "msg": "reverse changes `out` in place; write `out = [...out].reverse(...)`",
+     "env": false
+    },
+    {
+     "line": 154,
+     "rule": "type-assertion",
+     "msg": "`c.sha as string` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 155,
+     "rule": "spread",
+     "msg": "spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outside the subset",
+     "env": false
+    },
+    {
+     "line": 180,
+     "rule": "foreach",
+     "msg": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter",
+     "env": false
+    },
+    {
+     "line": 229,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-writer-input.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "LINEAR_URL",
+     "lines": [
+      18,
+      18
+     ]
+    },
+    {
+     "name": "nexKeys",
+     "lines": [
+      23,
+      25
+     ]
+    },
+    {
+     "name": "clusterOf",
+     "lines": [
+      28,
+      29
+     ]
+    },
+    {
+     "name": "keysOfPr",
+     "lines": [
+      32,
+      35
+     ]
+    },
+    {
+     "name": "excerpt",
+     "lines": [
+      38,
+      45
+     ]
+    },
+    {
+     "name": "factsOf",
+     "lines": [
+      60,
+      70
+     ]
+    },
+    {
+     "name": "groupPrs",
+     "lines": [
+      82,
+      90
+     ]
+    },
+    {
+     "name": "bytes",
+     "lines": [
+      92,
+      92
+     ]
+    },
+    {
+     "name": "chunkGroups",
+     "lines": [
+      99,
+      131
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 24,
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    },
+    {
+     "line": 92,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 108,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 110,
+     "rule": "alias-mutation",
+     "msg": "`cur` holds the result of `Array.prototype.at`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 112,
+     "rule": "foreach",
+     "msg": "forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog-writer.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "readSkills",
+     "lines": [
+      49,
+      53
+     ]
+    },
+    {
+     "name": "withinArgv",
+     "lines": [
+      62,
+      66
+     ]
+    },
+    {
+     "name": "devPrompt",
+     "lines": [
+      78,
+      81
+     ]
+    },
+    {
+     "name": "businessPrompt",
+     "lines": [
+      83,
+      91
+     ]
+    },
+    {
+     "name": "jsonDoc",
+     "lines": [
+      93,
+      98
+     ]
+    },
+    {
+     "name": "prNumbersOf",
+     "lines": [
+      100,
+      101
+     ]
+    },
+    {
+     "name": "textEntry",
+     "lines": [
+      103,
+      109
+     ]
+    },
+    {
+     "name": "parseDev",
+     "lines": [
+      114,
+      132
+     ]
+    },
+    {
+     "name": "parseBusiness",
+     "lines": [
+      135,
+      144
+     ]
+    },
+    {
+     "name": "withRetries",
+     "lines": [
+      146,
+      157
+     ]
+    },
+    {
+     "name": "linearOf",
+     "lines": [
+      159,
+      160
+     ]
+    },
+    {
+     "name": "writeDay",
+     "lines": [
+      162,
+      226
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 50,
+     "rule": "global-read",
+     "msg": "`Bun` cannot be resolved",
+     "env": false
+    },
+    {
+     "line": 50,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 63,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 101,
+     "rule": "type-assertion",
+     "msg": "`typeof p === \"object\" && p !== null ? (p as { number: unknow` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 108,
+     "rule": "type-assertion",
+     "msg": "`e.title.trim()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 108,
+     "rule": "type-assertion",
+     "msg": "`e.body.trim()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 108,
+     "rule": "type-assertion",
+     "msg": "`(e.details ?? \"\").trim()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 122,
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 184,
+     "rule": "type-assertion",
+     "msg": "`parseDev(await claude(prompt), expected)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 188,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 214,
+     "rule": "type-assertion",
+     "msg": "`parseBusiness(await claude(bPrompt), new Set(byNumber.keys()` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 216,
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/changelog.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "viewOf",
+     "lines": [
+      147,
+      148
+     ]
+    },
+    {
+     "name": "monthStart",
+     "lines": [
+      151,
+      152
+     ]
+    },
+    {
+     "name": "pageConfig",
+     "lines": [
+      219,
+      225
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'hono' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 2,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'hono' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 26,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 36,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 89,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 102,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 117,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 142,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 144,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 145,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 160,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 193,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 208,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'dir' does not exist on type 'ImportMeta'.",
+     "env": false
+    },
+    {
+     "line": 209,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'dir' does not exist on type 'ImportMeta'.",
+     "env": false
+    },
+    {
+     "line": 210,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 211,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 231,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 232,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 242,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 243,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/dashboard.ts",
+   "pkg": "server",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "server/db.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "migrate",
+     "lines": [
+      11,
+      59
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'postgres' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 4,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 6,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "server/discovery.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "discover",
+     "lines": [
+      16,
+      45
+     ]
+    },
+    {
+     "name": "getAutomations",
+     "lines": [
+      47,
+      49
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'node:fs' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 2,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'node:path' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 5,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'dir' does not exist on type 'ImportMeta'.",
+     "env": false
+    },
+    {
+     "line": 38,
+     "rule": "type-assertion",
+     "msg": "`automation` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/github.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "githubOverFetch",
+     "lines": [
+      8,
+      29
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "server/index.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "adminAuth",
+     "lines": [
+      15,
+      24
+     ]
+    },
+    {
+     "name": "stripPrefix",
+     "lines": [
+      47,
+      51
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'hono' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 2,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'hono' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 11,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 12,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "type-assertion",
+     "msg": "`header.slice(6)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 33,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 36,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 36,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 42,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 46,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 48,
+     "rule": "type-assertion",
+     "msg": "`c.req.url` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 52,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 53,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 54,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 55,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 59,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 66,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 67,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 69,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 70,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 71,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 73,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 75,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 76,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 78,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 79,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 80,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 82,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 83,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/runner.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "acquire",
+     "lines": [
+      14,
+      17
+     ]
+    },
+    {
+     "name": "release",
+     "lines": [
+      18,
+      21
+     ]
+    },
+    {
+     "name": "executeRun",
+     "lines": [
+      28,
+      40
+     ]
+    },
+    {
+     "name": "runInBackground",
+     "lines": [
+      42,
+      137
+     ]
+    },
+    {
+     "name": "truncate",
+     "lines": [
+      139,
+      141
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'node:fs' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 2,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'node:os' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 3,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'node:path' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 8,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 15,
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "optional-chain",
+     "msg": "an optional call reads a named callee; bind a computed callee to a local first",
+     "env": false
+    },
+    {
+     "line": 20,
+     "rule": "unsupported-call",
+     "msg": "calls through computed callees are outside the subset",
+     "env": false
+    },
+    {
+     "line": 38,
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 55,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 56,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 58,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 59,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 61,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 61,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 64,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 64,
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    },
+    {
+     "line": 64,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 71,
+     "rule": "global-read",
+     "msg": "`Bun` cannot be resolved",
+     "env": false
+    },
+    {
+     "line": 71,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 79,
+     "rule": "closure-mutation",
+     "msg": "`timedOut` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 80,
+     "rule": "opaque-mutation",
+     "msg": ".kill() on `proc` may change it, and `proc` is read later; read it before the call or through a method",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "server/scheduler.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "startScheduler",
+     "lines": [
+      7,
+      27
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'croner' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 9,
+     "rule": "property-assign",
+     "msg": "assignment into `jobs`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "server/webhooks.ts",
+   "pkg": "server",
+   "units": [
+    {
+     "name": "fanOut",
+     "lines": [
+      51,
+      62
+     ]
+    },
+    {
+     "name": "safeJson",
+     "lines": [
+      64,
+      70
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'hono' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 2,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module 'node:crypto' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 14,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 16,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 20,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 20,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'Buffer'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 38,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 39,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "worker/index.ts",
+   "pkg": "worker",
+   "units": [
+    {
+     "name": "enqueue",
+     "lines": [
+      40,
+      42
+     ]
+    },
+    {
+     "name": "startJob",
+     "lines": [
+      44,
+      60
+     ]
+    },
+    {
+     "name": "runClaude",
+     "lines": [
+      62,
+      87
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 14,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 15,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 16,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 20,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 39,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 41,
+     "rule": "toplevel-effect",
+     "msg": "move the effectful module initializer into a function",
+     "env": false
+    },
+    {
+     "line": 47,
+     "rule": "function-value",
+     "msg": "a same-file function takes values, not callbacks",
+     "env": false
+    },
+    {
+     "line": 67,
+     "rule": "global-read",
+     "msg": "`Bun` cannot be resolved",
+     "env": false
+    },
+    {
+     "line": 67,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 69,
+     "rule": "unresolved-module",
+     "msg": "TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.",
+     "env": true
+    },
+    {
+     "line": 89,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 89,
+     "rule": "ts-strict",
+     "msg": "TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.",
+     "env": false
+    },
+    {
+     "line": 117,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "server",
+   "files": 22,
+   "units": 78,
+   "entered": 49
+  },
+  {
+   "pkg": "scripts",
+   "files": 3,
+   "units": 9,
+   "entered": 5
+  },
+  {
+   "pkg": "cli",
+   "files": 1,
+   "units": 3,
+   "entered": 2
+  },
+  {
+   "pkg": "sdk",
+   "files": 2,
+   "units": 3,
+   "entered": 1
+  },
+  {
+   "pkg": "worker",
+   "files": 1,
+   "units": 3,
+   "entered": 0
+  },
+  {
+   "pkg": "automations",
+   "files": 7,
+   "units": 1,
+   "entered": 0
+  }
+ ]
+}

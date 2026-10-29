@@ -1,0 +1,13 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-nexus-agent-api.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  34113380    27%  458732 341133800    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-agent-api/tsconfig.json: 18 files
+nexus-agent-api: 18 files, 27 units, 21 inside the subset (77.8 percent), 0 files unreadable, 5 s
+       4 units  type-assertion         src/allowlist/redactor.ts:56 `obj as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or 
+       3 units  prototype              src/allowlist/projector.ts:28 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+       2 units  ts-strict              src/middleware/auth.ts:10 TS7030: Not all code paths return a value.
+       1 units  property-assign        src/middleware/rate-limit.ts:31 update of a field of `window`, which this function does not own
+       0 units  unresolved-module      src/db.ts:1 TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+       0 units  toplevel-effect        src/index.ts:22 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null
