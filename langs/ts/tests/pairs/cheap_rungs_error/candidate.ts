@@ -1,1 +1,1 @@
-export function f(y: any): number { return y(); }
+export function f(x: number): number { const h: any = x; return h(); }
