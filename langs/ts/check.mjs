@@ -111,6 +111,13 @@ export async function check(opts) {
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
   if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; return finish(rung(), cert, unreached({})); }
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
+  // The translator states how it keyed this unit's opaque absent result; expose both sides without re-reading reach.
+  const absentKey = Object.fromEntries(['parent', 'candidate'].map((side) => {
+    const text = side === 'candidate' ? cand : fs.readFileSync(path.join(tmp, 'parent.dfy'), 'utf8');
+    const row = text.match(new RegExp(`^\\s*// ABSENT-KEY ${dafnyName(unit)}_${side}: (.+)$`, 'm'));
+    return [side, row ? JSON.parse(row[1]) : null];
+  }));
+  if (Object.values(absentKey).some(Boolean)) cert.absentKey = absentKey;
   const names = [...new Set([...cand.matchAll(/\bfunction\s+([A-Za-z0-9_]+)_candidate\s*\(/g)].map((m) => m[1]))].filter((x) => !/_loop\d+$/.test(x));
   // the scope of the translated units (the unit and its same-file callees): a scope file names the file's units, and those
   // this translation holds take its entries; a unit it does not name is wholly outside S, as without a scope file
