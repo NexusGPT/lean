@@ -106,7 +106,7 @@ export function declaredConfig(cfg) {
   return res;
 }
 
-const GENERATED = /(^|[\\/])(generated|__generated__|@generated|gen)([\\/]|$)|\.gen\./;
+export const GENERATED = /(^|[\\/])(generated|__generated__|@generated|gen)([\\/]|$)|\.gen\./;
 
 export function classifier(root) {
   const lockfile = lockfileOf(root);
