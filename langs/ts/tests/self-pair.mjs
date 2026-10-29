@@ -84,7 +84,13 @@ const snapshot = () => {
   for (const row of rows) counts[row.status] = (counts[row.status] ?? 0) + 1;
   return { ...manifest, tasks: undefined, rows, counts, ok: rows.every(row => ['PASS-bounded', 'PASS-decided', 'ASK', 'REFUSE'].includes(row.status)) && rows.filter(row => row.group === 'fixture').every(row => row.status === 'PASS-bounded') };
 };
-const save = () => { if (out) fs.writeFileSync(out, JSON.stringify(snapshot(), null, 1)); };
+// Replace a complete snapshot only after its successor was fully written. A disk
+// failure still exits nonzero, while the preceding manifest remains recoverable.
+const save = () => {
+  if (!out) return;
+  fs.writeFileSync(out + '.next', JSON.stringify(snapshot(), null, 1));
+  fs.renameSync(out + '.next', out);
+};
 save(); // the full task list exists before dispatch; interrupted tasks stay visible
 let cursor = 0;
 async function worker() {

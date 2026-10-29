@@ -37,6 +37,8 @@ crashes, missing verdicts and an unfinished manifest cannot pass the control.
 Each unit runs via runPair's isolated worker and existing per-unit bound. Jobs
 are capped at two, default one. No result is cached between invocations. The output
 file is populated with pending rows before dispatch and updated after each result;
+each replacement writes a sibling .next file then renames it atomically, so a
+partial write does not destroy the preceding snapshot and still exits nonzero;
 interrupted runs retain their running/pending rows. The summary counts PASS-bounded,
 PASS-decided, ASK and REFUSE separately. ASK/REFUSE satisfy only the no-WITNESS
 invariant, not successful execution coverage. Dedicated fixtures must PASS-bounded.
@@ -59,3 +61,10 @@ load-time-work fixture retains the original settle regression.
 See the lane report for measured results and exact commands. Raw manifests,
 per-unit verdicts, mutation output and seed results are under the worktree's
 `work/self-pair` directory; that directory is evidence, not production code.
+
+The full sweep encountered host ENOSPC while saving its manifest. Its failed
+attempt is retained separately; unfinished rows can be re-run with explicit
+LEAN_PAIRS names and reconciled by task ID. No interrupted row is counted as a
+pass. A partial-write fault injection first destroyed the prior snapshot, then
+preserved it after atomic replacement was introduced; both injected child runs
+exited nonzero. The lane report records the commands and final reconciliation.
