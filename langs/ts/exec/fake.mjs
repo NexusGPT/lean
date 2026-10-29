@@ -349,7 +349,7 @@ function renderBody(v, depth, seen, share) {
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
   if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen, share), render(x, depth + 1, seen, share)]) };
   if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen, share)) };
-  if (isError(v)) return { $error: v.constructor?.name ?? 'Error', message: typeof v.message === 'string' ? withoutRoots(engineRaised(v) ? withoutPrintedSource(v.message) : v.message) : v.message }; // class and message; the stack is never part of the rendering (design/stack-text.md)
+  if (isError(v)) return { $error: v.constructor?.name ?? 'Error', ...(engineRaised(v) ? {} : { message: typeof v.message === 'string' ? withoutRoots(v.message) : v.message }) }; // the class and its own fields; a program-built message is program data; an engine-made message is implementation-defined (ECMA-262) and no outcome (owner 29 Oct, row f0d879ac); the stack never (design/stack-text.md)
   if (v instanceof RegExp) return { $regex: String(v) };
   if (typeof v.then === 'function') { const n = promiseNames.get(v); return n ? { $promise: n.label, settled: Object.hasOwn(n, 'reason') ? { rejected: render(n.reason, depth + 1, seen, share) } : render(n.value, depth + 1, seen, share) } : { $promise: true }; } // a promise the world or the input made is named by its creation; one the unit made is anonymous
   const out = {};
