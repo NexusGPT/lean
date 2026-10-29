@@ -32,7 +32,7 @@ contribute those files too. It runs self-pair fixtures and optionally every row 
 the historical lane-B sample. Each manifest row runs independently, even when two
 sample classes name the same unit. LEAN_PAIRS filters by exact directory name;
 unknown names fail. An absent parent is listed explicitly. Missing sample sources,
-crashes, missing verdicts and an unfinished manifest cannot pass the control.
+runner errors, missing verdicts and an unfinished manifest cannot pass the control.
 
 Each unit runs via runPair's isolated worker and existing per-unit bound. Jobs
 are capped at two, default one. No result is cached between invocations. The output
@@ -68,3 +68,23 @@ LEAN_PAIRS names and reconciled by task ID. No interrupted row is counted as a
 pass. A partial-write fault injection first destroyed the prior snapshot, then
 preserved it after atomic replacement was introduced; both injected child runs
 exited nonzero. The lane report records the commands and final reconciliation.
+
+## Completed acceptance evidence
+
+The lane report records exact commands and artifacts. `work/self-pair/combine.py`
+and `work/self-pair/summarize.py`, run from
+`/Users/assem/nexus/nexus-organisation/work/lean-lanes/self-pair-2`, reconciled
+all 1525 original task IDs: 1487 pair-parent units, 35 sample rows, 3 fixtures.
+There were 0 WITNESS, 1504 PASS-bounded, 6 PASS-decided, 13 ASK and 2 REFUSE.
+ASK/REFUSE establish only that no witness was produced, not successful equality
+coverage. The first attempt remains failed on ENOSPC; recovery supplies the
+unfinished rows and counts each original task once. Runtime code is unchanged.
+
+`node work/self-pair/seeds.mjs` verified getAdminToken at the supplied base for
+seeds 1 through 20, all PASS-bounded. The planted ordering defect produced a
+nonzero control exit before restoration. The selected suite command
+`LEAN_PAIRS=env_programs,schedule_explorer,two_callers,heap_methods JOBS=1 node langs/ts/tests/run.mjs`
+passed 828 checks; its detector read 10 units with no hidden false proof, and its
+self-pair row passed. That suite ran on the initial control commit; the subsequent
+atomic-write-only change passed the partial-write fault control, fixture rerun,
+and recovered sweep.
