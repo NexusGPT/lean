@@ -289,9 +289,13 @@ const PRINTED_SOURCE = [
   /^(.+?)( is not (?:a function|a constructor|iterable|async iterable)(?: \(cannot read property Symbol\(Symbol\.(?:async)?[iI]terator\)\))?)$/s,
 ];
 const DESTRUCTURE = /^(Cannot destructure )'(.+?)'( as it is (?:undefined|null)\.)$/s;
+// a property access on undefined or null prints the key the source names: `Cannot read properties of undefined (reading 'x')`,
+// `Cannot set properties of null (setting 'x')`; which of undefined and null it was is the value's, and stays
+const PROPERTY = /^(Cannot (?:read|set) properties of (?:undefined|null) \((?:reading|setting) )'(.+)'(\))$/s;
 export function withoutPrintedSource(m) {
   for (const re of PRINTED_SOURCE) { const x = re.exec(m); if (x) return `<expression>${x[2]}`; }
   const d = DESTRUCTURE.exec(m); if (d) return `${d[1]}'<expression>'${d[3]}`;
+  const p = PROPERTY.exec(m); if (p) return `${p[1]}'<expression>'${p[3]}`;
   return m;
 }
 // A V8 stack frame line: four spaces, `at`, then a location the engine writes (`file:line:column`, `<anonymous>`,

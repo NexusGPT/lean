@@ -97,6 +97,21 @@ a constructor`, `is not iterable`, `is not async iterable`, `is not a function o
 for the unit's own throw on 92eebd9 (`const n = o.name; return n.toUpperCase()` against a renamed `label`: WITNESS);
 it is now PASS-bounded.
 
+**The error rule (decided by the lead; owner row f0d879ac).** An error is observed by its provenance, tagged at its
+construction in the sandbox. An error the engine raised while the unit's code ran is an instance of the sandbox realm's
+own intrinsic class: its class is observed, with the source V8 prints into the message normalised (the CallPrinter
+templates above and the property-access templates `Cannot read|set properties of undefined|null (reading|setting
+'<key>')`; undefined or null stays, it is the value's). A program-constructed error (`new TypeError(m)`, `class X
+extends Error`) is built from the host's classes the sandbox hands the unit, so its message is program data and is
+observed whole. The two cases, run with `exec/run.mjs --no-project` on files extracted by `git show`:
+- `bugsjs:eslint:291` `isES5Constructor` (`=== name[0].toLocaleUpperCase()` against `!== name[0].toLocaleLowerCase()`):
+  on 92eebd9 its witness rested on `Cannot read properties of undefined (reading 'toLocaleUpperCase')` against `(reading
+  'toLocaleLowerCase')`, an engine text (the replay lane's `refuted_disputed`). Now that throw compares equal, and the
+  witness the head reports rests on returned values (`false` against `true` on input 15), which the two expressions
+  do differ on for a first character with no case.
+- `nexus43:pyka-000da30` `resolveContenders`: `CompareInputError` messages the program builds (`entre 2 et 6 magasins ou
+  enseignes` against `entre 2 et -100 ...`) are program data and stay a WITNESS.
+
 **The render-purity check** compares the two renders of one state with handles renamed by first sight in each render
 (canonHandles): each render makes its own closures, so a function is compared there by where it stands; the second
 render's functions are numbered but not driven (pauseEscapes), since the observation never shows them.
