@@ -11,7 +11,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, dn, artifactName } from '../common.mjs';
+import { ts, dn, artifactName, loadProgram, topLevelFunctions, findingUnit } from '../common.mjs';
+import { lintFile } from '../lint/lint.mjs';
 import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -86,8 +87,9 @@ const tflags = (c, withInv) => {
 };
 for (const c of cases) {
   const file = path.join(casesDir, c.file);
-  const l = run('node', [lint, file]);
-  add('construct', c.name, 'lint', l.status === 0, l.status === 0 ? 'inside the subset' : l.stdout.trim().split('\n')[0], lscAccepts(file));
+  const loaded = loadProgram(file), inventory = topLevelFunctions(loaded.sf);
+  const findings = lintFile(file, null, { loaded }).filter(f => findingUnit(loaded.sf, inventory, f)?.name === c.fn);
+  add('construct', c.name, 'lint', findings.length === 0, findings.length ? `${findings[0].rule}: ${findings[0].msg}` : 'inside the subset', lscAccepts(file));
   const out = path.join(tmp, `case_${c.name}.dfy`);
   if (!c.coreOnly) { // the proof-shape mode (methods for loops) cannot call a unit that assigns from an expression; the gate runs --core
     const t = run('node', [translate, file, '--fn', c.fn, '--out', out, ...tflags(c, true)]);
@@ -124,7 +126,7 @@ function differential(label, tsFile, entries) {
   const mod = { exports: {} };
   new Function('exports', 'module', js)(mod.exports, mod);
   const dfy = path.join(tmp, `diff_${label}.dfy`);
-  const t = run('node', [translate, tsFile, '--core', '--out', dfy]);
+  const t = run('node', [translate, tsFile, '--core', '--only', entries.map(e => e.fn).join(','), '--out', dfy]);
   if (t.status !== 0) { add('differential', label, 'translate --core', false, (t.stderr || t.stdout).trim().split('\n')[0]); return; }
   const lines = [], want = [];
   for (const { fn, samples } of entries) for (const args of samples) {
