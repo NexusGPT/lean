@@ -137,6 +137,15 @@ export const READINGS = [
   },
   {
     id: 'logic-values', construct: 'booleans, conditionals, &&, || and ??: JavaScript truthiness by the static type, the deciding operand evaluated once',
+    decisionExceptions: [{
+      id: 'conditional-state-channels',
+      sites: [{ who: 'lint', rule: 'conditional-effect' }, { who: 'translate', rule: 'conditional-effect' }],
+      conditions: {
+        argumentUpdatesInBranch: 'a same-file callee changes its argument under a conditional or short-circuit branch; branch results do not carry parameter updates',
+        worldEffectInPureBranch: 'a logical right operand has a world effect while the emitting unit has no world channel',
+      },
+      reason: 'These are different state channels: admission protects callee argument updates, while emission requires the world channel of the enclosing unit. Neither condition implies the other.',
+    }],
     kinds: ['TrueKeyword', 'FalseKeyword', 'ConditionalExpression'],
     uses: (n, ts) => ts.isBinaryExpression(n) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(n.operatorToken.kind),
     lint: ['conditional-effect'],

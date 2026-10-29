@@ -119,6 +119,8 @@ optionalCallShape owns the callee classification, function signature, declared f
 
 inlinePromiseStatementKind is the single statement vocabulary used by the lint and the promise emitter dispatch. The opaque return of a throwing handler remains the named promise-opaque-return exception: syntactic inline-body admission and opaque-block Promise settlement are different conditions, both recorded in the promises catalogue entry.
 
+The conditional-state-channels permanent exception records argumentUpdatesInBranch (lint) and worldEffectInPureBranch (emission). They protect different state channels. No predicate is widened and no admission or emission behavior changes.
+
 ## Withdrawal
 
 A reading's last version marked `withdrawn` with a reason, `LEAN_WITHDRAW="<id>=<reason>;..."` in the environment (an
@@ -404,7 +406,7 @@ fails when a site has no reading.
 | lint/lint.mjs:1502 | lint-refuse | string-order | strings | one-decider | compare two strings, or convert both operands explicitly |
 | lint/lint.mjs:1511 | lint-refuse | mixed-types | equality | one-decider | a value that is sometimes a primitive and sometimes a record or array compares with === only against |
 | lint/lint.mjs:1512 | lint-refuse | reference-equality | equality | one-decider | === on arrays and records compares references; compare fields |
-| lint/lint.mjs:1556 | lint-refuse | conditional-effect | logic-values | one-decider | move a call that changes its arguments into an explicit if branch so the updated values leave the br |
+| lint/lint.mjs:1556 | lint-refuse | conditional-effect | logic-values | exception:conditional-state-channels | move a call that changes its arguments into an explicit if branch so the updated values leave the br |
 | lint/lint.mjs:1566 | lint-refuse | generator-bound | generators | shared (generatorReading) | <shape.message> |
 | lint/lint.mjs:1566 | lint-refuse | generator-effect | generators | shared (generatorReading) | <shape.message> |
 | lint/lint.mjs:1566 | lint-refuse | generator-use | generators | shared (generatorReading) | <shape.message> |
@@ -633,7 +635,7 @@ fails when a site has no reading.
 | translate/translate.mjs:2443 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
 | translate/translate.mjs:2451 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
 | translate/translate.mjs:2474 | translate-refuse | prototype | prototype | shared (plainObjectTest) |  |
-| translate/translate.mjs:2566 | translate-refuse | conditional-effect | logic-values | one-decider | conditional-effect: move the effect into an explicit if statement |
+| translate/translate.mjs:2566 | translate-refuse | conditional-effect | logic-values | exception:conditional-state-channels | conditional-effect: move the effect into an explicit if statement |
 | translate/translate.mjs:2580 | translate-refuse | prototype | prototype | shared (inPrototypeReach) | prototype: this file makes an object whose prototype is not Object.prototype (line ${}), and ${}; `i |
 | translate/translate.mjs:2581 | translate-refuse | dynamic-key | keys | shared (openRecordIn) | dynamic-key: ${} |
 | translate/translate.mjs:2628 | translate-refuse |  | equality | one-decider | loose equality on a non-primitive operand is not translated |
