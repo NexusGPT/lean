@@ -175,7 +175,8 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
     }
     if (r.verdict === 'WITNESS') { reverted.set(r.file, `WITNESS on ${r.unit}${r.caller ? ' (an unchanged caller)' : ''}: input ${r.witness?.input ?? '?'}`); continue; }
     if (r.verdict === 'ASK' || r.verdict === 'REFUSE' || r.verdict === null) {
-      // the control, lane by lane: an ASK is lean's own when every lane that did not pass failed on the parent alone.
+      // the control, lane by lane: an ASK is lean's own when every lane that did not pass failed on the parent alone;
+      // a row no lane answered (a timeout) checked nothing, and its file is reverted.
       // Lane A: a refusal to translate the parent (stage translate-parent), or no lane A run, depends on the parent's
       // text only; any other lane A answer (the candidate's translation, an unproved lemma) is about the rewrite.
       // Lane B: the parent against itself must give lane B's same verdict and reason. The two lanes are judged apart
@@ -194,7 +195,8 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
           bOwn = !!ctlB && ctlB.verdict === B.verdict && (ctlB.reason ?? null) === (B.reason ?? null);
         } catch { bOwn = false; } finally { fs.rmSync(ctl, { force: true }); }
       }
-      if (!aOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane A ${A.verdict}${A.stage ? ` at ${A.stage}` : ''}, an answer about the rewrite, not the parent: ${String(A.detail ?? r.reason ?? '').slice(0, 120)}`);
+      if (!A && !B) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: no lane answered (${String(r.reason ?? r.coverage ?? '').slice(0, 80)}), so the rewrite was not checked`);
+      else if (!aOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane A ${A.verdict}${A.stage ? ` at ${A.stage}` : ''}, an answer about the rewrite, not the parent: ${String(A.detail ?? r.reason ?? '').slice(0, 120)}`);
       else if (!bOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane B ${B.verdict} that the parent against itself does not share (${ctlB ? `${ctlB.verdict}: ${String(ctlB.reason ?? '').slice(0, 80)}` : 'no control'}): ${String(B.reason ?? '').slice(0, 120)}`);
       else r.control = `lean's own: lane A ${A ? `${A.verdict}${A.stage ? ` at ${A.stage}` : ''}` : 'not run'}, lane B ${B?.verdict ?? 'not run'}${ctlB ? ', the same on the parent against itself' : ''}`;
     }
