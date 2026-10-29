@@ -794,10 +794,12 @@ reported and do not change admission.
 
 ## Byte budgets and interrupted censuses
 
-Compiler chunks use `PROGRAM_SOURCE_BUDGET_BYTES` (12 MiB), counting actual source
-and declaration text read through the compiler host before checking. This leaves
-space for the type graph and emission in the default heap; the measured 14.8 MB
-Redis closure grew to about 3 GB. A multi-root attempt over budget is split. An
+Compiler chunks retain their project/1,200-root grouping. The named
+`PROGRAM_SOURCE_BUDGET_BYTES` (1 GiB) is a last-resort guard on actual source and
+declaration text read through the compiler host, not a chunking target. A 12 MiB
+target repeated large shared declarations in singleton Programs; source volume
+was not the cause of Redis's type-graph expansion, which the visited walk fixes.
+A multi-root attempt exceeding the guard is split. An
 indivisible single-file import closure is read whole: deleting declarations would
 change its reading. Its census record has `closure: {sourceBytes,
 declarationBytes, totalBytes, budgetBytes}`, and the summary counts oversized

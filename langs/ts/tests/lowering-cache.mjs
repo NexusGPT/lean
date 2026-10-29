@@ -95,11 +95,29 @@ if (process.argv.includes('--checkpoint-test')) {
       assert.equal(JSON.parse(fs.readFileSync(out, 'utf8')).complete, false, 'an interrupted run never publishes a complete summary');
       assert.throws(() => censusDiff(JSON.parse(fs.readFileSync(out, 'utf8')), { records: [] }), /incomplete census/);
       const chunk = journal.find(r => r.records?.length);
-      assert.equal(chunk.oversizedClosures, 1);
-      assert.ok(chunk.records[0].closure.totalBytes > chunk.records[0].closure.budgetBytes);
+      assert.equal(chunk.oversizedClosures, 0);
+      assert.equal(chunk.records[0].closure, undefined, 'ordinary declaration inputs do not exceed the guard');
       console.log('partial checkpoint: ' + JSON.stringify({ complete: journal[0].complete, files: chunk.files, units: chunk.units, records: chunk.records.length, closure: chunk.records[0].closure }));
     } finally { fs.rmSync(root, { recursive: true, force: true }); }
   });
+  process.exit(0);
+}
+
+if (process.argv.includes('--guard-test')) {
+  const root = fs.mkdtempSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '.guard-'));
+  try {
+    fs.writeFileSync(path.join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: { noLib: true } }));
+    fs.writeFileSync(path.join(root, 'shared.d.ts'), `/*${'d'.repeat(13 * 1024 * 1024)}*/\nexport interface Shared { n: number }`);
+    const files = Array.from({ length: 4 }, (_, i) => {
+      const file = path.join(root, `f${i}.ts`);
+      fs.writeFileSync(file, `import type { Shared } from './shared'; export function f${i}(x: Shared): number { return x.n; }`); return file;
+    });
+    const chunks = [...loadManyChunks(files)];
+    console.log(`ordinary shared declaration closure: ${chunks.length} chunks for ${files.length} roots`);
+    assert.equal(chunks.length, 1, 'the source guard must not turn ordinary shared declarations into singleton Programs');
+    assert.equal(new Set([...chunks[0].values()].map(L => L.program)).size, 1);
+    for (const L of chunks[0].values()) assert.equal(L.closure, undefined);
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
   process.exit(0);
 }
 
@@ -307,6 +325,9 @@ try {
   const closure = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--closure-test'], { encoding: 'utf8' });
   process.stdout.write(closure.stdout); process.stderr.write(closure.stderr); console.log(`closure child exit ${closure.status}`);
   assert.equal(closure.status, 0);
+  const guard = spawnSync(process.execPath, [fileURLToPath(import.meta.url), '--guard-test'], { encoding: 'utf8' });
+  process.stdout.write(guard.stdout); process.stderr.write(guard.stderr); console.log(`guard child exit ${guard.status}`);
+  assert.equal(guard.status, 0);
   const disk = spawnSync('df', ['-k', '/'], { encoding: 'utf8' });
   process.stdout.write(disk.stdout); process.stderr.write(disk.stderr); console.log(`df exit ${disk.status}`);
   assert.equal(disk.status, 0);

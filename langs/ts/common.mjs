@@ -92,10 +92,11 @@ export function loadMany(files, opts = {}) {
   return out;
 }
 
-// A 12 MiB source/declaration envelope leaves room for the checker and emission
-// inside Node's default heap: the measured 14.8 MB Redis closure grew to ~3 GB.
-// An indivisible import closure is read whole and reported, never truncated.
-export const PROGRAM_SOURCE_BUDGET_BYTES = 12 * 1024 * 1024;
+// One GiB is a last-resort source/declaration guard, not a chunking target.
+// Keep the normal project/1200-root grouping: a smaller byte target repeats
+// large shared declaration closures. Type-graph expansion is bounded in the lint.
+// An indivisible import closure is still read whole and reported, never truncated.
+export const PROGRAM_SOURCE_BUDGET_BYTES = 1024 * 1024 * 1024;
 const CHUNK_OVER_BUDGET = Symbol('compiler source budget');
 
 // loadManyChunks: the same, one Map per byte-bounded chunk of one project.
@@ -108,7 +109,7 @@ export function* loadManyChunks(files, opts = {}) {
   }
   const budget = opts.sourceByteBudget ?? PROGRAM_SOURCE_BUDGET_BYTES;
   if (!Number.isSafeInteger(budget) || budget <= 0) throw new Error('sourceByteBudget must be a positive integer');
-  const cap = opts.chunk ?? Infinity; // optional test/caller cap, never the memory budget
+  const cap = opts.chunk ?? 1200; // preserve the original project grouping; bytes are a final guard
   if (cap !== Infinity && (!Number.isSafeInteger(cap) || cap <= 0)) throw new Error('chunk must be a positive integer');
   for (const [cfg, absList] of groups) {
     let roots = [], bytes = 0;
