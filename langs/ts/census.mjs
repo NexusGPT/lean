@@ -43,7 +43,7 @@ export function census(root, opts = {}) {
   const rules = new Map(); // rule -> {count, units:Set, examples:[]}
   const perPackage = new Map();
   const records = []; // one per file: what the per-file reader needs
-  let files = 0, units = 0, entered = 0, failedFiles = 0;
+  let files = 0, units = 0, entered = 0, failedFiles = 0, environmentBlocked = 0, languageRefused = 0;
   const t0 = Date.now();
   const list = [];
   for (const file of walk(root)) {
@@ -82,22 +82,33 @@ export function census(root, opts = {}) {
     });
     records.push({ file: path.relative(root, file), pkg, units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), findings: named });
     const blocked = new Set();
+    const stop = (unit, f, rule) => {
+      blocked.add(unit);
+      const relative = path.relative(root, file).split(path.sep).join('/');
+      const directory = relative.split('/').slice(0, -1).slice(0, depth).join('/') || '.';
+      const r = refusalGroups.get(rule) ?? { rule, units: 0, directories: new Map() };
+      r.units++;
+      const d = r.directories.get(directory) ?? {
+        directory, units: 0,
+        example: { file: relative, line: f.line, code: (f.text ?? sourceLines[f.line - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 120) },
+      };
+      d.units++;
+      r.directories.set(directory, d);
+      refusalGroups.set(rule, r);
+    };
+    // A unit whose module or global still does not resolve (after the environment rungs) is not inside the subset: its
+    // types are unknown. It is counted once, apart from the language refusals, under `environment: <kind>` of its first
+    // such finding; its language findings are not read as refusals, since they were judged on unknown types.
+    named.forEach((o, i) => {
+      if (o.rule !== 'unresolved-module') return;
+      const unit = unitNames.find(([, a, b]) => a <= o.line && o.line <= b)?.[0] ?? null;
+      if (unit && !blocked.has(unit)) { stop(unit, findings[i], `environment: ${o.kind}`); environmentBlocked++; }
+    });
     for (const f of findings) {
       const unit = unitNames.find(([, a, b]) => a <= f.line && f.line <= b)?.[0] ?? null;
       if (unit && !f.env && !blocked.has(unit)) {
-        // Count each stopped unit under its first refusal. Environment findings do not stop a unit.
-        blocked.add(unit);
-        const relative = path.relative(root, file).split(path.sep).join('/');
-        const directory = relative.split('/').slice(0, -1).slice(0, depth).join('/') || '.';
-        const r = refusalGroups.get(f.rule) ?? { rule: f.rule, units: 0, directories: new Map() };
-        r.units++;
-        const d = r.directories.get(directory) ?? {
-          directory, units: 0,
-          example: { file: relative, line: f.line, code: (f.text ?? sourceLines[f.line - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 120) },
-        };
-        d.units++;
-        r.directories.set(directory, d);
-        refusalGroups.set(f.rule, r);
+        // Count each stopped unit under its first refusal.
+        stop(unit, f, f.rule); languageRefused++;
       }
       const r = rules.get(f.rule) ?? { count: 0, units: new Set(), examples: [] };
       r.count++; if (unit) r.units.add(`${file}:${unit}`);
@@ -113,8 +124,9 @@ export function census(root, opts = {}) {
     rule: r.rule, units: r.units,
     directories: [...r.directories.values()].sort((a, b) => a.directory.localeCompare(b.directory)),
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
-  const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])) };
-  return { root, date, depth, refused: units - entered, refusalRules, files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), environment, rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  const blockedKinds = Object.fromEntries([...refusalGroups.values()].filter((r) => r.rule.startsWith('environment: ')).map((r) => [r.rule.slice(13), r.units]).sort((a, b) => b[1] - a[1]));
+  const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds };
+  return { root, date, depth, refused: units - entered, environmentBlocked, languageRefused, refusalRules, files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), environment, rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
 
 // Render only the saved census result. No files are read and no units are linted here.
@@ -125,7 +137,9 @@ export function censusReport(res) {
     `# Census: ${code(path.basename(res.root))}`, '',
     `Date: ${res.date} (UTC)`, '',
     `Units: ${res.units}. Inside the subset: ${res.entered} (${res.share ?? 'n/a'} percent). Refused: ${res.refused}. Files unreadable: ${res.failedFiles}.`, '',
-    'Each refused unit is counted once, under the first rule the lint names for it. Environment findings do not refuse units.', '',
+    '| Entered | Environment-blocked | Language-refused |', '| ---: | ---: | ---: |', `| ${res.entered} | ${res.environmentBlocked ?? 0} | ${res.languageRefused ?? res.refused} |`, '',
+    ...(res.environment && Object.keys(res.environment.blockedKinds ?? {}).length ? ['Environment-blocked by kind: ' + Object.entries(res.environment.blockedKinds).map(([k, n]) => `${k} ${n}`).join(', ') + '.', ''] : []),
+    'Each refused unit is counted once, under the first rule the lint names for it. A unit whose module or global still does not resolve is environment-blocked instead, under `environment: <kind>` of its first such finding.', '',
     `Directory depth: ${res.depth}. A dot means the repository root.`, '',
     '## Top five rules by units stopped', '',
     '| Rule | Units stopped |', '| --- | ---: |',
@@ -153,7 +167,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const report = opt('--report', null);
   if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
   if (report) fs.writeFileSync(report, censusReport(res));
-  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.failedFiles} files unreadable, ${res.seconds} s`);
+  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked, ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.seconds} s`);
   const st = res.environment.install;
   console.log(`  environment: install ${st.status}${st.exit !== undefined ? ` (exit ${st.exit}, ${st.command})` : ''}; ${res.environment.units} units reach an unresolved module or global: ${Object.entries(res.environment.kinds).map(([k, n]) => `${k} ${n}`).join(', ') || 'none'}`);
   for (const r of res.rules.slice(0, 25)) console.log(`  ${String(r.units).padStart(6)} units  ${r.rule.padEnd(22)} ${r.examples[0] ?? ''}`);
