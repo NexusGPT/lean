@@ -137,6 +137,15 @@ export const READINGS = [
   },
   {
     id: 'logic-values', construct: 'booleans, conditionals, &&, || and ??: JavaScript truthiness by the static type, the deciding operand evaluated once',
+    decisionExceptions: [{
+      id: 'conditional-state-channels',
+      sites: [{ who: 'lint', rule: 'conditional-effect' }, { who: 'translate', rule: 'conditional-effect' }],
+      conditions: {
+        argumentUpdatesInBranch: 'a same-file callee changes its argument under a conditional or short-circuit branch; branch results do not carry parameter updates',
+        worldEffectInPureBranch: 'a logical right operand has a world effect while the emitting unit has no world channel',
+      },
+      reason: 'These are different state channels: admission protects callee argument updates, while emission requires the world channel of the enclosing unit. Neither condition implies the other.',
+    }],
     kinds: ['TrueKeyword', 'FalseKeyword', 'ConditionalExpression'],
     uses: (n, ts) => ts.isBinaryExpression(n) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(n.operatorToken.kind),
     lint: ['conditional-effect'],
@@ -365,6 +374,62 @@ export const READINGS = [
   },
   {
     id: 'mutation', construct: 'writes: a local rebound, a parameter\'s record or array rebuilt and returned as an output, a field of the receiver as a world cell, a delete of an optional field or a key',
+    decisionExceptions: [
+      {
+        "id": "mutation-admission-vs-value-output",
+        "sites": [
+          {
+            "who": "lint",
+            "rule": "param-assign"
+          },
+          {
+            "who": "translate",
+            "rule": "param-assign"
+          }
+        ],
+        "conditions": {
+          "admissionRisk": "Source-level mutation and rebinding risk, before emission planning.",
+          "valueOutputs": "Mutated operands of the emitted value ABI, including selected callback and receiver bindings."
+        },
+        "reason": "The same facts feed two projections with different purposes and traversal scopes; equating them changes admission or function outputs."
+      },
+      {
+        "id": "element-shape-vs-selected-emission",
+        "sites": [
+          {
+            "who": "lint",
+            "rule": "alias-mutation",
+            "message": "`${}` is the accumulator `reduce` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (`{}`, `[]`, `new Map()`), every step returns the accumulator, and the write is one step deep (`acc[k] = v`) (escape reduce_accumulator_element)"
+          },
+          {
+            "who": "lint",
+            "rule": "alias-mutation",
+            "message": "`${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `++`, `--`) is read only in a `forEach` statement of one parameter over plain data records; write the element through its array in an index loop, `for (let i = 0; i < xs.length; i++) xs[i].f = v` (escape element_write_loop_callback)"
+          },
+          {
+            "who": "translate",
+            "rule": "alias-mutation",
+            "message": "alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so a write through it would be lost: write the element through its array in an index loop, `xs[i].f = v` (escape element_write_loop_callback)"
+          },
+          {
+            "who": "translate",
+            "rule": "alias-mutation",
+            "message": "alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, `xs[i].f = v` (escape element_write_loop_callback)"
+          }
+        ],
+        "conditions": {
+          "heapShapeEligible": "The callback field-write shape can be handled by the heap planner.",
+          "heapSelected": "The whole unit was selected for heap emission; otherwise loop-element writes lose identity in the value reader."
+        },
+        "reason": "Admission knows eligible shapes; value emission knows the actual planner selection. Owned reduce accumulators additionally distinguish ownership from safe write depth."
+      }
+    ],
+    decisions: [
+      { id: 'mutation-admission-risk', exception: 'mutation-admission-vs-value-output', condition: 'admissionRisk', reason: 'Source-level rebinding risk follows any mutator expression and nested argument roots, skipping nested functions; it does not define emitted return operands.' },
+      { id: 'mutation-value-outputs', exception: 'mutation-admission-vs-value-output', condition: 'valueOutputs', reason: 'The value ABI follows emitted loop callbacks, statement mutators, declared receivers and receiver calls, direct argument names, and excludes suspended async-generator bodies.' },
+      { id: 'element-heap-shape', exception: 'element-shape-vs-selected-emission', condition: 'heapShapeEligible', reason: 'Admission can permit a field-write shape the heap knows; only the later planner decides whether that whole unit is selected.' },
+      { id: 'element-value-emission', exception: 'element-shape-vs-selected-emission', condition: 'heapSelected', reason: 'A unit actually emitted by the value reader must refuse writes through loop elements even when their syntax is heap-eligible; owned reduce accumulators remain distinct from source write-depth safety.' },
+    ],
     kinds: ['DeleteExpression'],
     uses: (n, ts) => ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment,
     lint: ['alias-mutation', 'param-mutation', 'closure-mutation', 'global-mutation', 'index-assign', 'property-assign', 'receiver-mutation', 'receiver-write', 'opaque-mutation', 'param-assign', 'delete', 'unsupported-operator'],
@@ -396,6 +461,15 @@ export const READINGS = [
   },
   {
     id: 'optional-chain', construct: '`a?.b` and `f?.(x)`: an Option of the read, the call and its transition only when the callee or receiver is present',
+    decisionExceptions: [{
+      id: 'optional-source-vs-emitted-callee',
+      sites: [{ who: 'lint', rule: 'optional-chain', message: '<shape.why>' }, { who: 'translate', rule: 'optional-chain', message: 'optional-chain: ${}' }],
+      conditions: {
+        sourcePathAdmission: 'the directly walked source callee has an admissible local/plain-record path, one nongeneric signature and no surrounding value step',
+        emittedCalleeShape: 'the lowered value has a declared field or local callee, with a nongeneric signature only when it can be absent, and no active synthetic value step',
+      },
+      reason: 'Source path admission and lowered field emission have different domains. Indirect class receiver paths can reach emission without that source walk; imposing the source path restriction there loses admitted units. Required callees need no optional branch signature. Both conditions share the type and signature facts.',
+    }],
     uses: (n, ts) => !!n.questionDotToken,
     lint: ['optional-chain'],
     translate: rx('^optional-chain: ', '^\\?\\. on a type parameter is not translated$'),
@@ -406,6 +480,15 @@ export const READINGS = [
   },
   {
     id: 'promises', construct: 'async units and promises: await as a world transition, exact then/catch/finally/new Promise reactions sharing the fault channel, a returned outside promise as a handle',
+    decisionExceptions: [{
+      id: 'promise-opaque-return',
+      sites: [{ who: 'translate', rule: 'promise-handler', message: 'promise-handler: a promise returned from an opaque block of a throwing handler is not read' }],
+      conditions: {
+        inlineStatementAdmission: 'the handler body uses inlinePromiseStatementKind and has no refused same-file mutation',
+        opaqueFaultReturn: 'faultTr takes an opaque block return continuation whose handler return type is Promise',
+      },
+      reason: 'Statement admissibility is syntactic; the fault emitter additionally needs to settle a Promise returned by an opaque block. A valid statement can reach this separate emission limit.',
+    }],
     kinds: ['AwaitExpression'],
     lint: ['promise', 'promise-handler', 'promise-thenable', 'promise-pending', 'promise-executor', 'promise-executor-escape', 'promise-unsettled', 'promise-all-order', 'async'],
     translate: rx('^promise-handler: ', '^promise-pending: ', '^promise-unsettled: ', '^promise-combinator: ', '^promise-executor: ', '^promise-executor-escape: ', '^promise-thenable: ', '^a promise a same-file async unit returns, stored as a handle', '^promise forms require an effectful core unit$', '^an opaque promise call requires an effectful unit$'),
@@ -439,6 +522,18 @@ export const READINGS = [
   },
   {
     id: 'classes', construct: 'methods of a class of the file: units with an explicit receiver; fields a method assigns as world cells; `this` in a free function as a declared `this` parameter',
+    decisionExceptions: [{
+      id: 'receiver-scope-vs-self-type',
+      sites: [
+        { who: 'lint', rule: 'this', message: '`this` outside a class method; a free function declares its receiver as a `this` parameter' },
+        { who: 'translate', rule: 'this', message: 'this: `this` outside a class method; a free function declares its receiver as a `this` parameter' },
+      ],
+      conditions: {
+        lexicalReceiverAvailable: 'the lint traversal has a class receiver, an object-literal method receiver, or a declared this parameter',
+        materializableUnitReceiver: 'selfType materializes a unit class receiver or declared this parameter; object-literal methods use their captured field environment instead',
+      },
+      reason: 'Lexical this validity and the availability of a unit self type have different domains. A literal method has lexical this but no unit self type. Combining them would reject valid literal methods or invent a receiver type.',
+    }],
     kinds: ['ThisKeyword', 'SuperKeyword', 'Constructor', 'ClassDeclaration', 'ClassExpression', 'PropertyDeclaration'],
     lint: ['class', 'this', 'static-this', 'this-param', 'implicit-this'],
     translate: rx('^this-param: ', '^this: ', '^`this` outside a class method$'),

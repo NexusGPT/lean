@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { inlinePromiseStatementKind } from '../lower.mjs';
 // lean-ts lint, version 2: refuses any function outside the TypeScript subset (see langs/ts/subset.md).
 // Version 2 admits real idioms the translator can model: imports and module constants as externals,
 // arrow-const functions, async functions whose awaited calls are externals, null as "absent", literal
@@ -9,11 +10,12 @@
 // Usage: node lint.mjs <file.ts> [--changed <ranges.json>] [--json] [--advice] [--any-type] [--project <tsconfig>|--no-project]
 // Exit 0: every checked function is inside the subset. Exit 1: violations printed. Exit 2: usage error.
 import fs from 'node:fs';
+import { mutationAnalysis, parameterMutationConflicts, elementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
-import { elementWritePath, plainDataRecord, reduceAccumulator } from '../common.mjs';
+import { elementWritePath, plainDataRecord } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
@@ -41,8 +43,9 @@ import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, read
 import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
+import { optionalCallShape } from '../lower.mjs';
 import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
-import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy } from '../lower.mjs'; // decisions taken once for the lint and the translator
+import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -473,7 +476,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
     if (o.kind === 'global' && infinitySign(checker, id, sf, current) > 0) return; // the global Infinity is the value Number.POSITIVE_INFINITY is: a unit naming either is one opaque unit in the translator
-    if (o.kind === 'global' && ['NaN', 'Infinity'].includes(name)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
+    if (numberSpecial('global', name, o.kind)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
     if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
     if (libGlobalRoot(checker, id, sf, current)) return; // a lib or runtime global: a world read
@@ -524,46 +527,8 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // of a callback or a local function, a rest parameter, a parameter of a generator, a parameter the unit also changes
   // in place (an output: the caller would take back the rebound object), and one a closure reads before a later write
   // or inside a loop that writes it (the closure would keep the old value).
-  const PARAM_MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
-  let mutatedParamSets = null; // unit name -> names of its parameters it changes in place, same-file calls followed (the translator's outputs)
-  const paramRootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
-  const mutatedParams = (name) => {
-    if (!mutatedParamSets) {
-      const all = [...units.values()].filter((u) => u.body);
-      const namesOf = (u) => new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
-      mutatedParamSets = new Map(all.map((u) => {
-        const ps = namesOf(u), out = new Set();
-        const hit = (x) => { const r = paramRootOf(x); if (ts.isIdentifier(r) && ps.has(r.text) && r !== x) out.add(r.text); };
-        const w = (n) => {
-          if (ts.isFunctionLike(n) && n !== u.fn) return;
-          if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) hit(n.left);
-          if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) hit(n.operand);
-          if (ts.isDeleteExpression(n)) hit(n.expression);
-          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && PARAM_MUTATORS.has(n.expression.name.text)) { const r = paramRootOf(n.expression.expression); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
-          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'Object' && n.expression.name.text === 'assign' && n.arguments[0]) { const r = paramRootOf(n.arguments[0]); if (ts.isIdentifier(r) && ps.has(r.text)) out.add(r.text); }
-          ts.forEachChild(n, w);
-        };
-        w(u.body);
-        return [u.name, out];
-      }));
-      for (let changed = true; changed;) {
-        changed = false;
-        for (const u of all) {
-          const ps = namesOf(u), mine = mutatedParamSets.get(u.name);
-          const w = (n) => {
-            if (ts.isFunctionLike(n) && n !== u.fn) return;
-            if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && mutatedParamSets.has(n.expression.text)) {
-              const callee = units.get(n.expression.text), cm = mutatedParamSets.get(callee.name);
-              callee.params.forEach((cp, i) => { const a = n.arguments[i] && paramRootOf(n.arguments[i]); if (ts.isIdentifier(cp.name) && cm.has(cp.name.text) && a && ts.isIdentifier(a) && ps.has(a.text) && !mine.has(a.text)) { mine.add(a.text); changed = true; } });
-            }
-            ts.forEachChild(n, w);
-          };
-          w(u.body);
-        }
-      }
-    }
-    return mutatedParamSets.get(name) ?? new Set();
-  };
+  let parameterMutationRecord = null;
+  const parameterMutations = () => parameterMutationRecord ??= mutationAnalysis(checker, sf, units);
   const paramRebindRefusal = (decl) => {
     const name = decl.name.getText(sf);
     if (decl.parent !== currentFn) return `\`${name}\` is a parameter of a callback or a local function; copy it to a local first`;
@@ -571,7 +536,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (decl.dotDotDotToken) return `\`${name}\` is a rest parameter; copy it to a local first`;
     if (currentFn.asteriskToken) return `parameter \`${name}\` of a generator is assigned; copy it to a local first`;
     const u = [...units.values()].find((x) => x.fn === currentFn);
-    if (!u || mutatedParams(u.name).has(name)) return `parameter \`${name}\` is rebound and also changed in place, which hands the change back to the caller; copy it to a local first`;
+    if (!u || parameterMutationConflicts(parameterMutations().units.get(u.name), 'admissionRisk').includes(decl)) return `parameter \`${name}\` is rebound and also changed in place, which hands the change back to the caller; copy it to a local first`;
     const sym = checker.getSymbolAtLocation(decl.name);
     const symOf = (id) => (id.parent && ts.isShorthandPropertyAssignment(id.parent) && id.parent.name === id ? checker.getShorthandAssignmentValueSymbol(id.parent) : checker.getSymbolAtLocation(id));
     const isTarget = (id) => { let x = id; while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent; const p = x.parent; return !!p && ((ts.isBinaryExpression(p) && p.left === x && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator))); };
@@ -931,19 +896,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // value reading copies the element and would lose the write, so every other shape is refused here (escape
   // element_write_loop_callback) and the translator refuses a unit outside the heap core
   function loopElementWrite(e) {
-    let w = ts.isBinaryExpression(e) && e.operatorToken.kind >= K.FirstAssignment && e.operatorToken.kind <= K.LastAssignment ? e.left : (ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e)) && (e.operator === K.PlusPlusToken || e.operator === K.MinusMinusToken) ? e.operand : ts.isDeleteExpression(e) ? e.expression : null;
-    if (!w && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) w = ts.isIdentifier(e.expression.expression) && e.expression.expression.text === 'Object' && e.expression.name.text === 'assign' ? e.arguments[0] ?? null : MUT_NAMES.has(e.expression.name.text) ? e.expression.expression : null;
-    if (!w) return null;
-    let r = w; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r) || ts.isAsExpression(r)) r = r.expression;
-    const through = r !== w || !ts.isBinaryExpression(e) || ts.isCallExpression(e); // a field, an element, a mutator: not a rebinding of the name
-    if (!ts.isIdentifier(r) || !through) return null;
-    const d = declOf(r).decl;
-    if (!d || !ts.isParameter(d) || !syncLoopCallback(d.parent, checker)) return null;
-    const call = d.parent.parent; const st = call.parent;
-    if (reduceAccumulator(d, checker, w)) return null; // the accumulator of a reduce the call itself builds, written one step deep: no element of the array (common.mjs)
-    const fieldWrite = (ts.isBinaryExpression(e) && [K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e); // the writes the heap core reads in a loop body (a mutator, Object.assign and delete are not)
-    const carried = fieldWrite && call.expression.name.text === 'forEach' && st && ts.isExpressionStatement(st) && d.parent.parameters.length === 1 && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name));
-    if (carried) return null;
+    const decision = elementMutation(checker, e, { sf, current, heapSelected: null });
+    if (!decision?.admissionRefused) return null;
+    const w = decision.target, r = decision.root, d = decision.sourceDecl, call = decision.sourceCall;
     if (call.expression.name.text === 'reduce' && d.parent.parameters[0] === d) return v(w, 'alias-mutation', `\`${r.text}\` is the accumulator \`reduce\` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (\`{}\`, \`[]\`, \`new Map()\`), every step returns the accumulator, and the write is one step deep (\`acc[k] = v\`) (escape reduce_accumulator_element)`);
     return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
   }
@@ -1198,7 +1153,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const w = (x) => {
       if (ts.isFunctionLike(x)) return;
       if (ts.isCallExpression(x) && ts.isIdentifier(x.expression) && declOf(x.expression).kind === 'unit' && unsafePromiseCallee(units.get(x.expression.text), new Set(), !handler)) v(x, 'promise-handler', 'inline a same-file call that throws or mutates so its fault and state are visible');
-      if (ts.isStatement(x) && ![K.Block, K.VariableStatement, K.ExpressionStatement, K.IfStatement, K.ReturnStatement, K.ThrowStatement, K.EmptyStatement].includes(x.kind)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
+      if (ts.isStatement(x) && !inlinePromiseStatementKind(x)) v(x, 'promise-handler', 'use declarations, conditionals, calls, return and throw in an inline promise body');
       ts.forEachChild(x, w);
     };
     w(body);
@@ -1567,45 +1522,6 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // callee is present. The callee is a local function value, a function field of a record path rooted at a local (each
   // link a plain record, the last one optional under `?.`), or a function field of `this` in a class; the expression
   // around it holds no assignment, update or comma, whose value reading evaluates every operand before any branch
-  const sameFileClassT = (t) => !!t.symbol?.declarations?.some((d) => (ts.isClassDeclaration(d) || ts.isClassExpression(d)) && d.getSourceFile() === sf);
-  const valueStepIn = (n) => { if (!n || ts.isFunctionLike(n)) return false; if ((ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) || ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) || ts.isCommaListExpression(n) || (ts.isBinaryExpression(n) && n.operatorToken.kind === K.CommaToken)) return true; let found = false; ts.forEachChild(n, (c) => { if (!found && valueStepIn(c)) found = true; }); return found; };
-  function optionalCallRefusal(e) {
-    let top = e;
-    for (let p = e.parent; p && !ts.isStatement(p) && !ts.isFunctionLike(p) && !ts.isVariableDeclaration(p) && !ts.isParameter(p) && !ts.isCaseClause(p) && !ts.isSourceFile(p); p = p.parent) top = p;
-    const root = ts.isBinaryExpression(top) && top.operatorToken.kind >= K.FirstAssignment && top.operatorToken.kind <= K.LastAssignment && top.parent && ts.isExpressionStatement(top.parent) ? top.right : top;
-    if (valueStepIn(root)) return 'write the optional call in its own statement; an assignment, update or comma beside it evaluates every operand before the call decides';
-    let f = e.expression;
-    const plainRecord = (t) => nonNull(t).length === 1 && isRecordish(nonNull(t)[0]) && !isAny(nonNull(t)[0]) && !sameFileClassT(nonNull(t)[0]) && !localMethodLiteral(nonNull(t)[0]);
-    const fnType = (t) => { const parts = nonNull(t); if (parts.length !== 1 || isAny(parts[0])) return false; const sg = checker.getSignaturesOfType(parts[0], ts.SignatureKind.Call); return sg.length === 1 && !sg[0].typeParameters?.length; }; // one signature, not generic: its result is the present branch's
-    if (ts.isIdentifier(f)) {
-      if (declOf(f).kind !== 'local') return 'an optional call reads a local function value; bind an imported or global callee to a local first';
-      return fnType(tOf(f)) ? null : 'an optional call needs a callee typed as one nongeneric function or undefined; narrow an opaque or overloaded value first';
-    }
-    if (!ts.isPropertyAccessExpression(f)) return 'an optional call reads a named callee; bind a computed callee to a local first';
-    const recv = f.expression, name = f.name.text;
-    if (recv.kind === K.ThisKeyword) {
-      if (!currentClass || objectMethod || thisParam) return 'an optional call on `this` reads a field of a class receiver';
-      if (units.has(`${currentClass.name?.text}.${name}`)) return null; // a method of the class: never absent
-      const p = checker.getPropertyOfType(tOf(recv), name);
-      return p && fnType(checker.getTypeOfSymbolAtLocation(p, f)) && !p.declarations?.some((d) => ts.isGetAccessorDeclaration(d) || ts.isSetAccessorDeclaration(d)) ? null : 'an optional call on `this` reads a function field of the class';
-    }
-    // the receiver: a path of plain records from a local; `?.` before the field allows an absent last record
-    let link = recv;
-    for (;;) {
-      if (ts.isPropertyAccessExpression(link) && link.questionDotToken) return 'an optional call reads a field of a nonoptional record path; narrow the path first';
-      if (ts.isIdentifier(link)) { if (declOf(link).kind !== 'local') return 'an optional call reads a function field of a record held in a local or a parameter'; break; }
-      if (!ts.isPropertyAccessExpression(link)) return 'an optional call reads a function field of a record path; bind the receiver to a local first';
-      link = link.expression;
-    }
-    for (let x = recv; ts.isPropertyAccessExpression(x); x = x.expression) if (!plainRecord(tOf(x.expression)) || nonNull(tOf(x.expression)).length !== (tOf(x.expression).types?.length ?? 1)) return 'an optional call reads a field of a nonoptional record path; narrow the path first';
-    const rt = tOf(recv);
-    if (!plainRecord(rt)) return 'an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first';
-    if (isOptional(rt) && !f.questionDotToken) return 'an optional call reads a field of a present record';
-    const p = checker.getPropertyOfType(nonNull(rt)[0], name);
-    if (!p || !fnType(checker.getTypeOfSymbolAtLocation(p, f))) return 'an optional call reads a declared function field of the record';
-    return null;
-  }
-  const isOptional = (t) => !!(t.flags & TF.Union) && t.types.some((x) => x.flags & (TF.Undefined | TF.Null));
   function call(e) {
     conditionalEffect(e);
     const generatorDecl = checker.getResolvedSignature(e)?.declaration;
@@ -1620,7 +1536,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
     { const md = metadataCall(checker, e, sf); if (md) { if (!(ts.isIdentifier(f.expression) && f.expression.text === 'Reflect')) expr(f.expression); return e.arguments.forEach((a) => expr(a)); } } // a metadata API of the decorator table (translate/decorators.json): the one admitted use of Reflect, a cell of the world
     { const ok = ownKeyTest(checker, e, sf); if (ok) { if (ok.refuse) return v(e, 'prototype', ok.refuse); expr(ok.obj); return expr(ok.key); } } // the own-key test on a dictionary or a record of required fields
-    if (e.questionDotToken) { const why = optionalCallRefusal(e); if (why) v(e, 'optional-chain', why); }
+    if (e.questionDotToken) { const shape = optionalCallShape(checker, e, sf, { current, currentClass, objectMethod, thisParam, units }).sourcePathAdmission; if (shape.why) v(e, 'optional-chain', shape.why); }
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);
@@ -1649,7 +1565,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
         void 0; // Math.random is a world transition (version 3)
         if (name === 'floor' || name === 'trunc') { floorDepth++; e.arguments.forEach(expr); floorDepth--; return; }
         if (name === 'max' || name === 'min') {
-          if (!nonemptyMathArgs(e)) v(e, 'math-empty', 'Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback');
+          if (!nonemptyMathArgs(checker, e)) v(e, 'math-empty', 'Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback');
           if (e.arguments.some(ts.isSpreadElement) || e.arguments.length !== 2) { const numeric = (a) => { if (ts.isSpreadElement(a) && ts.isArrayLiteralExpression(a.expression)) return a.expression.elements.every(numeric); const t = ts.isSpreadElement(a) ? checker.getTypeArguments(tOf(a.expression))[0] : tOf(a); return !!t && (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & TF.NumberLike)); }; if (!e.arguments.every(numeric)) v(e, 'spread', 'Math sequence arguments must be numbers; narrow opaque values before spreading'); }
           return e.arguments.forEach((a) => ts.isSpreadElement(a) ? spreadArray(a) : expr(a));
         }
@@ -2073,73 +1989,6 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (r.kind === K.ThisKeyword) return !units.has(`${currentClass?.name?.text}.${f.name.text}`);
     if (ts.isIdentifier(r) && r.text === 'Math' && ['floor', 'trunc', 'abs'].includes(f.name.text)) return false;
     return !nonNull(tOf(r)).some((t) => isArrayLike(checker, t) || isStr(t) || isSetT(t) || isMapT(t));
-  }
-  // a directly enclosing conditional proves a sole array spread nonempty on the chosen branch
-  // Math.min/max over a spread is read on a nonempty list (MinSeq/MaxSeq require it): the spread's length is the length of
-  // a name (the name itself, `xs.map(f)`, `xs.slice()`, `[...xs]`), and a test that dominates the call says that length is
-  // not zero: a conditional, an if, `&&` / `||`, or an earlier `if (...) return` (or throw, break, continue) in the same
-  // statement list, in any equivalent form (`xs.length`, `> 0`, `>= 1`, `!== 0`, `0 < xs.length`, `!xs.length` and
-  // `=== 0` on the other branch); the name is not written between the test and the call
-  function nonemptyMathArgs(e) {
-    const filled = (a) => !ts.isSpreadElement(a) || (ts.isArrayLiteralExpression(a.expression) && a.expression.elements.some(filled));
-    if (e.arguments.some(filled)) return true;
-    if (e.arguments.length !== 1 || !ts.isSpreadElement(e.arguments[0])) return false;
-    const lengthName = (x) => { // the name whose length the value's length is
-      x = unparenX(x);
-      if (ts.isIdentifier(x)) return isArrayExpr(x) ? checker.getSymbolAtLocation(x) : null;
-      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && !x.expression.questionDotToken && isArrayExpr(x.expression.expression) && ((x.expression.name.text === 'map' && x.arguments.length === 1) || (x.expression.name.text === 'slice' && !x.arguments.length))) return lengthName(x.expression.expression);
-      if (ts.isArrayLiteralExpression(x) && x.elements.length === 1 && ts.isSpreadElement(x.elements[0])) return lengthName(x.elements[0].expression);
-      return null;
-    };
-    const sym = lengthName(e.arguments[0].expression);
-    if (!sym) return false;
-    const isLen = (x) => { x = unparenX(x); return ts.isPropertyAccessExpression(x) && x.name.text === 'length' && !x.questionDotToken && ts.isIdentifier(unparenX(x.expression)) && checker.getSymbolAtLocation(unparenX(x.expression)) === sym; };
-    // the test c, known to be `truth`, says the length is above zero
-    const implies = (c, truth) => {
-      c = unparenX(c);
-      if (ts.isPrefixUnaryExpression(c) && c.operator === K.ExclamationToken) return implies(c.operand, !truth);
-      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.AmpersandAmpersandToken) return truth && (implies(c.left, true) || implies(c.right, true));
-      if (ts.isBinaryExpression(c) && c.operatorToken.kind === K.BarBarToken) return !truth && (implies(c.left, false) || implies(c.right, false));
-      if (isLen(c)) return truth;
-      if (!ts.isBinaryExpression(c)) return false;
-      let op = c.operatorToken.kind, lit = unparenX(c.right);
-      if (!isLen(c.left)) { if (!isLen(c.right)) return false; lit = unparenX(c.left); op = { [K.LessThanToken]: K.GreaterThanToken, [K.LessThanEqualsToken]: K.GreaterThanEqualsToken, [K.GreaterThanToken]: K.LessThanToken, [K.GreaterThanEqualsToken]: K.LessThanEqualsToken }[op] ?? op; }
-      if (!ts.isNumericLiteral(lit)) return false;
-      const n = Number(lit.text);
-      if (truth) return (op === K.GreaterThanToken && n >= 0) || (op === K.GreaterThanEqualsToken && n >= 1) || ((op === K.ExclamationEqualsEqualsToken || op === K.ExclamationEqualsToken) && n === 0);
-      return (op === K.LessThanEqualsToken && n >= 0) || (op === K.LessThanToken && n >= 1) || ((op === K.EqualsEqualsEqualsToken || op === K.EqualsEqualsToken) && n === 0);
-    };
-    const writes = (node, from, to) => { // a write of the name inside node between two positions
-      let hit = false;
-      const w = (x) => {
-        if (hit || x.end <= from || x.pos >= to) return;
-        if (ts.isIdentifier(x) && checker.getSymbolAtLocation(x) === sym) {
-          let top = x; while (top.parent && (ts.isParenthesizedExpression(top.parent) || ts.isNonNullExpression(top.parent))) top = top.parent;
-          const p = top.parent;
-          if (p && ts.isBinaryExpression(p) && p.left === top && p.operatorToken.kind >= K.FirstAssignment && p.operatorToken.kind <= K.LastAssignment) hit = true;
-          if (p && ts.isPropertyAccessExpression(p) && p.expression === top && (MUT_NAMES.has(p.name.text) || (p.name.text === 'length' && p.parent && ts.isBinaryExpression(p.parent) && p.parent.left === p))) hit = true;
-        }
-        ts.forEachChild(x, w);
-      };
-      w(node);
-      return hit;
-    };
-    // a statement that never completes normally: a jump, or a block ending in one (the statements before it cannot reach the end)
-    const exits = (st) => { if (ts.isBlock(st)) return st.statements.length > 0 && exits(st.statements[st.statements.length - 1]); return ts.isReturnStatement(st) || ts.isThrowStatement(st) || ts.isBreakStatement(st) || ts.isContinueStatement(st); };
-    // a loop around the call runs it again after the statements that follow it: a write of the list anywhere in the loop can empty it for the next pass
-    let loopEnd = 0;
-    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
-      const upto = Math.max(e.pos, loopEnd);
-      if (ts.isConditionalExpression(p) && child !== p.condition && implies(p.condition, p.whenTrue === child) && !writes(p, p.condition.end, upto)) return true;
-      if (ts.isIfStatement(p) && child !== p.expression && implies(p.expression, p.thenStatement === child) && !writes(p, p.expression.end, upto)) return true;
-      if (ts.isBinaryExpression(p) && child === p.right && ((p.operatorToken.kind === K.AmpersandAmpersandToken && implies(p.left, true)) || (p.operatorToken.kind === K.BarBarToken && implies(p.left, false))) && !writes(p, p.left.end, upto)) return true;
-      if ((ts.isBlock(p) || ts.isSourceFile(p) || ts.isCaseClause(p) || ts.isDefaultClause(p)) && p.statements) {
-        const k = p.statements.indexOf(child);
-        for (let i = k - 1; i >= 0; i--) { const g = p.statements[i]; if (ts.isIfStatement(g) && !g.elseStatement && exits(g.thenStatement) && implies(g.expression, false) && !writes(p, g.end, upto)) return true; }
-      }
-      if (ts.isIterationStatement(p, false)) loopEnd = Math.max(loopEnd, p.end);
-    }
-    return false;
   }
   const argsOf = (e) => (e.arguments ?? []).forEach((a) => ts.isSpreadElement(a) ? (outsideSpread(e) ? spreadArray(a) : v(a, 'spread', 'spread arguments need an outside callee or a supported sequence operation')) : ts.isArrowFunction(a) ? callback(a, null) : expr(a));
   function propAccess(e) {
