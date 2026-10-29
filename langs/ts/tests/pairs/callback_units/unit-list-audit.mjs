@@ -12,10 +12,10 @@ for (const r of completed) {
     counts.units++;
     const names = ['a', u.name, 'b'];
     if (JSON.stringify(parseUnitList(names.join(','))) !== JSON.stringify(names)) counts.rawListFailures++;
-    if (/[\r\n]/.test(u.name)) counts.multilineNames++;
+    if (/[\r\n\u2028\u2029]/.test(u.name)) counts.multilineNames++;
     if (formatUnitList([u.name]) !== u.name) counts.encodedNames++;
     const emitted = formatUnitList(names);
-    if (/[\r\n]/.test(emitted) || JSON.stringify(parseUnitList(emitted)) !== JSON.stringify(names)) counts.roundTripFailures++;
+    if (/[\r\n\u2028\u2029]/.test(emitted) || JSON.stringify(parseUnitList(emitted)) !== JSON.stringify(names)) counts.roundTripFailures++;
   }
 }
 fs.writeFileSync(path.resolve(dir, '../unit-list-corpus.json'), JSON.stringify(counts, null, 2) + '\n');

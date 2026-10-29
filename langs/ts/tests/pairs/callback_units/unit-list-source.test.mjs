@@ -10,9 +10,9 @@ const sf = common.ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), commo
 const name = [...common.topLevelFunctions(sf).values()].find(u => u.form === 'callback').name;
 test('unit-list inverse preserves callee source comments and newlines without changing ordinary names', () => {
   assert.equal(typeof common.formatUnitList, 'function');
-  const names = ['a', name, "app.get('/a',1)#2", 'b'];
+  const names = ['a', name, "app.get('/a',1)#2", 'call\u2028.get()#0', 'call\u2029.get()#0', 'b'];
   const text = common.formatUnitList(names);
-  assert.doesNotMatch(text, /[\r\n]/);
+  assert.doesNotMatch(text, /[\r\n\u2028\u2029]/);
   assert.deepEqual(common.parseUnitList(text), names);
   assert.equal(common.formatUnitList(['a', "app.get('/a',1)#2", 'b']), "a,app.get('/a',1)#2,b");
 });

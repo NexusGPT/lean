@@ -2425,7 +2425,7 @@ export function parseUnitList(text) {
 export function formatUnitList(names) {
   return names.map(name => {
     const probe = parseUnitList(`${name},__unit_list_end__`);
-    return !/[\r\n\u2028\u2029]/.test(name) && probe.length === 2 && probe[0] === name && probe[1] === '__unit_list_end__' ? name : JSON.stringify(name);
+    return !/[\r\n\u2028\u2029]/.test(name) && probe.length === 2 && probe[0] === name && probe[1] === '__unit_list_end__' ? name : JSON.stringify(name).replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   }).join(',');
 }
 
