@@ -1,0 +1,180 @@
+{"pairsRead":222,"distinctUnits":1079}
+✔ unit artifact names round-trip punctuation without creating directories (28.312417ms)
+✔ every existing pair unit still finds the artifact it wrote (594.181583ms)
+census lock held by translator-sites 36512; retry in 10 s
+✔ captured input is explicit; a later write refuses only the callback (2268.006416ms)
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by translator-sites 36512; retry in 10 s
+census lock held by lowering-cache 64630; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+census lock held by callback-units 94125; retry in 10 s
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  31269496    29%  458732 312694960    0%   /
+exit=0
+✔ census respects the named finding and keeps the enclosing unit admitted (1170999.389958ms)
+✔ --only splits lists at top-level commas, including a name in any position (4256.679541ms)
+✔ named construct/differential consumers select the named unit (70600.701875ms)
+✔ contextual JavaScript inputs are typed; an untyped callback is refused by name (586.393458ms)
+✔ a contextual JS callback reads an opaque capture without reclassifying it as an untyped own argument (423.783083ms)
+# lean convert
+
+### .
+
+| file | findings | applied | listed for a person | verdicts |
+|---|---:|---|---:|---|
+| unit.ts | 4 | 2 (foreach 2) | 0 | 4 PASS-bounded |
+| total | 4 | 2 | 0 | 4 PASS-bounded |
+
+#### unit.ts
+
+- applied line 4 `foreach` by foreach [narrowed]: an array with no undefined element, a body that never changes the list, a synchronous arrow with plain parameters
+- applied line 10 `foreach` by foreach [narrowed]: an array with no undefined element, a body that never changes the list, a synchronous arrow with plain parameters
+
+exit=0
+unit.ts: 4 finding(s), 2 applied, 0 listed
+✔ foreach conversion keeps enclosing verdicts when nested callbacks disappear (13706.745334ms)
+✔ certificate inherits the enclosing verdict and labels its source (26399.085042ms)
+✔ PR retains nested lint findings but inherits the enclosing verdict (10153.389959ms)
+✔ one inventory lists module and enclosing-unit callbacks (14.59525ms)
+✔ identity survives unrelated insertion and canonicalizes quotes; collisions alone get ordinal suffixes (0.654041ms)
+✔ quoted literal identities escape control characters for command-line transport (0.244333ms)
+✔ units CLI reports callback form and actual module placement (1904.961583ms)
+✔ PR renders source identities in one table cell without changing the stored name (1.176416ms)
+✔ normalizing call/apply preserves callback source identity (1620.367625ms)
+✔ --only tokenization protects parentheses and quoted commas in every position (45.688125ms)
+✔ prediction partitions the five call shapes and nested callback (21.857791ms)
+✔ only colliding names in the same scope are order named (0.660625ms)
+✔ module callbacks are reachable; nested callbacks inherit the enclosing verdict (4791.8905ms)
+✔ callback capture does not add observable module exports (2.48675ms)
+✔ unit-list inverse preserves callee source comments and newlines without changing ordinary names (1.424958ms)
+✔ HEAP and certificate round-trip the exact multiline source identity (14702.897583ms)
+✔ --fn transports the source identity safely in generated comments (3732.262583ms)
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/parent.dfy
+exit=0
+wrote /Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/.lean/cache/callback-units/unit-lists/candidate.dfy
+exit=0
+✔ one shared parser reads emitted unit names and ordinary lists (1.284542ms)
+✔ translator heap/effect flags and agreeCore round-trip the HEAP writer (6018.154917ms)
+✔ certificate heapCore retains the source unit name emitted in HEAP (16438.943ms)
+✔ PR --scope reads a raw callback name containing a comma (17891.513ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1179176.340583
+
+EXIT 0
