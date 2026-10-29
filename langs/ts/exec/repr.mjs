@@ -15,7 +15,7 @@
 // alone, cycling through them in the order below, so a family that another one masks still meets the unit by itself.
 // A minimised witness (minimizeWitness below) names the fewest families it needs.
 import path from 'node:path';
-import { makeRng } from './fake.mjs';
+import { makeRng, worldFunction } from './fake.mjs';
 
 export const FAMILIES = [
   { name: 'extra-key', class: 'contract', on: 'record', why: 'an own key the type does not declare: a spread, Object.assign, Object.keys, for-in and JSON.stringify carry it, fields copied one by one drop it' },
@@ -153,12 +153,13 @@ export function reshaper(families, seed, extraNames = []) {
   // a value of an unread type: an object that converts itself, two forms turning with the stream
   function coercible() {
     mark('coercion-hooks');
-    if (rng() < 0.5) return { valueOf() { return 7; }, toString() { return 'seven'; } };
-    return { [Symbol.toPrimitive](hint) { return hint === 'number' ? 7 : hint === 'string' ? 'seven' : 'default'; } };
+    // the methods are the world's functions (exec/fake.mjs worldFunction): rendered by name, never numbered as the unit's escapes
+    if (rng() < 0.5) { const o = { valueOf() { return 7; }, toString() { return 'seven'; } }; worldFunction('drawn:coercible.valueOf', o.valueOf); worldFunction('drawn:coercible.toString', o.toString); return o; }
+    const o = { [Symbol.toPrimitive](hint) { return hint === 'number' ? 7 : hint === 'string' ? 'seven' : 'default'; } }; worldFunction('drawn:coercible[Symbol.toPrimitive]', o[Symbol.toPrimitive]); return o;
   }
   // an input promise as a thenable settling to the same value (resolved through the host's own promise, so a rejection
   // the input carries stays a rejection)
-  function thenable(value) { mark('thenable'); return { then(resolve, reject) { return Promise.resolve(value).then(resolve, reject); } }; }
+  function thenable(value) { mark('thenable'); const o = { then(resolve, reject) { return Promise.resolve(value).then(resolve, reject); } }; worldFunction('drawn:thenable.then', o.then); return o; }
   function keyString(s) { if (typeof s !== 'string') return s; mark('proto-name-key'); return pick(PROTO_NAMES); }
   // an input promise the caller settles later: a promise (instanceof Promise holds) that stays pending until the unit
   // first subscribes to one of this input's held promises; then every held promise settles, one per host macrotask, in

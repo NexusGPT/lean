@@ -156,9 +156,9 @@ export class Environment {
         if (prop === '__fakePath') return path;
         if (prop === 'then') return undefined; // never thenable
         if (prop === 'catch' || prop === 'finally') { return (h) => { env.record('call', `${path}.${prop}`, [typeof h === 'function' ? render(h) : String(h)]); return receiver; }; } // a promise-shaped chain on a fake: the handler is recorded by its handle (and driven like every escaped function), the fake flows on
-        if (prop === Symbol.toPrimitive) return (h) => (h === 'number' ? env.primitive('number', path) : h === 'string' ? env.primitive('string', path) : env.primitive('number', path));
-        if (prop === 'valueOf') return () => env.primitive('number', path);
-        if (prop === 'toString') return () => env.primitive('string', path);
+        if (prop === Symbol.toPrimitive) return fakeMember(`${path}[Symbol.toPrimitive]`, (h) => (h === 'number' ? env.primitive('number', path) : h === 'string' ? env.primitive('string', path) : env.primitive('number', path)));
+        if (prop === 'valueOf') return fakeMember(`${path}.valueOf`, () => env.primitive('number', path));
+        if (prop === 'toString') return fakeMember(`${path}.toString`, () => env.primitive('string', path));
         if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
         if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
@@ -400,7 +400,16 @@ function sideOf(fn) {
   return windowEnv?.escapes?.window && !nativeText(fn) ? windowEnv : null;
 }
 const escapesOf = (env) => (env.escapes ??= { ids: new Map(), list: [], window: null });
+// a function the fake world itself hands the unit (a fake's valueOf, toString or Symbol.toPrimitive; a drawn coercible
+// object's methods, a drawn thenable's then: exec/repr.mjs) is the world's, rendered by its name on every rendering: it is
+// never the unit's own function, so it takes no handle. Inside an observation window it was numbered as an escape
+// (sideOf's window fallback reads a host-realm closure as the window's), and outside one it read as host:toString, so
+// the render-purity check saw two different trees of one state.
+const worldFns = new WeakMap();
+export const worldFunction = (name, fn) => { worldFns.set(fn, name); return fn; };
+const fakeMember = worldFunction;
 export function escapeHandle(fn) {
+  const world = worldFns.get(fn); if (world) return { $fn: `fake:${world}` };
   const env = sideOf(fn);
   if (!env) return { $fn: `host:${fn.name || 'anonymous'}` };
   const reg = escapesOf(env);

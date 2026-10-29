@@ -67,8 +67,7 @@ const OUT = [/^tests\//, /^design\//, /^vendor\//, /^translate\//, /^lint\//, /^
 // file -> [raw `.children` count, why it is not kidsOf]. A count that changes either way fails: a new raw reader, or an
 // exception that went away and should leave this list.
 const EXCEPT = {
-  'patch.mjs': [2, 'renderTree: a shape-preserving copy of exec/run.mjs renderTree (it renders, it does not iterate a non-array); the two copies are merged under row ce68c002'],
-  'exec/run.mjs': [12, 'deepExpand, renderTree, observeJsx, eraseHandlers, treeHandlers read the sandbox jsxValue output, an array by jsxChildren; run.mjs is lane callback-behaviour\'s (a finding for the lead)'],
+  'exec/run.mjs': [10, 'deepExpand, observeJsx, eraseHandlers, treeHandlers read the sandbox jsxValue output, an array by jsxChildren; run.mjs is lane callback-behaviour\'s (a finding for the lead)'],
 };
 const files = [];
 const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name), r = path.relative(root, p); if (OUT.some((x) => x.test(r))) continue; if (e.isDirectory()) walk(p); else if (r.endsWith('.mjs')) files.push(r); } };
