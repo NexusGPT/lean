@@ -28,7 +28,12 @@ const theorems = JSON.parse(fs.readFileSync(path.join(here, 'theorems.json'), 'u
 // The run: every section at once on one pool of JOBS child processes (tests/pool.mjs; default: the CPU count minus one,
 // the owner, 29 Oct: "We can have also more workers and parallelise section better"); each pair in a child of this
 // script (`--pair <name>`) that writes its rows to `--result`; each section keeps its own rows and the table prints the
-// sections in their order, each in its own order, so the table is the same as a sequential run
+// sections in their order, each in its own order, so the table is the same as a sequential run.
+// The pool admits a child while the weights of the children running stay at or under JOBS; a job's weight is the cores
+// its children keep busy, measured by tests/measure-weights.mjs into suite-weights.json (read from LEAN_SUITE_WEIGHTS,
+// else beside the durations file, else tests/suite-weights.json, committed). The environment: JOBS, LEAN_PAIRS,
+// LEAN_CONFORMANCE, LEAN_STEP_CACHE_DIR, LEAN_STEP_CACHE=0, LEAN_SUITE_DURATIONS (default: suite-durations.json in the
+// step cache folder), LEAN_SUITE_WEIGHTS, LEAN_SUITE_TRACE (a `<pid> <job key>` line per child, for measure-weights).
 const argvAt = (k) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : null; };
 const PAIR_ONLY = argvAt('--pair');
 const RESULT_FILE = argvAt('--result');
@@ -275,7 +280,11 @@ if (PAIR_ONLY) {
 // The measured wall seconds of each job are kept beside the step cache (LEAN_SUITE_DURATIONS moves them): the next run
 // starts the longest jobs first. A section waits only for what it reads: the steps that read the pairs' lane B results
 // wait for the pair step, witness args (which runs lane B where a pair did not) for the steps that count those results.
-const pool = createPool(JOBS, { historyFile: process.env.LEAN_SUITE_DURATIONS || path.join(CACHE_DIR, 'suite-durations.json'), outDir: tmp });
+// the weights: LEAN_SUITE_WEIGHTS, else suite-weights.json beside the durations file, else the measured table committed
+// here (tests/suite-weights.json; tests/measure-weights.mjs writes it); LEAN_SUITE_TRACE: the pid and job key of each child
+const durationsFile = process.env.LEAN_SUITE_DURATIONS || path.join(CACHE_DIR, 'suite-durations.json');
+const weightsFile = process.env.LEAN_SUITE_WEIGHTS || [path.join(path.dirname(durationsFile), 'suite-weights.json'), path.join(here, 'suite-weights.json')].find((f) => fs.existsSync(f)) || null;
+const pool = createPool(JOBS, { historyFile: durationsFile, outDir: tmp, weightsFile, traceFile: process.env.LEAN_SUITE_TRACE || null });
 // a runner given --jobs takes that many slots: half the pool, so two of them run beside each other and the rest
 const WIDE = Math.max(1, Math.floor(JOBS / 2));
 const withEnv = (env) => (env ? { ...process.env, ...env } : process.env);
@@ -462,11 +471,11 @@ async function changedOnly(add) {
 }
 
 // ----- pairs: one child per pair on the pool, the rows replayed in pair order -----
-const spawnPair = (args) => new Promise((resolve) => { const c = spawn(process.execPath, args, { cwd: root, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, LEAN_PAIRS: '' } }); c.on('close', (code, signal) => resolve({ code, signal })); c.on('error', () => resolve({ code: null, signal: 'spawn-error' })); });
+const spawnPair = (args, onSpawn) => new Promise((resolve) => { const c = spawn(process.execPath, args, { cwd: root, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, LEAN_PAIRS: '' } }); if (c.pid !== undefined) onSpawn(c.pid); c.on('close', (code, signal) => resolve({ code, signal })); c.on('error', () => resolve({ code: null, signal: 'spawn-error' })); });
 async function pairs(add) {
   try {
     if (JOBS > 1 && pairNames.length > 1) {
-      await Promise.all(pairNames.map((name) => { const result = path.join(tmp, `pair_${name}.result.json`); fs.rmSync(result, { force: true }); return pool.job(`pairs/${name}`, { group: 'pairs' }).slots(1, () => spawnPair([fileURLToPath(import.meta.url), '--pair', name, '--result', result, '--tmp', tmp])); }));
+      await Promise.all(pairNames.map((name) => { const result = path.join(tmp, `pair_${name}.result.json`); fs.rmSync(result, { force: true }); const job = pool.job(`pairs/${name}`, { group: 'pairs' }); return job.slots(job.weight, () => spawnPair([fileURLToPath(import.meta.url), '--pair', name, '--result', result, '--tmp', tmp], job.onSpawn)); }));
       for (const name of pairNames) {
         let res = null; try { res = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}.result.json`), 'utf8')); } catch { /* no result: the worker died */ }
         if (!res) { add('pair', name, 'pair worker', false, 'the pair worker wrote no result (it died or was killed)'); continue; }
@@ -518,7 +527,8 @@ async function modelConformance(add) {
   const selectTest = runner('conformance/select').run('node', [path.join(here, '../conformance/select.test.mjs')]);
   let sel; try { sel = conformanceSelection({ root, pairsDir: path.join(here, 'pairs'), knownFile: path.join(here, '../conformance/known-findings.json') }); } catch (e) { sel = { error: e.message }; }
   console.log(`conformance: ${sel.error ?? sel.why}`);
-  const step = sel.error || (sel.pairs && !sel.pairs.length) ? null : pool.job(`conformance/model ${sel.pairs ? sel.pairs.join(',') : 'every pair'}`).slots(WIDE, (n) => spawnCollect('node', [path.join(here, '../conformance/run.mjs'), '--jobs', String(n), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { cwd: root, env: withEnv({ LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' }), maxBuffer: 1 << 26, dir: tmp }));
+  const modelJob = sel.error || (sel.pairs && !sel.pairs.length) ? null : pool.job(`conformance/model ${sel.pairs ? sel.pairs.join(',') : 'every pair'}`);
+  const step = !modelJob ? null : modelJob.slots(WIDE, (n) => spawnCollect('node', [path.join(here, '../conformance/run.mjs'), '--jobs', String(n), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { cwd: root, env: withEnv({ LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' }), maxBuffer: 1 << 26, dir: tmp, onSpawn: modelJob.onSpawn }));
   const t = await selectTest;
   add('conformance', 'select', 'the running rule: a changed pair runs, an unchanged one is skipped (conformance/select.test.mjs)', t.status === 0, (t.stdout ?? '').trim().split('\n').pop() || (t.stderr ?? '').trim().slice(-200));
   if (sel.error) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", false, sel.error);
@@ -633,7 +643,7 @@ async function adviceLabels(add) {
   // Every selected pair's parent, the self-pair fixtures, and an optional challenge
   // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane. Its own workers take WIDE slots.
   const selfPair = { key: `runtime/self-pair ${process.env.LEAN_PAIRS || 'every pair'}${process.env.LEAN_SELF_PAIR_SAMPLE ? ' + sample' : ''}`, wide: true, go: async (job, add) => {
-    const r = await job.slots(WIDE, (n) => spawnCollect('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json'), '--jobs', String(n)], { cwd: root, env: process.env, maxBuffer: 1 << 26, dir: tmp }));
+    const r = await job.slots(WIDE, (n) => spawnCollect('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json'), '--jobs', String(n)], { cwd: root, env: process.env, maxBuffer: 1 << 26, dir: tmp, onSpawn: job.onSpawn }));
     if (r.stderr) process.stderr.write(r.stderr);
     const text = (r.stdout ?? '') + (r.stderr ?? '');
     add('runtime', 'self-pair', 'every parent against itself: zero WITNESS; refusals counted', r.status === 0, text.trim().split('\n').pop());

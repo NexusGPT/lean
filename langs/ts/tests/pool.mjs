@@ -9,6 +9,12 @@
 // then the order the jobs were made in. A started job's next child goes before a later job's first. The measurements
 // are the wall seconds of the children a job really ran (a step-cache hit runs none), kept in one JSON file; the order
 // never changes a result, only when it is computed.
+// A job's weight is the cores its children keep busy, measured (tests/measure-weights.mjs: the 90th percentile of the
+// %CPU of a job's child and every process under it): each of its children holds that many slots, a fraction of one
+// included, and the pool admits children while the weights of those running stay at or under JOBS, so the busy cores
+// stay near JOBS and a CPU second does the same work as it does alone (lane B's bounds are CPU seconds). The weights
+// live in suite-weights.json: { keys: { <job key>: cores }, groups: { <fan-out>: cores } }; a job's own key first, then
+// its group, then 1; no job weighs under a quarter of a slot (MIN_WEIGHT), so at most 4 x JOBS children run at once.
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -21,7 +27,7 @@ import { spawn } from 'node:child_process';
 // maxBuffer on stdout or stderr the result is spawnSync's: the text cut there, error ENOBUFS, status null, SIGTERM
 // (spawnSync kills the child at that point; here it has run to its end). A spawn failure is `error` with status null.
 let named = 0;
-export function spawnCollect(cmd, args, { cwd, env, maxBuffer = 1024 * 1024, dir = os.tmpdir() } = {}) {
+export function spawnCollect(cmd, args, { cwd, env, maxBuffer = 1024 * 1024, dir = os.tmpdir(), onSpawn = null } = {}) {
   return new Promise((resolve) => {
     const base = path.join(dir, `child-${process.pid}-${named++}`), files = [`${base}.out`, `${base}.err`];
     const read = () => files.map((f) => { try { const b = fs.readFileSync(f); fs.rmSync(f, { force: true }); return b; } catch { return Buffer.alloc(0); } });
@@ -37,14 +43,21 @@ export function spawnCollect(cmd, args, { cwd, env, maxBuffer = 1024 * 1024, dir
       child = spawn(cmd, args, { cwd, env, stdio: ['ignore', fds[0], fds[1]] });
     } catch (e) { error = e; for (const fd of fds) fs.closeSync(fd); finish(null, null); return; }
     for (const fd of fds) fs.closeSync(fd); // the child holds its own copies
+    if (onSpawn && child.pid !== undefined) onSpawn(child.pid);
     child.on('error', (e) => { error ??= e; if (child.pid === undefined) finish(null, null); });
     child.on('close', (code, signal) => finish(code, signal));
   });
 }
 
 // outDir: where the children's output files go while they run
-export function createPool(width, { historyFile = null, outDir = os.tmpdir() } = {}) {
-  let free = width, made = 0;
+// weightsFile: the measured weights; traceFile: a line `<pid> <job key>` per child started (what measure-weights reads)
+export const MIN_WEIGHT = 0.25;
+export function createPool(width, { historyFile = null, outDir = os.tmpdir(), weightsFile = null, traceFile = null } = {}) {
+  let weights = { keys: {}, groups: {} };
+  if (weightsFile) try { weights = { keys: {}, groups: {}, ...JSON.parse(fs.readFileSync(weightsFile, 'utf8')) }; } catch (e) { console.error(`suite weights unreadable (${e.code ?? e.message}): ${weightsFile}; every job weighs 1`); }
+  const trace = (key) => (pid) => { if (traceFile) fs.appendFileSync(traceFile, `${pid} ${key}\n`); };
+  const U = 100; // slots are counted in hundredths
+  let free = width * U, made = 0;
   const queue = [];
   let history = {};
   if (historyFile) try { history = JSON.parse(fs.readFileSync(historyFile, 'utf8')); } catch (e) { if (e.code !== 'ENOENT') console.error(`suite durations unreadable (${e.code ?? e.message}): ${historyFile}`); }
@@ -62,16 +75,18 @@ export function createPool(width, { historyFile = null, outDir = os.tmpdir() } =
   function job(key, { group = null } = {}) {
     const seq = made++;
     const estimate = history[key] ?? (group ? groupMean(group) : null) ?? Infinity;
+    const weight = Math.min(width, Math.max(MIN_WEIGHT, Math.round((weights.keys[key] ?? (group ? weights.groups[group] : null) ?? 1) * 20) / 20)); // to a twentieth
     let started = 0, spent = 0;
-    // hold `need` slots ({ min, max } or a count) while fn(granted) runs
+    // hold `need` slots ({ min, max } or a count, fractions included) while fn(granted) runs
     async function slots(need, fn) {
       const min = typeof need === 'number' ? need : need.min, max = typeof need === 'number' ? need : need.max;
-      const n = await new Promise((resolve) => { queue.push({ min: Math.min(min, width), max: Math.min(max, width), estimate, started, seq, resolve }); schedule(); });
+      const units = (x) => Math.round(Math.min(x, width) * U);
+      const n = await new Promise((resolve) => { queue.push({ min: units(min), max: units(max), estimate, started, seq, resolve }); schedule(); });
       started = 1;
       const t = Date.now();
-      try { return await fn(n); } finally { spent += (Date.now() - t) / 1000; measured[key] = Math.round(spent * 10) / 10; free += n; schedule(); }
+      try { return await fn(n / U); } finally { spent += (Date.now() - t) / 1000; measured[key] = Math.round(spent * 10) / 10; free += n; schedule(); }
     }
-    return { key, slots, run: (cmd, args, opts) => slots(1, () => spawnCollect(cmd, args, { dir: outDir, ...opts })) };
+    return { key, weight, slots, onSpawn: trace(key), run: (cmd, args, opts) => slots(weight, () => spawnCollect(cmd, args, { dir: outDir, onSpawn: trace(key), ...opts })) };
   }
   // the measurements back to the file: this run's jobs replace their old values, the others are kept
   function save() {
