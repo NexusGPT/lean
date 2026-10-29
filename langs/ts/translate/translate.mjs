@@ -1084,6 +1084,13 @@ export function translate(file, fnName, opts = {}) {
     }
     if (f & TF.Intersection) return recordType(t, n, depth);
     if (f & TF.Object) {
+      if (isSetT(t) || isMapT(t)) {
+        // A spelling is not a library type: local classes can be named Set or Map, with no type arguments at all.
+        // Until those names have a distinct reading at every dispatch site, refuse instead of inventing a carrier.
+        const arity = isMapT(t) ? 2 : 1;
+        if (!t.symbol.declarations?.some((d) => loaded.program.isSourceFileDefaultLibrary(d.getSourceFile())) || checker.getTypeArguments(t).length !== arity)
+          fail(n, `builtin-type: ${t.symbol.name} needs a standard-library declaration and ${arity} type argument(s) for its collection reading`);
+      }
       if (checker.isTupleType(t)) {
         const ds = checker.getTypeArguments(t).map((a) => dtype(a, n, depth + 1));
         const lit = checker.getTypeArguments(t).every((a) => a.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral));
