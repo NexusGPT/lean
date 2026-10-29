@@ -22,6 +22,8 @@
 // Lane B draws its values first on every unit; the report names the file and its hash, each certificate carries the
 // hash, and the cache keys on it. Without a root file, each unit reads the nearest `.lean/values.json` above its file.
 import fs from 'node:fs';
+import { createRun, registerTask, startTask, commitArtifact, atomicJSON, supervise, reconcileTasks, taskId, materializeSources } from './ci/supervise.mjs';
+import { buildChangeManifest, routeChanges, ledgerRows, ledgerMarkdown, sensitivePath } from './ci/ledger.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -170,7 +172,7 @@ function writeCache(file, record) {
 
 // Only names are inspected. Secret contents never enter the change set.
 export function secretPath(file) {
-  return file.split(/[\\/]/).some((part) => /^(?:\.env(?:\..*)?|id_rsa.*)$|\.(?:pem|key|p12|pfx|jks)$/i.test(part));
+  return sensitivePath(file);
 }
 
 // The caller supplies file metadata, units and lint findings.
@@ -227,15 +229,17 @@ function removedUnits(rel, parentText, headText) {
 }
 
 // Read the change set before selection. Files outside code and secret names need no contents.
-function changedFiles(opts, temps) {
+function changedFiles(opts, temps, ledger) {
   const { repo, base, head = 'WORKTREE', filesRoot, project = true } = opts;
   const refs = [base, ...(head === 'WORKTREE' ? [] : [head])];
-  const names = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--name-only', '-z', ...refs, '--']).split('\0').filter(Boolean);
+  const names = ledger.files.map(f => f.file);
   const stats = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--numstat', '-z', ...refs, '--']);
   const binary = new Set(stats.split('\0').filter((x) => x.startsWith('-\t-\t')).map((x) => x.slice(4)));
   const pending = [];
   const entries = names.map((rel) => {
-    const entry = { file: rel, binary: binary.has(rel) };
+    const frame = ledger.files.find(f => f.file === rel);
+    const entry = { file: rel, binary: frame.kind === 'binary' || binary.has(rel) };
+    if (['submodule', 'symlink'].includes(frame.kind)) return entry;
     if (secretPath(rel) || entry.binary || (!CODE.test(rel) && !JS.test(rel))) return entry;
     const abs = path.join(filesRoot ?? repo, rel);
     const readRef = (ref) => {
@@ -246,7 +250,8 @@ function changedFiles(opts, temps) {
       return r.stdout;
     };
     try {
-      const original = readRef(base);
+      const originalText = ledger.sources.get(frame.id)?.old;
+      const original = originalText == null ? null : Buffer.from(originalText);
       const current = head === 'WORKTREE' ? (fs.existsSync(abs) ? fs.readFileSync(abs) : null) : readRef(head);
       entry.deleted = current === null;
       const bytes = current ?? original;
@@ -277,7 +282,8 @@ function changedFiles(opts, temps) {
       if (shared?.error) throw new Error(shared.error);
       const reading = shared ?? loadProgram(entry.headFile, { project }); // a file read alone is let go after its units
       if (shared) entry.keyReading = shared;
-      entry.units = changedUnits(reading, ranges, entry.headFile);
+      const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
+      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile).filter(u => routed.has(u.name));
     } catch (e) {
       entry.error = String(e.message).slice(0, 300);
       try { entry.units = changedUnits({ sf: ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true) }, ranges, entry.headFile); } catch (f) { entry.error = String(f.message).slice(0, 300); }
@@ -309,7 +315,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
 }
 
 export function stopNote(stop) {
@@ -372,6 +378,79 @@ export function writeRefusals(rows, dir, opts = {}) {
 }
 
 export async function prReport(opts) {
+  const ledger = routeChanges(buildChangeManifest(opts));
+  const artifactRows = ledgerRows(ledger);
+  const taskMap = new Map();
+  for (const e of ledger.edits) if (e.primary.kind === 'unit') for (const link of e.links) {
+    const id = taskId(link.file, link.unit);
+    const t = taskMap.get(id) ?? { id, file: link.file, unit: link.unit, lines: [link.start, link.end], lanes: ['B', 'A'], editIds: [] };
+    if (!t.editIds.includes(e.id)) t.editIds.push(e.id);
+    if (link.side === 'new') t.lines = [link.start, link.end];
+    taskMap.set(id, t);
+  }
+  for (const row of artifactRows) { const id = taskId(row.file, row.unit); taskMap.set(id, { id, file: row.file, unit: row.unit, lines: row.lines, lanes: [], editIds: row.editIds }); }
+  if (!taskMap.size) {
+    const row = { file: '(change)', unit: '(change)', lines: [1, 1], verdict: 'ASK', coverage: 'unassigned:empty-diff', reason: 'empty diff: no changed records', advice: [] };
+    artifactRows.push(row); const id = taskId(row.file, row.unit); taskMap.set(id, { id, file: row.file, unit: row.unit, lines: row.lines, lanes: [], editIds: [] });
+  }
+  const runsRoot = path.resolve(opts.runsDir ?? path.join(repoRunRoot(opts.repo), '.lean/runs'));
+  const dir = createRun(runsRoot, ledger, [...taskMap.values()]);
+  for (const row of artifactRows) commitArtifact(dir, taskId(row.file, row.unit), row);
+  const selectedPaths = opts.paths ? ledger.files.map(f => f.file).filter(opts.paths) : null;
+  for (const task of taskMap.values()) if (task.lanes.length && selectedPaths && !selectedPaths.includes(task.file)) commitArtifact(dir, task.id, { file: task.file, unit: task.unit, lines: task.lines, editIds: task.editIds, verdict: 'ASK', coverage: 'skipped:paths', reason: 'excluded by requested paths', advice: [] });
+  const workerOpts = { ...opts, repo: path.resolve(opts.repo), base: ledger.base, head: ledger.head,
+    runsDir: dir, cacheDir: path.resolve(opts.cacheDir ?? path.join(repoRunRoot(opts.repo), '.lean/cache')),
+    scope: [...(opts.scope ?? [])], paths: undefined, selectedPaths, expectedLedgerId: ledger.id, _runDir: dir };
+  atomicJSON(path.join(dir, 'options.json'), workerOpts);
+  const unitSeconds = Number(opts.unitSeconds ?? UNIT_SECONDS), dafnySeconds = Number(opts.dafnySeconds ?? 30);
+  const timeoutMs = Math.max(1000, 1000 * (opts.timeBudget == null ? taskMap.size * (unitSeconds + dafnySeconds + 30) + 60 : Number(opts.timeBudget) + unitSeconds + dafnySeconds + 60));
+  let terminal;
+  if ([...taskMap.values()].every(t => !t.lanes.length)) terminal = reconcileTasks(dir);
+  else if (opts.preview) {
+    // A preview runs no lane, so it needs no worker process (and promises none: only git is spawned). The same worker
+    // code runs in this process from the same options file; an exception is a crash for every task left without a receipt.
+    let failure = { state: 'incomplete-artifact' };
+    try { await ledgerWorker(path.join(dir, 'options.json')); }
+    catch (e) { failure = { state: 'crash', error: e.name }; console.error('lean preview worker: ' + String(e.message).slice(0, 300)); }
+    terminal = reconcileTasks(dir, failure);
+  } else terminal = await supervise(dir, { command: process.execPath, args: [fileURLToPath(import.meta.url), '--ledger-worker', path.join(dir, 'options.json')], timeoutMs });
+  // The snapshot is a copy of git blobs named by options.json (repo, head); once every task is terminal it is only a
+  // cache. Kept, it cost 11 GB over the 616 benchmark cases and filled the disk.
+  fs.rmSync(path.join(dir, 'sources'), { recursive: true, force: true });
+  let metadata = {};
+  try { metadata = JSON.parse(fs.readFileSync(path.join(dir, 'worker-report.json'), 'utf8')); }
+  catch (e) { if (e.code !== 'ENOENT') console.error('Worker metadata unreadable: ' + e.name); }
+  const rows = Object.assign(terminal.rows, { identity: metadata.identity ?? ledger.id, leanVersion: metadata.leanVersion ?? leanVersion(),
+    values: metadata.values, order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
+    ledger, reconciliation: terminal.reconciliation, terminalFile: path.join(dir, 'terminal.json'), runDir: dir });
+  rows.refusalsFile = writeRefusals(rows, dir, { repo: path.resolve(opts.repo) });
+  atomicJSON(path.join(dir, 'report.json'), reportJSON(rows));
+  return rows;
+}
+
+// Owner checkouts are never a destination, even when no explicit results directory was supplied.
+function repoRunRoot(repo) {
+  const abs = path.resolve(repo);
+  return abs.startsWith('/Users/assem/Documents/GitHub/') || abs === '/Users/assem/promo-app' || abs.startsWith('/Users/assem/promo-app/') ? path.resolve(here, '../..') : abs;
+}
+
+// The worker reads only its options file: the same code whether the supervisor spawned it or a preview runs it inline.
+async function ledgerWorker(optionsFile) {
+  const opts = JSON.parse(fs.readFileSync(optionsFile, 'utf8'));
+  opts.scope = new Set(opts.scope);
+  opts.paths = opts.selectedPaths ? f => opts.selectedPaths.includes(f) : null;
+  try { opts.filesRoot = materializeSources({ repo: opts.repo, head: opts.head, dir: path.join(opts._runDir, 'sources'), sensitivePath, ...(opts.snapshotCapBytes ? { capBytes: opts.snapshotCapBytes } : {}) }); }
+  catch (e) {
+    if (e.code !== 'SNAPSHOT_CAP') throw e;
+    console.error('lean worker: ' + e.message);
+    atomicJSON(path.join(opts._runDir, 'worker-refusal.json'), { state: 'snapshot-cap', bytes: e.bytes, cap: e.cap });
+    return;
+  }
+  const rows = await prWorker(opts);
+  atomicJSON(path.join(opts._runDir, 'worker-report.json'), reportJSON(rows));
+}
+
+async function prWorker(opts) {
   const { repo, base, head = 'WORKTREE', n = 100, seed = 1, deep = false, dafnySeconds = 30, project = true, scope = new Set(), adapters = null } = opts;
   const timeBudget = budgetValue(opts.timeBudget === undefined ? null : opts.timeBudget, '--time-budget');
   const unitBudget = budgetValue(opts.unitBudget === undefined ? null : opts.unitBudget, '--unit-budget', true);
@@ -385,13 +464,18 @@ export async function prReport(opts) {
   const toolVersions = opts.preview ? null : runTools();
   const context = toolVersions ? hash(JSON.stringify({ schema: 1, ...toolVersions })) : null;
   try {
-    const files = changedFiles(opts, temps);
-    const selected = selectUnits(files, opts);
+    rows.ledger = routeChanges(buildChangeManifest(opts));
+    if (rows.ledger.id !== opts.expectedLedgerId) throw new Error('change frame moved before dispatch');
+    const files = changedFiles(opts, temps, rows.ledger);
+    const unitRoutes = rows.ledger.edits.filter(e => e.primary.kind === 'unit');
+    const selected = selectUnits(files, opts).filter(x => unitRoutes.some(e => e.file === x.unit.file && e.links.some(u => u.unit === x.unit.name)));
+    // Artifact rows were committed by the supervisor before dispatch.
+    if (process.env.LEAN_LEDGER_TEST_FAULT === 'worker-crash') process.exit(73);
     // the project's values file, as the head has it (a temporary copy for a head ref, removed with the others)
     let valuesFile;
     if (opts.values !== undefined) valuesFile = opts.values;
-    else if (head === 'WORKTREE') valuesFile = fs.existsSync(path.join(repo, VALUES_FILE)) ? path.join(repo, VALUES_FILE) : undefined;
-    else { let text = null; try { text = git(repo, ['show', `${head}:${VALUES_FILE.split(path.sep).join('/')}`]); } catch { text = null; } if (text !== null) { const t = path.join(repo, `.lean_values_${process.pid}.json`); fs.writeFileSync(t, text); temps.push(t); valuesFile = t; } }
+    else if (head === 'WORKTREE') valuesFile = fs.existsSync(path.join(opts.filesRoot ?? repo, VALUES_FILE)) ? path.join(opts.filesRoot ?? repo, VALUES_FILE) : undefined;
+    else { let text = null; try { text = git(repo, ['show', `${head}:${VALUES_FILE.split(path.sep).join('/')}`]); } catch { text = null; } if (text !== null) { const t = path.join(opts.filesRoot ?? repo, `.lean_values_${process.pid}.json`); fs.writeFileSync(t, text); temps.push(t); valuesFile = t; } }
     if (valuesFile) { const v = readValues(valuesFile); rows.values = { file: VALUES_FILE, from: head, sha256: v.sha256 }; }
     const valuesHash = (file) => { const f = valuesFile !== undefined ? valuesFile : findValues(file); return f ? readValues(f).sha256 : null; }; // the cache key's: the file this unit's lane B reads
     for (const entry of files) {
@@ -401,7 +485,7 @@ export async function prReport(opts) {
       for (const item of intake) {
         const u = item.unit;
         const index = rows.length;
-        rows.push({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
+        rows.push({ editIds: unitRoutes.filter(e => e.file === rel && e.links.some(link => link.unit === u.name)).map(e => e.id), file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
         if (!opts.preview && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });
       }
       if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;
@@ -421,6 +505,8 @@ export async function prReport(opts) {
         callers.push({ entry, u: { name, start, end }, caller: true });
       }
     }
+    for (const row of rows) if (!changed.some(t => rows[t.index] === row)) commitArtifact(opts._runDir, taskId(row.file, row.unit), { ...row, coverage: row.coverage === 'pending' ? 'skipped:preview' : row.coverage });
+    for (const t of callers) registerTask(opts._runDir, { id: taskId(t.entry.file, t.u.name, true), file: t.entry.file, unit: t.u.name, lines: [t.u.start, t.u.end], caller: true, lanes: ['B'], editIds: [] });
     // The heap group stays empty until discovery supplies extra units.
     const groups = [{ group: 'changed', units: changed }, { group: 'callers', units: callers }, { group: 'heap', units: heap }];
     const order = groups.flatMap((g) => g.units);
@@ -433,11 +519,15 @@ export async function prReport(opts) {
     const baseReadings = order.length ? sharedReadings([...new Set(order.map(({ entry }) => entry.baseFile).filter(Boolean))], project) : new Map();
     for (const task of order) {
       const { entry, u, caller, index } = task;
+      const attempt = taskId(entry.file, u.name, !!caller);
+      startTask(opts._runDir, attempt);
       const rel = entry.file, headFile = entry.headFile, baseFile = entry.baseFile;
       let key = null, cacheFile = null;
       const save = (row) => {
         if (row.certificate) row.certificate = { ...row.certificate, verdict: row.verdict };
         if (row.certificate?.values && rows.values) row.certificate.values = { ...row.certificate.values, file: rows.values.file, from: rows.values.from }; // the project's file by its name in the checkout, never the temporary copy of a head ref
+        if (!caller) row.editIds = rows[index].editIds;
+        commitArtifact(opts._runDir, attempt, row);
         if (caller) rows.push(row); else rows[index] = row;
         if (key && row.coverage === 'checked' && row.certificate) writeCache(cacheFile, { key, context, row });
       };
@@ -452,8 +542,8 @@ export async function prReport(opts) {
       rows.stop.reached++;
       if (!u.findings?.length) {
         try {
-          const parent = keySide(baseFile, u.name, loadedKeys, project, repo, baseFile ? baseReadings.get(path.resolve(baseFile)) : undefined);
-          const candidate = keySide(entry.deleted ? null : headFile, u.name, loadedKeys, project, repo, entry.keyReading);
+          const parent = keySide(baseFile, u.name, loadedKeys, project, opts.filesRoot ?? repo, baseFile ? baseReadings.get(path.resolve(baseFile)) : undefined);
+          const candidate = keySide(entry.deleted ? null : headFile, u.name, loadedKeys, project, opts.filesRoot ?? repo, entry.keyReading);
           key = unitKey({ parentText: parent.text, candidateText: candidate.text,
             calleeSummaries: { parent: parent.callees, candidate: candidate.callees },
             fileContext: { parent: parent.fileContext, candidate: candidate.fileContext },
@@ -477,7 +567,7 @@ export async function prReport(opts) {
         let b = null;
         try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, values: valuesFile }); } catch { /* No witness row. */ }
         const w = b?.verdict === 'WITNESS' ? b.witnesses?.[0] : null;
-        if (!w || w.where?.cause !== 'callee') continue;
+        if (!w || w.where?.cause !== 'callee') { commitArtifact(opts._runDir, attempt, { file: rel, unit: u.name, lines: [u.start, u.end], caller: true, verdict: b?.verdict ?? 'ASK', coverage: b ? 'checked' : 'failed:harness', reason: b?.reason ?? 'no caller witness', omitFromReport: true, laneB: b?.verdict }); continue; }
         save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'WITNESS', coverage: 'checked', laneB: 'WITNESS', laneA: null, caller: true, certificate: basicCertificate({ B: b }), witness: { input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
         continue;
       }
@@ -538,7 +628,13 @@ export function intakeMarkdown(rows) {
   return lines.join('\n');
 }
 
+function displayOp(op) {
+  try { return formatOp(op); }
+  catch (e) { return `patch display unavailable (${e.name}); raw operation retained in JSON`; }
+}
+
 export function markdown(rows, base, head) {
+  if (process.env.LEAN_LEDGER_TEST_FAULT === 'report-crash') throw new Error('injected report writer crash');
   const count = (v) => rows.filter((r) => r.verdict === v).length;
   const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
@@ -547,19 +643,19 @@ export function markdown(rows, base, head) {
     if (r.verdict === 'WITNESS' && r.coverage !== 'reused') { // a reused row keeps its reuse note; the site rides on a fresh witness
       const site = r.witness?.where?.lines?.candidate;
       if (site) {
-        const source = site.file.replace(/(^|\/)\.lean_head_\d+_/, '$1');
+        const source = String(site.file ?? r.file).replace(/(^|\/)\.lean_head_\d+_/, '$1');
         const file = source === r.file || source.endsWith('/' + r.file) ? r.file : source;
         const label = r.witness.where.advice?.label ?? r.advice?.find((a) => a.line === site.start)?.do?.match(/^\[(proved|conditional|migration|flag-only)(?::[^\]]*)?\]/)?.[1];
         note += `; ${file}:${site.start}${label ? ' [' + label + ']' : ''}`;
       }
     }
-    if (r.verdict === 'WITNESS' && r.witness?.args) r.note = note;
+    // Rendering never mutates the durable result.
     lines.push(`| ${r.file} | \`${r.unit}\` (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);
   }
   const patched = rows.filter((r) => r.verdict === 'WITNESS' && r.witness?.patch?.length); // a front-end WITNESS: the first three ops of its patch, one per line
   if (patched.length) {
     lines.push('', '## What changed on the page', '');
-    for (const r of patched) { lines.push(`### ${r.file} · \`${r.unit}\`: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${formatOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
+    for (const r of patched) { lines.push(`### ${r.file} · \`${r.unit}\`: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${displayOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }
   }
   const asks = rows.filter((r) => r.advice && r.advice.length);
   if (asks.length) {
@@ -567,17 +663,24 @@ export function markdown(rows, base, head) {
     for (const r of asks) { lines.push(`### ${r.file} · \`${r.unit}\``, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
   }
   lines.push('', 'A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.');
+  if (rows.ledger) lines.push('', ledgerMarkdown(rows.ledger));
+  if (rows.reconciliation) lines.push('', `Task reconciliation: expected ${rows.reconciliation.expected.length}; terminal ${rows.reconciliation.terminal.length}; missing ${rows.reconciliation.missing.length}; unexpected ${rows.reconciliation.unexpected.length}; identities ${rows.reconciliation.complete ? 'complete' : 'INCOMPLETE'}.`, `Durable ledger: ${rows.terminalFile}`);
   return lines.join('\n');
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  if (process.argv[2] === '--ledger-worker') {
+    await ledgerWorker(process.argv[3]);
+  } else {
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
   if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set((opt('--scope', '') || '').split(',').map((x) => x.trim()).filter(Boolean));
   const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
+  if (opt('--json')) atomicJSON(opt('--json'), a.includes('--preview') ? rows : reportJSON(rows));
   const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);
-  if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(a.includes('--preview') ? rows : reportJSON(rows), null, 1));
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);
+}
+
 }
