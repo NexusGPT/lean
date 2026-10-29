@@ -1,0 +1,10 @@
+{
+  "files": 343,
+  "tokenPatternCounts": {
+    "private-key": 0,
+    "github-token": 0,
+    "aws-access-key": 0,
+    "slack-token": 0,
+    "openai-key": 0
+  }
+}

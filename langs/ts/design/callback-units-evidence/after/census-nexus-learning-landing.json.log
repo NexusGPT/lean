@@ -1,0 +1,28 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning-landing","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-nexus-learning-landing.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  35082100    27%  458732 350821000    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-learning-landing/tsconfig.json: 71 files
+50 files, 180 units, 150 inside, 18 s
+nexus-learning-landing: 71 files, 265 units, 220 inside the subset (83 percent), 0 files unreadable, 20 s
+      27 units  type-assertion         app/admin/funnel/page.tsx:39 `r[key] as number` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value)
+      10 units  unresolved-module      app/admin/funnel/page.tsx:9 TS2304: Cannot find name 'PageProps'.
+       4 units  ts-strict              scripts/admin-shots.mjs:11 TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.   Type 'undefin
+       3 units  alias-mutation         components/InsightTag.tsx:30 `w` is another name for a value this function was handed; change it through that name, or copy it first
+       3 units  index-assign           lib/attribution/parse.ts:87 write a record field by name, or use a local Record<string, T> dictionary
+       3 units  promise                lib/db/client.ts:62 a held promise of this result type has no identity in the reading; return the call itself
+       3 units  untyped-js             scripts/db-peek.mjs:4 parameter `sql` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} sql` or TypeScript)
+       2 units  global-read            components/form/StepForm.tsx:190 `renderField` is module state that can change; the subset reads constants only
+       2 units  mixed-types            components/form/controls.tsx:52 a value that is sometimes a primitive and sometimes a record or array compares with === only against a literal
+       2 units  unsupported-call       lib/requests/facts.ts:52 calls through computed callees are outside the subset
+       1 units  definite-assignment    app/api/requests/route.ts:30 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested
+       1 units  prototype              components/form/StepForm.tsx:120 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+       1 units  closure-mutation       components/form/useSubmission.ts:80 a callback cannot change an outer record
+       1 units  non-null-assertion     lib/admin/queries.ts:27 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       1 units  param-mutation         lib/admin/queries.ts:71 map mutation on a non-local
+       1 units  async                  lib/db/client.ts:61 an async unit is called without await
+       1 units  number-special         lib/requests/submit.ts:68 the finite number model has no NaN or infinity; use lane B for special-value arithmetic
+       1 units  global-mutation        scripts/e2e-smoke.mjs:56 update of `posts`, which this function does not own
+       1 units  unsupported-member     scripts/measure-fold.mjs:35 property .name is not declared on Element
+       0 units  toplevel-effect        scripts/admin-shots.mjs:6 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

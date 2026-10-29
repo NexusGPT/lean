@@ -1,0 +1,35 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/benchmark/work/bugsjs/repos/pencilblue","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/bugsjs-pencilblue.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  34582084    27%  458732 345820840    0%   /
+project (none): 327 files
+50 files, 16 units, 3 inside, 3 s
+100 files, 17 units, 3 inside, 3 s
+150 files, 27 units, 9 inside, 3 s
+200 files, 27 units, 9 inside, 3 s
+250 files, 27 units, 9 inside, 4 s
+300 files, 40 units, 9 inside, 4 s
+pencilblue: 327 files, 63 units, 10 inside the subset (15.9 percent), 0 files unreadable, 4 s
+      34 units  global-read            include/error/error_utils.js:36 `HttpStatusCodes` is module state that can change; the subset reads constants only
+      28 units  ts-strict              controllers/admin/base_admin_controller.js:30 TS8022: JSDoc '@extends' is not attached to a class.
+      20 units  var                    include/error/error_utils.js:72 `var` is outside the subset; use let or const
+      19 units  untyped-js             include/error/formatters/xml_error_formatter.js:58 parameter `prop` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} prop` or TypeScrip
+      19 units  callback-form          pencilblue.js:64 the callback must be an arrow function
+      13 units  unresolved-module      controllers/admin/base_admin_controller.js:61 TS2304: Cannot find name 'Localization'.
+       5 units  implicit-this          include/http/parsers/index.js:152 TS2683: `this` the function does not declare; declare the receiver as a `this` parameter
+       4 units  loose-equality         public/js/admin/login.js:41 use === and !== with an object, bigint or symbol operand; between primitives == follows the coercion table
+       4 units  this                   public/js/comments.js:37 `this` outside a class method; a free function declares its receiver as a `this` parameter
+       3 units  unsupported-call       include/error/error_utils.js:85 ErrorUtils.custom takes 2 arguments
+       3 units  captured-mutable       include/error/formatters/xml_error_formatter.js:61 captured binding `xml` may be written after this callback is created; capture a stable value
+       2 units  foreach                include/error/formatters/xml_error_formatter.js:58 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+       2 units  type-assertion         include/error/formatters/xml_error_formatter.js:64 `val` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl
+       2 units  prototype              public/js/lib/jquery/jquery.datetimepicker.min.js:1 this file makes an object whose prototype is not Object.prototype (line 1), and it is made in module code (lin
+       2 units  unsupported-syntax     public/js/lib/jquery/jquery.fileupload.js:28 only assignments, ++/--, calls, and await may stand as statements
+       1 units  key-order              public/js/form.js:20 a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this object is n
+       1 units  unsupported-member     public/js/lib/jquery/jquery.datetimepicker.min.js:1 property .slice on never[] is outside the subset
+       1 units  arguments              public/js/lib/jquery/jquery.datetimepicker.min.js:1 `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest paramet
+       1 units  param-assign           public/js/lib/jquery/jquery.datetimepicker.min.js:1 `t` is a parameter of a callback or a local function; copy it to a local first
+       1 units  closure-mutation       public/js/lib/jquery/jquery.datetimepicker.min.js:1 `r` is declared outside this callback; a callback cannot change it
+       1 units  index-assign           public/js/lib/jquery/jquery.datetimepicker.min.js:1 write a record field by name, or use a local Record<string, T> dictionary
+       0 units  toplevel-effect        controllers/admin/base_admin_controller.js:18 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

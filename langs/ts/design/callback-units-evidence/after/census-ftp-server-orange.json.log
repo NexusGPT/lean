@@ -1,0 +1,21 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/ftp-server-orange","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-ftp-server-orange.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33326284    28%  458732 333262840    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/ftp-server-orange/tsconfig.json: 17 files
+ftp-server-orange: 17 files, 112 units, 83 inside the subset (74.1 percent), 0 files unreadable, 13 s
+      12 units  non-null-assertion     src/routes/upload.ts:43 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      11 units  type-assertion         src/auth.ts:93 `req.cookies?.[SESSION_COOKIE]` holds a value whose type nothing checked (an `as` that narrows, or an any or u
+       6 units  void                   src/routes/web.ts:96 `void` is outside the subset
+       3 units  captured-mutable       scripts/webhook-receiver.mjs:11 captured binding `body` may be written after this callback is created; capture a stable value
+       2 units  assignment-expression  scripts/webhook-receiver.mjs:11 use numeric compound assignment or string += with a string value
+       2 units  unsupported-member     src/crypto.ts:31 property .length on string is outside the subset
+       1 units  untyped-js             scripts/webhook-receiver.mjs:11 parameter `c` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} c` or TypeScript) or 
+       1 units  promise                src/cli/manage-users.ts:70 a promise built with new Promise is not a handle; make the function async
+       1 units  promise-pending        src/cli/manage-users.ts:70 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       1 units  global-read            src/cli/manage-users.ts:98 `username` is module state that can change; the subset reads constants only
+       1 units  closure-mutation       src/crypto.ts:31 `size` is declared outside this callback; a callback cannot change it
+       1 units  param-mutation         src/totp.ts:81 push on `codes`, which is not a local array
+       0 units  toplevel-effect        scripts/webhook-receiver.mjs:8 code at module level runs on import; it is outside the subset
+       0 units  unsupported-syntax     src/config.ts:18 function without a body
+
+exit=0 signal=null

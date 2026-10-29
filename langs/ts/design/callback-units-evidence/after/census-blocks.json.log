@@ -1,0 +1,35 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-blocks.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33008440    28%  458732 330084400    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/tsconfig.json: 53 files
+50 files, 221 units, 205 inside, 11 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/templates/blank/files/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/templates/data-sync/files/tsconfig.json: 2 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/templates/rest-api/files/tsconfig.json: 3 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/web/tsconfig.json: 49 files
+100 files, 470 units, 426 inside, 34 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/packages/types/tsconfig.json: 1 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/packages/ui/tsconfig.json: 13 files
+blocks: 123 files, 516 units, 467 inside the subset (90.5 percent), 0 files unreadable, 38 s
+      21 units  type-assertion         apps/api/src/infrastructure/ai/ClaudeAIService.ts:138 `(input.offset as number) || 1` holds a value whose type nothing checked (an `as` that narrows, or an any or u
+      10 units  alias-mutation         apps/api/src/application/commands/StreamChatMessage.ts:141 `tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object
+       5 units  closure-mutation       apps/api/src/application/commands/ValidateProject.ts:61 `stdout` is declared outside this callback; a callback cannot change it
+       5 units  captured-mutable       apps/api/src/application/commands/ValidateProject.ts:61 captured binding `stdout` may be written after this callback is created; capture a stable value
+       4 units  ts-strict              apps/api/src/infrastructure/templates/rest-api/files/src/routes.ts:10 TS7030: Not all code paths return a value.
+       4 units  property-assign        apps/web/src/hooks/useResizable.ts:78 assignment into `document`, which this function does not own; records it owns are updated in place
+       3 units  dynamic-key            apps/web/src/features/project/FileSearchModal.tsx:91 HTMLCollection declares fields and an index signature; its value reading holds the declared fields alone, so a
+       2 units  param-mutation         apps/api/src/application/commands/StreamChatMessage.ts:127 push on `collectedEvents`, which is not a local array
+       2 units  promise-pending        apps/api/src/application/commands/ValidateProject.ts:54 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       2 units  unsupported-member     apps/api/src/infrastructure/http/routes/chatRoutes.ts:49 property .authContext is not declared on Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>
+       2 units  unsupported-syntax     apps/web/src/hooks/useProjects.ts:104 `import.meta.env` is injected at build time; read it outside the subset
+       2 units  definite-assignment    apps/web/src/hooks/useTypingEffect.ts:150 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested
+       1 units  promise                apps/api/src/application/commands/ValidateProject.ts:54 a promise built with new Promise is not a handle; make the function async
+       1 units  reference-equality     apps/web/src/features/project/FileTree.tsx:551 === on arrays and records compares references; compare fields
+       1 units  unsupported-call       apps/web/src/features/project/FileTree.tsx:662 .pop() in an optional chain changes a receiver that may be absent; check it first
+       1 units  void                   apps/web/src/features/project/FileTree.tsx:682 `void` is outside the subset
+       1 units  react-handler-capture  apps/web/src/hooks/useTypingEffect.ts:131 a React closure captures a changing local; capture a const value or use a state setter
+       0 units  unresolved-module      apps/api/src/application/commands/ArchiveProject.ts:1 TS6059: File '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/r
+       0 units  toplevel-effect        apps/api/src/index.ts:18 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

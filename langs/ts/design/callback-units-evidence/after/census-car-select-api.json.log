@@ -1,0 +1,16 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/car-select-api","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-car-select-api.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33103768    28%  458732 331037680    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/car-select-api/tsconfig.json: 10 files
+car-select-api: 10 files, 82 units, 45 inside the subset (54.9 percent), 0 files unreadable, 5 s
+      21 units  non-null-assertion     src/services/vehicleService.ts:221 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       9 units  type-assertion         src/middleware/auth.ts:38 `apiKey` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this
+       3 units  assignment-expression  src/services/vehicleService.ts:132 use numeric compound assignment or string += with a string value
+       2 units  index-assign           src/middleware/validation.ts:138 write a record field by name, or use a local Record<string, T> dictionary
+       2 units  unsupported-syntax     src/routes/vehicleRoutes.ts:114 assignment target
+       2 units  captured-mutable       src/services/vehicleService.ts:132 captured binding `data` may be written after this callback is created; capture a stable value
+       1 units  property-assign        src/middleware/auth.ts:86 update of a field of `limitData`, which this function does not own
+       1 units  promise-executor-escape src/services/vehicleService.ts:128 resolve and reject cannot be stored or passed away; call them at the end of each executor path
+       0 units  toplevel-effect        src/index.ts:12 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

@@ -1,0 +1,36 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/Documents/GitHub/nexus-app-starter","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-nexus-app-starter.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  34200228    27%  458732 342002280    0%   /
+project /Users/assem/Documents/GitHub/nexus-app-starter/tsconfig.json: 234 files
+50 files, 710 units, 219 inside, 29 s
+100 files, 1049 units, 431 inside, 32 s
+150 files, 1331 units, 681 inside, 33 s
+200 files, 1686 units, 960 inside, 39 s
+nexus-app-starter: 234 files, 1991 units, 1209 inside the subset (60.7 percent), 0 files unreadable, 41 s
+     416 units  untyped-js             journeys/extra/calendar-view.mjs:22 parameter `ROOT` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} ROOT` or TypeScrip
+     247 units  type-assertion         journeys/extra/calendar-view.mjs:53 `k` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot
+     116 units  unresolved-module      journeys/extra/calendar-view.mjs:13 TS2307: Cannot find module 'node:child_process' or its corresponding type declarations.
+      89 units  ts-strict              journeys/extra/copilot.mjs:23 TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string | URL'.   Type 'u
+      69 units  async                  journeys/extra/calendar-view.mjs:34 an async unit is called without await
+      66 units  dynamic-key            server/jobs.mjs:89 an open key may select a method; call a method by its declared name, and index records of data fields
+      58 units  promise                journeys/extra/calendar-view.mjs:34 a same-file async function runs on after its first await; return it from an async function with await
+      39 units  spread                 server/server.mjs:262 spread works on arrays, sets, maps and their keys(), values() and entries()
+      28 units  closure-mutation       journeys/extra/copilot.mjs:27 a callback cannot change an outer variable
+      26 units  global-read            journeys/extra/calendar-view.mjs:27 global `AbortSignal` is outside the subset
+      24 units  promise-pending        journeys/extra/calendar-view.mjs:30 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+      22 units  opaque-mutation        server/store.mjs:291 .splice() on `list`, an opaque value this function holds, used as a value: the call may mutate it
+      21 units  index-assign           server/seed.mjs:111 write a record field by name, or use a local Record<string, T> dictionary
+      17 units  property-assign        journeys/extra/editor.mjs:42 assignment into `window`, which this function does not own; records it owns are updated in place
+      17 units  unsupported-syntax     src/app/ObjectView.tsx:611 a local component value must be a string tag name or a named component
+      16 units  assignment-expression  server/jobs.mjs:99 write this assignment as a statement
+      16 units  unsupported-call       server/jobs.mjs:134 method .unref() on number is outside the subset
+      13 units  optional-chain         server/jobs.mjs:134 an optional call reads a function field of a plain record; narrow an opaque, class or union receiver first
+      12 units  param-mutation         journeys/extra/copilot.mjs:27 map mutation on a non-local
+      12 units  react-handler-capture  src/app/App.tsx:253 a React closure captures a changing local; capture a const value or use a state setter
+      11 units  captured-mutable       journeys/extra/copilot.mjs:27 captured binding `sid` may be written after this callback is created; capture a stable value
+      10 units  record-rest            server/apikeys.mjs:38 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+       9 units  prototype              server/store.mjs:178 this file makes an object whose prototype is not Object.prototype (line 131), and it is passed to a call the f
+       9 units  foreach                src/app/App.tsx:371 forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x
+       8 units  alias-mutation         src/app/pages/Tasks.tsx:133 `list` holds an element of `byBucket.values()`, which may be a field, a parameter, an element or a module obje
+
+exit=0 signal=null

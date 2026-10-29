@@ -1,0 +1,8197 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/status",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 106,
+   "units": 654,
+   "entered": 555
+  },
+  "js": {
+   "files": 8,
+   "units": 23,
+   "entered": 10
+  }
+ },
+ "refused": 112,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 25,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 4,
+     "example": {
+      "file": "scripts/drive-retention.ts",
+      "line": 96,
+      "code": "found.uuid"
+     }
+    },
+    {
+     "directory": "src",
+     "units": 2,
+     "example": {
+      "file": "src/tick.ts",
+      "line": 306,
+      "code": "r.worst_state as \"degraded\" | \"down\""
+     }
+    },
+    {
+     "directory": "src/api",
+     "units": 4,
+     "example": {
+      "file": "src/api/history.ts",
+      "line": 72,
+      "code": "r.unknown_reason as UnknownReason | null"
+     }
+    },
+    {
+     "directory": "src/domain",
+     "units": 8,
+     "example": {
+      "file": "src/domain/classify/gcp.ts",
+      "line": 24,
+      "code": "typeof i === \"object\" && i !== null && !(i as Record<string, unknown>)[\"end\"]"
+     }
+    },
+    {
+     "directory": "src/persist",
+     "units": 6,
+     "example": {
+      "file": "src/persist/current.ts",
+      "line": 84,
+      "code": "r.state as SuppressedClassification[\"state\"]"
+     }
+    },
+    {
+     "directory": "src/ui",
+     "units": 1,
+     "example": {
+      "file": "src/ui/strip.ts",
+      "line": 109,
+      "code": "char as keyof typeof spec.legend"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 18,
+   "directories": [
+    {
+     "directory": "web/app",
+     "units": 18,
+     "example": {
+      "file": "web/app/detail-main.ts",
+      "line": 91,
+      "code": "liveLabelEl.textContent"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "units": 17,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/build-examples.ts",
+      "line": 302,
+      "code": "grouped.get(id)!"
+     }
+    },
+    {
+     "directory": "src",
+     "units": 2,
+     "example": {
+      "file": "src/pages-worker.ts",
+      "line": 286,
+      "code": "historyMatch[1]!"
+     }
+    },
+    {
+     "directory": "src/api",
+     "units": 2,
+     "example": {
+      "file": "src/api/incidents.ts",
+      "line": 94,
+      "code": "sizes.pop()!"
+     }
+    },
+    {
+     "directory": "src/domain",
+     "units": 6,
+     "example": {
+      "file": "src/domain/bucketise.ts",
+      "line": 73,
+      "code": "buckets[index]!"
+     }
+    },
+    {
+     "directory": "src/ui",
+     "units": 6,
+     "example": {
+      "file": "src/ui/buckets.ts",
+      "line": 310,
+      "code": "points[points.length - 1]!"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "async",
+   "units": 12,
+   "directories": [
+    {
+     "directory": "web/app",
+     "units": 12,
+     "example": {
+      "file": "web/app/detail-main.ts",
+      "line": 184,
+      "code": "readJson(`/api/v1/targets/${encodeURIComponent(slug)}/history?window=24h`)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "untyped-js",
+   "units": 12,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 12,
+     "example": {
+      "file": "scripts/build-pages.mjs",
+      "line": 76,
+      "code": "entry"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise",
+   "units": 4,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 4,
+     "example": {
+      "file": "scripts/drive-retention.ts",
+      "line": 86,
+      "code": "q(sql, params)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "src/api",
+     "units": 1,
+     "example": {
+      "file": "src/api/summary.ts",
+      "line": 261,
+      "code": "list.push(row)"
+     }
+    },
+    {
+     "directory": "src/domain",
+     "units": 1,
+     "example": {
+      "file": "src/domain/classify/statuspage-shape.ts",
+      "line": 156,
+      "code": "list.push(c)"
+     }
+    },
+    {
+     "directory": "web/app",
+     "units": 1,
+     "example": {
+      "file": "web/app/chart.ts",
+      "line": 189,
+      "code": "line.classList.add(\"spark__line--drawing\")"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 2,
+     "example": {
+      "file": "scripts/migrate-remote.ts",
+      "line": 68,
+      "code": "output"
+     }
+    },
+    {
+     "directory": "src/ui",
+     "units": 1,
+     "example": {
+      "file": "src/ui/buckets.ts",
+      "line": 154,
+      "code": "used"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/build-examples.ts",
+      "line": 182,
+      "code": "out[w]"
+     }
+    },
+    {
+     "directory": "src/api",
+     "units": 1,
+     "example": {
+      "file": "src/api/summary.ts",
+      "line": 366,
+      "code": "uptime[w]"
+     }
+    },
+    {
+     "directory": "src/ui",
+     "units": 1,
+     "example": {
+      "file": "src/ui/derive.ts",
+      "line": 46,
+      "code": "counts[t.current.state]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "string-code-unit",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 3,
+     "example": {
+      "file": "scripts/manifest-to-sql.ts",
+      "line": 236,
+      "code": "\"-- 🔴 THIS FILE TRACKS THE MANIFEST. IT DOES NOT TRACK A DEPLOYED DATABASE.\""
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/migrate-remote.ts",
+      "line": 56,
+      "code": "output"
+     }
+    },
+    {
+     "directory": "web/app",
+     "units": 1,
+     "example": {
+      "file": "web/app/tooltip.ts",
+      "line": 38,
+      "code": "node.hidden"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "global-read",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 2,
+     "example": {
+      "file": "scripts/verify-deploy.ts",
+      "line": 94,
+      "code": "AbortSignal"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 2,
+     "example": {
+      "file": "scripts/build-examples.ts",
+      "line": 260,
+      "code": "grouped.get(t.groupId)!.push(t.id)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "spread",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/domain",
+     "units": 1,
+     "example": {
+      "file": "src/domain/consistency.ts",
+      "line": 265,
+      "code": "...t.bucketCells"
+     }
+    },
+    {
+     "directory": "src/ui",
+     "units": 1,
+     "example": {
+      "file": "src/ui/strip.ts",
+      "line": 108,
+      "code": "...target.bucketCells"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/ui",
+     "units": 1,
+     "example": {
+      "file": "src/ui/overview.ts",
+      "line": 346,
+      "code": "GLYPHS[renderedState(incident, target)]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "object-method-capture",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "scripts",
+     "units": 1,
+     "example": {
+      "file": "scripts/retention-plan.ts",
+      "line": 50,
+      "code": "recorded"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise-all-order",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/probe",
+     "units": 1,
+     "example": {
+      "file": "src/probe/http.ts",
+      "line": 112,
+      "code": "async (url) => [url, await probeUrl(url, options)] as const"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "unsupported-operator",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/domain",
+     "units": 1,
+     "example": {
+      "file": "src/domain/schema-fingerprint.ts",
+      "line": 82,
+      "code": "h ^= joined.charCodeAt(i)"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 114,
+ "failedFiles": 0,
+ "units": 677,
+ "entered": 565,
+ "share": 83.5,
+ "seconds": 6,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 62,
+   "units": 32,
+   "examples": [
+    "scripts/build-examples.ts:184 `out` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl",
+    "scripts/build-examples.ts:210 `out` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this sl",
+    "scripts/drive-retention.ts:96 `found.uuid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and "
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 43,
+   "units": 22,
+   "examples": [
+    "web/app/detail-main.ts:91 assignment into `liveLabelEl`, which this function does not own; records it owns are updated in place",
+    "web/app/detail-main.ts:99 assignment into `state`, which this function does not own; records it owns are updated in place",
+    "web/app/detail-main.ts:120 assignment into `state`, which this function does not own; records it owns are updated in place"
+   ]
+  },
+  {
+   "rule": "non-null-assertion",
+   "findings": 28,
+   "units": 19,
+   "examples": [
+    "scripts/build-examples.ts:302 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "scripts/build-examples.ts:302 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (",
+    "src/api/incidents.ts:94 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first ("
+   ]
+  },
+  {
+   "rule": "async",
+   "findings": 18,
+   "units": 14,
+   "examples": [
+    "scripts/drive-retention.ts:86 an async unit is called without await",
+    "web/app/detail-main.ts:184 an async unit is called without await",
+    "web/app/detail-main.ts:185 an async unit is called without await"
+   ]
+  },
+  {
+   "rule": "untyped-js",
+   "findings": 12,
+   "units": 12,
+   "examples": [
+    "scripts/build-pages.mjs:76 parameter `entry` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} entry` or TypeScr",
+    "scripts/cpu-report.mjs:25 parameter `d` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} d` or TypeScript) or ",
+    "scripts/deploy.mjs:33 parameter `label` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} label` or TypeScr"
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "findings": 7,
+   "units": 5,
+   "examples": [
+    "scripts/build-examples.ts:182 write a record field by name, or use a local Record<string, T> dictionary",
+    "scripts/build-examples.ts:197 write a record field by name, or use a local Record<string, T> dictionary",
+    "scripts/build-examples.ts:203 write a record field by name, or use a local Record<string, T> dictionary"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 7,
+   "units": 4,
+   "examples": [
+    "scripts/build-examples.ts:260 push on `grouped.get(t.groupId)!`, which is not a local array",
+    "scripts/manifest-to-sql.ts:216 push on `errors`, which is not a local array",
+    "scripts/manifest-to-sql.ts:220 map mutation on a non-local"
+   ]
+  },
+  {
+   "rule": "promise",
+   "findings": 4,
+   "units": 4,
+   "examples": [
+    "scripts/drive-retention.ts:86 a same-file async function runs on after its first await; return it from an async function with await",
+    "scripts/migrate-remote.ts:47 a promise built with new Promise is not a handle; make the function async",
+    "scripts/migrate-remote.ts:50 a promise built with new Promise is not a handle; make the function async"
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "findings": 17,
+   "units": 4,
+   "examples": [
+    "src/api/summary.ts:261 `list` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module obje",
+    "src/domain/bucketise.ts:75 `bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+    "src/domain/bucketise.ts:76 `bucket` is another name for a value this function was handed; change it through that name, or copy it first"
+   ]
+  },
+  {
+   "rule": "string-code-unit",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "scripts/manifest-to-sql.ts:236 use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+    "scripts/migrate-remote.ts:106 use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+    "scripts/verify-deploy.ts:124 use BMP scalar literals within the string model; astral and surrogate strings need lane B"
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "scripts/migrate-remote.ts:47 await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+    "scripts/migrate-remote.ts:50 await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+    "scripts/verify-deploy.ts:120 await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "scripts/migrate-remote.ts:68 captured binding `output` may be written after this callback is created; capture a stable value",
+    "scripts/migrate-remote.ts:73 captured binding `output` may be written after this callback is created; capture a stable value",
+    "src/ui/buckets.ts:154 captured binding `used` may be written after this callback is created; capture a stable value"
+   ]
+  },
+  {
+   "rule": "spread",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "scripts/verdicts.mjs:123 spread works on arrays, sets, maps and their keys(), values() and entries()",
+    "src/domain/consistency.ts:265 spread works on arrays, sets, maps and their keys(), values() and entries()",
+    "src/ui/strip.ts:108 spread works on arrays, sets, maps and their keys(), values() and entries()"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 6,
+   "units": 2,
+   "examples": [
+    "scripts/migrate-remote.ts:56 `output` is declared outside this callback; a callback cannot change it",
+    "scripts/migrate-remote.ts:68 `output` is declared outside this callback; a callback cannot change it",
+    "scripts/migrate-remote.ts:73 `output` is declared outside this callback; a callback cannot change it"
+   ]
+  },
+  {
+   "rule": "global-read",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "scripts/verify-deploy.ts:94 global `AbortSignal` is outside the subset",
+    "scripts/watchdog.ts:61 global `AbortSignal` is outside the subset"
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "scripts/negative-control.mjs:259 TS2345: Argument of type 'string[]' is not assignable to parameter of type 'readonly Verdict[]'.   Type 'strin",
+    "scripts/verdicts.mjs:151 TS2532: Object is possibly 'undefined'."
+   ]
+  },
+  {
+   "rule": "object-method-capture",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "scripts/retention-plan.ts:50 a literal method captures an unchanging value; copy mutable data before capturing it"
+   ]
+  },
+  {
+   "rule": "unsupported-operator",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/domain/schema-fingerprint.ts:82 assignment operator is outside the subset"
+   ]
+  },
+  {
+   "rule": "promise-all-order",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/probe/http.ts:112 Promise.all does not order work after await; use a for-of loop with await for ordered effects"
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/ui/overview.ts:346 bind the computed key before reading the record; a key call may mutate its receiver"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 54,
+   "units": 0,
+   "examples": [
+    "scripts/build-examples.ts:665 code at module level runs on import; it is outside the subset",
+    "scripts/build-pages.mjs:56 code at module level runs on import; it is outside the subset",
+    "scripts/build-pages.mjs:69 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "scripts/build-examples.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "bounds",
+     "lines": [
+      103,
+      109
+     ]
+    },
+    {
+     "name": "hourlyRowsFor",
+     "lines": [
+      126,
+      162
+     ]
+    },
+    {
+     "name": "stripAndUptimeFor",
+     "lines": [
+      172,
+      211
+     ]
+    },
+    {
+     "name": "targetOf",
+     "lines": [
+      213,
+      238
+     ]
+    },
+    {
+     "name": "summary",
+     "lines": [
+      240,
+      307
+     ]
+    },
+    {
+     "name": "summary/groupOrder.map()#0",
+     "lines": [
+      299,
+      303
+     ]
+    },
+    {
+     "name": "DEPENDENTS.map()#0@1",
+     "lines": [
+      441,
+      459
+     ]
+    },
+    {
+     "name": "DEPENDENTS.map()#0@2",
+     "lines": [
+      477,
+      482
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 182,
+     "unit": "stripAndUptimeFor",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 184,
+     "unit": "stripAndUptimeFor",
+     "rule": "type-assertion",
+     "msg": "`out` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 197,
+     "unit": "stripAndUptimeFor",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 203,
+     "unit": "stripAndUptimeFor",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 210,
+     "unit": "stripAndUptimeFor",
+     "rule": "type-assertion",
+     "msg": "`out` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 260,
+     "unit": "summary",
+     "rule": "param-mutation",
+     "msg": "push on `grouped.get(t.groupId)!`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 302,
+     "unit": "summary",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 302,
+     "unit": "summary/groupOrder.map()#0",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 665,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/build-pages.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "bundle",
+     "lines": [
+      76,
+      95
+     ]
+    },
+    {
+     "name": "readdirSync(join(web, \"assets\")).map()#0",
+     "lines": [
+      157,
+      157
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 56,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 69,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 76,
+     "unit": "bundle",
+     "rule": "untyped-js",
+     "msg": "parameter `entry` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} entry` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 116,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 117,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 118,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 119,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 120,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 126,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 161,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 165,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 171,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 172,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 173,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 174,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 175,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/cpu-report.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "iso",
+     "lines": [
+      25,
+      25
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 17,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": "iso",
+     "rule": "untyped-js",
+     "msg": "parameter `d` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} d` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 49,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 55,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 60,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 61,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 70,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/deploy.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "run",
+     "lines": [
+      33,
+      40
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 33,
+     "unit": "run",
+     "rule": "untyped-js",
+     "msg": "parameter `label` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} label` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 45,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 48,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 51,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 53,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 54,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 55,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/drive-retention.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "cf",
+     "lines": [
+      59,
+      69
+     ]
+    },
+    {
+     "name": "q",
+     "lines": [
+      73,
+      84
+     ]
+    },
+    {
+     "name": "exec",
+     "lines": [
+      86,
+      86
+     ]
+    },
+    {
+     "name": "setup",
+     "lines": [
+      88,
+      121
+     ]
+    },
+    {
+     "name": "seed",
+     "lines": [
+      123,
+      138
+     ]
+    },
+    {
+     "name": "scenario",
+     "lines": [
+      140,
+      167
+     ]
+    },
+    {
+     "name": "teardown",
+     "lines": [
+      169,
+      174
+     ]
+    },
+    {
+     "name": "setup/(existing.result ?? []).find()#0",
+     "lines": [
+      93,
+      93
+     ]
+    },
+    {
+     "name": "seed/rows.map()#0",
+     "lines": [
+      136,
+      136
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 52,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 86,
+     "unit": "exec",
+     "rule": "promise",
+     "msg": "a same-file async function runs on after its first await; return it from an async function with await",
+     "env": false
+    },
+    {
+     "line": 86,
+     "unit": "exec",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 96,
+     "unit": "setup",
+     "rule": "type-assertion",
+     "msg": "`found.uuid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 104,
+     "unit": "setup",
+     "rule": "type-assertion",
+     "msg": "`created.result.uuid` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 178,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/guard-step.mjs",
+   "pkg": "scripts",
+   "units": [],
+   "findings": [
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/manifest-to-sql.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "sqlString",
+     "lines": [
+      108,
+      111
+     ]
+    },
+    {
+     "name": "validate",
+     "lines": [
+      120,
+      227
+     ]
+    },
+    {
+     "name": "render",
+     "lines": [
+      229,
+      272
+     ]
+    },
+    {
+     "name": "renderComponents",
+     "lines": [
+      282,
+      317
+     ]
+    },
+    {
+     "name": "loadManifest",
+     "lines": [
+      319,
+      321
+     ]
+    },
+    {
+     "name": "main",
+     "lines": [
+      323,
+      381
+     ]
+    },
+    {
+     "name": "validate/manifest.groups.map()#0",
+     "lines": [
+      123,
+      123
+     ]
+    },
+    {
+     "name": "validate/manifest.targets.map()#0",
+     "lines": [
+      212,
+      212
+     ]
+    },
+    {
+     "name": "render/manifest.targets.map()#0",
+     "lines": [
+      253,
+      257
+     ]
+    },
+    {
+     "name": "render/manifest.targets.flatMap()#0",
+     "lines": [
+      262,
+      263
+     ]
+    },
+    {
+     "name": "render/manifest.targets.flatMap()#0/t.dependsOn.map()#0",
+     "lines": [
+      263,
+      263
+     ]
+    },
+    {
+     "name": "renderComponents/manifest.targets.flatMap()#0",
+     "lines": [
+      296,
+      300
+     ]
+    },
+    {
+     "name": "renderComponents/manifest.targets.flatMap()#0/(t.dependsOnComponents ?? []).map()#0",
+     "lines": [
+      298,
+      299
+     ]
+    },
+    {
+     "name": "main/manifest.targets.filter()#0@1",
+     "lines": [
+      367,
+      367
+     ]
+    },
+    {
+     "name": "main/manifest.targets.map()#0",
+     "lines": [
+      368,
+      368
+     ]
+    },
+    {
+     "name": "main/manifest.targets.filter()#0@2",
+     "lines": [
+      369,
+      369
+     ]
+    },
+    {
+     "name": "main/scoped.reduce()#0",
+     "lines": [
+      370,
+      370
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 216,
+     "unit": "validate",
+     "rule": "param-mutation",
+     "msg": "push on `errors`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 220,
+     "unit": "validate",
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 222,
+     "unit": "validate",
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 236,
+     "unit": "render",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 324,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`loadManifest()` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 384,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/migrate-remote.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "sleepSeconds",
+     "lines": [
+      46,
+      47
+     ]
+    },
+    {
+     "name": "runWrangler",
+     "lines": [
+      49,
+      77
+     ]
+    },
+    {
+     "name": "main",
+     "lines": [
+      79,
+      141
+     ]
+    },
+    {
+     "name": "sleepSeconds/Promise()#0",
+     "lines": [
+      47,
+      47
+     ]
+    },
+    {
+     "name": "runWrangler/Promise()#0",
+     "lines": [
+      50,
+      76
+     ]
+    },
+    {
+     "name": "runWrangler/Promise()#0/child.on('error')#1",
+     "lines": [
+      67,
+      70
+     ]
+    },
+    {
+     "name": "runWrangler/Promise()#0/child.on('close')#1",
+     "lines": [
+      72,
+      75
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 47,
+     "unit": "sleepSeconds",
+     "rule": "promise",
+     "msg": "a promise built with new Promise is not a handle; make the function async",
+     "env": false
+    },
+    {
+     "line": 47,
+     "unit": "sleepSeconds",
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 50,
+     "unit": "runWrangler",
+     "rule": "promise",
+     "msg": "a promise built with new Promise is not a handle; make the function async",
+     "env": false
+    },
+    {
+     "line": 50,
+     "unit": "runWrangler",
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "runWrangler/Promise()#0",
+     "rule": "closure-mutation",
+     "msg": "`output` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 68,
+     "unit": "runWrangler/Promise()#0",
+     "rule": "closure-mutation",
+     "msg": "`output` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 68,
+     "unit": "runWrangler/Promise()#0/child.on('error')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `output` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 73,
+     "unit": "runWrangler/Promise()#0",
+     "rule": "closure-mutation",
+     "msg": "`output` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 73,
+     "unit": "runWrangler/Promise()#0/child.on('close')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `output` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 106,
+     "unit": "main",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 143,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/mutations.mjs",
+   "pkg": "scripts",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "scripts/negative-control.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "runSuite",
+     "lines": [
+      51,
+      63
+     ]
+    },
+    {
+     "name": "failedTestNames",
+     "lines": [
+      65,
+      83
+     ]
+    },
+    {
+     "name": "selected",
+     "lines": [
+      92,
+      109
+     ]
+    },
+    {
+     "name": "selected/MUTATIONS.filter()#0",
+     "lines": [
+      102,
+      102
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 65,
+     "unit": "failedTestNames",
+     "rule": "untyped-js",
+     "msg": "parameter `stdout` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} stdout` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 72,
+     "unit": "failedTestNames",
+     "rule": "type-assertion",
+     "msg": "`stdout.slice(start)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 113,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 130,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 131,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 141,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 248,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 249,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 259,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2345: Argument of type 'string[]' is not assignable to parameter of type 'readonly Verdict[]'.   Type 'string' is not assignable to type 'Verdict'.",
+     "env": false
+    },
+    {
+     "line": 265,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 270,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 271,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 273,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 279,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/retention-plan.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "recordingDb",
+     "lines": [
+      43,
+      57
+     ]
+    },
+    {
+     "name": "hourlyCutoffFor",
+     "lines": [
+      85,
+      87
+     ]
+    },
+    {
+     "name": "prunePlan",
+     "lines": [
+      95,
+      111
+     ]
+    },
+    {
+     "name": "parsePruneSql",
+     "lines": [
+      123,
+      131
+     ]
+    },
+    {
+     "name": "countingSqlFor",
+     "lines": [
+      140,
+      143
+     ]
+    },
+    {
+     "name": "scalar",
+     "lines": [
+      158,
+      163
+     ]
+    },
+    {
+     "name": "runPlan",
+     "lines": [
+      172,
+      200
+     ]
+    },
+    {
+     "name": "reportLines",
+     "lines": [
+      203,
+      209
+     ]
+    },
+    {
+     "name": "reportLines/outcomes.map()#0",
+     "lines": [
+      204,
+      207
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 50,
+     "unit": "recordingDb",
+     "rule": "object-method-capture",
+     "msg": "a literal method captures an unchanging value; copy mutable data before capturing it",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "recordingDb",
+     "rule": "type-assertion",
+     "msg": "`db as unknown as D1Database` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/stamp.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "git",
+     "lines": [
+      16,
+      17
+     ]
+    },
+    {
+     "name": "git(\"status\", \"--porcelain\", \"--untracked-files=no\")\n  .split(\"\\n\")\n  .filter()#0",
+     "lines": [
+      30,
+      30
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 16,
+     "unit": "git",
+     "rule": "untyped-js",
+     "msg": "parameter `args` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} args` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 33,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 44,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/verdicts.mjs",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "classifyRun",
+     "lines": [
+      118,
+      130
+     ]
+    },
+    {
+     "name": "tally",
+     "lines": [
+      142,
+      154
+     ]
+    },
+    {
+     "name": "conservationError",
+     "lines": [
+      164,
+      171
+     ]
+    },
+    {
+     "name": "summaryLine",
+     "lines": [
+      180,
+      183
+     ]
+    },
+    {
+     "name": "remedyLines",
+     "lines": [
+      191,
+      195
+     ]
+    },
+    {
+     "name": "exitCodeFor",
+     "lines": [
+      206,
+      208
+     ]
+    },
+    {
+     "name": "classifyRun/mustFail.filter()#0",
+     "lines": [
+      125,
+      125
+     ]
+    },
+    {
+     "name": "tally/VERDICTS.map()#0",
+     "lines": [
+      143,
+      143
+     ]
+    },
+    {
+     "name": "conservationError/VERDICTS.reduce()#0",
+     "lines": [
+      165,
+      165
+     ]
+    },
+    {
+     "name": "summaryLine/VERDICTS.map()#0",
+     "lines": [
+      181,
+      181
+     ]
+    },
+    {
+     "name": "remedyLines/FAILING_VERDICTS.filter()#0",
+     "lines": [
+      192,
+      192
+     ]
+    },
+    {
+     "name": "remedyLines/FAILING_VERDICTS.filter((v) => (counts[v] ?? 0) > 0).map()#0",
+     "lines": [
+      193,
+      193
+     ]
+    },
+    {
+     "name": "exitCodeFor/FAILING_VERDICTS.some()#0",
+     "lines": [
+      207,
+      207
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 118,
+     "unit": "classifyRun",
+     "rule": "untyped-js",
+     "msg": "parameter `{ exitCode, failed, mustFail }` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} { exitCode, failed, mustFail }` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 123,
+     "unit": "classifyRun",
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    },
+    {
+     "line": 125,
+     "unit": "classifyRun/mustFail.filter()#0",
+     "rule": "untyped-js",
+     "msg": "parameter `title` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} title` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 142,
+     "unit": "tally",
+     "rule": "untyped-js",
+     "msg": "parameter `verdicts` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} verdicts` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 145,
+     "unit": "tally",
+     "rule": "type-assertion",
+     "msg": "`verdict` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 151,
+     "unit": "tally",
+     "rule": "index-assign",
+     "msg": "compound assignment on an element is outside the subset",
+     "env": false
+    },
+    {
+     "line": 151,
+     "unit": "tally",
+     "rule": "ts-strict",
+     "msg": "TS2532: Object is possibly 'undefined'.",
+     "env": false
+    },
+    {
+     "line": 164,
+     "unit": "conservationError",
+     "rule": "untyped-js",
+     "msg": "parameter `counts` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} counts` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 165,
+     "unit": "conservationError",
+     "rule": "type-assertion",
+     "msg": "`sum + (counts[v] ?? 0)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 165,
+     "unit": "conservationError/VERDICTS.reduce()#0",
+     "rule": "type-assertion",
+     "msg": "`sum + (counts[v] ?? 0)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 180,
+     "unit": "summaryLine",
+     "rule": "untyped-js",
+     "msg": "parameter `counts` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} counts` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 191,
+     "unit": "remedyLines",
+     "rule": "untyped-js",
+     "msg": "parameter `counts` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} counts` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    },
+    {
+     "line": 206,
+     "unit": "exitCodeFor",
+     "rule": "untyped-js",
+     "msg": "parameter `counts` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} counts` or TypeScript) or ask --any-type for a proposed type",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/verify-deploy.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "arg",
+     "lines": [
+      54,
+      57
+     ]
+    },
+    {
+     "name": "numericArg",
+     "lines": [
+      59,
+      68
+     ]
+    },
+    {
+     "name": "bustedUrl",
+     "lines": [
+      85,
+      89
+     ]
+    },
+    {
+     "name": "probe",
+     "lines": [
+      91,
+      117
+     ]
+    },
+    {
+     "name": "sleep",
+     "lines": [
+      119,
+      120
+     ]
+    },
+    {
+     "name": "fail",
+     "lines": [
+      122,
+      131
+     ]
+    },
+    {
+     "name": "main",
+     "lines": [
+      133,
+      223
+     ]
+    },
+    {
+     "name": "sleep/Promise()#0",
+     "lines": [
+      120,
+      120
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 94,
+     "unit": "probe",
+     "rule": "global-read",
+     "msg": "global `AbortSignal` is outside the subset",
+     "env": false
+    },
+    {
+     "line": 120,
+     "unit": "sleep",
+     "rule": "promise",
+     "msg": "a promise built with new Promise is not a handle; make the function async",
+     "env": false
+    },
+    {
+     "line": 120,
+     "unit": "sleep",
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 124,
+     "unit": "fail",
+     "rule": "string-code-unit",
+     "msg": "use BMP scalar literals within the string model; astral and surrogate strings need lane B",
+     "env": false
+    },
+    {
+     "line": 225,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "scripts/watchdog.ts",
+   "pkg": "scripts",
+   "units": [
+    {
+     "name": "arg",
+     "lines": [
+      47,
+      50
+     ]
+    },
+    {
+     "name": "fetchSummary",
+     "lines": [
+      58,
+      84
+     ]
+    },
+    {
+     "name": "report",
+     "lines": [
+      86,
+      95
+     ]
+    },
+    {
+     "name": "main",
+     "lines": [
+      97,
+      234
+     ]
+    },
+    {
+     "name": "main/Promise()#0",
+     "lines": [
+      125,
+      125
+     ]
+    },
+    {
+     "name": "main/body.targets.filter()#0",
+     "lines": [
+      154,
+      154
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 61,
+     "unit": "fetchSummary",
+     "rule": "global-read",
+     "msg": "global `AbortSignal` is outside the subset",
+     "env": false
+    },
+    {
+     "line": 121,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`delivery[\"producedBy\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 122,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`delivery[\"servedBy\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 158,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`sample` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 220,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`d[\"served\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 220,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`d[\"shape\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 221,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`d[\"missedTickSlots\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 221,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`d[\"rollupLagHours\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 222,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`d[\"buildsAgree\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 228,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`engineDetail` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 229,
+     "unit": "main",
+     "rule": "type-assertion",
+     "msg": "`engineDetail[\"destination\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 236,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/api/health.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "buildHealth",
+     "lines": [
+      49,
+      88
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/api/history.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isWindowKey",
+     "lines": [
+      27,
+      29
+     ]
+    },
+    {
+     "name": "isCaveat",
+     "lines": [
+      48,
+      50
+     ]
+    },
+    {
+     "name": "rawToCounts",
+     "lines": [
+      65,
+      78
+     ]
+    },
+    {
+     "name": "rollupToCounts",
+     "lines": [
+      80,
+      95
+     ]
+    },
+    {
+     "name": "partialHourCounts",
+     "lines": [
+      127,
+      185
+     ]
+    },
+    {
+     "name": "buildHistory",
+     "lines": [
+      187,
+      281
+     ]
+    },
+    {
+     "name": "rawToCounts/rows.map()#0",
+     "lines": [
+      66,
+      77
+     ]
+    },
+    {
+     "name": "rollupToCounts/rows.map()#0",
+     "lines": [
+      81,
+      94
+     ]
+    },
+    {
+     "name": "buildHistory/(results ?? []).map()#0",
+     "lines": [
+      242,
+      245
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 72,
+     "unit": "rawToCounts",
+     "rule": "type-assertion",
+     "msg": "`r.unknown_reason as UnknownReason | null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 72,
+     "unit": "rawToCounts/rows.map()#0",
+     "rule": "type-assertion",
+     "msg": "`r.unknown_reason as UnknownReason | null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/api/incidents.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "truncateToBytes",
+     "lines": [
+      83,
+      101
+     ]
+    },
+    {
+     "name": "parseRecorded",
+     "lines": [
+      108,
+      125
+     ]
+    },
+    {
+     "name": "mapIncidentRow",
+     "lines": [
+      150,
+      229
+     ]
+    },
+    {
+     "name": "buildIncidents",
+     "lines": [
+      231,
+      307
+     ]
+    },
+    {
+     "name": "truncateToBytes/items.map()#0",
+     "lines": [
+      88,
+      88
+     ]
+    },
+    {
+     "name": "truncateToBytes/sizes.reduce()#0",
+     "lines": [
+      90,
+      90
+     ]
+    },
+    {
+     "name": "parseRecorded/parsed.map()#0",
+     "lines": [
+      115,
+      120
+     ]
+    },
+    {
+     "name": "buildIncidents/targets.map()#0",
+     "lines": [
+      237,
+      237
+     ]
+    },
+    {
+     "name": "buildIncidents/page.map()#0",
+     "lines": [
+      285,
+      286
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 94,
+     "unit": "truncateToBytes",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 163,
+     "unit": "mapIncidentRow",
+     "rule": "type-assertion",
+     "msg": "`parseRecorded(r.dependents_json, nameOf)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 204,
+     "unit": "mapIncidentRow",
+     "rule": "type-assertion",
+     "msg": "`worstState` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 278,
+     "unit": "buildIncidents",
+     "rule": "type-assertion",
+     "msg": "`row.state as CheckState` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 279,
+     "unit": "buildIncidents",
+     "rule": "type-assertion",
+     "msg": "`row.unknown_reason as UnknownReason | null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/api/summary.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "dayKeyAt",
+     "lines": [
+      75,
+      76
+     ]
+    },
+    {
+     "name": "buildWindowStatements",
+     "lines": [
+      137,
+      155
+     ]
+    },
+    {
+     "name": "countsFrom",
+     "lines": [
+      168,
+      180
+     ]
+    },
+    {
+     "name": "buildSummary",
+     "lines": [
+      191,
+      492
+     ]
+    },
+    {
+     "name": "buildWindowStatements/UPTIME_WINDOW_DAYS.map()#0",
+     "lines": [
+      149,
+      152
+     ]
+    },
+    {
+     "name": "countsFrom/rows.map()#0",
+     "lines": [
+      170,
+      178
+     ]
+    },
+    {
+     "name": "buildSummary/edges.map()#0",
+     "lines": [
+      337,
+      337
+     ]
+    },
+    {
+     "name": "buildSummary/(openRows.results ?? []).map()#0",
+     "lines": [
+      345,
+      345
+     ]
+    },
+    {
+     "name": "buildSummary/targets.map()#0",
+     "lines": [
+      347,
+      392
+     ]
+    },
+    {
+     "name": "buildSummary/groupOrder.map()#0",
+     "lines": [
+      403,
+      407
+     ]
+    },
+    {
+     "name": "buildSummary/summaries.map()#0",
+     "lines": [
+      410,
+      410
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 261,
+     "unit": "buildSummary",
+     "rule": "alias-mutation",
+     "msg": "`list` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 263,
+     "unit": "buildSummary",
+     "rule": "type-assertion",
+     "msg": "`(h24.results ?? []) as HourRow[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 366,
+     "unit": "buildSummary",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 366,
+     "unit": "buildSummary/targets.map()#0",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    },
+    {
+     "line": 401,
+     "unit": "buildSummary",
+     "rule": "param-mutation",
+     "msg": "push on `grouped.get(t.groupId)!`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 406,
+     "unit": "buildSummary",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 406,
+     "unit": "buildSummary/groupOrder.map()#0",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/build-info.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/domain/api.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/domain/bucket-strip.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "stripWindowFor",
+     "lines": [
+      111,
+      114
+     ]
+    },
+    {
+     "name": "cellFor",
+     "lines": [
+      126,
+      143
+     ]
+    },
+    {
+     "name": "buildStrip",
+     "lines": [
+      153,
+      159
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/bucketise.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "bucketiseCounts",
+     "lines": [
+      42,
+      122
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 73,
+     "unit": "bucketiseCounts",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 75,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 76,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 77,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 78,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 79,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 81,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`reasons` holds the result of `Array.prototype.fill`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 83,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`latencySum` holds the result of `Array.prototype.fill`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 84,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`latencyCount` holds the result of `Array.prototype.fill`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 87,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 92,
+     "unit": "bucketiseCounts",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 102,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 103,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 108,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 109,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 118,
+     "unit": "bucketiseCounts",
+     "rule": "alias-mutation",
+     "msg": "`bucket` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/cadence.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "checkIntervalSeconds",
+     "lines": [
+      48,
+      65
+     ]
+    },
+    {
+     "name": "boardCheckIntervalSeconds",
+     "lines": [
+      84,
+      94
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/classify/gcp.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "classifyGcpIncidents",
+     "lines": [
+      16,
+      44
+     ]
+    },
+    {
+     "name": "classifyGcpIncidents/body.filter()#0",
+     "lines": [
+      24,
+      24
+     ]
+    },
+    {
+     "name": "classifyGcpIncidents/open.some()#0",
+     "lines": [
+      32,
+      32
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 24,
+     "unit": "classifyGcpIncidents",
+     "rule": "type-assertion",
+     "msg": "`typeof i === \"object\" && i !== null && !(i as Record<string,` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": "classifyGcpIncidents/body.filter()#0",
+     "rule": "type-assertion",
+     "msg": "`typeof i === \"object\" && i !== null && !(i as Record<string,` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/classify/index.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isDirectProbe",
+     "lines": [
+      48,
+      50
+     ]
+    },
+    {
+     "name": "isSlow",
+     "lines": [
+      59,
+      61
+     ]
+    },
+    {
+     "name": "ctxOkState",
+     "lines": [
+      64,
+      66
+     ]
+    },
+    {
+     "name": "classify",
+     "lines": [
+      68,
+      152
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/classify/nexus-health.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "classifyNexusHealth",
+     "lines": [
+      18,
+      49
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/classify/result.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "unknown",
+     "lines": [
+      10,
+      17
+     ]
+    },
+    {
+     "name": "known",
+     "lines": [
+      27,
+      35
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/classify/select-path.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "selectPath",
+     "lines": [
+      2,
+      9
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/classify/slack.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "fromSlackType",
+     "lines": [
+      106,
+      115
+     ]
+    },
+    {
+     "name": "readActiveIncidents",
+     "lines": [
+      129,
+      142
+     ]
+    },
+    {
+     "name": "classifyScoped",
+     "lines": [
+      157,
+      193
+     ]
+    },
+    {
+     "name": "classifySlack",
+     "lines": [
+      195,
+      261
+     ]
+    },
+    {
+     "name": "classifyScoped/incident.services.filter()#0",
+     "lines": [
+      169,
+      169
+     ]
+    },
+    {
+     "name": "classifySlack/list.some()#0",
+     "lines": [
+      238,
+      241
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 139,
+     "unit": "readActiveIncidents",
+     "rule": "type-assertion",
+     "msg": "`i[\"type\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 139,
+     "unit": "readActiveIncidents",
+     "rule": "type-assertion",
+     "msg": "`services as string[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/classify/statuspage-shape.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "fromIndicator",
+     "lines": [
+      36,
+      49
+     ]
+    },
+    {
+     "name": "fromComponentStatus",
+     "lines": [
+      59,
+      72
+     ]
+    },
+    {
+     "name": "worse",
+     "lines": [
+      77,
+      79
+     ]
+    },
+    {
+     "name": "readComponents",
+     "lines": [
+      94,
+      109
+     ]
+    },
+    {
+     "name": "readIncidents",
+     "lines": [
+      111,
+      133
+     ]
+    },
+    {
+     "name": "indexByScopeKey",
+     "lines": [
+      149,
+      168
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 106,
+     "unit": "readComponents",
+     "rule": "type-assertion",
+     "msg": "`c.id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 106,
+     "unit": "readComponents",
+     "rule": "type-assertion",
+     "msg": "`c.name` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 106,
+     "unit": "readComponents",
+     "rule": "type-assertion",
+     "msg": "`c.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 130,
+     "unit": "readIncidents",
+     "rule": "type-assertion",
+     "msg": "`i.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 130,
+     "unit": "readIncidents",
+     "rule": "type-assertion",
+     "msg": "`i.impact` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 156,
+     "unit": "indexByScopeKey",
+     "rule": "alias-mutation",
+     "msg": "`list` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/classify/statuspage.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "classifyScoped",
+     "lines": [
+      78,
+      162
+     ]
+    },
+    {
+     "name": "classifyStatuspage",
+     "lines": [
+      164,
+      204
+     ]
+    },
+    {
+     "name": "classifyScoped/missing.map()#0",
+     "lines": [
+      108,
+      108
+     ]
+    },
+    {
+     "name": "classifyScoped/matched.map()#0",
+     "lines": [
+      113,
+      113
+     ]
+    },
+    {
+     "name": "classifyScoped/incident.componentIds.some()#0",
+     "lines": [
+      140,
+      140
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/consistency.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "checkSummaryConsistency",
+     "lines": [
+      68,
+      396
+     ]
+    },
+    {
+     "name": "checkSummaryConsistency/Object.entries(strip.legend)\n      .filter()#0",
+     "lines": [
+      197,
+      197
+     ]
+    },
+    {
+     "name": "checkSummaryConsistency/Object.entries(strip.legend)\n      .filter(([, meaning]) => meaning.state === \"unknown\" && meaning.reason === \"not_yet_probed\")\n      .map()#0",
+     "lines": [
+      198,
+      198
+     ]
+    },
+    {
+     "name": "checkSummaryConsistency/[...t.bucketCells].some()#0",
+     "lines": [
+      265,
+      265
+     ]
+    },
+    {
+     "name": "checkSummaryConsistency/payload.targets.map()#0",
+     "lines": [
+      277,
+      277
+     ]
+    },
+    {
+     "name": "checkSummaryConsistency/payload.groups.flatMap()#0",
+     "lines": [
+      278,
+      278
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 265,
+     "unit": "checkSummaryConsistency",
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/cross-check.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "crossCheck",
+     "lines": [
+      61,
+      144
+     ]
+    },
+    {
+     "name": "crossCheckIncidents",
+     "lines": [
+      153,
+      193
+     ]
+    },
+    {
+     "name": "crossCheck/summary.targets.find()#0",
+     "lines": [
+      70,
+      70
+     ]
+    },
+    {
+     "name": "crossCheckIncidents/incidents.incidents.filter()#0",
+     "lines": [
+      163,
+      163
+     ]
+    },
+    {
+     "name": "crossCheckIncidents/incidents.incidents.filter((i) => i.closedAt === null).map()#0",
+     "lines": [
+      163,
+      163
+     ]
+    },
+    {
+     "name": "crossCheckIncidents/summary.openIncidents.map()#0",
+     "lines": [
+      165,
+      165
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/current-state.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "currentStateFor",
+     "lines": [
+      41,
+      89
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/deploy-budget.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "proberCatchUpSeconds",
+     "lines": [
+      142,
+      146
+     ]
+    },
+    {
+     "name": "jobTimeoutMinutesFor",
+     "lines": [
+      188,
+      190
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/deploy-verify.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isObject",
+     "lines": [
+      106,
+      108
+     ]
+    },
+    {
+     "name": "normalizeSha",
+     "lines": [
+      120,
+      122
+     ]
+    },
+    {
+     "name": "evaluateDeploy",
+     "lines": [
+      130,
+      249
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/edge-audit.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "observeEdges",
+     "lines": [
+      59,
+      97
+     ]
+    },
+    {
+     "name": "causeConfidence",
+     "lines": [
+      108,
+      112
+     ]
+    },
+    {
+     "name": "isContradicted",
+     "lines": [
+      115,
+      117
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/escalate.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "applyEscalation",
+     "lines": [
+      51,
+      98
+     ]
+    },
+    {
+     "name": "nextStreak",
+     "lines": [
+      107,
+      111
+     ]
+    },
+    {
+     "name": "applyEscalation/targets.map()#0",
+     "lines": [
+      59,
+      59
+     ]
+    },
+    {
+     "name": "applyEscalation/target.dependsOn.every()#0",
+     "lines": [
+      73,
+      76
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/freshness.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "computeFreshness",
+     "lines": [
+      16,
+      41
+     ]
+    },
+    {
+     "name": "applyStaleness",
+     "lines": [
+      54,
+      91
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/global-state.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "computeGlobalState",
+     "lines": [
+      13,
+      73
+     ]
+    },
+    {
+     "name": "computeGlobalState/targets.filter()#0@1",
+     "lines": [
+      17,
+      17
+     ]
+    },
+    {
+     "name": "computeGlobalState/targets.filter()#0@2",
+     "lines": [
+      18,
+      18
+     ]
+    },
+    {
+     "name": "computeGlobalState/nexus.filter()#0@1",
+     "lines": [
+      22,
+      22
+     ]
+    },
+    {
+     "name": "computeGlobalState/nexus.filter()#0@2",
+     "lines": [
+      23,
+      23
+     ]
+    },
+    {
+     "name": "computeGlobalState/nexus.filter()#0@3",
+     "lines": [
+      24,
+      24
+     ]
+    },
+    {
+     "name": "computeGlobalState/nexusDown.map()#0",
+     "lines": [
+      27,
+      27
+     ]
+    },
+    {
+     "name": "computeGlobalState/vendors.filter()#0",
+     "lines": [
+      57,
+      60
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 52,
+     "unit": "computeGlobalState",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "computeGlobalState",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/history-source.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "planFor",
+     "lines": [
+      56,
+      58
+     ]
+    },
+    {
+     "name": "cacheSecondsFor",
+     "lines": [
+      69,
+      82
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/incident-hysteresis.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "nextBadStreak",
+     "lines": [
+      78,
+      82
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/incident-summary.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isoSecond",
+     "lines": [
+      43,
+      45
+     ]
+    },
+    {
+     "name": "describeIncident",
+     "lines": [
+      60,
+      85
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/incidents.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "reconcileIncidents",
+     "lines": [
+      76,
+      157
+     ]
+    },
+    {
+     "name": "reconcileIncidents/openIncidents.map()#0",
+     "lines": [
+      107,
+      107
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/injection.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "activeInjections",
+     "lines": [
+      55,
+      61
+     ]
+    },
+    {
+     "name": "applyInjections",
+     "lines": [
+      71,
+      99
+     ]
+    },
+    {
+     "name": "injectionStatus",
+     "lines": [
+      110,
+      119
+     ]
+    },
+    {
+     "name": "activeInjections/input.injections.filter()#0",
+     "lines": [
+      59,
+      59
+     ]
+    },
+    {
+     "name": "injectionStatus/active.map()#0@1",
+     "lines": [
+      116,
+      116
+     ]
+    },
+    {
+     "name": "injectionStatus/active.map()#0@2",
+     "lines": [
+      117,
+      117
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/latency-attribution.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "latencyOwners",
+     "lines": [
+      79,
+      103
+     ]
+    },
+    {
+     "name": "latencyOwners/group.filter()#0",
+     "lines": [
+      96,
+      96
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 93,
+     "unit": "latencyOwners",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 100,
+     "unit": "latencyOwners",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/latency-threshold.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "baselineFromStored",
+     "lines": [
+      174,
+      182
+     ]
+    },
+    {
+     "name": "baselineFromSamples",
+     "lines": [
+      192,
+      207
+     ]
+    },
+    {
+     "name": "baselineFromBuckets",
+     "lines": [
+      242,
+      276
+     ]
+    },
+    {
+     "name": "degradedThresholdMs",
+     "lines": [
+      288,
+      305
+     ]
+    },
+    {
+     "name": "baselineFromSamples/latenciesMs.filter()#0",
+     "lines": [
+      196,
+      196
+     ]
+    },
+    {
+     "name": "baselineFromSamples/[...usable].sort()#0",
+     "lines": [
+      200,
+      200
+     ]
+    },
+    {
+     "name": "baselineFromBuckets/buckets.filter()#0",
+     "lines": [
+      251,
+      255
+     ]
+    },
+    {
+     "name": "baselineFromBuckets/usable.reduce()#0",
+     "lines": [
+      257,
+      257
+     ]
+    },
+    {
+     "name": "baselineFromBuckets/[...usable].sort()#0",
+     "lines": [
+      261,
+      261
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 206,
+     "unit": "baselineFromSamples",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/migration-retry.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "apiErrorCodes",
+     "lines": [
+      153,
+      160
+     ]
+    },
+    {
+     "name": "transportSignature",
+     "lines": [
+      162,
+      167
+     ]
+    },
+    {
+     "name": "classifyMigrationAttempt",
+     "lines": [
+      179,
+      217
+     ]
+    },
+    {
+     "name": "retryDelaysSeconds",
+     "lines": [
+      278,
+      283
+     ]
+    },
+    {
+     "name": "totalRetryWaitSeconds",
+     "lines": [
+      286,
+      288
+     ]
+    },
+    {
+     "name": "migrationBudgetSeconds",
+     "lines": [
+      310,
+      312
+     ]
+    },
+    {
+     "name": "runMigrationWithRetry",
+     "lines": [
+      346,
+      395
+     ]
+    },
+    {
+     "name": "classifyMigrationAttempt/codes.filter()#0",
+     "lines": [
+      188,
+      188
+     ]
+    },
+    {
+     "name": "retryDelaysSeconds/Array.from()#1",
+     "lines": [
+      280,
+      281
+     ]
+    },
+    {
+     "name": "totalRetryWaitSeconds/retryDelaysSeconds(config).reduce()#0",
+     "lines": [
+      287,
+      287
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/rollup-plan.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "hourFloor",
+     "lines": [
+      22,
+      22
+     ]
+    },
+    {
+     "name": "utcDayOf",
+     "lines": [
+      23,
+      23
+     ]
+    },
+    {
+     "name": "chooseScanWindow",
+     "lines": [
+      89,
+      102
+     ]
+    },
+    {
+     "name": "planRollups",
+     "lines": [
+      104,
+      168
+     ]
+    },
+    {
+     "name": "retentionCutoff",
+     "lines": [
+      184,
+      205
+     ]
+    },
+    {
+     "name": "planRollups/presentHours.map()#0@1",
+     "lines": [
+      138,
+      138
+     ]
+    },
+    {
+     "name": "planRollups/hours.map()#0",
+     "lines": [
+      153,
+      153
+     ]
+    },
+    {
+     "name": "planRollups/presentHours.map()#0@2",
+     "lines": [
+      156,
+      156
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 166,
+     "unit": "planRollups",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/rotation.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "distinctProbeUrls",
+     "lines": [
+      60,
+      70
+     ]
+    },
+    {
+     "name": "selectChunk",
+     "lines": [
+      72,
+      105
+     ]
+    },
+    {
+     "name": "selectChunk/targets.filter()#0",
+     "lines": [
+      91,
+      95
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 86,
+     "unit": "selectChunk",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/schema-fingerprint.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "fieldPaths",
+     "lines": [
+      37,
+      69
+     ]
+    },
+    {
+     "name": "hashPaths",
+     "lines": [
+      78,
+      87
+     ]
+    },
+    {
+     "name": "fingerprint",
+     "lines": [
+      90,
+      92
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 54,
+     "unit": "fieldPaths",
+     "rule": "type-assertion",
+     "msg": "`v as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "fieldPaths",
+     "rule": "param-mutation",
+     "msg": "set mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 60,
+     "unit": "fieldPaths",
+     "rule": "type-assertion",
+     "msg": "`(v as Record<string, unknown>)[key]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 64,
+     "unit": "fieldPaths",
+     "rule": "param-mutation",
+     "msg": "set mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 82,
+     "unit": "hashPaths",
+     "rule": "unsupported-operator",
+     "msg": "assignment operator is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/snapshot-contract.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isObject",
+     "lines": [
+      59,
+      61
+     ]
+    },
+    {
+     "name": "checkShape",
+     "lines": [
+      74,
+      166
+     ]
+    },
+    {
+     "name": "parseSnapshot",
+     "lines": [
+      173,
+      251
+     ]
+    },
+    {
+     "name": "parseSnapshot/fieldPaths(parsed).filter()#0",
+     "lines": [
+      225,
+      225
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/snapshot-policy.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "shouldRebuildSnapshot",
+     "lines": [
+      25,
+      42
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/summary-exemplar.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "exemplarWindow",
+     "lines": [
+      136,
+      151
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/suppress.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "findRootCause",
+     "lines": [
+      50,
+      76
+     ]
+    },
+    {
+     "name": "applySuppression",
+     "lines": [
+      78,
+      124
+     ]
+    },
+    {
+     "name": "findRootCause/(deps.get(frontier) ?? [])\n      .filter()#0",
+     "lines": [
+      63,
+      63
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/tenant-alert-engine.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "asRecord",
+     "lines": [
+      62,
+      66
+     ]
+    },
+    {
+     "name": "evaluateTenantAlertEngine",
+     "lines": [
+      68,
+      154
+     ]
+    },
+    {
+     "name": "evaluateDestination",
+     "lines": [
+      179,
+      229
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 93,
+     "unit": "evaluateTenantAlertEngine",
+     "rule": "type-assertion",
+     "msg": "`asRecord(asRecord(input.body)?.[\"details\"])` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 93,
+     "unit": "evaluateTenantAlertEngine",
+     "rule": "type-assertion",
+     "msg": "`asRecord(input.body)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 117,
+     "unit": "evaluateTenantAlertEngine",
+     "rule": "type-assertion",
+     "msg": "`asRecord(details[\"tenantAlertEngine\"])` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/domain/tick-coverage.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "computeTickCoverage",
+     "lines": [
+      48,
+      69
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/domain/uptime.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "buildUptimeWindow",
+     "lines": [
+      39,
+      68
+     ]
+    },
+    {
+     "name": "addCounts",
+     "lines": [
+      71,
+      78
+     ]
+    },
+    {
+     "name": "worstState",
+     "lines": [
+      90,
+      95
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/domain/watchdog.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "looksLikeSummary",
+     "lines": [
+      108,
+      127
+     ]
+    },
+    {
+     "name": "evaluate",
+     "lines": [
+      145,
+      254
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 225,
+     "unit": "evaluate",
+     "rule": "type-assertion",
+     "msg": "`delivery[\"producedBy\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 225,
+     "unit": "evaluate",
+     "rule": "type-assertion",
+     "msg": "`delivery[\"servedBy\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 238,
+     "unit": "evaluate",
+     "rule": "type-assertion",
+     "msg": "`injection[\"expiresAt\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/pages-worker.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "serveDocument",
+     "lines": [
+      122,
+      141
+     ]
+    },
+    {
+     "name": "json",
+     "lines": [
+      143,
+      152
+     ]
+    },
+    {
+     "name": "apiError",
+     "lines": [
+      154,
+      161
+     ]
+    },
+    {
+     "name": "default.fetch",
+     "lines": [
+      164,
+      398
+     ]
+    },
+    {
+     "name": "default.fetch/targets.some()#0",
+     "lines": [
+      292,
+      292
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 286,
+     "unit": "default.fetch",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/persist/checks.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "floorToTick",
+     "lines": [
+      13,
+      15
+     ]
+    },
+    {
+     "name": "hourFloor",
+     "lines": [
+      17,
+      17
+     ]
+    },
+    {
+     "name": "utcDay",
+     "lines": [
+      18,
+      18
+     ]
+    },
+    {
+     "name": "buildWriteStatements",
+     "lines": [
+      24,
+      106
+     ]
+    },
+    {
+     "name": "buildRollupStatements",
+     "lines": [
+      120,
+      218
+     ]
+    },
+    {
+     "name": "buildPruneStatements",
+     "lines": [
+      231,
+      243
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/persist/config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "toInt",
+     "lines": [
+      105,
+      109
+     ]
+    },
+    {
+     "name": "toNumber",
+     "lines": [
+      127,
+      131
+     ]
+    },
+    {
+     "name": "parseConfigRows",
+     "lines": [
+      133,
+      199
+     ]
+    },
+    {
+     "name": "loadConfig",
+     "lines": [
+      201,
+      206
+     ]
+    },
+    {
+     "name": "setConfigValue",
+     "lines": [
+      212,
+      220
+     ]
+    },
+    {
+     "name": "parseConfigRows/rows.map()#0",
+     "lines": [
+      134,
+      134
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/persist/current.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadCurrentStates",
+     "lines": [
+      59,
+      67
+     ]
+    },
+    {
+     "name": "loadCurrentStatesWithTime",
+     "lines": [
+      69,
+      105
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 84,
+     "unit": "loadCurrentStatesWithTime",
+     "rule": "type-assertion",
+     "msg": "`r.state as SuppressedClassification[\"state\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 85,
+     "unit": "loadCurrentStatesWithTime",
+     "rule": "type-assertion",
+     "msg": "`r.unknown_reason as SuppressedClassification[\"reason\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 100,
+     "unit": "loadCurrentStatesWithTime",
+     "rule": "type-assertion",
+     "msg": "`r.vendor_claim as SuppressedClassification[\"vendorClaim\"]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/persist/edges.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadEdges",
+     "lines": [
+      19,
+      34
+     ]
+    },
+    {
+     "name": "buildEdgeObservationStatements",
+     "lines": [
+      44,
+      82
+     ]
+    },
+    {
+     "name": "loadEdges/(results ?? []).map()#0",
+     "lines": [
+      27,
+      33
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/persist/incidents.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "buildIncidentStatements",
+     "lines": [
+      5,
+      65
+     ]
+    },
+    {
+     "name": "buildDependentRecordStatements",
+     "lines": [
+      78,
+      125
+     ]
+    },
+    {
+     "name": "buildDependentRecordStatements/[...merged.values()].sort()#0",
+     "lines": [
+      114,
+      114
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 104,
+     "unit": "buildDependentRecordStatements",
+     "rule": "type-assertion",
+     "msg": "`previous` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/persist/injections.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadInjections",
+     "lines": [
+      20,
+      32
+     ]
+    },
+    {
+     "name": "buildInjectionCleanup",
+     "lines": [
+      35,
+      40
+     ]
+    },
+    {
+     "name": "loadInjections/(results ?? []).map()#0",
+     "lines": [
+      25,
+      31
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 27,
+     "unit": "loadInjections",
+     "rule": "type-assertion",
+     "msg": "`r.state as CheckState` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 27,
+     "unit": "loadInjections/(results ?? []).map()#0",
+     "rule": "type-assertion",
+     "msg": "`r.state as CheckState` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 28,
+     "unit": "loadInjections",
+     "rule": "type-assertion",
+     "msg": "`r.reason as UnknownReason | null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 28,
+     "unit": "loadInjections/(results ?? []).map()#0",
+     "rule": "type-assertion",
+     "msg": "`r.reason as UnknownReason | null` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/persist/latency-baseline.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadLatencyHistogram",
+     "lines": [
+      60,
+      83
+     ]
+    },
+    {
+     "name": "buildLatencyBaselineStatements",
+     "lines": [
+      98,
+      106
+     ]
+    },
+    {
+     "name": "buildLatencyBaselineStatements/[...baselines].map()#0",
+     "lines": [
+      105,
+      105
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/persist/rollup-state.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadPresentHours",
+     "lines": [
+      33,
+      45
+     ]
+    },
+    {
+     "name": "loadPresentDays",
+     "lines": [
+      48,
+      54
+     ]
+    },
+    {
+     "name": "loadEarliestCheckAt",
+     "lines": [
+      63,
+      68
+     ]
+    },
+    {
+     "name": "loadCurrentHourCounts",
+     "lines": [
+      113,
+      159
+     ]
+    },
+    {
+     "name": "loadPresentHours/(results ?? []).map()#0",
+     "lines": [
+      44,
+      44
+     ]
+    },
+    {
+     "name": "loadPresentDays/(results ?? []).map()#0",
+     "lines": [
+      53,
+      53
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/persist/snapshots.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "buildSnapshotStatement",
+     "lines": [
+      13,
+      26
+     ]
+    },
+    {
+     "name": "readSnapshotGeneratedAt",
+     "lines": [
+      33,
+      42
+     ]
+    },
+    {
+     "name": "readSummarySnapshot",
+     "lines": [
+      62,
+      72
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/persist/targets.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "loadTargets",
+     "lines": [
+      28,
+      89
+     ]
+    },
+    {
+     "name": "loadTargets/((targets.results ?? []) as TargetRow[]).map()#0",
+     "lines": [
+      73,
+      88
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 56,
+     "unit": "loadTargets",
+     "rule": "type-assertion",
+     "msg": "`(edges.results ?? []) as EdgeRow[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 67,
+     "unit": "loadTargets",
+     "rule": "type-assertion",
+     "msg": "`(components.results ?? []) as ComponentRow[]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 76,
+     "unit": "loadTargets",
+     "rule": "type-assertion",
+     "msg": "`r.class as TargetClass` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 76,
+     "unit": "loadTargets/((targets.results ?? []) as TargetRow[]).map()#0",
+     "rule": "type-assertion",
+     "msg": "`r.class as TargetClass` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 78,
+     "unit": "loadTargets",
+     "rule": "type-assertion",
+     "msg": "`r.probe_kind as ProbeKind` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 78,
+     "unit": "loadTargets/((targets.results ?? []) as TargetRow[]).map()#0",
+     "rule": "type-assertion",
+     "msg": "`r.probe_kind as ProbeKind` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/persist/tick-runs.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "recordTickRun",
+     "lines": [
+      34,
+      51
+     ]
+    },
+    {
+     "name": "lastSuccessfulTick",
+     "lines": [
+      60,
+      65
+     ]
+    },
+    {
+     "name": "countTickRunsSince",
+     "lines": [
+      74,
+      80
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/probe/http.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "probeUrl",
+     "lines": [
+      27,
+      91
+     ]
+    },
+    {
+     "name": "probeUrls",
+     "lines": [
+      106,
+      116
+     ]
+    },
+    {
+     "name": "probeUrl/setTimeout()#0",
+     "lines": [
+      33,
+      33
+     ]
+    },
+    {
+     "name": "probeUrls/urls.map()#0",
+     "lines": [
+      112,
+      112
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 112,
+     "unit": "probeUrls",
+     "rule": "promise-all-order",
+     "msg": "Promise.all does not order work after await; use a for-of loop with await for ordered effects",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/tick.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "runTick",
+     "lines": [
+      118,
+      596
+     ]
+    },
+    {
+     "name": "stateChanged_",
+     "lines": [
+      598,
+      606
+     ]
+    },
+    {
+     "name": "dayOf",
+     "lines": [
+      608,
+      608
+     ]
+    },
+    {
+     "name": "runTick/[...injectedStates].map()#0",
+     "lines": [
+      241,
+      241
+     ]
+    },
+    {
+     "name": "runTick/(openRows.results ?? []).map()#0@1",
+     "lines": [
+      303,
+      307
+     ]
+    },
+    {
+     "name": "runTick/targets.map()#0",
+     "lines": [
+      342,
+      342
+     ]
+    },
+    {
+     "name": "runTick/(openRows.results ?? []).map()#0@2",
+     "lines": [
+      360,
+      364
+     ]
+    },
+    {
+     "name": "runTick/targets.filter()#0",
+     "lines": [
+      418,
+      418
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 306,
+     "unit": "runTick",
+     "rule": "type-assertion",
+     "msg": "`r.worst_state as \"degraded\" | \"down\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 306,
+     "unit": "runTick/(openRows.results ?? []).map()#0@1",
+     "rule": "type-assertion",
+     "msg": "`r.worst_state as \"degraded\" | \"down\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/buckets.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "barHeightPx",
+     "lines": [
+      48,
+      50
+     ]
+    },
+    {
+     "name": "bucketSegments",
+     "lines": [
+      139,
+      159
+     ]
+    },
+    {
+     "name": "round4",
+     "lines": [
+      161,
+      163
+     ]
+    },
+    {
+     "name": "bucketRangeText",
+     "lines": [
+      169,
+      171
+     ]
+    },
+    {
+     "name": "hhmm",
+     "lines": [
+      173,
+      176
+     ]
+    },
+    {
+     "name": "bucketObserved",
+     "lines": [
+      184,
+      186
+     ]
+    },
+    {
+     "name": "bucketCaveatText",
+     "lines": [
+      196,
+      201
+     ]
+    },
+    {
+     "name": "bucketDetailText",
+     "lines": [
+      204,
+      213
+     ]
+    },
+    {
+     "name": "bucketBars",
+     "lines": [
+      215,
+      241
+     ]
+    },
+    {
+     "name": "sparkline",
+     "lines": [
+      278,
+      323
+     ]
+    },
+    {
+     "name": "round2",
+     "lines": [
+      325,
+      327
+     ]
+    },
+    {
+     "name": "bucketSegments/counts.filter()#0",
+     "lines": [
+      148,
+      148
+     ]
+    },
+    {
+     "name": "bucketSegments/present.map()#0",
+     "lines": [
+      151,
+      158
+     ]
+    },
+    {
+     "name": "bucketBars/buckets.map()#0",
+     "lines": [
+      216,
+      240
+     ]
+    },
+    {
+     "name": "sparkline/points.map()#0",
+     "lines": [
+      312,
+      312
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 154,
+     "unit": "bucketSegments/present.map()#0",
+     "rule": "captured-mutable",
+     "msg": "captured binding `used` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 310,
+     "unit": "sparkline",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/chart-label.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "chartLabel",
+     "lines": [
+      49,
+      67
+     ]
+    },
+    {
+     "name": "chartLabel/bars.filter()#0@1",
+     "lines": [
+      50,
+      50
+     ]
+    },
+    {
+     "name": "chartLabel/[...counts].map()#0",
+     "lines": [
+      57,
+      57
+     ]
+    },
+    {
+     "name": "chartLabel/bars.filter()#0@2",
+     "lines": [
+      59,
+      59
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/copy-detail.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "numberWord",
+     "lines": [
+      39,
+      41
+     ]
+    },
+    {
+     "name": "capitalise",
+     "lines": [
+      43,
+      45
+     ]
+    },
+    {
+     "name": "nameList",
+     "lines": [
+      48,
+      52
+     ]
+    },
+    {
+     "name": "DETAIL_COPY.tableHeadings",
+     "lines": [
+      92,
+      98
+     ]
+    },
+    {
+     "name": "DETAIL_COPY.openVendor",
+     "lines": [
+      161,
+      161
+     ]
+    },
+    {
+     "name": "DETAIL_COPY.cannotAffect",
+     "lines": [
+      173,
+      174
+     ]
+    },
+    {
+     "name": "DETAIL_COPY.linkOnlySub",
+     "lines": [
+      189,
+      190
+     ]
+    },
+    {
+     "name": "DETAIL_COPY.basis",
+     "lines": [
+      200,
+      201
+     ]
+    },
+    {
+     "name": "DETAIL_COPY.noDataBasis",
+     "lines": [
+      204,
+      204
+     ]
+    },
+    {
+     "name": "bucketSpanWord",
+     "lines": [
+      215,
+      219
+     ]
+    },
+    {
+     "name": "groupDigits",
+     "lines": [
+      221,
+      223
+     ]
+    },
+    {
+     "name": "detailLabel",
+     "lines": [
+      226,
+      228
+     ]
+    },
+    {
+     "name": "groupLabel",
+     "lines": [
+      231,
+      233
+     ]
+    },
+    {
+     "name": "answeringIn",
+     "lines": [
+      236,
+      238
+     ]
+    },
+    {
+     "name": "lastFailed",
+     "lines": [
+      248,
+      250
+     ]
+    },
+    {
+     "name": "ofChecks",
+     "lines": [
+      255,
+      257
+     ]
+    },
+    {
+     "name": "suppressionNote",
+     "lines": [
+      266,
+      269
+     ]
+    },
+    {
+     "name": "dependsOnNote",
+     "lines": [
+      276,
+      279
+     ]
+    },
+    {
+     "name": "bucketMeta",
+     "lines": [
+      300,
+      302
+     ]
+    },
+    {
+     "name": "latencyMeta",
+     "lines": [
+      305,
+      310
+     ]
+    },
+    {
+     "name": "incidentMeta",
+     "lines": [
+      321,
+      323
+     ]
+    },
+    {
+     "name": "incidentRowMeta",
+     "lines": [
+      326,
+      328
+     ]
+    },
+    {
+     "name": "incidentRowWhen",
+     "lines": [
+      331,
+      333
+     ]
+    },
+    {
+     "name": "groupSub",
+     "lines": [
+      342,
+      360
+     ]
+    },
+    {
+     "name": "noNexusDependency",
+     "lines": [
+      363,
+      365
+     ]
+    },
+    {
+     "name": "dependentsStillUp",
+     "lines": [
+      368,
+      371
+     ]
+    },
+    {
+     "name": "dependentsAffected",
+     "lines": [
+      378,
+      381
+     ]
+    },
+    {
+     "name": "impairedWord",
+     "lines": [
+      384,
+      386
+     ]
+    },
+    {
+     "name": "checksSuppressed",
+     "lines": [
+      389,
+      391
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 50,
+     "unit": "nameList",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 51,
+     "unit": "nameList",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/copy-incident.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "incidentLabel",
+     "lines": [
+      90,
+      92
+     ]
+    },
+    {
+     "name": "checksWord",
+     "lines": [
+      95,
+      97
+     ]
+    },
+    {
+     "name": "stripHeading",
+     "lines": [
+      108,
+      110
+     ]
+    },
+    {
+     "name": "spanText",
+     "lines": [
+      123,
+      128
+     ]
+    },
+    {
+     "name": "rulerStart",
+     "lines": [
+      131,
+      133
+     ]
+    },
+    {
+     "name": "cellWidthText",
+     "lines": [
+      136,
+      141
+     ]
+    },
+    {
+     "name": "suppressedProse",
+     "lines": [
+      151,
+      153
+     ]
+    },
+    {
+     "name": "independentProse",
+     "lines": [
+      163,
+      166
+     ]
+    },
+    {
+     "name": "rootProse",
+     "lines": [
+      169,
+      171
+     ]
+    },
+    {
+     "name": "causedByProse",
+     "lines": [
+      181,
+      183
+     ]
+    },
+    {
+     "name": "recoveryNote",
+     "lines": [
+      194,
+      197
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/copy.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "staleBannerText",
+     "lines": [
+      82,
+      84
+     ]
+    },
+    {
+     "name": "staleBannerMobileText",
+     "lines": [
+      93,
+      95
+     ]
+    },
+    {
+     "name": "staleBannerMeta",
+     "lines": [
+      104,
+      106
+     ]
+    },
+    {
+     "name": "staleBannerMetaMobileText",
+     "lines": [
+      117,
+      119
+     ]
+    },
+    {
+     "name": "missedChecksNote",
+     "lines": [
+      133,
+      136
+     ]
+    },
+    {
+     "name": "lastKnownNote",
+     "lines": [
+      147,
+      149
+     ]
+    },
+    {
+     "name": "lastSeenText",
+     "lines": [
+      152,
+      154
+     ]
+    },
+    {
+     "name": "groupStaleSummary",
+     "lines": [
+      157,
+      159
+     ]
+    },
+    {
+     "name": "suppressedNote",
+     "lines": [
+      169,
+      171
+     ]
+    },
+    {
+     "name": "allReachableSub",
+     "lines": [
+      174,
+      176
+     ]
+    },
+    {
+     "name": "vendorClaimSub",
+     "lines": [
+      191,
+      202
+     ]
+    },
+    {
+     "name": "noneUpstream",
+     "lines": [
+      211,
+      213
+     ]
+    },
+    {
+     "name": "outageLineMobile",
+     "lines": [
+      233,
+      241
+     ]
+    },
+    {
+     "name": "someUpstream",
+     "lines": [
+      248,
+      250
+     ]
+    },
+    {
+     "name": "lastResolvedText",
+     "lines": [
+      253,
+      255
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/derive.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "worstState",
+     "lines": [
+      36,
+      42
+     ]
+    },
+    {
+     "name": "tally",
+     "lines": [
+      44,
+      48
+     ]
+    },
+    {
+     "name": "vendorClaimTally",
+     "lines": [
+      66,
+      80
+     ]
+    },
+    {
+     "name": "summaryText",
+     "lines": [
+      83,
+      90
+     ]
+    },
+    {
+     "name": "observedSpan",
+     "lines": [
+      102,
+      104
+     ]
+    },
+    {
+     "name": "renderedState",
+     "lines": [
+      142,
+      149
+     ]
+    },
+    {
+     "name": "impactOf",
+     "lines": [
+      162,
+      176
+     ]
+    },
+    {
+     "name": "effectOnNexus",
+     "lines": [
+      212,
+      231
+     ]
+    },
+    {
+     "name": "isDemoted",
+     "lines": [
+      234,
+      236
+     ]
+    },
+    {
+     "name": "impactOf/targets.filter()#0",
+     "lines": [
+      164,
+      164
+     ]
+    },
+    {
+     "name": "impactOf/dependents.filter()#0",
+     "lines": [
+      168,
+      168
+     ]
+    },
+    {
+     "name": "effectOnNexus/targets.find()#0",
+     "lines": [
+      221,
+      221
+     ]
+    },
+    {
+     "name": "effectOnNexus/targets.filter()#0",
+     "lines": [
+      228,
+      228
+     ]
+    },
+    {
+     "name": "effectOnNexus/declared.some()#0",
+     "lines": [
+      230,
+      230
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 46,
+     "unit": "tally",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/detail-cards.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "stripTargetPrefix",
+     "lines": [
+      67,
+      70
+     ]
+    },
+    {
+     "name": "verdictWord",
+     "lines": [
+      89,
+      100
+     ]
+    },
+    {
+     "name": "subLine",
+     "lines": [
+      114,
+      135
+     ]
+    },
+    {
+     "name": "effectOnNexusCard",
+     "lines": [
+      150,
+      202
+     ]
+    },
+    {
+     "name": "dependencyCard",
+     "lines": [
+      204,
+      259
+     ]
+    },
+    {
+     "name": "medianLatency",
+     "lines": [
+      262,
+      269
+     ]
+    },
+    {
+     "name": "incidentsFor",
+     "lines": [
+      280,
+      333
+     ]
+    },
+    {
+     "name": "windowView",
+     "lines": [
+      335,
+      404
+     ]
+    },
+    {
+     "name": "effectOnNexusCard/targets.filter()#0",
+     "lines": [
+      156,
+      156
+     ]
+    },
+    {
+     "name": "effectOnNexusCard/dependents.filter()#0",
+     "lines": [
+      158,
+      158
+     ]
+    },
+    {
+     "name": "effectOnNexusCard/dependents.map()#0@1",
+     "lines": [
+      164,
+      164
+     ]
+    },
+    {
+     "name": "effectOnNexusCard/affected.map()#0",
+     "lines": [
+      168,
+      168
+     ]
+    },
+    {
+     "name": "effectOnNexusCard/dependents.map()#0@2",
+     "lines": [
+      181,
+      186
+     ]
+    },
+    {
+     "name": "dependencyCard/targets.filter()#0",
+     "lines": [
+      208,
+      208
+     ]
+    },
+    {
+     "name": "dependencyCard/dependents.map()#0",
+     "lines": [
+      209,
+      214
+     ]
+    },
+    {
+     "name": "dependencyCard/upstream.map()#0@1",
+     "lines": [
+      252,
+      252
+     ]
+    },
+    {
+     "name": "dependencyCard/upstream.map()#0@2",
+     "lines": [
+      253,
+      257
+     ]
+    },
+    {
+     "name": "dependencyCard/upstream.map()#0@2/targets.find()#0",
+     "lines": [
+      254,
+      254
+     ]
+    },
+    {
+     "name": "medianLatency/[...values].sort()#0",
+     "lines": [
+      264,
+      264
+     ]
+    },
+    {
+     "name": "incidentsFor/input.incidents.filter()#0",
+     "lines": [
+      284,
+      284
+     ]
+    },
+    {
+     "name": "incidentsFor/mine.filter()#0",
+     "lines": [
+      285,
+      285
+     ]
+    },
+    {
+     "name": "incidentsFor/input.incidents.reduce()#0",
+     "lines": [
+      288,
+      288
+     ]
+    },
+    {
+     "name": "incidentsFor/inWindow.map()#0",
+     "lines": [
+      294,
+      329
+     ]
+    },
+    {
+     "name": "incidentsFor/inWindow.filter()#0",
+     "lines": [
+      331,
+      331
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 267,
+     "unit": "medianLatency",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 268,
+     "unit": "medianLatency",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 268,
+     "unit": "medianLatency",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/detail-types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/ui/detail.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "medianLatency",
+     "lines": [
+      47,
+      54
+     ]
+    },
+    {
+     "name": "buildDetail",
+     "lines": [
+      57,
+      164
+     ]
+    },
+    {
+     "name": "medianLatency/[...values].sort()#0",
+     "lines": [
+      49,
+      49
+     ]
+    },
+    {
+     "name": "buildDetail/summary.targets.find()#0",
+     "lines": [
+      59,
+      59
+     ]
+    },
+    {
+     "name": "buildDetail/summary.groups.find()#0",
+     "lines": [
+      62,
+      62
+     ]
+    },
+    {
+     "name": "buildDetail/summary.openIncidents.find()#0",
+     "lines": [
+      64,
+      64
+     ]
+    },
+    {
+     "name": "buildDetail/input.incidents.find()#0",
+     "lines": [
+      66,
+      66
+     ]
+    },
+    {
+     "name": "buildDetail/buckets.map()#0",
+     "lines": [
+      70,
+      70
+     ]
+    },
+    {
+     "name": "buildDetail/buckets.map((b) => b.latencyMsAvg).filter()#0",
+     "lines": [
+      70,
+      70
+     ]
+    },
+    {
+     "name": "buildDetail/WINDOW_ORDER.map()#0",
+     "lines": [
+      160,
+      161
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 52,
+     "unit": "medianLatency",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 53,
+     "unit": "medianLatency",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 53,
+     "unit": "medianLatency",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/format.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "ageText",
+     "lines": [
+      38,
+      42
+     ]
+    },
+    {
+     "name": "secondsToNextTick",
+     "lines": [
+      52,
+      54
+     ]
+    },
+    {
+     "name": "nextText",
+     "lines": [
+      56,
+      58
+     ]
+    },
+    {
+     "name": "ringOffset",
+     "lines": [
+      61,
+      63
+     ]
+    },
+    {
+     "name": "latencyText",
+     "lines": [
+      66,
+      68
+     ]
+    },
+    {
+     "name": "uptimePercent",
+     "lines": [
+      82,
+      87
+     ]
+    },
+    {
+     "name": "needsUptimeSplit",
+     "lines": [
+      106,
+      108
+     ]
+    },
+    {
+     "name": "uptimeSplit",
+     "lines": [
+      123,
+      133
+     ]
+    },
+    {
+     "name": "tenthText",
+     "lines": [
+      136,
+      138
+     ]
+    },
+    {
+     "name": "observedDuration",
+     "lines": [
+      154,
+      167
+     ]
+    },
+    {
+     "name": "intervalText",
+     "lines": [
+      170,
+      172
+     ]
+    },
+    {
+     "name": "halfHourText",
+     "lines": [
+      175,
+      180
+     ]
+    },
+    {
+     "name": "spanText",
+     "lines": [
+      205,
+      208
+     ]
+    },
+    {
+     "name": "incidentDuration",
+     "lines": [
+      216,
+      223
+     ]
+    },
+    {
+     "name": "clockText",
+     "lines": [
+      226,
+      229
+     ]
+    },
+    {
+     "name": "timestampText",
+     "lines": [
+      232,
+      238
+     ]
+    },
+    {
+     "name": "hostOf",
+     "lines": [
+      241,
+      245
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/glyphs.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "unknownCompact",
+     "lines": [
+      121,
+      123
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/group.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "rowOf",
+     "lines": [
+      93,
+      110
+     ]
+    },
+    {
+     "name": "effectNote",
+     "lines": [
+      121,
+      149
+     ]
+    },
+    {
+     "name": "buildGroupPage",
+     "lines": [
+      152,
+      221
+     ]
+    },
+    {
+     "name": "effectNote/[...impaired].sort()#0",
+     "lines": [
+      128,
+      132
+     ]
+    },
+    {
+     "name": "effectNote/ordered.map()#0",
+     "lines": [
+      133,
+      147
+     ]
+    },
+    {
+     "name": "effectNote/ordered.map()#0/summary.targets.filter()#0",
+     "lines": [
+      135,
+      135
+     ]
+    },
+    {
+     "name": "effectNote/ordered.map()#0/dependents.map()#0",
+     "lines": [
+      139,
+      139
+     ]
+    },
+    {
+     "name": "effectNote/ordered.map()#0/dependents.filter()#0",
+     "lines": [
+      140,
+      140
+     ]
+    },
+    {
+     "name": "effectNote/ordered.map()#0/affected.map()#0",
+     "lines": [
+      144,
+      144
+     ]
+    },
+    {
+     "name": "buildGroupPage/summary.groups.find()#0",
+     "lines": [
+      157,
+      157
+     ]
+    },
+    {
+     "name": "buildGroupPage/summary.targets.map()#0",
+     "lines": [
+      160,
+      160
+     ]
+    },
+    {
+     "name": "buildGroupPage/group.targetIds\n    .map()#0",
+     "lines": [
+      162,
+      162
+     ]
+    },
+    {
+     "name": "buildGroupPage/group.targetIds\n    .map((id) => byId.get(id))\n    .filter()#0",
+     "lines": [
+      163,
+      163
+     ]
+    },
+    {
+     "name": "buildGroupPage/members.filter()#0@1",
+     "lines": [
+      166,
+      166
+     ]
+    },
+    {
+     "name": "buildGroupPage/members.filter()#0@2",
+     "lines": [
+      168,
+      168
+     ]
+    },
+    {
+     "name": "buildGroupPage/members.filter()#0@3",
+     "lines": [
+      169,
+      169
+     ]
+    },
+    {
+     "name": "buildGroupPage/impaired.some()#0",
+     "lines": [
+      170,
+      170
+     ]
+    },
+    {
+     "name": "buildGroupPage/summary.targets.filter()#0",
+     "lines": [
+      180,
+      184
+     ]
+    },
+    {
+     "name": "buildGroupPage/summary.targets.filter()#0/t.dependsOn.some()#0",
+     "lines": [
+      184,
+      184
+     ]
+    },
+    {
+     "name": "buildGroupPage/summary.targets.filter()#0/t.dependsOn.some()#0/impaired.some()#0",
+     "lines": [
+      184,
+      184
+     ]
+    },
+    {
+     "name": "buildGroupPage/impaired.map()#0",
+     "lines": [
+      200,
+      200
+     ]
+    },
+    {
+     "name": "buildGroupPage/members.map()#0",
+     "lines": [
+      219,
+      219
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/incident-cards.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "stripCellsOf",
+     "lines": [
+      54,
+      56
+     ]
+    },
+    {
+     "name": "verdictFor",
+     "lines": [
+      70,
+      88
+     ]
+    },
+    {
+     "name": "incidentFacts",
+     "lines": [
+      90,
+      141
+     ]
+    },
+    {
+     "name": "compactValue",
+     "lines": [
+      144,
+      148
+     ]
+    },
+    {
+     "name": "edgesFor",
+     "lines": [
+      159,
+      175
+     ]
+    },
+    {
+     "name": "effectCard",
+     "lines": [
+      193,
+      286
+     ]
+    },
+    {
+     "name": "incidentStrip",
+     "lines": [
+      288,
+      325
+     ]
+    },
+    {
+     "name": "otherOpen",
+     "lines": [
+      327,
+      358
+     ]
+    },
+    {
+     "name": "edgesFor/dependents.map()#0",
+     "lines": [
+      164,
+      174
+     ]
+    },
+    {
+     "name": "effectCard/targets.filter()#0",
+     "lines": [
+      198,
+      198
+     ]
+    },
+    {
+     "name": "effectCard/nexus.filter()#0@1",
+     "lines": [
+      199,
+      199
+     ]
+    },
+    {
+     "name": "effectCard/incident.dependents.map()#0@1",
+     "lines": [
+      214,
+      214
+     ]
+    },
+    {
+     "name": "effectCard/nexus.filter()#0@2",
+     "lines": [
+      219,
+      223
+     ]
+    },
+    {
+     "name": "effectCard/independent.map()#0",
+     "lines": [
+      227,
+      227
+     ]
+    },
+    {
+     "name": "effectCard/incident.dependents.map()#0@2",
+     "lines": [
+      237,
+      243
+     ]
+    },
+    {
+     "name": "effectCard/declared.filter()#0",
+     "lines": [
+      248,
+      248
+     ]
+    },
+    {
+     "name": "effectCard/declared.map()#0",
+     "lines": [
+      255,
+      255
+     ]
+    },
+    {
+     "name": "effectCard/affected.map()#0",
+     "lines": [
+      262,
+      262
+     ]
+    },
+    {
+     "name": "effectCard/targets.find()#0",
+     "lines": [
+      283,
+      283
+     ]
+    },
+    {
+     "name": "otherOpen/summary.targets.map()#0",
+     "lines": [
+      332,
+      332
+     ]
+    },
+    {
+     "name": "otherOpen/summary.openIncidents\n    .filter()#0",
+     "lines": [
+      334,
+      334
+     ]
+    },
+    {
+     "name": "otherOpen/summary.openIncidents\n    .filter((other) => other.id !== incident.id)\n    .map()#0",
+     "lines": [
+      335,
+      351
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/incident-timeline.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "transitionText",
+     "lines": [
+      50,
+      55
+     ]
+    },
+    {
+     "name": "openingText",
+     "lines": [
+      65,
+      69
+     ]
+    },
+    {
+     "name": "openingState",
+     "lines": [
+      80,
+      85
+     ]
+    },
+    {
+     "name": "incidentTimeline",
+     "lines": [
+      97,
+      159
+     ]
+    },
+    {
+     "name": "openingState/buckets.find()#0",
+     "lines": [
+      82,
+      82
+     ]
+    },
+    {
+     "name": "incidentTimeline/buckets.filter()#0",
+     "lines": [
+      111,
+      113
+     ]
+    },
+    {
+     "name": "incidentTimeline/events.map()#0",
+     "lines": [
+      154,
+      158
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/incident-types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/ui/incident.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "historyWindowFor",
+     "lines": [
+      70,
+      76
+     ]
+    },
+    {
+     "name": "visibleIncidents",
+     "lines": [
+      96,
+      106
+     ]
+    },
+    {
+     "name": "buildIncident",
+     "lines": [
+      109,
+      178
+     ]
+    },
+    {
+     "name": "historyWindowFor/WINDOWS_BY_SPAN.find()#0",
+     "lines": [
+      73,
+      73
+     ]
+    },
+    {
+     "name": "buildIncident/visibleIncidents(input).find()#0",
+     "lines": [
+      111,
+      111
+     ]
+    },
+    {
+     "name": "buildIncident/summary.targets.find()#0",
+     "lines": [
+      114,
+      114
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 74,
+     "unit": "historyWindowFor",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/overview.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "rowOf",
+     "lines": [
+      299,
+      331
+     ]
+    },
+    {
+     "name": "chipOf",
+     "lines": [
+      333,
+      381
+     ]
+    },
+    {
+     "name": "factsFor",
+     "lines": [
+      383,
+      417
+     ]
+    },
+    {
+     "name": "outageFacts",
+     "lines": [
+      428,
+      458
+     ]
+    },
+    {
+     "name": "outageLineFor",
+     "lines": [
+      471,
+      477
+     ]
+    },
+    {
+     "name": "lastResolvedOf",
+     "lines": [
+      486,
+      505
+     ]
+    },
+    {
+     "name": "nexusVerdictFor",
+     "lines": [
+      520,
+      579
+     ]
+    },
+    {
+     "name": "buildOverview",
+     "lines": [
+      600,
+      841
+     ]
+    },
+    {
+     "name": "buildOverview/summary.targets.map()#0",
+     "lines": [
+      606,
+      606
+     ]
+    },
+    {
+     "name": "buildOverview/summary.targets.filter()#0@1",
+     "lines": [
+      607,
+      607
+     ]
+    },
+    {
+     "name": "buildOverview/summary.targets.filter()#0@2",
+     "lines": [
+      608,
+      608
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.find()#0",
+     "lines": [
+      617,
+      618
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.find()#0/g.targetIds.some()#0",
+     "lines": [
+      618,
+      618
+     ]
+    },
+    {
+     "name": "buildOverview/vendorTargets.filter()#0",
+     "lines": [
+      628,
+      628
+     ]
+    },
+    {
+     "name": "buildOverview/summary.openIncidents.find()#0",
+     "lines": [
+      633,
+      633
+     ]
+    },
+    {
+     "name": "buildOverview/nexusTargets.map()#0",
+     "lines": [
+      635,
+      635
+     ]
+    },
+    {
+     "name": "buildOverview/summary.openIncidents.filter()#0",
+     "lines": [
+      637,
+      637
+     ]
+    },
+    {
+     "name": "buildOverview/vendorIncidents.map()#0@1",
+     "lines": [
+      691,
+      692
+     ]
+    },
+    {
+     "name": "buildOverview/[\n              allReachableSub(probedVendors, vendorTargets.length - probedVendors),\n              vendorClaimSub(vendorClaims.reported, vendorClaims.outage),\n            ]\n              .filter()#0",
+     "lines": [
+      718,
+      718
+     ]
+    },
+    {
+     "name": "buildOverview/vendorIncidents.map()#0@2",
+     "lines": [
+      743,
+      744
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0",
+     "lines": [
+      752,
+      777
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0/group.targetIds\n      .map()#0",
+     "lines": [
+      754,
+      754
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0/group.targetIds\n      .map((id) => byId.get(id))\n      .filter()#0",
+     "lines": [
+      755,
+      755
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0/members.map()#0@1",
+     "lines": [
+      756,
+      756
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0/members\n      .map()#0",
+     "lines": [
+      758,
+      758
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0/members\n      .map((t) => t.current.causedBy)\n      .find()#0",
+     "lines": [
+      759,
+      759
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0/members.map()#0@2",
+     "lines": [
+      760,
+      760
+     ]
+    },
+    {
+     "name": "buildOverview/summary.groups.map()#0/rows.map()#0",
+     "lines": [
+      775,
+      775
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 346,
+     "unit": "chipOf",
+     "rule": "dynamic-key",
+     "msg": "bind the computed key before reading the record; a key call may mutate its receiver",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/parse-detail.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isRecord",
+     "lines": [
+      22,
+      24
+     ]
+    },
+    {
+     "name": "isBucket",
+     "lines": [
+      26,
+      38
+     ]
+    },
+    {
+     "name": "isHistoryResponse",
+     "lines": [
+      40,
+      51
+     ]
+    },
+    {
+     "name": "isIncident",
+     "lines": [
+      53,
+      67
+     ]
+    },
+    {
+     "name": "isIncidentsResponse",
+     "lines": [
+      69,
+      77
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/parse-summary.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "isRecord",
+     "lines": [
+      21,
+      23
+     ]
+    },
+    {
+     "name": "isSummaryResponse",
+     "lines": [
+      25,
+      51
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/short-names.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "shortName",
+     "lines": [
+      87,
+      90
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/strip-cell.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "cellRangeText",
+     "lines": [
+      39,
+      45
+     ]
+    },
+    {
+     "name": "cellLines",
+     "lines": [
+      70,
+      83
+     ]
+    },
+    {
+     "name": "cellClass",
+     "lines": [
+      95,
+      103
+     ]
+    },
+    {
+     "name": "stripLabel",
+     "lines": [
+      116,
+      123
+     ]
+    },
+    {
+     "name": "stripLabel/cells.filter()#0@1",
+     "lines": [
+      117,
+      117
+     ]
+    },
+    {
+     "name": "stripLabel/cells.filter()#0@2",
+     "lines": [
+      118,
+      118
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/ui/strip.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "gapChars",
+     "lines": [
+      77,
+      83
+     ]
+    },
+    {
+     "name": "stripCells",
+     "lines": [
+      94,
+      132
+     ]
+    },
+    {
+     "name": "stripCellsFor",
+     "lines": [
+      135,
+      144
+     ]
+    },
+    {
+     "name": "rank",
+     "lines": [
+      161,
+      167
+     ]
+    },
+    {
+     "name": "foldStrips",
+     "lines": [
+      177,
+      199
+     ]
+    },
+    {
+     "name": "stripCells/[...target.bucketCells].map()#0",
+     "lines": [
+      108,
+      131
+     ]
+    },
+    {
+     "name": "stripCellsFor/summary.targets.find()#0",
+     "lines": [
+      140,
+      140
+     ]
+    },
+    {
+     "name": "foldStrips/strips.filter()#0",
+     "lines": [
+      178,
+      178
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 108,
+     "unit": "stripCells",
+     "rule": "spread",
+     "msg": "spread works on arrays, sets, maps and their keys(), values() and entries()",
+     "env": false
+    },
+    {
+     "line": 109,
+     "unit": "stripCells",
+     "rule": "type-assertion",
+     "msg": "`char as keyof typeof spec.legend` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 109,
+     "unit": "stripCells/[...target.bucketCells].map()#0",
+     "rule": "type-assertion",
+     "msg": "`char as keyof typeof spec.legend` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 180,
+     "unit": "foldStrips",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    },
+    {
+     "line": 183,
+     "unit": "foldStrips",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/ui/theme.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "parseTheme",
+     "lines": [
+      37,
+      41
+     ]
+    },
+    {
+     "name": "parseTheme/VALID.find()#0",
+     "lines": [
+      39,
+      39
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/worker.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "json",
+     "lines": [
+      46,
+      57
+     ]
+    },
+    {
+     "name": "error",
+     "lines": [
+      59,
+      62
+     ]
+    },
+    {
+     "name": "default.scheduled",
+     "lines": [
+      65,
+      69
+     ]
+    },
+    {
+     "name": "default.fetch",
+     "lines": [
+      71,
+      239
+     ]
+    },
+    {
+     "name": "default.fetch/targets.some()#0",
+     "lines": [
+      189,
+      189
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 180,
+     "unit": "default.fetch",
+     "rule": "non-null-assertion",
+     "msg": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "vitest.config.ts",
+   "pkg": "vitest.config.ts",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "web/app/chart.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "svg",
+     "lines": [
+      25,
+      32
+     ]
+    },
+    {
+     "name": "bucketChart",
+     "lines": [
+      41,
+      100
+     ]
+    },
+    {
+     "name": "sparkSvg",
+     "lines": [
+      125,
+      206
+     ]
+    },
+    {
+     "name": "bucketChart/bars.map()#0",
+     "lines": [
+      51,
+      85
+     ]
+    },
+    {
+     "name": "bucketChart/bars.map()#0/bar.segments.map()#0",
+     "lines": [
+      73,
+      80
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 189,
+     "unit": "sparkSvg",
+     "rule": "alias-mutation",
+     "msg": "`line` holds the result of `svg`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "web/app/detail-main.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "need",
+     "lines": [
+      70,
+      74
+     ]
+    },
+    {
+     "name": "paint",
+     "lines": [
+      81,
+      135
+     ]
+    },
+    {
+     "name": "paintClock",
+     "lines": [
+      137,
+      143
+     ]
+    },
+    {
+     "name": "readJson",
+     "lines": [
+      147,
+      151
+     ]
+    },
+    {
+     "name": "refreshSummary",
+     "lines": [
+      153,
+      167
+     ]
+    },
+    {
+     "name": "refreshTargetData",
+     "lines": [
+      178,
+      203
+     ]
+    },
+    {
+     "name": "scheduleSummary",
+     "lines": [
+      205,
+      218
+     ]
+    },
+    {
+     "name": "start",
+     "lines": [
+      220,
+      260
+     ]
+    },
+    {
+     "name": "refreshTargetData/state.summary.groups.some()#0",
+     "lines": [
+      180,
+      180
+     ]
+    },
+    {
+     "name": "refreshTargetData/state.summary.targets.some()#0",
+     "lines": [
+      181,
+      181
+     ]
+    },
+    {
+     "name": "scheduleSummary/window.setTimeout()#0",
+     "lines": [
+      207,
+      217
+     ]
+    },
+    {
+     "name": "scheduleSummary/window.setTimeout()#0/refreshSummary()\n      .then(paint)\n      .catch()#0",
+     "lines": [
+      210,
+      215
+     ]
+    },
+    {
+     "name": "start/refreshSummary()\n    .then(refreshTargetData)\n    .then(paint)\n    .catch()#0",
+     "lines": [
+      238,
+      243
+     ]
+    },
+    {
+     "name": "start/window.setInterval()#0@1",
+     "lines": [
+      246,
+      252
+     ]
+    },
+    {
+     "name": "start/window.setInterval()#0@1/refreshTargetData()\n      .then(paint)\n      .catch()#0",
+     "lines": [
+      249,
+      251
+     ]
+    },
+    {
+     "name": "start/window.setInterval()#0@2",
+     "lines": [
+      254,
+      259
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 91,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `liveLabelEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 99,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 120,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 127,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `liveLabelEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 134,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 138,
+     "unit": "paintClock",
+     "rule": "property-assign",
+     "msg": "assignment into `ageEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 162,
+     "unit": "refreshSummary",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 163,
+     "unit": "refreshSummary",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 164,
+     "unit": "refreshSummary",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 165,
+     "unit": "refreshSummary",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 184,
+     "unit": "refreshTargetData",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 185,
+     "unit": "refreshTargetData",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 189,
+     "unit": "refreshTargetData",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 195,
+     "unit": "refreshTargetData",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 196,
+     "unit": "refreshTargetData",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 200,
+     "unit": "refreshTargetData",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 208,
+     "unit": "scheduleSummary",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 208,
+     "unit": "scheduleSummary/window.setTimeout()#0",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 235,
+     "unit": "start",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 247,
+     "unit": "start",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 247,
+     "unit": "start/window.setInterval()#0@1",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 256,
+     "unit": "start",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 256,
+     "unit": "start/window.setInterval()#0@2",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 262,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "web/app/dom.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "el",
+     "lines": [
+      21,
+      43
+     ]
+    },
+    {
+     "name": "glyphEl",
+     "lines": [
+      70,
+      83
+     ]
+    },
+    {
+     "name": "focusKey",
+     "lines": [
+      92,
+      96
+     ]
+    },
+    {
+     "name": "restoreFocus",
+     "lines": [
+      98,
+      102
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/incident-main.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "incidentIdFrom",
+     "lines": [
+      70,
+      75
+     ]
+    },
+    {
+     "name": "need",
+     "lines": [
+      79,
+      83
+     ]
+    },
+    {
+     "name": "notFound",
+     "lines": [
+      95,
+      104
+     ]
+    },
+    {
+     "name": "paint",
+     "lines": [
+      106,
+      137
+     ]
+    },
+    {
+     "name": "paintClock",
+     "lines": [
+      139,
+      145
+     ]
+    },
+    {
+     "name": "readJson",
+     "lines": [
+      149,
+      153
+     ]
+    },
+    {
+     "name": "refreshBoard",
+     "lines": [
+      155,
+      186
+     ]
+    },
+    {
+     "name": "refreshHistory",
+     "lines": [
+      197,
+      214
+     ]
+    },
+    {
+     "name": "scheduleRefresh",
+     "lines": [
+      216,
+      228
+     ]
+    },
+    {
+     "name": "start",
+     "lines": [
+      230,
+      256
+     ]
+    },
+    {
+     "name": "refreshHistory/visibleIncidents({ summary, incidents: state.incidents }).find()#0",
+     "lines": [
+      201,
+      201
+     ]
+    },
+    {
+     "name": "scheduleRefresh/window.setTimeout()#0",
+     "lines": [
+      218,
+      227
+     ]
+    },
+    {
+     "name": "scheduleRefresh/window.setTimeout()#0/refreshBoard()\n      .then(paint)\n      .catch()#0",
+     "lines": [
+      221,
+      225
+     ]
+    },
+    {
+     "name": "start/refreshBoard()\n    .then(refreshHistory)\n    .then(paint)\n    .catch()#0",
+     "lines": [
+      242,
+      247
+     ]
+    },
+    {
+     "name": "start/window.setInterval()#0",
+     "lines": [
+      250,
+      255
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 103,
+     "unit": "notFound",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 129,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `liveLabelEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 136,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 140,
+     "unit": "paintClock",
+     "rule": "property-assign",
+     "msg": "assignment into `ageEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 157,
+     "unit": "refreshBoard",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 158,
+     "unit": "refreshBoard",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 166,
+     "unit": "refreshBoard",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "refreshBoard",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 168,
+     "unit": "refreshBoard",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 169,
+     "unit": "refreshBoard",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 178,
+     "unit": "refreshBoard",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 210,
+     "unit": "refreshHistory",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 219,
+     "unit": "scheduleRefresh",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 219,
+     "unit": "scheduleRefresh/window.setTimeout()#0",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 239,
+     "unit": "start",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 252,
+     "unit": "start",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 252,
+     "unit": "start/window.setInterval()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 258,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "web/app/main.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "need",
+     "lines": [
+      85,
+      89
+     ]
+    },
+    {
+     "name": "paint",
+     "lines": [
+      106,
+      124
+     ]
+    },
+    {
+     "name": "toggleIncident",
+     "lines": [
+      126,
+      130
+     ]
+    },
+    {
+     "name": "paintClock",
+     "lines": [
+      139,
+      154
+     ]
+    },
+    {
+     "name": "ageFrom",
+     "lines": [
+      167,
+      169
+     ]
+    },
+    {
+     "name": "refreshLastResolved",
+     "lines": [
+      183,
+      193
+     ]
+    },
+    {
+     "name": "refresh",
+     "lines": [
+      195,
+      215
+     ]
+    },
+    {
+     "name": "scheduleRefresh",
+     "lines": [
+      225,
+      234
+     ]
+    },
+    {
+     "name": "start",
+     "lines": [
+      236,
+      278
+     ]
+    },
+    {
+     "name": "refreshLastResolved/body.incidents.find()#0",
+     "lines": [
+      189,
+      189
+     ]
+    },
+    {
+     "name": "scheduleRefresh/window.setTimeout()#0",
+     "lines": [
+      227,
+      233
+     ]
+    },
+    {
+     "name": "scheduleRefresh/window.setTimeout()#0/refresh()\n      .catch()#0",
+     "lines": [
+      229,
+      231
+     ]
+    },
+    {
+     "name": "start/document.addEventListener('keydown')#1",
+     "lines": [
+      241,
+      246
+     ]
+    },
+    {
+     "name": "start/refreshLastResolved()\n    .then(refresh)\n    .catch()#0",
+     "lines": [
+      254,
+      259
+     ]
+    },
+    {
+     "name": "start/window.setInterval()#0@1",
+     "lines": [
+      264,
+      268
+     ]
+    },
+    {
+     "name": "start/window.setInterval()#0@1/refreshLastResolved().then()#0",
+     "lines": [
+      265,
+      267
+     ]
+    },
+    {
+     "name": "start/window.setInterval()#0@2",
+     "lines": [
+      270,
+      277
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 115,
+     "unit": "paint",
+     "rule": "property-assign",
+     "msg": "assignment into `liveLabelEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 128,
+     "unit": "toggleIncident",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 146,
+     "unit": "paintClock",
+     "rule": "property-assign",
+     "msg": "assignment into `ageEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 147,
+     "unit": "paintClock",
+     "rule": "property-assign",
+     "msg": "assignment into `ageMobileEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 148,
+     "unit": "paintClock",
+     "rule": "property-assign",
+     "msg": "assignment into `nextEl`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 189,
+     "unit": "refreshLastResolved",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 210,
+     "unit": "refresh",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 211,
+     "unit": "refresh",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 212,
+     "unit": "refresh",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 213,
+     "unit": "refresh",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 228,
+     "unit": "scheduleRefresh",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 228,
+     "unit": "scheduleRefresh/window.setTimeout()#0",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 243,
+     "unit": "start",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 243,
+     "unit": "start/document.addEventListener('keydown')#1",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 252,
+     "unit": "start",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 265,
+     "unit": "start",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 265,
+     "unit": "start/window.setInterval()#0@1",
+     "rule": "async",
+     "msg": "an async unit is called without await",
+     "env": false
+    },
+    {
+     "line": 272,
+     "unit": "start",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 272,
+     "unit": "start/window.setInterval()#0@2",
+     "rule": "property-assign",
+     "msg": "assignment into `state`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 280,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "web/app/render-detail.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "sectionHead",
+     "lines": [
+      16,
+      21
+     ]
+    },
+    {
+     "name": "verdictCard",
+     "lines": [
+      23,
+      56
+     ]
+    },
+    {
+     "name": "dependencyCard",
+     "lines": [
+      65,
+      108
+     ]
+    },
+    {
+     "name": "incidentRow",
+     "lines": [
+      110,
+      118
+     ]
+    },
+    {
+     "name": "uptimeBlock",
+     "lines": [
+      120,
+      162
+     ]
+    },
+    {
+     "name": "renderDetail",
+     "lines": [
+      164,
+      197
+     ]
+    },
+    {
+     "name": "verdictCard/view.facts.map()#0",
+     "lines": [
+      42,
+      43
+     ]
+    },
+    {
+     "name": "dependencyCard/dep.chips.map()#0",
+     "lines": [
+      90,
+      94
+     ]
+    },
+    {
+     "name": "dependencyCard/dep.facts.map()#0",
+     "lines": [
+      102,
+      103
+     ]
+    },
+    {
+     "name": "uptimeBlock/window.split.map()#0",
+     "lines": [
+      136,
+      140
+     ]
+    },
+    {
+     "name": "renderDetail/view.ruler.map()#0",
+     "lines": [
+      180,
+      180
+     ]
+    },
+    {
+     "name": "renderDetail/view.windows.map()#0",
+     "lines": [
+      193,
+      193
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/render-group.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "verdictCard",
+     "lines": [
+      18,
+      33
+     ]
+    },
+    {
+     "name": "effectCard",
+     "lines": [
+      35,
+      48
+     ]
+    },
+    {
+     "name": "rowStrip",
+     "lines": [
+      55,
+      60
+     ]
+    },
+    {
+     "name": "tableRow",
+     "lines": [
+      62,
+      85
+     ]
+    },
+    {
+     "name": "renderGroup",
+     "lines": [
+      87,
+      101
+     ]
+    },
+    {
+     "name": "renderGroup/view.headings.map()#0",
+     "lines": [
+      95,
+      95
+     ]
+    },
+    {
+     "name": "renderGroup/view.rows.map()#0",
+     "lines": [
+      97,
+      97
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/render-incident.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "sectionHead",
+     "lines": [
+      25,
+      30
+     ]
+    },
+    {
+     "name": "verdictCard",
+     "lines": [
+      32,
+      67
+     ]
+    },
+    {
+     "name": "edgeRow",
+     "lines": [
+      76,
+      88
+     ]
+    },
+    {
+     "name": "effectCard",
+     "lines": [
+      90,
+      122
+     ]
+    },
+    {
+     "name": "timelineEvent",
+     "lines": [
+      124,
+      130
+     ]
+    },
+    {
+     "name": "stripRuler",
+     "lines": [
+      140,
+      161
+     ]
+    },
+    {
+     "name": "otherOpenSection",
+     "lines": [
+      163,
+      182
+     ]
+    },
+    {
+     "name": "renderIncident",
+     "lines": [
+      184,
+      207
+     ]
+    },
+    {
+     "name": "verdictCard/view.facts.map()#0",
+     "lines": [
+      53,
+      63
+     ]
+    },
+    {
+     "name": "effectCard/effect.chips.map()#0",
+     "lines": [
+      109,
+      117
+     ]
+    },
+    {
+     "name": "otherOpenSection/other.rows.map()#0",
+     "lines": [
+      170,
+      178
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/render-shell.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "renderCrumb",
+     "lines": [
+      19,
+      32
+     ]
+    },
+    {
+     "name": "renderNotFound",
+     "lines": [
+      45,
+      65
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/render-verdict.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "labelledFact",
+     "lines": [
+      25,
+      30
+     ]
+    },
+    {
+     "name": "flatChipEl",
+     "lines": [
+      40,
+      55
+     ]
+    },
+    {
+     "name": "lastResolvedEl",
+     "lines": [
+      57,
+      63
+     ]
+    },
+    {
+     "name": "chipEl",
+     "lines": [
+      65,
+      113
+     ]
+    },
+    {
+     "name": "verdictCard",
+     "lines": [
+      115,
+      199
+     ]
+    },
+    {
+     "name": "verdictCard/view.facts.map()#0",
+     "lines": [
+      176,
+      182
+     ]
+    },
+    {
+     "name": "verdictCard/view.chips.map()#0",
+     "lines": [
+      190,
+      193
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/render.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "rowEl",
+     "lines": [
+      21,
+      45
+     ]
+    },
+    {
+     "name": "groupCard",
+     "lines": [
+      47,
+      74
+     ]
+    },
+    {
+     "name": "mobileDetail",
+     "lines": [
+      76,
+      108
+     ]
+    },
+    {
+     "name": "renderOverview",
+     "lines": [
+      118,
+      204
+     ]
+    },
+    {
+     "name": "groupCard/group.rows.map()#0",
+     "lines": [
+      64,
+      64
+     ]
+    },
+    {
+     "name": "mobileDetail/nexusGroup.rows.map()#0",
+     "lines": [
+      91,
+      91
+     ]
+    },
+    {
+     "name": "mobileDetail/view.groups.slice(1).map()#0",
+     "lines": [
+      96,
+      104
+     ]
+    },
+    {
+     "name": "mobileDetail/view.groups.slice(1).map()#0/g.dots.map()#0",
+     "lines": [
+      102,
+      102
+     ]
+    },
+    {
+     "name": "renderOverview/view.groups.map()#0",
+     "lines": [
+      186,
+      186
+     ]
+    },
+    {
+     "name": "renderOverview/view.legend.map()#0",
+     "lines": [
+      192,
+      196
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/strip-el.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "stripEl",
+     "lines": [
+      35,
+      76
+     ]
+    },
+    {
+     "name": "stripEl/cells.map()#0",
+     "lines": [
+      51,
+      72
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "web/app/theme-binding.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "apply",
+     "lines": [
+      19,
+      22
+     ]
+    },
+    {
+     "name": "getTheme",
+     "lines": [
+      24,
+      26
+     ]
+    },
+    {
+     "name": "setTheme",
+     "lines": [
+      28,
+      35
+     ]
+    },
+    {
+     "name": "initTheme",
+     "lines": [
+      37,
+      45
+     ]
+    },
+    {
+     "name": "exposeThemeSeam",
+     "lines": [
+      53,
+      55
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 54,
+     "unit": "exposeThemeSeam",
+     "rule": "property-assign",
+     "msg": "assignment into `window`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 57,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "web/app/tooltip.ts",
+   "pkg": "web",
+   "units": [
+    {
+     "name": "createTooltip",
+     "lines": [
+      32,
+      62
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 38,
+     "unit": "createTooltip",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 44,
+     "unit": "createTooltip",
+     "rule": "closure-mutation",
+     "msg": "`timer` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 55,
+     "unit": "createTooltip",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 84,
+   "units": 476,
+   "entered": 429
+  },
+  {
+   "pkg": "web",
+   "files": 14,
+   "units": 114,
+   "entered": 82
+  },
+  {
+   "pkg": "scripts",
+   "files": 15,
+   "units": 87,
+   "entered": 54
+  },
+  {
+   "pkg": "vitest.config.ts",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

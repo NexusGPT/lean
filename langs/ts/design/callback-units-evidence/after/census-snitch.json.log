@@ -1,0 +1,44 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-snitch.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  32012092    28%  458732 320120920    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch/apps/admin/tsconfig.json: 86 files
+50 files, 149 units, 136 inside, 10 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch/apps/api/tsconfig.json: 66 files
+100 files, 516 units, 412 inside, 19 s
+150 files, 752 units, 587 inside, 27 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch/apps/desktop/tsconfig.json: 10 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch/apps/extension/tsconfig.json: 17 files
+project (none): 22 files
+200 files, 1074 units, 819 inside, 35 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch/infra/gen-events/tsconfig.json: 10 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch/infra/mock-api/tsconfig.json: 10 files
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/snitch/packages/shared/tsconfig.json: 13 files
+snitch: 234 files, 1430 units, 1100 inside the subset (76.9 percent), 0 files unreadable, 44 s
+     154 units  type-assertion         apps/admin/app/api/test-auth/route.ts:69 `body.orgId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and 
+      87 units  ts-strict              apps/api/src/admin/action-packs.service.ts:60 TS2339: Property 'actionPack' does not exist on type 'PrismaService'.
+      41 units  unresolved-module      apps/api/eslint.config.js:1 TS2307: Cannot find module '@snitch/config/eslint' or its corresponding type declarations.
+      28 units  untyped-js             infra/capture-sim/redaction-normalize.mjs:26 parameter `event` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} event` or TypeScr
+      22 units  void                   apps/admin/components/evidence/dom-snapshot.tsx:76 `void` is outside the subset
+      21 units  alias-mutation         apps/api/src/ingest/ingest.service.ts:399 `s` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object 
+      14 units  non-null-assertion     apps/extension/src/background.ts:572 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      13 units  unsupported-member     apps/admin/components/views/cluster-detail.tsx:71 property .data on NoInfer<{ data: { id: string; status: "candidate" | "named" | "dismissed" | "merged"; name: 
+      12 units  closure-mutation       apps/admin/components/shell/sidebar.tsx:158 `cancelled` is declared outside this callback; a callback cannot change it
+      10 units  param-mutation         apps/api/src/admin/clusters.service.ts:371 .sort() on `previous
+        .filter((p) => p.signat`, an opaque value, used as a value: the call may mutate i
+       9 units  unsupported-syntax     apps/admin/app/layout.tsx:21 a local component value must be a string tag name or a named component
+       9 units  captured-mutable       apps/admin/components/shell/sidebar.tsx:152 captured binding `cancelled` may be written after this callback is created; capture a stable value
+       9 units  unsupported-call       apps/admin/lib/api/client.ts:171 method .safeParse() on T is outside the subset
+       8 units  property-assign        apps/admin/components/shell/locale-switcher.tsx:23 assignment into `document`, which this function does not own; records it owns are updated in place
+       8 units  foreach                apps/api/src/admin/clusters.service.ts:725 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+       8 units  async                  apps/extension/src/background.ts:454 an async unit is called without await
+       7 units  dynamic-key            apps/api/src/admin/clusters.service.ts:232 key "opportunity", "feasibility", "confidence", "impact", "instanceCount", "medianDurationMs", "updatedAt" is 
+       5 units  function-value         apps/extension/src/lib/idb.ts:67 a same-file function takes values, not callbacks
+       4 units  this                   apps/api/src/admin/clusters.service.ts:246 `this` outside a class method
+       4 units  spread                 apps/api/src/admin/evidence.service.ts:226 spread works on arrays, sets, maps and their keys(), values() and entries()
+       4 units  index-assign           infra/capture-sim/redaction-normalize.mjs:29 write a record field by name, or use a local Record<string, T> dictionary
+       3 units  in-place-mutation      apps/api/src/admin/evidence.service.ts:417 sort changes `expiries` in place; write `expiries = [...expiries].sort(...)`
+       3 units  promise-pending        apps/extension/src/background.ts:471 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       3 units  promise                apps/extension/src/background.ts:676 a held promise of this result type has no identity in the reading; return the call itself
+       2 units  record-rest            apps/admin/components/views/action-pack.tsx:97 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+
+exit=0 signal=null

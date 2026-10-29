@@ -173,3 +173,11 @@ The nexus comparison exposed the same general attribution rule correcting old in
 The seven nexus files are generated minified Prisma clients. Whether a census denominator should mix generated and written code is a question for the lead (research 24), not a filter added by this lane.
 
 The final census lock protocol adds an empty epoch-seconds/lane ticket under `/tmp/claude-501/census.queue`. Acquisition waits for the oldest ticket, removes its own ticket only after locking, and still yields 60 seconds between roots. Waiting controllers alone were restarted to load rule changes; active roots were not interrupted. Signal cleanup removes only this helper's own waiting ticket.
+
+## Final measured result
+
+All 48 permitted roots completed before and after. Gain: census TS 34,290 (50,345→84,635), census JS 6,137 (19,147→25,284), BugsJS JS 1,769 (2,385→4,154); BugsJS TS has no units. Every root/language gain equals the frozen prediction. Langchainjs remains `awaits the census memory fix`, retaining its 1,802 TS and 24 JS prediction.
+
+The final comparison records 65 nested-callback admission moves and 21 first-refusal changes; shared-line independent-unit attribution records 1,675 inside→refused, 2 refused→inside and 61 first-refusal changes. No unexplained changes, missing old units or unreadable files remain. The report contains every nested owner/range/code/destination and the shared-line counts/examples; `shared-line-attribution.json` retains every old/new owner link and proves zero new or vanished finding triples for those affected old units. New-unit first refusals total 4,774 untyped-js, 2,293 type-assertion, 550 captured-mutable and 4,060 other refusals; 30,519 new units are admitted.
+
+The final saved-name audit checks all 114,073 units, with zero round-trip failures. Actual collision-ordinal additions match each permitted root's prediction: 7,763 census TS, 947 census JS and 95 BugsJS JS. The remaining tests and number-model findings are described above. All final tables are derived from saved JSON by the documented measurement/comparison/report commands.

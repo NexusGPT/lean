@@ -1,0 +1,41 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/Documents/GitHub/nexus-landing","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-nexus-landing.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  34594928    27%  458732 345949280    0%   /
+project /Users/assem/Documents/GitHub/nexus-landing/tsconfig.json: 436 files
+50 files, 105 units, 97 inside, 25 s
+100 files, 808 units, 608 inside, 39 s
+150 files, 1191 units, 932 inside, 42 s
+200 files, 1804 units, 1464 inside, 48 s
+250 files, 1911 units, 1548 inside, 49 s
+300 files, 2381 units, 1956 inside, 57 s
+350 files, 2644 units, 2189 inside, 60 s
+400 files, 2854 units, 2306 inside, 61 s
+project /Users/assem/Documents/GitHub/nexus-landing/public/voice_ai_assistant/tsconfig.json: 3 files
+nexus-landing: 439 files, 3001 units, 2344 inside the subset (78.1 percent), 0 files unreadable, 64 s
+     123 units  closure-mutation       app/dieteren-workshop/Deck.tsx:111 a callback cannot change an outer record
+     112 units  foreach                app/dieteren-workshop/scene.ts:499 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+     107 units  type-assertion         app/api/generate-role/route.ts:124 `text` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this s
+     106 units  untyped-js             scripts/build-competitive-report 2.mjs:31 parameter `md` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} md` or TypeScript) o
+     103 units  unsupported-syntax     app/(site)/roles/middle-lab/page 2.tsx:41 a local component value must be a string tag name or a named component
+      90 units  unresolved-module      app/(site)/(legal)/layout.tsx:4 TS2503: Cannot find namespace 'React'.
+      45 units  promise-pending        components/generate/GenerateFleetClient.tsx:55 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+      40 units  promise                lib/blog-md.ts:66 a same-file async function runs on after its first await; return it from an async function with await
+      36 units  property-assign        app/dieteren-workshop/Deck.tsx:125 assignment into `RECT`, which this function does not own; records it owns are updated in place
+      30 units  spread                 app/dieteren-workshop/Hundred.tsx:83 a spread argument goes to a rest parameter, as the last argument
+      27 units  opaque-mutation        app/dieteren-workshop/Gate.tsx:26 .preventDefault() on `e` may change it, and `e` is read later; read it before the call or through a method
+      21 units  react-handler-capture  app/dieteren-workshop/Deck.tsx:111 a React closure captures a changing local; capture a const value or use a state setter
+      21 units  captured-mutable       app/dieteren-workshop/scene.ts:2705 captured binding `counted` may be written after this callback is created; capture a stable value
+      19 units  alias-mutation         app/dieteren-workshop/Hundred.tsx:515 `u` is another name for a value this function was handed; change it through that name, or copy it first
+      18 units  non-null-assertion     components/customer-support/SupportSystem.tsx:16 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      17 units  index-assign           app/dieteren-workshop/scene.ts:11408 index assignment into `MORPH_PANES`, which this function does not own
+      17 units  param-mutation         components/customer-support/lab/pipeline/p07-depth.tsx:63 push is a statement on a local only
+      15 units  ts-strict              app/(site)/blog/[slug]/page.tsx:117 TS18047: 'post' is possibly 'null'.
+      15 units  unsupported-call       app/dieteren-workshop/scene.ts:1770 calls through computed callees are outside the subset
+       8 units  param-assign           app/dieteren-workshop/Hundred.tsx:39 parameter `seed` is assigned inside a callback or a local function; a callback cannot change it
+       7 units  unsupported-member     scripts/export-to-sanity.mjs:98 `.index` of a match is read for a match of a non-global regular expression literal bound to a const (`const m 
+       6 units  unsupported-operator   app/dieteren-workshop/Hundred.tsx:38 assignment operator is outside the subset
+       6 units  async                  lib/blog-md.ts:66 an async unit is called without await
+       5 units  global-read            components/whitepaper/WhitepaperArticle.tsx:104 `go` is module state that can change; the subset reads constants only
+       4 units  reference-equality     app/dieteren-workshop/Deck.tsx:125 === on arrays and records compares references; compare fields
+
+exit=0 signal=null

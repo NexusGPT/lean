@@ -1,0 +1,41 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/promo-app","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-pyka.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  31918856    28%  458732 319188560    0%   /
+project /Users/assem/promo-app/tsconfig.json: 493 files
+50 files, 355 units, 138 inside, 26 s
+100 files, 583 units, 235 inside, 34 s
+150 files, 1154 units, 426 inside, 35 s
+200 files, 1869 units, 633 inside, 40 s
+250 files, 2593 units, 1227 inside, 42 s
+300 files, 3210 units, 1713 inside, 43 s
+350 files, 3516 units, 1943 inside, 45 s
+400 files, 3892 units, 2282 inside, 46 s
+450 files, 4458 units, 2730 inside, 49 s
+promo-app: 493 files, 4801 units, 3012 inside the subset (62.7 percent), 0 files unreadable, 50 s
+     979 units  untyped-js             _captures/clerk-live.mjs:9 parameter `e` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} e` or TypeScript) or 
+     515 units  type-assertion         _captures/fix-r2/S/checks/m8-chrome.mjs:39 `el` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slo
+     178 units  ts-strict              _captures/fix-r2/S/checks/m8-chrome.mjs:45 TS18048: 'w' is possibly 'undefined'.
+      92 units  param-mutation         _captures/clerk-live.mjs:9 push is a statement on a local only
+      80 units  global-read            _captures/i18n/place-click.mjs:15 `w` is module state that can change; the subset reads constants only
+      78 units  spread                 _captures/fix-r2/S/checks/i1495a9-listlink.mjs:16 spread works on arrays, sets, maps and their keys(), values() and entries()
+      71 units  promise                _captures/round2/performance-and-speed/interact.mjs:64 a promise built with new Promise is not a handle; make the function async
+      67 units  async                  _captures/round2/performance-and-speed/measure.mjs:133 an async unit is called without await
+      61 units  non-null-assertion     _fix/timing/superset.ts:17 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      58 units  closure-mutation       _captures/round2/performance-and-speed/interact.mjs:69 `mutated` is declared outside this callback; a callback cannot change it
+      50 units  captured-mutable       _captures/round2/performance-and-speed/interact.mjs:69 captured binding `mutated` may be written after this callback is created; capture a stable value
+      41 units  alias-mutation         _captures/round2/gestalt/gestalt-modal.mjs:15 `sc` holds the result of `Array.prototype.find`, which may be a field, a parameter, an element or a module obj
+      39 units  unsupported-call       _captures/round2/performance-and-speed/measure.mjs:136 summarise takes 2 arguments
+      38 units  foreach                _captures/fix-r2/S/proto/caps.mjs:11 forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pa
+      38 units  promise-pending        _captures/round2/gestalt/gestalt-drive.mjs:14 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+      36 units  toplevel-effect        _captures/clerk-live.mjs:9 code at module level runs on import; it is outside the subset
+      36 units  property-assign        _captures/intermarche/drive.mjs:16 assignment into `log`, which this function does not own; records it owns are updated in place
+      28 units  index-assign           _captures/round2/copy-and-language/drive2.mjs:31 write a record field by name, or use a local Record<string, T> dictionary
+      23 units  dynamic-key            _captures/list/harness.mjs:62 bind the computed key before reading the record; a key call may mutate its receiver
+      23 units  unsupported-member     _captures/list-v2/drive.mjs:167 property .picks on undefined is outside the subset
+      22 units  reference-equality     src/search/match.ts:652 === on arrays and records compares references; compare fields
+      18 units  void                   src/views/ProductMenu.tsx:47 `void` is outside the subset
+      11 units  prototype              _fix/timing/picks.ts:12 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of 
+      11 units  unary-coercion         scripts/ingest-aldi.mjs:76 unary + coerces; it is outside the subset
+       9 units  operator-value-context _captures/list-v2/drive.mjs:167 move this value step into an explicit statement and conditional branch
+
+exit=0 signal=null

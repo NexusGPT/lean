@@ -1,0 +1,587 @@
+{
+  "command": "compare saved new unit suffixes #<argument>@<ordinal> with each reach-gap orderNamed count",
+  "totals": {
+    "bugsjs ts": 0,
+    "bugsjs js": 95,
+    "census ts": 7763,
+    "census js": 947
+  },
+  "rows": [
+    {
+      "root": "bugsjs-bower.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-bower.json",
+      "language": "js",
+      "predicted": 17,
+      "actual": 17
+    },
+    {
+      "root": "bugsjs-eslint.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-eslint.json",
+      "language": "js",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "bugsjs-express.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-express.json",
+      "language": "js",
+      "predicted": 9,
+      "actual": 9
+    },
+    {
+      "root": "bugsjs-hessian.js.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-hessian.js.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-hexo.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-hexo.json",
+      "language": "js",
+      "predicted": 8,
+      "actual": 8
+    },
+    {
+      "root": "bugsjs-karma.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-karma.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-mongoose.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-mongoose.json",
+      "language": "js",
+      "predicted": 20,
+      "actual": 20
+    },
+    {
+      "root": "bugsjs-node_redis.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-node_redis.json",
+      "language": "js",
+      "predicted": 4,
+      "actual": 4
+    },
+    {
+      "root": "bugsjs-pencilblue.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-pencilblue.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-shields.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "bugsjs-shields.json",
+      "language": "js",
+      "predicted": 35,
+      "actual": 35
+    },
+    {
+      "root": "census-agent-nexus.json",
+      "language": "ts",
+      "predicted": 52,
+      "actual": 52
+    },
+    {
+      "root": "census-agent-nexus.json",
+      "language": "js",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-apps-starter.json",
+      "language": "ts",
+      "predicted": 76,
+      "actual": 76
+    },
+    {
+      "root": "census-apps-starter.json",
+      "language": "js",
+      "predicted": 38,
+      "actual": 38
+    },
+    {
+      "root": "census-apps-ui.json",
+      "language": "ts",
+      "predicted": 387,
+      "actual": 387
+    },
+    {
+      "root": "census-apps-ui.json",
+      "language": "js",
+      "predicted": 62,
+      "actual": 62
+    },
+    {
+      "root": "census-blocks.json",
+      "language": "ts",
+      "predicted": 57,
+      "actual": 57
+    },
+    {
+      "root": "census-blocks.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-blog-studio-lambda.json",
+      "language": "ts",
+      "predicted": 110,
+      "actual": 110
+    },
+    {
+      "root": "census-blog-studio-lambda.json",
+      "language": "js",
+      "predicted": 23,
+      "actual": 23
+    },
+    {
+      "root": "census-car-select-api.json",
+      "language": "ts",
+      "predicted": 30,
+      "actual": 30
+    },
+    {
+      "root": "census-car-select-api.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-claude-chat-clean.json",
+      "language": "ts",
+      "predicted": 52,
+      "actual": 52
+    },
+    {
+      "root": "census-claude-chat-clean.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-claude-skills.json",
+      "language": "ts",
+      "predicted": 17,
+      "actual": 17
+    },
+    {
+      "root": "census-claude-skills.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-cue-status-page.json",
+      "language": "ts",
+      "predicted": 11,
+      "actual": 11
+    },
+    {
+      "root": "census-cue-status-page.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-driftbench.json",
+      "language": "ts",
+      "predicted": 385,
+      "actual": 385
+    },
+    {
+      "root": "census-driftbench.json",
+      "language": "js",
+      "predicted": 6,
+      "actual": 6
+    },
+    {
+      "root": "census-ftp-server-orange.json",
+      "language": "ts",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-ftp-server-orange.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-itsme-backend.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-itsme-backend.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-linear-status-page.json",
+      "language": "ts",
+      "predicted": 11,
+      "actual": 11
+    },
+    {
+      "root": "census-linear-status-page.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-lucca-unofficial-api.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-lucca-unofficial-api.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-n8n.json",
+      "language": "ts",
+      "predicted": 520,
+      "actual": 520
+    },
+    {
+      "root": "census-n8n.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nano-banana.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nano-banana.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nexus-agent-api.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nexus-agent-api.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nexus-app-starter.json",
+      "language": "ts",
+      "predicted": 179,
+      "actual": 179
+    },
+    {
+      "root": "census-nexus-app-starter.json",
+      "language": "js",
+      "predicted": 34,
+      "actual": 34
+    },
+    {
+      "root": "census-nexus-automations.json",
+      "language": "ts",
+      "predicted": 7,
+      "actual": 7
+    },
+    {
+      "root": "census-nexus-automations.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nexus-chat-embed.json",
+      "language": "ts",
+      "predicted": 28,
+      "actual": 28
+    },
+    {
+      "root": "census-nexus-chat-embed.json",
+      "language": "js",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-nexus-landing.json",
+      "language": "ts",
+      "predicted": 291,
+      "actual": 291
+    },
+    {
+      "root": "census-nexus-landing.json",
+      "language": "js",
+      "predicted": 34,
+      "actual": 34
+    },
+    {
+      "root": "census-nexus-learning-landing.json",
+      "language": "ts",
+      "predicted": 19,
+      "actual": 19
+    },
+    {
+      "root": "census-nexus-learning-landing.json",
+      "language": "js",
+      "predicted": 5,
+      "actual": 5
+    },
+    {
+      "root": "census-nexus-learning.json",
+      "language": "ts",
+      "predicted": 162,
+      "actual": 162
+    },
+    {
+      "root": "census-nexus-learning.json",
+      "language": "js",
+      "predicted": 21,
+      "actual": 21
+    },
+    {
+      "root": "census-nexus-linkedin-dashboard.json",
+      "language": "ts",
+      "predicted": 81,
+      "actual": 81
+    },
+    {
+      "root": "census-nexus-linkedin-dashboard.json",
+      "language": "js",
+      "predicted": 43,
+      "actual": 43
+    },
+    {
+      "root": "census-nexus-meeting-recorder.json",
+      "language": "ts",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-nexus-meeting-recorder.json",
+      "language": "js",
+      "predicted": 6,
+      "actual": 6
+    },
+    {
+      "root": "census-nexus-tokens.json",
+      "language": "ts",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-nexus-tokens.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nexus-ui.json",
+      "language": "ts",
+      "predicted": 59,
+      "actual": 59
+    },
+    {
+      "root": "census-nexus-ui.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-nexus.json",
+      "language": "ts",
+      "predicted": 4136,
+      "actual": 4136
+    },
+    {
+      "root": "census-nexus.json",
+      "language": "js",
+      "predicted": 228,
+      "actual": 228
+    },
+    {
+      "root": "census-nutshell.json",
+      "language": "ts",
+      "predicted": 553,
+      "actual": 553
+    },
+    {
+      "root": "census-nutshell.json",
+      "language": "js",
+      "predicted": 3,
+      "actual": 3
+    },
+    {
+      "root": "census-odoo-unofficial-api.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-odoo-unofficial-api.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-orange-checkout-automation.json",
+      "language": "ts",
+      "predicted": 60,
+      "actual": 60
+    },
+    {
+      "root": "census-orange-checkout-automation.json",
+      "language": "js",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-orange-identity-card-collection.json",
+      "language": "ts",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-orange-identity-card-collection.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-pipedream.json",
+      "language": "ts",
+      "predicted": 69,
+      "actual": 69
+    },
+    {
+      "root": "census-pipedream.json",
+      "language": "js",
+      "predicted": 159,
+      "actual": 159
+    },
+    {
+      "root": "census-pyka.json",
+      "language": "ts",
+      "predicted": 255,
+      "actual": 255
+    },
+    {
+      "root": "census-pyka.json",
+      "language": "js",
+      "predicted": 277,
+      "actual": 277
+    },
+    {
+      "root": "census-snitch.json",
+      "language": "ts",
+      "predicted": 99,
+      "actual": 99
+    },
+    {
+      "root": "census-snitch.json",
+      "language": "js",
+      "predicted": 2,
+      "actual": 2
+    },
+    {
+      "root": "census-status.json",
+      "language": "ts",
+      "predicted": 40,
+      "actual": 40
+    },
+    {
+      "root": "census-status.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-theirstack-unofficial-api.json",
+      "language": "ts",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-theirstack-unofficial-api.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    },
+    {
+      "root": "census-workday-unofficial-api.json",
+      "language": "ts",
+      "predicted": 9,
+      "actual": 9
+    },
+    {
+      "root": "census-workday-unofficial-api.json",
+      "language": "js",
+      "predicted": 0,
+      "actual": 0
+    }
+  ]
+}

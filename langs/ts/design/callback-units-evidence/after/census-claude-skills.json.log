@@ -1,0 +1,21 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-claude-skills.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33143124    28%  458732 331431240    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills/tsconfig.json: 112 files
+50 files, 89 units, 83 inside, 16 s
+100 files, 268 units, 257 inside, 19 s
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/claude-skills/packages/cli/tsconfig.json: 21 files
+claude-skills: 133 files, 355 units, 332 inside the subset (93.5 percent), 0 files unreadable, 22 s
+      13 units  type-assertion         src/app/[scope]/[slug]/versions/[version]/files/[...path]/page.tsx:21 `data.content` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), an
+       2 units  math-empty             src/app/api/v1/users/me/tokens/route.ts:47 Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback
+       2 units  unsupported-syntax     src/components/ui/badge.tsx:39 a local component value must be a string tag name or a named component
+       1 units  non-null-assertion     src/app/api/v1/skills/route.ts:50 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+       1 units  alias-mutation         src/components/files/file-tree.tsx:40 `current` is another name for a value this function was handed; change it through that name, or copy it first
+       1 units  callback-form          src/lib/rate-limit.ts:19 the callback must be an arrow function
+       1 units  promise-pending        packages/cli/src/api-client.ts:100 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+       1 units  index-assign           packages/cli/src/commands/pull.ts:109 write a record field by name, or use a local Record<string, T> dictionary
+       1 units  exception-binding      packages/cli/src/commands/pull.ts:190 use a distinct name for a local that shadows a value read by finally
+       1 units  in-place-mutation      packages/cli/src/lib/discovery.ts:50 sort changes `dirs` in place; write `dirs = [...dirs].sort(...)`
+       0 units  toplevel-effect        drizzle.config.ts:5 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

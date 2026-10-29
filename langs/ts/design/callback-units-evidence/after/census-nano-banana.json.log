@@ -1,0 +1,9 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nano-banana","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-nano-banana.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  34084160    27%  458732 340841600    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nano-banana/tsconfig.json: 2 files
+nano-banana: 2 files, 14 units, 8 inside the subset (57.1 percent), 0 files unreadable, 4 s
+       5 units  toplevel-effect        src/index.ts:234 code at module level runs on import; it is outside the subset
+       4 units  type-assertion         src/index.ts:171 `error.response?.status || 500` holds a value whose type nothing checked (an `as` that narrows, or an any or u
+
+exit=0 signal=null

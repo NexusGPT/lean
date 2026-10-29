@@ -1,0 +1,19 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/linear-status-page","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-linear-status-page.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  33655088    27%  458732 336550880    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/linear-status-page/tsconfig.json: 35 files
+linear-status-page: 35 files, 98 units, 83 inside the subset (84.7 percent), 0 files unreadable, 18 s
+       6 units  type-assertion         src/components/IssueModal.tsx:687 `props` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this 
+       4 units  unsupported-call       src/components/Board.tsx:239 Map.forEach is outside the subset; write for (const [k, v] of m)
+       3 units  param-mutation         src/components/Board.tsx:235 push on `grouped.get(stateId)!`, which is not a local array
+       3 units  assignment-expression  src/components/Board.tsx:361 narrow optional paths before assigning
+       2 units  reference-equality     src/components/Board.tsx:87 === on arrays and records compares references; compare fields
+       2 units  property-assign        src/components/IssueModal.tsx:296 assignment into `document`, which this function does not own; records it owns are updated in place
+       1 units  ts-strict              middleware.ts:6 TS7030: Not all code paths return a value.
+       1 units  unsupported-member     middleware.ts:23 property .email is not declared on JWTPayloadBase & CustomJwtSessionClaims & { v?: undefined; org_permissions?
+       1 units  react-handler-capture  src/components/AuthLayout.tsx:61 a React closure captures a changing local; capture a const value or use a state setter
+       1 units  string-code-unit       src/components/IssueCard.tsx:140 use BMP scalar literals within the string model; astral and surrogate strings need lane B
+       1 units  hook-order             src/components/Tooltip/TooltipTrigger.tsx:46 a hook is called under a branch, a loop, a nested function or after an early return; hooks run at the top of t
+       0 units  toplevel-effect        next.config.js:6 code at module level runs on import; it is outside the subset
+
+exit=0 signal=null

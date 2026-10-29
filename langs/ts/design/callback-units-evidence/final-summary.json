@@ -1,0 +1,75 @@
+{
+  "sources": [
+    "prediction-totals.json",
+    "compare.json",
+    "prediction/commands.json",
+    "before/commands.json",
+    "after/commands.json"
+  ],
+  "prediction": {
+    "census ts": {
+      "module": 2821,
+      "nested": 33271,
+      "orderNamed": 8020,
+      "total": 36092,
+      "otherScope": 4517
+    },
+    "census js": {
+      "module": 1319,
+      "nested": 4842,
+      "orderNamed": 947,
+      "total": 6161,
+      "otherScope": 12576
+    },
+    "bugsjs js": {
+      "module": 631,
+      "nested": 1138,
+      "orderNamed": 95,
+      "total": 1769,
+      "otherScope": 3510
+    },
+    "bugsjs ts": {
+      "module": 0,
+      "nested": 0,
+      "orderNamed": 0,
+      "total": 0,
+      "otherScope": 0
+    }
+  },
+  "newUnitRefusals": {
+    "inside": 30519,
+    "untyped-js": 4774,
+    "type-assertion": 2293,
+    "captured-mutable": 550,
+    "other": 4060
+  },
+  "runs": {
+    "prediction": {
+      "attempts": 49,
+      "successful": 49,
+      "failures": []
+    },
+    "before": {
+      "attempts": 50,
+      "successful": 48,
+      "failures": [
+        {
+          "root": "langchainjs",
+          "exit": null,
+          "signal": "SIGABRT"
+        },
+        {
+          "root": "nutshell",
+          "exit": null,
+          "signal": "SIGTERM"
+        }
+      ]
+    },
+    "after": {
+      "attempts": 48,
+      "successful": 48,
+      "failures": [],
+      "minimumFreeKiB": 26883572
+    }
+  }
+}

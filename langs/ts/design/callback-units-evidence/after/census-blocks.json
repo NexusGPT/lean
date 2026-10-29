@@ -1,0 +1,6707 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 121,
+   "units": 516,
+   "entered": 467
+  },
+  "js": {
+   "files": 2,
+   "units": 0,
+   "entered": 0
+  }
+ },
+ "refused": 49,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 14,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 5,
+     "example": {
+      "file": "apps/api/src/infrastructure/ai/ClaudeAIService.ts",
+      "line": 138,
+      "code": "(input.offset as number) || 1"
+     }
+    },
+    {
+     "directory": "apps/web",
+     "units": 8,
+     "example": {
+      "file": "apps/web/src/features/chat/ToolCallDisplay.tsx",
+      "line": 124,
+      "code": "errorMsg"
+     }
+    },
+    {
+     "directory": "packages/ui",
+     "units": 1,
+     "example": {
+      "file": "packages/ui/src/components/Panel.tsx",
+      "line": 44,
+      "code": "computedWidth !== undefined ? `${String(computedWidth)}px` : (width as string)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "units": 6,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/infrastructure/ai/ClaudeAIService.ts",
+      "line": 372,
+      "code": "pending.inputJson"
+     }
+    },
+    {
+     "directory": "apps/web",
+     "units": 5,
+     "example": {
+      "file": "apps/web/src/features/chat/ChatMessage.tsx",
+      "line": 22,
+      "code": "last.content"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "units": 5,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 5,
+     "example": {
+      "file": "apps/api/src/application/commands/ValidateProject.ts",
+      "line": 61,
+      "code": "stdout"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 4,
+   "directories": [
+    {
+     "directory": "apps/web",
+     "units": 4,
+     "example": {
+      "file": "apps/web/src/hooks/useResizable.ts",
+      "line": 78,
+      "code": "document.body.style.cursor"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "units": 4,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 4,
+     "example": {
+      "file": "apps/api/src/infrastructure/templates/rest-api/files/src/routes.ts",
+      "line": 10,
+      "code": "itemsRouter.get('/:id', (req, res) => {"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "units": 3,
+   "directories": [
+    {
+     "directory": "apps/web",
+     "units": 3,
+     "example": {
+      "file": "apps/web/src/features/project/FileSearchModal.tsx",
+      "line": 91,
+      "code": "list.children[selectedIndex]"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/application/commands/ValidateProject.ts",
+      "line": 61,
+      "code": "stdout"
+     }
+    },
+    {
+     "directory": "apps/web",
+     "units": 1,
+     "example": {
+      "file": "apps/web/src/hooks/useStreamingChat.ts",
+      "line": 138,
+      "code": "sseEvents.pop()"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 2,
+     "example": {
+      "file": "apps/api/src/application/commands/StreamChatMessage.ts",
+      "line": 127,
+      "code": "collectedEvents.push({ type: 'content', content })"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "unsupported-member",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 2,
+     "example": {
+      "file": "apps/api/src/infrastructure/http/routes/chatRoutes.ts",
+      "line": 49,
+      "code": "req.authContext"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "unsupported-syntax",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "apps/web",
+     "units": 2,
+     "example": {
+      "file": "apps/web/src/hooks/useProjects.ts",
+      "line": 104,
+      "code": "import.meta.env"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "definite-assignment",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "apps/web",
+     "units": 1,
+     "example": {
+      "file": "apps/web/src/hooks/useTypingEffect.ts",
+      "line": 150,
+      "code": "timeoutId: ReturnType<typeof setTimeout>"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/application/commands/ValidateProject.ts",
+      "line": 54,
+      "code": "new Promise((resolve) => { const proc = spawn(command, args, { cwd, shell: true }); let stdout = ''; let stderr = ''; pr"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "apps/api",
+     "units": 1,
+     "example": {
+      "file": "apps/api/src/infrastructure/templates/data-sync/files/src/sync.ts",
+      "line": 33,
+      "code": "syncData().catch(console.error)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "react-handler-capture",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "apps/web",
+     "units": 1,
+     "example": {
+      "file": "apps/web/src/hooks/useTypingEffect.ts",
+      "line": 131,
+      "code": "charIndexRef"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "reference-equality",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "apps/web",
+     "units": 1,
+     "example": {
+      "file": "apps/web/src/features/project/FileTree.tsx",
+      "line": 551,
+      "code": "e.currentTarget === e.target"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 123,
+ "failedFiles": 0,
+ "units": 516,
+ "entered": 467,
+ "share": 90.5,
+ "seconds": 38,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 58,
+   "units": 21,
+   "examples": [
+    "apps/api/src/infrastructure/ai/ClaudeAIService.ts:138 `(input.offset as number) || 1` holds a value whose type nothing checked (an `as` that narrows, or an any or u",
+    "apps/api/src/infrastructure/ai/ClaudeAIService.ts:139 `(input.limit as number) || MAX_READ_LINES` holds a value whose type nothing checked (an `as` that narrows, or",
+    "apps/api/src/infrastructure/ai/ClaudeAIService.ts:188 `oldString` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and t"
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "findings": 15,
+   "units": 10,
+   "examples": [
+    "apps/api/src/application/commands/StreamChatMessage.ts:141 `tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object",
+    "apps/api/src/application/commands/StreamChatMessage.ts:149 `tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object",
+    "apps/api/src/infrastructure/ai/ClaudeAIService.ts:372 `pending` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module o"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 36,
+   "units": 5,
+   "examples": [
+    "apps/api/src/application/commands/ValidateProject.ts:61 `stdout` is declared outside this callback; a callback cannot change it",
+    "apps/api/src/application/commands/ValidateProject.ts:65 `stderr` is declared outside this callback; a callback cannot change it",
+    "apps/api/src/infrastructure/ai/ClaudeAIService.ts:392 `fullContent` is declared outside this callback; a callback cannot change it"
+   ]
+  },
+  {
+   "rule": "captured-mutable",
+   "findings": 6,
+   "units": 5,
+   "examples": [
+    "apps/api/src/application/commands/ValidateProject.ts:61 captured binding `stdout` may be written after this callback is created; capture a stable value",
+    "apps/api/src/application/commands/ValidateProject.ts:65 captured binding `stderr` may be written after this callback is created; capture a stable value",
+    "apps/api/src/application/commands/ValidateProject.ts:69 captured binding `stdout` may be written after this callback is created; capture a stable value"
+   ]
+  },
+  {
+   "rule": "ts-strict",
+   "findings": 5,
+   "units": 4,
+   "examples": [
+    "apps/api/src/infrastructure/templates/rest-api/files/src/routes.ts:10 TS7030: Not all code paths return a value.",
+    "apps/api/src/infrastructure/templates/rest-api/files/src/routes.ts:16 TS7030: Not all code paths return a value.",
+    "apps/api/src/infrastructure/templates/rest-api/files/src/routes.ts:23 TS7030: Not all code paths return a value."
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 16,
+   "units": 4,
+   "examples": [
+    "apps/web/src/hooks/useResizable.ts:78 assignment into `document`, which this function does not own; records it owns are updated in place",
+    "apps/web/src/hooks/useResizable.ts:78 assignment into `document`, which this function does not own; records it owns are updated in place",
+    "apps/web/src/hooks/useResizable.ts:79 assignment into `document`, which this function does not own; records it owns are updated in place"
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "findings": 3,
+   "units": 3,
+   "examples": [
+    "apps/web/src/features/project/FileSearchModal.tsx:91 HTMLCollection declares fields and an index signature; its value reading holds the declared fields alone, so a",
+    "apps/web/src/features/project/FileSearchModal.tsx:91 HTMLCollection declares fields and an index signature; its value reading holds the declared fields alone, so a",
+    "apps/web/src/hooks/useDeploymentMessages.ts:251 narrow the record receiver before indexing it"
+   ]
+  },
+  {
+   "rule": "param-mutation",
+   "findings": 4,
+   "units": 2,
+   "examples": [
+    "apps/api/src/application/commands/StreamChatMessage.ts:127 push on `collectedEvents`, which is not a local array",
+    "apps/api/src/application/commands/StreamChatMessage.ts:133 map mutation on a non-local",
+    "apps/api/src/application/commands/StreamChatMessage.ts:134 push on `collectedEvents`, which is not a local array"
+   ]
+  },
+  {
+   "rule": "promise-pending",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "apps/api/src/application/commands/ValidateProject.ts:54 await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+    "apps/api/src/infrastructure/templates/data-sync/files/src/sync.ts:33 await or return the promise directly; a dangling or stored continuation leaves observable pending work"
+   ]
+  },
+  {
+   "rule": "unsupported-member",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "apps/api/src/infrastructure/http/routes/chatRoutes.ts:49 property .authContext is not declared on Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>",
+    "apps/api/src/infrastructure/http/routes/projectRoutes.ts:100 property .authContext is not declared on Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>"
+   ]
+  },
+  {
+   "rule": "unsupported-syntax",
+   "findings": 2,
+   "units": 2,
+   "examples": [
+    "apps/web/src/hooks/useProjects.ts:104 `import.meta.env` is injected at build time; read it outside the subset",
+    "apps/web/src/hooks/useUploadFiles.ts:34 `import.meta.env` is injected at build time; read it outside the subset"
+   ]
+  },
+  {
+   "rule": "definite-assignment",
+   "findings": 4,
+   "units": 2,
+   "examples": [
+    "apps/web/src/hooks/useTypingEffect.ts:150 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested",
+    "apps/web/src/hooks/useTypingEffect.ts:150 this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested",
+    "apps/web/src/hooks/useTypingEffect.ts:204 `timeoutId` may be read here before its first assignment (TypeScript does not check this read), and lean tests"
+   ]
+  },
+  {
+   "rule": "promise",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "apps/api/src/application/commands/ValidateProject.ts:54 a promise built with new Promise is not a handle; make the function async"
+   ]
+  },
+  {
+   "rule": "reference-equality",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "apps/web/src/features/project/FileTree.tsx:551 === on arrays and records compares references; compare fields"
+   ]
+  },
+  {
+   "rule": "unsupported-call",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "apps/web/src/features/project/FileTree.tsx:662 .pop() in an optional chain changes a receiver that may be absent; check it first"
+   ]
+  },
+  {
+   "rule": "void",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "apps/web/src/features/project/FileTree.tsx:682 `void` is outside the subset"
+   ]
+  },
+  {
+   "rule": "react-handler-capture",
+   "findings": 6,
+   "units": 1,
+   "examples": [
+    "apps/web/src/hooks/useTypingEffect.ts:131 a React closure captures a changing local; capture a const value or use a state setter",
+    "apps/web/src/hooks/useTypingEffect.ts:132 a React closure captures a changing local; capture a const value or use a state setter",
+    "apps/web/src/hooks/useTypingEffect.ts:133 a React closure captures a changing local; capture a const value or use a state setter"
+   ]
+  },
+  {
+   "rule": "unresolved-module",
+   "findings": 2,
+   "units": 0,
+   "examples": [
+    "apps/api/src/application/commands/ArchiveProject.ts:1 TS6059: File '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/r",
+    "eslint.config.mjs:1 TS2307: Cannot find module '@eslint/js' or its corresponding type declarations."
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 79,
+   "units": 0,
+   "examples": [
+    "apps/api/src/index.ts:18 code at module level runs on import; it is outside the subset",
+    "apps/api/src/index.ts:24 code at module level runs on import; it is outside the subset",
+    "apps/api/src/index.ts:31 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "apps/api/drizzle.config.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/ArchiveProject.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "ArchiveProjectCommand.constructor",
+     "lines": [
+      20,
+      23
+     ]
+    },
+    {
+     "name": "ArchiveProjectCommand.execute",
+     "lines": [
+      25,
+      63
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 1,
+     "unit": null,
+     "rule": "unresolved-module",
+     "msg": "TS6059: File '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/packages/types/src/index.ts' is not under 'rootDir' '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src'. 'rootDir' is expected to contain all source files.   The file is in the program because:     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/ArchiveProject.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/ports/ProjectRepository.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/ports/CleanupService.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/CreateProject.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/models/Project.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/models/Project.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/DeleteProject.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/DeployProject.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/ports/PermissionRepository.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/GrantPermission.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/models/ProjectPermission.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/models/ProjectPermission.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/SendChatMessage.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/models/ChatMessage.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/models/ChatMessage.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/ports/ChatRepository.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/ports/ChatSessionRepository.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/ports/AIService.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/domain/ports/AIService.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/StreamChatMessage.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/http/sse.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/UpdateProjectConfig.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/commands/ValidateProject.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/queries/GetDeployStatus.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/queries/GetPermissions.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/queries/GetProject.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/application/queries/GetProjects.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/http/routes/projectRoutes.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/persistence/schema.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/persistence/ProjectRepository.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/persistence/PermissionRepository.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/templates/TemplateService.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/aws/AWSCleanupService.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/http/routes/chatRoutes.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/persistence/ChatRepository.ts'     Imported via '@nexus-blocks/types' from file '/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/blocks/apps/api/src/infrastructure/persistence/ChatSessionRepository.ts'",
+     "env": true
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/application/commands/CreateProject.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "CreateProjectCommand.constructor",
+     "lines": [
+      15,
+      15
+     ]
+    },
+    {
+     "name": "CreateProjectCommand.execute",
+     "lines": [
+      17,
+      36
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/DeleteProject.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "DeleteProjectCommand.constructor",
+     "lines": [
+      20,
+      23
+     ]
+    },
+    {
+     "name": "DeleteProjectCommand.execute",
+     "lines": [
+      25,
+      56
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/DeployProject.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "DeployProjectCommand.constructor",
+     "lines": [
+      16,
+      21
+     ]
+    },
+    {
+     "name": "DeployProjectCommand.execute",
+     "lines": [
+      23,
+      71
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/ExportProject.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "ExportProjectCommand.constructor",
+     "lines": [
+      31,
+      35
+     ]
+    },
+    {
+     "name": "ExportProjectCommand.execute",
+     "lines": [
+      37,
+      86
+     ]
+    },
+    {
+     "name": "ExportProjectCommand.execute/allFiles.filter()#0",
+     "lines": [
+      71,
+      71
+     ]
+    },
+    {
+     "name": "ExportProjectCommand.execute/sourceFiles.map()#0",
+     "lines": [
+      75,
+      78
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/GrantPermission.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "GrantPermissionCommand.constructor",
+     "lines": [
+      17,
+      21
+     ]
+    },
+    {
+     "name": "GrantPermissionCommand.execute",
+     "lines": [
+      23,
+      64
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/RevokePermission.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "RevokePermissionCommand.constructor",
+     "lines": [
+      11,
+      14
+     ]
+    },
+    {
+     "name": "RevokePermissionCommand.execute",
+     "lines": [
+      16,
+      37
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/SendChatMessage.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "buildSystemPrompt",
+     "lines": [
+      79,
+      109
+     ]
+    },
+    {
+     "name": "SendChatMessageCommand.constructor",
+     "lines": [
+      112,
+      118
+     ]
+    },
+    {
+     "name": "SendChatMessageCommand.execute",
+     "lines": [
+      120,
+      197
+     ]
+    },
+    {
+     "name": "buildSystemPrompt/files.map()#0",
+     "lines": [
+      100,
+      100
+     ]
+    },
+    {
+     "name": "SendChatMessageCommand.execute/files.filter()#0",
+     "lines": [
+      156,
+      156
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/StreamChatMessage.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "buildSystemPrompt",
+     "lines": [
+      17,
+      69
+     ]
+    },
+    {
+     "name": "StreamChatMessageCommand.constructor",
+     "lines": [
+      72,
+      78
+     ]
+    },
+    {
+     "name": "StreamChatMessageCommand.execute",
+     "lines": [
+      80,
+      169
+     ]
+    },
+    {
+     "name": "buildSystemPrompt/files.map()#0",
+     "lines": [
+      47,
+      47
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 127,
+     "unit": "StreamChatMessageCommand.execute",
+     "rule": "param-mutation",
+     "msg": "push on `collectedEvents`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 133,
+     "unit": "StreamChatMessageCommand.execute",
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 134,
+     "unit": "StreamChatMessageCommand.execute",
+     "rule": "param-mutation",
+     "msg": "push on `collectedEvents`, which is not a local array",
+     "env": false
+    },
+    {
+     "line": 141,
+     "unit": "StreamChatMessageCommand.execute",
+     "rule": "alias-mutation",
+     "msg": "`tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 149,
+     "unit": "StreamChatMessageCommand.execute",
+     "rule": "alias-mutation",
+     "msg": "`tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/application/commands/UpdateProjectConfig.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "UpdateProjectConfigCommand.constructor",
+     "lines": [
+      15,
+      18
+     ]
+    },
+    {
+     "name": "UpdateProjectConfigCommand.execute",
+     "lines": [
+      20,
+      51
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/UploadFiles.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "UploadFilesCommand.constructor",
+     "lines": [
+      28,
+      32
+     ]
+    },
+    {
+     "name": "UploadFilesCommand.execute",
+     "lines": [
+      34,
+      93
+     ]
+    },
+    {
+     "name": "UploadFilesCommand.execute/input.files\n      .map()#0",
+     "lines": [
+      71,
+      71
+     ]
+    },
+    {
+     "name": "UploadFilesCommand.execute/input.files\n      .map((file) => file.path)\n      .filter()#0",
+     "lines": [
+      72,
+      72
+     ]
+    },
+    {
+     "name": "UploadFilesCommand.execute/input.files.map()#0",
+     "lines": [
+      84,
+      85
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/commands/ValidateProject.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "parseTscOutput",
+     "lines": [
+      23,
+      44
+     ]
+    },
+    {
+     "name": "runCommand",
+     "lines": [
+      49,
+      76
+     ]
+    },
+    {
+     "name": "ValidateProjectCommand.constructor",
+     "lines": [
+      79,
+      83
+     ]
+    },
+    {
+     "name": "ValidateProjectCommand.execute",
+     "lines": [
+      85,
+      214
+     ]
+    },
+    {
+     "name": "runCommand/Promise()#0",
+     "lines": [
+      54,
+      75
+     ]
+    },
+    {
+     "name": "runCommand/Promise()#0/proc.stdout.on('data')#1",
+     "lines": [
+      60,
+      62
+     ]
+    },
+    {
+     "name": "runCommand/Promise()#0/proc.stderr.on('data')#1",
+     "lines": [
+      64,
+      66
+     ]
+    },
+    {
+     "name": "runCommand/Promise()#0/proc.on('close')#1",
+     "lines": [
+      68,
+      70
+     ]
+    },
+    {
+     "name": "runCommand/Promise()#0/proc.on('error')#1",
+     "lines": [
+      72,
+      74
+     ]
+    },
+    {
+     "name": "ValidateProjectCommand.execute/requiredFiles.filter()#0",
+     "lines": [
+      127,
+      127
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 54,
+     "unit": "runCommand",
+     "rule": "promise",
+     "msg": "a promise built with new Promise is not a handle; make the function async",
+     "env": false
+    },
+    {
+     "line": 54,
+     "unit": "runCommand",
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    },
+    {
+     "line": 61,
+     "unit": "runCommand/Promise()#0",
+     "rule": "closure-mutation",
+     "msg": "`stdout` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 61,
+     "unit": "runCommand/Promise()#0/proc.stdout.on('data')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `stdout` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 65,
+     "unit": "runCommand/Promise()#0",
+     "rule": "closure-mutation",
+     "msg": "`stderr` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 65,
+     "unit": "runCommand/Promise()#0/proc.stderr.on('data')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `stderr` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 69,
+     "unit": "runCommand/Promise()#0/proc.on('close')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `stdout` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 69,
+     "unit": "runCommand/Promise()#0/proc.on('close')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `stderr` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 73,
+     "unit": "runCommand/Promise()#0/proc.on('error')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `stdout` may be written after this callback is created; capture a stable value",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/application/queries/GetDeployStatus.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "extractServiceName",
+     "lines": [
+      13,
+      16
+     ]
+    },
+    {
+     "name": "GetDeployStatusQuery.constructor",
+     "lines": [
+      24,
+      28
+     ]
+    },
+    {
+     "name": "GetDeployStatusQuery.execute",
+     "lines": [
+      30,
+      219
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/queries/GetPermissions.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "GetPermissionsQuery.constructor",
+     "lines": [
+      12,
+      15
+     ]
+    },
+    {
+     "name": "GetPermissionsQuery.execute",
+     "lines": [
+      17,
+      31
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/queries/GetProject.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "GetProjectQuery.constructor",
+     "lines": [
+      14,
+      17
+     ]
+    },
+    {
+     "name": "GetProjectQuery.execute",
+     "lines": [
+      19,
+      52
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/application/queries/GetProjects.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "GetProjectsQuery.constructor",
+     "lines": [
+      11,
+      11
+     ]
+    },
+    {
+     "name": "GetProjectsQuery.execute",
+     "lines": [
+      13,
+      20
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/errors/DomainError.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "DomainError.constructor",
+     "lines": [
+      8,
+      11
+     ]
+    },
+    {
+     "name": "NotFoundError.constructor",
+     "lines": [
+      21,
+      23
+     ]
+    },
+    {
+     "name": "UnauthorizedError.constructor",
+     "lines": [
+      41,
+      43
+     ]
+    },
+    {
+     "name": "ForbiddenError.constructor",
+     "lines": [
+      53,
+      55
+     ]
+    },
+    {
+     "name": "ConflictError.constructor",
+     "lines": [
+      73,
+      76
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/models/ChatMessage.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "createChatMessage",
+     "lines": [
+      10,
+      26
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/models/Project.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "createProject",
+     "lines": [
+      10,
+      34
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/models/ProjectPermission.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "createProjectPermission",
+     "lines": [
+      10,
+      24
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/AIService.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/ChatRepository.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/ChatSessionRepository.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/CleanupService.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/CodeStorageService.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/DeployService.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/PermissionRepository.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/domain/ports/ProjectRepository.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/index.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "(process.env.CORS_ORIGIN || 'http://localhost:8080')\n  .split(',')\n  .map()#0",
+     "lines": [
+      22,
+      22
+     ]
+    },
+    {
+     "name": "app.use()#0",
+     "lines": [
+      62,
+      64
+     ]
+    },
+    {
+     "name": "app.listen()#1",
+     "lines": [
+      66,
+      69
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 18,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 43,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 44,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 47,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 50,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 53,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 54,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 55,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 59,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 62,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 66,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/ai/ClaudeAIService.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "formatWithLineNumbers",
+     "lines": [
+      105,
+      116
+     ]
+    },
+    {
+     "name": "executeTool",
+     "lines": [
+      118,
+      235
+     ]
+    },
+    {
+     "name": "toAnthropicMessages",
+     "lines": [
+      237,
+      242
+     ]
+    },
+    {
+     "name": "ClaudeAIService.constructor",
+     "lines": [
+      247,
+      252
+     ]
+    },
+    {
+     "name": "ClaudeAIService.chat",
+     "lines": [
+      254,
+      321
+     ]
+    },
+    {
+     "name": "ClaudeAIService.streamChat",
+     "lines": [
+      323,
+      450
+     ]
+    },
+    {
+     "name": "formatWithLineNumbers/lines\n    .map()#0",
+     "lines": [
+      111,
+      114
+     ]
+    },
+    {
+     "name": "toAnthropicMessages/messages.map()#0",
+     "lines": [
+      238,
+      241
+     ]
+    },
+    {
+     "name": "ClaudeAIService.chat/response.content.filter()#0@1",
+     "lines": [
+      273,
+      273
+     ]
+    },
+    {
+     "name": "ClaudeAIService.chat/response.content.filter()#0@2",
+     "lines": [
+      279,
+      279
+     ]
+    },
+    {
+     "name": "ClaudeAIService.chat/textBlocks.map()#0",
+     "lines": [
+      281,
+      281
+     ]
+    },
+    {
+     "name": "ClaudeAIService.streamChat/stream.on('streamEvent')#1",
+     "lines": [
+      350,
+      388
+     ]
+    },
+    {
+     "name": "ClaudeAIService.streamChat/stream.on('text')#1",
+     "lines": [
+      391,
+      394
+     ]
+    },
+    {
+     "name": "ClaudeAIService.streamChat/response.content.filter()#0",
+     "lines": [
+      401,
+      401
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 138,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`(input.offset as number) || 1` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 139,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`(input.limit as number) || MAX_READ_LINES` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 188,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`oldString` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 197,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`oldString` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 207,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`oldString` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 211,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`oldString` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 211,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`newString` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 221,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`oldLines` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 222,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`newLines` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 224,
+     "unit": "executeTool",
+     "rule": "type-assertion",
+     "msg": "`startLine + oldLines - 1` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 296,
+     "unit": "ClaudeAIService.chat",
+     "rule": "type-assertion",
+     "msg": "`block.input as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 302,
+     "unit": "ClaudeAIService.chat",
+     "rule": "type-assertion",
+     "msg": "`block.input as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 354,
+     "unit": "ClaudeAIService.streamChat",
+     "rule": "param-mutation",
+     "msg": "map mutation on a non-local",
+     "env": false
+    },
+    {
+     "line": 372,
+     "unit": "ClaudeAIService.streamChat",
+     "rule": "alias-mutation",
+     "msg": "`pending` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 372,
+     "unit": "ClaudeAIService.streamChat/stream.on('streamEvent')#1",
+     "rule": "alias-mutation",
+     "msg": "`pending` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 382,
+     "unit": "ClaudeAIService.streamChat",
+     "rule": "type-assertion",
+     "msg": "`input` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 382,
+     "unit": "ClaudeAIService.streamChat/stream.on('streamEvent')#1",
+     "rule": "type-assertion",
+     "msg": "`input` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 392,
+     "unit": "ClaudeAIService.streamChat",
+     "rule": "closure-mutation",
+     "msg": "`fullContent` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 392,
+     "unit": "ClaudeAIService.streamChat/stream.on('text')#1",
+     "rule": "captured-mutable",
+     "msg": "captured binding `fullContent` may be written after this callback is created; capture a stable value",
+     "env": false
+    },
+    {
+     "line": 421,
+     "unit": "ClaudeAIService.streamChat",
+     "rule": "type-assertion",
+     "msg": "`block.input as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 428,
+     "unit": "ClaudeAIService.streamChat",
+     "rule": "type-assertion",
+     "msg": "`block.input as Record<string, unknown>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/aws/AWSCleanupService.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "AWSCleanupService.constructor",
+     "lines": [
+      40,
+      51
+     ]
+    },
+    {
+     "name": "AWSCleanupService.cleanupProject",
+     "lines": [
+      56,
+      116
+     ]
+    },
+    {
+     "name": "AWSCleanupService.deleteAppRunnerService",
+     "lines": [
+      121,
+      127
+     ]
+    },
+    {
+     "name": "AWSCleanupService.deleteECRImages",
+     "lines": [
+      133,
+      176
+     ]
+    },
+    {
+     "name": "AWSCleanupService.deleteCloudWatchLogs",
+     "lines": [
+      181,
+      216
+     ]
+    },
+    {
+     "name": "AWSCleanupService.stopActiveBuilds",
+     "lines": [
+      221,
+      251
+     ]
+    },
+    {
+     "name": "AWSCleanupService.deleteS3ProjectFolder",
+     "lines": [
+      256,
+      288
+     ]
+    },
+    {
+     "name": "AWSCleanupService.deleteS3ProjectFolder/listResponse.Contents.map()#0",
+     "lines": [
+      272,
+      272
+     ]
+    },
+    {
+     "name": "AWSCleanupService.deleteS3ProjectFolder/listResponse.Contents.map((obj) => obj.Key).filter()#0",
+     "lines": [
+      273,
+      273
+     ]
+    },
+    {
+     "name": "AWSCleanupService.deleteS3ProjectFolder/batch.map()#0",
+     "lines": [
+      282,
+      282
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/aws/AppRunnerService.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "AppRunnerService.constructor",
+     "lines": [
+      19,
+      30
+     ]
+    },
+    {
+     "name": "AppRunnerService.createService",
+     "lines": [
+      36,
+      67
+     ]
+    },
+    {
+     "name": "AppRunnerService.updateService",
+     "lines": [
+      72,
+      98
+     ]
+    },
+    {
+     "name": "AppRunnerService.getServiceStatus",
+     "lines": [
+      103,
+      120
+     ]
+    },
+    {
+     "name": "AppRunnerService.getLatestOperation",
+     "lines": [
+      125,
+      145
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/aws/CodeBuildService.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "CodeBuildService.constructor",
+     "lines": [
+      19,
+      31
+     ]
+    },
+    {
+     "name": "CodeBuildService.startBuild",
+     "lines": [
+      37,
+      57
+     ]
+    },
+    {
+     "name": "CodeBuildService.getBuildStatus",
+     "lines": [
+      62,
+      102
+     ]
+    },
+    {
+     "name": "CodeBuildService.fetchLogs",
+     "lines": [
+      107,
+      119
+     ]
+    },
+    {
+     "name": "CodeBuildService.mapBuildStatus",
+     "lines": [
+      121,
+      135
+     ]
+    },
+    {
+     "name": "CodeBuildService.getBuildStatus/build.phases.find()#0",
+     "lines": [
+      85,
+      85
+     ]
+    },
+    {
+     "name": "CodeBuildService.fetchLogs/events.map()#0",
+     "lines": [
+      118,
+      118
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/aws/types.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/clerk/ClerkService.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "ClerkService.userExistsByEmail",
+     "lines": [
+      11,
+      23
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/middleware/auth.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "requireAuth",
+     "lines": [
+      24,
+      50
+     ]
+    },
+    {
+     "name": "requireAuth/user.emailAddresses.find()#0",
+     "lines": [
+      38,
+      38
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/middleware/errorHandler.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "errorHandler",
+     "lines": [
+      5,
+      33
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/middleware/requestLogger.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "requestLogger",
+     "lines": [
+      3,
+      6
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/routes/aiRoutes.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "router.post('/generate-description')#1",
+     "lines": [
+      13,
+      53
+     ]
+    },
+    {
+     "name": "router.post('/generate-description')#1/client.messages\n    .create({\n      model: 'claude-sonnet-4-20250514',\n      max_tokens: 200,\n      messages: [\n        {\n          role: 'user',\n          content: `You are writing a short project description for a backend API project.\n\nTemplate type: ${templateName}\nUser's brief description: ${briefDescription}\n\nWrite a clear, professional 1-2 sentence description. Be concise. Don't use marketing language. Just describe what the project does.\n\nRespond with ONLY the description, nothing else.`,\n        },\n      ],\n    })\n    .then()#0",
+     "lines": [
+      42,
+      51
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 13,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/routes/chatRoutes.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "getAuthContext",
+     "lines": [
+      48,
+      54
+     ]
+    },
+    {
+     "name": "chatRoutes.get('/projects/:projectId/chats')#1",
+     "lines": [
+      63,
+      80
+     ]
+    },
+    {
+     "name": "chatRoutes.get('/projects/:projectId/chats')#1/projectRepository\n      .findById(projectId)\n      .then()#0",
+     "lines": [
+      69,
+      77
+     ]
+    },
+    {
+     "name": "chatRoutes.get('/projects/:projectId/chats')#1/projectRepository\n      .findById(projectId)\n      .then((project) => {\n        if (!project) {\n          throw new NotFoundError('Project', projectId);\n        }\n        if (project.organizationId !== (auth.orgId ?? auth.userId)) {\n          throw new ForbiddenError('Cannot access project from another organization');\n        }\n        return chatSessionRepository.findByProject(projectId);\n      })\n      .then()#0",
+     "lines": [
+      78,
+      78
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/projects/:projectId/chats')#1",
+     "lines": [
+      86,
+      115
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/projects/:projectId/chats')#1/projectRepository\n      .findById(projectId)\n      .then()#0",
+     "lines": [
+      93,
+      112
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/projects/:projectId/chats')#1/projectRepository\n      .findById(projectId)\n      .then()#0/chatSessionRepository.findByProject(projectId).then()#0",
+     "lines": [
+      101,
+      111
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/projects/:projectId/chats')#1/projectRepository\n      .findById(projectId)\n      .then((project) => {\n        if (!project) {\n          throw new NotFoundError('Project', projectId);\n        }\n        if (project.organizationId !== (auth.orgId ?? auth.userId)) {\n          throw new ForbiddenError('Cannot access project from another organization');\n        }\n        // Count existing chats to generate title\n        return chatSessionRepository.findByProject(projectId).then((chats) => {\n          const now = new Date().toISOString();\n          const title = parsed.title || `Chat ${String(chats.length + 1)}`;\n          return chatSessionRepository.create({\n            id: uuid(),\n            projectId,\n            title,\n            createdAt: now,\n            updatedAt: now,\n          });\n        });\n      })\n      .then()#0",
+     "lines": [
+      113,
+      113
+     ]
+    },
+    {
+     "name": "chatRoutes.get('/chats/:chatId/messages')#1",
+     "lines": [
+      125,
+      147
+     ]
+    },
+    {
+     "name": "chatRoutes.get('/chats/:chatId/messages')#1/chatSessionRepository\n      .findById(chatId)\n      .then()#0",
+     "lines": [
+      131,
+      144
+     ]
+    },
+    {
+     "name": "chatRoutes.get('/chats/:chatId/messages')#1/chatSessionRepository\n      .findById(chatId)\n      .then()#0/projectRepository.findById(chat.projectId).then()#0",
+     "lines": [
+      135,
+      143
+     ]
+    },
+    {
+     "name": "chatRoutes.get('/chats/:chatId/messages')#1/chatSessionRepository\n      .findById(chatId)\n      .then((chat) => {\n        if (!chat) {\n          throw new NotFoundError('Chat', chatId);\n        }\n        return projectRepository.findById(chat.projectId).then((project) => {\n          if (!project) {\n            throw new NotFoundError('Project', chat.projectId);\n          }\n          if (project.organizationId !== (auth.orgId ?? auth.userId)) {\n            throw new ForbiddenError('Cannot access chat from another organization');\n          }\n          return chatRepository.findByChat(chatId);\n        });\n      })\n      .then()#0",
+     "lines": [
+      145,
+      145
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/chats/:chatId/messages')#1",
+     "lines": [
+      153,
+      166
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/chats/:chatId/messages')#1/sendChatMessageCommand\n      .execute({\n        chatId,\n        organizationId: auth.orgId ?? auth.userId,\n        content: parsed.content,\n      })\n      .then()#0",
+     "lines": [
+      164,
+      164
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/chats/:chatId/messages/stream')#1",
+     "lines": [
+      172,
+      204
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/chats/:chatId/messages/stream')#1/streamChatMessageCommand\n      .execute(\n        {\n          chatId,\n          organizationId: auth.orgId ?? auth.userId,\n          content: parsed.content,\n        },\n        sseWriter\n      )\n      .then()#0",
+     "lines": [
+      189,
+      191
+     ]
+    },
+    {
+     "name": "chatRoutes.post('/chats/:chatId/messages/stream')#1/streamChatMessageCommand\n      .execute(\n        {\n          chatId,\n          organizationId: auth.orgId ?? auth.userId,\n          content: parsed.content,\n        },\n        sseWriter\n      )\n      .then(() => {\n        sseWriter.end();\n      })\n      .catch()#0",
+     "lines": [
+      192,
+      203
+     ]
+    },
+    {
+     "name": "chatRoutes.patch('/chats/:chatId')#1",
+     "lines": [
+      210,
+      233
+     ]
+    },
+    {
+     "name": "chatRoutes.patch('/chats/:chatId')#1/chatSessionRepository\n      .findById(chatId)\n      .then()#0",
+     "lines": [
+      217,
+      230
+     ]
+    },
+    {
+     "name": "chatRoutes.patch('/chats/:chatId')#1/chatSessionRepository\n      .findById(chatId)\n      .then()#0/projectRepository.findById(chat.projectId).then()#0",
+     "lines": [
+      221,
+      229
+     ]
+    },
+    {
+     "name": "chatRoutes.patch('/chats/:chatId')#1/chatSessionRepository\n      .findById(chatId)\n      .then((chat) => {\n        if (!chat) {\n          throw new NotFoundError('Chat', chatId);\n        }\n        return projectRepository.findById(chat.projectId).then((project) => {\n          if (!project) {\n            throw new NotFoundError('Project', chat.projectId);\n          }\n          if (project.organizationId !== (auth.orgId ?? auth.userId)) {\n            throw new ForbiddenError('Cannot update chat from another organization');\n          }\n          return chatSessionRepository.updateTitle(chatId, parsed.title);\n        });\n      })\n      .then()#0",
+     "lines": [
+      231,
+      231
+     ]
+    },
+    {
+     "name": "chatRoutes.delete('/chats/:chatId')#1",
+     "lines": [
+      239,
+      261
+     ]
+    },
+    {
+     "name": "chatRoutes.delete('/chats/:chatId')#1/chatSessionRepository\n      .findById(chatId)\n      .then()#0",
+     "lines": [
+      245,
+      258
+     ]
+    },
+    {
+     "name": "chatRoutes.delete('/chats/:chatId')#1/chatSessionRepository\n      .findById(chatId)\n      .then()#0/projectRepository.findById(chat.projectId).then()#0",
+     "lines": [
+      249,
+      257
+     ]
+    },
+    {
+     "name": "chatRoutes.delete('/chats/:chatId')#1/chatSessionRepository\n      .findById(chatId)\n      .then((chat) => {\n        if (!chat) {\n          throw new NotFoundError('Chat', chatId);\n        }\n        return projectRepository.findById(chat.projectId).then((project) => {\n          if (!project) {\n            throw new NotFoundError('Project', chat.projectId);\n          }\n          if (project.organizationId !== (auth.orgId ?? auth.userId)) {\n            throw new ForbiddenError('Cannot delete chat from another organization');\n          }\n          return chatSessionRepository.delete(chatId);\n        });\n      })\n      .then()#0",
+     "lines": [
+      259,
+      259
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 49,
+     "unit": "getAuthContext",
+     "rule": "unsupported-member",
+     "msg": "property .authContext is not declared on Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>",
+     "env": false
+    },
+    {
+     "line": 61,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 84,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 123,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 151,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 208,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 237,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/routes/healthRoutes.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "healthRoutes.get('/')#1",
+     "lines": [
+      5,
+      11
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 5,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/routes/projectRoutes.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "getAuthContext",
+     "lines": [
+      99,
+      105
+     ]
+    },
+    {
+     "name": "getAuthContextWithEmail",
+     "lines": [
+      108,
+      114
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/')#1",
+     "lines": [
+      117,
+      128
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/')#1/getProjectsQuery\n    .execute({\n      userId: auth.userId,\n      userEmail: auth.userEmail,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      126,
+      126
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id')#1",
+     "lines": [
+      131,
+      144
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id')#1/getProjectQuery\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      userEmail: auth.userEmail,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      142,
+      142
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/')#1",
+     "lines": [
+      147,
+      168
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/')#1/createProjectCommand\n    .execute({\n      name: parsed.name,\n      slug: parsed.slug,\n      description: parsed.description ?? null,\n      organizationId: auth.orgId ?? auth.userId,\n      ownerId: auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      159,
+      166
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/archive')#1",
+     "lines": [
+      171,
+      183
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/archive')#1/archiveProjectCommand\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      181,
+      181
+     ]
+    },
+    {
+     "name": "projectRoutes.delete('/:id')#1",
+     "lines": [
+      186,
+      198
+     ]
+    },
+    {
+     "name": "projectRoutes.delete('/:id')#1/deleteProjectCommand\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      196,
+      196
+     ]
+    },
+    {
+     "name": "projectRoutes.patch('/:id/config')#1",
+     "lines": [
+      201,
+      216
+     ]
+    },
+    {
+     "name": "projectRoutes.patch('/:id/config')#1/updateProjectConfigCommand\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      userEmail: auth.userEmail,\n      organizationId: auth.orgId ?? auth.userId,\n      config: parsed.config,\n    })\n    .then()#0",
+     "lines": [
+      214,
+      214
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/deploy')#1",
+     "lines": [
+      219,
+      232
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/deploy')#1/deployProjectCommand\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      userEmail: auth.userEmail,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      230,
+      230
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/deploy/status')#1",
+     "lines": [
+      237,
+      248
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/deploy/status')#1/getDeployStatusQuery\n      .execute({\n        projectId: id,\n        organizationId: auth.orgId ?? auth.userId,\n      })\n      .then()#0",
+     "lines": [
+      246,
+      246
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/validate')#1",
+     "lines": [
+      252,
+      265
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/validate')#1/validateProjectCommand\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      userEmail: auth.userEmail,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      263,
+      263
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/export')#1",
+     "lines": [
+      268,
+      310
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/export')#1/exportProjectCommand\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      userEmail: auth.userEmail,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0",
+     "lines": [
+      279,
+      308
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/export')#1/exportProjectCommand\n    .execute({\n      projectId: id,\n      userId: auth.userId,\n      userEmail: auth.userEmail,\n      organizationId: auth.orgId ?? auth.userId,\n    })\n    .then()#0/archive.on('error')#1",
+     "lines": [
+      294,
+      296
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/files')#1",
+     "lines": [
+      313,
+      320
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/files')#1/codeStorageService\n    .listFiles(id)\n    .then()#0",
+     "lines": [
+      318,
+      318
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/files/:filePath(*)')#1",
+     "lines": [
+      325,
+      332
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/files/:filePath(*)')#1/codeStorageService\n      .readFile(id, filePath)\n      .then()#0",
+     "lines": [
+      330,
+      330
+     ]
+    },
+    {
+     "name": "projectRoutes.put('/:id/files/:filePath(*)')#1",
+     "lines": [
+      338,
+      346
+     ]
+    },
+    {
+     "name": "projectRoutes.put('/:id/files/:filePath(*)')#1/codeStorageService\n      .writeFile(id, filePath, parsed.content)\n      .then()#0",
+     "lines": [
+      344,
+      344
+     ]
+    },
+    {
+     "name": "projectRoutes.patch('/:id/files/:filePath(*)')#1",
+     "lines": [
+      352,
+      360
+     ]
+    },
+    {
+     "name": "projectRoutes.patch('/:id/files/:filePath(*)')#1/codeStorageService\n      .renameFile(id, filePath, parsed.newPath)\n      .then()#0",
+     "lines": [
+      358,
+      358
+     ]
+    },
+    {
+     "name": "projectRoutes.delete('/:id/files/:filePath(*)')#1",
+     "lines": [
+      366,
+      373
+     ]
+    },
+    {
+     "name": "projectRoutes.delete('/:id/files/:filePath(*)')#1/codeStorageService\n      .deleteFile(id, filePath)\n      .then()#0",
+     "lines": [
+      371,
+      371
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/files/upload')#2",
+     "lines": [
+      380,
+      417
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/files/upload')#2/files.map()#0",
+     "lines": [
+      401,
+      404
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/files/upload')#2/uploadFilesCommand\n      .execute({\n        projectId: id,\n        userId: auth.userId,\n        userEmail: auth.userEmail,\n        organizationId: auth.orgId ?? auth.userId,\n        files: uploadedFiles,\n        confirmed,\n      })\n      .then()#0",
+     "lines": [
+      415,
+      415
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/permissions')#1",
+     "lines": [
+      433,
+      444
+     ]
+    },
+    {
+     "name": "projectRoutes.get('/:id/permissions')#1/getPermissionsQuery\n      .execute({\n        projectId: id,\n        organizationId: auth.orgId ?? auth.userId,\n      })\n      .then()#0",
+     "lines": [
+      442,
+      442
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/permissions')#1",
+     "lines": [
+      450,
+      465
+     ]
+    },
+    {
+     "name": "projectRoutes.post('/:id/permissions')#1/grantPermissionCommand\n      .execute({\n        projectId: id,\n        userEmail: parsed.userEmail,\n        permission: parsed.permission,\n        grantedByEmail: auth.userEmail,\n        organizationId: auth.orgId ?? auth.userId,\n      })\n      .then()#0",
+     "lines": [
+      463,
+      463
+     ]
+    },
+    {
+     "name": "projectRoutes.delete('/:id/permissions/:permissionId')#1",
+     "lines": [
+      471,
+      482
+     ]
+    },
+    {
+     "name": "projectRoutes.delete('/:id/permissions/:permissionId')#1/revokePermissionCommand\n      .execute({\n        permissionId,\n        organizationId: auth.orgId ?? auth.userId,\n      })\n      .then()#0",
+     "lines": [
+      480,
+      480
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 100,
+     "unit": "getAuthContext",
+     "rule": "unsupported-member",
+     "msg": "property .authContext is not declared on Request<ParamsDictionary, any, any, ParsedQs, Record<string, any>>",
+     "env": false
+    },
+    {
+     "line": 117,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 131,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 147,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 171,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 186,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 201,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 219,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 235,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 252,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 268,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 313,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 323,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 336,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 350,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 364,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 377,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 393,
+     "unit": "projectRoutes.post('/:id/files/upload')#2",
+     "rule": "type-assertion",
+     "msg": "`paths` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 402,
+     "unit": "projectRoutes.post('/:id/files/upload')#2",
+     "rule": "type-assertion",
+     "msg": "`pathsArray[index] ?? file.originalname` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 402,
+     "unit": "projectRoutes.post('/:id/files/upload')#2/files.map()#0",
+     "rule": "type-assertion",
+     "msg": "`pathsArray[index] ?? file.originalname` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 412,
+     "unit": "projectRoutes.post('/:id/files/upload')#2",
+     "rule": "type-assertion",
+     "msg": "`uploadedFiles` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 431,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 448,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 469,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/routes/templateRoutes.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "templateRoutes.get('/')#1",
+     "lines": [
+      8,
+      13
+     ]
+    },
+    {
+     "name": "templateRoutes.get('/')#1/templateService\n    .listTemplates()\n    .then()#0",
+     "lines": [
+      11,
+      11
+     ]
+    },
+    {
+     "name": "templateRoutes.get('/:id')#1",
+     "lines": [
+      22,
+      35
+     ]
+    },
+    {
+     "name": "templateRoutes.get('/:id')#1/templateService\n    .getTemplate(id)\n    .then()#0",
+     "lines": [
+      27,
+      33
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 8,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 22,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/http/sse.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "initSSE",
+     "lines": [
+      17,
+      36
+     ]
+    },
+    {
+     "name": "sendSSE",
+     "lines": [
+      44,
+      48
+     ]
+    },
+    {
+     "name": "endSSE",
+     "lines": [
+      53,
+      55
+     ]
+    },
+    {
+     "name": "createSSEWriter",
+     "lines": [
+      60,
+      113
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/persistence/ChatRepository.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "toISO",
+     "lines": [
+      7,
+      7
+     ]
+    },
+    {
+     "name": "toDate",
+     "lines": [
+      8,
+      8
+     ]
+    },
+    {
+     "name": "rowToMessage",
+     "lines": [
+      10,
+      20
+     ]
+    },
+    {
+     "name": "DrizzleChatRepository.findByChat",
+     "lines": [
+      23,
+      31
+     ]
+    },
+    {
+     "name": "DrizzleChatRepository.create",
+     "lines": [
+      33,
+      52
+     ]
+    },
+    {
+     "name": "DrizzleChatRepository.deleteByChat",
+     "lines": [
+      54,
+      56
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/persistence/ChatSessionRepository.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "toISO",
+     "lines": [
+      7,
+      7
+     ]
+    },
+    {
+     "name": "toDate",
+     "lines": [
+      8,
+      8
+     ]
+    },
+    {
+     "name": "rowToChat",
+     "lines": [
+      10,
+      18
+     ]
+    },
+    {
+     "name": "DrizzleChatSessionRepository.findById",
+     "lines": [
+      21,
+      25
+     ]
+    },
+    {
+     "name": "DrizzleChatSessionRepository.findByProject",
+     "lines": [
+      27,
+      35
+     ]
+    },
+    {
+     "name": "DrizzleChatSessionRepository.create",
+     "lines": [
+      37,
+      54
+     ]
+    },
+    {
+     "name": "DrizzleChatSessionRepository.updateTitle",
+     "lines": [
+      56,
+      64
+     ]
+    },
+    {
+     "name": "DrizzleChatSessionRepository.delete",
+     "lines": [
+      66,
+      68
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/persistence/PermissionRepository.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "toISO",
+     "lines": [
+      9,
+      9
+     ]
+    },
+    {
+     "name": "toDate",
+     "lines": [
+      10,
+      10
+     ]
+    },
+    {
+     "name": "rowToPermission",
+     "lines": [
+      12,
+      21
+     ]
+    },
+    {
+     "name": "hasRequiredLevel",
+     "lines": [
+      33,
+      35
+     ]
+    },
+    {
+     "name": "DrizzlePermissionRepository.findByProject",
+     "lines": [
+      38,
+      44
+     ]
+    },
+    {
+     "name": "DrizzlePermissionRepository.findByUserEmail",
+     "lines": [
+      46,
+      52
+     ]
+    },
+    {
+     "name": "DrizzlePermissionRepository.findById",
+     "lines": [
+      54,
+      57
+     ]
+    },
+    {
+     "name": "DrizzlePermissionRepository.findByProjectAndUser",
+     "lines": [
+      59,
+      73
+     ]
+    },
+    {
+     "name": "DrizzlePermissionRepository.hasPermission",
+     "lines": [
+      75,
+      85
+     ]
+    },
+    {
+     "name": "DrizzlePermissionRepository.create",
+     "lines": [
+      87,
+      105
+     ]
+    },
+    {
+     "name": "DrizzlePermissionRepository.delete",
+     "lines": [
+      107,
+      115
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/persistence/ProjectRepository.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "toISO",
+     "lines": [
+      9,
+      9
+     ]
+    },
+    {
+     "name": "toDate",
+     "lines": [
+      10,
+      10
+     ]
+    },
+    {
+     "name": "toISOOrNull",
+     "lines": [
+      11,
+      11
+     ]
+    },
+    {
+     "name": "toDateOrNull",
+     "lines": [
+      12,
+      12
+     ]
+    },
+    {
+     "name": "rowToProject",
+     "lines": [
+      14,
+      31
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.findById",
+     "lines": [
+      34,
+      37
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.findBySlug",
+     "lines": [
+      39,
+      42
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.findByOrganization",
+     "lines": [
+      44,
+      50
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.findByUser",
+     "lines": [
+      52,
+      78
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.create",
+     "lines": [
+      80,
+      106
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.update",
+     "lines": [
+      108,
+      134
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.updateConfig",
+     "lines": [
+      136,
+      138
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.updateStatus",
+     "lines": [
+      140,
+      149
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.delete",
+     "lines": [
+      151,
+      156
+     ]
+    },
+    {
+     "name": "DrizzleProjectRepository.findByUser/permissions.map()#0",
+     "lines": [
+      59,
+      59
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/persistence/db.ts",
+   "pkg": "apps/api",
+   "units": [],
+   "findings": [
+    {
+     "line": 7,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/persistence/schema.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "uuid('project_id')\n    .notNull()\n    .references()#0@1",
+     "lines": [
+      40,
+      40
+     ]
+    },
+    {
+     "name": "uuid('chat_id')\n    .notNull()\n    .references()#0",
+     "lines": [
+      51,
+      51
+     ]
+    },
+    {
+     "name": "uuid('project_id')\n    .notNull()\n    .references()#0@2",
+     "lines": [
+      65,
+      65
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/storage/S3CodeStorageService.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "S3CodeStorageService.constructor",
+     "lines": [
+      20,
+      27
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.getKeyPrefix",
+     "lines": [
+      29,
+      31
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.sanitizePath",
+     "lines": [
+      37,
+      68
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.listFiles",
+     "lines": [
+      73,
+      89
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.readFile",
+     "lines": [
+      91,
+      108
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.writeFile",
+     "lines": [
+      110,
+      122
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.deleteFile",
+     "lines": [
+      124,
+      134
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.renameFile",
+     "lines": [
+      136,
+      164
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.initializeProject",
+     "lines": [
+      166,
+      192
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.deleteProject",
+     "lines": [
+      194,
+      220
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.copyBuildTemplates",
+     "lines": [
+      226,
+      234
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.listFiles/contents\n      .map()#0",
+     "lines": [
+      85,
+      85
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.listFiles/contents\n      .map((obj) => obj.Key ?? '')\n      .filter()#0",
+     "lines": [
+      86,
+      86
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.listFiles/contents\n      .map((obj) => obj.Key ?? '')\n      .filter((key) => key.length > 0)\n      .map()#0",
+     "lines": [
+      87,
+      87
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.listFiles/contents\n      .map((obj) => obj.Key ?? '')\n      .filter((key) => key.length > 0)\n      .map((key) => key.slice(prefix.length))\n      .filter()#0",
+     "lines": [
+      88,
+      88
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.deleteProject/contents\n      .map()#0",
+     "lines": [
+      210,
+      210
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.deleteProject/contents\n      .map((obj) => obj.Key)\n      .filter()#0",
+     "lines": [
+      211,
+      211
+     ]
+    },
+    {
+     "name": "S3CodeStorageService.deleteProject/contents\n      .map((obj) => obj.Key)\n      .filter((key): key is string => key !== undefined)\n      .map()#0",
+     "lines": [
+      212,
+      212
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/templates/TemplateService.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "TemplateService.listTemplates",
+     "lines": [
+      10,
+      23
+     ]
+    },
+    {
+     "name": "TemplateService.getTemplate",
+     "lines": [
+      25,
+      28
+     ]
+    },
+    {
+     "name": "TemplateService.getTemplateFiles",
+     "lines": [
+      30,
+      36
+     ]
+    },
+    {
+     "name": "TemplateService.readDirRecursive",
+     "lines": [
+      38,
+      56
+     ]
+    },
+    {
+     "name": "TemplateService.getBuildFiles",
+     "lines": [
+      58,
+      69
+     ]
+    },
+    {
+     "name": "TemplateService.listTemplates/entries.filter()#0",
+     "lines": [
+      12,
+      12
+     ]
+    },
+    {
+     "name": "TemplateService.getTemplate/templates.find()#0",
+     "lines": [
+      27,
+      27
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/api/src/infrastructure/templates/blank/files/src/index.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "app.get('/health')#1",
+     "lines": [
+      8,
+      10
+     ]
+    },
+    {
+     "name": "app.listen()#1",
+     "lines": [
+      12,
+      14
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 6,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 8,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/templates/data-sync/files/src/index.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "app.get('/health')#1",
+     "lines": [
+      9,
+      11
+     ]
+    },
+    {
+     "name": "app.get('/api/data')#1",
+     "lines": [
+      13,
+      17
+     ]
+    },
+    {
+     "name": "app.post('/api/sync')#1",
+     "lines": [
+      19,
+      26
+     ]
+    },
+    {
+     "name": "app.listen()#1",
+     "lines": [
+      31,
+      33
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 9,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 13,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 19,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 29,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 31,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/templates/data-sync/files/src/sync.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "syncData",
+     "lines": [
+      9,
+      21
+     ]
+    },
+    {
+     "name": "getData",
+     "lines": [
+      23,
+      25
+     ]
+    },
+    {
+     "name": "getLastSync",
+     "lines": [
+      27,
+      29
+     ]
+    },
+    {
+     "name": "setInterval()#0",
+     "lines": [
+      32,
+      34
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 17,
+     "unit": "syncData",
+     "rule": "type-assertion",
+     "msg": "`await response.json()` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 32,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "unit": "setInterval()#0",
+     "rule": "promise-pending",
+     "msg": "await or return the promise directly; a dangling or stored continuation leaves observable pending work",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/templates/rest-api/files/src/index.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "app.get('/health')#1",
+     "lines": [
+      9,
+      11
+     ]
+    },
+    {
+     "name": "app.listen()#1",
+     "lines": [
+      15,
+      17
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 9,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 13,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 15,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/templates/rest-api/files/src/routes.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "itemsRouter.get('/')#1",
+     "lines": [
+      6,
+      8
+     ]
+    },
+    {
+     "name": "itemsRouter.get('/:id')#1",
+     "lines": [
+      10,
+      14
+     ]
+    },
+    {
+     "name": "itemsRouter.post('/')#1",
+     "lines": [
+      16,
+      21
+     ]
+    },
+    {
+     "name": "itemsRouter.put('/:id')#1",
+     "lines": [
+      23,
+      28
+     ]
+    },
+    {
+     "name": "itemsRouter.delete('/:id')#1",
+     "lines": [
+      30,
+      34
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 6,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 10,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 10,
+     "unit": "itemsRouter.get('/:id')#1",
+     "rule": "ts-strict",
+     "msg": "TS7030: Not all code paths return a value.",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 16,
+     "unit": "itemsRouter.post('/')#1",
+     "rule": "ts-strict",
+     "msg": "TS7030: Not all code paths return a value.",
+     "env": false
+    },
+    {
+     "line": 17,
+     "unit": "itemsRouter.post('/')#1",
+     "rule": "type-assertion",
+     "msg": "`req.body` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 23,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 23,
+     "unit": "itemsRouter.put('/:id')#1",
+     "rule": "ts-strict",
+     "msg": "TS7030: Not all code paths return a value.",
+     "env": false
+    },
+    {
+     "line": 24,
+     "unit": "itemsRouter.put('/:id')#1",
+     "rule": "type-assertion",
+     "msg": "`req.body` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 30,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 30,
+     "unit": "itemsRouter.delete('/:id')#1",
+     "rule": "ts-strict",
+     "msg": "TS7030: Not all code paths return a value.",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/api/src/infrastructure/templates/rest-api/files/src/store.ts",
+   "pkg": "apps/api",
+   "units": [
+    {
+     "name": "getAllItems",
+     "lines": [
+      11,
+      13
+     ]
+    },
+    {
+     "name": "getItem",
+     "lines": [
+      15,
+      17
+     ]
+    },
+    {
+     "name": "createItem",
+     "lines": [
+      19,
+      25
+     ]
+    },
+    {
+     "name": "updateItem",
+     "lines": [
+      27,
+      37
+     ]
+    },
+    {
+     "name": "deleteItem",
+     "lines": [
+      39,
+      41
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/postcss.config.js",
+   "pkg": "apps/web",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/App.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "App",
+     "lines": [
+      24,
+      26
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/components/AuthLayout.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "Breadcrumb",
+     "lines": [
+      7,
+      30
+     ]
+    },
+    {
+     "name": "AuthLayout",
+     "lines": [
+      32,
+      75
+     ]
+    },
+    {
+     "name": "AuthLayout/actions.map()#0",
+     "lines": [
+      44,
+      53
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/components/FileIcon.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "getFileColor",
+     "lines": [
+      2,
+      17
+     ]
+    },
+    {
+     "name": "FileIcon",
+     "lines": [
+      25,
+      38
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/components/HorizontalResizeHandle.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "HorizontalResizeHandle",
+     "lines": [
+      10,
+      20
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/components/MultisessionAppSupport.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "MultisessionAppSupport",
+     "lines": [
+      8,
+      11
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/components/ResizeHandle.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "ResizeHandle",
+     "lines": [
+      10,
+      20
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/components/StatusBar.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "StatusBar",
+     "lines": [
+      23,
+      163
+     ]
+    },
+    {
+     "name": "StatusBar/useEffect()#0",
+     "lines": [
+      39,
+      67
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/contexts/HeaderActionsContext.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "HeaderActionsProvider",
+     "lines": [
+      17,
+      24
+     ]
+    },
+    {
+     "name": "useHeaderActions",
+     "lines": [
+      27,
+      33
+     ]
+    },
+    {
+     "name": "useRegisterHeaderActions",
+     "lines": [
+      40,
+      51
+     ]
+    },
+    {
+     "name": "HeaderActionsProvider/useMemo()#0",
+     "lines": [
+      21,
+      21
+     ]
+    },
+    {
+     "name": "useRegisterHeaderActions/actions.map()#0",
+     "lines": [
+      44,
+      44
+     ]
+    },
+    {
+     "name": "useRegisterHeaderActions/useEffect()#0",
+     "lines": [
+      46,
+      50
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/auth/SignInPage.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "SignInPage",
+     "lines": [
+      3,
+      9
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/auth/SignUpPage.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "SignUpPage",
+     "lines": [
+      3,
+      9
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/chat/ChatList.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "ChatList",
+     "lines": [
+      19,
+      109
+     ]
+    },
+    {
+     "name": "ChatItem",
+     "lines": [
+      123,
+      249
+     ]
+    },
+    {
+     "name": "ChatList/chats?.map()#0",
+     "lines": [
+      92,
+      105
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/chat/ChatMessage.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "mergeEvents",
+     "lines": [
+      15,
+      32
+     ]
+    },
+    {
+     "name": "markdownComponents.p",
+     "lines": [
+      38,
+      38
+     ]
+    },
+    {
+     "name": "markdownComponents.code",
+     "lines": [
+      39,
+      48
+     ]
+    },
+    {
+     "name": "markdownComponents.ul",
+     "lines": [
+      49,
+      51
+     ]
+    },
+    {
+     "name": "markdownComponents.ol",
+     "lines": [
+      52,
+      54
+     ]
+    },
+    {
+     "name": "markdownComponents.li",
+     "lines": [
+      55,
+      55
+     ]
+    },
+    {
+     "name": "markdownComponents.strong",
+     "lines": [
+      56,
+      58
+     ]
+    },
+    {
+     "name": "markdownComponents.a",
+     "lines": [
+      59,
+      68
+     ]
+    },
+    {
+     "name": "markdownComponents.h1",
+     "lines": [
+      69,
+      71
+     ]
+    },
+    {
+     "name": "markdownComponents.h2",
+     "lines": [
+      72,
+      74
+     ]
+    },
+    {
+     "name": "markdownComponents.h3",
+     "lines": [
+      75,
+      77
+     ]
+    },
+    {
+     "name": "ChatMessage",
+     "lines": [
+      80,
+      135
+     ]
+    },
+    {
+     "name": "ChatMessage/mergedEvents.map()#0",
+     "lines": [
+      98,
+      115
+     ]
+    },
+    {
+     "name": "ChatMessage/message.toolCalls?.map()#0",
+     "lines": [
+      127,
+      129
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 22,
+     "unit": "mergeEvents",
+     "rule": "alias-mutation",
+     "msg": "`last` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/chat/ChatPanel.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "ChatPanel",
+     "lines": [
+      24,
+      212
+     ]
+    },
+    {
+     "name": "ChatPanel/useEffect()#0@1",
+     "lines": [
+      46,
+      48
+     ]
+    },
+    {
+     "name": "ChatPanel/useEffect()#0@2",
+     "lines": [
+      52,
+      59
+     ]
+    },
+    {
+     "name": "ChatPanel/useEffect()#0@3",
+     "lines": [
+      64,
+      73
+     ]
+    },
+    {
+     "name": "ChatPanel/useEffect()#0@3/setTimeout()#0",
+     "lines": [
+      68,
+      71
+     ]
+    },
+    {
+     "name": "ChatPanel/messages.map()#0",
+     "lines": [
+      125,
+      127
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 56,
+     "unit": "ChatPanel",
+     "rule": "alias-mutation",
+     "msg": "`textarea` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "ChatPanel/useEffect()#0@2",
+     "rule": "alias-mutation",
+     "msg": "`textarea` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": "ChatPanel",
+     "rule": "alias-mutation",
+     "msg": "`textarea` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    },
+    {
+     "line": 58,
+     "unit": "ChatPanel/useEffect()#0@2",
+     "rule": "alias-mutation",
+     "msg": "`textarea` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/chat/StreamingMessage.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "mergeEvents",
+     "lines": [
+      19,
+      38
+     ]
+    },
+    {
+     "name": "StreamingMessage",
+     "lines": [
+      44,
+      145
+     ]
+    },
+    {
+     "name": "StreamingMessage/events.filter()#0",
+     "lines": [
+      59,
+      59
+     ]
+    },
+    {
+     "name": "StreamingMessage/toolCallEvents.filter()#0",
+     "lines": [
+      60,
+      60
+     ]
+    },
+    {
+     "name": "StreamingMessage/mergedEvents.map()#0",
+     "lines": [
+      86,
+      142
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 27,
+     "unit": "mergeEvents",
+     "rule": "alias-mutation",
+     "msg": "`last` is another name for a value this function was handed; change it through that name, or copy it first",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/chat/ToolCallDisplay.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "formatRelativeTime",
+     "lines": [
+      14,
+      22
+     ]
+    },
+    {
+     "name": "getToolIcon",
+     "lines": [
+      33,
+      48
+     ]
+    },
+    {
+     "name": "getToolLabel",
+     "lines": [
+      50,
+      68
+     ]
+    },
+    {
+     "name": "formatInput",
+     "lines": [
+      70,
+      84
+     ]
+    },
+    {
+     "name": "parseToolResult",
+     "lines": [
+      99,
+      192
+     ]
+    },
+    {
+     "name": "ToolCallDisplay",
+     "lines": [
+      197,
+      392
+     ]
+    },
+    {
+     "name": "parseToolResult/oldStr.split('\\n').map()#0",
+     "lines": [
+      169,
+      169
+     ]
+    },
+    {
+     "name": "parseToolResult/newStr.split('\\n').map()#0",
+     "lines": [
+      170,
+      170
+     ]
+    },
+    {
+     "name": "ToolCallDisplay/useEffect()#0",
+     "lines": [
+      217,
+      225
+     ]
+    },
+    {
+     "name": "ToolCallDisplay/useEffect()#0/setInterval()#0",
+     "lines": [
+      220,
+      222
+     ]
+    },
+    {
+     "name": "ToolCallDisplay/content.split('\\n').map()#0",
+     "lines": [
+      337,
+      380
+     ]
+    },
+    {
+     "name": "ToolCallDisplay/content.split('\\n').map()#0/content\n                      .split('\\n')\n                      .slice(0, i)\n                      .filter()#0@1",
+     "lines": [
+      349,
+      349
+     ]
+    },
+    {
+     "name": "ToolCallDisplay/content.split('\\n').map()#0/content\n                      .split('\\n')\n                      .slice(0, i)\n                      .filter()#0@2",
+     "lines": [
+      356,
+      356
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 124,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`errorMsg` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 144,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`parsed.startLine` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 144,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`parsed.endLine` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 144,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`remaining` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 160,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`linesAdded` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 160,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`linesRemoved` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 176,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`linesRemoved` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 179,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`startLineNum` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 180,
+     "unit": "parseToolResult",
+     "rule": "type-assertion",
+     "msg": "`endLineNum` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/dashboard/DashboardPage.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "DashboardPage",
+     "lines": [
+      8,
+      93
+     ]
+    },
+    {
+     "name": "DashboardPage/projects?.filter()#0@1",
+     "lines": [
+      15,
+      15
+     ]
+    },
+    {
+     "name": "DashboardPage/projects?.filter()#0@2",
+     "lines": [
+      17,
+      17
+     ]
+    },
+    {
+     "name": "DashboardPage/Array.from({ length: 4 }).map()#0",
+     "lines": [
+      46,
+      48
+     ]
+    },
+    {
+     "name": "DashboardPage/filteredProjects.map()#0",
+     "lines": [
+      70,
+      78
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/dashboard/ProjectCard.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "formatDate",
+     "lines": [
+      49,
+      55
+     ]
+    },
+    {
+     "name": "ProjectCard",
+     "lines": [
+      57,
+      361
+     ]
+    },
+    {
+     "name": "ProjectCard/cleanupResults.errors.map()#0",
+     "lines": [
+      334,
+      338
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/project/CodePreview.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "defineBeardedTheme",
+     "lines": [
+      18,
+      73
+     ]
+    },
+    {
+     "name": "getLanguage",
+     "lines": [
+      85,
+      108
+     ]
+    },
+    {
+     "name": "isMarkdownFile",
+     "lines": [
+      110,
+      115
+     ]
+    },
+    {
+     "name": "MarkdownPreview",
+     "lines": [
+      117,
+      183
+     ]
+    },
+    {
+     "name": "CodePreview",
+     "lines": [
+      185,
+      434
+     ]
+    },
+    {
+     "name": "defineBeardedTheme/theme.tokenColors.flatMap()#0",
+     "lines": [
+      19,
+      26
+     ]
+    },
+    {
+     "name": "defineBeardedTheme/theme.tokenColors.flatMap()#0/scopes.map()#0",
+     "lines": [
+      21,
+      25
+     ]
+    },
+    {
+     "name": "CodePreview/useEffect()#0@1",
+     "lines": [
+      205,
+      207
+     ]
+    },
+    {
+     "name": "CodePreview/useEffect()#0@2",
+     "lines": [
+      209,
+      211
+     ]
+    },
+    {
+     "name": "CodePreview/useEffect()#0@3",
+     "lines": [
+      214,
+      246
+     ]
+    },
+    {
+     "name": "CodePreview/useEffect()#0@3/monaco.editor.onDidChangeMarkers()#0",
+     "lines": [
+      237,
+      239
+     ]
+    },
+    {
+     "name": "CodePreview/useEffect()#0@4",
+     "lines": [
+      253,
+      255
+     ]
+    },
+    {
+     "name": "CodePreview/useCallback()#0",
+     "lines": [
+      259,
+      263
+     ]
+    },
+    {
+     "name": "CodePreview/useEffect()#0@5",
+     "lines": [
+      266,
+      276
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 230,
+     "unit": "CodePreview",
+     "rule": "type-assertion",
+     "msg": "`hasErrors` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 230,
+     "unit": "CodePreview/useEffect()#0@3",
+     "rule": "type-assertion",
+     "msg": "`hasErrors` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/project/ConfirmUploadModal.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "ConfirmUploadModal",
+     "lines": [
+      21,
+      118
+     ]
+    },
+    {
+     "name": "ConfirmUploadModal/conflicts.map()#0",
+     "lines": [
+      91,
+      95
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/project/DeployButton.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "DeployButton",
+     "lines": [
+      19,
+      161
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/project/DeployDrawer.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "DeployDrawer",
+     "lines": [
+      31,
+      467
+     ]
+    },
+    {
+     "name": "DeployDrawer/(['test', 'deploy', 'preview', 'share'] as const).map()#0",
+     "lines": [
+      139,
+      152
+     ]
+    },
+    {
+     "name": "DeployDrawer/validationResult.errors.map()#0",
+     "lines": [
+      197,
+      209
+     ]
+    },
+    {
+     "name": "DeployDrawer/permissions.map()#0",
+     "lines": [
+      433,
+      455
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 398,
+     "unit": "DeployDrawer",
+     "rule": "type-assertion",
+     "msg": "`e.target.value as PermissionLevel` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/project/DeployPane.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "DeployPane",
+     "lines": [
+      17,
+      259
+     ]
+    },
+    {
+     "name": "DeployPane/useEffect()#0",
+     "lines": [
+      32,
+      48
+     ]
+    },
+    {
+     "name": "DeployPane/validationErrors.map()#0",
+     "lines": [
+      161,
+      178
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/project/FileSearchModal.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "fuzzyMatch",
+     "lines": [
+      12,
+      39
+     ]
+    },
+    {
+     "name": "FileSearchModal",
+     "lines": [
+      41,
+      195
+     ]
+    },
+    {
+     "name": "FileSearchModal/useMemo()#0",
+     "lines": [
+      48,
+      63
+     ]
+    },
+    {
+     "name": "FileSearchModal/useMemo()#0/[...files].sort()#0",
+     "lines": [
+      51,
+      55
+     ]
+    },
+    {
+     "name": "FileSearchModal/useMemo()#0/files\n      .map()#0",
+     "lines": [
+      59,
+      59
+     ]
+    },
+    {
+     "name": "FileSearchModal/useMemo()#0/files\n      .map((file) => ({ file, ...fuzzyMatch(query, file) }))\n      .filter()#0",
+     "lines": [
+      60,
+      60
+     ]
+    },
+    {
+     "name": "FileSearchModal/useMemo()#0/files\n      .map((file) => ({ file, ...fuzzyMatch(query, file) }))\n      .filter((r) => r.matches)\n      .sort()#0",
+     "lines": [
+      61,
+      61
+     ]
+    },
+    {
+     "name": "FileSearchModal/useMemo()#0/files\n      .map((file) => ({ file, ...fuzzyMatch(query, file) }))\n      .filter((r) => r.matches)\n      .sort((a, b) => b.score - a.score)\n      .map()#0",
+     "lines": [
+      62,
+      62
+     ]
+    },
+    {
+     "name": "FileSearchModal/useEffect()#0@1",
+     "lines": [
+      67,
+      74
+     ]
+    },
+    {
+     "name": "FileSearchModal/useEffect()#0@1/setTimeout()#0",
+     "lines": [
+      72,
+      72
+     ]
+    },
+    {
+     "name": "FileSearchModal/useEffect()#0@2",
+     "lines": [
+      79,
+      83
+     ]
+    },
+    {
+     "name": "FileSearchModal/useEffect()#0@3",
+     "lines": [
+      87,
+      95
+     ]
+    },
+    {
+     "name": "FileSearchModal/filteredFiles.map()#0",
+     "lines": [
+      152,
+      176
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 91,
+     "unit": "FileSearchModal",
+     "rule": "dynamic-key",
+     "msg": "HTMLCollection declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own",
+     "env": false
+    },
+    {
+     "line": 91,
+     "unit": "FileSearchModal/useEffect()#0@3",
+     "rule": "dynamic-key",
+     "msg": "HTMLCollection declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/project/FileTree.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "buildTree",
+     "lines": [
+      37,
+      105
+     ]
+    },
+    {
+     "name": "ChevronIcon",
+     "lines": [
+      107,
+      125
+     ]
+    },
+    {
+     "name": "FolderIcon",
+     "lines": [
+      127,
+      140
+     ]
+    },
+    {
+     "name": "TreeNodeItem",
+     "lines": [
+      159,
+      422
+     ]
+    },
+    {
+     "name": "FileTree",
+     "lines": [
+      424,
+      775
+     ]
+    },
+    {
+     "name": "buildTree/[...files].sort()#0",
+     "lines": [
+      44,
+      52
+     ]
+    },
+    {
+     "name": "TreeNodeItem/node.children.map()#0",
+     "lines": [
+      347,
+      365
+     ]
+    },
+    {
+     "name": "FileTree/useMemo()#0",
+     "lines": [
+      432,
+      432
+     ]
+    },
+    {
+     "name": "FileTree/tree.map()#0",
+     "lines": [
+      721,
+      738
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 79,
+     "unit": "buildTree",
+     "rule": "alias-mutation",
+     "msg": "`parent` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 551,
+     "unit": "FileTree",
+     "rule": "reference-equality",
+     "msg": "=== on arrays and records compares references; compare fields",
+     "env": false
+    },
+    {
+     "line": 662,
+     "unit": "FileTree",
+     "rule": "unsupported-call",
+     "msg": ".pop() in an optional chain changes a receiver that may be absent; check it first",
+     "env": false
+    },
+    {
+     "line": 682,
+     "unit": "FileTree",
+     "rule": "void",
+     "msg": "`void` is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/features/project/ProjectPage.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "getInitialWidths",
+     "lines": [
+      34,
+      41
+     ]
+    },
+    {
+     "name": "ProjectPage",
+     "lines": [
+      43,
+      580
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@1",
+     "lines": [
+      68,
+      71
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@2",
+     "lines": [
+      73,
+      75
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@3",
+     "lines": [
+      79,
+      82
+     ]
+    },
+    {
+     "name": "ProjectPage/useEffect()#0@1",
+     "lines": [
+      105,
+      107
+     ]
+    },
+    {
+     "name": "ProjectPage/useEffect()#0@2",
+     "lines": [
+      109,
+      111
+     ]
+    },
+    {
+     "name": "ProjectPage/useEffect()#0@3",
+     "lines": [
+      137,
+      145
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@4",
+     "lines": [
+      153,
+      156
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@5",
+     "lines": [
+      158,
+      160
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@6",
+     "lines": [
+      163,
+      176
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@7",
+     "lines": [
+      178,
+      180
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@8",
+     "lines": [
+      182,
+      184
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@9",
+     "lines": [
+      186,
+      189
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@10",
+     "lines": [
+      192,
+      215
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@10/files.every()#0",
+     "lines": [
+      198,
+      198
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@10/files.some()#0",
+     "lines": [
+      199,
+      199
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@11",
+     "lines": [
+      220,
+      244
+     ]
+    },
+    {
+     "name": "ProjectPage/useCallback()#0@11/pendingUpload.files.map()#0",
+     "lines": [
+      228,
+      233
+     ]
+    },
+    {
+     "name": "ProjectPage/useMemo()#0",
+     "lines": [
+      250,
+      256
+     ]
+    },
+    {
+     "name": "ProjectPage/useEffect()#0@4",
+     "lines": [
+      287,
+      315
+     ]
+    },
+    {
+     "name": "ProjectPage/Array.from({ length: 5 }).map()#0",
+     "lines": [
+      347,
+      349
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/wizard/ProjectForm.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "ProjectForm",
+     "lines": [
+      14,
+      143
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/wizard/ProjectWizard.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "ProjectWizard",
+     "lines": [
+      15,
+      26
+     ]
+    },
+    {
+     "name": "ProjectWizardContent",
+     "lines": [
+      33,
+      79
+     ]
+    },
+    {
+     "name": "ProjectWizardContent/templates?.find()#0",
+     "lines": [
+      39,
+      39
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/wizard/TemplateDetails.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "TemplateDetails",
+     "lines": [
+      7,
+      30
+     ]
+    },
+    {
+     "name": "TemplateDetails/template.features.map()#0",
+     "lines": [
+      21,
+      26
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/features/wizard/TemplateSidebar.tsx",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "TemplateSidebar",
+     "lines": [
+      10,
+      33
+     ]
+    },
+    {
+     "name": "TemplateSidebar/templates.map()#0",
+     "lines": [
+      16,
+      30
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/hooks/useChat.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useChats",
+     "lines": [
+      26,
+      38
+     ]
+    },
+    {
+     "name": "useCreateChat",
+     "lines": [
+      40,
+      57
+     ]
+    },
+    {
+     "name": "useDeleteChat",
+     "lines": [
+      59,
+      72
+     ]
+    },
+    {
+     "name": "useRenameChat",
+     "lines": [
+      74,
+      91
+     ]
+    },
+    {
+     "name": "useChatMessages",
+     "lines": [
+      97,
+      110
+     ]
+    },
+    {
+     "name": "useSendMessage",
+     "lines": [
+      112,
+      135
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/hooks/useDeploy.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useDeploy",
+     "lines": [
+      6,
+      22
+     ]
+    },
+    {
+     "name": "useDeployStatus",
+     "lines": [
+      24,
+      41
+     ]
+    },
+    {
+     "name": "useValidate",
+     "lines": [
+      43,
+      54
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/hooks/useDeploymentMessages.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "getTimeRange",
+     "lines": [
+      237,
+      243
+     ]
+    },
+    {
+     "name": "getMessage",
+     "lines": [
+      248,
+      254
+     ]
+    },
+    {
+     "name": "useDeploymentMessage",
+     "lines": [
+      260,
+      295
+     ]
+    },
+    {
+     "name": "formatElapsedTime",
+     "lines": [
+      300,
+      304
+     ]
+    },
+    {
+     "name": "useDeploymentMessage/useEffect()#0@1",
+     "lines": [
+      267,
+      282
+     ]
+    },
+    {
+     "name": "useDeploymentMessage/useEffect()#0@2",
+     "lines": [
+      285,
+      292
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 251,
+     "unit": "getMessage",
+     "rule": "dynamic-key",
+     "msg": "narrow the record receiver before indexing it",
+     "env": false
+    },
+    {
+     "line": 251,
+     "unit": "getMessage",
+     "rule": "type-assertion",
+     "msg": "`timeRange as keyof typeof phaseMessages` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/hooks/useFiles.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useFiles",
+     "lines": [
+      14,
+      26
+     ]
+    },
+    {
+     "name": "useFileContent",
+     "lines": [
+      28,
+      44
+     ]
+    },
+    {
+     "name": "useInitProject",
+     "lines": [
+      46,
+      63
+     ]
+    },
+    {
+     "name": "useRenameFile",
+     "lines": [
+      70,
+      92
+     ]
+    },
+    {
+     "name": "useDeleteFile",
+     "lines": [
+      94,
+      111
+     ]
+    },
+    {
+     "name": "useCreateFile",
+     "lines": [
+      117,
+      139
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/hooks/useGenerateDescription.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useGenerateDescription",
+     "lines": [
+      15,
+      27
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/hooks/usePermissions.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "usePermissions",
+     "lines": [
+      13,
+      28
+     ]
+    },
+    {
+     "name": "useGrantPermission",
+     "lines": [
+      33,
+      49
+     ]
+    },
+    {
+     "name": "useRevokePermission",
+     "lines": [
+      54,
+      69
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/hooks/useProjects.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useProjects",
+     "lines": [
+      15,
+      26
+     ]
+    },
+    {
+     "name": "useProject",
+     "lines": [
+      28,
+      39
+     ]
+    },
+    {
+     "name": "useCreateProject",
+     "lines": [
+      41,
+      57
+     ]
+    },
+    {
+     "name": "useArchiveProject",
+     "lines": [
+      59,
+      74
+     ]
+    },
+    {
+     "name": "useDeleteProject",
+     "lines": [
+      76,
+      91
+     ]
+    },
+    {
+     "name": "useExportProject",
+     "lines": [
+      93,
+      134
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 104,
+     "unit": "useExportProject",
+     "rule": "unsupported-syntax",
+     "msg": "`import.meta.env` is injected at build time; read it outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/hooks/useResizable.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useResizable",
+     "lines": [
+      27,
+      95
+     ]
+    },
+    {
+     "name": "useResizable/useCallback()#0@1",
+     "lines": [
+      40,
+      44
+     ]
+    },
+    {
+     "name": "useResizable/useCallback()#0@2",
+     "lines": [
+      49,
+      54
+     ]
+    },
+    {
+     "name": "useResizable/useEffect()#0",
+     "lines": [
+      58,
+      87
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 78,
+     "unit": "useResizable",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 78,
+     "unit": "useResizable/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 79,
+     "unit": "useResizable",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 79,
+     "unit": "useResizable/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 84,
+     "unit": "useResizable",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 84,
+     "unit": "useResizable/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 85,
+     "unit": "useResizable",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 85,
+     "unit": "useResizable/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/hooks/useStreamingChat.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useStreamingChat",
+     "lines": [
+      56,
+      284
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@1",
+     "lines": [
+      62,
+      68
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@1/setState()#0",
+     "lines": [
+      67,
+      67
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2",
+     "lines": [
+      71,
+      275
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@1",
+     "lines": [
+      73,
+      73
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@2",
+     "lines": [
+      163,
+      169
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@3",
+     "lines": [
+      179,
+      186
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@4",
+     "lines": [
+      196,
+      204
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@4/prev.events.map()#0",
+     "lines": [
+      198,
+      201
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@5",
+     "lines": [
+      214,
+      222
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@5/prev.events.map()#0",
+     "lines": [
+      216,
+      219
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@6",
+     "lines": [
+      232,
+      236
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@7",
+     "lines": [
+      246,
+      246
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@8",
+     "lines": [
+      260,
+      260
+     ]
+    },
+    {
+     "name": "useStreamingChat/useCallback()#0@2/setState()#0@9",
+     "lines": [
+      265,
+      270
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 138,
+     "unit": "useStreamingChat",
+     "rule": "closure-mutation",
+     "msg": ".pop() as a value inside a callback changes `sseEvents`; use a for-of loop",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`event.content` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.content` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "useStreamingChat/useCallback()#0@2/setState()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.content` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 175,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`event.toolCall` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 175,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.toolCall` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 192,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`event.toolCallId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 192,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.toolCallId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 194,
+     "unit": "useStreamingChat",
+     "rule": "alias-mutation",
+     "msg": "`tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 194,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "alias-mutation",
+     "msg": "`tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 194,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`event.input` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 194,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.input` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 211,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`event.toolCallId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 211,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.toolCallId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 213,
+     "unit": "useStreamingChat",
+     "rule": "alias-mutation",
+     "msg": "`tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 213,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "alias-mutation",
+     "msg": "`tc` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 213,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`event.result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 213,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.result` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 234,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`event.error` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 234,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`event.error` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 234,
+     "unit": "useStreamingChat/useCallback()#0@2/setState()#0@6",
+     "rule": "type-assertion",
+     "msg": "`event.error` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 256,
+     "unit": "useStreamingChat",
+     "rule": "type-assertion",
+     "msg": "`finalMessage` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 256,
+     "unit": "useStreamingChat/useCallback()#0@2",
+     "rule": "type-assertion",
+     "msg": "`finalMessage` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/hooks/useTemplates.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useTemplates",
+     "lines": [
+      10,
+      21
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/hooks/useTypingEffect.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useTypingEffect",
+     "lines": [
+      120,
+      209
+     ]
+    },
+    {
+     "name": "useTypingEffect/useCallback()#0",
+     "lines": [
+      130,
+      134
+     ]
+    },
+    {
+     "name": "useTypingEffect/useEffect()#0",
+     "lines": [
+      136,
+      206
+     ]
+    },
+    {
+     "name": "useTypingEffect/useEffect()#0/setTimeout()#0",
+     "lines": [
+      140,
+      140
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 131,
+     "unit": "useTypingEffect",
+     "rule": "react-handler-capture",
+     "msg": "a React closure captures a changing local; capture a const value or use a state setter",
+     "env": false
+    },
+    {
+     "line": 131,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 132,
+     "unit": "useTypingEffect",
+     "rule": "react-handler-capture",
+     "msg": "a React closure captures a changing local; capture a const value or use a state setter",
+     "env": false
+    },
+    {
+     "line": 132,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 133,
+     "unit": "useTypingEffect",
+     "rule": "react-handler-capture",
+     "msg": "a React closure captures a changing local; capture a const value or use a state setter",
+     "env": false
+    },
+    {
+     "line": 133,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 146,
+     "unit": "useTypingEffect",
+     "rule": "react-handler-capture",
+     "msg": "a React closure captures a changing local; capture a const value or use a state setter",
+     "env": false
+    },
+    {
+     "line": 146,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 150,
+     "unit": "useTypingEffect",
+     "rule": "definite-assignment",
+     "msg": "this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested function), and here its absence is not carried (a try, a switch, an async or nested function); assign it where it is declared or give it a start value",
+     "env": false
+    },
+    {
+     "line": 150,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "definite-assignment",
+     "msg": "this let may be read before its first assignment (a read TypeScript does not check, or a write inside a nested function), and here its absence is not carried (a try, a switch, an async or nested function); assign it where it is declared or give it a start value",
+     "env": false
+    },
+    {
+     "line": 154,
+     "unit": "useTypingEffect",
+     "rule": "react-handler-capture",
+     "msg": "a React closure captures a changing local; capture a const value or use a state setter",
+     "env": false
+    },
+    {
+     "line": 158,
+     "unit": "useTypingEffect",
+     "rule": "react-handler-capture",
+     "msg": "a React closure captures a changing local; capture a const value or use a state setter",
+     "env": false
+    },
+    {
+     "line": 159,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 159,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 161,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 161,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 163,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 163,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 164,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 164,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 169,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 169,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 175,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 175,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 179,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 179,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 180,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 180,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 191,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 191,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 192,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 192,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 193,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 193,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer record",
+     "env": false
+    },
+    {
+     "line": 194,
+     "unit": "useTypingEffect",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 194,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "closure-mutation",
+     "msg": "`timeoutId` is declared outside this callback; a callback cannot change it",
+     "env": false
+    },
+    {
+     "line": 204,
+     "unit": "useTypingEffect",
+     "rule": "definite-assignment",
+     "msg": "`timeoutId` may be read here before its first assignment (TypeScript does not check this read), and lean tests it only in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions; assign it before this read or give it a start value",
+     "env": false
+    },
+    {
+     "line": 204,
+     "unit": "useTypingEffect/useEffect()#0",
+     "rule": "definite-assignment",
+     "msg": "`timeoutId` may be read here before its first assignment (TypeScript does not check this read), and lean tests it only in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions; assign it before this read or give it a start value",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/hooks/useUploadFiles.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useUploadFiles",
+     "lines": [
+      9,
+      63
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 34,
+     "unit": "useUploadFiles",
+     "rule": "unsupported-syntax",
+     "msg": "`import.meta.env` is injected at build time; read it outside the subset",
+     "env": false
+    },
+    {
+     "line": 51,
+     "unit": "useUploadFiles",
+     "rule": "type-assertion",
+     "msg": "`error.error ?? 'Upload failed'` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 54,
+     "unit": "useUploadFiles",
+     "rule": "type-assertion",
+     "msg": "`response.json() as Promise<UploadFilesResult>` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/hooks/useVerticalResize.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "useVerticalResize",
+     "lines": [
+      25,
+      90
+     ]
+    },
+    {
+     "name": "useVerticalResize/useCallback()#0@1",
+     "lines": [
+      37,
+      41
+     ]
+    },
+    {
+     "name": "useVerticalResize/useCallback()#0@2",
+     "lines": [
+      46,
+      51
+     ]
+    },
+    {
+     "name": "useVerticalResize/useEffect()#0",
+     "lines": [
+      55,
+      82
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 73,
+     "unit": "useVerticalResize",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 73,
+     "unit": "useVerticalResize/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 74,
+     "unit": "useVerticalResize",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 74,
+     "unit": "useVerticalResize/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 79,
+     "unit": "useVerticalResize",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 79,
+     "unit": "useVerticalResize/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 80,
+     "unit": "useVerticalResize",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 80,
+     "unit": "useVerticalResize/useEffect()#0",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/lib/api.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "ApiError.constructor",
+     "lines": [
+      5,
+      12
+     ]
+    },
+    {
+     "name": "apiFetch",
+     "lines": [
+      15,
+      53
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/lib/storage.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "CargoHold.set",
+     "lines": [
+      47,
+      54
+     ]
+    },
+    {
+     "name": "CargoHold.get",
+     "lines": [
+      61,
+      70
+     ]
+    },
+    {
+     "name": "CargoHold.getOr",
+     "lines": [
+      77,
+      80
+     ]
+    },
+    {
+     "name": "CargoHold.remove",
+     "lines": [
+      85,
+      91
+     ]
+    },
+    {
+     "name": "CargoHold.clear",
+     "lines": [
+      97,
+      101
+     ]
+    },
+    {
+     "name": "CargoHold.has",
+     "lines": [
+      106,
+      108
+     ]
+    },
+    {
+     "name": "CargoHold.clear/Object.values(CargoKey).forEach()#0",
+     "lines": [
+      98,
+      100
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 66,
+     "unit": "CargoHold.get",
+     "rule": "type-assertion",
+     "msg": "`JSON.parse(serialized) as CargoHoldSchema[K]` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/lib/utils.ts",
+   "pkg": "apps/web",
+   "units": [
+    {
+     "name": "cn",
+     "lines": [
+      4,
+      6
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "apps/web/src/main.tsx",
+   "pkg": "apps/web",
+   "units": [],
+   "findings": [
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 26,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 28,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "apps/web/src/types/index.ts",
+   "pkg": "apps/web",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "apps/web/vite.config.ts",
+   "pkg": "apps/web",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "eslint.config.mjs",
+   "pkg": "eslint.config.mjs",
+   "units": [],
+   "findings": [
+    {
+     "line": 1,
+     "unit": null,
+     "rule": "unresolved-module",
+     "msg": "TS2307: Cannot find module '@eslint/js' or its corresponding type declarations.",
+     "env": true
+    },
+    {
+     "line": 44,
+     "unit": null,
+     "rule": "ts-strict",
+     "msg": "TS2339: Property 'dirname' does not exist on type 'ImportMeta'.",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/types/src/index.ts",
+   "pkg": "packages/types",
+   "units": [
+    {
+     "name": "generateSlug",
+     "lines": [
+      420,
+      427
+     ]
+    },
+    {
+     "name": "isValidSlug",
+     "lines": [
+      432,
+      434
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/ui/src/components/Badge.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "forwardRef()#0",
+     "lines": [
+      22,
+      46
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 49,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/components/Button.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "forwardRef()#0",
+     "lines": [
+      11,
+      65
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 68,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/components/Card.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "forwardRef()#0",
+     "lines": [
+      9,
+      22
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 25,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/components/ContextMenu.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "ContextMenuShortcut",
+     "lines": [
+      122,
+      124
+     ]
+    },
+    {
+     "name": "forwardRef()#0@1",
+     "lines": [
+      22,
+      42
+     ]
+    },
+    {
+     "name": "forwardRef()#0@2",
+     "lines": [
+      55,
+      72
+     ]
+    },
+    {
+     "name": "forwardRef()#0@3",
+     "lines": [
+      83,
+      89
+     ]
+    },
+    {
+     "name": "forwardRef()#0@4",
+     "lines": [
+      100,
+      109
+     ]
+    },
+    {
+     "name": "forwardRef()#0@5",
+     "lines": [
+      133,
+      151
+     ]
+    },
+    {
+     "name": "forwardRef()#0@6",
+     "lines": [
+      162,
+      187
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 44,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 74,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 91,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 111,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 153,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 189,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/components/Input.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "forwardRef()#0",
+     "lines": [
+      9,
+      27
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 30,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/components/Modal.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "Modal",
+     "lines": [
+      15,
+      21
+     ]
+    },
+    {
+     "name": "ModalHeader",
+     "lines": [
+      79,
+      92
+     ]
+    },
+    {
+     "name": "ModalFooter",
+     "lines": [
+      103,
+      115
+     ]
+    },
+    {
+     "name": "ModalClose",
+     "lines": [
+      125,
+      152
+     ]
+    },
+    {
+     "name": "forwardRef()#0",
+     "lines": [
+      34,
+      65
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 68,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/components/Panel.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "Panel",
+     "lines": [
+      22,
+      53
+     ]
+    },
+    {
+     "name": "PanelToggle",
+     "lines": [
+      63,
+      98
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 44,
+     "unit": "Panel",
+     "rule": "type-assertion",
+     "msg": "`computedWidth !== undefined ? `${String(computedWidth)}px` :` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/components/ProgressBar.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "ProgressBar",
+     "lines": [
+      16,
+      48
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/ui/src/components/Skeleton.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "Skeleton",
+     "lines": [
+      15,
+      47
+     ]
+    },
+    {
+     "name": "SkeletonText",
+     "lines": [
+      57,
+      65
+     ]
+    },
+    {
+     "name": "SkeletonCard",
+     "lines": [
+      72,
+      80
+     ]
+    },
+    {
+     "name": "SkeletonListItem",
+     "lines": [
+      88,
+      95
+     ]
+    },
+    {
+     "name": "SkeletonCode",
+     "lines": [
+      103,
+      117
+     ]
+    },
+    {
+     "name": "SkeletonText/Array.from({ length: lines }).map()#0",
+     "lines": [
+      60,
+      62
+     ]
+    },
+    {
+     "name": "SkeletonCode/Array.from({ length: lines }).map()#0",
+     "lines": [
+      109,
+      114
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/ui/src/components/Spinner.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "Spinner",
+     "lines": [
+      16,
+      33
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "packages/ui/src/components/Switch.tsx",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "forwardRef()#0",
+     "lines": [
+      30,
+      69
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 72,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "packages/ui/src/index.ts",
+   "pkg": "packages/ui",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "packages/ui/src/lib/utils.ts",
+   "pkg": "packages/ui",
+   "units": [
+    {
+     "name": "cn",
+     "lines": [
+      4,
+      6
+     ]
+    }
+   ],
+   "findings": []
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "apps/api",
+   "files": 59,
+   "units": 271,
+   "entered": 249
+  },
+  {
+   "pkg": "apps/web",
+   "files": 49,
+   "units": 214,
+   "entered": 188
+  },
+  {
+   "pkg": "packages/ui",
+   "files": 13,
+   "units": 29,
+   "entered": 28
+  },
+  {
+   "pkg": "packages/types",
+   "files": 1,
+   "units": 2,
+   "entered": 2
+  },
+  {
+   "pkg": "eslint.config.mjs",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

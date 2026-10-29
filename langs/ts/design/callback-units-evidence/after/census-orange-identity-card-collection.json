@@ -1,0 +1,634 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/orange-identity-card-collection",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 17,
+   "units": 32,
+   "entered": 24
+  }
+ },
+ "refused": 8,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 4,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 1,
+     "example": {
+      "file": "src/App.tsx",
+      "line": 47,
+      "code": "SUBMIT_URL"
+     }
+    },
+    {
+     "directory": "src/i18n",
+     "units": 2,
+     "example": {
+      "file": "src/i18n/I18nContext.tsx",
+      "line": 53,
+      "code": "langFromPath()"
+     }
+    },
+    {
+     "directory": "src/lib",
+     "units": 1,
+     "example": {
+      "file": "src/lib/scan.ts",
+      "line": 47,
+      "code": "SCAN_SECRET"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/components",
+     "units": 2,
+     "example": {
+      "file": "src/components/IdentityForm.tsx",
+      "line": 81,
+      "code": "[field]: value"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 2,
+   "directories": [
+    {
+     "directory": "src/i18n",
+     "units": 2,
+     "example": {
+      "file": "src/i18n/I18nContext.tsx",
+      "line": 92,
+      "code": "document.documentElement.lang"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 17,
+ "failedFiles": 0,
+ "units": 32,
+ "entered": 24,
+ "share": 75,
+ "seconds": 3,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 10,
+   "units": 6,
+   "examples": [
+    "src/App.tsx:47 `SUBMIT_URL` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and ",
+    "src/components/IdentityForm.tsx:112 `e.target.value as IdentityFormData['gender']` holds a value whose type nothing checked (an `as` that narrows,",
+    "src/i18n/I18nContext.tsx:53 `langFromPath()` calls a function whose result is asserted without a check; its value may be of another type t"
+   ]
+  },
+  {
+   "rule": "dynamic-key",
+   "findings": 3,
+   "units": 2,
+   "examples": [
+    "src/components/IdentityForm.tsx:81 a computed key on a record with declared keys is a literal or a union of literals; give the literal a Record<s",
+    "src/components/PhotoCapture.tsx:54 narrow the record receiver before indexing it",
+    "src/components/PhotoCapture.tsx:80 FileList declares fields and an index signature; its value reading holds the declared fields alone, so a key i"
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 4,
+   "units": 2,
+   "examples": [
+    "src/i18n/I18nContext.tsx:92 assignment into `document`, which this function does not own; records it owns are updated in place",
+    "src/i18n/I18nContext.tsx:92 assignment into `document`, which this function does not own; records it owns are updated in place",
+    "src/i18n/I18nContext.tsx:93 assignment into `document`, which this function does not own; records it owns are updated in place"
+   ]
+  },
+  {
+   "rule": "index-assign",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/lib/scan.ts:74 write a record field by name, or use a local Record<string, T> dictionary"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 2,
+   "units": 0,
+   "examples": [
+    "src/main.tsx:9 code at module level runs on import; it is outside the subset",
+    "src/main.tsx:11 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "src/App.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "App",
+     "lines": [
+      23,
+      115
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 47,
+     "unit": "App",
+     "rule": "type-assertion",
+     "msg": "`SUBMIT_URL` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/components/Header.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "Header",
+     "lines": [
+      3,
+      20
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/components/IdentityForm.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "validate",
+     "lines": [
+      9,
+      42
+     ]
+    },
+    {
+     "name": "IdentityForm",
+     "lines": [
+      52,
+      248
+     ]
+    },
+    {
+     "name": "IdentityForm/useMemo()#0",
+     "lines": [
+      66,
+      66
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 81,
+     "unit": "IdentityForm",
+     "rule": "dynamic-key",
+     "msg": "a computed key on a record with declared keys is a literal or a union of literals; give the literal a Record<string, T> type for an open key",
+     "env": false
+    },
+    {
+     "line": 112,
+     "unit": "IdentityForm",
+     "rule": "type-assertion",
+     "msg": "`e.target.value as IdentityFormData['gender']` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/components/LanguageSwitcher.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "LanguageSwitcher",
+     "lines": [
+      3,
+      29
+     ]
+    },
+    {
+     "name": "LanguageSwitcher/languages.map()#0",
+     "lines": [
+      11,
+      26
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/components/MethodChooser.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "MethodChooser",
+     "lines": [
+      11,
+      45
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/components/PhotoCapture.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "PhotoCapture",
+     "lines": [
+      15,
+      217
+     ]
+    },
+    {
+     "name": "PhotoCapture/useEffect()#0",
+     "lines": [
+      27,
+      31
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 54,
+     "unit": "PhotoCapture",
+     "rule": "dynamic-key",
+     "msg": "narrow the record receiver before indexing it",
+     "env": false
+    },
+    {
+     "line": 80,
+     "unit": "PhotoCapture",
+     "rule": "dynamic-key",
+     "msg": "FileList declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/components/Spinner.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "Spinner",
+     "lines": [
+      8,
+      20
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/components/SubmitResult.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "displayValue",
+     "lines": [
+      23,
+      35
+     ]
+    },
+    {
+     "name": "SubmitResult",
+     "lines": [
+      45,
+      100
+     ]
+    },
+    {
+     "name": "SubmitResult/FIELD_ORDER.map()#0",
+     "lines": [
+      71,
+      76
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/components/icons/CameraIcon.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "CameraIcon",
+     "lines": [
+      7,
+      28
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/components/icons/ManualIcon.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "ManualIcon",
+     "lines": [
+      7,
+      42
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/components/icons/ScanIcon.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "ScanIcon",
+     "lines": [
+      7,
+      58
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/i18n/I18nContext.tsx",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "langFromPath",
+     "lines": [
+      33,
+      38
+     ]
+    },
+    {
+     "name": "pathWithLang",
+     "lines": [
+      43,
+      49
+     ]
+    },
+    {
+     "name": "detectInitialLanguage",
+     "lines": [
+      51,
+      77
+     ]
+    },
+    {
+     "name": "interpolate",
+     "lines": [
+      79,
+      84
+     ]
+    },
+    {
+     "name": "I18nProvider",
+     "lines": [
+      88,
+      143
+     ]
+    },
+    {
+     "name": "useI18n",
+     "lines": [
+      145,
+      149
+     ]
+    },
+    {
+     "name": "LANGUAGES.map()#0",
+     "lines": [
+      20,
+      20
+     ]
+    },
+    {
+     "name": "interpolate/template.replace()#1",
+     "lines": [
+      81,
+      82
+     ]
+    },
+    {
+     "name": "I18nProvider/useEffect()#0@1",
+     "lines": [
+      91,
+      101
+     ]
+    },
+    {
+     "name": "I18nProvider/useEffect()#0@2",
+     "lines": [
+      105,
+      112
+     ]
+    },
+    {
+     "name": "I18nProvider/useCallback()#0",
+     "lines": [
+      114,
+      126
+     ]
+    },
+    {
+     "name": "I18nProvider/useMemo()#0",
+     "lines": [
+      128,
+      140
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 53,
+     "unit": "detectInitialLanguage",
+     "rule": "type-assertion",
+     "msg": "`langFromPath()` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 92,
+     "unit": "I18nProvider",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 92,
+     "unit": "I18nProvider/useEffect()#0@1",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 93,
+     "unit": "I18nProvider",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 93,
+     "unit": "I18nProvider/useEffect()#0@1",
+     "rule": "property-assign",
+     "msg": "assignment into `document`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 107,
+     "unit": "I18nProvider",
+     "rule": "type-assertion",
+     "msg": "`langFromPath()` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    },
+    {
+     "line": 107,
+     "unit": "I18nProvider/useEffect()#0@2",
+     "rule": "type-assertion",
+     "msg": "`langFromPath()` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/i18n/strings.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/lib/scan.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "ScanError.constructor",
+     "lines": [
+      16,
+      20
+     ]
+    },
+    {
+     "name": "isScanErrorCode",
+     "lines": [
+      23,
+      32
+     ]
+    },
+    {
+     "name": "scanIdCard",
+     "lines": [
+      40,
+      78
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 47,
+     "unit": "scanIdCard",
+     "rule": "type-assertion",
+     "msg": "`SCAN_SECRET` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 51,
+     "unit": "scanIdCard",
+     "rule": "type-assertion",
+     "msg": "`SCAN_URL` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 65,
+     "unit": "scanIdCard",
+     "rule": "type-assertion",
+     "msg": "`payload?.error || `Scan failed (${res.status})`` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 66,
+     "unit": "scanIdCard",
+     "rule": "type-assertion",
+     "msg": "`payload?.code` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 72,
+     "unit": "scanIdCard",
+     "rule": "type-assertion",
+     "msg": "`fields` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 74,
+     "unit": "scanIdCard",
+     "rule": "index-assign",
+     "msg": "write a record field by name, or use a local Record<string, T> dictionary",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/main.tsx",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 9,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "vite.config.ts",
+   "pkg": "vite.config.ts",
+   "units": [],
+   "findings": []
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 16,
+   "units": 32,
+   "entered": 24
+  },
+  {
+   "pkg": "vite.config.ts",
+   "files": 1,
+   "units": 0,
+   "entered": 0
+  }
+ ]
+}

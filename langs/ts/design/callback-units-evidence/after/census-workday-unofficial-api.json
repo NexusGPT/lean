@@ -1,0 +1,1415 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/workday-unofficial-api",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 15,
+   "units": 96,
+   "entered": 80
+  }
+ },
+ "refused": 16,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 12,
+   "directories": [
+    {
+     "directory": "src",
+     "units": 1,
+     "example": {
+      "file": "src/workday-client.ts",
+      "line": 150,
+      "code": "raw.facets ?? []"
+     }
+    },
+    {
+     "directory": "src/middleware",
+     "units": 1,
+     "example": {
+      "file": "src/middleware/query-parser.ts",
+      "line": 50,
+      "code": "parsed"
+     }
+    },
+    {
+     "directory": "src/services",
+     "units": 10,
+     "example": {
+      "file": "src/services/facets.service.ts",
+      "line": 32,
+      "code": "values.map(normalizeValue)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 1,
+     "example": {
+      "file": "src/services/jobs.service.ts",
+      "line": 628,
+      "code": "entry.names.add(value.descriptor)"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 1,
+     "example": {
+      "file": "src/services/jobs.service.ts",
+      "line": 405,
+      "code": "next++"
+     }
+    }
+   ]
+  },
+  {
+   "rule": "function-value",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 1,
+     "example": {
+      "file": "src/services/jobs.service.ts",
+      "line": 205,
+      "code": "async ({ p, needs }) => { if (!needs) return p; try { const detail = await getJobDetail(t, p.externalPath); const code ="
+     }
+    }
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "units": 1,
+   "directories": [
+    {
+     "directory": "src/services",
+     "units": 1,
+     "example": {
+      "file": "src/services/tenants.service.ts",
+      "line": 60,
+      "code": "JOBS_RE_GLOBAL.lastIndex"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 15,
+ "failedFiles": 0,
+ "units": 96,
+ "entered": 80,
+ "share": 83.3,
+ "seconds": 2,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 34,
+   "units": 12,
+   "examples": [
+    "src/middleware/query-parser.ts:50 `parsed` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this",
+    "src/services/facets.service.ts:32 `values.map(normalizeValue)` holds a value whose type nothing checked (an `as` that narrows, or an any or unkn",
+    "src/services/jobs.service.ts:140 `r.descriptor` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), an"
+   ]
+  },
+  {
+   "rule": "prototype",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/middleware/query-parser.ts:52 a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of "
+   ]
+  },
+  {
+   "rule": "function-value",
+   "findings": 1,
+   "units": 1,
+   "examples": [
+    "src/services/jobs.service.ts:205 a same-file function takes values, not callbacks"
+   ]
+  },
+  {
+   "rule": "closure-mutation",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "src/services/jobs.service.ts:405 a callback cannot change an outer variable",
+    "src/services/jobs.service.ts:407 a callback cannot change an outer array"
+   ]
+  },
+  {
+   "rule": "alias-mutation",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "src/services/jobs.service.ts:628 `entry` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module obj",
+    "src/services/jobs.service.ts:629 `entry` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module obj"
+   ]
+  },
+  {
+   "rule": "property-assign",
+   "findings": 2,
+   "units": 1,
+   "examples": [
+    "src/services/tenants.service.ts:60 assignment into `JOBS_RE_GLOBAL`, which this function does not own; records it owns are updated in place",
+    "src/services/tenants.service.ts:68 assignment into `SITE_RE_GLOBAL`, which this function does not own; records it owns are updated in place"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 21,
+   "units": 0,
+   "examples": [
+    "src/index.ts:16 code at module level runs on import; it is outside the subset",
+    "src/index.ts:17 code at module level runs on import; it is outside the subset",
+    "src/index.ts:20 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "src/config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "requireEnv",
+     "lines": [
+      1,
+      7
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/index.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "app.get('/openapi.yaml')#1",
+     "lines": [
+      20,
+      23
+     ]
+    },
+    {
+     "name": "app.get('/api/health')#1",
+     "lines": [
+      27,
+      29
+     ]
+    },
+    {
+     "name": "app.get('/api/health/upstream')#1",
+     "lines": [
+      33,
+      36
+     ]
+    },
+    {
+     "name": "app.use()#0",
+     "lines": [
+      42,
+      44
+     ]
+    },
+    {
+     "name": "app.listen()#1",
+     "lines": [
+      49,
+      51
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 16,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 17,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 20,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 27,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 39,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 42,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 47,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 49,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/middleware/auth.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "auth",
+     "lines": [
+      4,
+      13
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/middleware/error-handler.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "errorHandler",
+     "lines": [
+      6,
+      39
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/middleware/query-parser.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "queryParser",
+     "lines": [
+      25,
+      63
+     ]
+    },
+    {
+     "name": "parseTitleKeywords",
+     "lines": [
+      65,
+      91
+     ]
+    },
+    {
+     "name": "queryParser/v.every()#0",
+     "lines": [
+      51,
+      51
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 4,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 50,
+     "unit": "queryParser",
+     "rule": "type-assertion",
+     "msg": "`parsed` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 52,
+     "unit": "queryParser",
+     "rule": "prototype",
+     "msg": "a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the setter of Object.prototype.__proto__) and makes no key; write `d = { ...d, [k]: v }`, which makes an own key, or use a Map",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/facets.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "router.get('/:wd/:tenant/:site')#1",
+     "lines": [
+      9,
+      22
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 9,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/index.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 8,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 9,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 10,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/jobs.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "tenantFromParams",
+     "lines": [
+      10,
+      18
+     ]
+    },
+    {
+     "name": "router.get('/:wd/:tenant/:site/count')#1",
+     "lines": [
+      23,
+      31
+     ]
+    },
+    {
+     "name": "router.get('/search')#1",
+     "lines": [
+      36,
+      73
+     ]
+    },
+    {
+     "name": "router.get('/:wd/:tenant/:site/with-categories')#1",
+     "lines": [
+      77,
+      92
+     ]
+    },
+    {
+     "name": "router.get('/:wd/:tenant/:site/detail')#1",
+     "lines": [
+      95,
+      112
+     ]
+    },
+    {
+     "name": "router.get('/:wd/:tenant/:site')#1",
+     "lines": [
+      115,
+      123
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 23,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 36,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 77,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 95,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 115,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/tenants.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "router.post('/parse')#1",
+     "lines": [
+      11,
+      27
+     ]
+    },
+    {
+     "name": "router.post('/discover')#1",
+     "lines": [
+      33,
+      58
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 33,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/facets.service.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "asString",
+     "lines": [
+      4,
+      6
+     ]
+    },
+    {
+     "name": "asNumberOrNull",
+     "lines": [
+      8,
+      10
+     ]
+    },
+    {
+     "name": "normalizeValue",
+     "lines": [
+      19,
+      25
+     ]
+    },
+    {
+     "name": "normalizeGroup",
+     "lines": [
+      27,
+      34
+     ]
+    },
+    {
+     "name": "listFacets",
+     "lines": [
+      36,
+      40
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 32,
+     "unit": "normalizeGroup",
+     "rule": "type-assertion",
+     "msg": "`values.map(normalizeValue)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/jobs.service.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "buildExternalUrl",
+     "lines": [
+      18,
+      21
+     ]
+    },
+    {
+     "name": "asString",
+     "lines": [
+      23,
+      25
+     ]
+    },
+    {
+     "name": "asStringOrNull",
+     "lines": [
+      27,
+      29
+     ]
+    },
+    {
+     "name": "asStringArray",
+     "lines": [
+      31,
+      33
+     ]
+    },
+    {
+     "name": "matchesTitle",
+     "lines": [
+      40,
+      42
+     ]
+    },
+    {
+     "name": "buildKeywordTitleMatcher",
+     "lines": [
+      60,
+      76
+     ]
+    },
+    {
+     "name": "applyPostFilters",
+     "lines": [
+      88,
+      115
+     ]
+    },
+    {
+     "name": "normalizePosting",
+     "lines": [
+      117,
+      127
+     ]
+    },
+    {
+     "name": "normalizeSimilar",
+     "lines": [
+      129,
+      135
+     ]
+    },
+    {
+     "name": "normalizeCountry",
+     "lines": [
+      137,
+      146
+     ]
+    },
+    {
+     "name": "normalizeReqLocation",
+     "lines": [
+      148,
+      157
+     ]
+    },
+    {
+     "name": "normalizeDetail",
+     "lines": [
+      159,
+      180
+     ]
+    },
+    {
+     "name": "enrichMultiLocationPostings",
+     "lines": [
+      195,
+      216
+     ]
+    },
+    {
+     "name": "listJobs",
+     "lines": [
+      220,
+      270
+     ]
+    },
+    {
+     "name": "collectAllJobs",
+     "lines": [
+      286,
+      339
+     ]
+    },
+    {
+     "name": "getJobDetail",
+     "lines": [
+      341,
+      344
+     ]
+    },
+    {
+     "name": "countJobs",
+     "lines": [
+      346,
+      356
+     ]
+    },
+    {
+     "name": "parsePostedOn",
+     "lines": [
+      371,
+      382
+     ]
+    },
+    {
+     "name": "daysFromIso",
+     "lines": [
+      388,
+      394
+     ]
+    },
+    {
+     "name": "mapWithConcurrency",
+     "lines": [
+      396,
+      412
+     ]
+    },
+    {
+     "name": "searchJobs",
+     "lines": [
+      429,
+      572
+     ]
+    },
+    {
+     "name": "listJobsWithCategories",
+     "lines": [
+      592,
+      650
+     ]
+    },
+    {
+     "name": "asStringArray/v.filter()#0",
+     "lines": [
+      32,
+      32
+     ]
+    },
+    {
+     "name": "buildKeywordTitleMatcher/keywords\n    .map()#0",
+     "lines": [
+      62,
+      62
+     ]
+    },
+    {
+     "name": "buildKeywordTitleMatcher/keywords\n    .map((k) => (typeof k === \"string\" ? k.trim().toLowerCase() : \"\"))\n    .filter()#0",
+     "lines": [
+      63,
+      63
+     ]
+    },
+    {
+     "name": "buildKeywordTitleMatcher/cleaned.map()#0",
+     "lines": [
+      67,
+      70
+     ]
+    },
+    {
+     "name": "applyPostFilters/out.filter()#0@1",
+     "lines": [
+      96,
+      96
+     ]
+    },
+    {
+     "name": "applyPostFilters/out.filter()#0@2",
+     "lines": [
+      99,
+      99
+     ]
+    },
+    {
+     "name": "applyPostFilters/out.filter()#0@3",
+     "lines": [
+      104,
+      104
+     ]
+    },
+    {
+     "name": "applyPostFilters/out\n      .map()#0",
+     "lines": [
+      110,
+      110
+     ]
+    },
+    {
+     "name": "applyPostFilters/out\n      .map((j) => ({ ...j, daysSincePosted: parsePostedOn(j.postedOn) }))\n      .filter()#0",
+     "lines": [
+      111,
+      111
+     ]
+    },
+    {
+     "name": "enrichMultiLocationPostings/postings.map()#0@1",
+     "lines": [
+      199,
+      199
+     ]
+    },
+    {
+     "name": "enrichMultiLocationPostings/postings.map()#0@2",
+     "lines": [
+      203,
+      203
+     ]
+    },
+    {
+     "name": "enrichMultiLocationPostings/mapWithConcurrency(5)#2",
+     "lines": [
+      205,
+      214
+     ]
+    },
+    {
+     "name": "listJobs/postings.map()#0",
+     "lines": [
+      239,
+      239
+     ]
+    },
+    {
+     "name": "collectAllJobs/all.map()#0",
+     "lines": [
+      317,
+      317
+     ]
+    },
+    {
+     "name": "searchJobs/mapWithConcurrency()#2",
+     "lines": [
+      497,
+      504
+     ]
+    },
+    {
+     "name": "searchJobs/collectedRaw.map()#0",
+     "lines": [
+      510,
+      510
+     ]
+    },
+    {
+     "name": "searchJobs/collected.filter()#0",
+     "lines": [
+      516,
+      519
+     ]
+    },
+    {
+     "name": "searchJobs/filteredCollected.filter()#0",
+     "lines": [
+      528,
+      528
+     ]
+    },
+    {
+     "name": "searchJobs/filteredCollected.map()#0@1",
+     "lines": [
+      533,
+      537
+     ]
+    },
+    {
+     "name": "searchJobs/filteredCollected.map()#0@2",
+     "lines": [
+      538,
+      538
+     ]
+    },
+    {
+     "name": "searchJobs/jobs.map()#0@1",
+     "lines": [
+      543,
+      543
+     ]
+    },
+    {
+     "name": "searchJobs/mapWithConcurrency(5)#2",
+     "lines": [
+      543,
+      550
+     ]
+    },
+    {
+     "name": "searchJobs/jobs.map()#0@2",
+     "lines": [
+      551,
+      551
+     ]
+    },
+    {
+     "name": "searchJobs/jobs.filter()#0",
+     "lines": [
+      558,
+      562
+     ]
+    },
+    {
+     "name": "listJobsWithCategories/facets.find()#0",
+     "lines": [
+      600,
+      600
+     ]
+    },
+    {
+     "name": "listJobsWithCategories/allJobs.map()#0",
+     "lines": [
+      635,
+      642
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 140,
+     "unit": "normalizeCountry",
+     "rule": "type-assertion",
+     "msg": "`r.descriptor` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 144,
+     "unit": "normalizeCountry",
+     "rule": "type-assertion",
+     "msg": "`r.alpha2Code` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 151,
+     "unit": "normalizeReqLocation",
+     "rule": "type-assertion",
+     "msg": "`r.descriptor` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 155,
+     "unit": "normalizeReqLocation",
+     "rule": "type-assertion",
+     "msg": "`r.country` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 164,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.id` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 165,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.jobPostingId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 166,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.title` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 167,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.jobDescription` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 168,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.location` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 169,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.jobRequisitionLocation` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 170,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.country` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 171,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.postedOn` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 172,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.startDate` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 173,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.timeType` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 174,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.jobReqId` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.externalUrl` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 177,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`info.externalPath` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 178,
+     "unit": "normalizeDetail",
+     "rule": "type-assertion",
+     "msg": "`similarRaw.map(normalizeSimilar)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 205,
+     "unit": "enrichMultiLocationPostings",
+     "rule": "function-value",
+     "msg": "a same-file function takes values, not callbacks",
+     "env": false
+    },
+    {
+     "line": 240,
+     "unit": "listJobs",
+     "rule": "type-assertion",
+     "msg": "`allData` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 258,
+     "unit": "listJobs",
+     "rule": "type-assertion",
+     "msg": "`typeof raw.total === \"number\" ? raw.total : allData.length` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 266,
+     "unit": "listJobs",
+     "rule": "type-assertion",
+     "msg": "`typeof raw.total === \"number\" ? raw.total : data.length` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 308,
+     "unit": "collectAllJobs",
+     "rule": "type-assertion",
+     "msg": "`page` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 309,
+     "unit": "collectAllJobs",
+     "rule": "type-assertion",
+     "msg": "`page.length` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 331,
+     "unit": "collectAllJobs",
+     "rule": "type-assertion",
+     "msg": "`total ?? allData.length` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 337,
+     "unit": "collectAllJobs",
+     "rule": "type-assertion",
+     "msg": "`total ?? allData.length` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 343,
+     "unit": "getJobDetail",
+     "rule": "type-assertion",
+     "msg": "`raw` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 355,
+     "unit": "countJobs",
+     "rule": "type-assertion",
+     "msg": "`typeof raw.total === \"number\" ? raw.total : 0` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 405,
+     "unit": "mapWithConcurrency",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer variable",
+     "env": false
+    },
+    {
+     "line": 407,
+     "unit": "mapWithConcurrency",
+     "rule": "closure-mutation",
+     "msg": "a callback cannot change an outer array",
+     "env": false
+    },
+    {
+     "line": 485,
+     "unit": "searchJobs",
+     "rule": "type-assertion",
+     "msg": "`firstRaw.jobPostings` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 488,
+     "unit": "searchJobs",
+     "rule": "type-assertion",
+     "msg": "`total` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 503,
+     "unit": "searchJobs",
+     "rule": "type-assertion",
+     "msg": "`Array.isArray(r.jobPostings) ? r.jobPostings : []` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 503,
+     "unit": "searchJobs/mapWithConcurrency()#2",
+     "rule": "type-assertion",
+     "msg": "`Array.isArray(r.jobPostings) ? r.jobPostings : []` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 628,
+     "unit": "listJobsWithCategories",
+     "rule": "alias-mutation",
+     "msg": "`entry` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    },
+    {
+     "line": 629,
+     "unit": "listJobsWithCategories",
+     "rule": "alias-mutation",
+     "msg": "`entry` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module object under another name; copy it (return a copy from a same-file callee), or change that object through its own name",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/tenants.service.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "parseWorkdayUrl",
+     "lines": [
+      27,
+      34
+     ]
+    },
+    {
+     "name": "discoverFromCareersUrl",
+     "lines": [
+      41,
+      82
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 60,
+     "unit": "discoverFromCareersUrl",
+     "rule": "property-assign",
+     "msg": "assignment into `JOBS_RE_GLOBAL`, which this function does not own; records it owns are updated in place",
+     "env": false
+    },
+    {
+     "line": 68,
+     "unit": "discoverFromCareersUrl",
+     "rule": "property-assign",
+     "msg": "assignment into `SITE_RE_GLOBAL`, which this function does not own; records it owns are updated in place",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  },
+  {
+   "file": "src/validators.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "ValidationError.constructor",
+     "lines": [
+      11,
+      15
+     ]
+    },
+    {
+     "name": "validateTenantConfig",
+     "lines": [
+      18,
+      28
+     ]
+    },
+    {
+     "name": "isPrivateIPv4",
+     "lines": [
+      30,
+      46
+     ]
+    },
+    {
+     "name": "isPrivateIPv6",
+     "lines": [
+      48,
+      58
+     ]
+    },
+    {
+     "name": "isPrivateAddress",
+     "lines": [
+      60,
+      65
+     ]
+    },
+    {
+     "name": "assertPublicHost",
+     "lines": [
+      67,
+      91
+     ]
+    },
+    {
+     "name": "assertSafeOutboundUrl",
+     "lines": [
+      107,
+      122
+     ]
+    },
+    {
+     "name": "isPrivateIPv4/parts.some()#0",
+     "lines": [
+      32,
+      32
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/workday-client.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "WorkdayError.constructor",
+     "lines": [
+      8,
+      13
+     ]
+    },
+    {
+     "name": "buildTenantUrl",
+     "lines": [
+      22,
+      29
+     ]
+    },
+    {
+     "name": "jobsPath",
+     "lines": [
+      31,
+      33
+     ]
+    },
+    {
+     "name": "defaultHeaders",
+     "lines": [
+      35,
+      41
+     ]
+    },
+    {
+     "name": "fetchWithTimeout",
+     "lines": [
+      43,
+      51
+     ]
+    },
+    {
+     "name": "readBody",
+     "lines": [
+      53,
+      59
+     ]
+    },
+    {
+     "name": "parseJsonOrThrow",
+     "lines": [
+      61,
+      88
+     ]
+    },
+    {
+     "name": "workday.listJobs",
+     "lines": [
+      104,
+      118
+     ]
+    },
+    {
+     "name": "workday.jobDetail",
+     "lines": [
+      125,
+      139
+     ]
+    },
+    {
+     "name": "workday.facets",
+     "lines": [
+      148,
+      151
+     ]
+    },
+    {
+     "name": "workday.checkConnection",
+     "lines": [
+      158,
+      170
+     ]
+    },
+    {
+     "name": "workday.fetchHtml",
+     "lines": [
+      182,
+      214
+     ]
+    },
+    {
+     "name": "fetchWithTimeout/setTimeout()#0",
+     "lines": [
+      45,
+      45
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 150,
+     "unit": "workday.facets",
+     "rule": "type-assertion",
+     "msg": "`raw.facets ?? []` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 15,
+   "units": 96,
+   "entered": 80
+  }
+ ]
+}

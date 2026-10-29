@@ -1,0 +1,38 @@
+["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-nexus-linkedin-dashboard.json"]
+Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
+/dev/disk3s1s1   971350180  12340716  28806132    30%  458732 288061320    0%   /
+project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/nexus-linkedin-dashboard/tsconfig.json: 320 files
+50 files, 130 units, 116 inside, 17 s
+100 files, 335 units, 297 inside, 18 s
+150 files, 641 units, 471 inside, 19 s
+200 files, 834 units, 626 inside, 20 s
+250 files, 1104 units, 843 inside, 22 s
+300 files, 1832 units, 1476 inside, 29 s
+nexus-linkedin-dashboard: 320 files, 1950 units, 1564 inside the subset (80.2 percent), 0 files unreadable, 30 s
+     114 units  untyped-js             design/booking-artboards.mjs:7 parameter `mobile` of a JavaScript unit has no declared type; declare it (a JSDoc `@param {T} mobile` or TypeS
+      95 units  non-null-assertion     app/(admin)/(linkedin)/performance/page.tsx:54 `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (
+      73 units  type-assertion         app/(admin)/availability/page.tsx:29 `first(sp.saved) as keyof typeof C.saved` holds a value whose type nothing checked (an `as` that narrows, or a
+      31 units  unresolved-module      app/(admin)/(linkedin)/audience/layout.tsx:8 TS2304: Cannot find name 'LayoutProps'.
+      28 units  ts-strict              design/booking-artboards.mjs:95 TS2345: Argument of type '([d, n, on]: [any, any, any]) => string' is not assignable to parameter of type '(va
+      21 units  async                  lib/booking/calendar/tokens.ts:60 an async unit is called without await
+      18 units  promise                evals/results/0001/A-1-fonts.mjs:18 return the promise from a call, a name or a conditional, or make the function async
+      14 units  unsupported-member     evals/results/0001/A-1-review.mjs:73 property .style is not declared on Element
+      13 units  dynamic-key            app/(admin)/availability/page.tsx:29 bind the computed key before reading the record; a key call may mutate its receiver
+      12 units  captured-mutable       app/(admin)/availability/page.tsx:72 captured binding `index` may be written after this callback is created; capture a stable value
+      12 units  param-mutation         components/charts/line.tsx:165 push on `runs[runs.length - 1]!`, which is not a local array
+      12 units  unsupported-call       design/build.mjs:287 method .replace() on string | string[] | undefined is outside the subset; narrow the union with typeof or Arra
+      11 units  index-assign           evals/results/0001/A-1-review.mjs:26 write a record field by name, or use a local Record<string, T> dictionary
+      11 units  prototype              lib/landing/postgres.ts:101 `new Proxy` is outside the subset
+       9 units  closure-mutation       design/build.mjs:166 `g` is declared outside this callback; a callback cannot change it
+       8 units  spread                 eslint-rules/outbound.mjs:136 spread works on arrays, sets, maps and their keys(), values() and entries()
+       7 units  alias-mutation         app/(public)/book/rate-limit.ts:25 `mine` holds the result of `Map.prototype.get`, which may be a field, a parameter, an element or a module obje
+       6 units  reference-equality     evals/results/0001/A-1-review.mjs:185 === on arrays and records compares references; compare fields
+       4 units  unsupported-syntax     app/(admin)/design-system/page.tsx:181 a local component value must be a string tag name or a named component
+       4 units  unary-coercion         evals/results/0002/A-1-not-configured.mjs:8 unary + coerces; it is outside the subset
+       4 units  record-rest            lib/net/send.ts:202 record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without d
+       4 units  in-place-mutation      lib/read-models/bookings-admin.ts:115 sort changes `confirmedRows` in place; write `confirmedRows = [...confirmedRows].sort(...)`
+       3 units  object-method-capture  eslint-rules/env-reads.mjs:149 a literal method captures an unchanging value; copy mutable data before capturing it
+       3 units  global-read            evals/results/0020/0020-A-1-walk.cjs:12 global `path` is outside the subset
+       3 units  promise-pending        evals/results/0027/repro/zz-c1-pinned.ts:10 await or return the promise directly; a dangling or stored continuation leaves observable pending work
+
+exit=0 signal=null

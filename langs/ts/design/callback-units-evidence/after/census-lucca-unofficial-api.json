@@ -1,0 +1,632 @@
+{
+ "root": "/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/lucca-unofficial-api",
+ "date": "2026-10-29",
+ "depth": 2,
+ "languages": {
+  "ts": {
+   "files": 15,
+   "units": 40,
+   "entered": 35
+  }
+ },
+ "refused": 5,
+ "refusalRules": [
+  {
+   "rule": "type-assertion",
+   "units": 5,
+   "directories": [
+    {
+     "directory": "src/middleware",
+     "units": 1,
+     "example": {
+      "file": "src/middleware/error-handler.ts",
+      "line": 54,
+      "code": "anyErr.status"
+     }
+    },
+    {
+     "directory": "src/services",
+     "units": 4,
+     "example": {
+      "file": "src/services/expense-claims.service.ts",
+      "line": 11,
+      "code": "extractItems(raw)"
+     }
+    }
+   ]
+  }
+ ],
+ "files": 15,
+ "failedFiles": 0,
+ "units": 40,
+ "entered": 35,
+ "share": 87.5,
+ "seconds": 3,
+ "rules": [
+  {
+   "rule": "type-assertion",
+   "findings": 6,
+   "units": 5,
+   "examples": [
+    "src/middleware/error-handler.ts:54 `anyErr.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), a",
+    "src/middleware/error-handler.ts:56 `anyErr.code ?? \"bad_request\"` holds a value whose type nothing checked (an `as` that narrows, or an any or un",
+    "src/services/expense-claims.service.ts:11 `extractItems(raw)` calls a function whose result is asserted without a check; its value may be of another typ"
+   ]
+  },
+  {
+   "rule": "toplevel-effect",
+   "findings": 17,
+   "units": 0,
+   "examples": [
+    "src/index.ts:17 code at module level runs on import; it is outside the subset",
+    "src/index.ts:23 code at module level runs on import; it is outside the subset",
+    "src/index.ts:29 code at module level runs on import; it is outside the subset"
+   ]
+  }
+ ],
+ "records": [
+  {
+   "file": "src/config.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "requireEnv",
+     "lines": [
+      1,
+      7
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/index.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "app.get('/openapi.yaml')#1",
+     "lines": [
+      23,
+      26
+     ]
+    },
+    {
+     "name": "app.get('/api/health')#1",
+     "lines": [
+      29,
+      32
+     ]
+    },
+    {
+     "name": "app.use()#0",
+     "lines": [
+      38,
+      40
+     ]
+    },
+    {
+     "name": "app.listen()#1",
+     "lines": [
+      45,
+      47
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 17,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 23,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 29,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 35,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 38,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 43,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 45,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/lucca-client.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "LuccaError.constructor",
+     "lines": [
+      7,
+      12
+     ]
+    },
+    {
+     "name": "baseUrl",
+     "lines": [
+      16,
+      18
+     ]
+    },
+    {
+     "name": "defaultHeaders",
+     "lines": [
+      22,
+      29
+     ]
+    },
+    {
+     "name": "fetchWithTimeout",
+     "lines": [
+      32,
+      40
+     ]
+    },
+    {
+     "name": "readBody",
+     "lines": [
+      42,
+      45
+     ]
+    },
+    {
+     "name": "parseJsonOrThrow",
+     "lines": [
+      48,
+      73
+     ]
+    },
+    {
+     "name": "lucca.listLeaves",
+     "lines": [
+      86,
+      112
+     ]
+    },
+    {
+     "name": "lucca.getLeave",
+     "lines": [
+      115,
+      119
+     ]
+    },
+    {
+     "name": "lucca.listLeaveRequests",
+     "lines": [
+      127,
+      150
+     ]
+    },
+    {
+     "name": "lucca.listExpenseClaims",
+     "lines": [
+      157,
+      177
+     ]
+    },
+    {
+     "name": "lucca.getExpenseClaim",
+     "lines": [
+      180,
+      184
+     ]
+    },
+    {
+     "name": "lucca.listLegalEntities",
+     "lines": [
+      190,
+      198
+     ]
+    },
+    {
+     "name": "lucca.checkConnection",
+     "lines": [
+      201,
+      212
+     ]
+    },
+    {
+     "name": "fetchWithTimeout/setTimeout()#0",
+     "lines": [
+      34,
+      34
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/middleware/auth.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "auth",
+     "lines": [
+      9,
+      22
+     ]
+    }
+   ],
+   "findings": []
+  },
+  {
+   "file": "src/middleware/error-handler.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "errorHandler",
+     "lines": [
+      13,
+      67
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 54,
+     "unit": "errorHandler",
+     "rule": "type-assertion",
+     "msg": "`anyErr.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    },
+    {
+     "line": 56,
+     "unit": "errorHandler",
+     "rule": "type-assertion",
+     "msg": "`anyErr.code ?? \"bad_request\"` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/expense-claims.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "flattenQuery",
+     "lines": [
+      5,
+      12
+     ]
+    },
+    {
+     "name": "router.get('/')#1",
+     "lines": [
+      16,
+      23
+     ]
+    },
+    {
+     "name": "router.get('/:id')#1",
+     "lines": [
+      25,
+      32
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 16,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/index.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": [
+    {
+     "line": 9,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 10,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 11,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 12,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/leave-requests.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "flattenQuery",
+     "lines": [
+      5,
+      12
+     ]
+    },
+    {
+     "name": "router.get('/')#1",
+     "lines": [
+      16,
+      23
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 16,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/leaves.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "flattenQuery",
+     "lines": [
+      5,
+      12
+     ]
+    },
+    {
+     "name": "router.get('/')#1",
+     "lines": [
+      16,
+      23
+     ]
+    },
+    {
+     "name": "router.get('/:id')#1",
+     "lines": [
+      25,
+      32
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 16,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    },
+    {
+     "line": 25,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/routes/legal-entities.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "router.get('/')#1",
+     "lines": [
+      7,
+      14
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 7,
+     "unit": null,
+     "rule": "toplevel-effect",
+     "msg": "code at module level runs on import; it is outside the subset",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/expense-claims.service.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "listExpenseClaims",
+     "lines": [
+      3,
+      13
+     ]
+    },
+    {
+     "name": "getExpenseClaim",
+     "lines": [
+      15,
+      18
+     ]
+    },
+    {
+     "name": "extractItems",
+     "lines": [
+      20,
+      30
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 11,
+     "unit": "listExpenseClaims",
+     "rule": "type-assertion",
+     "msg": "`extractItems(raw)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/leave-requests.service.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "listLeaveRequests",
+     "lines": [
+      3,
+      14
+     ]
+    },
+    {
+     "name": "extractItems",
+     "lines": [
+      16,
+      26
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 12,
+     "unit": "listLeaveRequests",
+     "rule": "type-assertion",
+     "msg": "`extractItems(raw)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/leaves.service.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "listLeaves",
+     "lines": [
+      3,
+      15
+     ]
+    },
+    {
+     "name": "getLeave",
+     "lines": [
+      17,
+      20
+     ]
+    },
+    {
+     "name": "extractItems",
+     "lines": [
+      23,
+      33
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 13,
+     "unit": "listLeaves",
+     "rule": "type-assertion",
+     "msg": "`extractItems(raw)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/services/legal-entities.service.ts",
+   "pkg": "src",
+   "units": [
+    {
+     "name": "listLegalEntities",
+     "lines": [
+      3,
+      7
+     ]
+    },
+    {
+     "name": "extractItems",
+     "lines": [
+      9,
+      19
+     ]
+    }
+   ],
+   "findings": [
+    {
+     "line": 5,
+     "unit": "listLegalEntities",
+     "rule": "type-assertion",
+     "msg": "`extractItems(raw)` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type",
+     "env": false
+    }
+   ]
+  },
+  {
+   "file": "src/types.ts",
+   "pkg": "src",
+   "units": [],
+   "findings": []
+  }
+ ],
+ "packages": [
+  {
+   "pkg": "src",
+   "files": 15,
+   "units": 40,
+   "entered": 35
+  }
+ ]
+}
