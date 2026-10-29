@@ -1,0 +1,6 @@
+{
+  "scope": ["app_get___changed___1", "app_get___same___1", "outer_xs_map___0"],
+  "equal": {"app_get___changed___1": false, "app_get___same___1": true, "outer_xs_map___0": true},
+  "b": {"app.get('/changed')#1": "WITNESS", "app.get('/same')#1": "PASS-bounded", "outer/xs.map()#0": "ASK"},
+  "why": "Callbacks are units identified by their call. The changed module route differs, its sibling is identical, and the in-body map callback reads offset as an input in lane A but cannot be reached at module load in lane B."
+}

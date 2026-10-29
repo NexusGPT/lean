@@ -11,7 +11,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, dn } from '../common.mjs';
+import { ts, dn, artifactName } from '../common.mjs';
 import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPartsOf, dafnyName } from '../check.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -245,29 +245,29 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
-    const r = run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${unit}.json`)]);
+    const r = run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${artifactName(unit)}.json`)]);
     let got = 'no result';
-    try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).verdict; } catch { /* keep */ }
+    try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
   }
   // the states lane B reached (bound.states, for the gate's rendering check): one per input that ran on both sides, each
   // with its index and its arguments as drawn; `states` in expect.json names the unit and the count of inputs it ran
   for (const [unit, want] of Object.entries(exp.states ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
     const st = got?.bound?.states;
     const ok = Array.isArray(st) && st.length === want && st.every((x, i) => x.input === i && Array.isArray(x.args));
     add('pair', name, `states ${unit} ${want}`, ok, Array.isArray(st) ? `${st.length} states, first ${JSON.stringify(st[0] ?? null).slice(0, 80)}` : `no states (${got?.verdict ?? 'no result'})`);
   }
   // the retained-state programs lane B ran for a class unit (programs.mjs): the verdict, the shrunk program's length, whether the divergence names this unit
   for (const [unit, want] of Object.entries(exp.programs ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
     const pr = got?.bound?.programs ?? null; const div = pr?.divergence ?? null;
     const ok = !!pr && (want.verdict !== 'WITNESS' ? got.verdict === want.verdict && !div : !!div) && (want.commands === undefined || div?.commands === want.commands) && (want.mine === undefined || div?.mine === want.mine);
     add('pair', name, `programs ${unit} ${want.verdict}${want.commands ? ' in ' + want.commands : ''}`, ok, pr ? `${pr.programs} programs, ${pr.commands} commands${div ? `; divergence at ${div.method} after ${div.commands} command(s)${div.mine ? '' : ' (another unit)'}` : ''}` : 'no programs summary');
   }
   // the environment programs lane B ran for a free function (program.mjs on fast-check): the verdict, the shrunk program's length, the replay
   for (const [unit, want] of Object.entries(exp.envPrograms ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
     const ep = got?.bound?.environmentPrograms ?? null; const w = got?.witnesses?.find((x) => x.input === 'environment program') ?? null;
     const ok = !!ep && got.verdict === want.verdict && (want.verdict !== 'WITNESS' || (!!w && w.replayed === true && (want.commands === undefined || w.program.length === want.commands)));
     add('pair', name, `environment programs ${unit} ${want.verdict}${want.commands ? ' in ' + want.commands : ''}`, ok, ep ? (w ? `${w.program.join(', ')}; seed ${w.seed}, path ${w.path}, replayed ${w.replayed}` : `${ep.runs} programs of up to ${ep.maxCommands} commands, no divergence`) : 'no environment-programs summary');
@@ -275,13 +275,13 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   // deep render (moonshot 7): the unit run twice by lane B, with --deep (same-package children rendered one level down) and without (a tree of names)
   for (const [unit, want] of Object.entries(exp.deep ?? {})) {
     const got = {};
-    for (const mode of ['deep', 'names']) { const out = path.join(tmpd, `deep_${mode}_${unit}.json`); run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '20', '--no-project', ...(mode === 'deep' ? ['--deep'] : []), '--out', out]); try { got[mode] = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { got[mode] = null; } }
+    for (const mode of ['deep', 'names']) { const out = path.join(tmpd, `deep_${mode}_${artifactName(unit)}.json`); run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '20', '--no-project', ...(mode === 'deep' ? ['--deep'] : []), '--out', out]); try { got[mode] = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { got[mode] = null; } }
     const ok = !!got.deep && !!got.names && got.deep.verdict === want.deep && got.names.verdict === want.names && /one level down/.test(got.deep.bound?.frontEnd?.components ?? '');
     add('pair', name, `deep render ${unit} ${want.deep} / names ${want.names}`, ok, `deep ${got.deep?.verdict ?? 'no result'}, names ${got.names?.verdict ?? 'no result'}`);
   }
   // the schedule explorer (moonshot 9): the clock as a command, every order of the timers due at one instant; the verdict, the witness sequence, the timer bound
   for (const [unit, want] of Object.entries(exp.schedules ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
     const sc = got?.bound?.schedules ?? null; const w = got?.witnesses?.find((x) => x.schedule) ?? null;
     const ok = !!sc && got.verdict === want.verdict && (want.sequence === undefined || JSON.stringify(w?.sequence ?? null) === JSON.stringify(want.sequence)) && (want.timers === undefined || sc.timers === want.timers);
     add('pair', name, `schedules ${unit} ${want.verdict}${want.sequence ? ' by ' + want.sequence.join(', ') : ''}`, ok, sc ? `${sc.timers} timer(s), ${sc.paths ?? '?'} paths${w ? `; witness ${w.sequence.join(', ')} at step ${w.step}` : ''}` : 'no schedules summary');
@@ -289,7 +289,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   // races (design/schedules.md): two callers on one receiver, every promise the world answers held by the scheduler, the
   // orders bounded by conflicts; a WITNESS carries both orders, the dependent pair and its replay; a clean run its order count
   for (const [unit, want] of Object.entries(exp.races ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
     const rc = got?.bound?.races ?? null; const w = got?.witnesses?.find((x) => x.race) ?? null; const runs = rc?.orders ? rc.orders.parent + rc.orders.candidate : null;
     const pairOk = (x) => !!x && (want.pair === undefined || (x.dependentPair?.moved === want.pair[0] && x.dependentPair?.before === want.pair[1])) && (want.cells === undefined || JSON.stringify(x.dependentPair?.cells) === JSON.stringify(want.cells));
     const ok = !!rc && got.verdict === want.verdict && rc.liveCalls === 2 && /complete only within the stated bound/.test(rc.bound ?? '') && (want.verdict === 'WITNESS' ? pairOk(w) && w.replayed === true && w.orders?.default?.order?.length > 0 && JSON.stringify(w.orders.default.order) !== JSON.stringify(w.orders.distinguishing?.order) && (want.side === undefined || w.side === want.side) && (want.lines === undefined || ['parent', 'candidate'].every((k) => w.where?.lines?.[k]?.file?.endsWith(`/${k}.ts`) && w.where.lines[k].start >= 1 && w.where.lines[k].text.includes(want.lines[k]))) : !w && rc.complete === true && (want.orders === undefined || runs === want.orders));
@@ -297,7 +297,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
   // the element-tree patch a front-end WITNESS carries (patch.mjs): the kinds of its ops, in order, and its summary line
   for (const [unit, want] of Object.entries(exp.patch ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
     const w = got?.witnesses?.[0] ?? null; const kinds = Array.isArray(w?.patch) ? w.patch.map((o) => o.kind) : null;
     const ok = got?.verdict === 'WITNESS' && !!kinds && JSON.stringify(kinds) === JSON.stringify(want.kinds) && (want.summary === undefined || w.patchSummary === want.summary);
     add('pair', name, `patch ${unit} ${want.kinds.join(', ') || 'empty'}`, ok, w ? `${w.patchSummary ?? 'no summary'}; ${kinds ? kinds.join(', ') || 'no ops' : 'no patch'}` : `no witness (${got?.verdict ?? 'no result'})`);
@@ -305,7 +305,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   // the whole verdict of check.mjs for a unit (both lanes, the pair's scope file with its adapters): an adapted unit is
   // PASS-proved through its adapter, a changed signature without one is ASK:interface naming the door whatever lane B found
   for (const [unit, want] of Object.entries(exp.check ?? {})) {
-    const out = path.join(tmpd, `check_${unit}.json`);
+    const out = path.join(tmpd, `check_${artifactName(unit)}.json`);
     run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(typeof exp.adapters === 'string' ? ['--scope', path.join(d, exp.adapters)] : []), '--out', out]);
     let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
     const A = got.certificate?.lanes?.A ?? {};
@@ -326,36 +326,36 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   }
   // the callee a WITNESS came through (exec/callees.mjs): a unit whose own text is equal on both sides names the changed same-file callees on its call path, with where.cause 'callee'; an empty list: the witness names none and keeps its own cause
   for (const [unit, want] of Object.entries(exp.through ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')); } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
     const w = got?.witnesses?.[0] ?? null; const names = (w?.through ?? []).map((t) => t.callee);
     const ok = got?.verdict === 'WITNESS' && JSON.stringify(names) === JSON.stringify(want) && (want.length ? w.where?.cause === 'callee' && got.unitTextEqual === true : w.where?.cause !== 'callee');
     add('pair', name, `through ${unit} ${want.join(', ') || 'none'}`, ok, w ? `${names.join(', ') || 'no callee'}; cause ${w.where?.cause ?? w.where?.field ?? 'none'}; unit text ${got.unitTextEqual ? 'equal' : 'changed'}` : `no witness (${got?.verdict ?? 'no result'})`);
   }
   // the small heaps lane B enumerated for the unit (korat.mjs): at least `min` non-isomorphic graphs, reported in bound.heaps
   for (const [unit, want] of Object.entries(exp.heaps ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).bound?.heaps ?? null; } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).bound?.heaps ?? null; } catch { /* keep */ }
     add('pair', name, `heaps ${unit} enumerated`, !!got && got.enumerated >= want.min, got ? `${got.enumerated} distinct of ${got.assignments} assignments (space ${got.space}, pool ${got.pool})` : 'no heaps summary');
   }
   // the handler interpreter (moonshot 6b): at every fire of the sequences and the finite lane, each readable descriptor applied to the slots agrees with the real invocation
   for (const [unit, want] of Object.entries(exp.handlers ?? {})) {
-    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${unit}.json`), 'utf8')).bound?.frontEnd?.handlers ?? null; } catch { /* keep */ }
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).bound?.frontEnd?.handlers ?? null; } catch { /* keep */ }
     const ok = !!got && typeof got === 'object' && Array.isArray(got.defects) && got.defects.length === 0 && got.agreed === got.interpretable && got.interpretable >= (want.interpretable ?? 0);
     add('pair', name, `handlers ${unit} agree`, ok, got && typeof got === 'object' ? `${got.agreed} of ${got.interpretable} interpretable agreed (${got.readable} readable, ${got.fired} fired); ${got.defects?.length ?? '?'} defects` : 'no handlers summary');
   }
   // the library table validated by the run: the built-in calls made from the unit's files, each checked against its row
   const libraryOf = (unit, env, out) => { run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', out], env); try { return JSON.parse(fs.readFileSync(out, 'utf8')).bound?.library ?? null; } catch { return null; } };
   for (const [unit, want] of Object.entries(exp.library ?? {})) {
-    const L = libraryOf(unit, undefined, path.join(tmpd, `lib_${unit}.json`));
+    const L = libraryOf(unit, undefined, path.join(tmpd, `lib_${artifactName(unit)}.json`));
     const ok = !!L && (want.ops ?? []).every((op) => (L.ops[op] ?? 0) > 0) && L.defects.length === (want.defects ?? 0);
     add('pair', name, `library ${unit} recorded`, ok, L ? `${L.records} records: ${Object.keys(L.ops).join(', ')}; ${L.defects.length} defects` : 'no library summary');
   }
   for (const [unit, want] of Object.entries(exp.libraryWrong ?? {})) { // a row the engine contradicts is a defect naming its operation
-    const L = libraryOf(unit, { LEAN_LIBRARY_TABLE: path.join(here, want.table) }, path.join(tmpd, `libw_${unit}.json`));
+    const L = libraryOf(unit, { LEAN_LIBRARY_TABLE: path.join(here, want.table) }, path.join(tmpd, `libw_${artifactName(unit)}.json`));
     const hit = L ? L.defects.find((x) => x.op === want.op) : null;
     add('pair', name, `library ${unit} wrong table refuted`, !!hit, hit ? `${hit.op}: ${hit.why} (expected ${hit.expected})` : (L ? `${L.defects.length} defects, none on ${want.op}` : 'no library summary'));
   }
   for (const [unit, want] of Object.entries(exp.libraryCheck ?? {})) { // the proof lane refuses the operation while the row is wrong; lane B's own verdict stands
-    const out = path.join(tmpd, `libc_${unit}.json`);
+    const out = path.join(tmpd, `libc_${artifactName(unit)}.json`);
     run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', '--out', out], { LEAN_LIBRARY_TABLE: path.join(here, want.table) });
     let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
     const ok = got.verdict === want.verdict && new RegExp(want.reason).test(got.reason ?? '') && got.certificate?.lanes?.A?.verdict === 'ASK:library-model';
@@ -374,7 +374,7 @@ for (const name of fs.existsSync(pairsDir) ? fs.readdirSync(pairsDir).sort().fil
   for (const [name, A] of huntA) {
     const d = path.join(pairsDir, name), exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
     for (const unit of Object.keys(exp.b ?? {})) {
-      let B = null; try { B = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}`, `b_${unit}.json`), 'utf8')); } catch { /* no lane B result: not counted */ }
+      let B = null; try { B = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}`, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* no lane B result: not counted */ }
       const f = dafnyName(unit), a = A.proved(f), b = B?.verdict;
       if (!b || a === null) continue;
       both++;
@@ -601,7 +601,7 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
     const d = path.join(pairsDir, name);
     let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')); } catch { /* no expect: nothing listed */ }
     for (const [unit, kind] of Object.entries({ ...(listed[name] ?? {}), ...(exp.witnessArgs ?? {}) })) {
-      const result = path.join(tmp, `pair_${name}`, `b_${unit}.json`);
+      const result = path.join(tmp, `pair_${name}`, `b_${artifactName(unit)}.json`);
       if (!fs.existsSync(result)) { fs.mkdirSync(path.dirname(result), { recursive: true }); run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', result]); } // the pair's own lane B step did not run (its theorem stopped it): lane B runs here, as that step runs it
       if (!fs.existsSync(result)) { add('witness-args', name, `${unit} ${kind}`, false, 'no lane B result for the unit'); continue; }
       const r = run('node', [path.join(here, '../exec/replay-args.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--result', result, '--kind', kind]);
@@ -631,7 +631,7 @@ if (fs.existsSync(path.join(root, 'conformance/run.py')) && fs.existsSync(path.j
   for (const [name, unit, token] of listed) {
     if (onlyPairs && !onlyPairs.has(name)) continue;
     const d = path.join(pairsDir, name), candidate = pairFile(d, 'candidate');
-    const result = path.join(tmp, `pair_${name}`, `b_${unit}.json`);
+    const result = path.join(tmp, `pair_${name}`, `b_${artifactName(unit)}.json`);
     if (!fs.existsSync(result)) {
       fs.mkdirSync(path.dirname(result), { recursive: true });
       run('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', candidate, '--unit', unit, '--n', '30', '--no-project', '--out', result]);

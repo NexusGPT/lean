@@ -43,3 +43,25 @@ Each command was `node --test langs/ts/tests/pairs/callback_units/<name>.test.mj
 collision ordinals, contextual types, explicit captured parameters, callback-only refusal, named census attribution,
 and comma-containing names in each position in a list. Initial census-probe setup accidentally put its source under
 the walk's excluded `tests` directory; the corrected probe uses `probes/census`.
+
+## Runtime and origin
+
+The module loader wraps each module callback argument in a capture operation that returns the same function. It
+does not replace the call, evaluate the callee twice, change its receiver or reorder other arguments. Each sandbox
+has its own capture table. `pickUnit` uses that recorded closure. No instance is `callback-not-created`; multiple
+instances of the same call site are `callback-multiple-instances` rather than an arbitrary chosen closure. An
+in-body callback is `callback-in-body`: loading the module cannot create that closure. The pair's module route is
+WITNESS after its arithmetic changes; its sibling is PASS-bounded. Lane A separately proves the sibling and the
+in-body callback over its captured inputs.
+
+Internal rewrites carry their source origin. `normaliseApplyCalls` retains the original SourceFile in a WeakMap.
+The callback name builder joins through TypeScript's original-node link when present; the current reparse preserves
+text length and lines by padding, so its fallback is the unchanged start/end range. The red/green normalization
+test includes both the callback in `xs.map.call(xs, ...)` and a callback AFTER that rewrite in the same file.
+Only the source inventory constructs identity; neither lint, translator nor runtime renames it.
+
+`artifactName` is a reversible URI-component encoding used only for the pair runner's artifact basenames. Writers
+and readers use it for b_, deep_, check_, lib_, libw_, and libc_ results. The red CLI probe failed ENOENT writing
+`b_app.get('/changed')#1.json`; the helper test failed before the helper existed. Green tests round-trip `/`, `'`,
+`(`, `#`, distinguish a slash from its encoded spelling, retain `plain` and `ops.add`, and write/read every existing
+pair's unit artifact. Counts and exact site line numbers are in the lane report.

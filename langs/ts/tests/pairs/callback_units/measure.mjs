@@ -9,8 +9,10 @@ fs.mkdirSync(dir, { recursive: true });
 const bugs = `${W}/benchmark/work/bugsjs/repos`;
 const roots = [...JSON.parse(fs.readFileSync(`${W}/harness/regress-census-roots.json`)).roots.map(r => ({ ...r, cohort: 'census' })),
   ...fs.readdirSync(bugs).filter(n => fs.statSync(path.join(bugs, n)).isDirectory()).map(name => ({ name, root: path.join(bugs, name), cohort: 'bugsjs' }))];
-const commands = [];
+const commandFile = path.join(dir, 'commands.json');
+const commands = fs.existsSync(commandFile) ? JSON.parse(fs.readFileSync(commandFile)) : [];
 for (const r of roots) {
+  if (phase !== 'prediction' && r.name === 'langchainjs') { console.log('langchainjs: awaits the census memory fix (owner-directed exclusion)'); continue; }
   const out = path.join(dir, `${r.cohort}-${r.name}.json`);
   if (fs.existsSync(out)) { console.log(`saved ${out}`); continue; }
   const disk = spawnSync('df', ['-k', '/'], { encoding: 'utf8' });
@@ -22,7 +24,7 @@ for (const r of roots) {
   const run = spawnSync(process.execPath, args, { encoding: 'utf8', env: { ...process.env, JOBS: '2' }, maxBuffer: 64 * 1024 * 1024 });
   fs.writeFileSync(out + '.log', run.stdout + run.stderr + `\nexit=${run.status} signal=${run.signal}\n`);
   process.stderr.write(run.stderr); console.log(`exit=${run.status} signal=${run.signal}`);
-  commands.push({ ...r, command: [process.execPath, ...args], exit: run.status, signal: run.signal });
-  fs.writeFileSync(path.join(dir, 'commands.json'), JSON.stringify(commands, null, 2));
+  commands.push({ ...r, disk: disk.stdout, command: [process.execPath, ...args], exit: run.status, signal: run.signal });
+  fs.writeFileSync(commandFile, JSON.stringify(commands, null, 2));
   if (run.status !== 0) process.exit(run.status ?? 1);
 }

@@ -1910,6 +1910,7 @@ export function normaliseApplyCalls(loaded) {
     const next = ts.createProgram({ rootNames: roots, options, host, oldProgram: program });
     const nsf = next.getSourceFile(sf.fileName);
     if (!nsf) return cur;
+    unitSourceOrigin.set(nsf, unitSourceOrigin.get(sf) ?? sf); // a rewrite carries the source the user wrote
     const diagnostics = [...next.getSyntacticDiagnostics(nsf), ...next.getSemanticDiagnostics(nsf)];
     cur = { ...cur, program: next, sf: nsf, checker: next.getTypeChecker(), diagnostics };
   }
@@ -2271,7 +2272,14 @@ export function strandedLetReads(checker, d) {
 }
 // A callback's identity comes from its call, not its position among unrelated calls.
 // This is also the prediction's inventory; topLevelFunctions supplies its existing units.
+const unitSourceOrigin = new WeakMap();
 export function callbackUnits(sf, existing) {
+  const source = unitSourceOrigin.get(sf);
+  const sourceUnits = source ? [...topLevelFunctions(source).values()].filter(u => u.form === 'callback') : [];
+  const byOriginal = new Map(sourceUnits.map(u => [u.fn, u]));
+  // normaliseApplyCalls reparses length/line-preserving padded text, so it has no per-node original links. Its
+  // unchanged ranges are the fallback; transforms retaining TypeScript's original link use that link first.
+  const byRange = new Map(sourceUnits.map(u => [`${u.fn.getStart(source)}:${u.fn.end}`, u]));
   const byFn = new Map([...existing.values()].filter((u) => u.form !== 'callback').map((u) => [u.fn, u]));
   const candidates = [], groups = new Map();
   const literal = (n) => ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)
@@ -2308,6 +2316,11 @@ export function callbackUnits(sf, existing) {
     if (u.scope && (!parent || parent.form === 'callback' && !out.includes(parent))) continue;
     u.enclosingUnit = parent ?? null;
     if (parent) u.name = `${parent.name}/${u.name}`;
+    if (source) {
+      const origin = byOriginal.get(ts.getOriginalNode(u.fn)) ?? byRange.get(`${u.fn.getStart(sf)}:${u.fn.end}`);
+      if (!origin) throw new Error('callback origin lost by internal rewrite');
+      u.name = origin.name; u.orderNamed = origin.orderNamed;
+    }
     out.push(u);
   }
   return out;
@@ -2382,3 +2395,6 @@ export function callbackEnvironment(checker, u) {
   visit(u.fn);
   return [...captures.values()];
 }
+
+// Artifact filenames are an encoding of identity, never a replacement for the unit/certificate name.
+export const artifactName = unit => encodeURIComponent(unit);
