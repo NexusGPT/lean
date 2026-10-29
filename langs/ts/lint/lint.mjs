@@ -41,6 +41,8 @@ import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, read
 import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
+import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
+import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy } from '../lower.mjs'; // decisions taken once for the lint and the translator
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -204,7 +206,10 @@ function forInDelete(s, checker, sf) {
   return hit;
 }
 
-export function lintFile(file, ranges = null, opts = {}) {
+// the lint's findings: the lowering's record of the file (lower.mjs), whose first phase is admissionFindings below and whose
+// last is the translator's reading of every unit it admitted, so a unit the translator refuses is never advised as admitted
+export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
+export function admissionFindings(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
   const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
   const { sf, checker, diagnostics } = normaliseApplyCalls(given); // an exact apply/call is read as the direct call (common.mjs applyCall)
@@ -263,7 +268,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   // Object.assign writes into its first argument while the value reading returns a fresh record and leaves the target unchanged (research element 16); a fresh literal target is a copy and keeps its reading
   const objectCallRefusal = (e, r, name) => {
     if (!(ts.isIdentifier(r) && r.text === 'Object')) return null;
-    if (name === 'create' && e.arguments.length === 1 && e.arguments[0].kind === K.NullKeyword) return v(e, 'prototype', '`Object.create(null)` makes an object without a prototype; a plain object\'s reads and `in` go through Object.prototype and the ordinary lane has one dictionary for both; write `{}` and test own keys with `Object.prototype.hasOwnProperty.call(d, k)`');
+    if (nullPrototypeCreate(checker, e, sf, current)) return v(e, 'prototype', NULL_PROTOTYPE_WHY); // one decision with the translator (lower.mjs)
     if (OBJECT_PROTOTYPE_FUNCTIONS.has(name)) return v(e, 'prototype', `\`Object.${name}\` reaches the prototype chain or the property descriptors; no transition models it`);
     if (name === 'freeze' || name === 'seal' || name === 'preventExtensions') return v(e, 'freeze', `\`Object.${name}\` makes a later write throw in strict code; the value reading has no fault for that write, so no transition models it yet`);
     if (name === 'assign' && !(e.arguments[0] && ts.isObjectLiteralExpression(unparenX(e.arguments[0])))) return v(e, 'assign-target', '`Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread the sources into a new object');
@@ -988,7 +993,7 @@ export function lintFile(file, ranges = null, opts = {}) {
           // these writes on its process fake; the other outside roots (globalThis, window) keep property-assign
           if (ts.isIdentifier(root) && root.text === 'process' && outsideRoot(checker, root, sf, current)) {
             if (op !== K.EqualsToken || !outsideWriteStatement(e)) { v(l, 'property-assign', `a field of \`${root.text}\` is written by a plain \`=\` statement; read the old value into a local first`); return expr(e.right); }
-            if (nonNull(tOf(e.right)).some((t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length)) { v(l, 'property-assign', `a function installed into \`${root.text}\` is called by the outside later; no transition reads that call`); return expr(e.right); }
+            if (installsFunction(checker, e.right)) { v(l, 'property-assign', INSTALLS_FUNCTION_WHY(root.text)); return expr(e.right); } // one decision with the translator (lower.mjs)
             if (l.expression !== root) expr(l.expression);
             return expr(e.right);
           }
@@ -1246,7 +1251,7 @@ export function lintFile(file, ranges = null, opts = {}) {
   }
 
   function checkStringLiterals(n) {
-    if ((ts.isStringLiteral(n) || ts.isTemplateLiteralToken(n) || ts.isJsxText(n)) && /[\uD800-\uDFFF]/.test(n.text)) v(n, 'string-code-unit', 'use BMP scalar literals within the string model; astral and surrogate strings need lane B');
+    if ((ts.isStringLiteral(n) || ts.isTemplateLiteralToken(n) || ts.isJsxText(n)) && loneSurrogate(n.text)) v(n, 'string-code-unit', LONE_SURROGATE_WHY); // one decision with the translator (lower.mjs)
     ts.forEachChild(n, checkStringLiterals);
   }
   // value steps keep the statement ownership checks and reject conditional execution
@@ -1278,7 +1283,7 @@ export function lintFile(file, ranges = null, opts = {}) {
     const target = update ? e.operand : e.left;
     const rule = update ? 'update-expression' : 'assignment-expression';
     if (update && !isNum(tOf(target))) return v(e, rule, 'increment a numeric local or numeric field');
-    if (!update && ![K.EqualsToken, K.PlusEqualsToken, K.MinusEqualsToken, K.AsteriskEqualsToken].includes(e.operatorToken.kind)) return v(e, rule, 'write this assignment as a statement');
+    if (!update && valueAssignmentWhy(e.operatorToken.kind)) return v(e, rule, valueAssignmentWhy(e.operatorToken.kind)); // one decision with the translator (lower.mjs)
     if (!update && e.operatorToken.kind !== K.EqualsToken && !isNum(tOf(target)) && !(e.operatorToken.kind === K.PlusEqualsToken && isStr(tOf(target)) && isStr(tOf(e.right)))) return v(e, rule, 'use numeric compound assignment or string += with a string value');
     let root = target;
     while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root)) root = root.expression;

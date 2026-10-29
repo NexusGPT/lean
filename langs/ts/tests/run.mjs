@@ -442,6 +442,8 @@ const silent = run('node', [path.join(here, 'no-silent-exit.mjs')]);
 add('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', silent.status === 0, (silent.stdout + silent.stderr).trim().split('\n').pop());
 const importers = run('node', [path.join(here, 'no-silent-exit-importers.mjs')]); // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown
 add('runtime', 'no-silent-exit-importers', 'exit 1 outside a unit run; late error recorded inside; pr.mjs lean unknown', importers.status === 0, (importers.stdout + importers.stderr).trim().split('\n').pop());
+const withdrawal = run('node', [path.join(here, 'withdrawal.mjs')]); // the admission contract: a reading withdrawn by name is refused alike by the lint, the translator and the record, and proves nothing (design/admission-contract.md)
+add('runtime', 'withdrawal', 'a withdrawn reading refused identically; no proof; every decision site catalogued', withdrawal.status === 0, (withdrawal.stdout + withdrawal.stderr).trim().split('\n').pop());
 
 // Every selected pair's parent, the self-pair fixtures, and an optional challenge
 // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane.
