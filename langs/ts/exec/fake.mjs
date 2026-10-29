@@ -344,6 +344,11 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
   seen.add(v);
   return renderBody(v, depth, seen, share);
 }
+
+// an element tree rendered element by element: the depth bound of render restarts at every element, so a deep tree keeps its
+// shape where render alone cuts a deep element's children to one {$deep} object; a value inside a prop keeps the bound. The one
+// definition, read by lane B's outcome (exec/run.mjs) and the op-tree patch (patch.mjs): the two print the same tree.
+export const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 function renderBody(v, depth, seen, share) {
   if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen, share));
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
