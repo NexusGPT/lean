@@ -60,7 +60,20 @@ export const knownInput = (spec, i) => { const g = i - (spec.walkFrom ?? 0); ret
 // -Infinity, turning from one special-number input to the next; the decisions use a stream of their own, so every
 // other value of every input is the one drawn before. Negative zero is the fourth special value (6.1.6.1: a number
 // of its own, told from zero by Object.is and by a division, design/signed-zero.md): the fourth special-number input
-// (generated input 15) and every fourth after it start from it
+// (generated input 15) and every fourth after it start from it.
+// INVARIANT (special slots). In an even special-number input (turns 0, 2, 4, ...) the value of a number leaf depends
+// only on the turn and on its SLOT, the leaf's declared place with array and set indices erased (`in[3].k` and `in[0].k`
+// are one slot): the n-th distinct slot met takes NUM_SPECIAL[(turn + n) % 4], never a value counted over the leaves
+// drawn before it. So (1) siblings of one array hold the same special value at the same field, and a comparator over
+// them reaches its later keys (NaN - NaN, Infinity - Infinity and -0 - -0 all tie); (2) every array of such an input
+// holds two elements or more (a shorter draw is extended, its draw made first); (3) a slot that admits a number and an
+// absent option (null or undefined in a union) alternates the two along its siblings, the absent one first on turns
+// 0, 4, 8, ... and second on turns 2, 6, ..., so the absent value and the special one meet side by side in both orders:
+// the two values a default (`x ?? Infinity`, `x ?? 0`) or a nulls-last comparator tells apart. Before it, a leaf's
+// value was counted over every number leaf drawn before it in the input, so one more special value (merge 3d1bb1f2,
+// -0) or one more leaf moved every later value, and a class of input that separated a unit could vanish
+// (special_numbers order, lost at 3d1bb1f2). Odd special-number inputs keep that count, so siblings holding two
+// different specials (Infinity beside -Infinity) and a special beside a finite value stay reached
 export const SPECIAL = 4;
 const NUM_SPECIAL = [NaN, Infinity, -Infinity, -0];
 // whether a spec admits a number of any value: a number, or a union with a number option (a literal type does not)
@@ -124,12 +137,19 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   const isListed = (holder) => known != null && !!holder && Array.isArray(holder.known) && holder.known.length > 0;
   // a special-number input (`special` its turn: 0 for the first one, 1 for the next, ...): its own stream decides
   const srng = special != null ? makeRng((seed ^ 0x2545f491) >>> 0) : null;
-  let replaced = 0; // number leaves of this input made special so far
-  const specialOf = (spec, x) => {
+  let replaced = 0; // number leaves of this input made special so far (in an even one: distinct slots met so far)
+  const tie = special != null && special % 2 === 0; // an even special-number input: the special-slots invariant (header)
+  const slotValues = new Map(); // slot -> its special value, in an even special-number input
+  const slotOf = (path) => path.replace(/\[\d+\]/g, '[]').replace(/\{\d+\}/g, '{}');
+  const specialOf = (spec, x, path = 'in') => {
     if (!srng || typeof x !== 'number' || !admitsNumber(spec)) return x;
+    if (tie) { const k = slotOf(path); if (!slotValues.has(k)) slotValues.set(k, NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length]); return slotValues.get(k); }
     if (replaced > 0 && special % 2 === 1 && srng() < 0.5) return x; // every other special-number input keeps some later leaves finite
     return NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length];
   };
+  // the sibling index of a leaf (its innermost array index), or -1 outside an array
+  const siblingOf = (path) => { const m = path.match(/\[(\d+)\][^[]*$/); return m ? Number(m[1]) : -1; };
+  const isAbsent = (o) => !!o && (o.kind === 'null' || o.kind === 'undefined');
   // a shaped spec's boundaries: in the walk (`walk` set by inputsFor) each boundary takes its digit of the walk index,
   // the first boundary turning fastest; after it, a boundary value is mixed in at random. The declared draw is made
   // first in every case and the boundary decisions use their own stream, so the declared draws of every other leaf
@@ -175,10 +195,10 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   }
   function genBoundary(spec, depth = 0, env = null, path = 'in', leaf = false) {
     const v = gen0(spec, depth, env, path, leaf);
-    const b = spec && spec.boundary; if (!b) return spec && spec.kind === 'number' ? specialOf(spec, v) : v;
-    const c = choose(b); if (c >= 0) { const x = materialize(b.cmp[c], v, env, path); if (walking && b.rank === 1 && isDraw(b.cmp[c])) return truthyOf(spec, x); if (typeof x === 'number' && pool.length < 64) pool.push(x); return typeof b.cmp[c] === 'number' ? specialOf(spec, x) : x; } // a compared number the input holds joins the pool, as a drawn one does; it may be NaN or infinite in a special-number input
+    const b = spec && spec.boundary; if (!b) return spec && spec.kind === 'number' ? specialOf(spec, v, path) : v;
+    const c = choose(b); if (c >= 0) { const x = materialize(b.cmp[c], v, env, path); if (walking && b.rank === 1 && isDraw(b.cmp[c])) return truthyOf(spec, x); if (typeof x === 'number' && pool.length < 64) pool.push(x); return typeof b.cmp[c] === 'number' ? specialOf(spec, x, path) : x; } // a compared number the input holds joins the pool, as a drawn one does; it may be NaN or infinite in a special-number input
     if (b.falsy && b.falsy.length && brng() < (walking ? 0.5 : 0.25)) return materialize(b.falsy[Math.floor(brng() * b.falsy.length)], v, env, path);
-    return spec.kind === 'number' ? specialOf(spec, v) : v;
+    return spec.kind === 'number' ? specialOf(spec, v, path) : v;
   }
   function gen0(spec, depth = 0, env = null, path = 'in', leaf = false) {
     if (!spec || depth > 8) return env ? env.fake(path) : null;
@@ -191,7 +211,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'null': return null;
       case 'undefined': return undefined;
       case 'literal': return spec.values[Math.floor(rng() * spec.values.length)];
-      case 'array': { let n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); const c = choose(spec.lengths); if (c >= 0) n = spec.lengths.cmp[c]; const xs = Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); return reach ? reach.array(xs) : xs; }
+      case 'array': { let n = leaf ? 0 : pick([0, 1, 2, 3, 5], () => Math.floor(rng() * 6)); const c = choose(spec.lengths); if (c >= 0) n = spec.lengths.cmp[c]; if (tie && !leaf && n < 2) n = 2; const xs = Array.from({ length: n }, (_, i) => gen(spec.of, depth + 1, env, `${path}[${i}]`, leaf)); return reach ? reach.array(xs) : xs; } // an even special-number input holds two siblings or more (special slots, header), the length drawn first
       case 'async-iterable': {
         const values = gen({ kind: 'array', of: spec.of }, depth + 1, env, path, leaf);
         return { [Symbol.asyncIterator]() {
@@ -209,7 +229,7 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'dict': { const o = {}; for (let i = 0, n = Math.floor(rng() * 4); i < n; i++) o[`k${i}`] = gen(spec.value, depth + 1, env, `${path}.k${i}`); return reach ? reach.dict(o) : o; }
       // a record: a field leading to a compared leaf stays present while walking, unless the unit tests its key with `in`
       case 'record': { const o = {}; for (const [k, f] of Object.entries(spec.fields)) { if (f.optional && rng() < 0.3 && !((spec.refined || f.shaped) && walking && !f.presence) && !isListed(f)) continue; o[k] = gen(f.optional && f.spec.kind === 'union' ? present(f.spec) : f.spec, depth + 1, env, `${path}.${k}`, leaf); if (isListed(f)) o[k] = listed(f); } return reach ? reach.record(o, spec) : o; } // a listed field holds its listed value in the known phase (its declared draw made first)
-      case 'union': { const j = Math.floor(rng() * spec.options.length); const o = spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j]; const read = spec.options.some((x) => x && ['array', 'record', 'dict', 'function', 'service', 'ref'].includes(x.kind)); const was = membersRead; if (read) membersRead = true; try { return gen(o, depth + 1, env, path); } finally { membersRead = was; } } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable
+      case 'union': { const j = Math.floor(rng() * spec.options.length); let o = spec.options[spec.prefer != null && walking && brng() >= 1 / 3 ? spec.prefer : j]; const k = tie ? siblingOf(path) : -1; if (k >= 0 && spec.options.some(isAbsent) && spec.options.some((x) => x && x.kind === 'number')) o = (k % 2 === 0) === (special % 4 === 0) ? spec.options.find(isAbsent) : spec.options.find((x) => x && x.kind === 'number'); const read = spec.options.some((x) => x && ['array', 'record', 'dict', 'function', 'service', 'ref'].includes(x.kind)); const was = membersRead; if (read) membersRead = true; try { return gen(o, depth + 1, env, path); } finally { membersRead = was; } } // while walking, the option leading to a compared leaf two times in three; the declared draw stays reachable // an even special-number input: a sibling's absent option beside another's special number (special slots, header), the option drawn first
       case 'ref': return defs[spec.key] ? gen(defs[spec.key], depth + 1, env, path, leaf || depth >= 3) : (env ? env.fake(path) : null); // a recursive shape unfolds to depth 3, then ends in leaves (empty lists, no deeper refs)
       case 'date': return new Date(1700000000000 + Math.floor(rng() * 1e9));
       // an Error whose `cause` is another Error, `chain` links at most: the links a unit walks through `.cause`; the last
