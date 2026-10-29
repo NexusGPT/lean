@@ -2194,6 +2194,22 @@ export function strandedLetReads(checker, d) {
 // A callback's identity comes from its call, not its position among unrelated calls.
 // This is also the prediction's inventory; topLevelFunctions supplies its existing units.
 const unitSourceOrigin = new WeakMap();
+// An arrow function has no `this` or type parameters of its own: inside a class member it reads the member's receiver
+// (`this.total` is the class's accessor) and the member's and the class's type parameters; a callback unit under one
+// therefore carries the member's class context (cls, className, isStatic) and the type parameters in scope, so the
+// translator reads `this.x` and `T` in it as in the member. A function expression binds its own `this`: no class context.
+const lexicalGenerics = (fn, scope) => {
+  const own = fn.typeParameters ?? [];
+  if (!ts.isArrowFunction(fn) || !scope) return own.length ? own : undefined;
+  const outer = [...(scope.typeParameters ?? []), ...(ts.isClassLike(scope.parent) ? scope.parent.typeParameters ?? [] : [])];
+  const all = [...outer, ...own];
+  return all.length ? all : undefined;
+};
+const lexicalClass = (fn, scope) => {
+  if (!ts.isArrowFunction(fn) || !scope || !scope.parent || !ts.isClassLike(scope.parent) || !scope.parent.name) return {};
+  if (!(ts.isMethodDeclaration(scope) || ts.isGetAccessorDeclaration(scope) || ts.isSetAccessorDeclaration(scope) || ts.isConstructorDeclaration(scope) || ts.isPropertyDeclaration(scope))) return {};
+  return { cls: scope.parent, className: scope.parent.name.text, isStatic: !!scope.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword) };
+};
 export function callbackUnits(sf, existing) {
   const source = unitSourceOrigin.get(sf);
   const sourceUnits = source ? [...topLevelFunctions(source).values()].filter(u => u.form === 'callback') : [];
@@ -2219,7 +2235,7 @@ export function callbackUnits(sf, existing) {
         }
         const index = call.arguments.indexOf(arg);
         const key = `${call.expression.getText(sf)}(${call.arguments.slice(0, index).map(literal).filter((x) => x !== null).join(',')})#${index}`;
-        const u = { name: key, node: fn, fn, params: fn.parameters, body: fn.body, typeNode: fn.type, isAsync: !!fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: fn.typeParameters, form: 'callback', call, argumentIndex: index, scope, orderNamed: false };
+        const u = { name: key, node: fn, fn, params: fn.parameters, body: fn.body, typeNode: fn.type, isAsync: !!fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: lexicalGenerics(fn, scope), form: 'callback', ...lexicalClass(fn, scope), call, argumentIndex: index, scope, orderNamed: false };
         candidates.push(u); byFn.set(fn, u);
         if (!groups.has(scope)) groups.set(scope, new Map());
         const group = groups.get(scope);
