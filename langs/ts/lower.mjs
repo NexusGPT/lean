@@ -31,6 +31,34 @@ import { translate } from './translate/translate.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
+// Opt-in wall timers. Compiler counters include work nested in admission/emission;
+// the phase rows are inclusive, so their child rows must not be added again.
+let profile = null;
+export function startLoweringProfile() {
+  ts.performance.enable(); ts.performance.clearMarks(); ts.performance.clearMeasures();
+  profile = new Map();
+}
+export function measureLowering(phase, run) {
+  if (!profile) return run();
+  const start = performance.now(), programs = ts.performance.getCount('beforeProgram');
+  try { return run(); } finally {
+    const row = profile.get(phase) ?? { phase, calls: 0, milliseconds: 0, programs: 0 };
+    row.calls++; row.milliseconds += performance.now() - start;
+    row.programs += ts.performance.getCount('beforeProgram') - programs; profile.set(phase, row);
+  }
+}
+export function loweringProfile() {
+  return [...(profile?.values() ?? []), ...['Parse', 'Program', 'Bind', 'Check'].map((phase) => ({
+    phase: `compiler ${phase} (nested)`, calls: ts.performance.getCount(`before${phase}`),
+    milliseconds: ts.performance.getDuration(phase), programs: phase === 'Program' ? ts.performance.getCount('beforeProgram') : 0,
+  }))];
+}
+export function loweringProfileTable(rows = loweringProfile()) {
+  return ['| Phase (inclusive) | Calls | Seconds | Programs created |', '| --- | ---: | ---: | ---: |',
+    ...rows.map((r) => `| ${r.phase} | ${r.calls} | ${(r.milliseconds / 1000).toFixed(3)} | ${r.programs} |`)].join('\n');
+}
+
+
 // the rules a dynamic lint site can name: the shared decisions that hand the lint a rule (common.mjs, promise-forms.mjs,
 // generators.mjs, the EFFECT_GLOBALS table, operatorValue's update-or-assignment), read off their source
 const DYNAMIC_RULES = {
@@ -224,6 +252,9 @@ const tagReading = (f) => { if (!f.reading) { const id = refusing(f) ? (readingO
 // that uses syntax no reading reads or a withdrawn reading. `loaded` is the program the walk reads (the translator's, or
 // the lowering's own); lintOpts go to the lint as they always did
 export function admitUnits(file, ranges, lintOpts = {}, loaded = null) {
+  return measureLowering('phases 1-3 (including translation gates)', () => admission(file, ranges, lintOpts, loaded));
+}
+function admission(file, ranges, lintOpts, loaded) {
   const out = admissionFindings(file, ranges, lintOpts).map(tagReading);
   const L = loaded ?? normaliseApplyCalls(lintOpts.loaded ?? loadProgram(file, { project: lintOpts.project ?? true }));
   const { sf, checker } = L;
@@ -256,7 +287,7 @@ const MEMO_MAX = 64;
 // the record of every unit the ranges reach; opts as the lint takes them (project, loaded, advisory, anyType)
 export function lowerFile(file, ranges = null, opts = {}) {
   const abs = path.resolve(file);
-  const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });
+  const given = opts.loaded ?? measureLowering('load file', () => loadProgram(file, { project: opts.project ?? true }));
   const key = [abs, createHash('sha256').update(given.sf.text).digest('hex'), JSON.stringify(opts.project ?? true), JSON.stringify(ranges), !!opts.advisory, !!opts.anyType, opts.emission !== false, withdrawalKey()].join('\0');
   if (memo.has(key)) return memo.get(key);
   const L = normaliseApplyCalls(given);
@@ -274,7 +305,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
   if (open.length && opts.emission !== false) {
     const refuse = (u, id, rule, reason, line, by, site = null) => { u.refusal = { id, version: readingById(id) ? currentVersion(readingById(id)) : null, rule, reason, line, by, ...(site ? { site } : {}) }; };
     for (const u of open) {
-      try { translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given }); }
+      try { measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given })); }
       catch (e) {
         const message = String(e?.message ?? e);
         if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }

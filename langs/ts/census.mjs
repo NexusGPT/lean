@@ -7,7 +7,7 @@
 // with three examples each, per package and in total. Read-only: nothing is written into the repository.
 import fs from 'node:fs';
 import path from 'node:path';
-import { lowerFile } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
+import { lowerFile, startLoweringProfile, measureLowering, loweringProfile, loweringProfileTable } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
 import { loadManyChunks, topLevelFunctions, lineOf } from './common.mjs';
 
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
@@ -45,7 +45,9 @@ export function census(root, opts = {}) {
   }
   // one program per tsconfig (in chunks), every file of the project as a root: the type checker is built once per
   // chunk, not per file, and a chunk is dropped once its files are linted
-  for (const loaded of loadManyChunks(list, { log })) for (const abs of loaded.keys()) {
+  const chunks = loadManyChunks(list, { log });
+  function* timedChunks() { while (true) { const next = measureLowering('load census chunk', () => chunks.next()); if (next.done) return; yield next.value; } }
+  for (const loaded of timedChunks()) for (const abs of loaded.keys()) {
     const file = abs;
     files++;
     const pkg = packageOf(root, file);
@@ -163,7 +165,9 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   }
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const root = path.resolve(a[0]);
+  if (a.includes('--profile')) startLoweringProfile();
   const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), log: (m) => console.error(m) });
+  if (a.includes('--profile')) { res.profile = loweringProfile(); console.error(loweringProfileTable(res.profile)); }
   const out = opt('--out', null);
   const report = opt('--report', null);
   if (out) fs.writeFileSync(out, JSON.stringify(res, null, 1));
