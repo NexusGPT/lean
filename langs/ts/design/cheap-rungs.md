@@ -1,103 +1,101 @@
 # Certified correspondence before relational proof
 
-The claim remains equality of returned values, the reachable heap, ordered environment requests,
-pending work and exceptional completions, on the same typed inputs and matched initial world.
-These detectors never claim a witness. An unsuccessful condition returns `undecided` and leaves
-translation and execution available. The implementation contains no learned component.
+The claim remains lean's equality: returned values, the reachable heap, ordered environment requests, pending work and
+exceptional completions (an error by its class and message, never its stack: design/stack-text.md), on the same typed
+inputs and matched initial world. These detectors never claim a witness. A failed condition returns `undecided` and
+leaves translation and execution as they were. The implementation contains no learned component and reads no benchmark
+label, kind or case identifier.
 
-`rungs.mjs` separates pure detectors over parsed units and explicit environment facts from
-`certifyCorrespondence`, the file-loading boundary shared by check and PR decisions. The latter
-requires the same resolution directory, project and compiler options. Each detector compares the
-entire module context, so imports, mutable cells, initializers, declarations and siblings cannot
-silently change. These are same-environment unit claims, as for the existing world transitions;
-they do not certify arbitrary changes in an external module or host implementation.
+`rungs.mjs` separates pure detectors over parsed units and explicit environment facts from `certifyCorrespondence`, the
+file-loading boundary shared by check.mjs (after lane B, before translation) and pr.mjs (once per unit, before the
+admitted/refused split; the refused branch saves its certificate). It requires the same resolution directory, project and
+compiler options on both sides. Each detector compares the whole module context, so imports, module cells, initializers,
+declarations and siblings cannot change silently.
 
-## Parsed correspondence theorem (parsed-equal)
+## The source guard (all three rungs)
 
-Let two modules have identical parsed trees after removal of punctuation semicolons and ordinary
-trivia, retaining empty-statement nodes, all other tokens, operators, declaration kinds, literal
-spelling, template raw text, JSX text, JSDoc and compiler directives. Assume identical module
-resolution and compiler settings and related initial worlds. If changed function objects cannot
-be observed as values, and potentially failing expressions retain their raw spelling, then the
-units have equal observations.
+A changed function differs in its source text. Lean observes a function VALUE by its name and its source (exec/fake.mjs
+`render`: `{ $fn, src: fnHash }`), and module code can coerce one to a string. So the guard restores one invariant: no
+expression of the module evaluates to a changed function object, or to a class whose source holds one, except where the
+object is invoked. Each route to a function object is closed:
 
-Proof: pair the identical grammar nodes and lexical environments. Evaluation rules choose the
-same next node and evaluate operands in the same order. Identical binding structure selects the
-same cells; values, allocation correspondence, writes and control completion agree inductively.
-External steps receive corresponding arguments and worlds and use the same transition. The
-relation also matches infinite executions, rather than treating a bounded run as a proof.
-Source text and diagnostic quoting are the exceptions to this grammar induction. The source
-guard checks every changed function, requires a named top-level declaration and allows references
-only as direct callees. Methods, changed closures/function values and aliases are refused. A
-whole-file guard rejects source-reflection/dynamic-scope names and meta properties. Calls,
-construction, property/index reads, tagged templates, destructuring, spreads, for-of and throws
-retain exact expression text to prevent engine messages quoting different spelling. This guard
-is deliberately broader than the reached call graph.
+| Route | Closed by |
+|---|---|
+| its binding (top-level declaration) | every reference is a direct callee; shorthand and export specifiers resolve to it |
+| a container holding the binding: global object, `exports`/`module`, module namespace (self import, `import()`, self `require`), a `this` outside a class | any such handle refuses; `module.exports = …` and `exports.x = …` are writes and pass |
+| its member key (class method) | every read of a property of that name is a direct callee; no string spelling the name (a key handed to the world can come back); no computed read on a value whose type is open (any, unknown, object, a type parameter) or declares the name; no destructuring of the name; class methods are not enumerable, so key-free enumeration (`Object.values`, spread, for-in) never yields them |
+| reflection | `getOwnPropertyDescriptor(s)`, `getOwnPropertyNames`, `__lookupGetter__`/`__lookupSetter__`, `getPrototypeOf`, `__proto__`, `Reflect`, `Proxy`, `arguments`, `caller`, `callee`, `eval`, `Function`, `with`, meta properties: refused |
+| its class (whose source holds the method) | the class binding is only a `new` target, a member-access base, an `instanceof` right side, a heritage clause, an export or a type; no `.constructor` read; no `this` in a static member; no decorator declared in this module (it receives the class) |
+| any other changed function: closure, function expression, object-literal method, class expression | refused (a closure is a value by construction) |
 
-No token-stream-only equivalence: an ASI return, an empty statement after an if, a changed const/let
-and template whitespace remain distinct. No stripping type-directed JSDoc or compile directives.
-No interpreting a string containing code as syntax.
+Removed from the handover's refused names, each with its reason: `toString`/`toLocaleString` (under the invariant no
+`toString` can reach a changed function), `stack` (stack frames are not compared), `require` (only a self or computed
+require is a container, refused as such), `__filename`/`__dirname` (rendered as the unit file by lane B).
 
-## Rewrite theorem (normalised)
+World assumption, the same lane A makes: a world step (imported code, a host built-in) does not read the source text of a
+module function it is handed. Lane A has no representation of function source at all; this rung is not weaker than it.
 
-The supported relation is composition of binding alpha conversion, immutable lexical declaration
-conversion (const/let), and independent declaration permutation. Conditions are mechanically
-checked, not supplied by the benchmark label:
+## Parsed correspondence (parsed-equal)
 
-* A top-level synchronous nongeneric function declaration; simple explicitly primitive parameters;
-  no optional/rest/default parameters. All names resolve to unique declarations.
-* A straight-line initial sequence of single const/let declarations, followed by one return.
-  Initializers and the return use bound variables, primitive literals, parentheses, supported
-  primitive unary/binary operations and conditionals. No assignments, property reads, object
-  coercions, callable parameters, allocations, closures, eval, throws, destructuring or unbound reads.
-* Every initializer is checked before its binding enters the environment: no TDZ read. The grammar
-  excludes later writes and all capture. Identifiers are canonicalized by their resolved symbols,
-  not text; a capture-changing rename fails canonical correspondence.
-* A declaration block is sorted only when every initializer depends on parameters/literals alone,
-  not other locals or world steps. Otherwise declaration order remains fixed. Binding numbering
-  happens after this certified permutation. Type annotations and parameter order remain intact.
-* The source guard applies, and the rest of the module corresponds exactly.
+Two modules have identical parsed trees after removal of punctuation semicolons and ordinary trivia, retaining
+empty-statement nodes, every other token, operator, declaration kind, literal spelling, template raw text, JSX text, JSDoc
+and compiler directives; the source guard holds. Then the units have equal observations.
 
-Proof: alpha conversion is a bijection of initialized lexical cells, extended at each declaration;
-identifier evaluation commutes with the bijection. The grammar has no name reflection or operation
-that can quote a renamed binding in an engine error. Const and let have the same initialization
-and reads when neither is subsequently written. Independent total primitive initializers have no
-side effects or exceptional completion and do not read the cells being permuted, so adjacent
-swaps commute. Each normalization step preserves the complete observation. Both normal forms
-must then be identical parsed trees; transitivity gives equality of the original units.
+Proof: pair the identical grammar nodes and lexical environments. Evaluation chooses the same next node and evaluates
+operands in the same order; identical binding structure selects the same cells; values, allocation correspondence,
+writes and completions agree inductively; world steps receive corresponding arguments and worlds. The only operations
+that read spelling rather than the tree are Function.prototype.toString (excluded by the source guard) and engine
+messages. Engine messages are printed by V8 from the parse tree, not from source spelling: measured on node v24.18.0
+for calls, member calls across lines, `new`, for-of, spread, destructuring, property reads of undefined, tagged
+templates, `in` and `instanceof` (comments and whitespace inserted, message identical); the rung test "engine messages
+are printed from the parse tree" pins four of these and goes red if a node release changes it. The handover's guard that
+kept the raw text of every call and property read is therefore removed (it refused a comment inside any call).
 
-This is a stated semantic theorem and checked rule implementation, not a claim that Dafny has
-verified the JavaScript parser or implementation. It deliberately does not cover private member
-renames, arbitrary declaration reorder, higher-order code or arbitrary alpha conversion.
+Not covered: an ASI return, an empty statement after an if, const versus let, template whitespace (all distinct trees);
+a string holding code is a string.
 
-## Callee congruence theorem (congruence)
+## Renaming (normalised)
 
-The caller tree (including argument expressions and ordered call sites) is identical. Direct
-same-file call names must resolve to the matched declaration. The reached graph is acyclic.
-Every reached unit satisfies the same total primitive grammar, extended only with direct calls
-to previously checked units. Each changed leaf callee has a lower-rung normalized correspondence;
-unchanged callees have parsed correspondence. Every callee proof and its contract is in evidence.
-The remaining module context must correspond after replacing those proved declarations with
-matched placeholders. No external assertion of a callee result is accepted.
+The relation is alpha conversion of the unit's own variable, parameter and catch bindings, in any code (methods
+included). Each renamable binding is replaced by its declaration index; identifiers are resolved by the checker's
+symbol, never by text. Equal canonical trees give a bijection of those bindings under which every reference resolves to
+the corresponding binding (a capture-changing rename resolves elsewhere, so the trees differ). Identifier evaluation
+commutes with the bijection, so every step, value and completion corresponds, except where a NAME is observable. A
+binding keeps its text there, so a rename there makes the trees differ and the rung undecided:
 
-Contracts here are intentionally strong: empty effect trace, primitive parameters/results
-(no alias-bearing values), and no exceptional exit. Calls stay in their original order; no
-commutation of effectful steps is assumed. In topological order, substitute the proven equal
-callee transition at each corresponding call site. The same argument values and empty-effect,
-nonthrowing transition yield equal results and worlds. Structural induction proves the caller.
-Recursion is refused, so a cycle cannot justify itself. Effectful/heap callee contracts and
-previously proved Dafny summaries are future extensions; there is no unchecked summary door.
+| Observable name | Where it is kept |
+|---|---|
+| engine message (`x.y is not a function`, `v is not iterable`, `Cannot destructure … of 'v'`) | callees of calls, `new` and tagged templates; for-of, spread and `yield*` operands; destructuring sources; heritage clauses; JSX tags |
+| a property key | shorthand `{ x }` and shorthand destructuring: the checker resolves the name to the property, so it is never canonicalised |
+| a function's inferred `.name` | a binding initialised, defaulted or assigned (`=`, `||=`, `&&=`, `??=`) with an anonymous function, arrow or class |
+| a field | a parameter property (`constructor(private x)`) |
+| `Cannot access 'x' before initialization` | a lexical binding referenced before its declaration ends, inside a function created before it ends, or declared in a switch case |
 
-## Integration and limitations
+The unit's source changes, so the source guard applies as for parsed-equal, and the module outside the unit must be
+tree-equal. The handover's narrow form (top-level primitive straight-line functions, `const`/`let` without a write,
+independent declaration order) is kept as a second attempt when the alpha forms differ; its theorem is unchanged.
 
-The certificate names `provedBy` at the root and in lane A: parsed-equal, normalised, congruence,
-or dafny. Bounded execution remains lane B and is retained separately. Existing witness, adapted
-interface and contradicted-runtime-model paths take precedence in check. A rung failure is never
-a witness or a new refusal of the existing relational pipeline.
+Stated as a theorem with checked conditions, not proved in Dafny. Not covered: renaming a member, a function or class
+declaration, a label (all keep their text); a rename inside a closure (the closure's source changes: source guard).
 
-Tests live with the new pairs. Run the detector and certificate suite with:
+## Callee congruence (congruence)
 
-    node --test langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs
+The caller tree (argument expressions and ordered call sites included) is identical. Direct same-file call names resolve
+to the matched declaration. The reached graph is acyclic. Every reached unit satisfies the total primitive grammar,
+extended only with direct calls to previously checked units. Each changed leaf callee has a lower-rung normalised
+correspondence; unchanged callees have parsed correspondence. Every callee proof and its contract is in the evidence.
+The remaining module context must correspond after replacing those proved declarations with matched placeholders. No
+external assertion of a callee result is accepted. Contracts: empty effect trace, primitive parameters and results (no
+alias-bearing values), no exceptional exit; calls stay in their order. Substituting the proved callee transition at
+each corresponding call site gives equal results and worlds; structural induction proves the caller; recursion is
+refused. Effectful and heap callee contracts and Dafny-proved callee summaries are not covered.
 
-The lane report records red runs, mutation checks, integration checks, full suite results and
-frozen benchmark transitions. No benchmark kind or case identifier is consulted by a detector.
+## Integration
+
+The certificate names `provedBy` at the root and in lane A: `parsed-equal`, `normalised`, `congruence` or `dafny`, with
+the rung's evidence (tree or normal-form hash, rewrites, environment, contract). Lane B runs as before (exec/run.mjs is
+untouched) and its result is kept in `lanes.B`. A lane B WITNESS, an adapter, or a contradicted runtime model (library or
+handler defects) takes precedence: the rung is not consulted.
+
+Tests: `node --test langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs` (detectors, refusals, the engine-message pin,
+check.mjs certificates) and `node --test langs/ts/tests/pairs/cheap_rungs_parsed/pr.test.mjs` (a lint-refused PR unit).
