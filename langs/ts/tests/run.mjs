@@ -460,6 +460,11 @@ add('runtime', 'patch-children', 'single-object and string children diffed and p
 // exported reader, and every element-tree `.children` in lean's source read through kidsOf or a named exception
 const shapes = run('node', [path.join(here, 'children-shapes.mjs')]);
 add('runtime', 'children-shapes', 'seven children shapes read one way; no raw children reader outside the named exceptions', shapes.status === 0, (shapes.stdout + shapes.stderr).trim().split('\n').pop());
+
+// lane B's input generator keeps its stated invariants (a special number's value depends on the input's turn and its field, arrays
+// of two or more, null beside the special value), so a witness found once is found again (lane lost-witnesses)
+const gen = run('node', [path.join(here, '../exec/gen.test.mjs')]);
+add('runtime', 'gen-invariants', 'the input generator keeps its stated invariants over seeds 1 to 20', gen.status === 0, (gen.stdout + gen.stderr).trim().split('\n').pop());
 const silent = run('node', [path.join(here, 'no-silent-exit.mjs')]);
 add('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', silent.status === 0, (silent.stdout + silent.stderr).trim().split('\n').pop());
 const importers = run('node', [path.join(here, 'no-silent-exit-importers.mjs')]); // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown

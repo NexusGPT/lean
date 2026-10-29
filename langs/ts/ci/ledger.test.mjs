@@ -53,19 +53,20 @@ const git = (...args) => {
 const write = (name, text) => { fs.mkdirSync(path.dirname(path.join(tmp, name)), { recursive: true }); fs.writeFileSync(path.join(tmp, name), text); };
 try {
   git('init', '-q');
-  write('object.ts', 'module.exports = { method(x: number) { return x + 1; } };\n');
+  write('object.ts', 'module.exports = { method(x: number) { return x + 1; }, api: { inner(x: number) { return x * 2; } } };\n'); // the direct member is a listed unit (exported-units); the nested member is not
   write('package-lock.json', '{"lockfileVersion":1}\n'); write('asset.bin', Buffer.from([0, 1]));
   write('mode.txt', 'mode\n'); write('move.ts', 'export function moved(x: number) { return x; }\n');
   write('deleted.ts', 'export function gone() { return 1; }\n');
   git('add', '-A'); git('commit', '-qm', 'base'); const base = git('rev-parse', 'HEAD');
-  write('object.ts', 'module.exports = { method(x: number) { return x + 2; } };\n');
+  write('object.ts', 'module.exports = { method(x: number) { return x + 2; }, api: { inner(x: number) { return x * 3; } } };\n');
   write('package-lock.json', '{"lockfileVersion":2}\n'); write('asset.bin', Buffer.from([0, 2]));
   fs.chmodSync(path.join(tmp, 'mode.txt'), 0o755); git('mv', 'move.ts', 'moved.ts');
   git('rm', 'deleted.ts'); write('empty.ts', ''); write('bad.ts', 'export function ( {\n');
   git('add', '-A'); git('commit', '-qm', 'head'); const head = git('rev-parse', 'HEAD');
   if (!process.argv.includes('--frame-only')) {
   const rows = await prReport({ repo: tmp, base, head, preview: true, project: false });
-  assert(rows.some(r => r.file === 'object.ts' && r.verdict === 'ASK' && /object-literal member/.test(r.reason)), 'an unlisted object member must have a named ASK');
+  assert(rows.some(r => r.file === 'object.ts' && r.verdict === 'ASK' && /object-literal member/.test(r.reason)), 'an unlisted (nested) object member must have a named ASK');
+  assert(rows.some(r => r.file === 'object.ts' && /method/.test(r.unit ?? '') && !/object-literal member/.test(r.reason ?? '')), 'a direct member of an exported literal is a listed unit, not a ledger row');
   assert(rows.some(r => r.file === 'asset.bin' && r.coverage === 'artifact:binary'), 'binary artifact row');
   assert(rows.some(r => r.file === 'package-lock.json' && r.coverage === 'artifact:lockfile'), 'lockfile artifact row');
   }

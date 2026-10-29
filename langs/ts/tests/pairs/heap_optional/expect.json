@@ -13,11 +13,11 @@
   "forget": true,
   "visit": true
  },
- "why": "A field u.nick?: string is stored as Pres<string> (missing, undefined, or a value) and read as Option<string>; a parameter by?: number is an Option<int>. display writes ?? as a presence test and reads the field again after it: narrowed, the read marks the world if it finds no value, and the lemma shows it does not (proved); greeting changes the default (unproved, WITNESS when the nickname is absent); pad tests the absent amount first (proved); forget and visit are untouched (proved).",
+ "why": "A field u.nick?: string is stored as Pres<string> (missing, undefined, or a value) and read as Option<string>; a parameter by?: number is an Option<int>. display writes ?? as a presence test and reads the field again after it: narrowed, the read marks the world if it finds no value, and the lemma shows it does not (proved); greeting changes the default (unproved, WITNESS when the nickname is absent); pad tests the absent amount first (proved); forget and visit are untouched (proved). pad: lane B separates the two versions at a signed zero (-0 against undefined: the parent returns +0, the candidate -0); the PASS-bounded expectation predates -0 among the drawn special numbers (signed-zero merge 3d1bb1f2), found again by lane lost-witnesses with a direct run of both sides.",
  "b": {
   "display": "PASS-bounded",
   "greeting": "WITNESS",
-  "pad": "PASS-bounded",
+  "pad": "WITNESS",
   "forget": "PASS-bounded",
   "visit": "PASS-bounded"
  },
