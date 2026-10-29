@@ -9,7 +9,7 @@
 // then the order the jobs were made in. A started job's next child goes before a later job's first. The measurements
 // are the wall seconds of the children a job really ran (a step-cache hit runs none), kept in one JSON file; the order
 // never changes a result, only when it is computed.
-// A job's weight is the cores its children keep busy, measured (tests/measure-weights.mjs: the 90th percentile of the
+// A job's weight is the cores its children keep busy, measured (tests/measure-weights.mjs: the mean over its run of the
 // %CPU of a job's child and every process under it): each of its children holds that many slots, a fraction of one
 // included, and the pool admits children while the weights of those running stay at or under JOBS, so the busy cores
 // stay near JOBS and a CPU second does the same work as it does alone (lane B's bounds are CPU seconds). The weights

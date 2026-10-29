@@ -3,8 +3,10 @@
 // environment it is given: LEAN_PAIRS, JOBS, LEAN_STEP_CACHE_DIR...) with LEAN_SUITE_TRACE set, so the pool writes the
 // pid and job key of every child it starts, and reads `ps` four times a second: a job's busy cores at one reading are
 // the %CPU of its child and of every live process under it, over 100 (a CPU-time difference between readings would
-// miss the short processes a job starts and ends in between: a translate, a Dafny run). A job's weight is the 90th
-// percentile of its readings (cores, to a hundredth); a group's (the items of one fan-out: `pairs`, `escapes`) is the same
+// miss the short processes a job starts and ends in between: a translate, a Dafny run). A job's weight is the mean of
+// its readings (cores, to a hundredth: what it keeps busy over its run; the 90th percentile sized each job for its
+// busiest moment and left most of JOBS idle), kept in keys and groups; the 90th percentile stands beside it in
+// keys_p90 and groups_p90, read by nothing; a group's (the items of one fan-out: `pairs`, `escapes`) is the same
 // over all its jobs' readings, for the jobs a small run does not hold. A job seen in fewer than two readings gets no
 // weight of its own.
 //   node measure-weights.mjs <weights.json>    (the suite's own output goes to <weights.json>.suite.log)
@@ -45,17 +47,19 @@ while (running) {
   }
 }
 const p90 = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(0.9 * s.length))]; };
-const keys = {}, groups = {}, byGroup = new Map(), report = [];
+const mean = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+const r2 = (x) => Math.round(x * 100) / 100;
+const keys = {}, groups = {}, keys_p90 = {}, groups_p90 = {}, byGroup = new Map(), report = [];
 for (const [key, xs] of readings) {
   if (xs.length < 2) continue;
-  const w = p90(xs);
-  keys[key] = Math.round(w * 100) / 100;
-  report.push([key, xs.length, w]);
+  const w = mean(xs);
+  keys[key] = r2(w); keys_p90[key] = r2(p90(xs));
+  report.push([key, xs.length, w, p90(xs)]);
   const g = key.slice(0, key.indexOf('/'));
   if (!byGroup.has(g)) byGroup.set(g, []); byGroup.get(g).push(...xs);
 }
-for (const [g, xs] of byGroup) groups[g] = Math.round(p90(xs) * 100) / 100;
-fs.writeFileSync(out, JSON.stringify({ measured: new Date().toISOString(), cpus: os.cpus().length, lean_pairs: process.env.LEAN_PAIRS ?? null, keys, groups }, null, 1) + '\n');
-for (const [key, n, w] of report.sort((a, b) => b[2] - a[2])) console.log(`${w.toFixed(2).padStart(6)} cores (p90 of ${n} readings)  ${key}`);
+for (const [g, xs] of byGroup) { groups[g] = r2(mean(xs)); groups_p90[g] = r2(p90(xs)); }
+fs.writeFileSync(out, JSON.stringify({ measured: new Date().toISOString(), cpus: os.cpus().length, lean_pairs: process.env.LEAN_PAIRS ?? null, weight: 'mean busy cores', keys, groups, keys_p90, groups_p90 }, null, 1) + '\n');
+for (const [key, n, w, q] of report.sort((a, b) => b[2] - a[2])) console.log(`${w.toFixed(2).padStart(6)} cores mean, ${q.toFixed(2)} p90, ${n} readings  ${key}`);
 console.log(`groups: ${JSON.stringify(groups)}`);
 console.log(`weights: ${out}`);
