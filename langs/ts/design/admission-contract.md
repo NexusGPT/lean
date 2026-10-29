@@ -111,6 +111,8 @@ marked one-decider) are the ones left to move; each is listed in the report with
   translator's diagnostic text. The open-index emitter has an open-record receiver; the predicate's prototype condition
   is exactly the removed name test under that precondition.
 
+The number-special sites call numberSpecial with a named form: non-finite literal text or a global special-value name. The existing positive-Infinity opaque reading remains the preceding lint decision.
+
 ## Withdrawal
 
 A reading's last version marked `withdrawn` with a reason, `LEAN_WITHDRAW="<id>=<reason>;..."` in the environment (an
@@ -212,7 +214,7 @@ fails when a site has no reading.
 | lint/lint.mjs:454 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | pass a fresh literal handler or keep calls on the local object; sharing a named method object needs  |
 | lint/lint.mjs:458 | lint-refuse | toplevel-effect | module-state | shared (moduleState) | move the effectful module initializer into a function |
 | lint/lint.mjs:461 | lint-refuse | global-read | names | one-decider | `${}` is module state that can change; the subset reads constants only |
-| lint/lint.mjs:463 | lint-refuse | number-special | numbers | one-decider | the finite number model has no NaN or infinity; use lane B for special-value arithmetic |
+| lint/lint.mjs:463 | lint-refuse | number-special | numbers | lowering (numberSpecial) | the finite number model has no NaN or infinity; use lane B for special-value arithmetic |
 | lint/lint.mjs:464 | lint-refuse | dynamic-eval | names | one-decider | `${}` is outside the subset |
 | lint/lint.mjs:464 | lint-refuse | prototype | prototype | one-decider | `${}` is outside the subset |
 | lint/lint.mjs:467 | lint-refuse | global-read | names | one-decider | global `${}` is outside the subset |
@@ -591,7 +593,7 @@ fails when a site has no reading.
 | translate/translate.mjs:1428 | translate-refuse | internal | translator-internal | one-decider | internal: an effect in a unit not marked effectful (${}) |
 | translate/translate.mjs:1495 | translate-refuse |  | arrays | one-decider | spread arguments need an ordinary array |
 | translate/translate.mjs:1696 | translate-refuse |  | translator-internal | one-decider | no helper ${} |
-| translate/translate.mjs:1705 | translate-refuse | number-special | numbers | one-decider | number-special: a non-finite literal needs the opaque numeric reading |
+| translate/translate.mjs:1705 | translate-refuse | number-special | numbers | lowering (numberSpecial) | number-special: a non-finite literal needs the opaque numeric reading |
 | translate/translate.mjs:1707 | translate-refuse |  | numbers | one-decider | number literal ${} is not an integer; use --real |
 | translate/translate.mjs:1733 | translate-refuse |  | promises | one-decider | a promise a same-file async unit returns, stored as a handle: the call reads its settled value, so n |
 | translate/translate.mjs:1766 | translate-refuse | type-assertion | type-assertion | shared (typeAssertion) | type-assertion: ${} |

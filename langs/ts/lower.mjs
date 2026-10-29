@@ -67,7 +67,7 @@ const SHARED_TEXTS = { valueAssignmentWhy: 'write this assignment as a statement
 // the names both deciders import from a shared module (common.mjs and its kin), and the decisions lower.mjs takes for
 // both: a site whose statement calls one is decided once (the named-then pattern); any other is one decider's, which the
 // other reads through the record
-const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy']);
+const LOWER_DECISIONS = new Set(['installsFunction', 'loneSurrogate', 'nullPrototypeCreate', 'valueAssignmentWhy', 'numberSpecial']);
 function importedNames(sf) {
   const out = new Set();
   for (const st of sf.statements) if (ts.isImportDeclaration(st) && st.importClause?.namedBindings && ts.isNamedImports(st.importClause.namedBindings) && !/lint\.mjs|translate\.mjs/.test(st.moduleSpecifier.text)) for (const e of st.importClause.namedBindings.elements) out.add(e.name.text);
@@ -175,6 +175,13 @@ export const NULL_PROTOTYPE_WHY = '`Object.create(null)` makes an object without
 // an assignment used as a value (`(x += 1)`): `=`, `+=`, `-=` and `*=` have a value reading; any other operator is
 // refused (lint assignment-expression, translator operatorValue). The text, or null
 export const valueAssignmentWhy = (op) => ([ts.SyntaxKind.EqualsToken, ts.SyntaxKind.PlusEqualsToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken].includes(op) ? null : 'write this assignment as a statement');
+
+// The numbers reading has two syntactic forms. Origin matters only for a name; a shadowed NaN is ordinary data.
+export function numberSpecial(form, value, origin = null) {
+  if (form === 'literal') return !Number.isFinite(Number(value));
+  if (form === 'global') return origin === 'global' && ['NaN', 'Infinity'].includes(value);
+  throw new Error(`unknown number form: ${form}`);
+}
 
 // ---------- the lowering ----------
 const K = ts.SyntaxKind;

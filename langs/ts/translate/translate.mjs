@@ -44,7 +44,7 @@ import { spreadReadWhy } from '../common.mjs'; // the spreads of a record litera
 import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { admitUnits } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
-import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy } from '../lower.mjs'; // decisions taken once for the lint and the translator
+import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial } from '../lower.mjs'; // decisions taken once for the lint and the translator
 import { promiseForm, promiseConsumed, executorShape, unparen } from '../promise-forms.mjs';
 import { reactHook, exactReactHook, closureReads, renderPure, arrowOf } from '../react.mjs';
 import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
@@ -1702,7 +1702,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // ----- literals / coercion -----
   function numLit(text, n) {
     const v = Number(text);
-    if (!Number.isFinite(v)) fail(n, 'number-special: a non-finite literal needs the opaque numeric reading');
+    if (numberSpecial('literal', text)) fail(n, 'number-special: a non-finite literal needs the opaque numeric reading');
     if (Number.isInteger(v)) return BigInt(v).toString() + (real ? '.0' : '');
     if (!real) fail(n, `number literal ${text} is not an integer; use --real`);
     const [mantissa, exponent] = String(v).split('e');

@@ -41,7 +41,7 @@ import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../rea
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
-import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy } from '../lower.mjs'; // decisions taken once for the lint and the translator
+import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial } from '../lower.mjs'; // decisions taken once for the lint and the translator
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -460,7 +460,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
     if (o.kind === 'global' && infinitySign(checker, id, sf, current) > 0) return; // the global Infinity is the value Number.POSITIVE_INFINITY is: a unit naming either is one opaque unit in the translator
-    if (o.kind === 'global' && ['NaN', 'Infinity'].includes(name)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
+    if (numberSpecial('global', name, o.kind)) return v(id, 'number-special', 'the finite number model has no NaN or infinity; use lane B for special-value arithmetic');
     if ((Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined)) return v(id, (Object.hasOwn(EFFECT_GLOBALS, name) ? EFFECT_GLOBALS[name] : undefined), `\`${name}\` is outside the subset`);
     if (PURE_GLOBALS.has(name)) return;
     if (libGlobalRoot(checker, id, sf, current)) return; // a lib or runtime global: a world read
