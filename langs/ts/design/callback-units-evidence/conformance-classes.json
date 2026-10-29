@@ -1,0 +1,62 @@
+[
+  {
+    "kind": "disagree",
+    "pair": "callback_units",
+    "unit": "outer",
+    "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+    "row": "a94d702e",
+    "laneA": "proved",
+    "first": "input 8, parent: result: .1: model {\"$bigint\":\"9007199254740993\"} against 9007199254740992",
+    "class": "2^53: the model is exact, Node rounds to binary64"
+  },
+  {
+    "kind": "disagree",
+    "pair": "callback_units",
+    "unit": "app.get('/changed')#1",
+    "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+    "row": "a94d702e",
+    "laneA": "not proved",
+    "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
+    "class": "2^53: the model is exact, Node rounds to binary64"
+  },
+  {
+    "kind": "disagree",
+    "pair": "callback_units",
+    "unit": "app.get('/same')#1",
+    "cause": "signed zero: Node -0, the model 0",
+    "row": "a94d702e",
+    "laneA": "proved",
+    "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+    "class": "signed-zero: model collapses -0"
+  },
+  {
+    "kind": "disagree",
+    "pair": "exported_object_methods",
+    "unit": "ops.add",
+    "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+    "row": "a94d702e",
+    "laneA": "not proved",
+    "first": "input 9, candidate: result: model 9007199254740993 against 9007199254740992",
+    "class": "2^53: the model is exact, Node rounds to binary64"
+  },
+  {
+    "kind": "disagree",
+    "pair": "exported_object_methods",
+    "unit": "ops.scale",
+    "cause": "signed zero: Node -0, the model 0",
+    "row": "a94d702e",
+    "laneA": "proved",
+    "first": "input 15, parent: result: model 0 against {\"$negativeZero\":true}",
+    "class": "signed-zero: model collapses -0"
+  },
+  {
+    "kind": "disagree",
+    "pair": "exported_object_methods",
+    "unit": "ops.viaSibling",
+    "cause": "an integer past 2^53: the model is exact, Node rounds to binary64",
+    "row": "a94d702e",
+    "laneA": "not proved",
+    "first": "input 9, candidate: result: model 27021597764222979 against 27021597764222976",
+    "class": "2^53: the model is exact, Node rounds to binary64"
+  }
+]
