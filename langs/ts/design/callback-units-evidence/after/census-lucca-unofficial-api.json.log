@@ -1,9 +1,0 @@
-["/opt/homebrew/Cellar/node@24/24.18.0/bin/node","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/census.mjs","/Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/lucca-unofficial-api","--js","--out","/Users/assem/nexus/nexus-organisation/work/lean-lanes/callback-units/langs/ts/design/callback-units-evidence/after/census-lucca-unofficial-api.json"]
-Filesystem     1024-blocks      Used Available Capacity iused     ifree %iused  Mounted on
-/dev/disk3s1s1   971350180  12340716  33691496    27%  458732 336914960    0%   /
-project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/lucca-unofficial-api/tsconfig.json: 15 files
-lucca-unofficial-api: 15 files, 40 units, 35 inside the subset (87.5 percent), 0 files unreadable, 3 s
-       5 units  type-assertion         src/middleware/error-handler.ts:54 `anyErr.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), a
-       0 units  toplevel-effect        src/index.ts:17 code at module level runs on import; it is outside the subset
-
-exit=0 signal=null

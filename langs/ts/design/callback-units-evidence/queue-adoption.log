@@ -1,4 +1,0 @@
-Waiting controller 58452 received SIGTERM with no active root child; retrieved exit=143.
-Restart: node langs/ts/tests/pairs/callback_units/measure.mjs after .
-{"tickets":["1793250943-lowering-cache","1793252240-callback-units"],"owner":"translator-sites 11213"}
-Observed: census queue waits for 1793250943-lowering-cache; retry in 10 s

@@ -1,6 +1,0 @@
-lucca-unofficial-api: 15 files, 29 units, 24 inside the subset (82.8 percent), 0 files unreadable, 3 s
-       5 units  type-assertion         src/middleware/error-handler.ts:54 `anyErr.status` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), a
-       0 units  toplevel-effect        src/index.ts:17 code at module level runs on import; it is outside the subset
-project /Users/assem/nexus/nexus-organisation/work/unreviewable-throughput/legit/round7/lean-v3/census/repos/lucca-unofficial-api/tsconfig.json: 15 files
-
-exit=0 signal=null
