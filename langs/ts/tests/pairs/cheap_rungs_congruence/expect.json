@@ -1,0 +1,16 @@
+{
+ "scope": [],
+ "equal": {},
+ "why": "Certified-rung fixture; node --test langs/ts/tests/pairs/cheap_rungs_parsed/rungs.test.mjs checks both decisions and refusals.",
+ "rung": "congruence",
+ "laneBOnly": true,
+ "b": {
+  "f": "PASS-bounded"
+ },
+ "check": {
+  "f": {
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  }
+ }
+}

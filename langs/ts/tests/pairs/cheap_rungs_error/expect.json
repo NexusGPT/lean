@@ -1,0 +1,10 @@
+{
+ "scope": [],
+ "equal": {},
+ "why": "A renamed binding in a callee position reaches the engine message: a number called as a function throws 'g is not a function' against 'h is not a function', so lane B finds a WITNESS and the renaming rung must not decide (rungs.test.mjs checks the refusal).",
+ "rung": null,
+ "laneBOnly": true,
+ "b": {
+  "f": "WITNESS"
+ }
+}
