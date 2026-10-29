@@ -32,5 +32,7 @@ for (const name of ['shadowed-builtins.ts', 'generic-shadowed-builtins.ts']) {
 }
 const library = lowerFile(fixture('translator-crash-fixtures/library-builtins.ts'), null, { project: false });
 assert.ok(library.units.every((u) => !u.refusal), JSON.stringify(library.units.map((u) => [u.unit, u.refusal])));
+assert.doesNotThrow(() => translate(fixture('translator-crash-fixtures/library-builtins.ts'), null,
+  { core: true, heap: false, project: false }), 'the value reading must retain real library types through aliases');
 console.log('translator-crashes: ambient sibling admitted; selected bodiless declaration refused by name');
 console.log('translator-crashes: native type identity checked; shadowed builtins refused; library aliases admitted');
