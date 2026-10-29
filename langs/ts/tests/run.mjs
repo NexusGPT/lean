@@ -481,7 +481,7 @@ add('runtime', 'unit-listing', 'a class and an exports-property literal sharing 
 // Every selected pair's parent, the self-pair fixtures, and an optional challenge
 // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane.
 {
-  const r = run('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json')]);
+  const r = run('node', [path.join(here, 'self-pair.mjs'), '--out', path.join(tmp, 'self-pair.json'), '--jobs', String(Math.min(2, Number(process.env.JOBS ?? '2') || 1))]); // the suite's JOBS, at the runner's cap of two
   if (r.stderr) process.stderr.write(r.stderr);
   const text = (r.stdout ?? '') + (r.stderr ?? '');
   add('runtime', 'self-pair', 'every parent against itself: zero WITNESS; refusals counted', r.status === 0, text.trim().split('\n').pop());

@@ -263,7 +263,7 @@ export function commentAdapters(file) {
   let sf; try { ({ sf } = loadProgram(file, { project: false })); } catch { return out; }
   const text = sf.getFullText();
   for (const u of topLevelFunctions(sf).values()) {
-    let node = u.node; while (node.parent && !ts.isSourceFile(node.parent) && !ts.isClassLike(node.parent) && !ts.isVariableStatement(node)) node = node.parent; // an arrow const carries its comments on its statement
+    let node = u.node; while (node.parent && !ts.isSourceFile(node.parent) && !ts.isClassLike(node.parent) && !ts.isObjectLiteralExpression(node.parent) && !ts.isVariableStatement(node)) node = node.parent; // an arrow const carries its comments on its statement; a class method and a literal member carry their own
     for (const r of ts.getLeadingCommentRanges(text, node.getFullStart()) ?? []) {
       const m = text.slice(r.pos, r.end).match(/^\/\/\s*lean-adapter\s+(\{.*\})\s*$/);
       if (!m) continue;
