@@ -1042,6 +1042,14 @@ function workerReads(opts) {
   if (typeof opts.values === 'string') read.add(path.resolve(opts.values));
   if (typeof opts.project === 'string') read.add(path.dirname(path.resolve(opts.project)));
   if (process.env.LEAN_LIBRARY_TABLE) read.add(path.resolve(process.env.LEAN_LIBRARY_TABLE));
+  // the packages the trees' code resolves: module resolution (Node's and TypeScript's, @types included) looks in the
+  // node_modules folder of every folder from the file up to the root, and such a folder may be a link out of the tree
+  // (a checkout whose dependencies live in another checkout or a shared store); without it the child loads no
+  // declaration and no package that the command line's run loads, and reads the unit at other types
+  for (const p of [...read]) {
+    if (p === leanSources) continue;
+    for (let d = p; ; d = path.dirname(d)) { const nm = path.join(d, 'node_modules'); if (fs.existsSync(nm)) read.add(nm); if (path.dirname(d) === d) break; }
+  }
   const out = new Set();
   for (const p of read) { out.add(p); try { out.add(fs.realpathSync(p)); } catch { /* a path that does not exist reads nothing */ } }
   return [...out];

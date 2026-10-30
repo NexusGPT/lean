@@ -641,6 +641,8 @@ async function adviceLabels(add) {
     ['translator-crashes', scriptRow('runtime', 'translator-crashes', 'node shapes read without translator crashes', [path.join(here, 'translator-crashes.mjs')], (r) => `exit ${r.status}: ${r.stdout.trim()}`, { echoStderr: true })],
     // a module literal's member is named by the path code reaches it by; a same-named class keeps its own units (design/exported-units.md)
     ['unit-listing', scriptRow('runtime', 'unit-listing', 'a class and an exports-property literal sharing a name list two units, each refusal attributed to its own', [path.join(here, 'unit-listing.mjs')], lastLine)],
+    // lane B's child reads the node_modules folders module resolution visits, a link out of the tree included (exec/run.mjs workerReads; design/microtask-worker.md)
+    ['linked-dependencies', scriptRow('runtime', 'linked-dependencies', 'a declaration behind a node_modules link out of the tree reaches the lane B child', [path.join(here, 'linked-dependencies.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
   ].map(([key, go]) => ({ key: `runtime/${key}`, go }));

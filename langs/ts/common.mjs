@@ -2379,3 +2379,15 @@ export function enclosingUnitName(file, name) {
   const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
   return topLevelFunctions(sf).get(name)?.enclosingUnit?.name ?? null;
 }
+
+// A branded primitive: an intersection of a primitive with object types (`number & { readonly [brand]: true }`,
+// `string & { __kind: 'Id' }`). The object members exist only for the checker: a value of the type is a value of the
+// primitive (TypeScript reduces two different primitives to never), so it is compared, keyed and coerced as that
+// primitive is. Returns the primitive member, or null for any other type.
+export function primitiveBrand(t) {
+  const TF = ts.TypeFlags;
+  if (!t || !(t.flags & TF.Intersection)) return null;
+  const PRIM = TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.EnumLike;
+  const prims = t.types.filter((x) => x.flags & PRIM);
+  return prims.length === 1 && t.types.every((x) => x === prims[0] || !!(x.flags & TF.Object)) ? prims[0] : null;
+}

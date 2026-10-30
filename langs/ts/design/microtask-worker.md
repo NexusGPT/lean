@@ -34,7 +34,12 @@ spinning unit that allocates (one sample held 554 MB) gives all of it back with 
 
 What the child may touch: Node's permission model, `--permission` with `--allow-fs-read` for the lean sources
 (`langs/ts`) and, for each of the two files, its tree (the nearest folder above it holding `.git`, else its package root),
-the values file and the tsconfig when named. It writes nothing (the `LEAN_LIBRARY_CASES` folder excepted, when set), and
+the values file and the tsconfig when named, and the `node_modules` folder of every folder from each of those up to
+the root, followed through a link (module resolution, Node's and TypeScript's, looks in each of them, and TypeScript
+reads a linked package at its real path). Without that last part a tree whose `node_modules` links out of it (a
+checkout whose dependencies live in another checkout or a shared store) had no declaration and no package in the
+child: a parameter typed by a package was drawn as an opaque value, and the concept bench lost witnesses on units
+that read such a value (Capture.push, `chunk: Buffer`, at 1cc98dec). Test `tests/linked-dependencies.mjs`. It writes nothing (the `LEAN_LIBRARY_CASES` folder excepted, when set), and
 starts no process, worker thread, addon or inspector. An existence check outside the trees answers false (the model
 throws there; the run asks whether the path exists). The network: this Node (24) has no network switch in its
 permission model, so the child's network is what the sandbox gives the unit (`fetch`, every package and built-in import
