@@ -24,7 +24,7 @@ branch that writes `process.exitCode` threads only the world (`assignedOutside` 
 - a function installed into `process` (`process.stdout.write = (s) => ...`): the outside calls it later and no
   transition reads that call;
 - writes to the other outside roots (`globalThis.x = v`, `window.x = v`), to `document`, `console` or a computed slot:
-  lane B's sandbox gives `globalThis` as a plain object and `window` as undefined, so it would not observe them; they
+  lane B's sandbox gives `globalThis` as a plain object and `window` as that same object (as in a browser; it was undefined until 2026-10-30, which made every handler reaching a timer through `window` throw on both sides and hid a real difference behind it), so it would not observe them; they
   keep their refusal. Element writes (`process.env[k] = v`) keep `index-assign`.
 
 ## Soundness
