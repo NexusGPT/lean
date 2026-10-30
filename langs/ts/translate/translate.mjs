@@ -3549,8 +3549,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     { const b = worldBase(n); if (worldAfter?.get(b) === 'read' && !n.__worldNow) { // a field read after a call that may change the object: of the object as the world holds it now
       worldUsed.add(b); const now = nowOf(b);
       n.__worldNow = true; let parts; try { parts = captureParts(() => propAccess(n, keepOption)); } finally { n.__worldNow = false; }
-      pending.push(now.line, ...parts.lines.map((l) => renameIn(l, now.name, now.t)));
-      return renameIn(parts.text, now.name, now.t);
+      const lines = parts.lines.map((l) => renameIn(l, now.name, now.t)), text = renameIn(parts.text, now.name, now.t);
+      if (![...lines, text].some((x) => x.includes(now.t))) fail(n, `read-after-call: \`${n.getText(sf).slice(0, 60)}\` is read after a call that may change its object, and this reading holds the object under another name here, so it cannot read it as the world holds it`); // the object's name never reached the read (a value bound before the call): refused, never the value before the call
+      pending.push(now.line, ...lines);
+      return text;
     } }
     { const mm = execMatchMember(n, checker); if (mm) return mm.name === 'input' ? expr(mm.arg) : `${external('regex_index', ['Ext_RegExp', 'string'], NUM)}(${expr(mm.regex)}, ${outerParens(expr(mm.arg))})`; } // the place of a match of a non-global regular expression: a function of the pattern and the string
     { const rb = hookBinding(n.expression); if (rb && !rb.field && Object.hasOwn(rb.row.result, n.name.text) && !rb.row.result['*']) return `${expr(n.expression)}.${n.name.text}`; } // a field of a hook result: the table's datatype
