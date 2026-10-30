@@ -315,7 +315,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), rows, order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
 }
 
 export function stopNote(stop) {
@@ -525,7 +525,7 @@ async function prWorker(opts) {
       let key = null, cacheFile = null;
       const save = (row) => {
         if (row.certificate) row.certificate = { ...row.certificate, verdict: row.verdict };
-        if (row.certificate?.values && rows.values) row.certificate.values = { ...row.certificate.values, file: rows.values.file, from: rows.values.from }; // the project's file by its name in the checkout, never the temporary copy of a head ref
+        if (row.certificate?.values && listedValues(rows)) row.certificate.values = { ...row.certificate.values, file: rows.values.file, from: rows.values.from }; // the project's file by its name in the checkout, never the temporary copy of a head ref
         if (!caller) row.editIds = rows[index].editIds;
         commitArtifact(opts._runDir, attempt, row);
         if (caller) rows.push(row); else rows[index] = row;
@@ -653,11 +653,22 @@ function displayOp(op) {
   catch (e) { return `patch display unavailable (${e.name}); raw operation retained in JSON`; }
 }
 
+// The project's values file a run read ({ file, from, sha256 }), or null. The rows are an array, so a bare `rows.values`
+// is Array.prototype.values when no file was listed: only an own object property counts.
+export function listedValues(rows) {
+  return rows && Object.hasOwn(rows, 'values') && rows.values && typeof rows.values === 'object' ? rows.values : null;
+}
+// The report's Values line, decided by whether a values file was read: its path, ref and hash, or none listed.
+export function valuesLine(values) {
+  return values ? `Values: ${values.file} at ${values.from}, sha256 ${values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`
+    : 'Values: none listed (lane B draws from the types)';
+}
+
 export function markdown(rows, base, head) {
   if (process.env.LEAN_LEDGER_TEST_FAULT === 'report-crash') throw new Error('injected report writer crash');
   const count = (v) => rows.filter((r) => !r['covered-by'] && r.verdict === v).length; // a nested row inherits its enclosing unit's verdict: counted once, on that unit's row
   const covered = rows.filter((r) => r['covered-by'] && r.decision !== 'removed').length;
-  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), '', valuesLine(listedValues(rows)), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
