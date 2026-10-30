@@ -68,6 +68,9 @@ function z3Record() {
   if (v) return { z3: v, z3Source: 'z3 on PATH' };
   return { z3: null, z3Source: 'no z3 beside the dafny executable and none on PATH answered --version' };
 }
+// the seconds a lane took, added to certificate.timing under its key (a lane run twice, as a translation the core
+// agreement repeats, sums): only around a lane that runs, so a lane that did not run is an absent key, never a zero
+const timer = (timing) => (key, go) => { const t0 = performance.now(); const add = () => { timing[key] = (timing[key] ?? 0) + (performance.now() - t0) / 1000; }; let out; try { out = go(); } catch (e) { add(); throw e; } if (out instanceof Promise) return out.finally(add); add(); return out; };
 const run = (cmd, args, timeoutMs) => { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: !!r.error && r.error.code === 'ETIMEDOUT' }; };
 
 export async function check(opts) {
@@ -83,9 +86,10 @@ export async function check(opts) {
   const scopeFile = scope ? JSON.parse(fs.readFileSync(scope, 'utf8')) : null;
   const declared = { ...(() => { try { return commentAdapters(candidate); } catch { return {}; } })(), ...(adapters ?? {}), ...(scopeFile?.adapters ?? {}) };
   const adapter = declared[dafnyName(unit)] ? { name: dafnyName(unit), ...declared[dafnyName(unit)], door: declared[dafnyName(unit)].door ?? 'scope' } : null;
-  const cert = { tool: 'lean-ts v3', ...(opts.identity === undefined ? {} : { identity: opts.identity }), unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {}, tools: { node: process.version } };
+  const cert = { tool: 'lean-ts v3', ...(opts.identity === undefined ? {} : { identity: opts.identity }), unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {}, tools: { node: process.version }, timing: {} };
+  const timed = timer(cert.timing); // seconds per lane: B, correspondence, doubles, translate, theorem, dafny
   // ---- lane B ----
-  const b = await runPair({ parent, candidate, unit, n, seed, project, deep, values: opts.values, unitSeconds: opts.unitSeconds });
+  const b = await timed('B', () => runPair({ parent, candidate, unit, n, seed, project, deep, values: opts.values, unitSeconds: opts.unitSeconds }));
   if (b.bound?.values) cert.values = { file: b.bound.values.file, sha256: b.bound.values.sha256, phase: b.bound.values.phase, inputs: b.bound.values.inputs, reachedBody: b.bound.values.reachedBody }; // the values file lane B drew from, by hash
   if (b.witnesses?.some((w) => w.where?.lines?.candidate)) {
     const findings = lintFile(candidate, null, { project });
@@ -116,7 +120,7 @@ export async function check(opts) {
   // Certified decisions precede translation; bounded evidence remains separate. A witness,
   // an adapter or a contradicted runtime model cannot be hidden by this shortcut.
   const correspondence = !adapter && !witnessed && !b.bound?.library?.defects?.length && !b.bound?.frontEnd?.handlers?.defects?.length
-    ? certifyCorrespondence({ parent, candidate, unit, project, adapters: declared }) : null;
+    ? timed('correspondence', () => certifyCorrespondence({ parent, candidate, unit, project, adapters: declared })) : null;
   if (correspondence?.status === 'decided-equal') {
     cert.provedBy = correspondence.rung;
     cert.lanes.A = correspondence.certificate.lanes.A;
@@ -129,7 +133,9 @@ export async function check(opts) {
   // and that reading decides its number result: unsat proves it, a replayed counterexample is a WITNESS, unknown leaves
   // it unproved. Under an adapter the claim is f_candidate(A(x)) == f_parent(x), not the raw same-input comparison
   // this query asks, so the reading is recorded as not applicable and the unit is not proved through it.
+  const fpStart = performance.now();
   const fp = witnessed ? null : await solveUnit({ parent, candidate, unit, seconds: opts.fpSeconds ?? FP_SECONDS, project, keep: tmp });
+  if (fp?.bearing) cert.timing.doubles = (performance.now() - fpStart) / 1000; // the doubles lane is timed when it reads the unit, as lanes.A.doubles is recorded
   const doubles = fp && fp.bearing ? { verdict: adapter ? 'not applicable: an adapter' : fp.verdict, ...(fp.reason ? { reason: fp.reason } : {}), bearing: fp.bearing, solver: fp.solver, solverVersion: fp.solverVersion, seconds: fp.seconds, timeoutSeconds: fp.timeoutSeconds, encoded: fp.encoded, uninterpreted: fp.uninterpreted, query: fp.query, ...(fp.input ? { input: fp.input } : {}), ...(fp.cross ? { cross: fp.cross } : {}) } : null;
   if (doubles && !adapter && fp.verdict === 'witness') {
     cert.lanes.A = { verdict: 'WITNESS', doubles };
@@ -137,7 +143,7 @@ export async function check(opts) {
   }
   const noteDoubles = () => { if (doubles && cert.lanes.A) cert.lanes.A.doubles = doubles; };
   // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature (agreeCore: on the units both translations hold)
-  const tr = (file, suffix, eff, heapUnits) => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', formatUnitList([unit]), '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000);
+  const tr = (file, suffix, eff, heapUnits) => timed('translate', () => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', formatUnitList([unit]), '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000));
   const headerOf = (suffix, key) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm')); return m ? m[1].trim() : ''; };
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
@@ -157,7 +163,7 @@ export async function check(opts) {
   const adaptersHere = Object.fromEntries(Object.entries(declared).filter(([k]) => names.includes(k)));
   if (Object.keys(adaptersHere).length) scopeObj.adapters = adaptersHere; else delete scopeObj.adapters;
   fs.writeFileSync(path.join(tmp, 'scope.json'), JSON.stringify(scopeObj)); fs.writeFileSync(path.join(tmp, 'edit.json'), '{}');
-  const th = run('python3', ['-I', path.join(here, '../../spec/theorem.py'), '--parent', path.join(tmp, 'parent.dfy'), '--candidate', path.join(tmp, 'candidate.dfy'), '--scope', path.join(tmp, 'scope.json'), '--edit', path.join(tmp, 'edit.json'), '--out', path.join(tmp, 'theorem.dfy')], 60000);
+  const th = timed('theorem', () => run('python3', ['-I', path.join(here, '../../spec/theorem.py'), '--parent', path.join(tmp, 'parent.dfy'), '--candidate', path.join(tmp, 'candidate.dfy'), '--scope', path.join(tmp, 'scope.json'), '--edit', path.join(tmp, 'edit.json'), '--out', path.join(tmp, 'theorem.dfy')], 60000));
   if (th.status !== 0) {
     if (witnessed) return witnessOut();
     const why = th.out.trim().slice(-400);
@@ -172,7 +178,7 @@ export async function check(opts) {
     return finish('ASK', cert, { reason: `interface: ${withheldLine.replace(/^interface differs: /, '').slice(0, 600)}` });
   }
   if (witnessed) return witnessOut();
-  const v = run('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), path.join(tmp, 'theorem.dfy')], (dafnySeconds + 60) * 1000 * Math.max(1, names.length));
+  const v = timed('dafny', () => run('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), path.join(tmp, 'theorem.dfy')], (dafnySeconds + 60) * 1000 * Math.max(1, names.length)));
   const text = v.out;
   const m = text.match(/finished with (\d+) verified, (\d+) error/);
   const lines = fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').split('\n');
