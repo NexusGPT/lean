@@ -1,0 +1,6 @@
+{
+ "scope": ["abs_diff", "clamp", "midpoint"],
+ "equal": { "abs_diff": true, "clamp": false, "midpoint": true },
+ "why": "a pure function, no world: abs_diff and midpoint are algebraic rewrites on exact ints (floor division keeps midpoint: a + floor((b - a) / 2) = floor((2a + b - a) / 2)); clamp differs only when the bounds cross (lo > hi): max(lo, min(x, hi)) is lo, the branches give hi when x >= lo",
+ "b": { "abs_diff": "PASS-bounded", "clamp": "WITNESS", "midpoint": "PASS-bounded" }
+}

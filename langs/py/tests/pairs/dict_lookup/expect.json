@@ -1,0 +1,6 @@
+{
+ "scope": ["count_of", "next_count", "has_positive"],
+ "equal": { "count_of": true, "next_count": false, "has_positive": true },
+ "why": "a dict is a map: get with a default is a membership test and a lookup; next_count reads a missing key (a KeyError fault) where the parent used the default; has_positive is the same test (an absent key is 0, not positive)",
+ "b": { "count_of": "PASS-bounded", "next_count": "WITNESS", "has_positive": "PASS-bounded" }
+}
