@@ -23,7 +23,7 @@
 //   Never exact: a parameter, a field, an element, a call result, NaN, Infinity, a non-integer literal.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ts, topLevelFunctions, fileDiagnostics } from '../common.mjs';
+import { ts, topLevelFunctions, fileDiagnostics, assertionHeld } from '../common.mjs';
 import { calleesOf } from '../exec/callees.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -52,7 +52,11 @@ const isLoop = (n) => ts.isForStatement(n) || ts.isForOfStatement(n) || ts.isFor
 
 export function faithfulNumbers(loaded) {
   const { sf, checker, program } = loaded;
-  const typeAt = (n) => { try { return checker.getTypeAtLocation(n); } catch { return null; } };
+  // a node's real type: a held value (common.mjs assertionHeld: an `as` that narrows, an any or unknown value in a typed
+  // slot) is read with the type it has at run time, the one the translator's typeOf reads, never the type it claims; an
+  // opaque held value is no number here, so no operation on it becomes a double operation of this reading
+  const typeMemo = new Map();
+  const typeAt = (n) => { if (typeMemo.has(n)) return typeMemo.get(n); let t = null; try { t = assertionHeld(checker, n) ?? checker.getTypeAtLocation(n); } catch { t = null; } typeMemo.set(n, t); return t; };
   const isNumT = (t) => !!t && (!!(t.flags & TF.NumberLike) || (t.isUnion?.() && t.types.length > 0 && t.types.every((x) => x.flags & TF.NumberLike)));
   const isNum = (n) => isNumT(typeAt(n));
   const hasNumT = (t) => !!t && (!!(t.flags & TF.NumberLike) || (t.isUnion?.() && t.types.some((x) => x.flags & TF.NumberLike)));

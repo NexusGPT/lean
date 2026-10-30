@@ -180,3 +180,33 @@ operands: operands_receiver `scaled` and `via_call`, two_callers `beat_total`, w
 because `self.n * k` can make a -0 the real lemma cannot hold; under the faithful reading both sides are one
 uninterpreted product of the same two operands, whatever double it makes, -0 included). Their expectations say proved.
 
+
+### A held value is no number to the faithful reading (2026-10-30)
+
+The faithful reading decided which nodes are numbers from the checker's type. A held value (common.mjs `assertionHeld`:
+`x as number` with x any, unknown or of mixed types; an any or unknown value filling a number slot) has the type
+`number` to the checker and any type at run time. `(x as number) + 1` therefore became `Math.__lean_add(x as number, 1)`,
+whose two operands commute (above), and lane A proved it equal to `1 + (x as number)`: for x = "a" JavaScript gives
+"a1" and "1a". Lane B witnessed the difference; lane A's reading was unsound for it.
+
+The reading now takes every node's type from `assertionHeld(checker, n) ?? checker.getTypeAtLocation(n)`
+(faithful.mjs `typeAt`), which is the decision the translator's `typeOf` already makes. An opaque held value has the any
+type there, so it is not a number. The reading does not rewrite an operation on it, refuse it, or count it as exact,
+and the translator reads `+` on it as the operation on Any, which is not commutative. A value held at its own primitive
+family (a number asserted to a literal union, `n as 1 | 2`) is still `number` and is read as before. The reading is sound
+because it never makes a number of something the translator does not read as a number: both readings come from one
+decision.
+
+Still refused or left unproved: everything the translator reads at Any stays an uninterpreted operation on Any.
+Pairs: faithful_held (heldSum and heldNum are not proved, and lane B witnesses both; familySum and plainSum are still
+proved), plus the type_assertions row held_sum.
+
+The change reaches 8 of the 509 pair files: faithful_held, type_assertions, fake_throw, proof_hunt_10 and strict_fixer.
+That count comes from running faithfulNumbers with the old and new reading over every pair file. One row elsewhere
+moves: type_assertions opt_checked ("real-only"). Lane A still does not prove it, but its real lemma no longer proves
+either. The real lemma had proved because the faithful text failed on both sides and both sides fell back to the exact
+reading (translate.mjs `translate`). Now only the parent's text fails, at dbl, a callee that is read again at Any for a
+call. So the candidate's `n + 0` is `__lean_add(n, 0)` against the parent's exact `n`. A mixed reading can only lose a
+proof, and the two units do differ in JavaScript on -0. Two levers would restore the row, and both are left open: read a
+pair at one reading when either side falls back, or let the faithful reading follow the per-call reading of a callee
+at Any.
