@@ -15,6 +15,7 @@ import { generator } from './gen.mjs';
 export class BudgetError extends Error {}
 const EMPTY_LIST = Symbol('an empty list');
 const depthOf = (path) => (path.match(/[.\[(]/g) || []).length;
+export const CB_DEPTH = 40; // the nesting of callbacks the world runs: a callback handed to a fake past it is not run (the tree ends there)
 export function makeRng(seed) {
   // the seed is scrambled first: two xorshift states from nearby seeds give nearly the same first outputs, so every
   // run's first draw (the branch of a union, an optional's presence) would fall the same way for every input
@@ -194,8 +195,10 @@ export class Environment {
           }
           for (const [a, tag] of cbs) if (env.knownCallables && !/^class\s/.test(Function.prototype.toString.call(a))) env.knownCallables.push({ path: path + tag, fn: a }); // a callback handed to the environment: a program may fire it again
           for (const [a, tag] of cbs) if (a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) {
-            // a callback that recurses through the environment (a visitor over fakes) is bounded: past the depth it is a budget, not a behaviour
-            if (env.cbDepth >= 40) throw new BudgetError('callback recursion deeper than 40 through the environment');
+            // a callback that recurses through the environment (a visitor over fakes, `forEachChild(node, visit)`) meets a
+            // finite world: past CB_DEPTH nested callbacks the fake runs no further callback, as its iterator yields nothing
+            // past depth 8, so the visitor returns at the leaves, the same on both sides (design/fake-recursion.md)
+            if (env.cbDepth >= CB_DEPTH) continue;
             env.cbDepth++;
             try { const r = a(env.fake(`${path}#cb${tag}.arg0`), env.fake(`${path}#cb${tag}.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); }
             catch (e) { if (e instanceof BudgetError) throw e; if (e instanceof RangeError) throw new BudgetError('stack overflow inside a callback'); env.record('callback-throw', path + tag, [String(e && e.message)]); }
