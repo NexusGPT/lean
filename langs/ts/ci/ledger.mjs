@@ -180,6 +180,10 @@ export function routeChanges(manifest) {
       if (local.length) edit.diagnostics = local.map(d => d.code);
       if (file.parseFailures?.[side]) edit.primary = { kind: 'unassigned', reason: 'parse-failure', side };
       else if (local.length) edit.primary = { kind: 'unassigned', reason: 'parse-failure', codes: edit.diagnostics, side };
+      // An edit that changes no compiled token (only comments and blank lines, none of them read by the compiler) is
+      // intake: unassigned, inert, no verdict owed. Decided before every language or class route, since a comment
+      // changes nothing at run time whatever file holds it; one inside a listed unit still goes to its unit.
+      else if (syntax.inert && !touched.length) edit.primary = { kind: 'unassigned', reason: syntax.reason, inert: true, side };
       else if (touched.length) {
         // Stable smallest-containing-unit choice; secondary links retain every touched unit. A listed unit owns its edit
         // whatever the file's language: a JavaScript unit is listed and, when untyped, refused by name (untyped-js).
@@ -194,15 +198,51 @@ export function routeChanges(manifest) {
   return manifest;
 }
 
+// The parsed tree's own reading of a file: the span of every token it compiled, and the span of every comment the
+// compiler or the runtime reads (a pragma such as `/// <reference>` or `@jsx`, a `@ts-` directive, the JSDoc of a
+// JavaScript file, whose types are its type system, and a shebang). Everything else is trivia: comments and blank space.
+// Read from the tree, never from a scanner started at a line: a line inside a block comment is still comment, and a
+// line of a template literal that starts with `//` is still the literal's text.
+const readings = new WeakMap();
+function treeReading(sf) {
+  let r = readings.get(sf);
+  if (r) return r;
+  const tokens = [], directives = [];
+  const js = /\.[cm]?jsx?$/i.test(sf.fileName);
+  const stack = [sf]; // an explicit stack: a 10,000-term expression must not exhaust the call stack
+  while (stack.length) {
+    const n = stack.pop();
+    if (n.kind >= ts.SyntaxKind.FirstJSDocNode && n.kind <= ts.SyntaxKind.LastJSDocNode) { if (js) directives.push([n.pos, n.end]); continue; }
+    const children = n.getChildren(sf);
+    if (!children.length) { const start = n.kind === ts.SyntaxKind.JsxText ? n.pos : n.getStart(sf); if (n.end > start) tokens.push([start, n.end]); continue; } // JSX text is text the page shows, its blank space included
+    for (const c of children) stack.push(c);
+  }
+  for (const v of sf.pragmas?.values() ?? []) for (const p of [v].flat()) if (p?.range) directives.push([p.range.pos, p.range.end]);
+  for (const d of sf.commentDirectives ?? []) directives.push([d.range.pos, d.range.end]);
+  const shebang = ts.getShebang(sf.text);
+  if (shebang) directives.push([0, shebang.length]);
+  tokens.sort((a, b) => a[0] - b[0]);
+  r = { tokens, directives };
+  readings.set(sf, r);
+  return r;
+}
+const meets = (ranges, start, end) => ranges.some(([a, b]) => a < end && start < b);
+// whether a token meets [start, end): the first token ending after `start` (tokens never overlap, so ends rise with starts)
+function tokenIn(tokens, start, end) {
+  let lo = 0, hi = tokens.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (tokens[mid][1] <= start) lo = mid + 1; else hi = mid; }
+  return lo < tokens.length && tokens[lo][0] < end;
+}
+
 function syntaxContext(sf, line, offsets) {
   const starts = sf.getLineStarts(), start = offsets?.start ?? starts[line - 1] ?? sf.text.length, end = offsets?.end ?? starts[line] ?? sf.text.length;
-  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, sf.languageVariant, sf.text, undefined, start, end - start);
-  let token, meaningful = false, comments = false;
-  while ((token = scanner.scan()) !== ts.SyntaxKind.EndOfFileToken) {
-    if (token === ts.SyntaxKind.SingleLineCommentTrivia || token === ts.SyntaxKind.MultiLineCommentTrivia) comments = true;
-    else if (token > ts.SyntaxKind.LastTriviaToken) meaningful = true;
+  const reading = treeReading(sf);
+  // No compiled token in the span: the edit changes only comments and blank space. It is inert (no behaviour to check)
+  // unless a comment in it is one the compiler or the runtime reads.
+  if (!tokenIn(reading.tokens, start, end)) {
+    if (meets(reading.directives, start, end)) return { reason: 'directive comment', parent: 'SourceFile' };
+    return { reason: sf.text.slice(start, end).trim() ? 'comment' : 'whitespace', parent: 'SourceFile', inert: true };
   }
-  if (!meaningful) return { reason: comments ? 'comment' : 'whitespace', parent: 'SourceFile' };
   const candidates = [];
   // An explicit stack: a 10,000-term expression must not exhaust the call stack.
   const stack = [];
@@ -232,8 +272,9 @@ export function ledgerRows(manifest) {
     const line = Math.max(1, e[e.side ?? 'new']?.start ?? 1);
     const g = groups.get(key);
     if (g) { g.editIds.push(e.id); g.lines = [Math.min(g.lines[0], line), Math.max(g.lines[1], line)]; continue; }
+    // an inert group (comments and blank lines only) is an intake row with no verdict: nothing in it can behave differently
     groups.set(key, { file: e.file, unit: `(edits from ${e.id.slice(0, 12)} ${e.primary.kind}:${e.primary.reason})`, editIds: [e.id], lines: [line, line],
-      verdict: 'ASK', decision: e.primary.kind, coverage: `${e.primary.kind}:${e.primary.reason}`,
+      verdict: e.primary.inert ? null : 'ASK', ...(e.primary.inert ? { inert: true } : {}), decision: e.primary.kind, coverage: `${e.primary.kind}:${e.primary.reason}`,
       reason: e.primary.reason + (e.primary.context ? ` (${e.primary.context})` : ''), context: e.context, advice: [] });
   }
   return [...groups.values()];

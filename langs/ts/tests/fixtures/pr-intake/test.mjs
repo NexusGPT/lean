@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { intakeRepo } from './build.mjs';
-import { secretPath, selectUnits, coverageOf, budgetValue, runIdentity, unitKey } from '../../../pr.mjs';
+import { secretPath, selectUnits, coverageOf, budgetValue, runIdentity, unitKey, markdown, intakeMarkdown } from '../../../pr.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pr = path.resolve(here, '../../../pr.mjs');
@@ -160,7 +160,7 @@ export function testIntake() {
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try { console.log('PASS pr intake: ' + testIntake()); }
+  try { console.log('PASS pr intake: ' + testCommentOnly() + '; ' + testIntake()); }
   catch (e) { console.error(e.stack); process.exitCode = 1; }
 }
 
@@ -265,5 +265,48 @@ export function testRunIdentity() {
     assert.ok(unitRows(outside.report).length === 4 && unitRows(outside.report).every((r) => r.coverage === 'checked'), 'text outside functions must invalidate the file');
     console.log('Identity dependency guards: direct import, resolved config and module constant each invalidate all 4 rows');
     return 'run identity and cache pass';
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+
+// A hunk that changes no token outside comments and blank lines is intake, not a function: it stays in the intake table
+// as unassigned and leaves the verdict table and its counts. A hunk whose text only looks like a comment (a line of a
+// template literal) and a comment the compiler reads (a triple-slash reference) still change what is compiled: each
+// stays a verdict row. The fixture holds every shape once: a line comment added, the inside of a block comment edited,
+// a comment between two methods, a blank line, a comment above a function, and one function whose body changes.
+export function testCommentOnly() {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-comment-only-test-'));
+  try {
+    const refs = intakeRepo(path.join(tmp, 'repo'), { sides: path.join(here, 'comment-only') });
+    const args = ['--repo', refs.repo, '--base', refs.base, '--head', refs.head, '--no-project', '--runs-dir', path.join(tmp, 'runs'), '--cache-dir', path.join(tmp, 'cache')];
+    const previewJson = path.join(tmp, 'preview.json');
+    const preview = spawnSync(process.execPath, [pr, ...args, '--preview', '--json', previewJson], { encoding: 'utf8' });
+    assert.equal(preview.status, 0, preview.stderr);
+    const rows = Object.assign(JSON.parse(fs.readFileSync(previewJson, 'utf8')), { values: null }); // a bare array's `values` is Array.prototype.values
+    const inert = rows.filter((r) => r.inert);
+    // five groups change no token: the added top comment, the block comment's inside line (both sides), the comment above
+    // the class (both sides), the blank line, the comment between the two methods
+    assert.deepEqual(inert.map((r) => [r.coverage, r.lines]).sort(), [['unassigned:comment', [15, 17]], ['unassigned:comment', [2, 2]], ['unassigned:comment', [24, 24]], ['unassigned:comment', [8, 9]], ['unassigned:whitespace', [16, 16]]].sort(),
+      'every edit that changes no token outside comments and blank lines is an intake-only row');
+    assert.ok(inert.every((r) => r.decision === 'unassigned' && r.verdict === null), 'an intake-only row is unassigned and carries no verdict');
+    const owed = rows.filter((r) => !r.inert);
+    assert.deepEqual(owed.map((r) => r.coverage).sort(), ['skipped:preview', 'unassigned:directive comment', 'unassigned:module-level statement'],
+      'the changed function, the reference directive and the template line each owe a verdict');
+    const md = markdown(rows, 'base', 'head');
+    const verdicts = md.split('\n').filter((l) => l.startsWith('| notes.ts'));
+    assert.equal(verdicts.length, 3, 'the verdict table holds the three rows that owe a verdict');
+    assert.ok(!/unassigned:(comment|whitespace)/.test(md.split('## Change ledger')[0]), 'no intake-only row in the verdict table');
+    assert.match(md, /3 changed function\(s\): \*\*0 in scope · 0 WITNESS · 0 PASS-proved · 0 PASS-decided · 0 PASS-bounded · 2 ASK · 0 REFUSE · 0 NEW\*\*/);
+    const intake = intakeMarkdown(rows);
+    assert.equal(intake.split('\n').filter((l) => /unassigned:(comment|whitespace) \| unassigned \|/.test(l)).length, 5, 'the intake table lists the five as unassigned');
+    // the plain run prints the intake table before the verdicts, as the comment does; no lane runs at a zero unit budget
+    const plain = spawnSync(process.execPath, [pr, ...args, '--unit-budget', '0'], { encoding: 'utf8' });
+    assert.equal(plain.status, 0, plain.stderr);
+    assert.ok(plain.stdout.indexOf('## Intake') >= 0 && plain.stdout.indexOf('## Intake') < plain.stdout.indexOf('## Verdicts'), 'the run prints intake, then verdicts');
+    assert.match(plain.stdout, /3 changed function\(s\): \*\*.* 2 ASK · 0 REFUSE · 0 NEW\*\*/);
+    assert.equal(plain.stdout.split('## Verdicts')[1].split('## Change ledger')[0].split('\n').filter((l) => /unassigned:(comment|whitespace)/.test(l)).length, 0);
+    const comment = spawnSync(process.execPath, [path.resolve(here, '../../../ci/comment.mjs'), ...args, '--unit-budget', '0', '--block', 'ask'], { encoding: 'utf8' });
+    assert.match(comment.stdout, /3 changed function\(s\): \*\*.* 2 ASK · 0 REFUSE · 0 NEW\*\*/, 'the comment renders the same counts');
+    assert.ok(!/::error file=notes\.ts,line=(2|8|16|24)::/.test(comment.stderr), 'an intake-only row never blocks');
+    return '5 comment-only groups intake-only; template line and directive stay ASK; run and comment agree';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
