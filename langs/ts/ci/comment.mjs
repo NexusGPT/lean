@@ -24,6 +24,9 @@
 // Exit code: 0 always unless --block is given (a failed post is a warning, not a failure). --block witness exits 1
 // when any row is WITNESS; --block ask exits 1 on WITNESS or ASK. Both block on a budget stop. A missing table exits 1
 // too, since a gate that could not look must not pass. A row declared in scope never blocks. Usage errors exit 2.
+// The gate reads every row of the report (function and intake rows, after --paths); --max-functions cuts the verdict
+// table and nothing else, so a blocking row past the cap still fails the job and still gets its annotation. The work
+// is bounded by --time-budget and --unit-budget, whose stop blocks.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -48,6 +51,16 @@ export function blockingRows(rows, block = 'none') {
   const kinds = BLOCKING[block];
   if (!kinds) throw new Error(`--block must be one of ${Object.keys(BLOCKING).join(', ')}`);
   return rows.filter((r) => !r['covered-by'] && kinds.includes(r.verdict)); // a nested row inherits its enclosing unit's verdict: that unit's row blocks, once
+}
+
+// the report as the comment tables it: every intake row, and the first `max` function rows (none dropped when `max` is
+// not set). Presentation only: the gate reads the report, never this.
+export function capTable(rows, max) {
+  const functionRows = rows.filter((r) => !intakeRow(r)); // the rule of pr.mjs's verdictRows: an intake row never fills the cap
+  const capped = !!(max && functionRows.length >= max);
+  if (!capped) return { table: rows, capped };
+  const kept = new Set(functionRows.slice(0, max));
+  return { table: withRecord(rows, rows.filter((r) => intakeRow(r) || kept.has(r))), capped };
 }
 
 // the comment: the marker, the table, one line on what produced it; cut at a line boundary if it is too long
@@ -217,21 +230,16 @@ export async function main(argv, env = process.env, log = console.log, warn = co
   let rows = null, error = null, refusalsFile = null;
   try {
     // Filter paths before checking and keep the report metadata after filtering.
-    rows = await report({ repo: path.resolve(repo), base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project, scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), paths: paths.length ? (f) => inPaths(f, paths) : null, maxUnits: maxFunctions, runsDir: opt('--runs-dir') ? path.resolve(opt('--runs-dir')) : undefined });
+    rows = await report({ repo: path.resolve(repo), base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project, scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), paths: paths.length ? (f) => inPaths(f, paths) : null, runsDir: opt('--runs-dir') ? path.resolve(opt('--runs-dir')) : undefined });
     refusalsFile = rows.refusalsFile ?? null;
     rows = withRecord(rows, rows.filter((r) => inPaths(r.file, paths)));
   } catch (e) { error = String(e?.message ?? e).split('\n')[0].slice(0, 300); }
-  // The cap limits the verdict table. The budget limits work.
-  const intakeRows = rows;
-  // It counts the rows verdictRows keeps (function units): an intake row is never tabled, so it never fills the cap,
-  // and every intake row stays for the intake table and the gate.
-  const functionRows = rows ? verdictRows(rows) : [];
-  const capped = !!(rows && maxFunctions && functionRows.length >= maxFunctions);
-  if (capped) { const kept = new Set(functionRows.slice(0, maxFunctions)); rows = withRecord(rows, rows.filter((r) => intakeRow(r) || kept.has(r))); }
-  const md = rows ? markdown(rows, short(base), short(head)) : `# lean report: ${short(base)} → ${short(head)}\n\nlean could not produce the table: ${error}`;
-  const body = commentBody(md, { block, capped, rows: intakeRows });
-  if (opt('--out')) { fs.writeFileSync(opt('--out'), body); log(`${rows ? rows.length : 0} function(s) -> ${opt('--out')}`); } else log(body);
-  if (opt('--json') && rows) fs.writeFileSync(opt('--json'), JSON.stringify(reportJSON(intakeRows), null, 1));
+  // `rows` stays the whole report: the intake table, --json and the gate read it. The cap shapes the verdict table only.
+  const { table, capped } = rows ? capTable(rows, maxFunctions) : { table: null, capped: false };
+  const md = table ? markdown(table, short(base), short(head)) : `# lean report: ${short(base)} → ${short(head)}\n\nlean could not produce the table: ${error}`;
+  const body = commentBody(md, { block, capped, rows });
+  if (opt('--out')) { fs.writeFileSync(opt('--out'), body); log(`${table ? table.length : 0} function(s) -> ${opt('--out')}`); } else log(body);
+  if (opt('--json') && rows) fs.writeFileSync(opt('--json'), JSON.stringify(reportJSON(rows), null, 1));
   if (error) warn(`::warning::lean could not produce the table: ${error}`);
   if (argv.includes('--post') && !dryRun) {
     try {

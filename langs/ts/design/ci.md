@@ -59,10 +59,10 @@ request in the caller that changes both lines, and its own lean comment shows wh
 Per changed function: lane B on `--n` inputs (100 by default), then Dafny for at most `--dafny-seconds` (30 by
 default in `pr.mjs`). Measured on this machine through `comment.mjs`: a one-function refactor proved by Dafny,
 `real 1,85` s; three WITNESS rows, `real 0,51` s (`/usr/bin/time -p`, toy files, `--no-project`). A large pull
-request is bounded by `paths` (only the files that matter), `max-functions` (the table) and `timeout-minutes` (the
-job). `pr.mjs` checks every changed function today; the table is cut at the cap after the fact. A hunk that makes
-`prReport` skip unmatched files and stop at the cap (options `paths`, `maxUnits`, which `comment.mjs` already passes)
-is with the lead, since `pr.mjs` belongs to another lane.
+request is bounded by `paths` (only the files that matter), `--unit-budget` and `--time-budget` (the work; a stop
+blocks under `--block`) and `timeout-minutes` (the job). `max-functions` cuts the verdict table and nothing else: every
+selected function is still checked, and `--block` decides from every row of the report, so a blocking row past the
+cap still fails the job and still gets its annotation.
 
 Validated offline only: `actionlint` 1.7.12 with shellcheck on both workflow files and on the caller above, the caller checked against the
 local reusable workflow's inputs (a misspelt `lean-ref` is refused). No workflow has run on GitHub; nothing is
