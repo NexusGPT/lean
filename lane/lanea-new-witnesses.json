@@ -1,0 +1,42 @@
+[
+ {
+  "key": "nexus_5684",
+  "name": "reachesSelfJson",
+  "k": 0,
+  "a": "ASK:lane-a-parent",
+  "false_pass": false,
+  "detail": "n value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result\n"
+ },
+ {
+  "key": "nexus_5684",
+  "name": "reachesSelfJson",
+  "k": 2,
+  "a": "ASK:lane-a-parent",
+  "false_pass": false,
+  "detail": "n value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result\n"
+ },
+ {
+  "key": "nexus_408",
+  "name": "VirtualEmployeeVersionService.restoreVersion",
+  "k": 2,
+  "a": "ASK:lane-a-parent",
+  "false_pass": false,
+  "detail": "irtualEmployee is not declared on Omit<PrismaClient<PrismaClientOptions, never, DefaultArgs>, \"$connect\" | \"$disconnect\" | \"$on\" | \"$transaction\" | \"$extends\">\n"
+ },
+ {
+  "key": "nexus-687",
+  "name": "ToolConnectionRepositoryAdapter.pollPipedreamAccounts",
+  "k": 2,
+  "a": "ASK:lane-a-parent",
+  "false_pass": false,
+  "detail": "n value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result\n"
+ },
+ {
+  "key": "nexus_408",
+  "name": "WorkflowExecutionHistoryService.getWorkflowNodeTestResult",
+  "k": 2,
+  "a": "ASK:lane-a-parent",
+  "false_pass": false,
+  "detail": "n value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result\n"
+ }
+]

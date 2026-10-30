@@ -99,6 +99,17 @@ export function changedTurn(spec, i) {
   if (g < 2 || g % REACH !== 2 || knownInput(spec, i)) return null;
   return (g - 2) / REACH;
 }
+// the full-world tier (fake.mjs enterWorld, design/world-reach.md): every WORLD-th generated input from the WORLD/2-th on,
+// outside the known phase, is turn w of the tier, an input whose world answers every read with a handle (no dead value
+// along a chain of reads), holds the caller's key in a field of that name, and reads a handle as a list of 1, 2 or 3
+// elements by turn. The parameters are drawn as on every other input; LEAN_WORLD=off switches the tier off
+export const WORLD = 8;
+export function worldTurn(spec, i) {
+  if (process.env.LEAN_WORLD === 'off') return null;
+  const g = i - (spec.walkFrom ?? 0);
+  if (g < WORLD / 2 || g % WORLD !== WORLD / 2 || knownInput(spec, i)) return null;
+  return (g - WORLD / 2) / WORLD;
+}
 const isUndefTag = (v) => !!v && typeof v === 'object' && v.t === 'undefined';
 function reachChanged(args, targets, t, defs = {}) {
   const locate = (at) => { // the holder of a target's leaf and its key, or null when a container on the way is absent

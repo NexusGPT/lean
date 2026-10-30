@@ -1,0 +1,13 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "Methods that read the world through injected services (this.db, this.api), untyped. Before the rule each untyped read of the world answered a handle a little more than one time in two, a field of the world was never the key the caller passed, and a handle read as a list held two elements: rename's ownership guard threw on every input so its changed lock test never ran, ownedDeep's guard five reads deep was never reached, firstAccount never met a list of one; all three were PASS-bounded. Every eighth generated input from the fourth on is now a full-world input (gen.mjs worldTurn, fake.mjs enterWorld, design/world-reach.md): every untyped read answers a handle, a field named like a primitive the caller passed holds it, and a list holds 1, 2 or 3 elements by turn. rename, ownedDeep and firstAccount: WITNESS, on full-world inputs only (LEAN_WORLD=off gives PASS-bounded). renameRefactor and firstAccountRefactor rename locals and write the bound as < 1: PASS-bounded.",
+ "b": {
+  "Records.rename": "WITNESS",
+  "Records.renameRefactor": "PASS-bounded",
+  "Records.ownedDeep": "WITNESS",
+  "Records.firstAccount": "WITNESS",
+  "Records.firstAccountRefactor": "PASS-bounded"
+ }
+}
