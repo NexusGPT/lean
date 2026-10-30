@@ -1,12 +1,56 @@
 {
- "why": "A call that runs outside code may change any object it can reach, and JavaScript reads a field after the call from the changed object (SEMANTICS.md: aliasing counts). The ordinary lane threads the world through the call but reads a field without it: `ext_Any_defaultPrevented_Any(f)`, `ext_Any_x_Any(g)`, `p.x` take the object as it was before the call, so a candidate reading the field first is the same term. At 9f26c1ed lane A proved all four equal (the equal block, 4 FAILED): aliased (f an alias of e, e.preventDefault()) and otherAny (g and e both any) lane B witnesses; typedAlias (p: Box, e any, which may be p) and passed (f(p), f a function parameter) lane B passes, its fakes never alias e and p or write an argument. Now a read without the world of an object the run has handed to such a call (directly, as an alias, by an any or function value, or reachable by type) after that call is refused read-after-call (translate.mjs readAfterCall, design/alias-result.md 2026-10-30). The refusal stops the file, so lane A is read unit by unit through check.mjs: against candidate.ts lane B witnesses aliased and otherAny, and typedAlias and passed are PASS-bounded with lane A ASK read-after-call (PASS-proved before the rule); against refactor.ts (aliased and otherAny with names changed, equal in JavaScript) lane A answers ASK read-after-call. freshAfter reads a record of primitive fields the unit made and never handed: lane A proves it.",
+ "why": "A call that runs outside code may change any object it can reach, and JavaScript reads a field after the call from the changed object (SEMANTICS.md: aliasing counts). The ordinary lane threads the world through the call but reads a field without it: `ext_Any_defaultPrevented_Any(f)`, `ext_Any_x_Any(g)`, `p.x` take the object as it was before the call, so a candidate reading the field first is the same term. At 9f26c1ed lane A proved all four equal (the equal block, 4 FAILED): aliased (f an alias of e, e.preventDefault()) and otherAny (g and e both any) lane B witnesses; typedAlias (p: Box, e any, which may be p) and passed (f(p), f a function parameter) lane B passes, its fakes never alias e and p or write an argument. Now a read without the world of an object the run has handed to such a call (directly, as an alias, by an any or function value, or reachable by type) after that call is refused read-after-call (translate.mjs readAfterCall, design/alias-result.md 2026-10-30). The refusal stops the file, so lane A is read unit by unit through check.mjs: against candidate.ts lane B witnesses aliased and otherAny, and typedAlias and passed are PASS-bounded with lane A ASK read-after-call (PASS-proved before the rule); against refactor.ts (aliased and otherAny with names changed, equal in JavaScript) lane A answers ASK read-after-call. freshAfter reads a record of primitive fields the unit made and never handed: lane A proves it. INTERIM (2026-10-30): read-after-call is switched off until its narrowed form lands; the four rows marked claim record the false proofs lane A gives meanwhile.",
  "candidateOnly": [
-  { "parent": "parent.ts", "file": "candidate.ts", "unit": "aliased", "verdict": "WITNESS" },
-  { "parent": "parent.ts", "file": "candidate.ts", "unit": "otherAny", "verdict": "WITNESS" },
-  { "parent": "parent.ts", "file": "candidate.ts", "unit": "typedAlias", "verdict": "PASS-bounded", "laneA": "read-after-call: `p` is read here after a call that may change it" },
-  { "parent": "parent.ts", "file": "candidate.ts", "unit": "passed", "verdict": "PASS-bounded", "laneA": "read-after-call: `p` is read here after a call that may change it" },
-  { "parent": "parent.ts", "file": "candidate.ts", "unit": "freshAfter", "verdict": "PASS-proved", "laneA": "PASS-proved" },
-  { "parent": "parent.ts", "file": "refactor.ts", "unit": "aliased", "verdict": "PASS-bounded", "laneA": "read-after-call: `f` is read here after a call that may change it" },
-  { "parent": "parent.ts", "file": "refactor.ts", "unit": "otherAny", "verdict": "PASS-bounded", "laneA": "read-after-call: `g` is read here after a call that may change it" }
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "aliased",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "otherAny",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "typedAlias",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved",
+   "claim": "[CLAIM \u2014 false proof, open] lane A proves this; read-after-call is off in this interim admission, its narrowed form restores the refusal"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "passed",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved",
+   "claim": "[CLAIM \u2014 false proof, open] lane A proves this; read-after-call is off in this interim admission, its narrowed form restores the refusal"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "freshAfter",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "aliased",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved",
+   "claim": "[CLAIM \u2014 false proof, open] lane A proves this; read-after-call is off in this interim admission, its narrowed form restores the refusal"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "otherAny",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved",
+   "claim": "[CLAIM \u2014 false proof, open] lane A proves this; read-after-call is off in this interim admission, its narrowed form restores the refusal"
+  }
  ]
 }
