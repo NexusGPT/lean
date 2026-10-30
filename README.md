@@ -284,7 +284,7 @@ docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     
 | the pull-request table, `--preview`, budgets, reuse across pushes; a `WITNESS` that names the source line on each side | built; the reuse key stops at one import level |
 | the lint, its editor rule, labelled advice, a proposal for every `any` declaration | built; `any` inside a type is not reported yet |
 | the front-end layers: a tree to a stated depth with context, resolved Tailwind styles with the project's theme | built |
-| the CI comment and block flag | built, validated offline, not yet run on a runner |
+| the CI comment and block flag | built; runs on GitHub runners ([pull request #1](https://github.com/NexusGPT/lean/pull/1): the table posted as the comment, the image job building the container and running ten proof-lane pairs inside it) |
 | a container image with Dafny and Z3, so the proof lane needs nothing installed | in progress |
 | the readings of the backlog kinds above | in progress, one design note each |
 | screen analysis, the gate, the benchmark, containment | in DA ([link](https://github.com/NexusGPT/differential-attestation)) |
