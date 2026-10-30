@@ -692,9 +692,7 @@ export function withRecord(rows, part) {
 export const intakeRow = (r) => r.decision === 'artifact' || r.decision === 'unassigned' || (!r.decision && /^(?:artifact|unassigned):/.test(r.coverage ?? ''));
 // The run's metadata (identity, values, stop, ledger...) rides on the array and is kept.
 export function verdictRows(rows) {
-  const kept = rows.filter((r) => !intakeRow(r));
-  for (const k of Object.keys(rows)) if (!/^\d+$/.test(k)) kept[k] = rows[k];
-  return kept;
+  return withRecord(rows, rows.filter((r) => !intakeRow(r)));
 }
 
 // the whole report as a run prints it: the title, the intake table (every row, the inert ones included), then the verdicts
@@ -734,8 +732,9 @@ export function markdown(allRows, base, head) {
     for (const r of asks) { lines.push(`### ${r.file} · ${unitCell(r.unit)}`, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
   }
   lines.push('', 'A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.');
-  if (rows.ledger) lines.push('', ledgerMarkdown(rows.ledger));
-  if (rows.reconciliation) lines.push('', `Task reconciliation: expected ${rows.reconciliation.expected.length}; terminal ${rows.reconciliation.terminal.length}; missing ${rows.reconciliation.missing.length}; unexpected ${rows.reconciliation.unexpected.length}; identities ${rows.reconciliation.complete ? 'complete' : 'INCOMPLETE'}.`, `Durable ledger: ${rows.terminalFile}`);
+  // the change ledger and the task reconciliation describe the whole row set (WHOLE_SET_FIELDS): read from allRows
+  if (allRows.ledger) lines.push('', ledgerMarkdown(allRows.ledger));
+  if (allRows.reconciliation) lines.push('', `Task reconciliation: expected ${allRows.reconciliation.expected.length}; terminal ${allRows.reconciliation.terminal.length}; missing ${allRows.reconciliation.missing.length}; unexpected ${allRows.reconciliation.unexpected.length}; identities ${allRows.reconciliation.complete ? 'complete' : 'INCOMPLETE'}.`, `Durable ledger: ${allRows.terminalFile}`);
   return lines.join('\n');
 }
 

@@ -113,3 +113,29 @@ One rule, decided only by whether the run read a values file:
 - The worker sends its fields to the parent through `reportJSON`, a hand-written list. The parent reads them back
   through another hand-written list at `prReport`. That is the same class of risk, at the process boundary. I added
   `valuesNearest` to both lists and did not restructure them.
+
+# Fourth follow-up, on lane/values-line-cap from the lead head 14b4d5f2
+
+- **Cap.** `comment.mjs` `--max-functions` counts `verdictRows(rows)`. It keeps the first N function rows and every
+  intake row, so intake rows reach both the intake table and the gate.
+- **verdictRows.** It is now `withRecord(rows, rows.filter((r) => !intakeRow(r)))`, the one shared helper. This drops
+  the whole-set fields (`WHOLE_SET_FIELDS`), so `markdown` reads the change ledger and the task reconciliation from
+  `allRows`, the whole set they describe.
+- **Tests.** `values-line.test.mjs` has 21 checks.
+  - Cap: six intake rows before three function rows. Cap 3 and cap 4 table f1, f2 and f3. Cap 2 tables f1 and f2. All
+    six intake rows are listed every time.
+  - verdictRows keeps the record. markdown keeps the reconciliation and durable-ledger lines.
+  - comment.test: the stop mutation is isolated under `--block witness`, and "an intake ASK blocks under ask with the
+    cap at 1" is added.
+- **Mutations.** Each one goes red:
+  - old cap: "--max-functions 3: tabled []"; the pr-intake fixture fails "an intake ASK blocks under ask with the cap
+    at 1"
+  - whole-set lines read from the filtered rows: "the reconciliation lines"
+- **Green.**
+  - pr-intake fixture PASS. comment.test 47 of 47. new-code 12 of 12.
+  - ledger, supervise, report, ledger-failures and worktree pass.
+  - The readme_ledger pair: 15 checks, all pass. readme-check 16 of 16.
+  - On the readme_ledger pair, the CI comment has Identity, Values none and the verdict table. `pr.mjs` keeps
+    "## Change ledger" and "Task reconciliation".
+- The earlier commits ebc926a1, a0e46eb6, d6dce328 and 911d0814 on `lane/values-line` are superseded by this branch.
+  `lane/values-line` is not to be merged past afe5a0fd.
