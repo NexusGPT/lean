@@ -25,7 +25,7 @@ Each is a real run of this checkout; the commands are the ones shown.
 **A slip the tests missed.** A ledger function whose candidate rejects an event that lands exactly on the floor (`<=` where the parent had `<`):
 
 ```bash
-git clone https://github.com/NexusGPT/lean && cd lean     # node ≥ 20 for lane B; python3 and dafny ≥ 4 (brew install dafny) for the proof lane
+git clone https://github.com/NexusGPT/lean && cd lean     # node ≥ 24 for lane B; python3 and dafny ≥ 4 (brew install dafny) for the proof lane, or the image below
 node langs/ts/check.mjs --parent langs/ts/tests/pairs/readme_ledger/parent.ts --candidate langs/ts/tests/pairs/readme_ledger/candidate.ts --unit applyAll --no-project --n 60 --seed 3 --out ledger.json
 jq -c '.witness | {input, floor: .args[3], parent: .parent.outcome.returned.posted, candidate: .candidate.outcome.returned.posted}' ledger.json
 ```
@@ -287,6 +287,14 @@ The habits one by one, with what each buys: [`docs/writing-provable-code.md`](do
 
 **Lane B needs only Node**; Dafny and Python are for the proof lane, and without them lane A reports `ASK`. `check.mjs` exits 0 on every verdict and 2 when a run ends with no verdict; `lint.mjs` exits 1 on findings.
 ## What is built and what is planned
+
+**The container image has both lanes and nothing to install**: node 24.22.2, python3, Dafny 4.11.0 and the Z3 4.12.1 its release bundles, all pinned in the [`Dockerfile`](Dockerfile). 873 MB on disk, 216 MB to download. Lane B forks its worker with Node's `--permission`, which node 20 rejects.
+
+```bash
+docker build -t lean:local .
+docker run --rm -v "$PWD:/work" -w /work lean:local check --parent old.ts --candidate new.ts --unit f --no-project
+docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     # any other command runs inside the checkout
+``` `check.mjs` exits 0 on every verdict and 2 when a run ends with no verdict; `lint.mjs` exits 1 on findings.
 
 | capability | status |
 |---|---|
