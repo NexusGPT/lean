@@ -1707,7 +1707,7 @@ function writesOf(checker, sym) {
   if (!m) {
     m = new Map();
     const walk = (x) => {
-      if (ts.isBinaryExpression(x) && x.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(x.left)) { const s = checker.getSymbolAtLocation(x.left); if (s) { if (!m.has(s)) m.set(s, []); m.get(s).push(x.right); } }
+      if (ts.isBinaryExpression(x) && x.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && x.operatorToken.kind <= ts.SyntaxKind.LastAssignment && ts.isIdentifier(x.left)) { const s = checker.getSymbolAtLocation(x.left); if (s) { if (!m.has(s)) m.set(s, []); m.get(s).push(x.operatorToken.kind === ts.SyntaxKind.EqualsToken ? x.right : x); } } // `t = v` writes v; a compound `t += v` writes the operation itself
       ts.forEachChild(x, walk);
     };
     walk(fn); localWrites.set(fn, m);
@@ -1809,7 +1809,9 @@ function heldOf(checker, n, seen) {
     return null;
   }
   if (ts.isIdentifier(n)) {
-    let sym = null; try { sym = checker.getSymbolAtLocation(n); } catch { return null; }
+    if (heldParams && n.parent && ts.isParameter(n.parent) && n.parent.name === n && heldParams.has(n.parent)) return any(); // a parameter of a unit read at Any for a call that hands it a held value
+    let sym = null; try { sym = n.parent && ts.isShorthandPropertyAssignment(n.parent) && n.parent.name === n ? checker.getShorthandAssignmentValueSymbol(n.parent) : checker.getSymbolAtLocation(n); } catch { return null; } // a shorthand member's name reads the local it names
+    if (heldParams && sym?.valueDeclaration && ts.isParameter(sym.valueDeclaration) && heldParams.has(sym.valueDeclaration)) return any();
     const ws = writesOf(checker, sym);
     if (!ws) return null;
     const declared = tAt(checker, sym.valueDeclaration.name);
@@ -1819,17 +1821,65 @@ function heldOf(checker, n, seen) {
     if (!real.some(Boolean)) return null;
     return real.length === 1 ? real[0] : any();
   }
-  if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) return opaqueOperand(n.expression) ? any() : null;
-  if (ts.isCallExpression(n)) return (ts.isPropertyAccessExpression(n.expression) || ts.isElementAccessExpression(n.expression)) && opaqueOperand(n.expression.expression) ? any() : null;
+  if (ts.isObjectLiteralExpression(n)) return heldLiteral(checker, n, seen) ? tAt(checker, n) : null; // a literal holding a held field: its own record type, each held field at its real type (heldField)
+  if (ts.isPropertyAccessExpression(n)) {
+    const h = assertionHeld(checker, n.expression, seen);
+    if (h && heldRecord(checker, h, seen)) { const p = checker.getPropertyOfType(h, n.name.text); return p ? heldField(checker, p, seen) : any(); } // a field of a held literal: held when its value was
+    return h && !primitiveFamily(h) ? any() : null;
+  }
+  if (ts.isElementAccessExpression(n)) return opaqueOperand(n.expression) ? any() : null;
+  if (ts.isCallExpression(n)) {
+    const v = heldCall(checker, n, seen);
+    if (v) return v.result; // a same-file unit read once more for this call: its result's real type when it is held there
+    return (ts.isPropertyAccessExpression(n.expression) || ts.isElementAccessExpression(n.expression)) && opaqueOperand(n.expression.expression) ? any() : null;
+  }
   if (ts.isBinaryExpression(n)) {
     const k = n.operatorToken.kind;
-    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return null;
+    if (k === ts.SyntaxKind.EqualsToken) return null;
+    if (k > ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return ts.isIdentifier(n.left) && (opaqueOperand(n.left) || opaqueOperand(n.right)) ? any() : null; // a compound write to a local: the operation on the real values, which the local then holds (writesOf)
     if ([ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken, ts.SyntaxKind.InstanceOfKeyword, ts.SyntaxKind.InKeyword].includes(k)) return null; // a boolean whatever its operands are
     return opaqueOperand(n.left) || opaqueOperand(n.right) ? any() : null;
   }
   if (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) return opaqueOperand(n.operand) ? any() : null;
   if (ts.isConditionalExpression(n)) return opaqueOperand(n.whenTrue) || opaqueOperand(n.whenFalse) ? any() : null;
   return null;
+}
+// an any or unknown value in a slot whose contextual type is another (`const n: number = x`, a field of a typed literal)
+function opaqueInTypedSlot(checker, n) {
+  if (!opaqueT(tAt(checker, n))) return false;
+  let ct = null; try { ct = checker.getContextualType(n); } catch { return false; }
+  if (!ct) return false;
+  return !(ct.flags & ts.TypeFlags.Union ? ct.types : [ct]).some((x) => x.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.TypeParameter | ts.TypeFlags.Void));
+}
+// the value a literal member writes: a property's initializer, a shorthand's name; null for any other member
+const memberValue = (p) => ts.isPropertyAssignment(p) ? p.initializer : ts.isShorthandPropertyAssignment(p) ? p.name : null;
+// A literal is HELD when a field holds a held value, or an any or unknown value where its type names another: the
+// literal is read with its own record type (each field the type of its value: any for an opaque value, the real type
+// for a held one, heldField), so the held field is Any in the literal's datatype and nothing converts it to the
+// declared type. Its members are plain data (named properties, shorthands, spreads of values that are not held); a
+// method, an accessor, a computed key or a held spread source keeps the literal refused.
+function heldLiteral(checker, n, seen = new Map()) {
+  if (!ts.isObjectLiteralExpression(n)) return false;
+  let hit = false;
+  for (const p of n.properties) {
+    if (ts.isSpreadAssignment(p)) { if (assertionHeld(checker, p.expression, seen)) return false; continue; }
+    const v = memberValue(p);
+    if (!v || (ts.isPropertyAssignment(p) && !(ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)))) return false;
+    if (!hit && (assertionHeld(checker, v, seen) || opaqueInTypedSlot(checker, v))) hit = true;
+  }
+  return hit;
+}
+// the type of a held literal (heldOf of an object literal: its own type, declared by the literal)
+export function heldRecord(checker, t, seen = new Map()) {
+  const d = t?.symbol?.declarations?.[0];
+  return !!d && ts.isObjectLiteralExpression(d) && heldLiteral(checker, d, seen);
+}
+// the real type of a field of a held literal's type: the real type of the value its member writes, null when it is not
+// held (the field's own type is the value's type: any for an opaque value)
+export function heldField(checker, prop, seen = new Map()) {
+  const d = prop?.valueDeclaration ?? prop?.declarations?.[0];
+  const v = d && d.parent && ts.isObjectLiteralExpression(d.parent) ? memberValue(d) : null;
+  return v ? assertionHeld(checker, v, seen) : null;
 }
 // a unit of the file: a top-level function, an arrow or function const at top level, a method of a top-level class
 function unitFunction(fn) {
@@ -1855,17 +1905,20 @@ function carried(checker, n) {
   if (ts.isBinaryExpression(p)) {
     const k = p.operatorToken.kind;
     if (k === ts.SyntaxKind.EqualsToken && p.right === n) { const s = ts.isIdentifier(p.left) ? checker.getSymbolAtLocation(p.left) : null; return !!writesOf(checker, s); } // a write to a local: the local is held in turn
-    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return false; // a compound write reads the target's declared type
+    if (k > ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment && p.right === n) { const s = ts.isIdentifier(p.left) ? checker.getSymbolAtLocation(p.left) : null; return !!writesOf(checker, s); } // a compound write to a local: the local holds the operation's result, so its real type is read (a field or an element keeps its declared type)
+    if (k >= ts.SyntaxKind.FirstAssignment && k <= ts.SyntaxKind.LastAssignment) return false; // the target of a write
     return true; // an operand: an operation on the real value
   }
   if (ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p) || ts.isTypeOfExpression(p) || ts.isExpressionStatement(p) || ts.isTemplateSpan(p)) return true;
   if (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isSatisfiesExpression(p) || ts.isAwaitExpression(p) || ts.isAsExpression(p) || ts.isTypeAssertionExpression(p)) return true; // the wrapper is held in turn
   if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === n) return true;
+  if ((ts.isPropertyAssignment(p) || ts.isShorthandPropertyAssignment(p)) && memberValue(p) === n) return heldLiteral(checker, p.parent); // a field of a literal: the field is its value's type in the literal's datatype, and the literal is held in turn
   if (ts.isConditionalExpression(p)) return true; // the condition is a truth test; a branch makes the whole held
   if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isSwitchStatement(p) || ts.isCaseClause(p)) && p.expression === n) return true; // a test, or a switch over the real value
   if (ts.isCallExpression(p)) {
     if (p.expression === n) return false; // calling a held value
     if (p.expression.getText() === 'Array.isArray') return true; // a test of the run-time value
+    if (heldCall(checker, p)) return true; // a same-file unit read once more with this parameter at Any
     return importRooted(checker, p.expression); // the outside receives the value as it is
   }
   if (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === n)) return unitFunction(ts.isReturnStatement(p) ? enclosingFn(p) : p); // the unit's own result
@@ -1880,13 +1933,61 @@ function returnsHeld(checker, fn) {
   walk(fn.body);
   return hit;
 }
+// the real type of a unit's result when it is held: the one held literal record type every return gives (its fields
+// read as heldField says), else Any; null when no return is held
+function heldResultType(checker, fn) {
+  const rets = [];
+  if (!ts.isBlock(fn.body)) rets.push(fn.body);
+  else { const walk = (x) => { if (x !== fn.body && ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) rets.push(x.expression); ts.forEachChild(x, walk); }; walk(fn.body); }
+  const held = rets.map((r) => assertionHeld(checker, r) ?? (opaqueT(tAt(checker, r)) && (() => { const ct = checker.getContextualType(r); return !!ct && !opaqueT(ct); })() ? checker.getAnyType() : null));
+  if (!held.some(Boolean)) return null;
+  return held.every((h) => h && h === held[0]) && heldRecord(checker, held[0]) ? held[0] : checker.getAnyType();
+}
+// A same-file unit called with a held value for a parameter, or whose result is held, is read once more for that call
+// (design/type-assertions.md, 2026-10-30): each such parameter at Any, the body read with it held, and the result Any
+// when the body's result is held under that reading, else the declared type. The callee is a plain unit (a top-level
+// function or function const, no type parameter, plain named parameters) that calls no same-file unit, so its reading
+// at Any is one more leaf; any other callee keeps the call refused.
+let heldParams = null; // the parameters (declarations) read at Any while a unit is read once more for a call
+export function withHeldParams(params, f) { const saved = heldParams; heldParams = params; try { return f(); } finally { heldParams = saved; } }
+const variantMemo = new WeakMap();
+export function heldVariantUnit(checker, decl) {
+  if (!decl || !ts.isFunctionLike(decl) || !decl.body || !unitFunction(decl) || ts.isMethodDeclaration(decl) || ts.isConstructorDeclaration(decl) || ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl)) return false;
+  if (variantMemo.has(decl)) return variantMemo.get(decl);
+  let ok = !decl.typeParameters?.length && !decl.asteriskToken && !(ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Async) && decl.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.questionToken && !p.dotDotDotToken && p.name.text !== 'this');
+  const sf = decl.getSourceFile();
+  const walk = (x) => {
+    if (!ok) return;
+    if (ts.isCallExpression(x) || ts.isNewExpression(x)) { let d = null; try { d = checker.getResolvedSignature(x)?.declaration ?? null; } catch { /* unresolved */ } if (d && d.getSourceFile() === sf && !isWithin(d, decl)) ok = false; } // another same-file unit: not a leaf
+    if (ts.isIdentifier(x) && x !== decl.name) { let s = null; try { s = checker.getSymbolAtLocation(x); } catch { /* none */ } const d = s?.valueDeclaration; if (d && d.getSourceFile() === sf && (d === decl || (ts.isVariableDeclaration(d) && d.initializer === decl)) ) ok = false; } // a reference to itself
+    ts.forEachChild(x, walk);
+  };
+  if (ok) walk(decl.body);
+  variantMemo.set(decl, ok);
+  return ok;
+}
+const isWithin = (d, root) => { for (let q = d; q; q = q.parent) if (q === root) return true; return false; };
+// the reading of a call of a same-file unit once more: { decl, held: parameter indices at Any, result: whether the
+// result is held there }, or null when the call needs none (no held argument, a result not held) or the callee is not
+// one such a reading reaches
+export function heldCall(checker, call, seen = new Map()) { // seen: the caller's, so a write cycle through the call (`x = f(x)`) is met again, not re-entered
+  if (!ts.isCallExpression(call)) return null;
+  let decl = null; try { decl = checker.getResolvedSignature(call)?.declaration ?? null; } catch { return null; }
+  if (!decl || decl.getSourceFile() !== call.getSourceFile() || !heldVariantUnit(checker, decl)) return null;
+  if (call.arguments.length > decl.parameters.length || call.arguments.some((a) => ts.isSpreadElement(a))) return null;
+  const held = [];
+  call.arguments.forEach((a, i) => { if (assertionHeld(checker, a, seen) || opaqueInTypedSlot(checker, a)) held.push(i); });
+  const params = new Set(held.map((i) => decl.parameters[i]));
+  const result = withHeldParams(params, () => heldResultType(checker, decl)); // the result's real type there, or null
+  return held.length || result ? { decl, held, result } : null;
+}
 // the refusal text for a held value (or an any or unknown value in a slot of another type) where its reading does not
 // carry it, or for a call of a same-file unit whose result is held; null otherwise
 export function typeAssertion(checker, n) {
   if (!n || !ts.isExpression(n)) return null;
   if (ts.isCallExpression(n)) {
     let decl = null; try { decl = checker.getResolvedSignature(n)?.declaration ?? null; } catch { /* unresolved */ }
-    if (decl && decl.getSourceFile() === n.getSourceFile() && ts.isFunctionLike(decl) && unitFunction(decl) && returnsHeld(checker, decl)) return `\`${n.getText().slice(0, 60)}\` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type`;
+    if (decl && decl.getSourceFile() === n.getSourceFile() && ts.isFunctionLike(decl) && unitFunction(decl) && !heldVariantUnit(checker, decl) && returnsHeld(checker, decl)) return `\`${n.getText().slice(0, 60)}\` calls a function whose result is asserted without a check; its value may be of another type than this caller reads; test it in the callee or give its source that type`;
   }
   if (ts.isParenthesizedExpression(n.parent) || ts.isNonNullExpression(n.parent) || ts.isSatisfiesExpression(n.parent)) return null; // the outermost wrapper owns the report
   const held = assertionHeld(checker, n);
@@ -1930,6 +2031,7 @@ function erasedReference(checker, n, seen = new Set()) {
     return referencePart(from) ? from : null;
   }
   if (ts.isIdentifier(n)) {
+    if (heldParams && n.parent && ts.isParameter(n.parent) && n.parent.name === n && heldParams.has(n.parent)) return any(); // a parameter of a unit read at Any for a call that hands it a held value
     let sym = null; try { sym = checker.getSymbolAtLocation(n); } catch { return null; }
     if (!sym || seen.has(sym)) return null;
     seen.add(sym);

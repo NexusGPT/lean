@@ -64,3 +64,57 @@ export function twice(x: any): number {
 export function plain(x: number): number {
   return x + 1;
 }
+
+// a held value in a field of a literal: the field is typed Any in the literal's datatype, so the unit's result is the
+// same uninterpreted conversion of the same record on both sides
+export function fieldHeld(x: any): { v: number } {
+  return { v: x as number };
+}
+
+// the same field holding `+ 0` of the held value: an operation on Any, a different record ("a" + 0 is "a0")
+export function fieldBumped(x: any): { v: number } {
+  return { v: x as number };
+}
+
+// a same-file callee given a held value: it is read once more at Any for that call, so its sum is the sum on Any
+function dbl(n: number): number {
+  return n + n;
+}
+export function paramHeld(x: any): string {
+  return `${dbl(x as number)}`;
+}
+
+// the callee's `+ 0` on the held value is an operation on Any: the string flows on and gains a "0"
+function keep(n: number): number {
+  return n + 0;
+}
+export function paramKept(x: any): string {
+  return `${keep(x as number)}`;
+}
+
+// a same-file unit whose result is held returns Any: its caller reads the value it is
+function asNum(x: unknown): number {
+  return x as number;
+}
+export function resultHeld(x: unknown): string {
+  return `${asNum(x)}`;
+}
+
+// `+ 0` on what such a unit returns is an operation on Any
+export function resultBumped(x: unknown): string {
+  return `${asNum(x) + 0}`;
+}
+
+// a compound write of a held value reads the target's real type: `t += v` on an Any total is the sum on Any
+export function compoundHeld(x: any): string {
+  let t = 0;
+  t += x as number;
+  return `${t}`;
+}
+
+// the same write against `0 + v` read as numbers: "a" makes "0a", which the number reading would call 0 + v
+export function compoundBumped(x: any): string {
+  let t = 0;
+  t += x as number;
+  return `${t}`;
+}
