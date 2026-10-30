@@ -1,3 +1,4 @@
+// touched on 2026-10-30 so the self-check workflow runs this pair on a GitHub runner (B5); the slip below (<= for <) is the WITNESS the table must show
 // README example, back end: a ledger. Events are applied to balances held in a Map, each posting is notified to a
 // port, bad events are rejected with a reason, and a class keeps a running count across calls.
 export interface Port { notify(account: string, balance: number): void; audit(line: string): void; }
