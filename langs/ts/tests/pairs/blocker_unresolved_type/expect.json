@@ -1,0 +1,21 @@
+{
+ "scope": [
+  "key_score",
+  "shifted",
+  "enter_only",
+  "negated"
+ ],
+ "equal": {
+  "key_score": true,
+  "shifted": false,
+  "enter_only": false,
+  "negated": true
+ },
+ "why": "A parameter whose type the checkout cannot resolve (React.KeyboardEvent without react installed, a DOM KeyboardEvent outside lib es2022, a type-only import from a package that is not there) is typed any by TypeScript; the translator already admits it as the opaque type Any (the lint reports it as an environment finding, which the gate does not count). The doubles lane (translate/smt-fp.mjs) refused every such unit: 'a parameter that is not a number, boolean, string or record'. Now such a parameter is Unread: it gets no symbol in the query, and a read of it anywhere refuses the unit, so a term that never names it is the same function for every value of it. keyScore (n * 2 against n + n, equal in binary64) and negated (-(-n) against n) are proved by the doubles lane (before: ASK doubles-unknown, the real lemma not proved). shifted (n + 1 against n + 2) is sat and the replay witnesses it. enterOnly reads e.key: the doubles lane refuses the read, lane B witnesses (0 against 1).",
+ "b": {
+  "keyScore": "PASS-bounded",
+  "shifted": "WITNESS",
+  "enterOnly": "WITNESS",
+  "negated": "PASS-bounded"
+ }
+}

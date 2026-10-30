@@ -163,18 +163,22 @@ const sortOfType = (t) => {
 export function encodeUnit(checker, sf, unit, side = 'unit') {
   const units = topLevelFunctions(sf);
   const u = typeof unit === 'string' ? units.get(unit) : unit;
-  const ops = new Set(), ufs = new Map(), leaves = new Map(); // ufs: symbol -> [arg sorts, result sort]; leaves: record path -> sort
+  const ops = new Set(), ufs = new Map(), leaves = new Map(), unread = new Set(); // ufs: symbol -> [arg sorts, result sort]; leaves: record path -> sort
   try {
     if (!u) throw new Unsupported(`no unit ${unit} in ${side}`);
     if (u.isAsync || u.fn.asteriskToken || u.cls) throw new Unsupported(`${u.name} is ${u.cls ? 'a class member' : u.isAsync ? 'async' : 'a generator'}`);
     const params = u.params.map((p, i) => {
       if (!ts.isIdentifier(p.name) || p.initializer || p.questionToken || p.dotDotDotToken) refuse(sf, p, 'a parameter that is not one plain name');
-      const t = checker.getTypeAtLocation(p), s = sortOfType(t) ?? (record(t) ? 'Obj' : null); if (!s) refuse(sf, p, 'a parameter that is not a number, boolean, string or record');
+      // a parameter of another type (an opaque any, a DOM event the checkout cannot resolve, a function) is Unread: it
+      // has no symbol in the query and no entry in env, so a read of it anywhere (here or in a callee it is passed to)
+      // refuses the unit, and a term that never names it is the same function for every value of it (design/opaque-params-fp.md)
+      const t = checker.getTypeAtLocation(p), s = sortOfType(t) ?? (record(t) ? 'Obj' : 'Unread');
       return { name: `p${i}`, sort: s, sym: checker.getSymbolAtLocation(p.name) };
     });
     // a record parameter is read through its paths: each scalar leaf the unit reads is a parameter of its own,
     // `|p0.a.b|`, so a unit that only reads its record is a function of those leaves (a write to it is refused)
-    const env = new Map(params.map((p) => [p.sym, p.sort === 'Obj' ? { s: 'Obj', path: p.name } : { t: p.name, s: p.sort }]));
+    params.filter((p) => p.sort === 'Unread').forEach((p) => unread.add(p.sym));
+    const env = new Map(params.filter((p) => p.sort !== 'Unread').map((p) => [p.sym, p.sort === 'Obj' ? { s: 'Obj', path: p.name } : { t: p.name, s: p.sort }]));
     const result = callBody(u, env, 0);
     return { ok: true, params: params.map(({ name, sort }) => ({ name, sort })), leaves: Object.fromEntries([...leaves].sort()), value: result, sort: result.s, encoded: [...ops].sort(), uninterpreted: [...ufs.keys()].sort(), ufs: Object.fromEntries(ufs) };
   } catch (e) {
@@ -255,6 +259,7 @@ export function encodeUnit(checker, sf, unit, side = 'unit') {
       if (e.text === 'NaN' || e.text === 'Infinity') { const d = sym?.valueDeclaration; if (!d || d.getSourceFile() !== sf) return { t: fromValue(e.text === 'NaN' ? NaN : Infinity), s: D }; }
       const d = sym?.valueDeclaration;
       if (d && ts.isVariableDeclaration(d) && d.getSourceFile() === sf && d.initializer && (ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && ts.isSourceFile(d.parent.parent.parent)) return expr(d.initializer, new Map(), depth); // a module const: its value, read where it is declared
+      if (sym && unread.has(sym)) refuse(sf, e, 'a read of a parameter that is not a number, boolean, string or record');
       refuse(sf, e, 'a name outside the unit\'s parameters, locals and module constants');
     }
     if (ts.isPrefixUnaryExpression(e)) {
@@ -388,10 +393,10 @@ export function equivalenceQuery(parent, candidate) {
   for (const [k, sig] of Object.entries(candidate.ufs)) { if (ufs[k] && JSON.stringify(ufs[k]) !== JSON.stringify(sig)) return { ok: false, reason: `${k} at two signatures` }; ufs[k] = sig; }
   const differ = P.map((x, i) => `(not (= ${x.t} ${C[i].t}))`);
   const leaves = { ...parent.leaves, ...candidate.leaves };
-  const vars = [...parent.params.filter((p) => p.sort !== 'Obj').map((p) => ({ name: p.name, sort: p.sort })), ...Object.entries(leaves).map(([k, s]) => ({ name: `|${k}|`, path: k, sort: s }))];
+  const vars = [...parent.params.filter((p) => p.sort !== 'Obj' && p.sort !== 'Unread').map((p) => ({ name: p.name, sort: p.sort })), ...Object.entries(leaves).map(([k, s]) => ({ name: `|${k}|`, path: k, sort: s }))];
   const text = [PRELUDE,
     ...Object.entries(ufs).map(([k, [as, r]]) => `(declare-fun |${k}| (${as.join(' ')}) ${r})`),
-    ...parent.params.filter((p) => p.sort !== 'Obj').map((p) => `(declare-const ${p.name} ${p.sort})`),
+    ...parent.params.filter((p) => p.sort !== 'Obj' && p.sort !== 'Unread').map((p) => `(declare-const ${p.name} ${p.sort})`),
     ...Object.entries(leaves).map(([k, s]) => `(declare-const |${k}| ${s})`),
     `(assert ${differ.length === 1 ? differ[0] : `(or ${differ.join(' ')})`})`, '(check-sat)', vars.length ? `(get-value (${vars.map((v) => v.name).join(' ')}))` : '', ''].join('\n');
   return { ok: true, text, params: parent.params, vars, encoded: [...new Set([...parent.encoded, ...candidate.encoded])].sort(), uninterpreted: Object.keys(ufs).sort() };
