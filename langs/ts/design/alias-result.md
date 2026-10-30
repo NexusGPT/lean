@@ -122,5 +122,6 @@ Pair `copied_argument`: `hand` and `twice` (one copy handed twice against two co
 made, read before the call, and handed, against the same copy made inline) is proved. Lane B passes all three, because
 its fake `g` neither writes nor keeps its argument.
 
-Open: a same-file effectful callee's arguments are not handed through `handedArg` (`helper({ ...p })` against
-`helper(p)` where `helper` calls `g` on its parameter), nor are receivers of outside methods.
+The arguments of a same-file call that threads the world go through `handedArg` too (`unitArgs`): `helper({ ...p })`
+against `helper(p)`, where `helper` hands its parameter to `g`, was proved at 1ffceb9b and is not now (pair unit
+`viaHelper`). Open: the receiver of an outside method (`{ ...p }.m()` on a typed object) is not classified.
