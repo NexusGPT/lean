@@ -23,7 +23,7 @@ import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or f
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
 import { absenceCarried, absenceHome, payloadRead, payloadStatement, strandedLetReads } from '../common.mjs'; // a value that may be absent: one test with the translator (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
-import { typeAssertion } from '../common.mjs'; // a narrowing `as`: one test with the translator
+import { typeAssertion, erasedReferenceSlot } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { spreadReadWhy, openRecordReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries (open-datatype)
 import { untypedThisParam } from '../common.mjs'; // a `this` parameter typed any or unknown, or untyped: one test with the translator
 // untypedJsUnit (common.mjs): a JavaScript unit whose parameter has no declared type, refused as untyped-js by the lint's unit loop and at the head of the translator's emitUnit
@@ -1295,6 +1295,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
 
   function expr(e) {
     { const why = typeAssertion(checker, e); if (why) v(e, 'type-assertion', why); } // a value whose type nothing checked, in a slot that reads it as its declared type
+    { const er = erasedReferenceSlot(checker, e); if (er && er.rule === 'reference-equality') v(e, er.rule, er.message); } // a reference whose type an assertion erased, compared by identity (a Map key or a Set item is the translator's reference-key, as for an object-keyed Map: the heap core reads keys by identity)
     switch (e.kind) {
       case K.Identifier: return checkIdent(e);
       case K.NumericLiteral: case K.BigIntLiteral: case K.StringLiteral: case K.TrueKeyword: case K.FalseKeyword: case K.NullKeyword: return;
