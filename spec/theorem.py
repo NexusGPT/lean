@@ -651,6 +651,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         ed = edit.get(f)
         tp = sig.get('tparams', '')
         out.append(f'predicate InScope_{f}{tp}({params}) {{ {ins.strip()} }}')
+        first = len(out)  # the lemmas' calls of f's own functions pass f's type parameters by name (pass_type_args)
         if f in unguarded:
             out.append(f'// UNGUARDED Equal_{f}: {unguarded[f]}')
             if ins.strip() == 'false' or f in dafny_sig_withheld:
@@ -720,6 +721,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                 out.append(f'  ensures {ens}')
                 out.append(f'{{ // PROOF EqualCanon_{f}_{part}')
                 out.append(f'}} // END EqualCanon_{f}_{part}')
+        out[first:] = pass_type_args(out[first:], f, tp)
         if ins.strip() == 'false':
             if ed:
                 raise Refusal(f'{f} is wholly outside S and cannot carry an edit')
@@ -749,6 +751,19 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                 out.append(f'}} // END Edit_{f}_pair{i}')
     out.append('// END THEOREM')
     return '\n'.join(out) + '\n'
+
+
+def pass_type_args(lines, f, tparams):
+    """The lemma lines of f with every call of f's parent, candidate and InScope functions given f's type parameters
+    by name (`<T(==), U(==)>` passes `<T, U>`). A type parameter that only f's body or result names (a method of `C<T>`
+    reading a field of type T through an opaque receiver) is not inferred from the arguments; inside the lemma, which
+    declares the same parameters, the call names them, so each side is read at the lemma's own T."""
+    names = [re.split(r'[(:\s]', x.strip(), maxsplit=1)[0] for x in split_top(tparams.strip()[1:-1])] if tparams else []
+    if not names:
+        return lines
+    ta = '<' + ', '.join(names) + '>'
+    call = re.compile(r'(?<![A-Za-z0-9_])((?:InScope_' + re.escape(f) + r')|(?:' + re.escape(f) + r'_(?:parent|candidate)))\(')
+    return [call.sub(lambda m: m.group(1) + ta + '(', ln) if not ln.startswith(('lemma ', 'predicate ', '//')) else ln for ln in lines]
 
 
 SUPPORT_RE = re.compile(r'// BEGIN SUPPORT\n.*?// END SUPPORT\n?', re.S)

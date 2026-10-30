@@ -1,5 +1,5 @@
 // a scalar generator has no reference whose contents can change between yields
-import { ts, originOf } from './common.mjs';
+import { ts, originOf, unitTypeParameters } from './common.mjs';
 const K = ts.SyntaxKind, TF = ts.TypeFlags;
 export const asyncGenerator = (u) => !!(u?.fn.asteriskToken && u.isAsync);
 export function generatorReading(checker, sf, units) {
@@ -13,7 +13,7 @@ export function generatorReading(checker, sf, units) {
     if (asyncGenerator(u)) {
       const rt = checker.getSignatureFromDeclaration(u.fn).getReturnType(), element = checker.getTypeArguments(rt)[0];
       const handle = (t) => ['AsyncIterable', 'AsyncIterator', 'AsyncIterableIterator', 'AsyncGenerator'].includes(t.symbol?.name) && scalar(checker.getTypeArguments(t)[0]);
-      if (!element || !scalar(element) || u.generics?.length || u.params.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || !(scalar(checker.getTypeAtLocation(p.name)) || handle(checker.getTypeAtLocation(p.name))))) return { rule: 'generator-effect', message: 'an async suspended program captures scalar values or scalar async iterator handles and yields scalars; mutable value captures need a heap step reading' };
+      if (!element || !scalar(element) || unitTypeParameters(checker, u).length || u.params.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || !(scalar(checker.getTypeAtLocation(p.name)) || handle(checker.getTypeAtLocation(p.name))))) return { rule: 'generator-effect', message: 'an async suspended program captures scalar values or scalar async iterator handles and yields scalars; mutable value captures need a heap step reading' };
       return { async: true };
     }
     active.add(u);
@@ -62,7 +62,7 @@ export function generatorReading(checker, sf, units) {
       if (ts.isWhileStatement(s) || ts.isDoStatement(s)) return bad('generator-bound', 'an unbounded generator needs a step reading; use a finite counted loop');
       bad('generator-use', 'use statement yields, scalar locals and finite loops; sent values and generator return values need a step reading');
     };
-    if (u.cls || u.generics?.length || u.params.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken || !scalar(checker.getTypeAtLocation(p.name)))) bad('generator-effect', 'a sequence generator is top-level with plain scalar parameters');
+    if (u.cls || unitTypeParameters(checker, u).length || u.params.some((p) => !ts.isIdentifier(p.name) || p.initializer || p.dotDotDotToken || p.questionToken || !scalar(checker.getTypeAtLocation(p.name)))) bad('generator-effect', 'a sequence generator is top-level with plain scalar parameters');
     const rt = checker.getSignatureFromDeclaration(u.fn).getReturnType();
     const element = checker.getTypeArguments(rt)[0];
     if (!element || !scalar(element)) bad('generator-effect', 'a sequence generator yields scalar values');
