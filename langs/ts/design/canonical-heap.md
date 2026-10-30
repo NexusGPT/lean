@@ -77,3 +77,48 @@ A seq comprehension anywhere in the walk blocks the hint-free proof: every funct
 allocations`; `lanes.A.canonical.parts` lists the five lemmas with their verdicts; `lanes.A.lemmas` holds every lemma.
 The suite reads a unit as proved when either lemma holds, and `expect.json` `canon` asserts the canonical route alone
 (`"canon": {"drop_first": true}` means the whole-heap lemma fails and the parts hold).
+
+## 2026-10-30: the walk's fuel is its bound, not a constant
+
+**What failed.** `heap_canonical`'s theorem failed `EqualCanon_pair_cells` under the Z3 bundled with Dafny 4.11
+(4.12.1), with identical text on both machines; the green runs had come from the step cache, whose key did not name the
+solver (it does now: `tests/stepcache.mjs`). Unfolding the walk by hand, one `CanonOrder` step per `assert`, proves the
+lemma: every step holds and the definitions are right. What fails is the solver's own unfolding at `{:fuel CanonOrder,20,21}`.
+
+**What was measured** (`CanonOrder`'s fuel varied, the other functions at 20, both canonical pairs, Dafny 4.11.0):
+
+| fuel | 4.12.1 | 4.14.1 | 5.3.3 |
+|---|---|---|---|
+| 8 and below | pair's `cells`, `named`, `roots` fail (the walk is not unfolded to its end) | same | same |
+| 9 to 12 | every expected part proves | same | same |
+| 13 to 19 | `pair_cells` or `attach_named` fails at 14, 16, 17, 18, 19 | at 13, 17, 18 | every part proves |
+| 20 | `pair_cells` fails | proves | proves |
+| 25, 30 | more parts fail (7 and 14 errors at 25 and 30) | 7 errors at 25 | proves to 40 |
+
+`pair`'s walk takes nine steps (two roots, the box's four fields, the fresh array's two items, the stop). A fuel below
+the walk leaves it unevaluated; a fuel far above it gives the solver instantiations it gets lost in, and where that starts
+depends on the solver version. The fixed 20 sat at 4.12.1's edge. Two rewrites of the walk were measured and dropped:
+an index into the worklist instead of `work[1..]`, and one recursive call with its arguments chosen by the condition
+(worse at every fuel). Lowering the fuel of the other recursive functions (`CanonCells`, `CanonIndex`, `CanonNames`,
+`CanonRootEdges`) to the same bound cost `pair_named` under 4.14.1; they stay at 20.
+
+**The reading.** `spec/theorem.py` `canon_walk_bound` computes, from the generated text, the steps the walk can take on
+either side: one per root, one per reference field of a root that is an initial record (the parameters' shapes from
+`// HYP`, a reference result's from the new `// RET <unit>: <shape>` the translator writes; the widest record when no
+shape is named), one per reference of every fresh cell the unit allocates (each `Alloc_<shape>` call, directly, through
+a prelude helper or through a callee unit: a record's reference fields, an array literal's items), and one to stop.
+The part lemmas take `{:fuel CanonOrder,b+1,b+2}`. When the text does not bound the walk (an allocation in a recursion,
+an array or map of references whose width the text does not write, a prelude function without a body that returns a
+world) the fuel stays 20, as before. Measured fuels: `pair` 10, `attach`, `tally`, `unhook` 7, `library_ops` 5 to 7.
+
+**Why it is sound.** The fuel is a hint to the prover and changes no statement: the lemma text, the part predicates and
+`CanonEqual` are what they were. A fuel too low can only fail a part (an `ASK:unproved`), never prove a false one.
+
+**What stays refused.** Nothing new is admitted. A walk the text does not bound keeps the fixed fuel and its old limits
+(the list under Limits above); a walk longer than about ten steps above its bound is no longer given a fuel that far.
+A unit whose bound is far above its real walk (a record result that is in fact fresh, counted as an initial record) can
+land in the band where 4.12.1 gives up; none of the 45 heap pairs does.
+
+**Checked.** `heap_canonical` 13 of 13 and `library_ops` 19 of 19 under each of 4.12.1, 4.14.1 and 5.3.3 (`LEAN_Z3`,
+`LEAN_STEP_CACHE=0`, `JOBS=4`); `heap_canonical` 13 of 13 twice under `JOBS=28` without the cache; the 45 pairs whose
+`expect.json` says `"heap": true` or `"canon"`, all pass.
