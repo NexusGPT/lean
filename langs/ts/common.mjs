@@ -1758,12 +1758,12 @@ function heldOf(checker, n, seen) {
   if (ts.isObjectLiteralExpression(n)) return heldLiteral(checker, n, seen) ? tAt(checker, n) : null; // a literal holding a held field: its own record type, each held field at its real type (heldField)
   if (ts.isPropertyAccessExpression(n)) {
     const h = assertionHeld(checker, n.expression, seen);
-    if (h && heldRecord(checker, h)) { const p = checker.getPropertyOfType(h, n.name.text); return p ? heldField(checker, p) : any(); } // a field of a held literal: held when its value was
+    if (h && heldRecord(checker, h, seen)) { const p = checker.getPropertyOfType(h, n.name.text); return p ? heldField(checker, p, seen) : any(); } // a field of a held literal: held when its value was
     return h && !primitiveFamily(h) ? any() : null;
   }
   if (ts.isElementAccessExpression(n)) return opaqueOperand(n.expression) ? any() : null;
   if (ts.isCallExpression(n)) {
-    const v = heldCall(checker, n);
+    const v = heldCall(checker, n, seen);
     if (v) return v.result ? any() : null; // a same-file unit read once more for this call: its result is Any when it is held there
     return (ts.isPropertyAccessExpression(n.expression) || ts.isElementAccessExpression(n.expression)) && opaqueOperand(n.expression.expression) ? any() : null;
   }
@@ -1804,16 +1804,16 @@ function heldLiteral(checker, n, seen = new Map()) {
   return hit;
 }
 // the type of a held literal (heldOf of an object literal: its own type, declared by the literal)
-export function heldRecord(checker, t) {
+export function heldRecord(checker, t, seen = new Map()) {
   const d = t?.symbol?.declarations?.[0];
-  return !!d && ts.isObjectLiteralExpression(d) && heldLiteral(checker, d);
+  return !!d && ts.isObjectLiteralExpression(d) && heldLiteral(checker, d, seen);
 }
 // the real type of a field of a held literal's type: the real type of the value its member writes, null when it is not
 // held (the field's own type is the value's type: any for an opaque value)
-export function heldField(checker, prop) {
+export function heldField(checker, prop, seen = new Map()) {
   const d = prop?.valueDeclaration ?? prop?.declarations?.[0];
   const v = d && d.parent && ts.isObjectLiteralExpression(d.parent) ? memberValue(d) : null;
-  return v ? assertionHeld(checker, v) : null;
+  return v ? assertionHeld(checker, v, seen) : null;
 }
 // a unit of the file: a top-level function, an arrow or function const at top level, a method of a top-level class
 function unitFunction(fn) {
@@ -1894,13 +1894,13 @@ const isWithin = (d, root) => { for (let q = d; q; q = q.parent) if (q === root)
 // the reading of a call of a same-file unit once more: { decl, held: parameter indices at Any, result: whether the
 // result is held there }, or null when the call needs none (no held argument, a result not held) or the callee is not
 // one such a reading reaches
-export function heldCall(checker, call) {
+export function heldCall(checker, call, seen = new Map()) { // seen: the caller's, so a write cycle through the call (`x = f(x)`) is met again, not re-entered
   if (!ts.isCallExpression(call)) return null;
   let decl = null; try { decl = checker.getResolvedSignature(call)?.declaration ?? null; } catch { return null; }
   if (!decl || decl.getSourceFile() !== call.getSourceFile() || !heldVariantUnit(checker, decl)) return null;
   if (call.arguments.length > decl.parameters.length || call.arguments.some((a) => ts.isSpreadElement(a))) return null;
   const held = [];
-  call.arguments.forEach((a, i) => { if (assertionHeld(checker, a) || opaqueInTypedSlot(checker, a)) held.push(i); });
+  call.arguments.forEach((a, i) => { if (assertionHeld(checker, a, seen) || opaqueInTypedSlot(checker, a)) held.push(i); });
   const params = new Set(held.map((i) => decl.parameters[i]));
   const result = withHeldParams(params, () => returnsHeld(checker, decl));
   return held.length || result ? { decl, held, result } : null;
