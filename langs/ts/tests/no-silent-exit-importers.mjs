@@ -41,7 +41,7 @@ const repo = path.join(tmp, 'repo'); fs.mkdirSync(repo);
 const git = (...args) => { const r = spawnSync('git', ['-C', repo, '-c', 'user.email=lean@example.invalid', '-c', 'user.name=lean', ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); };
 git('init', '-q'); fs.writeFileSync(path.join(repo, 'a.ts'), 'export const inc = (x: number): number => x + 1;\n'); git('add', 'a.ts'); git('commit', '-qm', 'base');
 fs.writeFileSync(path.join(repo, 'a.ts'), 'export const inc = (x: number): number => 1 + x;\n'); git('commit', '-qam', 'head');
-assert.notEqual(spawnSync('git', ['-C', path.join(copy, 'langs/ts'), 'rev-parse', 'HEAD'], { encoding: 'utf8' }).status, 0, 'the copy must have no git history');
+assert.notEqual(spawnSync('git', ['-C', path.join(copy, 'langs/ts'), 'ls-files', '--error-unmatch', 'pr.mjs'], { encoding: 'utf8' }).status, 0, 'the copy must have no git history of its own (pr.mjs leanVersion: the checkout that tracks the file; a temp folder inside another repository is not that)');
 const out = path.join(tmp, 'report.md'), json = path.join(tmp, 'report.json');
 const pr = node(path.join(copy, 'langs/ts/pr.mjs'), ['--repo', repo, '--base', 'HEAD~1', '--head', 'HEAD', '--fresh', '--n', '5', '--dafny-seconds', '20', '--cache-dir', path.join(tmp, 'cache'), '--runs-dir', path.join(tmp, 'runs'), '--out', out, '--json', json]);
 assert.equal(pr.status, 0, `pr.mjs from a copy without git: exit ${pr.status}\n${pr.out}${pr.err}`);

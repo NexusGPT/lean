@@ -1060,11 +1060,15 @@ const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefin
 // in the child under the bound
 const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit);
 let recordHeadCache = null;
+// lean's own head, as pr.mjs leanVersion reads it: the commit of the checkout that TRACKS this file; a copy of lean placed
+// inside some other repository (a harness's temp folder under its own checkout) must not name that repository's head
 const leanHeadForRecords = () => {
   if (recordHeadCache) return recordHeadCache;
-  const head = spawnSync('git', ['-C', path.dirname(new URL(import.meta.url).pathname), 'rev-parse', 'HEAD'], { encoding: 'utf8' });
-  if (head.status !== 0) console.error(`witness record head unavailable (exit ${head.status}): ${head.stderr ?? head.error?.message}`);
-  return recordHeadCache = head.status === 0 ? head.stdout.trim() : 'unknown';
+  const here = path.dirname(new URL(import.meta.url).pathname);
+  const tracked = spawnSync('git', ['-C', here, 'ls-files', '--error-unmatch', 'run.mjs'], { encoding: 'utf8' });
+  const head = tracked.status === 0 ? spawnSync('git', ['-C', here, 'rev-parse', 'HEAD'], { encoding: 'utf8' }) : null;
+  if (!head || head.status !== 0) console.error(`witness record head unavailable (${head ? `exit ${head.status}: ${head.stderr ?? head.error?.message}` : 'this copy of lean has no git history of its own'})`);
+  return recordHeadCache = head && head.status === 0 ? head.stdout.trim() : 'unknown';
 };
 export async function runPair(opts) {
   if (!opts.recordHead) opts = { ...opts, recordHead: leanHeadForRecords() }; // the lean head every record names, read once per process
