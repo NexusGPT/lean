@@ -127,7 +127,8 @@ export function census(root, opts = {}) {
       r.units++;
       const d = r.directories.get(directory) ?? {
         directory, units: 0,
-        example: { file: relative, line: f.line, code: (f.text ?? sourceLines[f.line - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 120) },
+        // the message names the form the rule refused (a `types` refusal names its type only there; design/types-inventory.md)
+        example: { file: relative, line: f.line, code: (f.text ?? sourceLines[f.line - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 120), message: f.msg },
       };
       d.units++;
       r.directories.set(directory, d);

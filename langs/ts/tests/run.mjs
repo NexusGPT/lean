@@ -657,6 +657,8 @@ async function adviceLabels(add) {
     // the converter: a dry run writes no source file even when killed mid-round; census.mjs answers --help; a forEach rewrite is refused when the list's type rests on an assertion (converter lane, 2026-10-30)
     ['convert-dry-run-kill', scriptRow('runtime', 'convert-dry-run-kill', 'a converter dry run killed mid-round leaves the tree byte-identical', [path.join(here, 'convert_dry_run_kill.mjs')], lastLine)],
     ['census-usage', scriptRow('runtime', 'census-usage', 'census.mjs prints usage on --help (exit 0) and on no arguments (exit 2)', [path.join(here, 'census_usage.mjs')], lastLine)],
+    // a census refusal example carries the finding's message, the form the rule refused (types inventory lane, 2026-10-30)
+    ['census-example-message', scriptRow('runtime', 'census-example-message', 'each refusal example carries its finding\'s message', [path.join(here, 'census_example_message.mjs')], lastLine)],
     ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
