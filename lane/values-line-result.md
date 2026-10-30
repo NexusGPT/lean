@@ -64,3 +64,52 @@ One rule, decided only by whether the run read a values file:
 - The comment step's re-wrap also drops `identity` and `leanVersion`, so the CI comment carries no Identity line. Same
   class of defect, other line. Left for its owner.
 - `docs/known-values.md` documents the listed line only. It could name the none line too.
+
+# Follow-ups (second commit)
+
+## 1. The comment step keeps the whole report record
+- **Defect.** `comment.mjs` re-wrapped the rows twice, after the path filter and after the cap. Each re-wrap listed the
+  fields it kept by hand. Identity and lean version were missing from that list, so the CI comment had no Identity line.
+- **Fix.** `withRecord(rows, part)` in `pr.mjs` copies every own non-index field of the rows onto the part. Both
+  re-wraps call it. A field the report gains later goes through by default.
+- **One exception.** The fields that describe the whole row set are listed once in `WHOLE_SET_FIELDS`: ledger,
+  reconciliation, terminalFile, runDir, refusalsFile. A literal whole spread copied the unfiltered change ledger and a
+  runner-local ledger path into the comment and ignored `--paths`. The comment check "paths keep only matching files"
+  went red, 45 of 46. With the exception it is 46 of 46. These fields stay in the job's report.json, as before.
+
+## 2. The pairs repository keeps a pair's values file
+- **pairs-repo.** `pairs-repo.mjs` skipped every folder of a pair, so `.lean/` was dropped. It now copies the pair's
+  `.lean/` beside its index file.
+- **Snapshot.** That copy alone was not enough. The run's source snapshot (`supervise.mjs` materializeSources) kept
+  only the root `.lean/values.json`. It now keeps every `.lean/values.json`, the nearest-file rule `findValues` already
+  reads.
+- **Report line.** With the values reaching lane B, the line would have said "none listed", which is false. The worker
+  now records each nearer file a certificate drew, by its checkout path, as `valuesNearest`. `valuesLine` prints them:
+  `Values: known_values/.lean/values.json at <head>, sha256 12b6be4ec136f067; each unit's lane B draws the nearest file
+  above it first, ...`.
+- **Certificates.** A certificate's values file now names the checkout path. Before, it named the run's snapshot
+  copy, which the run deletes.
+- **Live, the CI path on the known_values pair.** `quote` is WITNESS, which is the verdict its expect.json gives with
+  the file. Before, lane B ran without the file.
+
+## 3. Docs
+`docs/known-values.md` documents three cases: the root-file line, the nearer-file line and the none line.
+
+## Tests and mutation evidence
+`langs/ts/ci/values-line.test.mjs`, 17 checks. Each mutation exits 1:
+- old comment re-wraps: "comment unfiltered: no Identity line with the lean version"
+- old pairs-repo: the `git show` of `known_values/.lean/values.json` fails
+- old snapshot filter: ENOENT on the snapshot's `known_values/.lean/values.json`
+- `markdown` ignoring `valuesNearest`: the line reads none listed
+
+## Regression
+- **readme-check**: 16 of 16.
+- **CI tests**: comment.test 46 of 46. report, ledger, supervise, ledger-failures and worktree pass. new-code 12 of 12.
+- **Root-file branch.** `pr.mjs` on a repo with a root file still prints `.lean/values.json at <head>`, and its
+  certificates name `.lean/values.json`.
+- **Pull request #1.** `pr.mjs` still prints the none line.
+
+## Left over
+- The worker sends its fields to the parent through `reportJSON`, a hand-written list. The parent reads them back
+  through another hand-written list at `prReport`. That is the same class of risk, at the process boundary. I added
+  `valuesNearest` to both lists and did not restructure them.

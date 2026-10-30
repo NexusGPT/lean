@@ -27,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prReport, markdown, intakeMarkdown, reportJSON, stopNote, budgetValue, listedValues } from '../pr.mjs';
+import { prReport, markdown, intakeMarkdown, reportJSON, stopNote, budgetValue, withRecord } from '../pr.mjs';
 
 export const MARKER = '<!-- lean-report -->';
 // a GitHub comment body holds at most 65,536 characters; the table is cut at a row boundary below that
@@ -219,12 +219,12 @@ export async function main(argv, env = process.env, log = console.log, warn = co
     // Filter paths before checking and keep the report metadata after filtering.
     rows = await report({ repo: path.resolve(repo), base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project, scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), paths: paths.length ? (f) => inPaths(f, paths) : null, maxUnits: maxFunctions, runsDir: opt('--runs-dir') ? path.resolve(opt('--runs-dir')) : undefined });
     refusalsFile = rows.refusalsFile ?? null;
-    rows = Object.assign(rows.filter((r) => inPaths(r.file, paths)), { stop: rows.stop, order: rows.order, callersChecked: rows.callersChecked, values: listedValues(rows) });
+    rows = withRecord(rows, rows.filter((r) => inPaths(r.file, paths)));
   } catch (e) { error = String(e?.message ?? e).split('\n')[0].slice(0, 300); }
   // The cap limits the verdict table. The budget limits work.
   const intakeRows = rows;
   const capped = !!(rows && maxFunctions && rows.length >= maxFunctions);
-  if (capped) rows = Object.assign(rows.slice(0, maxFunctions), { stop: rows.stop, order: rows.order, callersChecked: rows.callersChecked, values: listedValues(rows) });
+  if (capped) rows = withRecord(rows, rows.slice(0, maxFunctions));
   const md = rows ? markdown(rows, short(base), short(head)) : `# lean report: ${short(base)} → ${short(head)}\n\nlean could not produce the table: ${error}`;
   const body = commentBody(md, { block, capped, rows: intakeRows });
   if (opt('--out')) { fs.writeFileSync(opt('--out'), body); log(`${rows ? rows.length : 0} function(s) -> ${opt('--out')}`); } else log(body);
