@@ -289,7 +289,7 @@ if (PAIR_ONLY) {
   const A = huntA.get(PAIR_ONLY) ?? null;
   let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(pairsDir, PAIR_ONLY, 'expect.json'), 'utf8')); } catch { /* a pair without expectations has no hunt */ }
   const provedBy = A ? Object.fromEntries(Object.keys(exp.b ?? {}).map((u) => [dafnyName(u), A.proved(dafnyName(u))])) : null;
-  if (RESULT_FILE) { fs.writeFileSync(RESULT_FILE, JSON.stringify({ rows, hunt: A ? { adapters: A.adapters, provedBy } : null, cache: stepCacheStats() })); process.exit(0); }
+  if (RESULT_FILE) { fs.writeFileSync(RESULT_FILE, JSON.stringify({ rows, hunt: A ? { adapters: A.adapters, provedBy, bearing: Object.fromEntries(Object.keys(provedBy).map((f) => [f, A.bearing(f)])) } : null, cache: stepCacheStats() })); process.exit(0); } // the hunt entry crosses the process boundary whole: adapters, each lemma's proof and whether the doubles reading bears on it
   // run by hand (no `--result`): the pair's own table, as the whole suite prints it, and the exit code of its rows
   const cols = ['kind', 'name', 'check']; const widths = Object.fromEntries(cols.map((c) => [c, Math.max(c.length, ...rows.map((r) => String(r[c]).length))]));
   console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | lsc accepts | detail`);
@@ -504,7 +504,7 @@ async function pairs(add) {
         let res = null; try { res = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}.result.json`), 'utf8')); } catch { /* no result: the worker died */ }
         if (!res) { add('pair', name, 'pair worker', false, 'the pair worker wrote no result (it died or was killed)'); continue; }
         for (const r of res.rows) add(r.kind, r.name, r.check, r.ok, r.detail, r.lsc);
-        if (res.hunt) huntA.set(name, { adapters: res.hunt.adapters, proved: (f) => (f in res.hunt.provedBy ? res.hunt.provedBy[f] : null) });
+        if (res.hunt) huntA.set(name, { adapters: res.hunt.adapters, bearing: (f) => !!res.hunt.bearing?.[f], proved: (f) => (f in res.hunt.provedBy ? res.hunt.provedBy[f] : null) });
         childCache.hits += res.cache?.hits ?? 0; childCache.misses += res.cache?.misses ?? 0;
       }
     } else await pool.job('pairs/in-process').slots(1, async () => { for (const name of pairNames) await runPairStep(name, add); }); // its children run synchronously in this process: it holds one slot throughout
@@ -521,7 +521,9 @@ async function proofHunt(add) {
 // numbers only. The step prints its own TOTAL line.
 {
   let both = 0, hidden = 0, exempt = 0;
+  for (const [name, A] of huntA) if (typeof A.bearing !== 'function' || typeof A.proved !== 'function' || !Array.isArray(A.adapters)) add('proof-hunt', name, 'hunt entry shape', false, 'the pair step handed the hunt an entry without adapters, bearing or proved: the two paths that build it (in-process and the pair worker) must agree'); // a shape defect is a failing row, never an uncaught exception that ends the suite with no table
   for (const [name, A] of huntA) {
+    if (typeof A.bearing !== 'function' || typeof A.proved !== 'function') continue;
     const d = path.join(pairsDir, name), exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
     for (const unit of Object.keys(exp.b ?? {})) {
       let B = null; try { B = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}`, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* no lane B result: not counted */ }

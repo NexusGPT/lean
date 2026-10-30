@@ -7,3 +7,4 @@ harness-copy/
 
 # a lane's own scratch (result files, logs, bisection copies): never part of lean
 lane/
+.lean/

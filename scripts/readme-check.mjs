@@ -66,8 +66,8 @@ if (qi >= 0) {
 // the pull-request summary line
 const pi = readme.findIndex((l) => l.startsWith('$ node langs/ts/pr.mjs'));
 if (pi >= 0) {
-  const args = readme[pi].replace(/^\$ node langs\/ts\/pr\.mjs /, '').split(/\s+/);
-  const r = run([path.join(root, 'langs/ts/pr.mjs'), ...args], path.join(root, 'examples/booking'));
+  const args = readme[pi].replace(/^\$ node langs\/ts\/pr\.mjs /, '').replace(/\s+#.*$/, '').split(/\s+/);
+  const r = run([path.join(root, 'langs/ts/pr.mjs'), ...args], root); // the README says: from the repository root
   const shown = readme.slice(pi + 1, pi + 6).find((l) => l.startsWith('> '))?.replace(/\*\*/g, '') ?? '';
   const counts = shown.match(/\d+ in scope · .*?0 NEW/)?.[0] ?? '';
   const out = (r.stdout + r.stderr).replace(/\*\*/g, '');

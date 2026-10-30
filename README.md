@@ -137,7 +137,7 @@ Beside it: `statement`, `rollback` (throws on an unknown account) and a class `L
 [`examples/booking/`](examples/booking/) is a pricing core and a quote service. Commit `85136f1` changed it the way a real pull request does: one asked rule (percent promotions capped at half the unit price), one slip while there (`>=` became `>` in the free-delivery test), two refactors.
 
 ```
-$ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDiscount
+$ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDiscount     # from the repository root
 ```
 
 > 4 changed function(s); 5 unchanged caller(s) checked through lane B, 2 with a WITNESS through a changed callee: **1 in scope · 3 WITNESS · 1 PASS-proved · 0 PASS-decided · 1 PASS-bounded · 0 ASK · 0 REFUSE · 0 NEW**
@@ -211,30 +211,11 @@ lean judges values, the reachable object graph, effects, schedules and a compone
 
 ## Writing code lean can prove
 
-The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.** Code written that way gets more than a test: the next change to it is a theorem. Three pairs: a function written the usual way, then lean-style. Each gets the same later refactor (`*.next.ts`), and lean checks it on both. Every check ran with `--no-project --n 30 --dafny-seconds 30`; the `#` lines are read from the certificate. Files: [`examples/showcase/`](examples/showcase/); run the commands from that folder.
+The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.** Code written that way gets more than a test: the next change to it is a theorem. Two pairs: a function written the usual way, then lean-style. Each gets the same later refactor (`*.next.ts`), and lean checks it on both. Every check ran with `--no-project --n 30 --dafny-seconds 30`; the `#` lines are read from the certificate. Files: [`examples/showcase/`](examples/showcase/); run the commands from that folder.
 
-**1. A cart: change what you were handed through its own name, not a second one.** `addLine(cart: Cart, price: number): number`; the refactor computes the new total once (`const net = … + price`) and returns it.
-```ts
-// usual/cart.ts                              // lean/cart.ts
-const t = cart.totals;                        cart.totals.net += price;
-t.net += price;                               cart.totals.lines += 1;
-t.lines += 1;                                 return cart.totals.net;
-return t.net;
-```
-```
-$ node langs/ts/lint/lint.mjs usual/cart.ts --advice
-usual/cart.ts:6:3  alias-mutation  `t` is another name for a value this function was handed; change it through that name, or copy it first
-usual/cart.ts:7:3  alias-mutation  `t` is another name for a value this function was handed; change it through that name, or copy it first
-$ node langs/ts/check.mjs --parent usual/cart.ts --candidate usual/cart.next.ts --unit addLine
-PASS-bounded -> usual-cart.json      # lanes.A: ASK, translate: outside the subset (alias-mutation)
-$ node langs/ts/lint/lint.mjs lean/cart.ts --advice
-lean/cart.ts: inside the subset
-$ node langs/ts/check.mjs --parent lean/cart.ts --candidate lean/cart.next.ts --unit addLine
-PASS-proved -> lean-cart.json        # lanes.A: Equal_add_line: true; Dafny: 34 verified, 0 errors
-```
-**Impact:** the refactor is proved for every cart, not sampled on 30 inputs; the same refactor with the `lines` update forgotten is a `WITNESS`.
+A local alias of a value you were handed (`const t = cart.totals; t.net += price`) was once refused by the lint; the heap core reads it now, so `examples/showcase/usual/cart.ts` proves against its refactor as the lean-style file does. Two habits the lint still asks for:
 
-**2. A booking: write an effect under a condition as a branch, not an expression.** `confirm(b: Booking, late: boolean): number`; the refactor computes the price before the note (`const price = b.nights * b.rate`) and returns it.
+**1. A booking: write an effect under a condition as a branch, not an expression.** `confirm(b: Booking, late: boolean): number`; the refactor computes the price before the note (`const price = b.nights * b.rate`) and returns it.
 ```ts
 // usual/booking.ts                           // lean/booking.ts
 late && b.notes.push("late arrival");         if (late) b.notes.push("late arrival");
@@ -252,7 +233,7 @@ PASS-proved -> lean-booking.json     # lanes.A: Equal_confirm: true; Dafny: 1 ve
 ```
 **Impact:** nobody re-reads whether moving a line above the note changed anything. The branch returns its world only when taken, so the reordering is a theorem.
 
-**3. A ledger: build a dictionary as a value, not by writing keys into it.** `index(accounts: Account[]): Record<string, Account>`; the refactor turns the loop into `accounts.forEach((a) => { … })` with the same body.
+**2. A ledger: build a dictionary as a value, not by writing keys into it.** `index(accounts: Account[]): Record<string, Account>`; the refactor turns the loop into `accounts.forEach((a) => { … })` with the same body.
 ```ts
 // usual/ledger.ts                            // lean/ledger.ts
 const byId: Record<string, Account> = {};     let byId: Record<string, Account> = {};

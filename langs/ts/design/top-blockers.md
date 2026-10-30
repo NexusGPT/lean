@@ -45,6 +45,8 @@ receiver. The rule a sound reading needs:
 Estimated work: more than 90 minutes. It changes the read model in translate.mjs, used by every field read, and every
 pair whose units read a field after a call.
 
+**Closed (2026-10-30, later the same day).** The narrowed read-after-call rule (design/alias-result.md) refuses the parent file at typedAlias and passed, so the four rows are no longer proved: the pair's expectations are candidateOnly verdicts now (lane B witnesses aliased, otherAny and looped; typedAlias and passed are PASS-bounded with the refusal named; moved is proved). The reading that keeps these units instead of refusing them is the world read after a transition, below, still to build.
+
 **Pair** `blocker_opaque_receiver` (2026-10-30, after the lead's routing). Its equal block states today's verdicts, so
 the suite stays green. aliased, otherAny, typedAlias and passed are proved, and its why text marks each one
 `[CLAIM — false proof, open]`. The false-proof lane owns the read-model fix and its own pair, alias_after_call. When
