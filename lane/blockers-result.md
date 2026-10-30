@@ -24,7 +24,8 @@ Per bucket:
   refused (lint.mjs). Pair blocker_import_meta: no theorem before, 7/7 after.
 - **callbacks-function-values (5334).** An optional call `f?.(x)` inside a callback, with f an immutable captured
   input, is now admitted as the plain call already was (optionalScope in lint.mjs and translate.mjs). Pair
-  blocker_optional_callback: the lint refused parent.ts before. On the merged head, 9/9 pass. Still refused: a function field of a captured record, `p.onDone?.()` inside a callback.
+  blocker_optional_callback: the lint refused parent.ts before. On the merged head, 13/13 pass. The same reading
+  covers a function field of a captured record, `h.onItem?.(x)` inside a callback.
 
 Sibling pairs re-run by hand, all pass:
 - **Doubles change:** numbers, signed_zero, absent_number, env_programs, for_each, this_param, this_receiver,
@@ -35,6 +36,8 @@ Sibling pairs re-run by hand, all pass:
   named_callbacks, effectful_callbacks, callback_patterns.
 - **import.meta change:** local_declarations, new_unit, stack_text, module_forms.
 - **After the 497cc8c8 merge:** all five blocker_ pairs and any_equality pass.
+- **Record-path extension:** optional-call, optional_calls, heap_optional, null_undefined, callback_units,
+  lint_misfires, callbacks.
 
 Files touched:
 - langs/ts/translate/smt-fp.mjs, langs/ts/translate/translate.mjs, langs/ts/lint/lint.mjs

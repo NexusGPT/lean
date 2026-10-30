@@ -89,8 +89,9 @@ the translator give `optionalCallShape` the function that declares it as the sco
 (`optionalScope`, lint.mjs and translate.mjs). The callee is then `local`, and the translator reads it as the
 callback's own input: `var oc := onItem; if oc.Some? then invoke(world, oc.value, x)`. That is the reading the unit's
 own body already had. A mutable capture stays refused (`captured-mutable`). A function field of a captured record
-(`p.onDone?.(n)` inside a callback) stays refused too ("reads a function field of a record held in a local or a
-parameter"); that one goes through the record path of optionalCallShape and is not changed here.
+(`h.onItem?.(x)` inside a callback) is read the same way. Its root name is the captured input, so `optionalScope`
+follows the record path down to that root (an optional link inside the path stays refused). Before this change the
+lint refused it with "reads a function field of a record held in a local or a parameter".
 
 **A second blocker, in spec/theorem.py.** No unit with a function-typed parameter can be proved today.
 `split_top` (spec/theorem.py:104) counts the `>` of the Dafny arrow `->` as a closing bracket, so every parameter
@@ -108,7 +109,7 @@ is one line, in a file this lane does not own:
 **Pair** `blocker_optional_callback`. Before: the lint refused parent.ts, so no theorem was generated. After, with the
 theorem.py fix applied locally and then reverted: `Equal_notify_all`, `Equal_notify_named` and `Equal_notify_later`
 proved, notifyNext not proved, and lane B rows as expected (9 of 9). Without the fix, the three proof rows fail with
-the arity error. The lead merged that fix (497cc8c8). On the merged head, the pair passes 9 of 9.
+the arity error. The lead merged that fix (497cc8c8). On the merged head, the pair passes 13 of 13: notifyProp (record field) is proved, and lane B witnesses notifyPropNext.
 
 ## 2026-10-30 async-await: awaited port calls and a handed async arrow
 

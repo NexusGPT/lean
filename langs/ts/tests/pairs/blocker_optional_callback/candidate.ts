@@ -25,3 +25,16 @@ export function notifyLater(t: Timer, onDone: OnItem, n: number): number {
   t.later(() => { onDone?.(n); });
   return next;
 }
+
+export type Handlers = { onItem?: (n: number) => void; label: string };
+
+export function notifyProp(xs: readonly number[], h: Handlers): number {
+  xs.forEach((x) => { h.onItem?.(x); });
+  const total = xs.length;
+  return total;
+}
+
+export function notifyPropNext(xs: readonly number[], h: Handlers): number {
+  xs.forEach((x) => { h.onItem?.(x * 2); });
+  return xs.length;
+}
