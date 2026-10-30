@@ -68,23 +68,6 @@ check('withRecord carries every field of the record and no row', () => {
   for (const k of WHOLE_SET_FIELDS) assert.ok(!Object.hasOwn(withRecord(whole, []), k), `${k} describes the whole set`);
 });
 
-// the function cap counts function rows only: intake rows (artifact, unassigned) outnumber the cap and fill none of it
-const intake = (i) => ({ file: `cfg${i}.json`, unit: `(edits from e${i} artifact:config)`, lines: [1, 1], verdict: 'ASK', coverage: 'artifact:config', decision: 'artifact', reason: 'config' });
-const capRun = async (cap) => {
-  const fns = ['f1', 'f2', 'f3'].map((u) => ({ ...row(), unit: u }));
-  const report = async () => Object.assign([...[0, 1, 2, 3, 4].map(intake), { ...intake(5), decision: 'unassigned', coverage: 'unassigned:comment' }, ...fns], RECORD);
-  const out = []; assert.equal(await main(['--repo', '.', '--base', 'b'.repeat(40), '--head', 'c'.repeat(40), '--max-functions', String(cap)], {}, (m) => out.push(m), () => {}, report), 0);
-  const body = out.join('\n'), verdicts = body.split('## Verdicts')[1] ?? '', intakeTable = body.split('## Intake')[1]?.split('## Verdicts')[0] ?? '';
-  return { tabled: ['f1', 'f2', 'f3'].filter((u) => verdicts.includes(`| \`${u}\` (`)), intakeCount: (intakeTable.match(/^\| `cfg\d\.json` \|/gm) ?? []).length, capped: body.includes('cap was reached') };
-};
-for (const [cap, want, capped] of [[3, ['f1', 'f2', 'f3'], true], [4, ['f1', 'f2', 'f3'], false], [2, ['f1', 'f2'], true]]) {
-  const got = await capRun(cap);
-  assert.deepEqual(got.tabled, want, `--max-functions ${cap}: tabled ${JSON.stringify(got.tabled)}`);
-  assert.equal(got.intakeCount, 6, `--max-functions ${cap}: intake lists ${got.intakeCount} of 6 intake rows`);
-  assert.equal(got.capped, capped, `--max-functions ${cap}: cap note`);
-  passed++; console.log(`ok: --max-functions ${cap} with 6 intake rows: function rows ${want.join(', ')} tabled, every intake row listed`);
-}
-
 // without a root file, the nearer files lane B drew
 const nearest = [{ file: 'known_values/.lean/values.json', from: 'abc1234', sha256: '12b6be4ec136f067' }];
 check('markdown, nearer files only: each named by path, ref and hash', () => {

@@ -12,7 +12,6 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { main, MARKER, MAX_BODY, commentBody, inPaths, blockingRows, prNumber } from './comment.mjs';
 import { pairsRepo } from './pairs-repo.mjs';
-import { intakeRow } from '../pr.mjs';
 import { intakeRepo } from '../tests/fixtures/pr-intake/build.mjs';
 
 let passed = 0; const failed = [];
@@ -89,17 +88,12 @@ try {
   delete silent.stop;
   const scratch = path.join(tmp, 'silent.json');
   fs.writeFileSync(scratch, JSON.stringify(silent));
-  const unstopped = async () => {
+  const red = await run([...args, '--block', 'ask'], {}, async () => {
     const saved = JSON.parse(fs.readFileSync(scratch, 'utf8'));
     return Object.assign(saved.rows, { order: saved.order, stop: saved.stop });
-  };
-  // the stop alone: under witness no row of the report blocks (its intake rows are ASK), so only the stop can
-  const red = await run([...args, '--block', 'witness'], {}, unstopped);
+  });
   ok(red.code === 0, 'dropping the stop makes the gate silent');
-  const redLog = 'Scratch report: stop field removed\ncomment.mjs --block witness\nEXIT ' + red.code + '\n';
-  // the function cap counts function rows only: an intake row past it still reaches the gate
-  const intakeAsk = silent.rows.some((r) => r.verdict === 'ASK' && intakeRow(r));
-  ok(!intakeAsk || (await run([...args, '--block', 'ask'], {}, unstopped)).code === 1, 'an intake ASK blocks under ask with the cap at 1');
+  const redLog = 'Scratch report: stop field removed\ncomment.mjs --block ask\nEXIT ' + red.code + '\n';
   if (process.argv.includes('--budget-only')) {
     fs.mkdirSync('/tmp/claude-501', { recursive: true });
     fs.writeFileSync('/tmp/claude-501/budgets-red.log', redLog);

@@ -27,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prReport, markdown, intakeMarkdown, reportJSON, stopNote, budgetValue, withRecord, intakeRow } from '../pr.mjs';
+import { prReport, markdown, intakeMarkdown, reportJSON, stopNote, budgetValue, withRecord } from '../pr.mjs';
 
 export const MARKER = '<!-- lean-report -->';
 // a GitHub comment body holds at most 65,536 characters; the table is cut at a row boundary below that
@@ -223,11 +223,8 @@ export async function main(argv, env = process.env, log = console.log, warn = co
   } catch (e) { error = String(e?.message ?? e).split('\n')[0].slice(0, 300); }
   // The cap limits the verdict table. The budget limits work.
   const intakeRows = rows;
-  // It counts function units only (the rule of pr.mjs's verdictRows): an intake row is never tabled, so it never fills
-  // the cap, and every intake row stays for the intake table.
-  const functionRows = rows ? rows.filter((r) => !intakeRow(r)) : [];
-  const capped = !!(rows && maxFunctions && functionRows.length >= maxFunctions);
-  if (capped) { const kept = new Set(functionRows.slice(0, maxFunctions)); rows = withRecord(rows, rows.filter((r) => intakeRow(r) || kept.has(r))); }
+  const capped = !!(rows && maxFunctions && rows.length >= maxFunctions);
+  if (capped) rows = withRecord(rows, rows.slice(0, maxFunctions));
   const md = rows ? markdown(rows, short(base), short(head)) : `# lean report: ${short(base)} → ${short(head)}\n\nlean could not produce the table: ${error}`;
   const body = commentBody(md, { block, capped, rows: intakeRows });
   if (opt('--out')) { fs.writeFileSync(opt('--out'), body); log(`${rows ? rows.length : 0} function(s) -> ${opt('--out')}`); } else log(body);
