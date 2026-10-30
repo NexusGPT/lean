@@ -79,7 +79,7 @@ Every refusal is a named rule with a fixture the suite checks, and lane B still 
 | kind | what | the reader's expectation |
 |---|---|---|
 | **by design** | a change through an alias of a parameter; a prototype write; `===` on two objects; `eval` and `new Function`; `super` as a value; a loop with no measure (`ASK`); a changed signature without a declared adapter (`ASK:interface`) | stays refused: no value model keeps the meaning, and a wrong proof would be worse than an `ASK` |
-| **backlog** | a value whose type nothing checked (`as T` from `any`), in the four slots the reading does not reach yet; a strict-mode compile error's value; type forms with no reading yet; a field read after a call that may change its object; some `Promise` constructor shapes; a callback handed to an outside call that writes a local | each has a planned reading, written in its design note under [`langs/ts/design/`](langs/ts/design/); the lint names the construct and the rewrite today |
+| **backlog** | a value whose type nothing checked (`as T` from `any`) in a slot its reading does not reach: an array element, a callback result, a destructuring, a field write, a callee in a global script or a namespace; a strict-mode error no edit fixes (an absent read, a rejected cast, a missing initializer); type forms with no reading yet ([inventory](langs/ts/design/types-inventory.md)); a field read after a call on an object the reading cannot name (a copy, a spread, a name written twice); some `Promise` constructor shapes; a callback handed to an outside call that writes a local | each has a planned reading, written in its design note under [`langs/ts/design/`](langs/ts/design/); the lint names the construct and the rewrite today |
 | **environment** | a module the checkout cannot resolve; a dependency not installed | the census counts these apart from the subset; installing the project removes them |
 
 The lint tells you which kind you hit and what to write instead ([`docs/writing-provable-code.md`](docs/writing-provable-code.md)); `node langs/ts/census.mjs <repo>` counts the three kinds over a repository.
@@ -284,11 +284,11 @@ docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     
 | the pull-request table, `--preview`, budgets, reuse across pushes; a `WITNESS` that names the source line on each side | built; the reuse key stops at one import level |
 | the lint, its editor rule, labelled advice, a proposal for every `any` declaration | built; `any` inside a type is not reported yet |
 | the front-end layers: a tree to a stated depth with context, resolved Tailwind styles with the project's theme | built |
-| the CI comment and block flag | built, validated offline, not yet run on a runner |
-| a container image with Dafny and Z3, so the proof lane needs nothing installed | in progress |
-| the readings of the backlog kinds above | in progress, one design note each |
+| the CI comment and block flag | built; runs on GitHub runners ([pull request #1](https://github.com/NexusGPT/lean/pull/1): the table posted as the comment, the image job building the container and running ten proof-lane pairs inside it) |
+| a container image with Dafny and Z3, so the proof lane needs nothing installed | built (above); one Z3 is looked up once and named in the certificate, and the step cache is keyed by the Dafny and Z3 versions |
+| the readings of the backlog kinds above | in progress, one design note each; landed 2026-10-30: the four type-assertion slots and a held value into an outside callee, strict-mode values, a field read or one-level write after a call as a world read, the faithful number reading on held values |
 | screen analysis, the gate, the benchmark, containment | in DA ([link](https://github.com/NexusGPT/differential-attestation)) |
-| more languages through the conformance suite | Python at its first milestone |
+| more languages through the conformance suite | Python at its second milestone: the lint names the rewrite, lane B in the TypeScript record shape, five pairs ([`langs/py/design/milestone-2.md`](langs/py/design/milestone-2.md)) |
 
 ## Limits
 

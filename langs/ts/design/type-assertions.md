@@ -175,7 +175,7 @@ What stays refused, and why:
   fuel or further second readings; the translator also refuses, as `type-assertion`, a callee that threads the world,
   mutates a parameter, recurses or is read by the heap core;
 - an argument to a call whose callee is a local value rather than an import (`client.x.y(...)` with `client` a local
-  made by an imported factory): the rule `importRooted` keeps, unchanged here.
+  made by an imported factory): the rule `importRooted` keeps, unchanged here (carried since, the next section).
 
 Found on the way (the doubles lane, not changed here): `translate/faithful.mjs` decides a number operation by the
 checker's type, not the held reading, so `(x as number) + 1` with `x: any` is rewritten to the commutative
@@ -201,3 +201,54 @@ handed to a method of a local made by an imported factory (`client.analytics.exp
 held, and the refusal moves up to the call argument, which `importRooted` does not carry. Carrying a held value into
 such a call (a callee declared outside the file and not a library reading's) is the next lever. blocks' extra unit
 changes only its first refusal (a unit refused before by `callback-units`).
+
+## 2026-10-30: a held value reaches a callee declared in another module
+
+The construct: `client.analytics.exportCsv({ v: x as number })`, where `client` is a local an imported factory made.
+The callee is no import of the file, so `importRooted` (the callee expression's root is an import) did not carry the
+held literal and the unit was refused at the argument. In agent-nexus this was the form of most held literal fields
+(the previous section's measurement).
+
+The reading (`common.mjs outsideCallee`, called by `carried`): an argument to a call whose resolved declaration sits at
+the top level of another module (a file with an import or an export, the declaration not inside a namespace, a
+`declare global` or a `declare module` block) is carried. The translator reads such a call by `externalCall`, as it
+reads an imported function: no body, the arguments handed over as their own values, so a held literal goes in at its
+own `Held_<hash>` record type (the held field Any) and any other held value by the one uninterpreted conversion both
+sides apply (`ext_Any_as_int_Any(x)`).
+
+Why it is sound. The outside call is a bodiless function of its arguments (and the world): two calls give equal
+results only when their argument terms are equal. A held field is Any in the record the call receives, so
+`{ v: x as number }` and `{ v: (x as number) + 0 }` are different terms and the call results are not proved equal;
+the same literal on both sides is the same term. Nothing reads the held value at its declared type on the way in.
+
+What stays refused, and why:
+- a callee declared in a global script: the default library, lean's own number operations (`lean-number.d.ts`,
+  `Math.__lean_add`), an ambient declaration file. A reading may give such a call exact operations at the declared
+  types; the faithful rewrite's `Math.__lean_add` reads its operands as numbers and is commutative, so a held operand
+  there would prove `(x as number) + 1` equal to `1 + (x as number)` ("a1" and "1a"). The first version of this rule
+  tested only for the default library and let that through: five real-only rows of this pair proved their doubles
+  reading, the regression that named the hole;
+- a callee inside a namespace or a `declare` block (`@types/react`'s `React` namespace, `@types/node`'s modules,
+  a module augmentation): a library's own declarations, which hook and library rows read;
+- a callee of this file (heldCall decides it), and one the checker cannot resolve (no declaration: nothing says it is
+  outside).
+
+Pair `type_assertions`, two rows over the pair file `client.ts` (`makeClient(): Client`, `Client.analytics.exportCsv`):
+`outsideHeld` proved (the candidate builds `{ v }` from a held local, the same `Held` record), `outsideBumped` not
+proved and WITNESS by lane B (the outside receives "a0" where the parent hands "a").
+
+
+Measured (`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs /root/da/census/repos/agent-nexus --out
+<file>`, before at 2a6c7bb62, after at 6050d73f1; the copy has no installed dependencies):
+| | before | after |
+|---|---:|---:|
+| units whose first refusal is `type-assertion` (`refusalRules`) | 184 | 53 |
+| units with a `type-assertion` finding (`rules`) | 314 | 97 |
+| `type-assertion` findings | 370 | 138 |
+| units entered | 1,368 of 4,171 | 1,368 of 4,171 |
+
+The 217 units the rule frees were each refused by another rule as well: 162 `property-assign`, 81
+`unresolved-module`, 6 `read-after-call` among the rules they already had, and 53 now meet the translator's
+`copied-argument` (a new literal holding objects handed to a call that may keep it) and one `types` (type nesting too
+deep), the next guard on the same call. No unit that kept its type-assertion finding gained a rule, so the count of
+units entered does not move: this lever moves the refusals to the guards behind them.

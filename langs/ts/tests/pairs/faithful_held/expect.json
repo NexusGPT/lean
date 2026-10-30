@@ -1,0 +1,21 @@
+{
+  "why": "the faithful number reading (translate/faithful.mjs, rule C of design/doubles.md) read a node's checker type, so `(x as number) + 1` with x: any became the commutative Math.__lean_add and lane A proved it equal to `1 + (x as number)`, while JavaScript gives \"a1\" and \"1a\" (2026-10-30). It now reads the real type (common.mjs assertionHeld, the translator's typeOf): an opaque held value is no number, so heldSum and heldNum are not proved and lane B witnesses each (heldNum's lemma is withheld by the identity guard, a number result read from Any). familySum (a number held at its own family) and plainSum still commute and are proved.",
+  "scope": [
+    "held_sum",
+    "held_num",
+    "family_sum",
+    "plain_sum"
+  ],
+  "equal": {
+    "held_sum": false,
+    "held_num": false,
+    "family_sum": true,
+    "plain_sum": true
+  },
+  "b": {
+    "heldSum": "WITNESS",
+    "heldNum": "WITNESS",
+    "familySum": "PASS-bounded",
+    "plainSum": "PASS-bounded"
+  }
+}

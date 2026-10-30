@@ -2,9 +2,10 @@
  "scope": [],
  "equal": {},
  "laneBOnly": true,
- "why": "The sandbox boundary (design/sandbox-boundary.md). statusOf calls fetch: an outside call, the same fake on both sides, destructured in the candidate: PASS-bounded, and under LEAN_NET=deny it opens no socket (the record names the mode and no denied attempt). reachNet and reachFetch leave the vm context through a host intrinsic and attempt a real connection (net.connect, the worker's own fetch); under LEAN_NET=deny each attempt fails with ERR_ACCESS_DENIED before a socket exists, on both sides alike (PASS-bounded), and the record names the attempt. They are not lane B rows in the open mode: there the answer is the machine's (ECONNREFUSED or a listener), not the unit's.",
+ "why": "The sandbox boundary (design/sandbox-boundary.md). statusOf calls fetch: an outside call, the same fake on both sides, destructured in the candidate: PASS-bounded, and under LEAN_NET=deny it opens no socket (the record names the mode and no denied attempt). reachNet and reachFetch leave the vm context through a host intrinsic and attempt a real connection (net.connect, the worker's own fetch); under LEAN_NET=deny each attempt fails with ERR_ACCESS_DENIED before a socket exists, on both sides alike (PASS-bounded), and the record names the attempt. They are not lane B rows in the open mode: there the answer is the machine's (ECONNREFUSED or a listener), not the unit's. envLeak reads the names of the worker's environment variables outside lean's own reads (LEAN_*, NODE_OPTIONS, PATH, HOME, XDG_CACHE_HOME) through the real process; the worker is forked with only those, so the list is empty, as the parent answers (PASS-bounded); before, every other variable of the caller was visible (WITNESS).",
  "b": {
-  "statusOf": "PASS-bounded"
+  "statusOf": "PASS-bounded",
+  "envLeak": "PASS-bounded"
  },
  "netDeny": {
   "statusOf": { "verdict": "PASS-bounded", "denied": [] },

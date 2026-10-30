@@ -69,8 +69,9 @@ Units of the TypeScript pairs left out, by rule: `small_forms` `clearNote` (`par
 (`delete`), `Reg.forget` (`collection-mutation`); `operators` `headTail`'s default pattern (written as a conditional);
 `statements` `firstBig`'s callback (written as a loop).
 
-## Milestone 2
+## Milestone 2 and after
 
-Generators and async; inheritance and the exception class hierarchy; float; the heap reading of shared mutable
+Milestone 2 is the lint's rewrites, lane B's record and the conformance pairs (`milestone-2.md`). Milestone 3:
+generators and async; inheritance and the exception class hierarchy; float; the heap reading of shared mutable
 values (lists and dicts handed to the outside, in-place updates); dict iteration in insertion order; `finally`;
 programs of several commands on one instance in lane B; the concept bench for Python.

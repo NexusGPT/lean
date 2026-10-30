@@ -64,6 +64,15 @@ def mangle(t):
     return re.sub(r'[^A-Za-z0-9]+', '_', t).strip('_')
 
 
+def has_tvar(t):
+    """Does a type mention a type parameter?"""
+    if not isinstance(t, tuple):
+        return False
+    if t and t[0] == 'tvar':
+        return True
+    return any(has_tvar(x) if isinstance(x, tuple) else (isinstance(x, list) and any(has_tvar(y) for y in x)) for x in t[1:])
+
+
 def subst(t, sb):
     """A type with its type parameters replaced by the types a call binds them to."""
     if t is None:
@@ -571,6 +580,24 @@ class Translator:
             params.append({'name': '*' + a.vararg.arg, 'type': fold(a.vararg.annotation), 'default': None})
         sig = {'decorators': [fold(d) for d in fn.decorator_list], 'params': params, 'ret': fold(fn.returns)}
         return f'// SIG {name}: {json.dumps(sig, separators=(",", ":"))}'
+
+    def filter_helper(self, T):
+        """The filter of a list of T: one helper per element type with its congruence lemma `<F>_same` (two predicates
+        that agree on every element keep the same elements), the vocabulary spec/theorem.py states for two filters of
+        one sequence. An element type with a type parameter keeps the generic PyFilter (no lemma: its type is open)."""
+        if has_tvar(T):
+            return self.helper('PyFilter')
+        A = self.dtype(T)
+        name = 'PyFilter_' + mangle(A)
+        self.block(name, f'function {name}(s: seq<{A}>, p: {A} -> bool): (r: seq<{A}>)\n  ensures |r| <= |s|\n'
+                         f'  ensures forall i :: 0 <= i < |r| ==> p(r[i])\n  decreases |s|\n'
+                         f'{{ if |s| == 0 then [] else (if p(s[0]) then [s[0]] else []) + {name}(s[1..], p) }}\n'
+                         f'// two predicates that agree on every element keep the same elements\n'
+                         f'lemma {name}_same(s: seq<{A}>, p: {A} -> bool, q: {A} -> bool)\n'
+                         f'  requires forall i :: 0 <= i < |s| ==> p(s[i]) == q(s[i])\n'
+                         f'  ensures {name}(s, p) == {name}(s, q)\n  decreases |s|\n'
+                         f'{{ if |s| > 0 {{ {name}_same(s[1..], p, q); }} }}')
+        return name
 
     def tmp(self, base='t'):
         self.counter += 1
@@ -1468,10 +1495,14 @@ class Translator:
             if ct != BOOL:
                 fail(g.ifs[0], 'truthiness', 'the condition is not a bool: compare explicitly')
             cur = lam(c)
-            text = f'{self.helper("PyFilter")}({text}, {cur})'
+            text = f'{self.filter_helper(T)}({text}, {cur})'
         e, et = self.pure(n.elt, inner, ctx)
         if not (isinstance(n.elt, ast.Name) and n.elt.id == x):
-            text = f'{self.helper("PyMap")}({text}, {lam(e)})'
+            # a map is the sequence of its elements, element by element: two maps whose element expressions agree on
+            # every element are one sequence by extensionality, with no lemma about a recursive helper
+            sv, iv = self.tmp('s'), self.tmp('i')
+            text = (f'(var {sv} := {text}; seq(|{sv}|, {iv} requires 0 <= {iv} < |{sv}| => '
+                    f'(var {dn(x)}: {self.dtype(T)} := {sv}[{iv}]; {e})))')
         elif cur is not None and {m.id for m in ast.walk(g.ifs[0]) if isinstance(m, ast.Name)} <= {x}:
             self._last_filter = (n, (x, cur))
         return s, text, ('list', et)

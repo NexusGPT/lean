@@ -1,0 +1,6 @@
+{
+ "scope": ["deposit", "charge_fee", "same_owner"],
+ "equal": { "deposit": true, "charge_fee": false, "same_owner": true },
+ "why": "a frozen dataclass is a datatype: replace is a field update and a construction by position or keyword builds the same value; charge_fee changes the boundary (a zero balance is charged in the candidate); == on str is symmetric",
+ "b": { "deposit": "PASS-bounded", "charge_fee": "WITNESS", "same_owner": "PASS-bounded" }
+}

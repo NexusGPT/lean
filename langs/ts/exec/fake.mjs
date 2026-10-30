@@ -70,6 +70,41 @@ export class Environment {
     this.cache.set(path, v);
     return v;
   }
+  // A call into the world may change the objects it is handed (SEMANTICS.md, reachable mutation): on a seeded draw (the
+  // same on both sides for the same call) every writable primitive field of each plain object handed (an argument, the
+  // receiver of a view's method) takes another value of its kind, so a read the candidate moves across the call, or
+  // a field it restores, is seen. The draw is per call and per position, so a call that writes nothing runs too; the
+  // receiver of a view's method is always written (the few enumerated heaps that make an any value a record are the
+  // only inputs that show a write through it, and a fake receiver stands for the call that writes nothing)
+  writeHanded(path, values, always = null) {
+    if (this.loading) return;
+    values.forEach((o, i) => {
+      if (!o || typeof o !== 'object' || o.__isFake || Array.isArray(o) || Object.isFrozen(o) || (Object.getPrototypeOf(o) !== Object.prototype && Object.getPrototypeOf(o) !== null)) return;
+      const h = createHash('sha256').update(`${this.seed}:write:${path}:${i}`).digest();
+      if (o !== always && h.readUInt32BE(0) / 4294967296 >= 0.5) return;
+      for (const k of Object.keys(o)) {
+        const d = Object.getOwnPropertyDescriptor(o, k);
+        if (!d || !Object.hasOwn(d, 'value') || !d.writable) continue;
+        const v = d.value, nv = typeof v === 'number' ? (Number.isFinite(v) ? v + 1 : 0) : typeof v === 'string' ? `${v}~` : typeof v === 'boolean' ? !v : undefined;
+        if (nv !== undefined) o[k] = nv; // seen through the object, by every name of it
+      }
+    });
+  }
+  // an object the unit holds as an any value too (exec/korat.mjs): its own fields are the object's, a member it lacks
+  // is a fake whose call may write the object (its receiver) and what it is handed
+  view(path, obj) {
+    const env = this;
+    (this.viewReceivers ??= new Map());
+    return new Proxy(obj, {
+      get(t, prop, receiver) {
+        if (typeof prop === 'symbol' || prop in t) return Reflect.get(t, prop, receiver);
+        if (prop === 'then' || prop === '__isFake' || prop === '__fakePath') return undefined;
+        env.record('get', `${path}.${prop}`);
+        env.viewReceivers.set(`${path}.${prop}`, t);
+        return env.fake(`${path}.${prop}`);
+      },
+    });
+  }
   // whether a call faults: about one call in twelve, decided by the seed and the call's path
   faultDraw(path) { const h = createHash('sha256').update(`${this.seed}:fault:${path}`).digest(); return h.readUInt32BE(0) / 4294967296 < 1 / 12; }
   // a member of a handle: typed when the handle's shape names it, a plain answer otherwise
@@ -188,6 +223,7 @@ export class Environment {
           // own __decorate never lets a decorator's result replace the class
         }
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
+        env.writeHanded(`${path}()#${k}`, [...args, env.viewReceivers?.get(path)], env.viewReceivers?.get(path)); // the call may change what it is handed
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
         if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); programBuilt.add(error); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }

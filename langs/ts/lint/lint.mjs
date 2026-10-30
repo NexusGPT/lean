@@ -1080,17 +1080,10 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       if (ts.isIdentifier(r) && declOf(r).kind === 'local' && aliasHere(declOf(r).decl, e) && MUT_NAMES.has(name) && !heldRow) return v(e, 'alias-mutation', aliasMsg(r.text, declOf(r).decl));
       if (ts.isPropertyAccessExpression(r) && r.expression.kind === K.ThisKeyword && currentClass) return argsOf(e); // a field of the receiver: the field lives in the world, the call is a transition
       if (nonNull(rt).some(isAny)) {
-        // the call is a transition of the world; a later method call on the receiver is a transition too and sees it. A later
-        // plain field read would not (reads are pure), so that is the one shape refused
-        if (currentFn) {
-          // a fresh value as receiver (a call result, an element) cannot be read again later: the call is a plain transition
-          const rtext = (ts.isIdentifier(r) || ts.isPropertyAccessExpression(r) || r.kind === K.ThisKeyword) ? r.getText(sf) : null;
-          if (rtext === null) return expr(e);
-          let later = false; const walk = (x) => { if (later) return; if (x.getStart(sf) > e.getEnd() && ts.isPropertyAccessExpression(x) && x.expression.getText(sf) === rtext && !(x.parent && ts.isCallExpression(x.parent) && x.parent.expression === x)) later = true; ts.forEachChild(x, walk); };
-          walk(currentFn.body);
-          if (later) return v(e, 'opaque-mutation', `.${name}() on \`${rtext.slice(0, 40)}\` may change it, and \`${rtext.slice(0, 40)}\` is read later; read it before the call or through a method`);
-          return expr(e);
-        }
+        // the call is a transition of the world; a later method call on the receiver is a transition too and sees it, and a
+        // later field read of any object the call may reach is a world read (common.mjs readAfterCall decides it for the
+        // lint and the translator, design/alias-result.md 2026-10-30 world read): no test by the receiver's text
+        if (currentFn) return expr(e);
         return v(e, 'opaque-mutation', `.${name}() as a statement on an opaque value may mutate it; name the receiver first`);
       }
       // a path on a local or a parameter (user.tags): the owner of the root owns the path

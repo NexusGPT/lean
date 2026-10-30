@@ -1,5 +1,6 @@
 // type_assertions: `e as T` checks nothing at run time, and neither does an any or unknown value filling a typed slot.
 // Such a value is read with its real type (the source's, or the opaque Any), so `v` and `v + 0` stay different terms
+import { makeClient } from "./client";
 export type Mode = "a" | "b";
 export type Wide = "a" | "b" | "c";
 
@@ -117,4 +118,23 @@ export function compoundBumped(x: any): string {
   let t = 0;
   t += x as number;
   return `${t}`;
+}
+
+// a held literal handed to a method of a local an imported factory made: the callee is declared outside the file, so
+// the literal reaches it as an outside call's input, the same uninterpreted conversion of the same record on both sides
+export function outsideHeld(x: any): string {
+  const client = makeClient();
+  return client.analytics.exportCsv({ v: x as number });
+}
+
+// the same call given `+ 0` of the held value: an operation on Any, a different record the outside receives ("a0")
+export function outsideBumped(x: any): string {
+  const client = makeClient();
+  return client.analytics.exportCsv({ v: x as number });
+}
+
+// a held value summed with a number: the faithful reading must not make it a number (a commutative double sum), since
+// "a" + 1 is "a1" and 1 + "a" is "1a"
+export function heldSum(x: any): string {
+  return `${(x as number) + 1}`;
 }

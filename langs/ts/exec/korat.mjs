@@ -38,15 +38,24 @@ export function enumerateHeaps(spec, k = 2, seed = 1, cap = 48, maxAssignments =
       }
     } else if (r.kind === 'array') visit(r.of, d + 1);
   };
+  const opaque = (s) => { const r = resolve(s); return !!r && (r.kind === 'opaque' || (r.kind === 'union' && r.options.some((o) => resolve(o)?.kind === 'opaque'))); }; // any or unknown, a shape its reads refined included
   const paramSlots = spec.params.map((p) => { const r = inner(p.spec); if (r && r.kind === 'record') { visit(p.spec, 0); return { kind: 'ref', shape: shapeKey(p.spec), nullable: nullable(resolve(p.spec)) }; } if (r && r.kind === 'array' && inner(r.of) && inner(r.of).kind === 'record') { visit(r.of, 1); return { kind: 'list', shape: shapeKey(r.of) }; } return null; });
   if (!paramSlots.some(Boolean)) return { builders: [], assignments: 0, shapes: {}, pool: k };
   const keys = [...shapes.keys()];
+  // an any or unknown argument may be one of the pool's records too (SEMANTICS.md: aliasing counts): its own draw, or a
+  // view of a pool object (fake.mjs view: the record's fields, a member it lacks a fake that may write it)
+  spec.params.forEach((p, ai) => { if (!paramSlots[ai] && opaque(p.spec)) paramSlots[ai] = { kind: 'view' }; });
   // the dimensions of the odometer: one per argument slot and per pool-object slot
   const dims = []; // { set: (objs, args, choice) => void, choices: n, shape }
   const lists = (shape) => { const out = [[]]; for (let L = 1; L <= k; L++) { const prev = out.filter((x) => x.length === L - 1); for (const p of prev) for (let j = 0; j < k; j++) out.push([...p, j]); } return out; }; // every tuple of pool indices up to length k
   paramSlots.forEach((ps, ai) => {
     if (!ps) return;
-    if (ps.kind === 'ref') { const opts = [...(ps.nullable ? [null] : []), ...Array.from({ length: k }, (_, j) => j)]; dims.push({ choices: opts.length, apply: (objs, args, c) => { args[ai] = opts[c] === null ? null : objs.get(ps.shape)[opts[c]]; } }); }
+    if (ps.kind === 'view') { // a member the any value is read for, which the object holds only as an undeclared extra key, is left to the view (the object lacks it, as a record of its type may)
+      const r = resolve(spec.params[ai].spec), members = new Set((r.kind === 'union' ? r.options : [r]).flatMap((o) => { const x = resolve(o); return x && x.kind === 'record' ? Object.keys(x.fields) : []; }));
+      const opts = [null, ...keys.flatMap((key) => Array.from({ length: k }, (_, j) => [key, j]))];
+      dims.push({ choices: opts.length, apply: (objs, args, c, env) => { if (!opts[c]) return; const [key, j] = opts[c], o = objs.get(key)[j]; for (const m of members) if (shapes.get(key).spec.fields[m]?.extra) delete o[m]; args[ai] = env ? env.view(`arg${ai}`, o) : o; } });
+    }
+    else if (ps.kind === 'ref') { const opts = [...(ps.nullable ? [null] : []), ...Array.from({ length: k }, (_, j) => j)]; dims.push({ choices: opts.length, apply: (objs, args, c) => { args[ai] = opts[c] === null ? null : objs.get(ps.shape)[opts[c]]; } }); }
     else { const opts = lists(ps.shape); dims.push({ choices: opts.length, apply: (objs, args, c) => { args[ai] = opts[c].map((j) => objs.get(ps.shape)[j]); } }); }
   });
   for (const key of keys) for (let o = 0; o < k; o++) for (const slot of shapes.get(key).slots) {
@@ -63,8 +72,8 @@ export function enumerateHeaps(spec, k = 2, seed = 1, cap = 48, maxAssignments =
   const build = (choice, env) => { // fresh objects for one assignment
     const objs = new Map(); for (const key of keys) objs.set(key, Array.from({ length: k }, () => primsFor(key, env)));
     const g = generator(seed * 1000003, defs, spec.literals ?? [], 0, spec.strings ?? [], spec.regexes ?? []);
-    const args = spec.params.map((p, ai) => (paramSlots[ai] ? undefined : g.gen(p.spec, 0, env, `arg${ai}`)));
-    dims.forEach((d, i) => d.apply(objs, args, choice[i]));
+    const args = spec.params.map((p, ai) => (paramSlots[ai] && paramSlots[ai].kind !== 'view' ? undefined : g.gen(p.spec, 0, env, `arg${ai}`)));
+    dims.forEach((d, i) => d.apply(objs, args, choice[i], env));
     return args;
   };
   const total = dims.reduce((n, d) => n * d.choices, 1);

@@ -1,6 +1,7 @@
 # lean on its own pull requests: every pair test the pull request touches becomes a change set (its parent, then its
 # candidate, in a scratch two-commit repository) and its table is posted as the comment. Never blocking.
-# The job `image` builds the container image (Dockerfile at the root) and runs ten proof-lane pairs inside it.
+# The job `image` builds the container image (Dockerfile at the root) and runs ten proof-lane pairs inside it; the job
+# `pairs` installs the same pinned Dafny and Z3 the image does (a runner has no brew), so both jobs verify with one toolchain.
 name: lean self
 
 on:
@@ -29,10 +30,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: install dafny
+      - name: install the pinned dafny and z3 of the image (the Dockerfile's release zip and bundled solver)
+        env:
+          DAFNY_VERSION: "4.11.0"
+          DAFNY_SHA256: a46a9ff7cdd720f7955854c78e95df13f4cfe6b80691b05f8654fe19e8267179
         run: |
-          brew install dafny
+          curl -fsSL -o /tmp/dafny.zip "https://github.com/dafny-lang/dafny/releases/download/v${DAFNY_VERSION}/dafny-${DAFNY_VERSION}-x64-ubuntu-22.04.zip"
+          echo "${DAFNY_SHA256}  /tmp/dafny.zip" | sha256sum -c -
+          sudo unzip -q /tmp/dafny.zip -d /opt
+          sudo ln -s /opt/dafny/dafny /usr/local/bin/dafny
+          sudo ln -s /opt/dafny/z3/bin/z3-4.12.1 /usr/local/bin/z3
           dafny --version
+          z3 --version
       - name: the touched pairs as a two-commit repository
         id: pairs
         env:

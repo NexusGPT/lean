@@ -937,7 +937,8 @@ export { commitRender, commitEffects, settleEffects, treeHandlers, RenderLoop };
 // process (worker.mjs) under a wall-clock bound: when the bound passes, the child is killed with SIGKILL and the unit's
 // verdict is ASK naming the bound (spin-bound), with the step, the input and the side that was running. The child reads
 // only the lean sources and the trees it is given (Node's permission model: --permission with --allow-fs-read), writes
-// nothing (LEAN_LIBRARY_CASES excepted), and starts no process, worker or addon. The network is open to code that leaves
+// nothing (LEAN_LIBRARY_CASES excepted), starts no process, worker or addon, and holds only the environment variables
+// lean's own code reads (workerEnv); a unit no parent holds runs in new-unit.mjs's child under the same. The network is open to code that leaves
 // the vm context, since this Node's permission model has no network switch; LEAN_NET=deny closes it at the process's own
 // bindings (net-deny.mjs) and the unit's record names every attempt it refused (design/sandbox-boundary.md).
 export const UNIT_SECONDS = 120; // the bound of one unit when no flag and no run budget names one
@@ -1059,7 +1060,23 @@ function workerReads(opts) {
   for (const p of read) { out.add(p); try { out.add(fs.realpathSync(p)); } catch { /* a path that does not exist reads nothing */ } }
   return [...out];
 }
-function workerFlags(opts) {
+// the environment a process that runs a unit's code starts with: only the variables lean's own code reads there (LEAN_*,
+// NODE_OPTIONS, the cache folder lower.mjs derives from XDG_CACHE_HOME or HOME, PATH). The permission model has no switch
+// for process.env, and code that leaves the vm context reads the real process's (design/sandbox-boundary.md), so what
+// the process is not given is what that code cannot read
+const KEPT_ENV = /^(?:LEAN_\w*|NODE_OPTIONS|PATH|HOME|XDG_CACHE_HOME)$/;
+export const workerEnv = (env = process.env) => Object.fromEntries(Object.entries(env).filter(([k]) => KEPT_ENV.test(k)));
+// A sandboxed process keeps only the kept set in its own environment, whatever the platform added at exec: macOS's
+// loader puts __CF_USER_TEXT_ENCODING into every child whatever env it was given, so the reduction is applied by the
+// process to itself, once, before any unit code loads. Called by the worker and by the parentless unit's child.
+export function scrubEnv(env = process.env) { for (const k of Object.keys(env)) if (!KEPT_ENV.test(k)) delete env[k]; return env; }
+// a path outside the trees a process under the permission model may read does not exist for the run: the model throws
+// on an existence check there (a walk up for a package.json, a config, a values file), where the run asks whether it exists
+export function absentOutsideReads() {
+  const exists = fs.existsSync;
+  fs.existsSync = (p) => { try { return exists(p); } catch (e) { if (e && e.code === 'ERR_ACCESS_DENIED') return false; throw e; } };
+}
+export function workerFlags(opts) {
   const flags = ['--permission', ...workerReads(opts).map((p) => `--allow-fs-read=${p}`), ...netFlags(netMode())];
   if (process.env.LEAN_LIBRARY_CASES) { const d = path.resolve(process.env.LEAN_LIBRARY_CASES); fs.mkdirSync(d, { recursive: true }); flags.push(`--allow-fs-write=${d}`, `--allow-fs-read=${d}`); }
   // the worker's heap: its share of the machine when the process that runs units in parallel states one
@@ -1100,7 +1117,7 @@ export async function runPair(opts) {
   const { unitSeconds, inProcess, ...rest } = opts;
   return new Promise((resolve) => {
     let last = null, done = false;
-    const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
+    const child = fork(workerFile, [], { execArgv: workerFlags(opts), env: workerEnv(), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
     const end = (res) => { if (done) return; done = true; clearTimeout(timer); cpuWatch.stop(); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
     const started = Date.now();
     let cpuSeen = 0, timedOut = 0, contention = 1;

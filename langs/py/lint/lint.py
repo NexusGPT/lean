@@ -1,8 +1,11 @@
 """lean-py lint: is every function of a Python file inside the milestone 1 subset?
 
-    python3 -I langs/py/lint/lint.py <file.py> [--json]
+    python3 -I langs/py/lint/lint.py <file.py> [--json | --agent]
 
-Exit 0 and "inside the subset", or exit 1 with one finding per line: `file:line:col rule message`.
+Exit 0 and "inside the subset", or exit 1 with one finding per line: `file:line:col rule message`. Each finding names
+the construct (the rule, the message, the source line) and what to write instead (`advice.py`, labelled proved,
+conditional or migration as the TypeScript lint labels it): `--json` gives every field per finding (`unit`, `text`,
+`label`, `precondition`, `advice`), `--agent` a work list per function, the TypeScript lint's `--agent` form.
 
 Two passes. The rules below name the constructs the subset refuses on sight (the same rule names as the TypeScript
 lint where the construct is the same). Then the translator runs on every unit, and anything it cannot read is a
@@ -13,7 +16,9 @@ import ast, json, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), 'translate'))
+sys.path.insert(0, HERE)
 from common import Module, decorator_names, decreases_hint, class_kind  # noqa: E402
+from advice import advise  # noqa: E402
 
 PROTO = {'getattr', 'setattr', 'hasattr', 'delattr', 'vars', 'type', 'globals', 'locals', 'super'}
 MUTATORS = {'append', 'extend', 'insert', 'pop', 'remove', 'clear', 'sort', 'reverse', 'update', 'setdefault',
@@ -182,21 +187,62 @@ def lint_file(path):
     return found
 
 
+def finding_rows(path, found):
+    """The findings as records: where, the rule, the message, the unit it sits in, its source line, the rewrite."""
+    try:
+        mod = Module(path)
+        spans = [(u.name, u.node.lineno, u.node.end_lineno) for u in mod.units()]
+        lines = mod.text.split('\n')
+    except SyntaxError:
+        spans, lines = [], []
+    rows = []
+    for f in found:
+        loc, rule, msg = f.split('  ', 2)
+        _, line, col = loc.rsplit(':', 2)
+        line, col = int(line), int(col)
+        inner = [s for s in spans if s[1] <= line <= s[2]]
+        unit = min(inner, key=lambda s: s[2] - s[1])[0] if inner else None  # a method's span lies inside its class's
+        label, pre, adv = advise(rule)
+        row = {'file': path, 'line': line, 'col': col, 'rule': rule, 'message': msg, 'unit': unit,
+               'text': lines[line - 1].strip() if 0 < line <= len(lines) else '', 'label': label, 'advice': adv}
+        if pre:
+            row['precondition'] = pre
+        rows.append(row)
+    return rows
+
+
+def agent_report(path, rows):
+    """A work list for a person or a coding agent: per function, each finding with its line, code and rewrite."""
+    by_unit = {}
+    for r in rows:
+        by_unit.setdefault(r['unit'] or '(module level)', []).append(r)
+    out = [f'# lean: what keeps {path} from being proved', '',
+           f'{len(rows)} finding(s) in {len(by_unit)} place(s). Each item is one construct the proof lane refuses; fix it, '
+           f'rerun `python3 -I langs/py/lint/lint.py {path} --agent`, and the function is provable when its list is empty.', '']
+    for unit, rs in by_unit.items():
+        out += [f'## {unit}', '']
+        for r in rs:
+            out.append(f'- [ ] line {r["line"]}, `{r["rule"]}`: {r["message"]}')
+            if r['text']:
+                out.append(f'      code: `{r["text"][:120]}`')
+            if r['advice']:
+                out.append(f'      do: {r["advice"]}')
+        out.append('')
+    return '\n'.join(out)
+
+
 def main(argv):
-    as_json = '--json' in argv
+    as_json, as_agent = '--json' in argv, '--agent' in argv
     files = [a for a in argv if not a.startswith('--')]
     if len(files) != 1:
-        print('usage: lint.py <file.py> [--json]', file=sys.stderr)
+        print('usage: lint.py <file.py> [--json | --agent]', file=sys.stderr)
         return 2
     path = files[0]
     found = lint_file(path)
     if as_json:
-        rows = []
-        for f in found:
-            loc, rule, msg = f.split('  ', 2)
-            _, line, col = loc.rsplit(':', 2)
-            rows.append({'file': path, 'line': int(line), 'col': int(col), 'rule': rule, 'message': msg})
-        print(json.dumps({'inside': not found, 'findings': rows}, indent=1))
+        print(json.dumps({'inside': not found, 'findings': finding_rows(path, found)}, indent=1))
+    elif as_agent:
+        print(agent_report(path, finding_rows(path, found)) if found else f'{path}: inside the subset')
     else:
         if found:
             print('\n'.join(found))

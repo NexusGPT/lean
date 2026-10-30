@@ -16,6 +16,11 @@ answering (an exception, FakeFault). A call of the unit observes:
   4. pending work: none at milestone 1 (no async, no generators).
 A difference on any input is a WITNESS with that input and the first differing observation. None on n inputs is
 PASS-bounded: n, the seed and the fault policy are stated; it never becomes a proof.
+
+The record is the TypeScript lane B's (langs/ts/exec/run.mjs), so conformance/run.py reads both languages the same
+way: `verdict`, `unit`, `witnesses` (each: `input` the index, `args` as drawn, `parent` and `candidate` the whole
+observations, `where.field` the first that differs), `bound` (`n`, `seed`, `ms`, and how inputs were drawn) and
+`spec` (`params`, `returns`).
 """
 import argparse, ast, dataclasses, importlib.util, json, os, random, shutil, signal, sys, tempfile, types, typing
 
@@ -471,21 +476,33 @@ def main(argv):
                 continue
             for key in ('outcome', 'state', 'trace', 'pending'):
                 if obs['parent'][key] != obs['candidate'][key]:
-                    witnesses.append({'input': {'args': [spec_text(s) for s in flat], 'receiver': spec_text(recv) if recv else None, 'fault_rate': fault_rate, 'seed': call_seed},
-                                      'observation': key, 'parent': obs['parent'][key], 'candidate': obs['candidate'][key]})
+                    # the TypeScript record: the input's index, the arguments as drawn, each side's whole observation,
+                    # and where the first difference is (the observation's name)
+                    witnesses.append({'input': i, 'args': [spec_text(s) for s in flat], 'receiver': spec_text(recv) if recv else None,
+                                      'drawn': {'seed': call_seed, 'fault_rate': fault_rate},
+                                      'parent': obs['parent'], 'candidate': obs['candidate'], 'where': {'field': key}})
                     break
             if witnesses:
                 break
         result.update(inputs=n, faults=faults, timeouts=timeouts, skipped=skipped)
+        # the bound and the typed surface, in the TypeScript record's fields: n inputs, the seed, the per-call limit
+        bound = {'n': n, 'seed': a.seed, 'ms': CALL_SECONDS * 1000, 'skipped_setup': skipped, 'faults': faults,
+                 'fault_rate': '0.5 on one input in three', 'inputs': 'from the type hints, boundary values first, then seeded draws',
+                 'observation': 'outcome, reachable state of the arguments and the receiver, the trace of fake requests, pending work',
+                 'programs': 'none at milestone 2'}
+        result['spec'] = {'params': [{'name': p.arg, 'type': tstr(t)} for p, t in zip(params, types_)]
+                          + ([{'name': '*' + fn.args.vararg.arg, 'type': tstr(types_[-1][1])}] if fn.args.vararg is not None else []),
+                          'returns': tstr(pm.hint(fn.returns)) if fn.returns is not None else 'None',
+                          'receiver': tstr(recv_t) if recv_t is not None else None}
         if witnesses:
-            result.update(verdict='WITNESS', witnesses=witnesses)
+            result.update(verdict='WITNESS', witnesses=witnesses, bound=bound)
         elif timeouts:
-            result.update(verdict='ASK', reason=f'{timeouts} input(s) timed out on a side')
+            result.update(verdict='ASK', reason=f'{timeouts} input(s) timed out on a side', bound=bound)
         else:
             if n == 0:
-                result.update(verdict='ASK', reason=f'no input passed the setup ({skipped} skipped)')
+                result.update(verdict='ASK', reason=f'no input passed the setup ({skipped} skipped)', bound=bound)
             else:
-                result.update(verdict='PASS-bounded', bound={'inputs': n, 'skipped_setup': skipped, 'seed': a.seed, 'fault_rate': '0.5 on one input in three', 'programs': 'none at milestone 1'})
+                result.update(verdict='PASS-bounded', bound=bound)
         return finish(result)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
