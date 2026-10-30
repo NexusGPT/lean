@@ -119,3 +119,15 @@ keeps a quarter of the machine. And the in-process call watchdog's wall allowanc
 slowdown (the same sample that stretches the unit's CPU bound, capped at three) instead of the run queue over the
 cores (capped at ten): a spinning call allocates for its whole wall allowance, so ten times the idle allowance under
 eleven workers is what exhausted the machine. Without a baseline (a run outside the suite) the run-queue rule stands.
+
+## A finite exploration where every handler threw one same error is ASK (2026-10-30)
+
+The finite explorer (exec/finite.mjs) fires every handler over every click order. A handler that reaches a global the
+sandbox does not hold (a `window` member before the window patch, a browser API) throws a ReferenceError on both sides
+before it does anything, so both sides throw the same thing at every step and the exploration closed as PASS-decided:
+a sandbox gap taken for an observation (found by the front-end lane). The explorer now counts each side's handler fires
+and the errors they threw; when every fire threw on both sides and the two sides threw one same error text, the verdict
+is ASK, naming the error and the fire count, and run.mjs reports it as `finite exploration: every explored handler
+threw the same error on both sides (...)`. One handler that runs is an observation, so a component where some
+handlers throw and others run keeps its verdict; a WITNESS found earlier stands. Test `tests/same-error.mjs` over
+fixture `tests/fixtures/same-error`: Copier ASK (PASS-decided before), Partial and Toggle PASS-decided.
