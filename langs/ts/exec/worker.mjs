@@ -6,7 +6,8 @@
 // before it starts, so that a run the parent kills at the bound names the step, the input and the side it was in. A
 // run whose event loop drains before a verdict (a promise nobody settles) answers ASK naming what was pending, as the
 // command line's verdict guard does.
-import { runPairInProcess, crumbText, onCrumb, absentOutsideReads } from './run.mjs';
+import { runPairInProcess, crumbText, onCrumb, absentOutsideReads, scrubEnv } from './run.mjs';
+scrubEnv(); // the platform's own additions (macOS: __CF_USER_TEXT_ENCODING) leave before any unit code loads
 
 absentOutsideReads(); // a path outside the trees this process may read does not exist for the run (run.mjs)
 

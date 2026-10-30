@@ -6,7 +6,7 @@ import { createRequire, isBuiltin } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { ts, loadProgramOptions, topLevelFunctions } from '../common.mjs';
-import { sandbox, pickUnit, observe, workerFlags, workerEnv, absentOutsideReads } from './run.mjs';
+import { sandbox, pickUnit, observe, workerFlags, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
 import { Environment, BudgetError } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
@@ -251,4 +251,4 @@ export async function runNew(opts) {
   return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, ...(networkDenied() ? { sandbox: sandboxEntry() } : {}) };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === here) { absentOutsideReads(); console.log(JSON.stringify(await runNew(JSON.parse(process.argv[2])))); }
+if (process.argv[1] && path.resolve(process.argv[1]) === here) { scrubEnv(); absentOutsideReads(); console.log(JSON.stringify(await runNew(JSON.parse(process.argv[2])))); }

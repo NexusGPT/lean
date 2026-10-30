@@ -1066,6 +1066,10 @@ function workerReads(opts) {
 // the process is not given is what that code cannot read
 const KEPT_ENV = /^(?:LEAN_\w*|NODE_OPTIONS|PATH|HOME|XDG_CACHE_HOME)$/;
 export const workerEnv = (env = process.env) => Object.fromEntries(Object.entries(env).filter(([k]) => KEPT_ENV.test(k)));
+// A sandboxed process keeps only the kept set in its own environment, whatever the platform added at exec: macOS's
+// loader puts __CF_USER_TEXT_ENCODING into every child whatever env it was given, so the reduction is applied by the
+// process to itself, once, before any unit code loads. Called by the worker and by the parentless unit's child.
+export function scrubEnv(env = process.env) { for (const k of Object.keys(env)) if (!KEPT_ENV.test(k)) delete env[k]; return env; }
 // a path outside the trees a process under the permission model may read does not exist for the run: the model throws
 // on an existence check there (a walk up for a package.json, a config, a values file), where the run asks whether it exists
 export function absentOutsideReads() {

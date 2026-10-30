@@ -146,3 +146,7 @@ Every other probe line is unchanged.
   sets, including ones only the suite or the command line reads; lean keeps no secret in any of them.
 - Reads inside the given trees stay open by design: the unit's own repository and its packages are what the run reads.
 - Containment of hostile code as a service stays DA's (an operating-system sandbox, a network namespace), never lean's.
+
+## 2026-10-30, the platform's own additions
+
+A child process receives what the platform adds at exec whatever environment it was given: on macOS the loader puts `__CF_USER_TEXT_ENCODING` into every process (the user id and text encoding, no secret), so the reduced environment was one name larger there than on Linux, and the `envLeak` row and the parentless `escape` unit witnessed it on the Mac after passing on the server. The reduction is therefore applied by the sandboxed process to itself (`scrubEnv` in exec/run.mjs, called first thing by the worker and by the parentless unit's child): every variable outside the kept set is deleted before any unit code loads, whatever the platform added. The kept set is one definition (`KEPT_ENV`).
