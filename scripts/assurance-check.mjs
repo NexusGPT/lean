@@ -19,10 +19,12 @@ const docFile = argv.includes('--doc') ? path.resolve(argv[argv.indexOf('--doc')
 const testsDir = path.join(root, 'langs/ts/tests/assurance');
 const suiteFile = path.join(root, 'langs/ts/tests/run.mjs');
 
-// the suite rows that run a standalone script: the row's add(...) prefix and the script, both as the suite writes them
+// the suite rows that run a standalone script: the row's add(...) prefix (or the same arguments to scriptRow(...), which
+// adds the row itself) and the script, both as the suite writes them
 const SUITE_ROWS = {
   'runtime clock-read': { add: "add('runtime', 'clock-read'", script: 'langs/ts/tests/clock-read.mjs', cited: "'clock-read.mjs'" },
   'runtime no-silent-exit': { add: "add('runtime', 'no-silent-exit'", script: 'langs/ts/tests/no-silent-exit.mjs', cited: "'no-silent-exit.mjs'" },
+  'runtime certificate-timing': { add: "add('runtime', 'certificate-timing'", script: 'langs/ts/tests/certificate-timing.mjs', cited: "'certificate-timing.mjs'" },
   'repo pr intake': { add: "add('repo', 'pr intake'", script: 'langs/ts/tests/fixtures/pr-intake/test.mjs', cited: "'fixtures/pr-intake/test.mjs'" },
 };
 
@@ -43,7 +45,7 @@ const byFile = new Map();
 for (const name of named) {
   if (nodeTests.has(name)) { const f = nodeTests.get(name); if (!byFile.has(f)) byFile.set(f, []); byFile.get(f).push(name); rows.push({ name, kind: 'node:test', file: f }); continue; }
   const s = SUITE_ROWS[name];
-  if (s && suiteText.includes(s.add) && suiteText.includes(s.cited) && fs.existsSync(path.join(root, s.script))) { rows.push({ name, kind: 'suite row', script: s.script }); continue; }
+  if (s && [s.add, s.add.replace(/^add\(/, 'scriptRow(')].some((x) => suiteText.includes(x)) && suiteText.includes(s.cited) && fs.existsSync(path.join(root, s.script))) { rows.push({ name, kind: 'suite row', script: s.script }); continue; }
   rows.push({ name, kind: 'missing', ok: false, detail: s ? 'the suite no longer holds this row or its script' : 'no node:test and no suite row of this name' });
 }
 

@@ -61,6 +61,10 @@ results, the Dafny summary line, the SHA-256 prefixes of the theorem and the pre
 the time limit and the temporary folder (line 150).
 `check: certificate: the input files by SHA-256, the bound with its seed, the theorem hash and the Dafny version`
 
+- Held: `timing`, the wall-clock seconds of each lane that ran (`B`, `correspondence`, `doubles`, `translate`, `theorem`,
+  `dafny`); a lane that did not run has no key. No verdict reads it ([`langs/ts/design/certificate-timing.md`](../langs/ts/design/certificate-timing.md)).
+  `check: runtime certificate-timing`
+
 - Never held: the producer's words. `check.mjs` reads only the two files, the unit, the scope file, `--project` and
   its numeric options (line 246); any other text given beside them reaches neither the verdict nor the certificate.
   The one text it reads from the candidate besides code is a `// lean-adapter` comment (line 226): an input map the
