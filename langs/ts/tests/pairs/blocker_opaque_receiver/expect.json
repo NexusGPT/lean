@@ -1,5 +1,5 @@
 {
- "why": "A field read moved across a call that can change the object. In JavaScript every pair here except moved differs: aliased reads through f = e after e.preventDefault(); otherAny reads g.x after e.bump() where g may be e; typedAlias reads the record p after e.bump() where p may be e; passed reads p.x after f(p) where f may write it; looped reads inside a loop after a call. Since the narrowed read-after-call rule (2026-10-30, design/alias-result.md), the parent file is refused as a whole on typedAlias and passed (a read that does not take the world, after a call that may change its object), so lane A gives no theorem for the file and every row is a candidateOnly verdict: lane B witnesses aliased, otherAny and looped; typedAlias and passed are PASS-bounded with lane A's refusal named; moved (the read before the call on both sides) is proved. The four false proofs recorded here as open claims on 2026-10-30 are closed by the refusal; the reading that keeps these units (a field read after a transition as a world read) is the next lane (design/top-blockers.md, class-and-this).",
+ "why": "A field read moved across a call that can change the object. In JavaScript every pair here except moved differs: aliased reads through f = e after e.preventDefault(); otherAny reads g.x after e.bump() where g may be e; typedAlias reads the record p after e.bump() where p may be e; passed reads p.x after f(p) where f may write it; looped reads inside a loop after a call. Since the narrowed read-after-call rule (2026-10-30, design/alias-result.md), the parent file is refused as a whole on typedAlias and passed (a read that does not take the world, after a call that may change its object), so lane A gives no theorem for the file and every row is a candidateOnly verdict: lane B witnesses aliased, otherAny and looped; typedAlias and passed are PASS-bounded with lane A's refusal named; moved (the read before the call on both sides) is proved. The four false proofs recorded here as open claims on 2026-10-30 are closed by the refusal; the reading that keeps these units (a field read after a transition as a world read) is the next lane (design/top-blockers.md, class-and-this). Since the world read (2026-10-30, design/alias-result.md 'world read') lane A keeps the file: a field read after a call that may change the object reads it as the world holds it, so the moved reads are different terms and nothing here is proved but moved; lane B now witnesses typedAlias (the any argument a view of the record p, exec/korat.mjs) and passed (a fake f that writes its argument, exec/fake.mjs), PASS-bounded before.",
  "candidateOnly": [
   {
    "parent": "parent.ts",
@@ -24,15 +24,13 @@
    "parent": "parent.ts",
    "file": "candidate.ts",
    "unit": "typedAlias",
-   "verdict": "PASS-bounded",
-   "laneA": "read-after-call  `p` is read here after `e.bump()`"
+   "verdict": "WITNESS"
   },
   {
    "parent": "parent.ts",
    "file": "candidate.ts",
    "unit": "passed",
-   "verdict": "PASS-bounded",
-   "laneA": "read-after-call  `p` is read here after `f(p)`"
+   "verdict": "WITNESS"
   },
   {
    "parent": "parent.ts",

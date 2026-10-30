@@ -2102,7 +2102,11 @@ export function erasedReferenceSlot(checker, n) {
 // through values this run hands it). A read of such an object without the world, after such a call, would read the
 // value before the call: refused by name. Kept: the object handed on to a call that threads the world (a receiver, an
 // argument), an alias, `typeof`, `===`, a truth test, and a local the unit made of primitive fields and only reads.
-export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), quiet(call), deferred(call) }
+// A field read `x.f` and a one-level write `x.f = v` after such a call are world forms (2026-10-30, world read): a
+// decider that reads the object as the world holds it at that point passes `h.after` (a Map the forms are put in,
+// occurrence -> 'read' | 'write') and `h.identity(occurrence)` (whether it names the object, else the form is refused);
+// `h.outputs` and `h.afterEnd` the same for the output parameters at the unit's end. Without `h.after` the forms are kept.
+export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
 const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (TF.Any | TF.Unknown)), typeOf = (n) => h.typeOf(n);
   const body = u.fn?.body ?? u.node?.body;
   if (!body) return null;
@@ -2178,12 +2182,11 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     const { p, x } = P(occ);
     if (!p) return false;
     if (h.worldName?.(occ)) return true; // a name the decider reads through the world (module state): read as it is now
-    if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === x && p.parent && ts.isBinaryExpression(p.parent) && p.parent.left === p && p.parent.operatorToken.kind === K.EqualsToken) return true; // `x.f = v`, one level: a write, the output rebuilt from x on both sides and every call recorded with what it was handed (a deeper `x.a.b = v` reads `x.a` first and stays refused)
     if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === x && h.worldRead(p)) return true; // a member the decider reads through the world (a field a method of its same-file class writes, a getter): read as it is now
     if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && (p.arguments ?? []).includes(x)) return effect(p);
     if (ts.isSpreadElement(p) && p.parent && (ts.isCallExpression(p.parent) || ts.isNewExpression(p.parent))) return false;
     if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return effect(p.parent);
-    if (ts.isVariableDeclaration(p) && p.initializer === x) return true;
+    if (ts.isVariableDeclaration(p) && p.initializer === x && ts.isIdentifier(p.name)) return true; // an alias; a destructuring pattern reads the fields
     if (ts.isBinaryExpression(p)) { const k = p.operatorToken.kind; if (k === K.EqualsToken && p.right === x) return true; if ([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(k)) return true; if (k === K.InstanceOfKeyword && p.left === x) return true; }
     if (ts.isTypeOfExpression(p)) return true;
     if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true;
@@ -2191,7 +2194,22 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isConditionalExpression(p)) && (p.expression ?? p.condition) === x) return true;
     return false;
   };
-  let found = null;
+  // a world form: an occurrence the world read keeps after the call. `x.f` read (a path below it read too, a method of
+  // the value it holds called when that call threads the world or changes nothing), or `x.f = v` one level: the
+  // translator reads the object as the world holds it, `ext_now_<T>(wld, x)`, at that point of the run (h.after)
+  const MUTATING = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'add', 'set', 'delete', 'clear']);
+  const worldForm = (occ) => {
+    const { p, x } = P(occ);
+    if (!p || !ts.isPropertyAccessExpression(p) || p.expression !== x || ts.isPrivateIdentifier(p.name)) return null;
+    const assigned = (y) => y.parent && ts.isBinaryExpression(y.parent) && y.parent.left === y && y.parent.operatorToken.kind >= K.FirstAssignment && y.parent.operatorToken.kind <= K.LastAssignment;
+    if (assigned(p)) return p.parent.operatorToken.kind === K.EqualsToken ? 'write' : null;
+    let top = p; for (;;) { const { p: q, x: y } = P(top); if (q && (ts.isPropertyAccessExpression(q) || ts.isElementAccessExpression(q)) && q.expression === y) { top = q; continue; } break; }
+    const { p: q, x: y } = P(top);
+    if (!q || assigned(y) || ts.isDeleteExpression(q) || ((ts.isPrefixUnaryExpression(q) || ts.isPostfixUnaryExpression(q)) && (q.operator === K.PlusPlusToken || q.operator === K.MinusMinusToken))) return null; // a write below the field reads it first
+    if (ts.isCallExpression(q) && q.expression === y) { if (top === p) return null; const m = ts.isPropertyAccessExpression(top) ? top.name.text : null; if (!effect(q) && (!m || MUTATING.has(m))) return null; } // x.m() is the receiver handed; x.f.push(v) changes what it reads
+    return 'read';
+  };
+  let found = null, unnamed = false;
   const visit = (n) => {
     if (found) return;
     const isThis = n.kind === K.ThisKeyword;
@@ -2205,15 +2223,23 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
         const fresh = init && (ts.isCallExpression(init) || ts.isNewExpression(init)) && !writes(s).length; // obtained when it was bound
         const bound = d && ts.isBindingElement(d) ? (() => { let v = d.parent; while (v && !ts.isVariableDeclaration(v)) v = v.parent; let e = v?.initializer; while (e && (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e))) e = e.expression; return v && v.pos >= body.pos && e && (ts.isCallExpression(e) || ts.isNewExpression(e)) ? v : null; })() : null; // a name destructured from a call's answer is obtained at its binding
         const start = bound ? bound.getEnd() : fresh ? d.getEnd() : d && ts.isCatchClause(d.parent) ? d.parent.getStart(sf) : body.getStart(sf); // a caught value is obtained at its catch
-        if (between(start, n, t)) found = n;
+        if (between(start, n, t)) {
+          const wf = worldForm(n);
+          if (!wf) found = n;
+          else if (h.after) { if (h.identity && !isThis && !h.identity(n)) { found = n; unnamed = true; } else h.after.set(n, wf); } // the decider that reads it through the world; one that names no identity for it refuses
+          // a decider without the world read (the lint) keeps the form: it never refuses what the translator reads
+        }
       }
     }
     ts.forEachChild(n, visit);
   };
   visit(body);
+  // an output parameter (h.outputs: its name nodes) is read at the unit's end, after every call: as the world holds it
+  if (!found && h.afterEnd) { const end = { pos: body.end, end: body.end, parent: body, getStart: () => body.end, getEnd: () => body.end }; for (const nm of h.outputs ?? []) if (objectLike(typeOf(nm)) && between(body.getStart(sf), end, typeOf(nm))) h.afterEnd.add(nm.text); }
   if (!found) return null;
   const txt = found.kind === K.ThisKeyword ? 'this' : found.getText(sf);
   const at = (x) => `\`${x.getText(sf).replace(/\s+/g, ' ').slice(0, 50)}\` (line ${sf.getLineAndCharacterOfPosition(x.getStart(sf)).line + 1})`;
+  if (unnamed) return { node: found, message: `\`${txt}\` is read here after ${at(why.call)}, a call that may change it: it is handed ${at(why.handed)}, which may be or hold this object, and this reading names no identity for it (a new object, a name written more than once), so it cannot read it as the world holds it; read what you need before the call, or pass it to the call and use the call's result` };
   return { node: found, message: `\`${txt}\` is read here after ${at(why.call)}, a call that may change it: it is handed ${at(why.handed)}, which may be or hold this object, and this reading takes the object as it was before the call; read what you need before the call, or pass it to the call and use the call's result` };
 }
 /** A named promise handler (`p.then(h)`, `p.catch(h)`, `p.finally(h)`, `h` a name or a member path): one decision the lint

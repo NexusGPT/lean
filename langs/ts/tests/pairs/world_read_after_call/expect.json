@@ -1,0 +1,83 @@
+{
+ "why": "A field read after a transition is a world read (design/alias-result.md, 2026-10-30 world read). One unit per transition kind: a method call on an any value with the read of another any value (anyMethod) or of a record it may be (anyRecord), a method call on a record value (recordMethod), a call of a function value handed the object (fnValue), an outside call handed the object (outside), and a one-level write after the call (restore, the narrowing lane's claim: at the lane base `const y = p.y; f(p); p.y = y` against `const x = p.x; f(p); p.x = x` was PASS-proved, the output p rebuilt from its value before the call). Against refactor.ts (the read kept after the call through a local, names changed) lane A proves every unit: the object is read as ext_now_<T>(wld, x) after the call on both sides. Against candidate.ts (the read moved before the call; restore restoring the other field) JavaScript differs when the call changes the object, and lane B witnesses each: anyMethod and recordMethod by the order of the fake's reads, anyRecord with the any argument a view of the record (exec/korat.mjs), fnValue, outside and restore with a fake that writes the object it is handed (exec/fake.mjs). Before the reading the refactor rows were PASS-bounded with lane A read-after-call (restore PASS-proved), and against the candidate anyRecord, fnValue and outside were PASS-bounded and restore PASS-proved (a false proof).",
+ "candidateOnly": [
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "anyMethod",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "anyMethod",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "anyRecord",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "anyRecord",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "recordMethod",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "recordMethod",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "fnValue",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "fnValue",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "outside",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "outside",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "refactor.ts",
+   "unit": "restore",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "restore",
+   "verdict": "WITNESS"
+  }
+ ]
+}

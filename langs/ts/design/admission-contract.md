@@ -329,7 +329,6 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | lint/lint.mjs:1022 | lint-refuse | closure-mutation | mutation | shared (moduleState) | a callback cannot change an outer variable |
 | lint/lint.mjs:1037 | lint-refuse | assign-target | record-copy | one-decider | `Object.assign` copies every own key of its source, and a value of a record type may carry keys its  |
 | lint/lint.mjs:1052 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(r.text, declOf(r).decl)> |
-| lint/lint.mjs:1063 | lint-refuse | opaque-mutation | mutation | one-decider | .${}() on `${}` may change it, and `${}` is read later; read it before the call or through a method |
 | lint/lint.mjs:1066 | lint-refuse | opaque-mutation | mutation | one-decider | .${}() as a statement on an opaque value may mutate it; name the receiver first |
 | lint/lint.mjs:1072 | lint-refuse | receiver-write | mutation | shared (thisParamPath) | <RECEIVER_WRITE> |
 | lint/lint.mjs:1073 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(pr.text, declOf(pr).decl)> |

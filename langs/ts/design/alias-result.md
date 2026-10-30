@@ -159,3 +159,64 @@ Cut, each a read the rule counted that is not a read without the world, or a cal
 The last cut is reasoned, not probed: the output is rebuilt from `x` on both sides, and every call is recorded with the
 value it was handed, so a different call order or argument is a different world. A deeper `x.a.b = v` reads `x.a` first
 and stays refused. The four `alias_after_call` units stay refused; freshAfter stays proved.
+
+## 2026-10-30: a field read after a transition is a world read (world read)
+
+**The claim, probed first.** The narrowing kept a one-level write `x.f = v` after a call as admitted, reasoned and not
+probed. It was a false proof. `const y = p.y; f(p); p.y = y` against `const x = p.x; f(p); p.x = x` (p a `{ x, y }`
+record, f a function parameter) was PASS-proved by check.mjs at the lane base. Both sides returned `p.(y := y)` and
+`p.(x := x)` of p's value before the call, which is p itself. In JavaScript an f that writes `q.x` tells them apart.
+The output is rebuilt from the value, so every field the write leaves alone is the value before the call. The same holds
+for an output written before the call (`p.x = 1; f(p)` returns `p.(x := 1)`).
+
+**The reading.** `readAfterCall` (common.mjs) keeps its one decision: which calls run outside code, what each is handed,
+and which objects that reaches (by identity, alias or type). An occurrence of such an object after such a call, in a
+world form, is now put into `h.after` instead of being refused:
+- a field read `x.f` (also a path below it, `x.f.g`; or a method called on the value it holds when that call threads the world or is no mutator);
+- a one-level write `x.f = v`.
+
+The translator reads the object as the world holds it at that point of the run: `var nwK_ := ext_now_<T>(wld, x);`,
+bound in the run's order (the pending lines, after every transition evaluated before the occurrence), and the read is
+`nwK_.f`. A write rebuilds that object, `x := ext_now_<T>(wld, x).(f := v)`, read after the written value is computed.
+An output parameter that a call may reach before the unit's end (`h.outputs`, `h.afterEnd`) leaves as
+`ext_now_<T>(wld, x)`. An absent value stays absent (`Option<T>` maps `Some` through it). `ext_now` is uninterpreted
+and takes the world, so a read moved across a call reads another world, and the proof fails with no textual guard. Two
+reads with no call between them are one term. A unit that keeps its reads after the call, renamed or through a local,
+is proved.
+
+**Why it is sound.** The world is the history of every transition the run made, each with what it was handed. An outside
+call reaches an object only through what it was handed (hash-keys.md). So the object's state at a point is a function of
+that history and the object, and `ext_now` names that function. The object is named as the call reading already names
+it (copied-argument, `identityOf`): an existing object (a parameter, `this`, an alias of one, a member or element read,
+an outside answer) by its value. Where the reading names no identity (a new object bound to a name, a name written more
+than once, a choice between kinds), the form stays refused `read-after-call`, and the message says why. The value stands
+for the identity, as it already does for a handed argument. A proof that relies on two inputs with equal values being one
+object fails at the inputs where they differ, because the lemma ranges over all values.
+
+A recorded form that the body translates another way (a translator path that does not pass through `propAccess` or
+`pathUpdate`) is refused at the unit's end (`worldUsed`). So is a read whose object the reading already holds under another name (a
+value bound before the call, so the read never names the object). Neither is ever read as the value before the call.
+
+**What stays refused** (`read-after-call`, as before): a copy, a spread, a destructuring (`const { a } = x`, which reads
+the fields; it was kept as an alias, a hole now closed), an element read, a library method on the object itself, the
+object as the unit's result, a deeper write `x.a.b = v`, a compound write `x.f += v`, `delete`, `++`, and every form on
+an object with no named identity. The lint passes no `h.after`, so it keeps the world forms and never refuses what the
+translator reads. Its `opaque-mutation` test by receiver text (`e.m()` then a later `e.x`) is withdrawn: the shared
+decision covers it, and the translator reads that field through the world. The test of a mutating method on an opaque
+value used as a value stays.
+
+**Lane B.** Two inputs it could not make:
+- exec/korat.mjs: an any or unknown argument (one whose reads refined it included) now ranges over its own draw and
+  every pool object. A pool object is passed as a view (fake.mjs `view`): its fields are the object's fields, and a member
+  it lacks is a fake whose call writes the object. A view drops the undeclared extra keys the any value is called for,
+  so the object stays a legal value of its type.
+- exec/fake.mjs `writeHanded`: a fake's call, on a seeded draw per call and per position, gives every writable primitive
+  field of each plain object it is handed another value of its kind. The receiver of a view's method is always written.
+
+**Pairs.**
+- `world_read_after_call`, one unit per transition kind: a method of an any value read through another any value, or
+  through a record it may be; a method of a record; a function value; an outside call; and restore. All 12 rows pass.
+  Against refactor.ts every unit is proved. Against candidate.ts (the read moved before the call) lane B witnesses every unit.
+- `alias_after_call`: typedAlias and passed are WITNESS (they were PASS-bounded); refactor.ts aliased and otherAny are
+  proved (they were PASS-bounded with read-after-call).
+- `blocker_opaque_receiver`: typedAlias and passed are WITNESS.
