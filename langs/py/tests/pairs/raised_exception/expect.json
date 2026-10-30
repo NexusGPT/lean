@@ -1,0 +1,6 @@
+{
+ "scope": ["safe_ratio", "checked_at", "parse_or"],
+ "equal": { "safe_ratio": false, "checked_at": true, "parse_or": true },
+ "why": "a raised exception is a fault on the world: safe_ratio raises ZeroDivisionError where the parent raised ValueError (the exception values are distinct constructors); checked_at keeps the same raise under a rewritten condition; parse_or keeps the outcome of int(s) and its handler",
+ "b": { "safe_ratio": "WITNESS", "checked_at": "PASS-bounded", "parse_or": "PASS-bounded" }
+}

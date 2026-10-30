@@ -1,4 +1,4 @@
-# The Python subset (milestone 1)
+# The Python subset (milestone 2)
 
 A function inside the subset is read as mathematics: every value is a mathematical value (an int, a string, a
 sequence, a map, an optional, a datatype), every call into the outside is a **transition of an explicit world**
@@ -22,7 +22,7 @@ without a return hint is refused by name. Rule names are the TypeScript lint's w
 | Statements | assignment to a name (annotated or not), tuple unpacking of a tuple value, `+=`, `-=`, `*=` on an int or str name, `if`/`elif`/`else` (a branch join, or the continuation in each branch when a branch leaves), `return`, `pass`, `break`, `continue` | `label = "zero"` |
 | Loops | `for x in <list>`, `for i in range(stop)`, `for i in range(start, stop)`, `while` with `# @decreases <expr>` on its line or the line above; a loop is a private recursive helper with that measure; a non-negative accumulator gets its invariant | `while True:  # @decreases i` |
 | Expressions | `+ - *` on ints, `//` and `%` (floor division, the sign of the divisor), `**` with a non-negative int literal exponent, unary `-`, `not`, `and`/`or` on bools, comparisons (chained when pure), `in` on a list, a dict or a str, conditional expressions, f-strings of str, int and bool | `(total + size - 1) // size` |
-| Comprehensions | one `for` over a list with at most one `if`, pure element and condition: a map and a filter | `[x for x in xs if x > 0]` |
+| Comprehensions | one `for` over a list with at most one `if`, pure element and condition: a filter (one helper per element type, with its congruence lemma) and a map (a Dafny sequence comprehension, equal element by element) | `[x for x in xs if x > 0]` |
 | Indexing | `xs[i]` on a list or str (negative indices count from the end), `d[k]` on a dict, `t[0]` on a tuple, slices `xs[a:b]` without a step (clamped as Python clamps) | `xs[-1]` |
 | Built-ins | `len`, `abs`, `min` and `max` of two ints, `sum` of a list of ints, `str` of an int or bool, `list(xs)` and `dict(d)` (copies, the same value), `d.get(k)` and `d.get(k, default)`, `str.startswith`, `str.endswith`, `sep.join(xs)` | `d.get(k, 0)` |
 | Calls | a unit of the file (positional, keyword and literal defaults, `*args` typed as a list), a method of `self`, a static method, a method of a dataclass value | `sum(a, b) + sum(*rest)` |
@@ -80,4 +80,12 @@ dict key (`KeyError`), `//` or `%` by zero (`ZeroDivisionError`), `int(s)` on a 
 | `bitwise`, `power`, `slice-step`, `comprehension`, `comprehension-effect`, `list-method`, `type-test`, `unsupported-call`, `unsupported-syntax` | milestone 2 readings | `x & 1` |
 
 Each file under `fixtures/escapes/py/` names one rule on its first line (`# expect: <rule>`); `tests/run.py` checks that
-the lint refuses it by that rule and that the translator refuses it too.
+the lint refuses it by that rule, that the finding carries the rule's rewrite, and that the translator refuses it too.
+
+## The rewrite of each finding
+
+Every rule has a rewrite in `lint/advice.py`, labelled as the TypeScript lint labels them: `proved` (the rewrite keeps
+behaviour on every input: `a = b = v` as two assignments, `match` as `if`/`elif`), `conditional` (it keeps behaviour
+when the stated precondition holds: `if xs:` as `if len(xs) > 0:` when `xs` has no `__bool__` of its own) or
+`migration` (it changes the meaning on some input, or the construct has no reading; a person decides). `lint.py
+--json` gives the label, the precondition and the text per finding; `--agent` prints them as a work list.

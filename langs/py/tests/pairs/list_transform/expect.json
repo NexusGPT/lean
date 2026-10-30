@@ -1,0 +1,6 @@
+{
+ "scope": ["positives", "doubled", "tail_sum"],
+ "equal": { "positives": true, "doubled": true, "tail_sum": false },
+ "why": "a comprehension is a map or a filter over a seq: positives compares its predicates by element, doubled its element expressions; tail_sum indexes an empty list where the parent's slice was empty (a slice clamps, an index faults)",
+ "b": { "positives": "PASS-bounded", "doubled": "PASS-bounded", "tail_sum": "WITNESS" }
+}

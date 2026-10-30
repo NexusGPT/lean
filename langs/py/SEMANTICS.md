@@ -1,4 +1,4 @@
-# What "equal" means (lean-py, milestone 1)
+# What "equal" means (lean-py, milestone 2)
 
 The definition is the TypeScript one (`langs/ts/SEMANTICS.md`): one call observes its **outcome** (the returned value
 or the raised exception), the **reachable state** of the arguments and the receiver after the call, the ordered
@@ -31,7 +31,10 @@ through every unit that touches it. Below is what differs for Python.
   nothing about it.
 - **Dicts** keep insertion order in Python and a `map` keeps none, so every operation that observes the order
   (iteration, `keys`, `values`, `items`, `list(d)`) is refused (`dict-order`). Lookup, membership, size, `get` and
-  `{**a, **b}` (the right side wins) are exact.
+  `{**a, **b}` (the right side wins) are exact. **Known gap (milestone 3):** the refusal covers the unit's own reads,
+  not its caller's. A dict the unit returns (or leaves in an argument) carries an order the caller can iterate, and
+  the proof does not see it: `{"a": x, "b": y}` against `{"b": y, "a": x}` is proved equal, and lane B, which keeps
+  dict order in its observation, gives a WITNESS on the first input. Lane B is the faithful reading here.
 
 ## Exceptions
 
@@ -71,5 +74,7 @@ both sides; one input in three runs with fake faults (an exception, `FakeFault`)
 side (a receiver's constructor) is skipped and counted, since the difference belongs to the constructor's own unit.
 The observation compares the outcome, the reachable state (identities renamed in first-reach order, dict order kept),
 the trace and pending work (none at milestone 1: no async, no generators). A difference is a `WITNESS` with the input;
-none on n inputs is `PASS-bounded`, which states n and the seed and never becomes a proof. Programs of several
-commands on one instance (the TypeScript `programs.mjs`) are milestone 2.
+none on n inputs is `PASS-bounded`, which states n and the seed and never becomes a proof. The record is the
+TypeScript lane B's: a witness gives the input's index, the arguments as drawn, both sides' whole observations and
+`where.field` (the first observation that differs); the bound gives `n`, `seed` and `ms`; `spec` gives the typed
+surface. Programs of several commands on one instance (the TypeScript `programs.mjs`) are milestone 3.

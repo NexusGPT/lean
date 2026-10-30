@@ -15,6 +15,14 @@ Per language:
            lint passes on both, every lemma proved.
   bugs     fixtures/bugs/<lang>/**/ (the same plus expected.json): the per-lemma
            outcomes equal expected.json exactly.
+  pairs    each folder conformance.json lists under "pairs" (parent, candidate,
+           expect.json: scope, equal, b): both sides lint, translate with a shared
+           prelude ("pair_translate") and the theorem's lemmas come out as `equal`
+           says (true: proved; false or "witness": not proved); lane B ("exec")
+           gives the verdict `b` names on each unit, its record has the
+           TypeScript shape (a WITNESS names input, args, parent, candidate and
+           where.field; a PASS-bounded names bound.n and bound.seed), and no
+           proved lemma has a WITNESS on its unit.
 
 Exit 0 only when every language passes. The last line states the result.
 """
@@ -36,8 +44,11 @@ def sub(argv, **kw):
 
 
 class Lang:
-    def __init__(self, name, ext, lint=None, translate=None):
+    def __init__(self, name, ext, lint=None, translate=None, conf=None):
         self.name, self.ext, self.lint_cmd, self.translate_cmd = name, ext, lint, translate
+        conf = conf or {}
+        self.pairs = conf.get('pairs', [])
+        self.pair_translate_cmd, self.exec_cmd = conf.get('pair_translate'), conf.get('exec')
 
     def lint(self, src):
         """Return exit code of the lint (0 pass, 1 refused, other = broken)."""
@@ -73,7 +84,7 @@ def load_langs(wanted):
             continue
         try:
             c = json.load(open(cj))
-            langs.append(Lang(d, c['ext'].lstrip('.'), c['lint'], c['translate']))
+            langs.append(Lang(d, c['ext'].lstrip('.'), c['lint'], c['translate'], c))
         except (ValueError, KeyError) as e:
             record(d, 'lang', 'conformance.json', False, f'unreadable: {e!r}')
     if not wanted or 'dfy' in wanted:
@@ -208,6 +219,125 @@ def changes(lang, kind):
             record(lang.name, 'bug', name, not diff, '; '.join(diff))
 
 
+OBSERVATIONS = {'outcome', 'state', 'trace', 'pending'}
+
+
+def record_shape(rec):
+    """The lane B record, read the same way for every language (the TypeScript shape): '' when it holds, else why not."""
+    v = rec.get('verdict')
+    if not isinstance(v, str):
+        return 'no verdict'
+    if v == 'WITNESS':
+        ws = rec.get('witnesses')
+        if not isinstance(ws, list) or not ws:
+            return 'a WITNESS without witnesses'
+        for w in ws:
+            missing = [k for k in ('input', 'args', 'parent', 'candidate') if k not in w]
+            if missing:
+                return 'a witness without ' + ', '.join(missing)
+            if not isinstance(w.get('where'), dict) or 'field' not in w['where']:
+                return 'a witness without where.field (the first observation that differs)'
+    if v == 'PASS-bounded':
+        b = rec.get('bound')
+        if not isinstance(b, dict) or not isinstance(b.get('n'), int) or b['n'] <= 0 or 'seed' not in b:
+            return 'a PASS-bounded without bound.n and bound.seed'
+    return ''
+
+
+def dafny_unit(name):
+    """The Dafny name of a source unit, by the rule every language shares (langs/py/README.md, "Units and names"):
+    snake_case, a method is <class>_<method>, a constructor <class>_constructor."""
+    parts = name.split('.')
+    if len(parts) == 2 and parts[1] in ('__init__', 'constructor'):
+        parts[1] = 'constructor'
+    snake = lambda x: re.sub(r'(?<=[a-z0-9])([A-Z])', r'_\1', x).lower()
+    return '_'.join(snake(p) for p in parts)
+
+
+def pair_run(lang, d, td):
+    """Lint, translate with a shared prelude, generate the theorem, check it. Returns ({lemma: status}, error)."""
+    exp = json.load(open(os.path.join(d, 'expect.json')))
+    for k in ('parent', 'candidate'):
+        if lang.lint(os.path.join(d, f'{k}.{lang.ext}')) != 0:
+            return None, f'lint refused the {k}'
+
+    def tr(k, eff):
+        argv = sub(lang.pair_translate_cmd, src=os.path.join(d, f'{k}.{lang.ext}'), out=os.path.join(td, f'{k}.dfy'),
+                   prelude=os.path.join(td, f'{k}.pre.dfy'), suffix=k, effectful=eff, root=ROOT, lang=lang.name)
+        r = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True)
+        return r.returncode, (r.stdout + r.stderr).strip()[-300:]
+
+    def effectful(k):  # the units the side reads with the world: both sides agree on them before the theorem
+        m = re.search(r'^// EFFECTFUL: (.*)$', open(os.path.join(td, f'{k}.dfy')).read(), re.M)
+        return m.group(1).strip() if m else ''
+    rc, err = tr('parent', '')
+    if rc != 0:
+        return None, f'translate of the parent failed: {err}'
+    rc, err = tr('candidate', effectful('parent'))
+    if rc != 0:
+        return None, f'translate of the candidate failed: {err}'
+    if effectful('candidate') != effectful('parent'):
+        rc, err = tr('parent', effectful('candidate'))
+        if rc != 0:
+            return None, f'translate of the parent failed: {err}'
+    scope, edit, obl = (os.path.join(td, f) for f in ('scope.json', 'edit.json', 'obligations.dfy'))
+    json.dump({'functions': {f: {'in_scope': 'false'} for f in exp['scope']}}, open(scope, 'w'))
+    open(edit, 'w').write('{}')
+    with contextlib.redirect_stdout(io.StringIO()):
+        rc = theorem.main(['--parent', os.path.join(td, 'parent.dfy'), '--candidate', os.path.join(td, 'candidate.dfy'),
+                           '--scope', scope, '--edit', edit, '--out', obl])
+    if rc != 0:
+        return None, 'theorem generator refused the inputs'
+    rows, _ = check.check(obl)
+    return {r[0]: r[1] for r in rows}, None
+
+
+def pairs(lang):
+    if not lang.pairs:
+        return
+    if not lang.pair_translate_cmd or not lang.exec_cmd:
+        record(lang.name, 'pair', '-', False, 'conformance.json lists pairs without "pair_translate" and "exec"')
+        return
+    for rel in lang.pairs:
+        d = os.path.join(ROOT, rel)
+        name = os.path.basename(rel.rstrip('/'))
+        try:
+            exp = json.load(open(os.path.join(d, 'expect.json')))
+        except (OSError, ValueError) as e:
+            record(lang.name, 'pair', name, False, f'expect.json unreadable: {e}')
+            continue
+        with tempfile.TemporaryDirectory() as td:
+            got, err = pair_run(lang, d, td)
+            if err:
+                record(lang.name, 'pair', name, False, err)
+                continue
+            for f, want in exp['equal'].items():
+                status = got.get(f'Equal_{f}')
+                ok = status is not None and ((status == 'proved') == (want is True))
+                record(lang.name, 'pair', f'{name} Equal_{f}', ok, f'{"must prove" if want is True else "must not prove"}: {status}')
+            verdicts = {}
+            for unit, want in exp.get('b', {}).items():
+                out = os.path.join(td, 'b.json')
+                argv = sub(lang.exec_cmd, parent=os.path.join(d, f'parent.{lang.ext}'), candidate=os.path.join(d, f'candidate.{lang.ext}'),
+                           unit=unit, out=out, root=ROOT, lang=lang.name)
+                r = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True)
+                try:
+                    rec = json.load(open(out))
+                    os.remove(out)
+                except (OSError, ValueError):
+                    record(lang.name, 'pair', f'{name} lane B {unit}', False, f'no record (exit {r.returncode}): {(r.stdout + r.stderr).strip()[-160:]}')
+                    continue
+                verdicts[dafny_unit(unit)] = rec.get('verdict')
+                shape = record_shape(rec)
+                record(lang.name, 'pair', f'{name} lane B {unit}', rec.get('verdict') == want and not shape,
+                       f'{"must witness" if want == "WITNESS" else "wants " + want}: {rec.get("verdict")}' + (f'; record: {shape}' if shape else ''))
+            for f, want in exp['equal'].items():  # a proof the bounded run contradicts is a false proof
+                if got.get(f'Equal_{f}') == 'proved':
+                    v = verdicts.get(f)
+                    record(lang.name, 'pair', f'{name} Equal_{f} vs lane B', v is not None and v != 'WITNESS',
+                           f'proved; lane B: {v}' if v else 'proved, but expect.json runs no lane B on this unit')
+
+
 def main(argv):
     langs = load_langs(set(argv))
     for lang in langs:
@@ -216,6 +346,7 @@ def main(argv):
             escapes(lang)
         changes(lang, 'cleans')
         changes(lang, 'bugs')
+        pairs(lang)
     w = max([len(f'{r[0]}/{r[1]}') for r in ROWS] + [8])
     v = max([len(r[2]) for r in ROWS] + [8])
     for lang, kind, name, ok, detail in ROWS:
