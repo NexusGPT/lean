@@ -798,6 +798,10 @@ reads this from the parsed tree, never from a scanner started at the line: a lin
 and a line of a template literal that starts with `//` is the literal's text. A comment that the compiler or the runtime
 reads is not inert: a pragma such as `/// <reference>` or `@jsx`, a `@ts-` directive, the JSDoc of a JavaScript file and
 a shebang. Such an edit is `unassigned:directive comment` and stays ASK. An inert edit is `unassigned:comment` or
-`unassigned:whitespace` with no verdict. The report (`pr.mjs`) lists it in the intake table and leaves it out of the
-verdict table, its counts and the blocking rows. A comment inside a listed unit still goes to that unit. The rule is
-about what the edit is, decided once in the ledger. It never depends on a hash, a file name or the pull request.
+`unassigned:whitespace` with no verdict, and it never blocks. A comment inside a listed unit still goes to that unit.
+
+Only a function unit enters the report's verdict table and its counts (`pr.mjs` `verdictRows`). Every other row is an
+intake row of the ledger: an artifact by kind or class (config, test, lockfile, binary, a secret path), an unassigned
+edit by its named reason, the empty diff. It stays in the intake table. A non-inert intake row keeps its ASK in the
+data, so `--block ask` still blocks on it. Both rules are about what the edit is, decided once in the ledger. Neither
+depends on a hash, a file name or the pull request.

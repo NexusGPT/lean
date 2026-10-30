@@ -653,10 +653,14 @@ function displayOp(op) {
   catch (e) { return `patch display unavailable (${e.name}); raw operation retained in JSON`; }
 }
 
-// The rows that owe a verdict: every row but an inert intake row (an edit of comments and blank lines only, decided by
-// the change ledger). The run's metadata (identity, values, stop, ledger...) rides on the array and is kept.
+// Only a function unit enters the verdict table and its counts. Every other row is an intake row of the change ledger,
+// routed there by what the edit is (an artifact by kind or class, an unassigned edit by its named reason, the empty
+// diff): it stays in the intake table. A non-inert intake row keeps its ASK in the data, so a blocking level still
+// sees it; an inert one (comments and blank lines only) carries no verdict at all.
+export const intakeRow = (r) => r.decision === 'artifact' || r.decision === 'unassigned' || (!r.decision && /^(?:artifact|unassigned):/.test(r.coverage ?? ''));
+// The run's metadata (identity, values, stop, ledger...) rides on the array and is kept.
 export function verdictRows(rows) {
-  const kept = rows.filter((r) => !r.inert);
+  const kept = rows.filter((r) => !intakeRow(r));
   for (const k of Object.keys(rows)) if (!/^\d+$/.test(k)) kept[k] = rows[k];
   return kept;
 }
@@ -669,7 +673,7 @@ export function reportMarkdown(rows, base, head) {
 
 export function markdown(allRows, base, head) {
   if (process.env.LEAN_LEDGER_TEST_FAULT === 'report-crash') throw new Error('injected report writer crash');
-  const rows = verdictRows(allRows); // an inert intake row is listed by intakeMarkdown, never counted or tabled here
+  const rows = verdictRows(allRows); // an intake row is listed by intakeMarkdown, never counted or tabled here
   const count = (v) => rows.filter((r) => !r['covered-by'] && r.verdict === v).length; // a nested row inherits its enclosing unit's verdict: counted once, on that unit's row
   const covered = rows.filter((r) => r['covered-by'] && r.decision !== 'removed').length;
   const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
