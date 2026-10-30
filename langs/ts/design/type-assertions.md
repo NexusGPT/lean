@@ -78,3 +78,26 @@ Each is refused at the slot named; the unit reads its held value faithfully up t
 The invariant: no value is given a Dafny type its run-time value has not been shown to have; a value whose type was
 asserted rather than checked is read at the type its source proves, and converted to the asserted type only as the
 unit's own result, where both sides apply the same uninterpreted conversion.
+
+## 2026-10-30: a reference whose type an assertion erased is refused where identity is compared
+
+`r as any`, `r as unknown as string`, or a local such an assertion writes, of a record, an array or a function, is
+converted by its contents (`ext_Any_as_string_Any(ext_Any_of_Rec_Rec(r))`): two objects with equal fields give one
+value. JavaScript compares objects by reference in `===`, `!==`, `==`, `!=`, a switch, `Object.is`, a Map key, a Set
+item and `includes`, `indexOf`, `lastIndexOf`. The guards that keep identity out of the value reading
+(`reference-equality` in the lint, `reference-key` in the translator) read the asserted type, any or a primitive, and
+saw no object, so `m.set(r1 as any, 1); m.set(r2 as any, 1); m.size` was proved equal to 1 where JavaScript gives 2.
+
+The rule (`common.mjs erasedReferenceSlot`, called by the translator's `expr` and the lint's `expr`): such a value in
+one of those slots is refused, `reference-key` as a Map key or a Set item, `reference-equality` elsewhere. A
+comparison against null, undefined or a literal stays admitted (an object never equals one, and the reading cannot
+prove it does). The lint reports `reference-equality` only; `reference-key` stays the translator's, as for an
+object-keyed Map (the heap core reads keys by identity). A primitive written `as any` (`String(r) as any`, `n as any`)
+is no reference and keeps its reading.
+
+Pair `asany_record_key` (lane A read unit by unit through check.mjs, since the refusal stops the file): `countByKey`,
+`setByKey`, `hasOther` were proved equal at b8efb60f and are now ASK `reference-key`, lane B WITNESS against the
+constant candidates; `countByString` proved; `countByNumber` not proved, WITNESS.
+
+Open: `p === p` on a parameter typed any is read as Dafny equality on Any, which is reflexive, and is proved equal to
+`true`; JavaScript returns false for NaN, and lane B draws no NaN for an any parameter.
