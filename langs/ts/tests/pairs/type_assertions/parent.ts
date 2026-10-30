@@ -118,3 +118,9 @@ export function compoundBumped(x: any): string {
   t += x as number;
   return `${t}`;
 }
+
+// a held value summed with a number: the faithful reading must not make it a number (a commutative double sum), since
+// "a" + 1 is "a1" and 1 + "a" is "1a"
+export function heldSum(x: any): string {
+  return `${(x as number) + 1}`;
+}

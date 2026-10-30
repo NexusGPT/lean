@@ -19,7 +19,8 @@
     "result_held",
     "result_bumped",
     "compound_held",
-    "compound_bumped"
+    "compound_bumped",
+    "held_sum"
   ],
   "equal": {
     "any_as": false,
@@ -40,7 +41,8 @@
     "result_held": "real-only",
     "result_bumped": false,
     "compound_held": "real-only",
-    "compound_bumped": false
+    "compound_bumped": false,
+    "held_sum": false
   },
   "b": {
     "anyAs": "WITNESS",
@@ -61,6 +63,7 @@
     "resultHeld": "PASS-bounded",
     "resultBumped": "WITNESS",
     "compoundHeld": "PASS-bounded",
-    "compoundBumped": "WITNESS"
+    "compoundBumped": "WITNESS",
+    "heldSum": "WITNESS"
   }
 }
