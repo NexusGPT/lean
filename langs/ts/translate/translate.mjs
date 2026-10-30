@@ -6334,10 +6334,10 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && effect(n)) {
         points.push(n);
         if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
-          for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a)) { const id = identityOf(a); if (id.kind === 'fresh' && partsPrim(typeOf(id.site))) continue; } handed.push(typeOf(ts.isSpreadElement(a) ? a.expression : a)); } // a new object of primitive parts reaches only itself
+          for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a)) { const id = identityOf(a); if (id.kind === 'fresh' && partsPrim(typeOf(id.site))) continue; } handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a) }); } // a new object of primitive parts reaches only itself
           const f = n.expression;
-          if (ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) handed.push(typeOf(f.expression));
-        } else if (ts.isPropertyAccessExpression(n)) handed.push(typeOf(n.expression));
+          if (ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) handed.push({ at: n, t: typeOf(f.expression) });
+        } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression) });
       }
       ts.forEachChild(n, walk);
     };
@@ -6357,11 +6357,14 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
       return [...inner, ...(idx ? [idx] : [])].some((x) => reaches(x, o, depth + 1, seen));
     };
-    const reached = (o) => handed.some((h) => reaches(h, o));
+    // a call reaches what it is handed and what calls started before it were handed (the outside may keep it), and in a loop what the loop hands
+    const ranBy = (h, c) => h === c || h.getEnd() <= c.getStart(sf) || (c.pos <= h.pos && h.end <= c.end) || loops(h).some((l) => loops(c).includes(l)); // h ran before c ends: c itself, a call before it, one inside its operands, or one its loop repeats
+    const reached = (o, c) => handed.some((h) => ranBy(h.at, c) && reaches(h.t, o));
     const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
     const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
     const inFn = (x, top) => { for (let p = x.parent; p && p !== top; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
-    const between = (start, occ) => points.some((c) => {
+    const between = (start, occ, t) => points.some((c) => {
+      if (!reached(t, c)) return false;
       const inside = c.pos <= occ.pos && occ.end <= c.end;
       if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
       if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf)) return true;
@@ -6404,7 +6407,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
           let init = local && d.initializer; while (init && (ts.isParenthesizedExpression(init) || ts.isAwaitExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init))) init = init.expression;
           const fresh = init && (ts.isCallExpression(init) || ts.isNewExpression(init)) && !writes(s).length; // obtained when it was bound
           const start = fresh ? d.getEnd() : body.getStart(sf);
-          if (between(start, n) && reached(t)) found = n;
+          if (between(start, n, t)) found = n;
         }
       }
       ts.forEachChild(n, visit);
