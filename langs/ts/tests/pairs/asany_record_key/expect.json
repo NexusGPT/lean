@@ -1,0 +1,6 @@
+{
+ "scope": ["count_by_key", "count_by_string", "set_by_key", "has_other", "count_by_number"],
+ "equal": { "count_by_key": false, "count_by_string": true, "set_by_key": false, "has_other": false, "count_by_number": false },
+ "why": "A record written `as any` as the key of a Map<string, V> or the item of a Set<string> keeps its run-time value, an object, and a Map or Set compares objects by reference (SameValueZero): two records with equal fields are two keys. The type-assertion reading read such a key as the uninterpreted conversion ext_Any_as_string_Any(ext_Any_of_Rec_Rec(r)) of the record's value, so two records with equal fields gave one key, and countByKey (size 2 in JavaScript) was proved equal to a constant 1: a false proof. countByKey, setByKey (the Set mirror) and hasOther (has of an equal-fields record, false in JavaScript) are not proved, lane B witnesses each. countByString keys by String(r), the same string for both records on both sides: proved, PASS-bounded. countByNumber writes n and String(n) as keys, two keys in JavaScript: not proved, WITNESS.",
+ "b": { "countByKey": "WITNESS", "countByString": "PASS-bounded", "setByKey": "WITNESS", "hasOther": "WITNESS", "countByNumber": "WITNESS" }
+}
