@@ -1764,7 +1764,7 @@ function heldOf(checker, n, seen) {
   if (ts.isElementAccessExpression(n)) return opaqueOperand(n.expression) ? any() : null;
   if (ts.isCallExpression(n)) {
     const v = heldCall(checker, n, seen);
-    if (v) return v.result ? any() : null; // a same-file unit read once more for this call: its result is Any when it is held there
+    if (v) return v.result; // a same-file unit read once more for this call: its result's real type when it is held there
     return (ts.isPropertyAccessExpression(n.expression) || ts.isElementAccessExpression(n.expression)) && opaqueOperand(n.expression.expression) ? any() : null;
   }
   if (ts.isBinaryExpression(n)) {
@@ -1867,6 +1867,16 @@ function returnsHeld(checker, fn) {
   walk(fn.body);
   return hit;
 }
+// the real type of a unit's result when it is held: the one held literal record type every return gives (its fields
+// read as heldField says), else Any; null when no return is held
+function heldResultType(checker, fn) {
+  const rets = [];
+  if (!ts.isBlock(fn.body)) rets.push(fn.body);
+  else { const walk = (x) => { if (x !== fn.body && ts.isFunctionLike(x)) return; if (ts.isReturnStatement(x) && x.expression) rets.push(x.expression); ts.forEachChild(x, walk); }; walk(fn.body); }
+  const held = rets.map((r) => assertionHeld(checker, r) ?? (opaqueT(tAt(checker, r)) && (() => { const ct = checker.getContextualType(r); return !!ct && !opaqueT(ct); })() ? checker.getAnyType() : null));
+  if (!held.some(Boolean)) return null;
+  return held.every((h) => h && h === held[0]) && heldRecord(checker, held[0]) ? held[0] : checker.getAnyType();
+}
 // A same-file unit called with a held value for a parameter, or whose result is held, is read once more for that call
 // (design/type-assertions.md, 2026-10-30): each such parameter at Any, the body read with it held, and the result Any
 // when the body's result is held under that reading, else the declared type. The callee is a plain unit (a top-level
@@ -1902,7 +1912,7 @@ export function heldCall(checker, call, seen = new Map()) { // seen: the caller'
   const held = [];
   call.arguments.forEach((a, i) => { if (assertionHeld(checker, a, seen) || opaqueInTypedSlot(checker, a)) held.push(i); });
   const params = new Set(held.map((i) => decl.parameters[i]));
-  const result = withHeldParams(params, () => returnsHeld(checker, decl));
+  const result = withHeldParams(params, () => heldResultType(checker, decl)); // the result's real type there, or null
   return held.length || result ? { decl, held, result } : null;
 }
 // the refusal text for a held value (or an any or unknown value in a slot of another type) where its reading does not
