@@ -130,6 +130,18 @@ function translateOnce(file, fnName, opts = {}) {
     const o = sourceOriginOf(checker, id, sf, node);
     return callbackInputs.get(node)?.some(c => c.decl === o.decl) ? { ...o, kind: 'local' } : o;
   };
+  // an optional call `f?.(x)` in a callback unit whose callee `f` is one of the callback's captured inputs: the input is
+  // the callback's own parameter (callbackEnvironment), as a plain call `f(x)` reads it, so optionalCallShape (lower.mjs,
+  // which reads locality through common.mjs originOf) is given the function that declares `f` as the scope its locality
+  // is read against (design/top-blockers.md, callbacks-function-values)
+  const optionalScope = (call, node) => {
+    const f = call.expression;
+    if (!node || !ts.isIdentifier(f)) return node;
+    const o = sourceOriginOf(checker, f, sf, node);
+    if (!o.decl || !callbackInputs.get(node)?.some((c) => c.decl === o.decl && !c.mutable)) return node;
+    let p = o.decl; while (p && !ts.isFunctionLike(p)) p = p.parent;
+    return p ?? node;
+  };
   const exceptionUnits = analyze('exceptions', () => exceptionUnitsOf(sf, checker, fns));
   const generators = analyze('generators', () => generatorReading(checker, sf, fns));
   let yieldState = null;
@@ -3990,7 +4002,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // the value of an optional chain that stopped, in the chain's own type: a void call's result is Unit either way
   function absentIn(t, n) { const none = checker.getUndefinedType(); return dtype(t, n) === 'Unit' ? 'Unit' : convert(absentValue(none), none, t, n); }
   function optionalCall(n, awaited) {
-    const shape = optionalCallShape(checker, n, sf, { current: currentUnit?.node, currentClass: currentUnit?.cls, thisParam: thisParamOf(currentUnit), units: fns, valueOperands, valueType: typeOf, materializeReceiver: dtype }).emittedCalleeShape;
+    const shape = optionalCallShape(checker, n, sf, { current: optionalScope(n, currentUnit?.node), currentClass: currentUnit?.cls, thisParam: thisParamOf(currentUnit), units: fns, valueOperands, valueType: typeOf, materializeReceiver: dtype }).emittedCalleeShape;
     if (shape.why) fail(n, `optional-chain: ${shape.why}`);
     if (!shape.absent) return null;
     const f = shape.callee, calleeT = shape.calleeType;
