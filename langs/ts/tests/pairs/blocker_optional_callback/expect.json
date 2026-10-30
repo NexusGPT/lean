@@ -3,19 +3,25 @@
   "notify_all",
   "notify_next",
   "notify_named",
-  "notify_later"
+  "notify_later",
+  "notify_prop",
+  "notify_prop_next"
  ],
  "equal": {
   "notify_all": true,
   "notify_next": false,
   "notify_named": true,
-  "notify_later": true
+  "notify_later": true,
+  "notify_prop": true,
+  "notify_prop_next": false
  },
- "why": "An optional call f?.(x) inside a callback, where f is a function the enclosing function received (a parameter, or a const naming one). The callback is a unit of its own whose captured inputs are its parameters (callbackEnvironment), and a plain call f(x) there is admitted. optionalCallShape (lower.mjs) read locality through common.mjs originOf, which does not know callback inputs, so the lint refused the optional form: 'an optional call reads a local function value'. The lint and the translator now give optionalCallShape the function that declares f as its locality scope when f is an immutable captured input of the callback (optionalScope). Before: the lint refused parent.ts, theorem not generated. notifyAll and notifyLater are unchanged or refactored around an identical callback; notifyNamed names the callback with a const first. notifyNext passes x + 1: lane B witnesses. The proof rows need spec/theorem.py split_top to stop reading the > of an arrow type -> as a closing bracket (design/top-blockers.md); without that fix every unit with a function-typed parameter is ASK translation-defect.",
+ "why": "An optional call f?.(x) inside a callback, where f is a function the enclosing function received (a parameter, or a const naming one). The callback is a unit of its own whose captured inputs are its parameters (callbackEnvironment), and a plain call f(x) there is admitted. optionalCallShape (lower.mjs) read locality through common.mjs originOf, which does not know callback inputs, so the lint refused the optional form: 'an optional call reads a local function value'. The lint and the translator now give optionalCallShape the function that declares f as its locality scope when f is an immutable captured input of the callback (optionalScope). Before: the lint refused parent.ts, theorem not generated. notifyAll and notifyLater are unchanged or refactored around an identical callback; notifyNamed names the callback with a const first. notifyNext passes x + 1: lane B witnesses. notifyProp calls a function field of a captured record (h.onItem?.(x)), read the same way through the record path; notifyPropNext doubles x: lane B witnesses. The proof rows rest on the spec/theorem.py split_top fix for arrow types (497cc8c8).",
  "b": {
   "notifyAll": "PASS-bounded",
   "notifyNext": "WITNESS",
   "notifyNamed": "PASS-bounded",
-  "notifyLater": "PASS-bounded"
+  "notifyLater": "PASS-bounded",
+  "notifyProp": "PASS-bounded",
+  "notifyPropNext": "WITNESS"
  }
 }

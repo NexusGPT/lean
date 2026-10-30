@@ -227,12 +227,13 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     return callbackInputs.get(node)?.some(c => c.decl === o.decl) ? { ...o, kind: 'local' } : o;
   };
   const unitByNode = new Map([...units.values()].map(u => [u.node, u]));
-  // an optional call `f?.(x)` in a callback unit whose callee `f` is one of the callback's captured inputs: the input is
+  // an optional call `f?.(x)` (or `p.f?.(x)`) in a callback unit whose callee `f` (or root `p`) is one of the callback's captured inputs: the input is
   // the callback's own parameter (callbackEnvironment), as a plain call `f(x)` reads it, so optionalCallShape (lower.mjs,
   // which reads locality through common.mjs originOf) is given the function that declares `f` as the scope its locality
   // is read against (design/top-blockers.md, callbacks-function-values)
   const optionalScope = (call, node) => {
-    const f = call.expression;
+    let f = call.expression; // the callee, or the root name of its record path (`p.onDone?.(x)`, `p.cbs.done?.(x)`)
+    while (ts.isPropertyAccessExpression(f) && !f.questionDotToken) f = f.expression;
     if (!node || !ts.isIdentifier(f)) return node;
     const o = sourceOriginOf(checker, f, sf, node);
     if (!o.decl || !callbackInputs.get(node)?.some((c) => c.decl === o.decl && !c.mutable)) return node;
