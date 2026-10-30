@@ -8,6 +8,7 @@ edit file. The candidate file is only the thing the theorem is about: the
 generator reads its function signatures to refuse a mismatch, and never takes a
 statement from it. See spec/README.md for the exact theorem shape.
 """
+import os
 import argparse, json, re, sys
 
 FORBIDDEN = [
