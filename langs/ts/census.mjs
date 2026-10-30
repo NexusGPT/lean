@@ -127,7 +127,8 @@ export function census(root, opts = {}) {
       r.units++;
       const d = r.directories.get(directory) ?? {
         directory, units: 0,
-        example: { file: relative, line: f.line, code: (f.text ?? sourceLines[f.line - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 120) },
+        // the message names the form the rule refused (a `types` refusal names its type only there; design/types-inventory.md)
+        example: { file: relative, line: f.line, code: (f.text ?? sourceLines[f.line - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 120), message: f.msg },
       };
       d.units++;
       r.directories.set(directory, d);
@@ -238,6 +239,13 @@ export function censusDiffReport(d) {
 
 if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(process.argv[1])) {
   const a = process.argv.slice(2);
+  const USAGE = [
+    'usage: node census.mjs <repo-root> [--out census.json] [--report census.md] [--readings-report readings.md] [--depth N] [--limit N] [--include <prefix>] [--js] [--profile]',
+    '                       [--install-under <dir>] [--npm-cache <dir>] [--clean-after]',
+    '       node census.mjs --diff <before.json> <after.json>',
+  ].join('\n');
+  if (a.includes('--help') || a.includes('-h')) { console.log(USAGE); process.exit(0); }
+  if (!a.length || (a[0] !== '--diff' && a[0].startsWith('-')) || (a[0] === '--diff' && a.length < 3)) { console.error(USAGE); process.exit(2); }
   if (a[0] === '--diff') { // node census.mjs --diff <before.json> <after.json>: gains and losses per reading
     const d = censusDiff(JSON.parse(fs.readFileSync(a[1], 'utf8')), JSON.parse(fs.readFileSync(a[2], 'utf8')));
     console.log(censusDiffReport(d));

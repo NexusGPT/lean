@@ -1,0 +1,27 @@
+{
+ "scope": [
+  "self_eq",
+  "neq",
+  "narrowed",
+  "same_self",
+  "switch_self",
+  "unknown_sym"
+ ],
+ "equal": {
+  "self_eq": false,
+  "neq": true,
+  "narrowed": false,
+  "same_self": false,
+  "switch_self": false,
+  "unknown_sym": true
+ },
+ "why": "A value typed any or unknown may be NaN, where === is false on equal operands (NaN === NaN), or a signed zero, where it is true on two values (-0 === 0). The translator read === and !== on such an operand as Dafny == and != on Any, which is reflexive, so selfEq (p === p) was proved equal to true (7f13803a: Equal_self_eq proved, 1 FAILED); JavaScript returns false for NaN. Now the comparison is one uninterpreted test over Any, ext_op_strict_eq_Any, negated for !== (translate.mjs, design/type-assertions.md 2026-10-30): selfEq is not proved, and lane B passes it because it draws no NaN for an any parameter. neq (p !== q against !(p === q)) reads the same term on both sides: proved, PASS-bounded. narrowed tests typeof p === 'number' first, so p === p is the number comparison through the uninterpreted Math.__lean_eq, as before: not proved (the doubles reading does not encode an unknown parameter), lane B WITNESS on NaN. sameSelf (Object.is(p, p), true in JavaScript) is an outside call, uninterpreted, as before: not proved, PASS-bounded. switchSelf (switch (p) { case p: }) is one opaque block, as before: not proved, PASS-bounded (NaN would take default). unknownSym is untouched: proved. == on any is refused loose-equality by the lint, as before, so it is not in the pair. Since lane B draws NaN, -0 and the infinities for any and unknown parameters (2026-10-30), selfEq and switchSelf are witnessed by lane B too (NaN): their lane B rows are WITNESS, as their equal rows already said false.",
+ "b": {
+  "selfEq": "WITNESS",
+  "neq": "PASS-bounded",
+  "narrowed": "WITNESS",
+  "sameSelf": "PASS-bounded",
+  "switchSelf": "WITNESS",
+  "unknownSym": "PASS-bounded"
+ }
+}

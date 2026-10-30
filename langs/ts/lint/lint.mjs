@@ -13,9 +13,9 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, elementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
-import { primitiveBrand } from '../common.mjs';
+import { primitiveBrand, readAfterCall } from '../common.mjs';
 import { originOf } from '../common.mjs';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment, strictValue } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
@@ -23,7 +23,7 @@ import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or f
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
 import { absenceCarried, absenceHome, payloadRead, payloadStatement, strandedLetReads } from '../common.mjs'; // a value that may be absent: one test with the translator (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
-import { typeAssertion, erasedReferenceSlot } from '../common.mjs'; // a narrowing `as`: one test with the translator
+import { typeAssertion, erasedReferenceSlot, assertionHeld } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { spreadReadWhy, openRecordReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries (open-datatype)
 import { untypedThisParam } from '../common.mjs'; // a `this` parameter typed any or unknown, or untyped: one test with the translator
 // untypedJsUnit (common.mjs): a JavaScript unit whose parameter has no declared type, refused as untyped-js by the lint's unit loop and at the head of the translator's emitUnit
@@ -227,10 +227,37 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     return callbackInputs.get(node)?.some(c => c.decl === o.decl) ? { ...o, kind: 'local' } : o;
   };
   const unitByNode = new Map([...units.values()].map(u => [u.node, u]));
+  // an optional call `f?.(x)` (or `p.f?.(x)`) in a callback unit whose callee `f` (or root `p`) is one of the callback's captured inputs: the input is
+  // the callback's own parameter (callbackEnvironment), as a plain call `f(x)` reads it, so optionalCallShape (lower.mjs,
+  // which reads locality through common.mjs originOf) is given the function that declares `f` as the scope its locality
+  // is read against (design/top-blockers.md, callbacks-function-values)
+  const optionalScope = (call, node) => {
+    let f = call.expression; // the callee, or the root name of its record path (`p.onDone?.(x)`, `p.cbs.done?.(x)`)
+    while (ts.isPropertyAccessExpression(f) && !f.questionDotToken) f = f.expression;
+    if (!node || !ts.isIdentifier(f)) return node;
+    const o = sourceOriginOf(checker, f, sf, node);
+    if (!o.decl || !callbackInputs.get(node)?.some((c) => c.decl === o.decl && !c.mutable)) return node;
+    let p = o.decl; while (p && !ts.isFunctionLike(p)) p = p.parent;
+    return p ?? node;
+  };
   const exceptionUnits = exceptionUnitsOf(sf, checker, units);
   const generators = generatorReading(checker, sf, units);
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
+  // read-after-call (common.mjs readAfterCall, one decision with the translator): the lint's own readings are a subset
+  // of the translator's, so it never refuses a unit the translator reads; a call is a method of an any or unknown
+  // value, a call of a function-valued parameter or an await; a member of a class instance is read through the world
+  const rafHooks = {
+    effect: (n) => { if (ts.isAwaitExpression(n)) return true; if (!ts.isCallExpression(n)) return false; const f = n.expression; if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && nonNull(tOf(f.expression)).some(isAny)) return true; if (ts.isIdentifier(f)) { const d = checker.getSymbolAtLocation(f)?.valueDeclaration; return !!d && ts.isParameter(d); } return false; },
+    typeOf: (n) => tOf(n),
+    worldRead: (m) => { const t = tOf(m.expression); return !!t && nonNull(t).some((x) => !!x.symbol && !!(x.symbol.flags & ts.SymbolFlags.Class)); },
+    worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf),
+    quiet: (n) => !!reactHook(checker, n) || /^Promise\.(resolve|reject|all|allSettled|race|any)$/.test(n.expression?.getText?.(sf) ?? ''),
+    deferred: (q) => /^use(Layout|Insertion)?Effect$/.test(reactHook(checker, q) ?? ''),
+    opaque: (st) => ts.isTryStatement(st) || ts.isSwitchStatement(st) || ts.isLabeledStatement(st) || ts.isIterationStatement(st, false), // weaker than the translator's own test: never more refusals
+    freshAlone: (a) => { let e = a; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; if (ts.isIdentifier(e)) { const d = checker.getSymbolAtLocation(e)?.valueDeclaration; e = d && ts.isVariableDeclaration(d) && d.initializer ? d.initializer : e; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; } return ts.isObjectLiteralExpression(e) || ts.isArrayLiteralExpression(e); },
+  };
+  const readAfter = (u) => { if (!u?.fn?.body) return; const rc = readAfterCall(checker, sf, u, rafHooks); if (rc) v(rc.node, 'read-after-call', rc.message); };
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
   let objectMethod = null;
   let literalUnit = null; // the member of a module literal being checked as a unit: `this` is that literal (design/exported-units.md)
@@ -1556,7 +1583,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (moduleLoader(checker, e, sf, current)) return argsOf(e);
     { const md = metadataCall(checker, e, sf); if (md) { if (!(ts.isIdentifier(f.expression) && f.expression.text === 'Reflect')) expr(f.expression); return e.arguments.forEach((a) => expr(a)); } } // a metadata API of the decorator table (translate/decorators.json): the one admitted use of Reflect, a cell of the world
     { const ok = ownKeyTest(checker, e, sf); if (ok) { if (ok.refuse) return v(e, 'prototype', ok.refuse); expr(ok.obj); return expr(ok.key); } } // the own-key test on a dictionary or a record of required fields
-    if (e.questionDotToken) { const shape = optionalCallShape(checker, e, sf, { current, currentClass, objectMethod, thisParam, units }).sourcePathAdmission; if (shape.why) v(e, 'optional-chain', shape.why); }
+    if (e.questionDotToken) { const shape = optionalCallShape(checker, e, sf, { current: optionalScope(e, current), currentClass, objectMethod, thisParam, units }).sourcePathAdmission; if (shape.why) v(e, 'optional-chain', shape.why); }
     if (ts.isIdentifier(f)) {
       checkIdent(f, true);
       const o = declOf(f);
@@ -2033,6 +2060,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     expr(e.expression);
     const parts = nonNull(rt);
     if (parts.some(isAny)) return; // a read on an opaque value: uninterpreted accessor
+    if (!onWritePath(e) && (() => { const h = assertionHeld(checker, e.expression); return !!h && isAny(h); })()) return; // a read on a value held at Any (an assertion, a strict-mode error's value): uninterpreted accessor, one test with the translator's typeOf
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
     if (execMatchMember(e, checker)) return; // `m.index` / `m.input` of a match of a non-global regular expression literal (common.mjs)
@@ -2182,6 +2210,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       }
       checkStringLiterals(u.node);
       if (u.body) { if (ts.isBlock(u.body)) stmts(u.body.statements); else expr(u.body); }
+      readAfter(u);
       current = null; currentFn = null;
       continue;
     }
@@ -2249,6 +2278,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
         checkStringLiterals(u.node);
         if (u.isStatic && !u.params.every((p) => ts.isIdentifier(p.name))) staticThis(u.body); // with plain parameters the unit is one opaque transition keyed by the file
         stmts(u.body.statements);
+        readAfter(u);
         current = null; currentFn = null; currentClass = null; thisParam = null;
       }
       continue;
@@ -2331,6 +2361,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     return !guarded;
   };
   // compiler diagnostics (strict mode) that fall inside a checked region; unresolved-module codes get their own rule
+  const strictAdvice = [];
   for (const d of diagnostics) {
     if (d.file !== sf || d.start === undefined) continue;
     const hit = !ranges || checkedDiagSpans.some((n) => d.start >= n.getStart(sf) && d.start <= n.getEnd());
@@ -2338,6 +2369,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (d.code === 7029) continue; // switch fall-through is an ordered clause continuation
     if (IMPLICIT_ANY.has(d.code)) continue; // implicit any: opaque, admitted
     if (d.code === 18046 && !ownUnknown(d)) continue; // an unknown the unit did not write: opaque, admitted
+    if (strictValue(checker, sf, d)) { strictAdvice.push(d); continue; } // a value whose type the error says nothing checked: held at Any (common.mjs strictValue), advice only
     if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, which the translator refuses
       out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: ownText.slice(d.start, d.start + (d.length ?? 4)) });
       continue;
@@ -2346,6 +2378,10 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       // a property missing on a type that lives in node_modules: the dependency's version may differ from the commit's; the read is opaque
       const at = (function find(n) { if (d.start >= n.getStart(sf) && d.start < n.getEnd()) { let hit = n; ts.forEachChild(n, (c) => { const r = find(c); if (r) hit = r; }); return hit; } return null; })(sf);
       let pa = at; while (pa && !ts.isPropertyAccessExpression(pa)) pa = pa.parent;
+      // a property of `import.meta`: the host defines the object's properties (ECMA-262 HostGetImportMetaProperties), and
+      // their types come from the host's package (`@types/node`, `vite/client`), so a name the checkout's lib does not
+      // declare is the environment's; the translator reads `import.meta.x` as a world read (design/top-blockers.md)
+      if (pa) { let m = pa.expression; while (ts.isParenthesizedExpression(m) || ts.isNonNullExpression(m)) m = m.expression; if (ts.isMetaProperty(m) && m.keywordToken === K.ImportKeyword && pa.name.text !== 'env') { out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'unresolved-module', msg: `TS${d.code}: \`import.meta.${pa.name.text}\` is a host-defined property whose type the checkout's lib does not declare`, env: true }); continue; } }
       if (pa) { const rt = checker.getTypeAtLocation(pa.expression); const decl = rt.symbol?.declarations?.[0] ?? rt.aliasSymbol?.declarations?.[0]; if (decl && /node_modules/.test(decl.getSourceFile().fileName)) continue; }
     }
     const rule = RESOLUTION_CODES.has(d.code) ? 'unresolved-module' : 'ts-strict';
@@ -2355,6 +2391,8 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   }
   // Optional mechanical advice never enters the proof gate. The editor and --advice ask for it.
   if (opts.advisory) {
+    // a strict-mode error the proof reads at Any: advice with the compiler's code, never a refusal
+    for (const d of strictAdvice) out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'ts-strict', msg: `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')} (the value is read at Any: no fact of its type is used; narrow it to give the proof its type)`, text: ownText.slice(d.start, d.start + (d.length ?? 4)), advisory: true });
     const note = (node, rule, msg) => {
       if (!overlaps(sf, node, ranges)) return;
       v(node, rule, msg);

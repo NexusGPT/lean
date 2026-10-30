@@ -1,5 +1,5 @@
 {
- "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity). Re-baselined on the admission head of 2026-10-29 (the doubles merge, all 204 pairs, --jobs 4): 118 entries not seen in a pair that ran were retired (70 an integer past 2^53: the model is exact, Node rounds to binary64, 43 signed zero: Node -0, the model 0, 3 real arithmetic: the model is exact, Node rounds to binary64, 2 aliased arguments: one object at two places of the input): the faithful number reading makes a unit's inexact operations uninterpreted, so those units no longer execute against Node; 2 added (signed zero on a pass-through unit: proof_hunt_13/spreadCopy, reach_absent/Changed.f). The retired entries are in the git history of this file at e2c729a0.",
+ "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity). Re-baselined on the admission head of 2026-10-29 (the doubles merge, all 204 pairs, --jobs 4): 118 entries not seen in a pair that ran were retired (70 an integer past 2^53: the model is exact, Node rounds to binary64, 43 signed zero: Node -0, the model 0, 3 real arithmetic: the model is exact, Node rounds to binary64, 2 aliased arguments: one object at two places of the input): the faithful number reading makes a unit's inexact operations uninterpreted, so those units no longer execute against Node; 2 added (signed zero on a pass-through unit: proof_hunt_13/spreadCopy, reach_absent/Changed.f). The retired entries are in the git history of this file at e2c729a0. 2026-10-30: one entry added, blocker_unresolved_type/negated (signed zero), a new unit of the known class from the pair the top-blockers lane landed that day.",
  "findings": [
   {
    "kind": "disagree",
@@ -775,6 +775,16 @@
    "row": "d7e54baf",
    "laneA": "unlisted",
    "first": "input 15, candidate: result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "blocker_unresolved_type",
+   "unit": "negated",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 11, candidate: result: model 0 against {\"$negativeZero\":true} (input [-Infinity, -0]; the pair landed 2026-10-30, lane top-blockers)",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)"
   }
  ]

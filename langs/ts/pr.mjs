@@ -28,7 +28,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, loadProgramOptions, topLevelFunctions, findingUnit, parseUnitList, formatUnitList } from './common.mjs';
+import { ts, loadProgram, loadProgramOptions, fileDiagnostics, topLevelFunctions, findingUnit, parseUnitList, formatUnitList } from './common.mjs';
 import { check } from './check.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { lintFile } from './lint/lint.mjs';
@@ -113,7 +113,7 @@ function sharedReadings(files, project) {
     for (const abs of roots) {
       const sf = program.getSourceFile(abs);
       if (!sf) { out.set(abs, { error: `cannot read ${abs}` }); continue; }
-      try { out.set(abs, { program, sf, checker, diagnostics: [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)], abs, projectFile: cfg }); }
+      try { out.set(abs, { program, sf, checker, diagnostics: fileDiagnostics(program, sf), abs, projectFile: cfg }); }
       catch (e) { out.set(abs, { error: String(e.message) }); }
     }
   }

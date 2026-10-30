@@ -2,6 +2,18 @@
 
 lean answers one question: do two versions of a function behave the same outside a declared scope? This page is the layer above it: lean's state, the parts of a program it threads one contract at a time, the gate that would use it as one check among six, and the coding agent's loop as a research setting. The design source is [`langs/ts/design/research-integration.md`](../langs/ts/design/research-integration.md), sections 1, 2 and 11.
 
+## Differential attestation (DA)
+
+The pipelines around lean live in one repository, **DA, differential attestation**: https://github.com/NexusGPT/differential-attestation. What it holds, each a row with its own parameters and its own report:
+
+- **Screen analysis**: two builds rendered on the same screens under one pinned browser, compared by pixels (per-channel and pixel-count tolerances, masks, regions), by layout boxes and by the accessibility tree. lean names the state where two renders differ; DA judges what is shown.
+- **Open code review**: a diff read against its stated scope, with the readers' findings kept apart from lean's verdicts.
+- **The gate**: one pull-request check that assembles lean's table with the other rows; advisory first.
+- **The benchmark**: the gate measured on real repositories, with the numbers from committed runs.
+- **Containment**: hostile code is the gate's problem, not the checker's.
+
+lean plugs in through its certificate: one JSON per function with the verdict, what backs it, and the seconds each lane took. Any other check of that kind couples with lean the same way. The rest of this page is the layer both share: the ledger of obligations and the worlds lean threads one contract at a time.
+
 ## What settles a claim
 
 A claim about a change is settled only by a check that can fail, and every check states what it covered.

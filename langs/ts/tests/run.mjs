@@ -113,7 +113,13 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] });
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
   if (th.status !== 0) return;
-  const v = crun('dafny', ['verify', '--verification-time-limit', '30', '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
+  // lane A's time limit stretches with the share of the machine one Dafny process gets: alone it verifies a lemma's parts
+  // across the cores (--cores above), under JOBS neighbours it holds floor(cpus / JOBS) cores and the same parts run in
+  // sequence, so the wall a lemma needs grows by that ratio. The stretch is that ratio, capped at 4 (heap_canonical's
+  // EqualCanon_pair runs in 4 parts: 13 of 13 alone on 11 cores, 2 rows red twice under JOBS 28 on 32 cores at 30 s)
+  const coresEach = Math.max(1, Math.floor(os.cpus().length / JOBS));
+  const dafnyStretch = Math.min(4, Math.max(1, os.cpus().length / coresEach / 4));
+  const v = crun('dafny', ['verify', '--verification-time-limit', String(Math.round(30 * dafnyStretch)), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
@@ -158,6 +164,17 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     let got = 'no result';
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
+  }
+  // lane B under the network-denied mode (LEAN_NET=deny, design/sandbox-boundary.md): the verdict, and the record's
+  // sandbox entry naming the mode and every connection attempt it refused, each as `<api> <host>:<port>`
+  for (const [unit, want] of Object.entries(exp.netDeny ?? {})) {
+    const out = path.join(tmpd, `bnet_${artifactName(unit)}.json`);
+    crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate')], outs: [out], env: { LEAN_NET: 'deny' } });
+    let got = null; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* keep */ }
+    const sb = got?.record?.sandbox;
+    const denied = [...new Set((sb?.denied ?? []).map((a) => `${a.api} ${a.target}`))].sort();
+    const ok = got?.verdict === want.verdict && sb?.network === 'deny' && JSON.stringify(denied) === JSON.stringify([...want.denied].sort());
+    add('pair', name, `lane B ${unit} under LEAN_NET=deny: ${want.verdict}, denied ${JSON.stringify(want.denied)}`, ok, `${got?.verdict ?? 'no result'}; sandbox ${sb ? `${sb.network}, denied ${JSON.stringify(denied)}` : 'not recorded'}`);
   }
   // the states lane B reached (bound.states, for the gate's rendering check): one per input that ran on both sides, each
   // with its index and its arguments as drawn; `states` in expect.json names the unit and the count of inputs it ran
@@ -278,7 +295,7 @@ if (PAIR_ONLY) {
   const A = huntA.get(PAIR_ONLY) ?? null;
   let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(pairsDir, PAIR_ONLY, 'expect.json'), 'utf8')); } catch { /* a pair without expectations has no hunt */ }
   const provedBy = A ? Object.fromEntries(Object.keys(exp.b ?? {}).map((u) => [dafnyName(u), A.proved(dafnyName(u))])) : null;
-  if (RESULT_FILE) { fs.writeFileSync(RESULT_FILE, JSON.stringify({ rows, hunt: A ? { adapters: A.adapters, provedBy } : null, cache: stepCacheStats() })); process.exit(0); }
+  if (RESULT_FILE) { fs.writeFileSync(RESULT_FILE, JSON.stringify({ rows, hunt: A ? { adapters: A.adapters, provedBy, bearing: Object.fromEntries(Object.keys(provedBy).map((f) => [f, A.bearing(f)])) } : null, cache: stepCacheStats() })); process.exit(0); } // the hunt entry crosses the process boundary whole: adapters, each lemma's proof and whether the doubles reading bears on it
   // run by hand (no `--result`): the pair's own table, as the whole suite prints it, and the exit code of its rows
   const cols = ['kind', 'name', 'check']; const widths = Object.fromEntries(cols.map((c) => [c, Math.max(c.length, ...rows.map((r) => String(r[c]).length))]));
   console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | lsc accepts | detail`);
@@ -493,7 +510,7 @@ async function pairs(add) {
         let res = null; try { res = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}.result.json`), 'utf8')); } catch { /* no result: the worker died */ }
         if (!res) { add('pair', name, 'pair worker', false, 'the pair worker wrote no result (it died or was killed)'); continue; }
         for (const r of res.rows) add(r.kind, r.name, r.check, r.ok, r.detail, r.lsc);
-        if (res.hunt) huntA.set(name, { adapters: res.hunt.adapters, proved: (f) => (f in res.hunt.provedBy ? res.hunt.provedBy[f] : null) });
+        if (res.hunt) huntA.set(name, { adapters: res.hunt.adapters, bearing: (f) => !!res.hunt.bearing?.[f], proved: (f) => (f in res.hunt.provedBy ? res.hunt.provedBy[f] : null) });
         childCache.hits += res.cache?.hits ?? 0; childCache.misses += res.cache?.misses ?? 0;
       }
     } else await pool.job('pairs/in-process').slots(1, async () => { for (const name of pairNames) await runPairStep(name, add); }); // its children run synchronously in this process: it holds one slot throughout
@@ -510,7 +527,9 @@ async function proofHunt(add) {
 // numbers only. The step prints its own TOTAL line.
 {
   let both = 0, hidden = 0, exempt = 0;
+  for (const [name, A] of huntA) if (typeof A.bearing !== 'function' || typeof A.proved !== 'function' || !Array.isArray(A.adapters)) add('proof-hunt', name, 'hunt entry shape', false, 'the pair step handed the hunt an entry without adapters, bearing or proved: the two paths that build it (in-process and the pair worker) must agree'); // a shape defect is a failing row, never an uncaught exception that ends the suite with no table
   for (const [name, A] of huntA) {
+    if (typeof A.bearing !== 'function' || typeof A.proved !== 'function') continue;
     const d = path.join(pairsDir, name), exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
     for (const unit of Object.keys(exp.b ?? {})) {
       let B = null; try { B = JSON.parse(fs.readFileSync(path.join(tmp, `pair_${name}`, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* no lane B result: not counted */ }
@@ -652,8 +671,20 @@ async function adviceLabels(add) {
     ['unit-listing', scriptRow('runtime', 'unit-listing', 'a class and an exports-property literal sharing a name list two units, each refusal attributed to its own', [path.join(here, 'unit-listing.mjs')], lastLine)],
     // lane B's child reads the node_modules folders module resolution visits, a link out of the tree included (exec/run.mjs workerReads; design/microtask-worker.md)
     ['linked-dependencies', scriptRow('runtime', 'linked-dependencies', 'a declaration behind a node_modules link out of the tree reaches the lane B child', [path.join(here, 'linked-dependencies.mjs')], lastLine)],
+    // a finite exploration where every handler fire threw one same error on both sides is ASK naming it, never PASS-decided (exec/finite.mjs; design/microtask-worker.md)
+    ['same-error', scriptRow('runtime', 'same-error', 'a component whose every handler threw the same sandbox error is ASK, not PASS-decided', [path.join(here, 'same-error.mjs')], lastLine)],
+    // the converter: a dry run writes no source file even when killed mid-round; census.mjs answers --help; a forEach rewrite is refused when the list's type rests on an assertion (converter lane, 2026-10-30)
+    ['convert-dry-run-kill', scriptRow('runtime', 'convert-dry-run-kill', 'a converter dry run killed mid-round leaves the tree byte-identical', [path.join(here, 'convert_dry_run_kill.mjs')], lastLine)],
+    ['census-usage', scriptRow('runtime', 'census-usage', 'census.mjs prints usage on --help (exit 0) and on no arguments (exit 2)', [path.join(here, 'census_usage.mjs')], lastLine)],
+    // a census refusal example carries the finding's message, the form the rule refused (types inventory lane, 2026-10-30)
+    ['census-example-message', scriptRow('runtime', 'census-example-message', 'each refusal example carries its finding\'s message', [path.join(here, 'census_example_message.mjs')], lastLine)],
+    ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
+    // the certificate records the seconds of each lane that ran, a lane that did not run absent (check.mjs certificate.timing)
+    ['certificate-timing', scriptRow('runtime', 'certificate-timing', 'certificate.timing holds positive seconds per lane that ran on numbers::average, readme_ledger::applyAll and component::Counter', [path.join(here, 'certificate-timing.mjs')], lastLine)],
+    // one entry point: bin/lean check | lint | pr | census, arguments and exit codes passed through; the README quickstart through it
+    ['bin-lean', scriptRow('runtime', 'bin-lean', 'bin/lean check reproduces the README quickstart; lint, pr and census dispatched with their exit codes', [path.join(here, 'bin-lean.mjs')], lastLine)],
   ].map(([key, go]) => ({ key: `runtime/${key}`, go }));
   // Every selected pair's parent, the self-pair fixtures, and an optional challenge
   // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane. Its own workers take WIDE slots.

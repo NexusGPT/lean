@@ -1,0 +1,7 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "A unit that hands a string to a parser in another file of its package (token.ts keyOfToken, a pattern of that file). Lane B drew strings from its edges, the unit's literals and the patterns of the unit's own file, so no drawn string parsed and the branch that returns the parsed key never ran: attemptKeyOf, whose candidate swaps the test on the absent token, was PASS-bounded. The patterns of every local file whose function the unit calls now join the pool (exec/spec.mjs, design/callee-pattern.md), the unit's own file first: attemptKeyOf WITNESS. attemptKeyOfRefactor writes the test as an if: PASS-bounded. hasAttempt is untouched: PASS-bounded. The pair checks lane B alone (the parser's regular expression is outside lane A's subset).",
+ "b": { "attemptKeyOf": "WITNESS", "attemptKeyOfRefactor": "PASS-bounded", "hasAttempt": "PASS-bounded" }
+}

@@ -4,3 +4,7 @@ __pycache__/
 results-bench/
 harness-copy/
 .lean/cache/
+
+# a lane's own scratch (result files, logs, bisection copies): never part of lean
+lane/
+.lean/

@@ -1,0 +1,7 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "A visitor that recurses through the world (walker.forEachChild(node, visit), the ts.forEachChild shape): the fake runs each callback it is handed once with a fake node, and the visitor hands the walker itself again, so before the rule every input passed 40 nested callbacks and lane B answered ASK (budget) on both sides of every unit that called it. The world's tree is finite now (exec/fake.mjs, design/fake-recursion.md): past 40 nested callbacks the fake runs no further callback, as its iterator yields nothing past depth 8, so the visitor returns at the leaves, the same on both sides. reaches negates the test on the visitor's answer: WITNESS. reachesRenamed renames a local: PASS-bounded. countSeed is untouched: PASS-bounded. The units take unknown values, so the pair checks lane B alone.",
+ "b": { "reaches": "WITNESS", "reachesRenamed": "PASS-bounded", "countSeed": "PASS-bounded" }
+}

@@ -88,3 +88,29 @@ commits, each proved or bounded by `pr.mjs`) is in the lane report of this chang
 `langs/ts/tests/fixtures/convert/<transform>/{before,after,wrong}.ts`, run by the suite's `convert` section: the
 before converts to the after exactly, the after proves with no WITNESS, and the wrong after (a near rewrite that
 changes behaviour) is a WITNESS.
+
+## 2026-10-30: dry runs write nothing, stopped runs leave no file, an awaited list keeps its forEach
+
+- The rounds read and write their text in memory. The compiler host reads every file through `ts.sys.readFile`, and
+  the converter answers a file it is converting from its own map. A dry run therefore writes no source file at any
+  moment; a real run writes each file once, after its rounds. Before, every round wrote the file and a dry run
+  restored it only after the file's last round, so a run stopped mid-round left the rewrite in the tree
+  (`tests/convert_dry_run_kill.mjs` kills a dry run in its second file's rounds and compares the tree byte for byte).
+- The control copy the proof writes for an ASK (the parent against itself) stays beside the source: lane B imports
+  it, and its relative imports resolve only there. While one exists, SIGINT, SIGTERM and SIGHUP remove it before the
+  run exits. The handlers are installed only for that phase: it awaits lane B, so a handler runs at once, while a
+  handler held for the whole run would wait for the synchronous rounds to end.
+- foreach refuses a list bound from an await (or a field path whose root is). Superseded the same day by the next
+  paragraph: the cause is the cast, not the await.
+- foreach refuses a list whose array type rests on a type assertion anywhere on its path. pyka's `alertNewData` read
+  rows typed an array only by an `as`; lane B's fake there is not an array, forEach and the counted loop read it
+  differently, and pr.mjs gave a WITNESS. The test asks the lint's own readers (common.mjs `assertionHeld`: an `as`, or
+  a local an `as` writes; `typeAssertion`: a call of a same-file unit returning an asserted value) about each
+  expression on the path: the list, the root of a field path, the initializer of its binding, through `await` and
+  through the element of `[a, b] = await Promise.all([x, y])` that the pattern takes. `erasedReference` is not used: it
+  names a reference cast to a non-reference type, which is not an array type, and common.mjs does not export it.
+  Fixtures in `tests/fixtures/convert_async_foreach` (`tests/convert_async_foreach.mjs`): `asserted/` (a same-file
+  callee's `as`, awaited) refused, its pair a WITNESS; `json-cast/` (`JSON.parse(text) as Row[]`, no await) refused;
+  `external/` (an awaited list with a declared array type) rewritten, its pair PASS-bounded. The readers stop at the
+  file: a cast in another module (pyka's `db.ts`) is not seen, the rewrite is made, and the proof step's WITNESS
+  reverts the file, as it did on pyka.

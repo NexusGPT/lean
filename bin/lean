@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+// lean: one entry point over the four scripts, every argument after the subcommand passed through unchanged, the
+// script run from the caller's directory (so relative paths read as they would given to the script) and its exit code
+// (or 128 + the signal number) returned as lean's own.
+//
+//   lean check  ...   langs/ts/check.mjs      one function, both lanes, one verdict with its certificate
+//   lean lint   ...   langs/ts/lint/lint.mjs  the lint
+//   lean pr     ...   langs/ts/pr.mjs         a whole pull request, one table
+//   lean census ...   langs/ts/census.mjs     a repository's reach
+import { spawn } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const scripts = { check: 'langs/ts/check.mjs', lint: 'langs/ts/lint/lint.mjs', pr: 'langs/ts/pr.mjs', census: 'langs/ts/census.mjs' };
+const usage = `usage: lean <${Object.keys(scripts).join(' | ')}> [arguments of that script]\n${Object.entries(scripts).map(([k, s]) => `  lean ${k.padEnd(7)} runs ${s}`).join('\n')}`;
+const [sub, ...rest] = process.argv.slice(2);
+if (sub === '--help' || sub === '-h' || sub === 'help') { console.log(usage); process.exit(0); }
+if (!Object.hasOwn(scripts, sub ?? '')) { console.error(sub === undefined ? usage : `lean: unknown command ${JSON.stringify(sub)}\n${usage}`); process.exit(2); }
+const child = spawn(process.execPath, [path.join(root, scripts[sub]), ...rest], { stdio: 'inherit' });
+for (const s of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(s, () => child.kill(s)); // the script, never lean alone, answers a stop
+child.on('error', (e) => { console.error(`lean: ${scripts[sub]}: ${e.message}`); process.exit(2); });
+child.on('close', (code, signal) => process.exit(code ?? 128 + (os.constants.signals[signal] ?? 0)));

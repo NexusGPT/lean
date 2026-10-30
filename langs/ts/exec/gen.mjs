@@ -99,6 +99,17 @@ export function changedTurn(spec, i) {
   if (g < 2 || g % REACH !== 2 || knownInput(spec, i)) return null;
   return (g - 2) / REACH;
 }
+// the full-world tier (fake.mjs enterWorld, design/world-reach.md): every WORLD-th generated input from the WORLD/2-th on,
+// outside the known phase, is turn w of the tier, an input whose world answers every read with a handle (no dead value
+// along a chain of reads), holds the caller's key in a field of that name, and reads a handle as a list of 1, 2 or 3
+// elements by turn. The parameters are drawn as on every other input; LEAN_WORLD=off switches the tier off
+export const WORLD = 8;
+export function worldTurn(spec, i) {
+  if (process.env.LEAN_WORLD === 'off') return null;
+  const g = i - (spec.walkFrom ?? 0);
+  if (g < WORLD / 2 || g % WORLD !== WORLD / 2 || knownInput(spec, i)) return null;
+  return (g - WORLD / 2) / WORLD;
+}
 const isUndefTag = (v) => !!v && typeof v === 'object' && v.t === 'undefined';
 function reachChanged(args, targets, t, defs = {}) {
   const locate = (at) => { // the holder of a target's leaf and its key, or null when a container on the way is absent
@@ -141,8 +152,8 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   const tie = special != null && special % 2 === 0; // an even special-number input: the special-slots invariant (header)
   const slotValues = new Map(); // slot -> its special value, in an even special-number input
   const slotOf = (path) => path.replace(/\[\d+\]/g, '[]').replace(/\{\d+\}/g, '{}');
-  const specialOf = (spec, x, path = 'in') => {
-    if (!srng || typeof x !== 'number' || !admitsNumber(spec)) return x;
+  const specialOf = (spec, x, path = 'in', untyped = false) => { // untyped: an opaque leaf (any, unknown), x undefined; undefined back means it keeps its draw
+    if (!srng || (!untyped && (typeof x !== 'number' || !admitsNumber(spec)))) return x;
     if (tie) { const k = slotOf(path); if (!slotValues.has(k)) slotValues.set(k, NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length]); return slotValues.get(k); }
     if (replaced > 0 && special % 2 === 1 && srng() < 0.5) return x; // every other special-number input keeps some later leaves finite
     return NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length];
@@ -239,7 +250,9 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'service': return env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path, spec)) : {}; // a handle: often one the unit was handed, so a lookup keyed by an argument can hit
       case 'class': return env ? env.fake(path, spec) : function () {};
       case 'tparam': { const pool = [0, 1, 2, 'a', 'b', '', true, false, 7]; const x = pool[Math.floor(rng() * pool.length)]; return reach && reach.on.has('coercion-hooks') ? reach.coercible() : x; }
-      case 'opaque': default: { const x = env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {}; return reach && reach.on.has('coercion-hooks') && (spec?.kind === 'opaque') && !membersRead ? reach.coercible() : x; } // a value of an unread type converts itself on a representation input, its declared draw made first; one whose members or elements the unit reads (a union the reads shaped, usage.mjs) keeps its fake
+      // a special-number input: an opaque leaf (any, unknown) whose members the unit does not read takes its slot's special
+      // value, as a number leaf does: any and unknown admit NaN and -0, which equality tells apart (design/gen-walk.md)
+      case 'opaque': default: { if (spec?.kind === 'opaque' && !membersRead && !leaf) { const sp = specialOf(spec, undefined, path, true); if (sp !== undefined) return sp; } const x = env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {}; return reach && reach.on.has('coercion-hooks') && (spec?.kind === 'opaque') && !membersRead ? reach.coercible() : x; } // a value of an unread type converts itself on a representation input, its declared draw made first; one whose members or elements the unit reads (a union the reads shaped, usage.mjs) keeps its fake
     }
   }
   // nullable optional fields draw both absent tags as well as omission

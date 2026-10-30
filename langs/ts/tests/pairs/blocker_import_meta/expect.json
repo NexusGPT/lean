@@ -1,0 +1,18 @@
+{
+ "scope": [
+  "here",
+  "folder",
+  "which"
+ ],
+ "equal": {
+  "here": true,
+  "folder": true,
+  "which": false
+ },
+ "why": "import.meta's properties are host-defined (ECMA-262 HostGetImportMetaProperties): url, dirname and filename come from the host's types (@types/node, vite/client), which lib es2022 does not declare, so TypeScript reports TS2339 and the lint called it ts-strict, a defect of the code. Now TS2339 on a property of import.meta (env excepted, which stays refused as build-injected) is an environment finding (unresolved-module, env), as an unresolved import is; the translator already reads import.meta.x as a world read. Before: the lint refused parent.ts, no theorem. here converts the url to a string in a local first: proved. folder reads dirname and changes n + 1 to 1 + n: proved. which reads filename in place of url: lane B witnesses (the paths are rendered against each side's root), lane A withholds the lemma because the result is the opaque value itself.",
+ "b": {
+  "here": "PASS-bounded",
+  "folder": "PASS-bounded",
+  "which": "WITNESS"
+ }
+}

@@ -10,6 +10,7 @@ import { sandbox, pickUnit, observe } from './run.mjs';
 import { Environment, BudgetError } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
+import { netMode, denyNetwork, networkDenied, sandboxEntry } from './net-deny.mjs';
 
 const here = fileURLToPath(import.meta.url);
 const compile = { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, importHelpers: false, jsx: ts.JsxEmit.ReactJSX };
@@ -203,6 +204,7 @@ export async function runNew(opts) {
     catch { return { ...base, verdict: 'ASK', reason: child.error?.message ?? `candidate runner exited ${child.status}: ${child.stdout}`, loaded: false, inputs: 0 }; }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, frozen clock', inputs: 'from parameter types with boundary values first' };
+  if (netMode() === 'deny') denyNetwork(); // the network-denied mode (net-deny.mjs); this process has no permission model, and the result's sandbox entry says so
   const abs = path.resolve(candidate);
   let options;
   const sources = new Map();
@@ -244,7 +246,7 @@ export async function runNew(opts) {
     const shape = { outcome: Object.hasOwn(observation.outcome, 'threw') ? 'threw' : 'returned', trace: observation.trace.map(({ op, path }) => ({ op, path })), pending: observation.pending.map(x => x.op) };
     const key = JSON.stringify(shape); const entry = shapes.get(key) ?? { ...shape, inputs: 0 }; entry.inputs++; shapes.set(key, entry);
   }
-  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound };
+  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, ...(networkDenied() ? { sandbox: sandboxEntry() } : {}) };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === here) console.log(JSON.stringify(await runNew(JSON.parse(process.argv[2]))));

@@ -10,11 +10,12 @@
 // structurally equal outcomes, agree. A candidate that asks something new, or reads a field the parent never read,
 // diverges on the trace.
 import { createHash } from 'node:crypto';
-import { generator } from './gen.mjs';
+import { generator, worldTurn } from './gen.mjs';
 
 export class BudgetError extends Error {}
 const EMPTY_LIST = Symbol('an empty list');
 const depthOf = (path) => (path.match(/[.\[(]/g) || []).length;
+export const CB_DEPTH = 40; // the nesting of callbacks the world runs: a callback handed to a fake past it is not run (the tree ends there)
 export function makeRng(seed) {
   // the seed is scrambled first: two xorshift states from nearby seeds give nearly the same first outputs, so every
   // run's first draw (the branch of a union, an optional's presence) would fall the same way for every input
@@ -39,6 +40,7 @@ export class Environment {
     this.loading = false;   // true while modules load: every answer is a handle
     this.cbDepth = 0;       // nesting of callbacks the environment is running
     this.shapes = null;     // the unit's spec (defs, literals, strings, regexes, receiver, imports): typed answers draw from it
+    this.world = null;      // a full-world input (enterWorld): its turn and the caller's keys, else null
     this.scheduler = null;  // the race explorer's hold (program.mjs): every promise the world answers waits for its release; null is the default schedule
   }
   // clock answers advance with the seeded history and are recorded beside port requests
@@ -102,6 +104,9 @@ export class Environment {
     if (kind === 'string') return `s${h.readUInt16BE(4).toString(36)}`;
     return u > 0.5;
   }
+  // the elements of the list a fake stands for: two, none past depth 8 (a fake tree is finite); on a full-world input
+  // 1, 2 or 3 by its turn, so a unit that tells one element from several meets both
+  listSize(path) { return depthOf(path) > 8 ? 0 : this.world ? 1 + (this.world.turn % 3) : 2; }
   // What a request answers: mostly another fake, sometimes a concrete empty or falsy value, so that null checks,
   // empty lists and error branches run. The choice depends on the seed and the path only, so both sides see the same
   // answer to the same question; a field read twice answers the same way.
@@ -111,6 +116,7 @@ export class Environment {
     // a handle: varied answers are for what the unit itself asks at run time
     if (this.loading || (path.startsWith('module:') && !path.includes('('))) return this.fake(path);
     if (path.startsWith('drive#')) return this.drawn(path); // a read through a drive's argument draws like the argument
+    if (this.world) { const m = path.match(/\.([A-Za-z_$][\w$]*)$/); const v = m && this.world.keys.has(m[1]) ? this.world.keys.get(m[1]) : this.fake(path); this.cache.set(path, v); return v; } // a full-world input: every read a handle, a field named like a key the caller passed holds that key
     const h = createHash('sha256').update(`${this.seed}:answer:${path}`).digest();
     const u = h.readUInt32BE(0) / 4294967296;
     const d = depthOf(path);
@@ -159,11 +165,11 @@ export class Environment {
         if (prop === Symbol.toPrimitive) return fakeMember(`${path}[Symbol.toPrimitive]`, (h) => (h === 'number' ? env.primitive('number', path) : h === 'string' ? env.primitive('string', path) : env.primitive('number', path)));
         if (prop === 'valueOf') return fakeMember(`${path}.valueOf`, () => env.primitive('number', path));
         if (prop === 'toString') return fakeMember(`${path}.toString`, () => env.primitive('string', path));
-        if (prop === Symbol.iterator) return function* () { const n = depthOf(path) > 8 ? 0 : 2; for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
+        if (prop === Symbol.iterator) return function* () { const n = env.listSize(path); for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
         if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
         if (typeof prop === 'string' && Object.hasOwn(ITERATION, prop) && !env.loading) return iterationMethod(env, receiver, path, prop); // an iteration method: the fake is read as an array when the call hands it a callback
-        if (prop === 'length') return depthOf(path) > 8 ? 0 : 2; // the length of the array a fake stands for is its drawn shape and asks nothing of the world, as the iterator asks nothing: a loop that reads it once (forEach) and one that reads it per step (a counted for) make the same requests
+        if (prop === 'length') return env.listSize(path); // the length of the array a fake stands for is its drawn shape and asks nothing of the world, as the iterator asks nothing: a loop that reads it once (forEach) and one that reads it per step (a counted for) make the same requests
         if (prop === 'constructor') return Object;
         if (typeof prop === 'symbol') return undefined;
         env.record('get', `${path}.${String(prop)}`);
@@ -194,8 +200,10 @@ export class Environment {
           }
           for (const [a, tag] of cbs) if (env.knownCallables && !/^class\s/.test(Function.prototype.toString.call(a))) env.knownCallables.push({ path: path + tag, fn: a }); // a callback handed to the environment: a program may fire it again
           for (const [a, tag] of cbs) if (a.length <= 2 && !/^class\s/.test(Function.prototype.toString.call(a))) {
-            // a callback that recurses through the environment (a visitor over fakes) is bounded: past the depth it is a budget, not a behaviour
-            if (env.cbDepth >= 40) throw new BudgetError('callback recursion deeper than 40 through the environment');
+            // a callback that recurses through the environment (a visitor over fakes, `forEachChild(node, visit)`) meets a
+            // finite world: past CB_DEPTH nested callbacks the fake runs no further callback, as its iterator yields nothing
+            // past depth 8, so the visitor returns at the leaves, the same on both sides (design/fake-recursion.md)
+            if (env.cbDepth >= CB_DEPTH) continue;
             env.cbDepth++;
             try { const r = a(env.fake(`${path}#cb${tag}.arg0`), env.fake(`${path}#cb${tag}.arg1`)); if (r && typeof r.then === 'function') r.catch(() => {}); }
             catch (e) { if (e instanceof BudgetError) throw e; if (e instanceof RangeError) throw new BudgetError('stack overflow inside a callback'); env.record('callback-throw', path + tag, [String(e && e.message)]); }
@@ -480,3 +488,17 @@ export function rememberFunctionSource(marked, original) { functionSources.set(m
 export function withSite(record, site) { return Object.defineProperty(record, 'site', { value: site ?? null }); }
 
 export function fnHash(f) { try { const emitted = Function.prototype.toString.call(f); const src = (functionSources.get(emitted) ?? emitted).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '').replace(/\s+/g, ' '); return createHash('sha256').update(src).digest('hex').slice(0, 12); } catch { return 'native'; } }
+
+// A full-world input (gen.mjs worldTurn, design/world-reach.md): the world answers every untyped read with a handle,
+// never a dead value, so a chain of reads through injected services reaches its end; a field whose name is the name of a
+// primitive the caller passed (a parameter, or a field of a record parameter) holds that value, as the record the world
+// keeps for the caller's key carries the key; and a handle read as a list holds 1, 2 or 3 elements by turn. Typed answers
+// draw from their declared types as on every input, and calls still fault on their seeded draw. Both sides of an input
+// get the same world; the other inputs are untouched.
+export function enterWorld(env, spec, i, inputs) {
+  const turn = worldTurn(spec, i); if (turn === null) return;
+  const keys = new Map(); const prim = (v) => v !== null && v !== undefined && ['string', 'number', 'boolean', 'bigint'].includes(typeof v);
+  (spec.params ?? []).forEach((p, k) => { const v = inputs[k]; if (prim(v) && /^[A-Za-z_$][\w$]*$/.test(p.name ?? '') && !keys.has(p.name)) keys.set(p.name, v); });
+  for (const v of inputs) if (v && typeof v === 'object' && !v.__isFake && !Array.isArray(v)) { try { for (const [k, x] of Object.entries(v)) if (prim(x) && !keys.has(k)) keys.set(k, x); } catch { /* a value that refuses its keys gives none */ } }
+  env.world = { turn, keys };
+}

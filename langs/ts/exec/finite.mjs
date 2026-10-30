@@ -71,6 +71,11 @@ const erase = (v) => (Array.isArray(v) ? v.map(erase) : v && typeof v === 'objec
 export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1, ms = 2000, maxPairs = 500, rt, handlers = null }) {
   const { sandbox, pickUnit, commitRender, commitEffects, treeHandlers, runTimers, RenderLoop } = rt;
   let pairs = 0, pathsRun = 0;
+  // every handler fire of the exploration, per side, and the errors they threw (design/microtask-worker.md, 2026-10-30):
+  // a run where every fire threw one same error on both sides observed no handler at all, only the sandbox's gap (a
+  // global it does not hold), so it is ASK naming the error, never PASS-decided
+  const fires = { parent: { fired: 0, threw: 0, errors: new Set() }, candidate: { fired: 0, threw: 0, errors: new Set() } };
+  const errorText = (e) => { try { return e && typeof e === 'object' ? `${e.name ?? 'Error'}: ${e.message ?? ''}` : `thrown ${typeof e}: ${String(e)}`; } catch { return 'an error that cannot be read'; } };
   for (const [ai, assignment] of domain.assignments.entries()) {
     const mount = async (name) => {
       const env = new Environment(seed * 7919 + ai); env.shapes = spec;
@@ -91,7 +96,8 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
         const h = treeHandlers(tree).find((x) => x.label === label); if (!h) return { obs, missing: label, s, tree };
         const from = s.env.trace.length;
         const event = s.env.fake(`react:event:${label}`), slotsBefore = (s.env.hookSlots ?? []).slice(); let threw = false;
-        try { const r = guarded(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
+        fires[name].fired++;
+        try { const r = guarded(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (e instanceof BudgetError || e instanceof CallTimeout) throw e; threw = true; fires[name].threw++; fires[name].errors.add(errorText(e)); s.env.record('handler-throw', label, [render(e)]); }
         if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // the descriptor applied to the slots before the handler must give the slots the handler left
         tree = await commit(s);
         obs.push({ command: label, tree: erase(tree), trace: rt.traceWithSites(s.env.trace.slice(from).filter((x) => x.op !== 'set' && x.op !== 'hook')), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }); // setter calls are state, compared through the slots; their order inside one handler is React's batching, not an observation
@@ -116,6 +122,8 @@ export async function exploreFinite({ files, roots, spec, unit, domain, seed = 1
       frontier = next;
     }
   }
+  const allThrew = (t) => t.fired > 0 && t.threw === t.fired && t.errors.size === 1;
+  if (allThrew(fires.parent) && allThrew(fires.candidate) && [...fires.parent.errors][0] === [...fires.candidate.errors][0]) return { verdict: 'ASK', reason: `every explored handler threw the same error on both sides (${[...fires.parent.errors][0].slice(0, 160)}; ${fires.parent.fired} fires a side): no handler ran past it, so the exploration observed the sandbox, not the component`, pairs, assignments: domain.assignments.length };
   return { verdict: 'PASS-decided', pairs, assignments: domain.assignments.length, pathsRun, note: 'every click order from every prop assignment, at the element-tree layer, with effects and timers inside each step; a function or element prop is one opaque input' };
 }
 

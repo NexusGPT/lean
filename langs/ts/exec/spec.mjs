@@ -204,6 +204,22 @@ export function specOf(file, unitName, opts = {}) {
   // every regular expression of the file (a unit often parses its input with a module-level pattern)
   const walkRe = (n) => { if (ts.isRegularExpressionLiteral(n)) { const m = n.text.match(/^\/(.*)\/[a-z]*$/s); if (m && !regexes.includes(m[1])) regexes.push(m[1]); } ts.forEachChild(n, walkRe); };
   walkRe(sf);
+  // and of every local file whose function the unit calls (a unit often hands a string to a parser in another file of its
+  // package, which matches it against that file's pattern; design/callee-pattern.md): the unit's own file first, so a
+  // file with patterns of its own keeps them in front, and a declaration file or a package gives none
+  try {
+    const calleeFiles = new Set([sf.fileName]);
+    const walkCalls = (n) => {
+      if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
+        const callee = ts.isPropertyAccessExpression(n.expression) ? n.expression.name : n.expression;
+        let sym = checker.getSymbolAtLocation(callee); if (sym && (sym.flags & ts.SymbolFlags.Alias)) sym = checker.getAliasedSymbol(sym);
+        const f = (sym?.valueDeclaration ?? sym?.declarations?.[0])?.getSourceFile();
+        if (f && !f.isDeclarationFile && !calleeFiles.has(f.fileName) && !/[\\/]node_modules[\\/]/.test(f.fileName)) { calleeFiles.add(f.fileName); walkRe(f); }
+      }
+      ts.forEachChild(n, walkCalls);
+    };
+    walkCalls(u.body);
+  } catch { /* a callee the checker cannot resolve gives no pattern */ }
   // the unit's own literals join the input pools, so a comparison against a constant can go both ways
   // a name bound to a numeric constant outside the unit (a module const, a static readonly field) is a literal of the unit too
   // the literal a name or a `CONST.field` is bound to, when its declaration carries one (a module const, a static field, a
