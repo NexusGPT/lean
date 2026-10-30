@@ -49,6 +49,24 @@ export async function hostFetch(): Promise<string> {
   try { const f = (Buffer as any).constructor('return fetch')(); const r = await f(`http://127.0.0.1:${PORT}/`); return `ok: status ${r.status}`; } catch (e) { return `${outcome(e)}${e && (e as any).cause ? ` (cause ${outcome((e as any).cause)})` : ''}`; }
 }
 
+export async function dnsLookup(): Promise<string> {
+  try { return await new Promise<string>((resolve) => mod('dns').lookup('localhost', (e: any, a: string) => resolve(e ? outcome(e) : `ok: ${a}`))); } catch (e) { return outcome(e); }
+}
+
+export function udpSend(): string {
+  try { const s = mod('dgram').createSocket('udp4'); s.send('probe', PORT, '127.0.0.1', () => s.close()); return 'ok: sent'; } catch (e) { return outcome(e); }
+}
+
+export function rawBinding(): string {
+  const p = host(); const out: string[] = [];
+  for (const [how, get] of [['binding', () => p.binding('tcp_wrap')], ['_linkedBinding', () => p._linkedBinding('tcp_wrap')]] as [string, () => any][]) { try { get(); out.push(`${how} ok`); } catch (e) { out.push(`${how} ${outcome(e)}`); } }
+  return out.join('; ');
+}
+
+export function unseal(): string {
+  try { Object.defineProperty(mod('net').Socket.prototype, 'connect', { value: () => 'mine' }); return 'ok: redefined'; } catch (e) { return outcome(e); }
+}
+
 export async function sandboxFetch(): Promise<string> {
   const r: any = await fetch('http://127.0.0.1:9/');
   return typeof r;
