@@ -25,10 +25,10 @@ jq -c '.witness | {input, floor: .args[3], parent: .parent.outcome.returned.post
 ```
 
 ```
-{"input":12,"floor":1,"parent":2,"candidate":0}
+{"input":17,"floor":-1,"parent":1,"candidate":0}
 ```
 
-That is a ledger function whose candidate rejects an event that lands exactly on the floor (`<=` where the parent had `<`). lean drew the input itself: a floor of 1 and two credits of 1 to two new accounts, which land exactly on it. The parent posts both and notifies the port twice; the candidate posts nothing. The whole example, with the five other functions of the file, is [below](#1-one-function-in-a-service-the-back-end).
+That is a ledger function whose candidate rejects an event that lands exactly on the floor (`<=` where the parent had `<`). lean drew the input itself: a floor of -1 and a debit of 1 from a new account, which lands exactly on it. The parent posts it and notifies the port once; the candidate posts nothing. The whole example, with the five other functions of the file, is [below](#1-one-function-in-a-service-the-back-end).
 
 ## How it works
 
