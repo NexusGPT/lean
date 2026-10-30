@@ -662,6 +662,8 @@ async function adviceLabels(add) {
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
     // the certificate records the seconds of each lane that ran, a lane that did not run absent (check.mjs certificate.timing)
     ['certificate-timing', scriptRow('runtime', 'certificate-timing', 'certificate.timing holds positive seconds per lane that ran on numbers::average, readme_ledger::applyAll and component::Counter', [path.join(here, 'certificate-timing.mjs')], lastLine)],
+    // one entry point: bin/lean check | lint | pr | census, arguments and exit codes passed through; the README quickstart through it
+    ['bin-lean', scriptRow('runtime', 'bin-lean', 'bin/lean check reproduces the README quickstart; lint, pr and census dispatched with their exit codes', [path.join(here, 'bin-lean.mjs')], lastLine)],
   ].map(([key, go]) => ({ key: `runtime/${key}`, go }));
   // Every selected pair's parent, the self-pair fixtures, and an optional challenge
   // manifest (LEAN_SELF_PAIR_SAMPLE) run against themselves. No model or proof lane. Its own workers take WIDE slots.
