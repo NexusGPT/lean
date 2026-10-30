@@ -64,8 +64,9 @@ test('certificate: words given beside the files never reach the verdict or the c
   assert.ok(!text.includes(words), 'the words are on the output');
   const top = ['verdict', 'reason', 'witness', 'certificate'];
   for (const k of Object.keys(res)) assert.ok(top.includes(k), `unexpected verdict field ${k}`);
-  const fields = ['tool', 'tools', 'identity', 'unit', 'parent', 'candidate', 'lanes', 'unitTextEqual', 'observation', 'layers', 'library', 'adapter'];
+  const fields = ['tool', 'tools', 'identity', 'unit', 'parent', 'candidate', 'lanes', 'unitTextEqual', 'observation', 'layers', 'library', 'adapter', 'timing'];
   for (const k of Object.keys(res.certificate)) assert.ok(fields.includes(k), `unexpected certificate field ${k}`);
+  for (const [k, v] of Object.entries(res.certificate.timing ?? {})) assert.equal(typeof v, 'number', `timing ${k} is not a number of seconds`); // seconds only: no text reaches the certificate through it
 });
 
 test('run identity: lean\'s commit, its tables and the Dafny version each change the identity', async () => {
