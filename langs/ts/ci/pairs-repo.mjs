@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // a two-commit repository made of pair tests: the first commit holds every named pair's parent, the second its
-// candidate, each at <pair>/index.ts (or .tsx) beside the pair's sibling modules, so the pull-request table between
+// candidate, each at <pair>/index.ts (or .tsx) beside the pair's sibling modules and its `.lean/` (its values file), so
+// each unit reads the pair's values as the pair test does, and the pull-request table between
 // the two commits is the pairs' own change set. lean's self workflow runs the comment on it.
 //
 //   node pairs-repo.mjs --out <empty dir> [--pairs a,b] [--pairs-root <dir>]
@@ -34,6 +35,7 @@ export function pairsRepo({ out, pairs = null, pairsRoot = PAIRS }) {
       const src = path.join(pairsRoot, n), dst = path.join(out, n);
       fs.mkdirSync(dst, { recursive: true });
       for (const f of fs.readdirSync(src)) {
+        if (f === '.lean' && fs.statSync(path.join(src, f)).isDirectory()) { fs.cpSync(path.join(src, f), path.join(dst, f), { recursive: true }); continue; } // the pair's values file: the nearest above its index file
         if (/^(parent|candidate)\.tsx?$/.test(f) || f === 'expect.json' || !fs.statSync(path.join(src, f)).isFile()) continue;
         fs.copyFileSync(path.join(src, f), path.join(dst, f));
       }

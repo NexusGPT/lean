@@ -37,7 +37,10 @@ stops at the guard: lean says ASK, `no input reached the body`. A values file te
 ## Where it is read
 
 - `lean pr` (`langs/ts/pr.mjs`) reads the head's `.lean/values.json`, prints `Values: .lean/values.json at <head>,
-  sha256 <hash>` under the report title, and reuses a cached verdict only when the file is unchanged.
+  sha256 <hash>` under the report title, and reuses a cached verdict only when the file is unchanged. Without a root
+  file each unit's lane B reads the nearest `.lean/values.json` above its file; the line then names each file a
+  certificate drew, `Values: <path> at <head>, sha256 <hash>`, one per file. When no file was read it prints
+  `Values: none listed (lane B draws from the types)`. The CI comment prints the same line.
 - `langs/ts/check.mjs --values <file>` names a file; `--values none` reads none; without the flag the nearest
   `.lean/values.json` above the file is read.
 

@@ -138,7 +138,7 @@ export function materializeSources({ repo, head, dir, sensitivePath, capBytes = 
     });
   const seen = new Set(); // an unmerged path has one index entry per stage; it is copied once
   const entries = listing.filter(e => !seen.has(e.file) && seen.add(e.file)).filter(e => e.type === 'blob' && /^100/.test(e.mode) && !sensitivePath(e.file)
-    && (/\.[cm]?[jt]sx?$/.test(e.file) || /(?:^|\/)(?:package|tsconfig[^/]*)\.json$/.test(e.file) || e.file === '.lean/values.json'));
+    && (/\.[cm]?[jt]sx?$/.test(e.file) || /(?:^|\/)(?:package|tsconfig[^/]*)\.json$/.test(e.file) || /(?:^|\/)\.lean\/values\.json$/.test(e.file))); // the root values file and each nearer one a unit reads (findValues)
   // Sizes first: the cap is checked against the whole snapshot, so a refused snapshot leaves nothing half written.
   if (head === 'WORKTREE') for (const e of entries) {
     const src = path.join(repo, e.file);
