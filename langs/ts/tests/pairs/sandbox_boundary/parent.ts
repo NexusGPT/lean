@@ -22,3 +22,8 @@ export async function reachFetch(): Promise<string> {
   try { await (Buffer as any).constructor('return fetch')()('http://127.0.0.1:1080/'); return 'answered'; }
   catch (e) { return String(e && (e as any).cause ? (e as any).cause.code : (e as any).code); }
 }
+
+// envLeak: the parent's answer is that no variable outside lean's own reads is visible (design/sandbox-boundary.md)
+export function envLeak(): string[] {
+  return [];
+}

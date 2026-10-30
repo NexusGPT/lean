@@ -229,6 +229,13 @@
       "environmentClass": "CommonJS wrapper",
       "phase": "link",
       "inputs": 0
+    },
+    {
+      "file": "escape.ts",
+      "unit": "escapes",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0
     }
   ],
   "why": "New units have no equality lemma. Only local link failures refuse; evaluation failures ask and input exceptions count as faults."

@@ -22,3 +22,10 @@ export async function reachFetch(): Promise<string> {
   try { await (Buffer as any).constructor('return fetch')()('http://127.0.0.1:1080/'); return 'answered'; }
   catch (e) { return String(e && (e as any).cause ? (e as any).cause.code : (e as any).code); }
 }
+
+// envLeak: the names (never the values) of the worker's environment variables outside lean's own reads, reached
+// through the real process; the worker's env is reduced to those reads, so the list is empty, as the parent answers
+const KEPT = /^(?:LEAN_\w*|NODE_OPTIONS|PATH|HOME|XDG_CACHE_HOME)$/;
+export function envLeak(): string[] {
+  return Object.keys(host().env).filter((k) => !KEPT.test(k)).sort();
+}

@@ -1,4 +1,4 @@
-# node v24.22.2, Linux 6.8.0-139-generic; listener pid 4056730 on 127.0.0.1:47391
+# node v24.22.2, Linux 6.8.0-139-generic; listener pid 2576902 on 127.0.0.1:47391
 
 ## units the parent holds (the lane B worker, under --permission), LEAN_NET=open
 $ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit reachHost --n 1 --no-project --out <tmp>/reachHost.json
@@ -9,7 +9,7 @@ $ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts -
   verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-read to manage permissions."}
 $ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit envRead --n 1 --no-project --out <tmp>/envRead.json
   exit 0 | WITNESS -> <tmp>/envRead.json 
-  verdict WITNESS | outcome {"returned":"ok: 32 variables"}
+  verdict WITNESS | outcome {"returned":"ok: 3 variables: HOME LEAN_NET PATH"}
 $ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit fileWrite --n 1 --no-project --out <tmp>/fileWrite.json
   exit 0 | WITNESS -> <tmp>/fileWrite.json 
   verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-write to manage permissions."}
@@ -47,7 +47,7 @@ $ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts -
 ## a unit with no parent (exec/new-unit.mjs, its own child), LEAN_NET=open
 $ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitReach --n 1 --no-project --out <tmp>/newUnitReach.json
   exit 0 | NEW -> <tmp>/newUnitReach.json 
-  verdict NEW | outcome "write ok; spawn ok (exit 0)"
+  verdict NEW | outcome "write ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-write to manage permissions.; spawn ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-child-process to manage permissions.; read / ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-read to manage permissions.; env 3 variables: HOME LEAN_NET PATH"
 $ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitNet --n 1 --no-project --out <tmp>/newUnitNet.json
   exit 0 | NEW -> <tmp>/newUnitNet.json 
   verdict NEW | outcome "connect ok"
@@ -63,7 +63,7 @@ $ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts -
   record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
 $ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit envRead --n 1 --no-project --out <tmp>/envRead.json
   exit 0 | WITNESS -> <tmp>/envRead.json 
-  verdict WITNESS | outcome {"returned":"ok: 32 variables"}
+  verdict WITNESS | outcome {"returned":"ok: 3 variables: HOME LEAN_NET PATH"}
   record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
 $ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit fileWrite --n 1 --no-project --out <tmp>/fileWrite.json
   exit 0 | WITNESS -> <tmp>/fileWrite.json 
@@ -113,11 +113,11 @@ $ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts -
 ## a unit with no parent (exec/new-unit.mjs, its own child), LEAN_NET=deny
 $ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitReach --n 1 --no-project --out <tmp>/newUnitReach.json
   exit 0 | NEW -> <tmp>/newUnitReach.json 
-  verdict NEW | outcome "write ok; spawn ok (exit 0)"
-  record.sandbox {"network":"deny","by":"lean's bindings only: this process runs without the permission model, so the raw bindings are not refused","denied":[]}
+  verdict NEW | outcome "write ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-write to manage permissions.; spawn ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-child-process to manage permissions.; read / ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-read to manage permissions.; env 3 variables: HOME LEAN_NET PATH"
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
 $ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitNet --n 1 --no-project --out <tmp>/newUnitNet.json
   exit 0 | NEW -> <tmp>/newUnitNet.json 
   verdict NEW | outcome "connect ERR_ACCESS_DENIED: net.connect ERR_ACCESS_DENIED: the network is denied (LEAN_NET=deny)"
-  record.sandbox {"network":"deny","by":"lean's bindings only: this process runs without the permission model, so the raw bindings are not refused","denied":[{"api":"net.connect","target":"127.0.0.1:47391","side":null,"failed":"ERR_ACCESS_DENIED"}]}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[{"api":"net.connect","target":"127.0.0.1:47391","side":null,"failed":"ERR_ACCESS_DENIED"}]}
 
-# listener 4056730 stopped (exit 0); requests it answered: see the probes above
+# listener 2576902 stopped (exit 0); requests it answered: see the probes above

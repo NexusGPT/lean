@@ -6,13 +6,9 @@
 // before it starts, so that a run the parent kills at the bound names the step, the input and the side it was in. A
 // run whose event loop drains before a verdict (a promise nobody settles) answers ASK naming what was pending, as the
 // command line's verdict guard does.
-import fs from 'node:fs';
-import { runPairInProcess, crumbText, onCrumb } from './run.mjs';
+import { runPairInProcess, crumbText, onCrumb, absentOutsideReads } from './run.mjs';
 
-// a path outside the trees this process may read does not exist for the run: the permission model throws on an
-// existence check there (a walk up for a package.json, a config, a values file), where the run asks whether it exists
-const exists = fs.existsSync;
-fs.existsSync = (p) => { try { return exists(p); } catch (e) { if (e && e.code === 'ERR_ACCESS_DENIED') return false; throw e; } };
+absentOutsideReads(); // a path outside the trees this process may read does not exist for the run (run.mjs)
 
 let sent = false;
 const reply = (result, drained = false) => { if (sent) return; sent = true; process.send({ result, drained }, () => process.exit(0)); };
