@@ -2358,6 +2358,10 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       // a property missing on a type that lives in node_modules: the dependency's version may differ from the commit's; the read is opaque
       const at = (function find(n) { if (d.start >= n.getStart(sf) && d.start < n.getEnd()) { let hit = n; ts.forEachChild(n, (c) => { const r = find(c); if (r) hit = r; }); return hit; } return null; })(sf);
       let pa = at; while (pa && !ts.isPropertyAccessExpression(pa)) pa = pa.parent;
+      // a property of `import.meta`: the host defines the object's properties (ECMA-262 HostGetImportMetaProperties), and
+      // their types come from the host's package (`@types/node`, `vite/client`), so a name the checkout's lib does not
+      // declare is the environment's; the translator reads `import.meta.x` as a world read (design/top-blockers.md)
+      if (pa) { let m = pa.expression; while (ts.isParenthesizedExpression(m) || ts.isNonNullExpression(m)) m = m.expression; if (ts.isMetaProperty(m) && m.keywordToken === K.ImportKeyword && pa.name.text !== 'env') { out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'unresolved-module', msg: `TS${d.code}: \`import.meta.${pa.name.text}\` is a host-defined property whose type the checkout's lib does not declare`, env: true }); continue; } }
       if (pa) { const rt = checker.getTypeAtLocation(pa.expression); const decl = rt.symbol?.declarations?.[0] ?? rt.aliasSymbol?.declarations?.[0]; if (decl && /node_modules/.test(decl.getSourceFile().fileName)) continue; }
     }
     const rule = RESOLUTION_CODES.has(d.code) ? 'unresolved-module' : 'ts-strict';
