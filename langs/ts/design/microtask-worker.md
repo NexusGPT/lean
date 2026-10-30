@@ -34,7 +34,12 @@ spinning unit that allocates (one sample held 554 MB) gives all of it back with 
 
 What the child may touch: Node's permission model, `--permission` with `--allow-fs-read` for the lean sources
 (`langs/ts`) and, for each of the two files, its tree (the nearest folder above it holding `.git`, else its package root),
-the values file and the tsconfig when named. It writes nothing (the `LEAN_LIBRARY_CASES` folder excepted, when set), and
+the values file and the tsconfig when named, and the `node_modules` folder of every folder from each of those up to
+the root, followed through a link (module resolution, Node's and TypeScript's, looks in each of them, and TypeScript
+reads a linked package at its real path). Without that last part a tree whose `node_modules` links out of it (a
+checkout whose dependencies live in another checkout or a shared store) had no declaration and no package in the
+child: a parameter typed by a package was drawn as an opaque value, and the concept bench lost witnesses on units
+that read such a value (Capture.push, `chunk: Buffer`, at 1cc98dec). Test `tests/linked-dependencies.mjs`. It writes nothing (the `LEAN_LIBRARY_CASES` folder excepted, when set), and
 starts no process, worker thread, addon or inspector. An existence check outside the trees answers false (the model
 throws there; the run asks whether the path exists). The network: this Node (24) has no network switch in its
 permission model, so the child's network is what the sandbox gives the unit (`fetch`, every package and built-in import
@@ -79,13 +84,38 @@ threads, which is why the main thread's own time is the measure.
 
 The in-process watchdogs (the per-call `--ms` allowance, the drive timeouts) are wall clocks stretched by the load
 factor, the load average per core read once at the unit's start: a call starved by other processes keeps its CPU
-share. A call that spins burns its whole allowance as CPU, so under a load factor of k the unit's spinning inputs cost
-k times their nominal CPU; the parent therefore stretches the unit's CPU bound by the same factor, read at the same
-moment, and the ASK names the stretch. Without it, for_desugar `chunks` (half its drawn sizes spin, 2 s each, two
-sides, 30 inputs: 60 s nominal) was killed at 120 s of CPU under a load factor above 2 while every per-call bound was
-doing its work.
+share. CPU time itself does not stretch: a spinning call under a load of k per core takes k times the wall and burns
+the same CPU. The unit's bound covers the unit's real work; a call that hits its own `--ms` bound is paid for by that
+bound, so the worker reports each such call in its breadcrumb and the parent grows the unit's allowance by `ms` for
+every one (the far wall guard follows). Without it, for_desugar `chunks` (half its drawn sizes spin, 2 s each, two
+sides, 30 inputs: 60 s of bounded calls beside the work) lived at the 120 s bound and was killed on some runs while
+every per-call bound was doing its work; the ASK names the calls counted.
 
 The worker's heap is a quarter of the machine's memory, never below V8's default (`--max-old-space-size`): a spinning
 call allocates for its whole allowance (the chunking loop pushing empty slices reached 4 GB in 16 s), and an exhausted
 heap aborts the process, which loses the unit (ASK:harness, SIGABRT) where the per-call bound would have skipped one
 input.
+
+### The bound is stated for an idle core (2026-10-30)
+
+A CPU second buys less work when the thread shares a core or runs on a slower one. The suite measures the idle-core
+rate once before its pool starts (`cpuRateNsPerIter`, the median of five short integer spins read by this thread's CPU
+time) and hands it to every child as `LEAN_CPU_BASELINE`; each unit samples its own rate at its start and at every input
+and reports the running mean's ratio in its breadcrumb; the parent stretches the unit's allowance by that ratio and the
+ASK names it. The ratio is capped at `CONTENTION_CAP` (3): an efficiency core runs at about a third of a performance
+core, so a reading above that is the sampler disturbed, not the unit starved; without the cap a spin test stretched six
+times ran 734 s. Measured on the eleven-worker suite: with the stretch every verdict held (this_param bump, the self-pair
+counts), where the unstretched bound had flipped two rows under a load average of 150.
+
+### The workers' heaps fit the machine; the call watchdog stretches by the same measured slowdown (2026-10-30)
+
+An admission suite at eleven workers lost one unit to `FATAL ERROR: Ineffective mark-compacts near heap limit` at
+4 GB on a 48 GB machine, while the worker carried a 12 GB heap flag: the operating system refused the next page, so
+V8 aborted the process at whatever size it had, and the unit's verdict was ASK (the worker exited) where the same run
+alone gives PASS-bounded. Two rules follow. The process that runs units in parallel states each worker's heap
+(`LEAN_WORKER_HEAP_MB`; the suite gives each of its JOBS workers an equal part of 60 percent of memory, never below
+1 GB), so the harness's own limit is the bound that ends a runaway allocation, never the machine's state; a lone run
+keeps a quarter of the machine. And the in-process call watchdog's wall allowance stretches by the unit's measured CPU
+slowdown (the same sample that stretches the unit's CPU bound, capped at three) instead of the run queue over the
+cores (capped at ten): a spinning call allocates for its whole wall allowance, so ten times the idle allowance under
+eleven workers is what exhausted the machine. Without a baseline (a run outside the suite) the run-queue rule stands.

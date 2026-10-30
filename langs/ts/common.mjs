@@ -1841,6 +1841,76 @@ export function typeAssertion(checker, n) {
   return `\`${n.getText().slice(0, 60)}\` holds a value whose type nothing checked (an \`as\` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (\`typeof x === "number"\`, a field test), or keep it in a local, an operation or the result`;
 }
 
+// A reference (a record, an array, a function, an object) whose type an assertion erased: `r as any`, `r as unknown as
+// string`, or a local such an assertion writes. The value reading converts it by its contents (ext_Any_of_Rec_Rec(r)),
+// so two objects with equal fields give one value, where JavaScript compares objects by reference. The guards that keep
+// identity out of the value reading (reference-equality, reference-key) read the asserted type and see none, so the
+// erased reference is refused here at every slot that compares by identity (design/type-assertions.md, 2026-10-30).
+const referencePart = (t) => {
+  const TF = ts.TypeFlags;
+  const notRef = TF.Any | TF.Unknown | TF.Never | TF.Void | TF.Undefined | TF.Null | TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.ESSymbolLike | TF.TypeParameter;
+  return !!t && (t.flags & TF.Union ? t.types : [t]).some((x) => !(x.flags & notRef) && !primitiveBrand(x));
+};
+function erasedReference(checker, n, seen = new Set()) {
+  while (n && (ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isSatisfiesExpression(n))) n = n.expression;
+  if (!n) return null;
+  if (ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) {
+    if (isConstAssertion(n)) return null;
+    const to = tAt(checker, n);
+    if (!to || referencePart(to)) return null; // the asserted type is a reference: the guards see it
+    const inner = erasedReference(checker, n.expression, seen);
+    if (inner) return inner;
+    const from = tAt(checker, n.expression);
+    return referencePart(from) ? from : null;
+  }
+  if (ts.isIdentifier(n)) {
+    let sym = null; try { sym = checker.getSymbolAtLocation(n); } catch { return null; }
+    if (!sym || seen.has(sym)) return null;
+    seen.add(sym);
+    for (const w of writesOf(checker, sym) ?? []) { const r = erasedReference(checker, w, seen); if (r) return r; }
+  }
+  return null;
+}
+const MAP_KEY_METHODS = new Set(['set', 'get', 'has', 'delete']), SET_ITEM_METHODS = new Set(['add', 'has', 'delete']), SEARCH_METHODS = new Set(['includes', 'indexOf', 'lastIndexOf']);
+const collectionKind = (checker, t) => {
+  const parts = t ? (t.flags & ts.TypeFlags.Union ? t.types : [t]) : [];
+  const names = parts.map((x) => x.symbol?.name ?? x.aliasSymbol?.name).filter(Boolean);
+  if (names.some((s) => s === 'Map' || s === 'ReadonlyMap')) return 'map';
+  if (names.some((s) => s === 'Set' || s === 'ReadonlySet')) return 'set';
+  return parts.some((x) => checker.isArrayType?.(x) || checker.isTupleType?.(x)) ? 'array' : null;
+};
+// the rule and the text for an erased reference in an identity slot: an operand of === !== == != (not against null,
+// undefined or a literal), a switch discriminant or case, an argument of Object.is, a key of a Map's set/get/has/delete,
+// an item of a Set's add/has/delete, the searched value of an array's includes/indexOf/lastIndexOf; null otherwise
+export function erasedReferenceSlot(checker, n) {
+  if (!n || !ts.isExpression(n)) return null;
+  const p = n.parent;
+  if (!p || ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isSatisfiesExpression(p) || ts.isAsExpression(p) || ts.isTypeAssertionExpression(p)) return null; // the outermost wrapper owns the report
+  const K = ts.SyntaxKind;
+  const plainSide = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined') || ts.isStringLiteral(x) || ts.isNumericLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword; };
+  let rule = null;
+  if (ts.isBinaryExpression(p) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(p.operatorToken.kind)) {
+    if (!plainSide(p.left === n ? p.right : p.left)) rule = 'reference-equality';
+  } else if ((ts.isSwitchStatement(p) || ts.isCaseClause(p)) && p.expression === n) rule = 'reference-equality';
+  else if (ts.isCallExpression(p) && p.expression !== n) {
+    const i = p.arguments.indexOf(n), c = p.expression;
+    if (c.getText() === 'Object.is') rule = 'reference-equality';
+    else if (i === 0 && ts.isPropertyAccessExpression(c)) {
+      const kind = collectionKind(checker, tAt(checker, c.expression)), m = c.name.text;
+      if (kind === 'map' && MAP_KEY_METHODS.has(m)) rule = 'reference-key';
+      else if (kind === 'set' && SET_ITEM_METHODS.has(m)) rule = 'reference-key';
+      else if (kind === 'array' && SEARCH_METHODS.has(m)) rule = 'reference-equality';
+    }
+  }
+  if (!rule) return null;
+  const t = erasedReference(checker, n);
+  if (!t) return null;
+  const what = `\`${n.getText().slice(0, 60)}\` is a ${checker.typeToString(t).slice(0, 40)} whose type an assertion erased`;
+  return rule === 'reference-key'
+    ? { rule, message: `${what}; as a Map key or a Set item it is compared by reference (SameValueZero), and the value reading would equate two objects with the same fields; key it by a primitive (a field, an id) or keep its object type` }
+    : { rule, message: `${what}; this comparison compares references, and the value reading would equate two objects with the same fields; compare fields` };
+}
+
 /** A named promise handler (`p.then(h)`, `p.catch(h)`, `p.finally(h)`, `h` a name or a member path): one decision the lint
  * and the translator take (design/named-then.md). Admitted, the handler is called with the settled argument: a unit of
  * this file by its own function (`origin: 'unit'`), an import or another file's function as one transition named by its
@@ -2378,4 +2448,16 @@ export function enclosingUnitName(file, name) {
   if (!file || !fs.existsSync(file)) return null;
   const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
   return topLevelFunctions(sf).get(name)?.enclosingUnit?.name ?? null;
+}
+
+// A branded primitive: an intersection of a primitive with object types (`number & { readonly [brand]: true }`,
+// `string & { __kind: 'Id' }`). The object members exist only for the checker: a value of the type is a value of the
+// primitive (TypeScript reduces two different primitives to never), so it is compared, keyed and coerced as that
+// primitive is. Returns the primitive member, or null for any other type.
+export function primitiveBrand(t) {
+  const TF = ts.TypeFlags;
+  if (!t || !(t.flags & TF.Intersection)) return null;
+  const PRIM = TF.NumberLike | TF.BigIntLike | TF.StringLike | TF.BooleanLike | TF.EnumLike;
+  const prims = t.types.filter((x) => x.flags & PRIM);
+  return prims.length === 1 && t.types.every((x) => x === prims[0] || !!(x.flags & TF.Object)) ? prims[0] : null;
 }

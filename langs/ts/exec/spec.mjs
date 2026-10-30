@@ -3,7 +3,7 @@
 //   {kind:'number'|'string'|'boolean'|'bigint'|'null'|'undefined'|'literal'(values)|'array'(of)|'tuple'(items)
 //    |'record'(fields:{name:{spec,optional}})|'union'(options)|'opaque'|'function'(arity)|'set'(of)|'map'(key,value)|'date'}
 // Usage: node spec.mjs <file.ts> --unit <name> [--project <tsconfig>|--no-project]   -> JSON on stdout
-import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
+import { ts, loadProgram, topLevelFunctions, primitiveBrand } from '../common.mjs';
 import { hookTable, hookRecordSpec } from '../hooks.mjs';
 import { usage, mergeUsage, newNode } from './usage.mjs';
 import { decoratorTable, importOf } from '../decorators.mjs';
@@ -50,6 +50,7 @@ export function specOf(file, unitName, opts = {}) {
     if (f & TF.Null) return { kind: 'null' };
     if (f & (TF.Undefined | TF.Void)) return { kind: 'undefined' };
     if (depth > 5 || budget-- <= 0) return { kind: 'opaque' };
+    { const p = primitiveBrand(t); if (p) return spec(p, depth); } // a branded primitive (`number & { [brand]: true }`) is drawn as its primitive: no value of it is an object
     if (f & TF.TypeParameter) { // stage 5 rank 17: a type parameter is drawn as its declared constraint (every value of T has the constraint's members); unconstrained (or constrained to unknown, any, {} or object, which name no member) it stays opaque, so equal draws may coincide as before
       const c = checker.getBaseConstraintOfType(t);
       const bare = !c || (c.flags & (TF.Any | TF.Unknown)) || ((c.flags & TF.Object) && !checker.getPropertiesOfType(c).length && !checker.getIndexInfoOfType(c, ts.IndexKind.String) && !checker.isArrayType(c) && !checker.isTupleType(c)) || (c.flags & TF.NonPrimitive);
