@@ -1,0 +1,21 @@
+{
+ "scope": [
+  "bump",
+  "copy_both",
+  "wire",
+  "guarded"
+ ],
+ "equal": {
+  "bump": true,
+  "copy_both": false,
+  "wire": false,
+  "guarded": true
+ },
+ "why": "The async-await bucket's top names (an async function with awaited port calls, an async arrow handed to an external registration) are read by lean at f3cb5b41 with no change: each await of a port call is a world transition in source order, and a handed async arrow is an opaque value keyed by its text. bump names its intermediate values: proved. guarded turns an early return into a conditional: proved. copyBoth swaps the order of two awaited loads: not proved, lane B witnesses the order. wire changes x + 1 to x + 2 inside the handed callback: not proved (two texts), lane B witnesses the registered value. This pair records the reading so a later change that loses it turns red.",
+ "b": {
+  "bump": "PASS-bounded",
+  "copyBoth": "WITNESS",
+  "wire": "WITNESS",
+  "guarded": "PASS-bounded"
+ }
+}

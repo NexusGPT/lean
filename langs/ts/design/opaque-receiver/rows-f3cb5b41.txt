@@ -1,0 +1,15 @@
+| kind | name                    | check                        | res  | lsc accepts | detail
+| pair | blocker_opaque_receiver | theorem generated            | PASS |             | ok
+| pair | blocker_opaque_receiver | Equal_aliased not proved     | FAIL |             | proved
+| pair | blocker_opaque_receiver | Equal_looped not proved      | PASS |             | doubles unknown: not encoded: a parameter that is not a number, boolean, string or record: `e: an (0 s); real lemma not proved
+| pair | blocker_opaque_receiver | Equal_moved proved           | PASS |             | proved
+| pair | blocker_opaque_receiver | Equal_typed_alias not proved | FAIL |             | proved
+| pair | blocker_opaque_receiver | Equal_passed not proved      | FAIL |             | proved
+| pair | blocker_opaque_receiver | Equal_other_any not proved   | FAIL |             | proved
+| pair | blocker_opaque_receiver | lane B aliased WITNESS       | PASS |             | WITNESS
+| pair | blocker_opaque_receiver | lane B looped WITNESS        | PASS |             | WITNESS
+| pair | blocker_opaque_receiver | lane B moved PASS-bounded    | PASS |             | PASS-bounded
+| pair | blocker_opaque_receiver | lane B typedAlias WITNESS    | FAIL |             | PASS-bounded
+| pair | blocker_opaque_receiver | lane B passed WITNESS        | FAIL |             | PASS-bounded
+| pair | blocker_opaque_receiver | lane B otherAny WITNESS      | PASS |             | WITNESS
+| TOTAL | 13 checks | 6 FAILED |

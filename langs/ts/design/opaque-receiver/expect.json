@@ -1,0 +1,27 @@
+{
+ "scope": [
+  "aliased",
+  "looped",
+  "moved",
+  "typed_alias",
+  "passed",
+  "other_any"
+ ],
+ "equal": {
+  "aliased": false,
+  "looped": false,
+  "moved": true,
+  "typed_alias": false,
+  "passed": false,
+  "other_any": false
+ },
+ "why": "draft",
+ "b": {
+  "aliased": "WITNESS",
+  "looped": "WITNESS",
+  "moved": "PASS-bounded",
+  "typedAlias": "WITNESS",
+  "passed": "WITNESS",
+  "otherAny": "WITNESS"
+ }
+}
