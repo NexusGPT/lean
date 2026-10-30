@@ -664,8 +664,27 @@ export function valuesLine(values) {
     : 'Values: none listed (lane B draws from the types)';
 }
 
-export function markdown(rows, base, head) {
+// Only a function unit enters the verdict table and its counts. Every other row is an intake row of the change ledger,
+// routed there by what the edit is (an artifact by kind or class, an unassigned edit by its named reason, the empty
+// diff): it stays in the intake table. A non-inert intake row keeps its ASK in the data, so a blocking level still
+// sees it; an inert one (comments and blank lines only) carries no verdict at all.
+export const intakeRow = (r) => r.decision === 'artifact' || r.decision === 'unassigned' || (!r.decision && /^(?:artifact|unassigned):/.test(r.coverage ?? ''));
+// The run's metadata (identity, values, stop, ledger...) rides on the array and is kept.
+export function verdictRows(rows) {
+  const kept = rows.filter((r) => !intakeRow(r));
+  for (const k of Object.keys(rows)) if (!/^\d+$/.test(k)) kept[k] = rows[k];
+  return kept;
+}
+
+// the whole report as a run prints it: the title, the intake table (every row, the inert ones included), then the verdicts
+export function reportMarkdown(rows, base, head) {
+  const md = markdown(rows, base, head), cut = md.indexOf('\n');
+  return [md.slice(0, cut), '', intakeMarkdown(rows), '', '## Verdicts', md.slice(cut + 1)].join('\n');
+}
+
+export function markdown(allRows, base, head) {
   if (process.env.LEAN_LEDGER_TEST_FAULT === 'report-crash') throw new Error('injected report writer crash');
+  const rows = verdictRows(allRows); // an intake row is listed by intakeMarkdown, never counted or tabled here
   const count = (v) => rows.filter((r) => !r['covered-by'] && r.verdict === v).length; // a nested row inherits its enclosing unit's verdict: counted once, on that unit's row
   const covered = rows.filter((r) => r['covered-by'] && r.decision !== 'removed').length;
   const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), '', valuesLine(listedValues(rows)), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
@@ -710,7 +729,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const scope = new Set(parseUnitList(opt('--scope', '') || ''));
   const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   if (opt('--json')) atomicJSON(opt('--json'), a.includes('--preview') ? rows : reportJSON(rows));
-  const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);
+  const md = a.includes('--preview') ? intakeMarkdown(rows) : reportMarkdown(rows, base, head);
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);
 }
 
