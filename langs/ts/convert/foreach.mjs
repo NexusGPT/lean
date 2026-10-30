@@ -13,7 +13,8 @@
 // list), the callback is a synchronous arrow with plain parameters it never assigns, and a bare `return;` in the
 // body (the end of one step) is not inside a nested loop or switch, where it becomes `continue;`. A receiver that is
 // not a name is read once into a fresh local first, as forEach reads it once. A Map or Set forEach, an async
-// callback, a `return <value>`, a three-parameter callback, a list bound from an await: listed for a person.
+// callback, a `return <value>`, a three-parameter callback, a list whose array type rests on a type assertion: listed for a person.
+import { assertionHeld, typeAssertion } from '../common.mjs';
 import { ts, K, src, unparen, indentAt, statementOf, freshName, usesOf, symbolOf, isWritten, excludesUndefined, contains, purePath, sameTree, rootOf } from './util.mjs';
 
 const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'length']);
@@ -35,13 +36,12 @@ export default {
     if (!(checker.isArrayType(rt) || checker.isTupleType(rt))) return { list: 'the receiver is not typed as an array (a Map or Set forEach passes the key, not an index)' };
     const elementType = checker.getIndexTypeOfType(rt, ts.IndexKind.Number) ?? checker.getTypeArguments(rt)?.[0];
     if (!elementType || !excludesUndefined(elementType)) return { list: 'the element type holds undefined: a hole and an undefined element would read alike' };
-    // a list bound from an await: its array type is the claim of whatever produced the promise, and an `as` there
-    // (a database row set typed by assertion) is checked by nothing; on a value that is not an array, forEach and an
-    // indexed loop read it differently (pyka src/server/alert-data.ts: a WITNESS; tests/fixtures/convert_async_foreach)
-    const awaitedRoot = ts.isIdentifier(recv) ? recv : rootOf(recv);
-    let decl = awaitedRoot && symbolOf(checker, awaitedRoot)?.valueDeclaration;
-    while (decl && ts.isBindingElement(decl)) decl = decl.parent?.parent;
-    if (decl && ts.isVariableDeclaration(decl) && decl.initializer && (ts.isAwaitExpression(unparen(decl.initializer)) || contains(decl.initializer, (x) => ts.isAwaitExpression(x)))) return { list: `the list \`${awaitedRoot.text}\` comes from an await: its array type is a claim of the promise's producer that nothing checks, and forEach and an indexed loop read a value that is not an array differently` };
+    // a list whose array type rests on a type assertion anywhere on its path: nothing checks that the value is an
+    // array, and forEach and an indexed loop read a value that is not one differently (pyka src/server/alert-data.ts:
+    // a WITNESS; tests/fixtures/convert_async_foreach). The readers are the lint's own (common.mjs assertionHeld,
+    // typeAssertion); castOnPath only walks to the expressions they are asked about
+    const cast = castOnPath(checker, recv);
+    if (cast) return { list: `the list's array type rests on a type assertion (\`${cast.getText().replace(/\s+/g, ' ').slice(0, 60)}\`): nothing checks it is an array, and forEach and an indexed loop read a value that is not one differently` };
     const [xp, ip] = cb.parameters;
     // the parameters are never assigned in the body: in the loop they are a const and the counter
     for (const p of cb.parameters) for (const u of usesOf(checker, symbolOf(checker, p.name), cb.body)) if (isWritten(u)) return { list: `the callback assigns its parameter \`${p.name.text}\`` };
@@ -123,3 +123,32 @@ export default {
     return { edits: [{ start: stmt.getStart(sf), end: stmt.end, text: loop }], guard: 'an array with no undefined element, a body that never changes the list, a synchronous arrow with plain parameters' };
   },
 };
+
+// the expression on the list's path whose type rests on an assertion, or null: the value itself (an `as`, or a local
+// an `as` writes: assertionHeld), a call of a same-file unit returning an asserted value (typeAssertion), and, walking
+// back, the root of a field path, the initializer of the binding it comes from, through await and through the
+// element of `[a, b] = await Promise.all([x, y])` or `[a, b] = [x, y]` that the pattern takes
+function castOnPath(checker, e, depth = 0) {
+  if (!e || depth > 12) return null;
+  e = unparen(e);
+  while (ts.isAwaitExpression(e) || ts.isNonNullExpression(e) || ts.isSatisfiesExpression(e)) e = unparen(e.expression);
+  if (assertionHeld(checker, e)) return e;
+  if (ts.isCallExpression(e) && typeAssertion(checker, e)) return e;
+  if (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) return castOnPath(checker, e.expression, depth + 1);
+  if (!ts.isIdentifier(e)) return null;
+  const d = symbolOf(checker, e)?.valueDeclaration;
+  if (!d) return null;
+  if (ts.isVariableDeclaration(d)) return d.initializer ? castOnPath(checker, d.initializer, depth + 1) : null;
+  if (!ts.isBindingElement(d)) return null;
+  const pattern = d.parent, vd = pattern?.parent;
+  if (!vd || !ts.isVariableDeclaration(vd) || !vd.initializer) return null;
+  let init = unparen(vd.initializer);
+  while (ts.isAwaitExpression(init)) init = unparen(init.expression);
+  if (ts.isArrayBindingPattern(pattern)) {
+    const k = pattern.elements.indexOf(d);
+    const all = ts.isCallExpression(init) && init.expression.getText() === 'Promise.all' && init.arguments[0] && ts.isArrayLiteralExpression(unparen(init.arguments[0])) ? unparen(init.arguments[0]) : null;
+    const list = all ?? (ts.isArrayLiteralExpression(init) ? init : null);
+    if (list && k >= 0 && k < list.elements.length && !list.elements.slice(0, k + 1).some((x) => ts.isSpreadElement(x))) return castOnPath(checker, list.elements[k], depth + 1);
+  }
+  return castOnPath(checker, init, depth + 1);
+}
