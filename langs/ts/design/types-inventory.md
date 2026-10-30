@@ -196,6 +196,16 @@ refusal came from a local inside it. n8n 7, nexus 9, pipedream 1, pyka 1: n8n `p
 are presumably forms 1 or 3. That is not shown. If the nesting message named its outermost type, the next census
 would say.
 
+## Forms 1 and 3 read (2026-10-30, lane A7a)
+
+The depth bound is gone: `dtype` keeps the descent path, reads a finite type at any depth, reads a type met again by
+the name a record reserved, and reads opaque a type that recurs with no record on its loop (and each type on that
+loop) or a generic instance grown from its own. The reading, its soundness and its pair: [types-depth.md](types-depth.md).
+One correction to the split above: the n8n site named under form 3 (`WaitingWebhooks.ts:114`) is a finite chain
+ten levels deep (IRunExecutionData > ... > ITaskSubRunMetadata > string), not a recursion of `JsonValue`: the walk
+descends union members that `dtype` never reaches (`JsonValue` is opaque at its union before any descent). Other
+form 3 counts may hold such sites too.
+
 ## Order for the readings (step 2)
 
 By units, and by how many roots each reading reaches:
