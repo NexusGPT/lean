@@ -1574,7 +1574,22 @@ function translateOnce(file, fnName, opts = {}) {
     if (ts.isPrefixUnaryExpression(n)) { const T = typeOf(n.operand); if (anyT(T)) return null; if (n.operator === K.ExclamationToken) return checker.getBooleanType(); if (n.operator === K.MinusToken || n.operator === K.PlusToken) return (T.flags & TF.NumberLike) ? checker.getNumberType() : null; }
     return null;
   };
-  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
+  // an empty `new Map()` or `new Set()` written without type arguments: MapConstructor's overload `new (): Map<any, any>`
+  // types it Map<any, any> whatever its slot declares, and a Set's T defaults to any. It holds no value, so its type is
+  // the one its slot gives it (the declaration, the return type, the parameter), when that is a Map (or a Set) with type
+  // arguments of its own
+  const emptyCollectionT = (n) => {
+    if (!ts.isNewExpression(n) || n.typeArguments || (n.arguments && n.arguments.length) || !ts.isIdentifier(n.expression) || !['Map', 'Set'].includes(n.expression.text)) return null;
+    const t = checker.getTypeAtLocation(n); const args = t && t.objectFlags & ts.ObjectFlags.Reference ? checker.getTypeArguments(t) : [];
+    if (!args.some((a) => a.flags & TF.Any)) return null;
+    let ct = null; try { ct = checker.getContextualType(n); } catch { return null; }
+    if (!ct || ct.flags & TF.Union) return null;
+    const name = ct.symbol?.name; const want = n.expression.text;
+    if (name !== want || !(ct.objectFlags & ts.ObjectFlags.Reference)) return null;
+    const cargs = checker.getTypeArguments(ct);
+    return cargs.length === args.length && !cargs.some((a) => a.flags & (TF.Any | TF.Unknown)) ? ct : null;
+  };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
   // the sign of zero is read exactly by the doubles reading (design/doubles.md): a number-bearing unit is decided over
   // binary64, so no unit is made opaque for a -0 it may produce (the opaque reading of design/signed-zero.md is lifted)
   if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
