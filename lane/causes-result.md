@@ -13,8 +13,8 @@ The baseline is this worktree's base f3cb5b41; "after" is head afa1c0f1. Outputs
 | callee pattern, behind an unresolved package type | 1 | 0 | 0 | 1 |
 | receiver state, a handler on a rejected promise | 3 | 0 | 0 | 3 |
 | equivalent mutant | 6 | 0 | 0 | 6 |
-- Total: 7 of 23 witnessed at base, 12 of 23 after. Lane A on the 5 new witnesses gave ASK on each, so zero false PASS.
-- The 6 equivalent rows stayed PASS-bounded, so no rule made a witness where none exists.
+- Total: 7 of 23 witnessed at base, 12 of 23 after. Lane A gave ASK on each of the 5 new witnesses: zero false PASS.
+- The 6 equivalent rows stayed PASS-bounded: no rule made a witness where none exists.
 
 ## Changes, one commit each, each with a pair red before and green after
 - **Fake recursion.** Past 40 nested callbacks the fake runs no further callback it is handed, so the tree ends there.
@@ -28,6 +28,12 @@ The baseline is this worktree's base f3cb5b41; "after" is head afa1c0f1. Outputs
 - **Callee patterns.** The regular expressions of every local file whose function the unit calls join the string pool, after the unit's own file.
   Pair cause_callee_pattern goes from PASS-bounded to WITNESS. Files: exec/spec.mjs, design/callee-pattern.md.
 - None of these changes how a verdict is read. They only change which world or which strings lane B draws, the same on both sides.
+
+## Added item: NaN and -0 for any and unknown parameters
+- An any or unknown parameter was drawn as a fake, never a number, so `p === p` against `true` stayed PASS-bounded.
+- On a special-number input, an opaque leaf whose members the unit does not read now takes its slot's special value: NaN, Infinity, -Infinity or -0.
+- Pair cause_any_nan: selfEq and isZero go from PASS-bounded to WITNESS. Two honest refactors stay PASS-bounded, one on NaN and one on -0.
+- gen.test.mjs passes, and so do special_numbers, numbers and absent_number. Files: exec/gen.mjs, design/gen-walk.md (dated section).
 
 ## What is left, with the reason
 - **reachesSelfJson changed-return.** It is ASK now on a different budget, "a fake path longer than 400 characters", at input 44. Not fixed today.
@@ -43,7 +49,6 @@ The baseline is this worktree's base f3cb5b41; "after" is head afa1c0f1. Outputs
 ## Siblings run by hand, all pass
 - On the final code: for_desugar, fake_throw, gen_walk, generics, lane_b_reach and the three cause pairs.
 - Also on the world rule: generators, callback_behaviour, callback_behaviour_tree, rest_param and witness_args.
-- No pair named no_silent_exit exists, and none has "load" in its name.
 - I stopped microtask_worker at 15 minutes, by my own task, and it has no result. It is a spin-bound pair; please run it in the suite.
 - These were not run: service, class_new, counter, heap_methods, try_catch, two_callers, promise_handle, exceptions_across and for_each.
   They read services through `this`, so the full-world rule reaches them. The admission suite should cover them before merge.

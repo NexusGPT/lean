@@ -1,0 +1,7 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "Parameters typed any or unknown were drawn as fakes or handles, never as numbers, so NaN and -0 never reached them: selfEq (p === p against true, false on NaN in JavaScript) and isZero (p === 0 against Object.is(p, 0), apart on -0) were PASS-bounded. On a special-number input an opaque parameter leaf whose members the unit does not read now takes the input's special value, by the same turn and slot rule as a number leaf (exec/gen.mjs, design/gen-walk.md): selfEq WITNESS, isZero WITNESS. selfTag (p === p against Number.isNaN) and zeroSign (Object.is(p, -0) against p === 0 && 1 / p < 0) are equal on every value, NaN and -0 included, and stay PASS-bounded: both sides get the same draw. The units take untyped values, so the pair checks lane B alone.",
+ "b": { "selfEq": "WITNESS", "selfTag": "PASS-bounded", "zeroSign": "PASS-bounded", "isZero": "WITNESS" }
+}

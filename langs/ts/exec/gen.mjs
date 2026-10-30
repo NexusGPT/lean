@@ -152,8 +152,8 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
   const tie = special != null && special % 2 === 0; // an even special-number input: the special-slots invariant (header)
   const slotValues = new Map(); // slot -> its special value, in an even special-number input
   const slotOf = (path) => path.replace(/\[\d+\]/g, '[]').replace(/\{\d+\}/g, '{}');
-  const specialOf = (spec, x, path = 'in') => {
-    if (!srng || typeof x !== 'number' || !admitsNumber(spec)) return x;
+  const specialOf = (spec, x, path = 'in', untyped = false) => { // untyped: an opaque leaf (any, unknown), x undefined; undefined back means it keeps its draw
+    if (!srng || (!untyped && (typeof x !== 'number' || !admitsNumber(spec)))) return x;
     if (tie) { const k = slotOf(path); if (!slotValues.has(k)) slotValues.set(k, NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length]); return slotValues.get(k); }
     if (replaced > 0 && special % 2 === 1 && srng() < 0.5) return x; // every other special-number input keeps some later leaves finite
     return NUM_SPECIAL[(special + replaced++) % NUM_SPECIAL.length];
@@ -250,7 +250,9 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'service': return env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path, spec)) : {}; // a handle: often one the unit was handed, so a lookup keyed by an argument can hit
       case 'class': return env ? env.fake(path, spec) : function () {};
       case 'tparam': { const pool = [0, 1, 2, 'a', 'b', '', true, false, 7]; const x = pool[Math.floor(rng() * pool.length)]; return reach && reach.on.has('coercion-hooks') ? reach.coercible() : x; }
-      case 'opaque': default: { const x = env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {}; return reach && reach.on.has('coercion-hooks') && (spec?.kind === 'opaque') && !membersRead ? reach.coercible() : x; } // a value of an unread type converts itself on a representation input, its declared draw made first; one whose members or elements the unit reads (a union the reads shaped, usage.mjs) keeps its fake
+      // a special-number input: an opaque leaf (any, unknown) whose members the unit does not read takes its slot's special
+      // value, as a number leaf does: any and unknown admit NaN and -0, which equality tells apart (design/gen-walk.md)
+      case 'opaque': default: { if (spec?.kind === 'opaque' && !membersRead && !leaf) { const sp = specialOf(spec, undefined, path, true); if (sp !== undefined) return sp; } const x = env ? (env.argPool?.length && rng() < 0.5 ? env.argPool[Math.floor(rng() * env.argPool.length)] : env.fake(path)) : {}; return reach && reach.on.has('coercion-hooks') && (spec?.kind === 'opaque') && !membersRead ? reach.coercible() : x; } // a value of an unread type converts itself on a representation input, its declared draw made first; one whose members or elements the unit reads (a union the reads shaped, usage.mjs) keeps its fake
     }
   }
   // nullable optional fields draw both absent tags as well as omission

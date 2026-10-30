@@ -66,3 +66,14 @@ of 60 past its guards on cdbd48d and none after: a pool pick moved with item 5.
 
 Leaves the usage reading gives no boundary (`externalUserId?.trim()` read through a call, a field compared against a
 local derived from another field) are drawn as before; their coincidences are left to the pool and the free draws.
+
+## Special numbers for any and unknown (2026-10-30)
+
+A parameter typed any or unknown was drawn as a fake or a handle the unit was handed, never as a number, so NaN and -0
+never reached it: `p === p` against `true` (false on NaN) stayed PASS-bounded. On a special-number input (every SPECIAL-th
+generated input) an opaque leaf whose members the unit does not read now takes its slot's special value, NaN, Infinity,
+-Infinity or -0, by the same turn and slot rule as a number leaf (`specialOf`, the special-slots invariant); a leaf the
+unit reads members of keeps its fake, and every other input draws as before. Both sides get the same value. Pair
+`tests/pairs/cause_any_nan`: selfEq and isZero (`p === 0` against `Object.is(p, 0)`) go from PASS-bounded to WITNESS;
+selfTag (`p === p` against `Number.isNaN`) and zeroSign (`Object.is(p, -0)` against a division) are equal on every value
+and stay PASS-bounded.
