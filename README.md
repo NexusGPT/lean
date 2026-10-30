@@ -297,8 +297,8 @@ lean says `ASK` rather than guess. Today it asks on: a `while` loop with no meas
 Lane B's bound is real: a frozen world, generated inputs, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. Measured figures: [`langs/ts/design/`](langs/ts/design/). What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
 ## What lean is not
 
-- **Not a jail.** The sandbox fakes the world but is a Node `vm` context, so hostile code can reach the host. Containment is the gate's ([planned](docs/around-lean.md)).
-- **Not a pixel judge.** Pixels, layout and accessibility are the gate's; lean names the state where two renders differ.
+- **Not a jail.** The sandbox fakes the world, but it is a Node `vm` context, and code that leaves it (through a host intrinsic such as `Buffer.constructor`) reaches the worker process. Measured on Node 24 ([`langs/ts/design/sandbox-boundary.md`](langs/ts/design/sandbox-boundary.md), probe log beside it), that process denies file writes, child processes, native addons, worker threads and file reads outside the given trees. The network and the environment variables stay open: a probe connected to a local listener and read 32 variables. `LEAN_NET=deny` closes the network at the process's own bindings, and the unit's record names every attempt it refused. A unit with no parent runs without the permission model today. Containment of hostile code is the gate's, in [DA](https://github.com/NexusGPT/differential-attestation).
+- **Not a pixel judge.** Pixels, layout and the accessibility tree are DA's screen-analysis row; lean names the state where two renders differ.
 - **Not a judge of what a model says.** The code around the call is lean's object: retries, routing, parsing, timers. The reply is an outside call, so a different call is a `WITNESS`. Here the candidate loops `<=` where the parent looped `<`:
 
 ```
