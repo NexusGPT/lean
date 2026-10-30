@@ -1,11 +1,15 @@
 # lean on its own pull requests: every pair test the pull request touches becomes a change set (its parent, then its
 # candidate, in a scratch two-commit repository) and its table is posted as the comment. Never blocking.
+# The job `image` builds the container image (Dockerfile at the root) and runs ten proof-lane pairs inside it.
 name: lean self
 
 on:
   pull_request:
     paths:
       - "langs/ts/tests/pairs/**"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "scripts/lean-docker.sh"
 
 permissions:
   contents: read
@@ -46,3 +50,18 @@ jobs:
         run: |
           node langs/ts/ci/comment.mjs --repo "$RUNNER_TEMP/pairs" --base "${{ steps.pairs.outputs.base }}" --head "${{ steps.pairs.outputs.head }}" \
             --no-project --max-functions 40 --out lean-report.md --post
+
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: build the image
+        run: |
+          docker build -t lean:ci .
+          docker image ls lean:ci
+      - name: ten proof-lane pairs inside the image
+        env:
+          PAIRS: cheap_rungs_congruence cheap_rungs_normalised cheap_rungs_parsed nested_ternary prelude_unit_added definite_assignment prelude_unit non_null narrow_in known_values
+        run: |
+          docker run --rm -e PAIRS="$PAIRS" lean:ci sh -c 'fail=0; for p in $PAIRS; do echo "=== $p"; JOBS=4 node langs/ts/tests/run.mjs --pair "$p" || fail=1; done; exit $fail'
