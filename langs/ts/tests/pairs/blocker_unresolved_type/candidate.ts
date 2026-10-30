@@ -1,5 +1,5 @@
 // A parameter whose type the checkout cannot resolve (an unresolved type-only import, a DOM or React event type) is
-// opaque; the doubles lane reads a unit that never reads it (translate/smt-fp.mjs, design/opaque-params-fp.md)
+// opaque; the doubles lane reads a unit that never reads it (translate/smt-fp.mjs, design/top-blockers.md)
 import type { Foo } from 'some-external-pkg';
 
 export function keyScore(e: React.KeyboardEvent<HTMLInputElement>, n: number): number {

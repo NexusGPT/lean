@@ -171,7 +171,7 @@ export function encodeUnit(checker, sf, unit, side = 'unit') {
       if (!ts.isIdentifier(p.name) || p.initializer || p.questionToken || p.dotDotDotToken) refuse(sf, p, 'a parameter that is not one plain name');
       // a parameter of another type (an opaque any, a DOM event the checkout cannot resolve, a function) is Unread: it
       // has no symbol in the query and no entry in env, so a read of it anywhere (here or in a callee it is passed to)
-      // refuses the unit, and a term that never names it is the same function for every value of it (design/opaque-params-fp.md)
+      // refuses the unit, and a term that never names it is the same function for every value of it (design/top-blockers.md)
       const t = checker.getTypeAtLocation(p), s = sortOfType(t) ?? (record(t) ? 'Obj' : 'Unread');
       return { name: `p${i}`, sort: s, sym: checker.getSymbolAtLocation(p.name) };
     });

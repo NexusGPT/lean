@@ -1,4 +1,4 @@
-// A method call on an opaque value, then reads of a value of the same name (design/opaque-receiver.md)
+// A method call on an opaque value, then reads of a value of the same name (design/top-blockers.md, class-and-this)
 export function shadowed(e: any, xs: readonly any[]): number {
   e.preventDefault();
   return xs.filter((item) => item.ok).length;
