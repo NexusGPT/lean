@@ -1139,7 +1139,7 @@ async function runPairInFlight(opts) {
   let res;
   try { res = annotateWitness(await runPairOnce({ ...opts, unitRecord }), opts.parent, opts.candidate, opts.unit); }
   finally { finishUnitRecord(unitRecord); }
-  if (networkDenied()) unitRecord.sandbox = sandboxEntry(deniedFrom); // the mode, what holds it, and every connection or lookup it refused, with the side that made it
+  if (networkDenied()) unitRecord.sandbox = res.sandbox ?? sandboxEntry(deniedFrom); // the mode, what holds it, and every connection or lookup it refused, with the side that made it; a unit run in another process (new-unit.mjs) brings that process's entry
   res.record = unitRecord; // one home: lane B's result; check.mjs and pr.mjs pass it to the certificate
   for (const w of res.witnesses ?? []) if (!w.record) w.record = { schema: 'witness-record/v2', version: 2, seed: unitRecord.seed, leanHead: unitRecord.leanHead, invocation: { kind: 'unrecorded' }, unrecorded: [{ site: 'runPairInFlight: non-single-call witness', reason: 'program/sequence initialization and command arguments not captured at this output boundary' }] };
   const ud = res?.bound?.undriven; if (ud && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { res.verdict = 'ASK'; res.kind = 'callback-undriven'; res.reason = `callback-undriven: on ${ud.inputs} input(s) a function the unit handed out could not be driven (${ud.first.reasons.join('; ')}, first at input ${ud.first.input}); an undriven callback is undecided, never a difference`; } // no rung found a WITNESS: the gap is the verdict's (design/callbacks.md)
