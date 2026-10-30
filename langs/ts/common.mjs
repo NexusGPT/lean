@@ -1897,6 +1897,20 @@ const importRooted = (checker, e) => {
   const d = s?.declarations?.[0];
   return !!d && (ts.isImportSpecifier(d) || ts.isImportClause(d) || ts.isNamespaceImport(d) || ts.isImportEqualsDeclaration(d));
 };
+// a call whose callee is declared at the top level of another module: a method of a local an imported factory made
+// (`client.x.y(v)`), whose interface that module exports. The translator reads such a call as the outside's
+// (externalCall: no reading of its body, its arguments handed over as their own values), so a held argument reaches
+// it as the same uninterpreted conversion on both sides, as one reaches an imported function (importRooted). A callee
+// declared in a global script (the default library, lean's own number operations, an ambient declaration file) or
+// inside a namespace, a `declare global` or a `declare module` block is a library's, which a reading may give exact
+// operations at the declared types; it stays refused, as a callee the checker cannot resolve or one of this file.
+const outsideCallee = (checker, call) => {
+  let decl = null; try { decl = checker.getResolvedSignature(call)?.declaration ?? null; } catch { return false; }
+  const sf = decl?.getSourceFile?.();
+  if (!sf || sf === call.getSourceFile() || !ts.isExternalModule(sf)) return false;
+  for (let q = decl.parent; q && q !== sf; q = q.parent) if (ts.isModuleDeclaration(q)) return false;
+  return true;
+};
 // where a held value's reading carries it: no conversion to the asserted type happens there
 function carried(checker, n) {
   const p = n.parent;
@@ -1919,7 +1933,7 @@ function carried(checker, n) {
     if (p.expression === n) return false; // calling a held value
     if (p.expression.getText() === 'Array.isArray') return true; // a test of the run-time value
     if (heldCall(checker, p)) return true; // a same-file unit read once more with this parameter at Any
-    return importRooted(checker, p.expression); // the outside receives the value as it is
+    return importRooted(checker, p.expression) || outsideCallee(checker, p); // the outside receives the value as it is
   }
   if (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === n)) return unitFunction(ts.isReturnStatement(p) ? enclosingFn(p) : p); // the unit's own result
   return false;
