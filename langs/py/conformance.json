@@ -1,5 +1,14 @@
 {
   "ext": "py",
   "lint": ["python3", "-I", "langs/py/lint/lint.py", "{src}"],
-  "translate": ["python3", "-I", "langs/py/translate/translate.py", "{src}", "--core", "--suffix", "{suffix}", "--out", "{out}"]
+  "translate": ["python3", "-I", "langs/py/translate/translate.py", "{src}", "--core", "--suffix", "{suffix}", "--out", "{out}"],
+  "pair_translate": ["python3", "-I", "langs/py/translate/translate.py", "{src}", "--core", "--suffix", "{suffix}", "--out", "{out}", "--prelude", "{prelude}", "--effectful", "{effectful}"],
+  "exec": ["python3", "-I", "langs/py/exec/run.py", "--parent", "{parent}", "--candidate", "{candidate}", "--unit", "{unit}", "--n", "30", "--seed", "1", "--out", "{out}"],
+  "pairs": [
+    "langs/py/tests/pairs/pure_function",
+    "langs/py/tests/pairs/raised_exception",
+    "langs/py/tests/pairs/dataclass_update",
+    "langs/py/tests/pairs/list_transform",
+    "langs/py/tests/pairs/dict_lookup"
+  ]
 }
