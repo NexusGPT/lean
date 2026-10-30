@@ -124,3 +124,60 @@ lint. The cost: a proof that needs `===` on Any to be symmetric or reflexive (`p
 
 Lane B draws no NaN for an any parameter, so `selfEq` and `switchSelf` (NaN takes the default) are PASS-bounded, not
 witnessed. Lane A no longer proves them.
+
+## 2026-10-30: the four refused slots, each read at Any
+
+Each slot below was refused (`type-assertion`) because a held value reached a place whose reading holds the declared
+Dafny type. Each now gets the reading the earlier section sketched; `common.mjs` decides (`assertionHeld`,
+`typeAssertion`, one test for the lint and the translator) and `translate.mjs` emits.
+
+- **A field of a literal.** A literal one of whose fields holds a held value, or an any or unknown value where the
+  field's type names another, is HELD (`heldLiteral`): its real type is its own record type, and each held field is
+  read at its real type (`heldField`; an any value is any in the literal's own type already). The translator builds it
+  at that type (`objectLit`, `recordType`): a datatype `Held_<hash>` whose name carries the real field types, the held
+  field `Any`. The literal then goes where a held value goes; a field read on it is the field's real type (a held field
+  Any, the others exact). It reaches a slot of its declared type only where a held value is carried (the unit's own
+  result, an argument to an outside call), by `cast_Held_..._T`, the one uninterpreted conversion both sides apply.
+  A local it initialises is held in turn.
+- **A same-file callee's parameter.** The callee is read once more for the call (`heldCall`, `heldVariantCall`): the
+  parameters the call hands a held value are read at Any (`withHeldParams`: `assertionHeld` reads such a parameter as
+  Any), the body is emitted under that reading as `<callee>_held_<i..>[_r]`, and the call applies it.
+- **A call of a same-file unit whose result is held.** The same reading: the result is Any when the body's result is
+  held under it (`returnsHeld` with the held parameters), so the call is held (Any) and its caller's operations on it
+  are operations on Any. The unit's own lemma keeps its declared signature; only the call reads the second text.
+- **A compound write.** `t += v` to a local is a write of the operation `t + v` (`writesOf`), held when either operand
+  is, so the local's real type is Any and the write is the uninterpreted operator over Any the binary form reads
+  (`heldCompound`: `+=`, `-=`, `*=`).
+
+Why it is sound. A wrong proof needs a value whose run-time type differs from the type its reading gives it, and an
+operation exact on the read type but not on the value. In each slot the value now keeps its real type: a held field is
+Any in its datatype (no field read converts it), a held parameter is Any in the callee's second text, a held result is
+Any at the call, a held compound total is Any. Every operation on them is the uninterpreted application on Any, so `v`
+and `v + 0` remain different terms; a conversion to the declared type happens only as a unit's own result or into an
+outside call, where both sides apply the same uninterpreted function to their own terms (equal only when the terms
+are). The record conversion `cast_Held_T` is no exception: two records convert to equal values when they are equal.
+
+Pair `type_assertions`, eight rows. Must prove: `fieldHeld` (proved), `paramHeld`, `resultHeld`, `compoundHeld`
+(real-only, as `twice`: the doubles reading does not encode Any; they return a template string, since a number read
+from Any may be the input object itself and the identity guard withholds such a result, as for `anyAs`). Must not
+prove: `fieldBumped`, `paramKept`, `resultBumped`, `compoundBumped`, each proved under the declared-type reading
+(`n + 0 = n` on numbers) and each witnessed by lane B on the emitted JavaScript ("a" + 0 is "a0").
+
+What stays refused, and why:
+- an array element (`push`, an array literal), a callback's result, an index, a held spread source, a held literal in a
+  destructuring, a field write (`o.f = v`, `o.f += v`): each puts the held value into a sequence, a callback type or
+  a declared record whose Dafny type every other value of that type shares; reading it at Any there would change the
+  reading of values that were checked (an element type, a datatype of a declared type, the other side's values);
+- a literal with a method, an accessor or a computed key: its datatype is not built from its fields alone;
+- a callee that is not a plain leaf (a method, an async or generic unit, one with an optional, default, rest or
+  destructured parameter, one that calls another same-file unit or itself): its second reading would need the world,
+  fuel or further second readings; the translator also refuses, as `type-assertion`, a callee that threads the world,
+  mutates a parameter, recurses or is read by the heap core;
+- an argument to a call whose callee is a local value rather than an import (`client.x.y(...)` with `client` a local
+  made by an imported factory): the rule `importRooted` keeps, unchanged here.
+
+Found on the way (the doubles lane, not changed here): `translate/faithful.mjs` decides a number operation by the
+checker's type, not the held reading, so `(x as number) + 1` with `x: any` is rewritten to the commutative
+`Math.__lean_add` and lane A reads `1 + (x as number)` as the same term, where JavaScript gives "a1" and "1a". Lane B
+witnesses it, so `check.mjs` answers WITNESS; the lane A reading is wrong all the same. The structural fix: the
+rewrite's `isNum` reads `assertionHeld(checker, n) ?? checker type`.
