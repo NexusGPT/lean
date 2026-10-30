@@ -2212,7 +2212,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   function heldCompound(e) {
     if (!ts.isIdentifier(e.left) || !isAny(typeOf(e.left))) return null;
     const names = { [K.PlusEqualsToken]: 'plus', [K.MinusEqualsToken]: 'minus', [K.AsteriskEqualsToken]: 'times' }, nm = names[e.operatorToken.kind];
-    if (!nm) fail(e, 'a compound write other than +=, -=, *= to a local holding a value whose type nothing checked is not translated');
+    if (!nm) fail(e, 'type-assertion: a compound write other than +=, -=, *= to a local holding a value whose type nothing checked is not translated'); // the rule prefix joins this site to its reading (lower.mjs auditSites)
     return (cur, right) => { const A = anyType(); return `${external(`op_${nm}_Any`, [A, A], A)}(${cur}, ${expr(right, anyTarget())})`; };
   }
   function operatorValue(n) {
