@@ -16,7 +16,7 @@ export function fileRead(): string {
 }
 
 export function envRead(): string {
-  try { return `ok: ${Object.keys(host().env).length} variables`; } catch (e) { return outcome(e); }
+  try { const names = Object.keys(host().env).sort(); return `ok: ${names.length} variables: ${names.join(' ')}`; } catch (e) { return outcome(e); } // names only, never values
 }
 
 export function fileWrite(): string {
