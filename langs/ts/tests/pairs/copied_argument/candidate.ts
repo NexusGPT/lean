@@ -13,7 +13,9 @@ export function honest(p: Box, g: (q: Box) => void): number {
 }
 
 export function twice(p: Box, g: (q: Box) => void): number {
-  g({ ...p });
-  g({ ...p });
+  const a = { ...p };
+  const b = { ...p };
+  g(a);
+  g(b);
   return 0;
 }
