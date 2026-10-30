@@ -16,7 +16,8 @@ What holds after that is the process the unit runs in:
 - A unit the parent holds runs in the lane B worker (`exec/worker.mjs`), forked with Node's permission model:
   `--permission` and `--allow-fs-read` for lean's sources, the trees of the two files and their `node_modules`.
 - A unit the parent does not hold runs through `exec/new-unit.mjs`, in a child started with
-  `--experimental-vm-modules` and **no permission model**.
+  `--experimental-vm-modules` and **no permission model** (until the section of 2026-10-30 below: it now takes the
+  worker's flags).
 
 ## What the probes measured (node v24.22.2, Linux 6.8)
 In the lane B worker (units the parent holds):
@@ -25,7 +26,7 @@ In the lane B worker (units the parent holds):
 |---|---|---|
 | `reachHost` | the real `process` through `Buffer.constructor` | reached |
 | `fileRead` | read `/etc/hostname` (outside the allowed trees) | `ERR_ACCESS_DENIED ... Use --allow-fs-read` |
-| `envRead` | `process.env` of the real process | **open**: 32 variables, readable |
+| `envRead` | `process.env` of the real process | **open**: 32 variables, readable (3 since the section on the children below) |
 | `fileWrite` | write a file in the temp folder | `ERR_ACCESS_DENIED ... Use --allow-fs-write` |
 | `childProcess` | `spawnSync('true')` | `ERR_ACCESS_DENIED ... Use --allow-child-process` |
 | `nativeAddon` | `process.dlopen` | `ERR_DLOPEN_DISABLED: Cannot load native addon because loading addons is disabled.` |
@@ -84,10 +85,64 @@ there the answer is the machine's, not the unit's.
 **What stays open, and why.**
 - `process.env` of the worker is readable by code that leaves the context. The permission model has no switch for it.
   The fix is to start the worker with a reduced environment (`fork`'s `env`). That is a change to what lean's own
-  reads see (`LEAN_*`, `NODE_OPTIONS`), and it is left to its own lane.
+  reads see (`LEAN_*`, `NODE_OPTIONS`), and it is left to its own lane. (Done: the section on the children below.)
 - A unit with no parent runs in a child without the permission model. There, the mode replaces the same JavaScript
   doors, but the raw bindings stay open, and its record says so (`lean's bindings only: this process runs without the
   permission model, so the raw bindings are not refused`). File writes and child processes are open there in both
-  modes. Giving `new-unit.mjs`'s child the worker's flags is the structural fix, left to its own lane.
+  modes. Giving `new-unit.mjs`'s child the worker's flags is the structural fix, left to its own lane. (Done: the
+  section on the children below.)
 - The deny holds against the unit's code, not against a hostile process. Containment of hostile code as a service is
   DA's (the gate's profile: an operating-system sandbox, a network namespace), never lean's.
+
+## 2026-10-30: the children of lane B hold the same sandbox
+**The reading.** Every process lean starts to run a unit's code holds the same sandbox: the permission model with the
+read trees of the unit's files (`workerFlags`), the network flag of the mode (`netFlags`), and only the environment
+variables lean's own code reads there (`workerEnv`: `LEAN_*`, `NODE_OPTIONS`, `PATH`, `HOME`, `XDG_CACHE_HOME`).
+- The lane B worker is forked with `workerEnv()` as its whole environment.
+- `exec/new-unit.mjs` starts its child with `workerFlags(opts)`, `--experimental-vm-modules` and `workerEnv()`. A
+  process runs a parentless unit itself only when it holds both vm modules and the permission model (that child, or a
+  caller already sandboxed); any other process, lean's command line included, hands the unit to the child. Before, the
+  test was vm modules alone, so a caller started with that flag would also have run the unit unsandboxed.
+- The existence check outside the read trees (the permission model throws where the run asks whether a path exists)
+  is one function, `absentOutsideReads` in `run.mjs`, installed by the worker and by new-unit.mjs's child.
+
+**Why it is sound.** The permission model has no switch for `process.env`: code that leaves the vm context reads the
+real process's. What the process is not given is what that code cannot read, so the environment is cut where the
+process starts. The variables kept are the ones lean reads in these processes: its own `LEAN_*` settings (the library
+table and cases, the worker heap, the CPU baseline, the network mode), `NODE_OPTIONS` (Node's own flags), `PATH`, and
+`HOME` and `XDG_CACHE_HOME`, from which `lower.mjs` derives its cache folder. Both sides of a unit run in the same
+process, so an answer read from the environment is the same on both sides before and after; the cut changes what a
+unit can see, never a comparison. The new-unit child reads what the worker reads: lean's sources, the tree of the
+candidate (the nearest folder holding `.git`, else its package root), a named `tsconfig.json`'s folder, and every
+`node_modules` folder from those trees up to the root, which is where TypeScript's and Node's resolution look.
+
+**The pairs.** `tests/pairs/sandbox_boundary`, lane B `envLeak`: the candidate answers the names of the worker's
+variables outside the kept set, the parent answers none. Before: WITNESS (every other variable of the caller was
+visible). After: PASS-bounded. `tests/pairs/new_unit`, `escape.ts` `escapes`: a unit no parent holds tries a file
+write, `spawnSync('true')`, `readdirSync('/')` and the environment, and throws naming each door that opened. Before:
+NEW with faults 30 of 30. After: NEW with faults 0.
+
+**The probe log** (`bash fixtures/sandbox/probe.sh`, regenerated in `sandbox-boundary-probes.txt`; `envRead` now
+answers the names, and `newUnitReach` also tries the read and the environment). The lines that changed, in both modes:
+
+```
+envRead       ok: 32 variables
+           -> ok: 3 variables: HOME LEAN_NET PATH
+newUnitReach  write ok; spawn ok (exit 0)
+           -> write ERR_ACCESS_DENIED ... Use --allow-fs-write ...; spawn ERR_ACCESS_DENIED ... Use --allow-child-process ...;
+              read / ERR_ACCESS_DENIED ... Use --allow-fs-read ...; env 3 variables: HOME LEAN_NET PATH
+newUnitNet, LEAN_NET=deny: record.sandbox.by
+              lean's bindings only: this process runs without the permission model, so the raw bindings are not refused
+           -> lean's bindings under the permission model (this Node has no --allow-net)
+```
+
+Every other probe line is unchanged.
+
+**What stays open, and why.**
+- The network in the open mode, in the new-unit child as in the worker (`newUnitNet` answers `connect ok`): this Node's
+  permission model has no network switch; `LEAN_NET=deny` closes it in both (`connect ERR_ACCESS_DENIED`).
+- The kept variables are readable, and their values are the caller's: a secret placed in a `LEAN_*` variable, in
+  `NODE_OPTIONS` or in `PATH` would be visible to the unit. The `LEAN_*` prefix passes every such variable the caller
+  sets, including ones only the suite or the command line reads; lean keeps no secret in any of them.
+- Reads inside the given trees stay open by design: the unit's own repository and its packages are what the run reads.
+- Containment of hostile code as a service stays DA's (an operating-system sandbox, a network namespace), never lean's.
