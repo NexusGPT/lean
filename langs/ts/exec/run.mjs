@@ -309,7 +309,7 @@ const callTimedOut = () => { crumb.timedOut++; tellCrumb(); }; // a call that hi
 // the unit's CPU slowdown is sampled at its start and at every input (a short spin, about 10 ms): a thread moves between
 // cores of different speed and shares them, so one sample at the start is not the unit's rate; the running mean is
 const rateSamples = [];
-const sampleContention = () => { const base = Number(process.env.LEAN_CPU_BASELINE); if (!(base > 0)) return; rateSamples.push(cpuRateNsPerIter(2_000_000, 3)); const mean = rateSamples.reduce((a, b) => a + b, 0) / rateSamples.length; crumb.contention = Math.min(FAR_GUARD, Math.max(1, mean / base)); };
+const sampleContention = () => { const base = Number(process.env.LEAN_CPU_BASELINE); if (!(base > 0)) return; rateSamples.push(cpuRateNsPerIter(2_000_000, 3)); const mean = rateSamples.reduce((a, b) => a + b, 0) / rateSamples.length; crumb.contention = Math.min(CONTENTION_CAP, Math.max(1, mean / base)); };
 const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; crumb.side = null; if (input !== null) sampleContention(); tellCrumb(); };
 export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
 // a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
@@ -945,7 +945,7 @@ export const UNIT_SECONDS = 120; // the bound of one unit when no flag and no ru
 // portable read of another process's time) and kills it past the bound. A wall bound FAR_GUARD times longer stays as
 // the far guard, for a child that burns no CPU and never answers; a host whose ps answers nothing keeps the wall bound
 // at the CPU bound, the old rule, said once on stderr.
-export const CPU_POLL_MS = 1000, FAR_GUARD = 10;
+export const CPU_POLL_MS = 1000, FAR_GUARD = 10, CONTENTION_CAP = 3; // CONTENTION_CAP: the largest CPU slowdown a shared or slower core can impose on a thread (an efficiency core runs at about a third of a performance core); a reading above it is the sampler disturbed, not the unit starved, and a unit that runs away would otherwise burn the whole stretched allowance (a spin test stretched six times ran 734 s)
 const cpuWatched = new Map(); // pid -> { bound (s), onSample, onBound, onUnavailable }
 let cpuPoll = null, psUnavailable = false;
 const psSeconds = (t) => { const [dd, rest] = t.includes('-') ? t.split('-') : ['0', t]; const parts = rest.split(':').map(Number); return Number(dd) * 86400 + parts.reduce((acc, x) => acc * 60 + x, 0); }; // mm:ss.cc (BSD) or [dd-]hh:mm:ss (procps)

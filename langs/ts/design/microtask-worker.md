@@ -90,3 +90,14 @@ The worker's heap is a quarter of the machine's memory, never below V8's default
 call allocates for its whole allowance (the chunking loop pushing empty slices reached 4 GB in 16 s), and an exhausted
 heap aborts the process, which loses the unit (ASK:harness, SIGABRT) where the per-call bound would have skipped one
 input.
+
+### The bound is stated for an idle core (2026-10-30)
+
+A CPU second buys less work when the thread shares a core or runs on a slower one. The suite measures the idle-core
+rate once before its pool starts (`cpuRateNsPerIter`, the median of five short integer spins read by this thread's CPU
+time) and hands it to every child as `LEAN_CPU_BASELINE`; each unit samples its own rate at its start and at every input
+and reports the running mean's ratio in its breadcrumb; the parent stretches the unit's allowance by that ratio and the
+ASK names it. The ratio is capped at `CONTENTION_CAP` (3): an efficiency core runs at about a third of a performance
+core, so a reading above that is the sampler disturbed, not the unit starved; without the cap a spin test stretched six
+times ran 734 s. Measured on the eleven-worker suite: with the stretch every verdict held (this_param bump, the self-pair
+counts), where the unstretched bound had flipped two rows under a load average of 150.
