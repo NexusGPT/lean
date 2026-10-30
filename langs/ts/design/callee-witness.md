@@ -27,7 +27,7 @@ own row: `(changed; its own row is WITNESS)`, or `(changed), whose own row is PA
 caller's inputs`. A caller whose text did not change meets no diff hunk, so `pr.mjs` also runs lane B alone on each
 unchanged unit of a changed file that reaches a changed unit, and adds its row only when that run is a WITNESS with
 `cause: 'callee'`. The callers come from one read of the file's call graph; their runs count against
-`maxUnits` (comment.mjs `--max-functions`), and the header says how many were checked.
+`--unit-budget` and `--time-budget`, and the header says how many were checked.
 
 ## What it does not claim, and soundness
 
