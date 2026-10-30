@@ -142,9 +142,10 @@ Dafny type. Each now gets the reading the earlier section sketched; `common.mjs`
 - **A same-file callee's parameter.** The callee is read once more for the call (`heldCall`, `heldVariantCall`): the
   parameters the call hands a held value are read at Any (`withHeldParams`: `assertionHeld` reads such a parameter as
   Any), the body is emitted under that reading as `<callee>_held_<i..>[_r]`, and the call applies it.
-- **A call of a same-file unit whose result is held.** The same reading: the result is Any when the body's result is
-  held under it (`returnsHeld` with the held parameters), so the call is held (Any) and its caller's operations on it
-  are operations on Any. The unit's own lemma keeps its declared signature; only the call reads the second text.
+- **A call of a same-file unit whose result is held.** The same reading: the result is held when the body's result is
+  held under it (`heldResultType` with the held parameters), at the one held literal type every return gives (its
+  unheld fields exact at the call), else at Any; the caller's operations on it are operations on that real value. The
+  unit's own lemma keeps its own signature; only the call reads the second text.
 - **A compound write.** `t += v` to a local is a write of the operation `t + v` (`writesOf`), held when either operand
   is, so the local's real type is Any and the write is the uninterpreted operator over Any the binary form reads
   (`heldCompound`: `+=`, `-=`, `*=`).
@@ -181,3 +182,22 @@ checker's type, not the held reading, so `(x as number) + 1` with `x: any` is re
 `Math.__lean_add` and lane A reads `1 + (x as number)` as the same term, where JavaScript gives "a1" and "1a". Lane B
 witnesses it, so `check.mjs` answers WITNESS; the lane A reading is wrong all the same. The structural fix: the
 rewrite's `isNum` reads `assertionHeld(checker, n) ?? checker type`.
+
+A hole closed on the way: a shorthand member `{ n }` was read through the property's symbol, not the local's, so a
+held local in a shorthand field was never seen as held and was converted to the field's declared type. `heldOf` now
+reads the local (`getShorthandAssignmentValueSymbol`); one census unit that entered through the hole is now refused
+(apps-ui `GalleryView`, whose callee returns a literal with a held shorthand field).
+
+Measured (`node langs/ts/census.mjs <root> --out lane/census-<root>-{before,after}.json`, `type-assertion` units in
+`refusalRules`; base 6421be639, after the lane's last code commit):
+| tree | before | after | entered before | entered after |
+|---|---:|---:|---:|---:|
+| agent-nexus | 193 | 189 | 1,635 | 1,643 |
+| blocks | 17 | 18 | 247 | 247 |
+| apps-ui | 169 | 162 | 861 | 860 |
+
+The fall is small because the literal fields (500 of the 600 refused nodes in agent-nexus) mostly sit in a literal
+handed to a method of a local made by an imported factory (`client.analytics.exportCsv({ ... })`): the literal is now
+held, and the refusal moves up to the call argument, which `importRooted` does not carry. Carrying a held value into
+such a call (a callee declared outside the file and not a library reading's) is the next lever. blocks' extra unit
+changes only its first refusal (a unit refused before by `callback-units`).
