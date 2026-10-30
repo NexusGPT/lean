@@ -1,0 +1,8 @@
+.git
+**/node_modules
+**/__pycache__
+**/.DS_Store
+.lean/cache
+results-bench
+harness-copy
+lane
