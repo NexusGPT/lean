@@ -385,27 +385,31 @@ export function enclosingTypeParameters(fn) {
   }
   return out;
 }
-// whether a type mentions a type parameter named in `names`: through union and intersection members, a reference's
+// a type parameter's declaration as a key (its file and position: a reparsed file keeps them), so a parameter is matched
+// by declaration, never by name: an inner `T` that hides an outer `T` is another parameter
+const typeParameterKey = (d) => d && `${d.getSourceFile().fileName}:${d.pos}`;
+// whether a type mentions a type parameter whose declaration's key is in `keys`: through union and intersection members, a reference's
 // type arguments (an array, a tuple, a Promise, an instantiated generic), an object's members and a signature's
 // parameters and result. A type is walked once.
-function typeMentions(checker, t, names, seen = new Set()) {
+function typeMentions(checker, t, keys, seen = new Set()) {
   if (!t || seen.has(t)) return false;
   seen.add(t);
-  if (t.flags & ts.TypeFlags.TypeParameter) return names.has(t.symbol?.name);
-  if (t.flags & ts.TypeFlags.UnionOrIntersection) return t.types.some((x) => typeMentions(checker, x, names, seen));
+  if (t.flags & ts.TypeFlags.TypeParameter) return keys.has(typeParameterKey(t.symbol?.declarations?.[0]));
+  if (t.flags & ts.TypeFlags.UnionOrIntersection) return t.types.some((x) => typeMentions(checker, x, keys, seen));
   if (!(t.flags & ts.TypeFlags.Object)) return false;
-  if (t.objectFlags & ts.ObjectFlags.Reference && checker.getTypeArguments(t).some((x) => typeMentions(checker, x, names, seen))) return true;
+  if (t.objectFlags & ts.ObjectFlags.Reference && checker.getTypeArguments(t).some((x) => typeMentions(checker, x, keys, seen))) return true;
   if (t.objectFlags & (ts.ObjectFlags.Anonymous | ts.ObjectFlags.Mapped)) {
-    for (const p of checker.getPropertiesOfType(t)) if (typeMentions(checker, checker.getTypeOfSymbol(p), names, seen)) return true;
+    for (const p of checker.getPropertiesOfType(t)) if (typeMentions(checker, checker.getTypeOfSymbol(p), keys, seen)) return true;
     for (const s of [...checker.getSignaturesOfType(t, ts.SignatureKind.Call), ...checker.getSignaturesOfType(t, ts.SignatureKind.Construct)]) {
-      if (s.getParameters().some((p) => typeMentions(checker, checker.getTypeOfSymbol(p), names, seen)) || typeMentions(checker, s.getReturnType(), names, seen)) return true;
+      if (s.getParameters().some((p) => typeMentions(checker, checker.getTypeOfSymbol(p), keys, seen)) || typeMentions(checker, s.getReturnType(), keys, seen)) return true;
     }
   }
   return false;
 }
 /**
  * A unit's type parameters, in the order its Dafny function declares them: the enclosing declarations' type parameters
- * the unit reads (the type of one of its nodes mentions it), outermost first, then its own. A method of `C<T>` that
+ * the unit reads (the type of one of its nodes, or the type a name of it declares, mentions that very declaration),
+ * outermost first, then its own. A method of `C<T>` that
  * reads `T` is parametric in `T` as `f<T>` is: each caller fixes `T` once for the call, so a proof over an arbitrary `T`
  * holds at each instance. One that never reads `T` keeps its reading unchanged.
  */
@@ -415,20 +419,21 @@ export function unitTypeParameters(checker, u) {
   const own = [...(u.generics ?? [])], outer = enclosingTypeParameters(u.fn);
   let read = [];
   if (outer.length) {
-    const names = new Set(outer.map((g) => g.name.text)), found = new Set();
+    const keys = outer.map((g) => typeParameterKey(g)), found = new Set();
     const visit = (n) => {
-      if (found.size === names.size) return;
+      if (found.size === keys.length) return;
+      if (n.kind === ts.SyntaxKind.SuperKeyword) return; // the receiver, as `this` is: what the unit reads of it is the names it reads on it
       // a node's type, and for a name the type its symbol declares: `this.type` is typed at its constraint where it is
       // read, while the translator reads the field's declared type (`type: TRole`) through its accessor
       const sym = ts.isIdentifier(n) || ts.isPrivateIdentifier(n) ? checker.getSymbolAtLocation(n) : undefined;
       const types = [checker.getTypeAtLocation(n), ...(sym && !(sym.flags & ts.SymbolFlags.Alias) ? [checker.getTypeOfSymbol(sym)] : [])];
-      for (const nm of names) if (!found.has(nm) && types.some((t) => typeMentions(checker, t, new Set([nm])))) found.add(nm);
+      for (const k of keys) if (!found.has(k) && types.some((t) => typeMentions(checker, t, new Set([k])))) found.add(k);
       ts.forEachChild(n, visit);
     };
     visit(u.fn);
     // a constructor also runs its class's instance field initialisers (`items: T[] = []`)
     if (ts.isConstructorDeclaration(u.fn)) for (const m of u.fn.parent.members) if (ts.isPropertyDeclaration(m) && m.initializer && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword)) visit(m);
-    read = outer.filter((g) => found.has(g.name.text));
+    read = outer.filter((g) => found.has(typeParameterKey(g)));
   }
   const all = [...read, ...own];
   unitTypeParametersOf.set(u, all);
