@@ -1,8 +1,7 @@
 # Causes lane: missed-mutation classes (2026-10-30, branch lane/causes)
 
-Battery v7 missed 23 planted mutants. Its cause column said "to read" for 20, so I classified them from the units.
-I replayed soundness.py's lane B step (mutate.mjs, then run.mjs --n 60) for the 23 rows only, by a script of my own.
-The baseline is this worktree's base f3cb5b41; "after" is head afa1c0f1. Outputs are in lane/battery-*.json.
+Battery v7 missed 23 mutants; I classified them from the units and replayed soundness.py's lane B step for those rows.
+Baseline is base f3cb5b41, "after" is afa1c0f1 (outputs: lane/battery-*.json).
 
 ## Battery delta per class (23 rows)
 | class | rows | witnessed at base | witnessed after | still missed |
@@ -18,11 +17,9 @@ The baseline is this worktree's base f3cb5b41; "after" is head afa1c0f1. Outputs
 
 ## Changes, one commit each, each with a pair red before and green after
 - **Fake recursion.** Past 40 nested callbacks the fake runs no further callback it is handed, so the tree ends there.
-  Before, every input threw a budget and lane B answered ASK on both sides. Pair cause_fake_recursion goes from 2 ASK to WITNESS and PASS-bounded.
-  Files: exec/fake.mjs, design/fake-recursion.md.
+  Pair cause_fake_recursion: 2 ASK become WITNESS and PASS-bounded. Files: exec/fake.mjs, design/fake-recursion.md.
 - **Full-world input.** Every eighth generated input from the fourth on is a full-world input.
-  On it every untyped world read answers a handle, and a field named like a primitive the caller passed holds that value.
-  On it a handle read as a list also holds 1, 2 or 3 elements by turn.
+  Every untyped world read answers a handle, a field named like a caller's primitive holds it, a list holds 1 to 3 elements.
   Pair cause_world_reach: 3 units go from PASS-bounded to WITNESS, only on those inputs; LEAN_WORLD=off brings back PASS-bounded.
   Files: exec/gen.mjs, exec/fake.mjs, exec/run.mjs, design/world-reach.md.
 - **Callee patterns.** The regular expressions of every local file whose function the unit calls join the string pool, after the unit's own file.
