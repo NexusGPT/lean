@@ -1617,7 +1617,9 @@ function translateOnce(file, fnName, opts = {}) {
   // binary64, so no unit is made opaque for a -0 it may produce (the opaque reading of design/signed-zero.md is lifted)
   if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
-  const symType = (sym, n) => { const vd = sym?.valueDeclaration, held = vd && ts.isVariableDeclaration(vd) && ts.isIdentifier(vd.name) ? assertionHeld(checker, vd.name) : null; if (held) return held; return checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n); }; // a local holding a value whose type nothing checked has its real type, as typeOf reads it
+  // a parameter held under a second reading of its callee (withHeldParams) is Any to its declaration as to its reads: the
+  // storage type and the read type come from one decision (assertionHeld), so no read converts between them
+  const symType = (sym, n) => { const vd = sym?.valueDeclaration, held = vd && (ts.isVariableDeclaration(vd) || ts.isParameter(vd)) && ts.isIdentifier(vd.name) ? assertionHeld(checker, vd.name) : null; if (held) return held; return checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n); }; // a local holding a value whose type nothing checked has its real type, as typeOf reads it
 
   // ----- externals -----
   const unitTParams = () => (currentUnit?.generics ?? []).map((g) => dn(g.name.text));
