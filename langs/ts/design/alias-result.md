@@ -58,3 +58,37 @@ with `--heap --tolerant` prints an empty `// HEAP:` header for each of their 21 
 * `langchainjs/libs/langchain-core/src/tracers/base.ts:364`: `run.end_time = ...` through `this.getRunById(id)`: refused.
 * `nutshell/adapters/claude-cli/src/live/ndjson-splitter.ts:42`: `this.joined(n)` returns a local `new Uint8Array`
   filled by `bytes.set(piece, k)` with `piece` a field's element: not fresh by this rule (a precision loss: `set` copies).
+
+## 2026-10-30: a read after a call that may change the object (read-after-call)
+
+`const f = e; e.preventDefault(); return f.defaultPrevented`. A call that runs outside code (a method of an any
+value, a call of a function value, an import, a same-file effectful unit, an `await`) may write any object it can
+reach. JavaScript reads a field after the call from the object as the call left it (SEMANTICS.md, "aliasing counts").
+The ordinary lane threads the world through the call (`var (wld, t0_) := ext_call_args_Any_preventDefault_World_Any(wld, e)`)
+but reads a field without the world (`ext_Any_defaultPrevented_Any(f)`, `p.x`, `ext_Ext_C_x_Ext_C(self)`), so the read
+takes the object as it was before the call. A candidate that reads the field first is then the same term, and lane A
+proved four such pairs equal (pair `alias_after_call` at 9f26c1ed). The lint's `opaque-mutation` catches only a later
+read with the receiver's own text (`e.m(); e.x`).
+
+The rule (`translate.mjs readAfterCall`, before `emitUnit`, the ordinary lane only; the heap core reads cells by
+identity): the run hands the outside every receiver, argument and called function value of such a call. Following
+the assumption `hash-keys.md` states for code (the outside runs code only through values this run hands it), a call
+may reach an object that is, or is reachable by type from, a handed value. An any or unknown value reaches anything
+(it may be any object). A function value, or a method of a handed object, reaches what it is handed: its arguments and
+its receiver, which are handed values themselves (`f(p)` reaches `p`; `bus.emit(topic, x)` with string arguments
+reaches what `bus` holds by type, not a `readonly string[]` the unit reads). Only names the unit's own file declares
+are such objects (a lib namespace such as `Math` is not); a for-of or for-in header runs once, so it does not repeat
+with a call in the loop body. A use of such an object after such a call (in text order, or in one loop
+with it) is refused `read-after-call` when it reads the object without the world: a field or element read, a library
+method, a copy, a spread, a field of a literal, the unit's result. Kept: the object handed on to a call that threads
+the world (a receiver, an argument), an alias (`const g = f`, which takes the source's start), `typeof`, `===`,
+`instanceof`, a truth test, an any value returned as it is (a handle), and a local the unit made from a literal of
+primitive fields that is only read and written with primitives (never handed, never aliased). A local bound to a
+call's result counts its calls from its own binding. Clock and random reads run no code and are not such calls.
+
+Pair `alias_after_call`: aliased, otherAny, typedAlias and passed are ASK `read-after-call` (they were PASS-proved);
+freshAfter is proved. The refusal stops the file, so the pair reads lane A unit by unit through check.mjs.
+
+Open: the cost is not measured on the census, and `this.x` after a call is refused whenever a handed value may reach the
+receiver's class. Reading such a field through the world (a read that takes the world after the call) would keep
+these units, and is the follow-up.
