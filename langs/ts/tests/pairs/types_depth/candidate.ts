@@ -34,4 +34,4 @@ export function hasGrandchild(t: Tree): boolean { return Object.keys(t).length >
 // form 3 through a generic callable: a stream returns its head and the rest of itself
 export type Stream<T> = () => [T, Stream<T>];
 export function second(s: Stream<string>): string { const rest = s()[1]; return rest()[0]; }
-export function secondChanged(s: Stream<string>): string { return s()[1]()[1]()[0]; }
+export function secondChanged(s: Stream<string>): string { const rest = s()[1]; const after = rest()[1]; return after()[0]; }
