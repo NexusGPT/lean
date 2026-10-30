@@ -1,0 +1,6 @@
+{
+ "scope": ["aliased", "other_any", "typed_alias", "passed", "fresh_after"],
+ "equal": { "aliased": false, "other_any": false, "typed_alias": false, "passed": false, "fresh_after": true },
+ "why": "TBD",
+ "b": { "aliased": "WITNESS", "otherAny": "WITNESS", "typedAlias": "PASS-bounded", "passed": "PASS-bounded", "freshAfter": "PASS-bounded" }
+}
