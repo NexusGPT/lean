@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: install dafny, the image's pinned toolchain (Dockerfile: the same release zip, the same bundled Z3 on PATH)
+      - name: install the pinned dafny and z3 of the image (the Dockerfile's release zip and bundled solver)
         env:
           DAFNY_VERSION: "4.11.0"
           DAFNY_SHA256: a46a9ff7cdd720f7955854c78e95df13f4cfe6b80691b05f8654fe19e8267179
