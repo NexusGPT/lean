@@ -570,6 +570,8 @@ if (translatorCrashes.stderr) process.stderr.write(translatorCrashes.stderr);
 add('runtime', 'translator-crashes', 'node shapes read without translator crashes', translatorCrashes.status === 0, `exit ${translatorCrashes.status}: ${translatorCrashes.stdout.trim()}`);
 const listing = run('node', [path.join(here, 'unit-listing.mjs')]); // a module literal's member is named by the path code reaches it by; a same-named class keeps its own units (design/exported-units.md)
 add('runtime', 'unit-listing', 'a class and an exports-property literal sharing a name list two units, each refusal attributed to its own', listing.status === 0, (listing.stdout + listing.stderr).trim().split('\n').pop());
+const linked = run('node', [path.join(here, 'linked-dependencies.mjs')]); // lane B's child reads the node_modules folders module resolution visits, a link out of the tree included (exec/run.mjs workerReads)
+add('runtime', 'linked-dependencies', 'a declaration behind a node_modules link out of the tree reaches the lane B child', linked.status === 0, (linked.stdout + linked.stderr).trim().split('\n').pop());
 const sealed = run('node', [path.join(here, 'sealed-assumption.mjs')]); // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
 add('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', sealed.status === 0, (sealed.stdout + sealed.stderr).trim().split('\n').pop());
 
