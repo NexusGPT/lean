@@ -1,0 +1,1 @@
+{ "name": "convert-async-foreach-external", "private": true, "type": "module", "dependencies": { "ext-db": "1.0.0" } }

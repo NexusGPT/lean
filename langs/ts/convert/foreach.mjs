@@ -13,7 +13,7 @@
 // list), the callback is a synchronous arrow with plain parameters it never assigns, and a bare `return;` in the
 // body (the end of one step) is not inside a nested loop or switch, where it becomes `continue;`. A receiver that is
 // not a name is read once into a fresh local first, as forEach reads it once. A Map or Set forEach, an async
-// callback, a `return <value>`, a three-parameter callback: listed for a person.
+// callback, a `return <value>`, a three-parameter callback, a list bound from an await: listed for a person.
 import { ts, K, src, unparen, indentAt, statementOf, freshName, usesOf, symbolOf, isWritten, excludesUndefined, contains, purePath, sameTree, rootOf } from './util.mjs';
 
 const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'fill', 'copyWithin', 'length']);
@@ -35,6 +35,13 @@ export default {
     if (!(checker.isArrayType(rt) || checker.isTupleType(rt))) return { list: 'the receiver is not typed as an array (a Map or Set forEach passes the key, not an index)' };
     const elementType = checker.getIndexTypeOfType(rt, ts.IndexKind.Number) ?? checker.getTypeArguments(rt)?.[0];
     if (!elementType || !excludesUndefined(elementType)) return { list: 'the element type holds undefined: a hole and an undefined element would read alike' };
+    // a list bound from an await: its array type is the claim of whatever produced the promise, and an `as` there
+    // (a database row set typed by assertion) is checked by nothing; on a value that is not an array, forEach and an
+    // indexed loop read it differently (pyka src/server/alert-data.ts: a WITNESS; tests/fixtures/convert_async_foreach)
+    const awaitedRoot = ts.isIdentifier(recv) ? recv : rootOf(recv);
+    let decl = awaitedRoot && symbolOf(checker, awaitedRoot)?.valueDeclaration;
+    while (decl && ts.isBindingElement(decl)) decl = decl.parent?.parent;
+    if (decl && ts.isVariableDeclaration(decl) && decl.initializer && (ts.isAwaitExpression(unparen(decl.initializer)) || contains(decl.initializer, (x) => ts.isAwaitExpression(x)))) return { list: `the list \`${awaitedRoot.text}\` comes from an await: its array type is a claim of the promise's producer that nothing checks, and forEach and an indexed loop read a value that is not an array differently` };
     const [xp, ip] = cb.parameters;
     // the parameters are never assigned in the body: in the loop they are a const and the counter
     for (const p of cb.parameters) for (const u of usesOf(checker, symbolOf(checker, p.name), cb.body)) if (isWritten(u)) return { list: `the callback assigns its parameter \`${p.name.text}\`` };
