@@ -2,17 +2,22 @@
  "scope": [
   "hand",
   "honest",
-  "twice"
+  "twice",
+  "helper",
+  "via_helper"
  ],
  "equal": {
   "hand": false,
   "honest": true,
-  "twice": false
+  "twice": false,
+  "helper": true,
+  "via_helper": false
  },
- "why": "A record copy is another object than its source. The value reading reads `{ ...p }` as `Copy_Box(p)`, whose body is `p`, so `g({ ...p })` and `g(p)` handed the outside one term and lane A proved hand (`g(p)` against `g({ ...p })`) equal; in JavaScript a g that writes its argument changes p in the parent only, which the observation of p after the call sees (SEMANTICS.md: reachable mutation). Now an object handed to a call that threads the world is classified by identity (translate.mjs identityOf, handedArg; design/alias-result.md 2026-10-30): an existing one (a parameter, a member read, an outside answer) is handed as itself, a fresh one (a literal, new, a copy) as the uninterpreted handed_fresh_<T>(v, k), k its allocation site's order among the sites the unit hands. hand: p against handed_fresh_Box(Copy_Box(p), 0), not proved. honest makes the copy, computes from it before the call and never reads p afterwards: both sides hand handed_fresh_Box(Copy_Box(p), 0), proved. twice hands one copy twice against two copies made before the calls, sites 0, 0 against 0, 1, which a g keeping its first argument tells apart: not proved. Lane B passes all three: its fake g neither writes nor keeps what it is handed.",
+ "why": "A record copy is another object than its source. The value reading reads `{ ...p }` as `Copy_Box(p)`, whose body is `p`, so `g({ ...p })` and `g(p)` handed the outside one term and lane A proved hand (`g(p)` against `g({ ...p })`) equal; in JavaScript a g that writes its argument changes p in the parent only, which the observation of p after the call sees (SEMANTICS.md: reachable mutation). Now an object handed to a call that threads the world is classified by identity (translate.mjs identityOf, handedArg; design/alias-result.md 2026-10-30): an existing one (a parameter, a member read, an outside answer) is handed as itself, a fresh one (a literal, new, a copy) as the uninterpreted handed_fresh_<T>(v, k), k its allocation site's order among the sites the unit hands. hand: p against handed_fresh_Box(Copy_Box(p), 0), not proved. honest makes the copy, computes from it before the call and never reads p afterwards: both sides hand handed_fresh_Box(Copy_Box(p), 0), proved. twice hands one copy twice against two copies made before the calls, sites 0, 0 against 0, 1, which a g keeping its first argument tells apart: not proved. Lane B passes all three: its fake g neither writes nor keeps what it is handed. viaHelper hands p, or a copy of it, to a same-file helper that hands its parameter to g: the arguments of a same-file call that threads the world go through handedArg too, so the copy reaches helper as handed_fresh_Box(Copy_Box(p), 0): not proved (it was proved at 1ffceb9b); helper is untouched: proved.",
  "b": {
   "hand": "PASS-bounded",
   "honest": "PASS-bounded",
-  "twice": "PASS-bounded"
+  "twice": "PASS-bounded",
+  "viaHelper": "PASS-bounded"
  }
 }

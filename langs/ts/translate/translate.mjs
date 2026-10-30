@@ -3931,7 +3931,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       }
       if (!a) { if (p.questionToken) { usesOption = true; out.push(missingD(dtype(pt, p))); return; } fail(n, `${callee.name} needs ${callee.params.length} arguments`); }
       if (p.questionToken && dtype(typeOf(p.name), p) === 'Any') { out.push(isAny(typeOf(a)) ? liftAny(expr(a, pt), 'Option<Any>') : `Some(${outerParens(expr(a, pt))})`); return; } // an optional any parameter is an Option<Any> slot
-      out.push(expr(a, pt));
+      out.push(effectfulUnits.has(callee.name) ? handedArg(a, expr(a, pt), dtype(pt, a)) : expr(a, pt)); // a callee that threads the world may hand its argument on: a fresh one keeps its identity (handedArg)
     });
     return out;
   }
