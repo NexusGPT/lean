@@ -3,9 +3,10 @@ import { touch } from 'lib';
 export type Box = { x: number; y: number };
 export type Counter = { n: number; bump(): void };
 
-export function anyMethod(ev: any, other: any): number {
-  ev.bump();
-  const v = other.x;
+// the names of the any parameters kept: check.mjs compares the reads of an any value by its name
+export function anyMethod(e: any, g: any): number {
+  e.bump();
+  const v = g.x;
   return v;
 }
 

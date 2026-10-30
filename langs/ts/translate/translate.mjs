@@ -764,7 +764,7 @@ function translateOnce(file, fnName, opts = {}) {
   let callbackBody = 0; // while a pure callback's block body is read
   function wrapRet(code) {
     if (callbackBody) return code; // a callback's return is its own value: the unit's world, mutated parameters and slots stay outside it, read by the closure as they are when the callback runs
-    const outs = currentUnit ? mutatedOf(currentUnit).map(dn) : [];
+    const outs = currentUnit ? mutatedOf(currentUnit).map((m) => { if (!worldEnd?.has(m)) return dn(m); const pr = currentUnit.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m); return worldNow(dn(m), dtype(typeOf(pr.name), pr)); }) : []; // an output a call may reach leaves as the world holds it
     const parts = [...(unitEffectful() ? [WORLD] : []), outerParens(code), ...outs, ...(currentSlots ? [`${currentSlots.T}(${Array.from({ length: currentSlots.n }, (_, i) => `init${i}_`).join(', ')})`] : [])];
     return parts.length === 1 ? code : `(${parts.join(', ')})`;
   }
@@ -1662,6 +1662,27 @@ function translateOnce(file, fnName, opts = {}) {
   // elements are primitives (an object inside it is an identity this reading does not hold) and its site is not
   // repeated by a loop of the unit (every pass makes another object): else refused
   let handedSites = new Map();
+  // A field read after a transition is a world read (design/alias-result.md, 2026-10-30 world read). common.mjs
+  // readAfterCall puts each occurrence of an object a call before it may reach, in a world form, into worldAfter: a read
+  // `x.f` reads `ext_now_<T>(wld, x)`, the object as the world holds it at that point of the run, bound in the run's
+  // order (pending); a write `x.f = v` rebuilds that object with the new field; an output parameter a call may reach
+  // leaves as the world holds it (worldEnd). x names the object: a parameter, `this`, an alias of one, the answer of an
+  // outside call, as identityOf names an existing object handed to a call. Every recorded form is read here (worldUsed)
+  let worldAfter = null, worldEnd = null, worldUsed = null;
+  function worldNow(code, d) {
+    addPrelude('World', 'type World');
+    if (d.startsWith('Option<') && d.endsWith('>')) { const inner = d.slice(7, -1); return `(if ${code}.Some? then Some(${external('now', ['World', inner], inner)}(${WORLD}, ${code}.value)) else None)`; } // an absent value stays absent
+    return `${external('now', ['World', d], d)}(${WORLD}, ${code})`;
+  }
+  function nowOf(x) { // the object x names, as the world holds it now, bound to a fresh name in the run's order
+    let name, d;
+    if (x.kind === K.ThisKeyword) { name = SELF; d = selfType(currentUnit); }
+    else { const sym = checker.getSymbolAtLocation(x); name = dn(x.text); d = letTypeOf(sym) ?? dtype(symType(sym, x), x); }
+    const t = `nw${tempCount++}_`;
+    return { name, t, line: `var ${t} := ${worldNow(name, d)};` };
+  }
+  const renameIn = (code, from, to) => code.replace(new RegExp(`(?<![\\w.'?])${from.replace(/[$]/g, '\\$&')}(?![\\w'?])`, 'g'), to);
+  const worldBase = (n) => { let e = n.expression; while (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression; return e; };
   const FRESH_CALLS = new Set(['structuredClone', 'JSON.parse', 'Array.from', 'Array.of', 'Object.fromEntries', 'Object.keys', 'Object.values', 'Object.entries']);
   const FRESH_METHODS = new Set(['slice', 'map', 'filter', 'concat', 'flat', 'flatMap', 'toSorted', 'toReversed', 'toSpliced', 'with', 'split']);
   const EXISTING_METHODS = new Set(['find', 'findLast', 'at', 'get', 'pop', 'shift']);
@@ -3525,6 +3546,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
   const elemType = (arrNode) => { const t = baseOf(typeOf(arrNode)); return checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); };
   function propAccess(n, keepOption = false) {
+    { const b = worldBase(n); if (worldAfter?.get(b) === 'read' && !n.__worldNow) { // a field read after a call that may change the object: of the object as the world holds it now
+      worldUsed.add(b); const now = nowOf(b);
+      n.__worldNow = true; let parts; try { parts = captureParts(() => propAccess(n, keepOption)); } finally { n.__worldNow = false; }
+      pending.push(now.line, ...parts.lines.map((l) => renameIn(l, now.name, now.t)));
+      return renameIn(parts.text, now.name, now.t);
+    } }
     { const mm = execMatchMember(n, checker); if (mm) return mm.name === 'input' ? expr(mm.arg) : `${external('regex_index', ['Ext_RegExp', 'string'], NUM)}(${expr(mm.regex)}, ${outerParens(expr(mm.arg))})`; } // the place of a match of a non-global regular expression: a function of the pattern and the string
     { const rb = hookBinding(n.expression); if (rb && !rb.field && Object.hasOwn(rb.row.result, n.name.text) && !rb.row.result['*']) return `${expr(n.expression)}.${n.name.text}`; } // a field of a hook result: the table's datatype
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
@@ -4874,7 +4901,9 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (!ts.isIdentifier(root) && !field && !ownThis) fail(target, 'receiver-mutation: a receiver path needs nonoptional data records');
       const rootName = ownThis ? 'this' : root.text;
       if (ts.isIdentifier(root) && loopElementBinding(checker, root, isLoopCallback)?.valueElement) fail(target, `alias-mutation: \`${root.text}\` is the element a loop or an array callback walks; this reading copies it, so a write through it would be lost: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); // a dropped write is never silent
-      const rootCode = field ? expr(field) : dn(rootName);
+      const nowRoot = ts.isIdentifier(root) && chain.length === 1 && worldAfter?.get(root) === 'write' ? nowOf(root) : null; // a write after a call that may change the object: the object as the world holds it, read after the value is
+      if (nowRoot) worldUsed.add(root);
+      const rootCode = field ? expr(field) : nowRoot ? nowRoot.t : dn(rootName);
       const rootT = field ? typeOf(field) : typeOf(root);
       if (!chain.length) { // a local declared optional and narrowed here (`if (l) l.push(x)`): its value is changed inside the Some
         const sym = ts.isIdentifier(root) ? checker.getSymbolAtLocation(root) : null;
@@ -4901,6 +4930,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         return `${recvCode}.(${dn(fname_)} := ${inner})`;
       };
       const value = build(0, rootCode, rootT);
+      if (nowRoot) pending.push(nowRoot.line);
       if (field) { const d = dtype(rootT, field); hoist(`${worldFieldAccessor(field, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit'); return null; }
       return [rootName, value, root];
     }
@@ -6398,6 +6428,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   function emitUnit(u) {
     currentUnit = u;
     handedSites = new Map(); // the fresh objects a unit hands are numbered from its own start
+    worldAfter = null; worldEnd = null; worldUsed = null;
     { const why = callbackUntypedJsUnit(sf, u, checker); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
@@ -6439,8 +6470,10 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && partsPrim(typeOf(id.site)); } }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
-        body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
+      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && partsPrim(typeOf(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+        body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
+        if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
+      }
       catch (e) { if (!(e instanceof Unsupported) || !moduleShape.reads || !eff || u.isCtor) throw e; pending = savedPending; coreHelpers.length = savedHelpers; usedModuleOpaque = true; body0 = opaqueModuleBody(u); }
       const cleared = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
       const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;
