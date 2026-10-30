@@ -70,7 +70,7 @@ import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits a
 import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { sealedMember } from '../common.mjs'; // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
-import { typeAssertion, assertionHeld, erasedReferenceSlot } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
+import { typeAssertion, assertionHeld, erasedReferenceSlot, heldRecord, heldField, heldCall, withHeldParams } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
 import { callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList, formatUnitList } from '../common.mjs'; // a callback unit's captured inputs and its contextual types; a finding's unit; the one unit-list parser and its inverse
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -182,6 +182,8 @@ function translateOnce(file, fnName, opts = {}) {
   const recursiveUnits = new Set();
   const FUEL = 'fuel';
   let currentUnit = null;
+  const heldVariants = new Set(); // the names of the units read once more at Any (heldVariantCall)
+  let variantMode = null; // { u, held: Set of parameter declarations, result, suffix } while such a reading is emitted
   function collect(u) {
     if (order.includes(u)) return;
     if (visiting.has(u)) { for (let i = visitStack.lastIndexOf(u); i < visitStack.length; i++) recursiveUnits.add(visitStack[i].name); return; } // a cycle: every unit on it takes fuel
@@ -1490,7 +1492,9 @@ function translateOnce(file, fnName, opts = {}) {
       addPrelude(name, primitiveBrand(t) ? `type ${name}(==)` : `type ${name}`); // a branded primitive's value is the primitive: equality is its own
       return name;
     }
-    const fields = props.map((p) => ({ name: p.name, type: checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional) })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    const heldLit = heldRecord(checker, t); // a literal holding a held value: each held field at its real type (Any for an opaque one), so no field converts it to the declared type
+    const fields = props.map((p) => { const real = heldLit ? heldField(checker, p) : null; return { name: p.name, type: real ?? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional), held: !!real }; }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    if (heldLit) name = `Held_${hash(fields.map((f) => `${f.name}:${f.held ? '!' + dtype(f.type, n, depth + 1) : checker.typeToString(f.type)}`).join(','))}`; // named by its real field types: never one datatype with a literal of the same declared fields
     if (t.symbol?.declarations?.some((d) => ts.isBindingElement(d) && d.dotDotDotToken)) name = `Rest_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     if (literalRecord(t)) name = `Literal_${hash(fields.map((f) => f.name + ':' + checker.typeToString(f.type)).join(','))}`;
     // a record's name carries its field types as well as their names (as Literal_ and Rest_ do): two records with the
@@ -2194,6 +2198,15 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     pending.push(`var ${name} := ${outerParens(code)};`);
     return name;
   }
+  // a compound write `t op= v` to a local whose real type is Any (common.mjs assertionHeld: a held value reaches it):
+  // the operation on the real values, the uninterpreted operator over Any the binary form reads (`t + v` on Any); null
+  // for any other compound write, read by the target's own operator
+  function heldCompound(e) {
+    if (!ts.isIdentifier(e.left) || !isAny(typeOf(e.left))) return null;
+    const names = { [K.PlusEqualsToken]: 'plus', [K.MinusEqualsToken]: 'minus', [K.AsteriskEqualsToken]: 'times' }, nm = names[e.operatorToken.kind];
+    if (!nm) fail(e, 'a compound write other than +=, -=, *= to a local holding a value whose type nothing checked is not translated');
+    return (cur, right) => { const A = anyType(); return `${external(`op_${nm}_Any`, [A, A], A)}(${cur}, ${expr(right, anyTarget())})`; };
+  }
   function operatorValue(n) {
     if (!core) fail(n, 'value updates need --core');
     const update = isUpdate(n), target = update ? n.operand : n.left;
@@ -2216,7 +2229,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     const rhs = update ? (typeOf(target).flags & TF.BigIntLike ? '1' : one()) : expr(n.right);
     const symbol = update ? (op === K.PlusPlusToken ? '+' : '-') : op === K.PlusEqualsToken ? '+' : op === K.MinusEqualsToken ? '-' : op === K.AsteriskEqualsToken ? '*' : null;
     if (!update && valueAssignmentWhy(op)) fail(n, `assignment-expression: ${valueAssignmentWhy(op)}`); // one decision with the lint (lower.mjs)
-    const value = valueBind(symbol ? `${old} ${symbol} ${rhs}` : rhs);
+    const value = valueBind(!update && heldCompound(n) ? heldCompound(n)(old, n.right) : symbol ? `${old} ${symbol} ${rhs}` : rhs);
     const storedAs = (d) => convertToD(value, typeOf(n), d, n);
     const moduleDecl = moduleState(checker, target, sf), staticDecl = staticCell(target);
     if (moduleDecl) {
@@ -3028,9 +3041,16 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       return `${external('method_value', [d, 'string', 'seq<Any>'], d)}(${opaque}, ${strEsc(Buffer.from(text).toString('hex'))}, [${captured.join(', ')}])`;
     } finally { objectData = prev; }
   }
-  function objectLit(n, expected) {
+  function objectLit(n, expected, own = false) {
     { const pp = n.properties.find(literalProtoMember); if (pp) fail(pp, 'prototype: `__proto__:` in a literal sets the prototype, not a key'); }
     for (const p of n.properties) if (ts.isSpreadAssignment(p)) { const cs = copySource(checker, p.expression, p); if (cs.kind === 'refuse') fail(p, `spread-source: ${cs.why}`); } // a copy carries everything its source carries (common.mjs copySource, one test with the lint)
+    if (!own && heldRecord(checker, typeOf(n))) {
+      // a literal holding a held value (common.mjs heldLiteral): built at its own record type, the held field Any in its
+      // datatype; it reaches a slot of the declared type only where a held value is carried (the unit's result, an
+      // outside call), by the one uninterpreted conversion both sides apply (convertToD asks typeAssertion)
+      const t = typeOf(n), code = objectLit(n, t, true), ctx = expected ?? checker.getContextualType(n);
+      return ctx && !isAny(ctx) ? convertToD(code, t, dtype(isOptional(ctx) ? baseOf(ctx) : ctx, n), n) : code;
+    }
     if (literalRecord(typeOf(n))) {
       const t = typeOf(n), d = dtype(t, n), fields = new Map();
       for (const p of n.properties) if (!ts.isMethodDeclaration(p) && !ts.isGetAccessorDeclaration(p)) {
@@ -3048,7 +3068,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     let recT = ctx && !isOptional(ctx) ? ctx : null;
     if (ctx && isOptional(ctx)) recT = baseOf(ctx);
     const first = n.properties[0];
-    if (first && ts.isSpreadAssignment(first)) recT = typeOf(first.expression);
+    if (first && ts.isSpreadAssignment(first) && !own) recT = typeOf(first.expression);
     if (!recT || !isRecordish(recT)) recT = typeOf(n);
     const rname = dtype(recT, n);
     if (rname.startsWith('Ext_') || rname === 'Any') {
@@ -3092,7 +3112,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (pieces.length) { if (entries.length) pieces.push(`map[${entries.join(', ')}]`); const ps = pieces.filter(Boolean); return ps.length === 1 ? ps[0] : ps.map((x) => `(${x})`).join(' + '); }
       return entries.length ? `map[${entries.join(', ')}]` : `map[]`;
     }
-    const propT = (name) => { const p = checker.getPropertyOfType(recT, name); return p ? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : (checker.getIndexInfoOfType(recT, ts.IndexKind.String)?.type ?? undefined); }; // an undeclared key of an open record takes the index type
+    const propT = (name) => { const p = checker.getPropertyOfType(recT, name); return p ? (own && heldField(checker, p)) || checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n) : (checker.getIndexInfoOfType(recT, ts.IndexKind.String)?.type ?? undefined); }; // an undeclared key of an open record takes the index type
     const propOpt = (name) => { const p = checker.getPropertyOfType(recT, name); return !!p && !!(p.flags & ts.SymbolFlags.Optional); };
     const keyOf = (p) => (ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf).replace(/^["']|["']$/g, ''));
     const fieldCode = (key, valueNode) => {
@@ -3126,7 +3146,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     const fields = []; const splits = []; // a field is [key, code]; a split stands at a field slot, one branch per member
     { const why = spreadReadWhy(checker, n); if (why) fail(n, `spread-source: ${why}`); } // common.mjs spreadReadWhy
-    if (n.properties.some((p, i) => ts.isSpreadAssignment(p) && i > 0)) {
+    if (n.properties.some((p, i) => ts.isSpreadAssignment(p) && (i > 0 || own))) { // a held literal with a spread: its own datatype is no source's, so the construction is uninterpreted too
       // a spread after other members, or two spreads: one uninterpreted construction of the member values in source
       // order, keyed by the layout (the names, `...` for a spread); each source enters whole, its rest included, so two
       // literals of one layout over equal values are equal and any other pair is never proved equal (open-datatype.md)
@@ -3138,7 +3158,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         vals.push(expr(v)); types.push(dtype(typeOf(v), v));
       }
       const layout = n.properties.map((p) => (ts.isSpreadAssignment(p) ? '...' : ts.isPropertyAssignment(p) && ts.isComputedPropertyName(p.name) ? '[]' : keyOf(p))).join(',');
-      let litT = expected ?? checker.getContextualType(n) ?? typeOf(n); if (isOptional(litT)) litT = baseOf(litT); if (!isRecordish(litT)) litT = typeOf(n); // the literal's own record type, not its first source's
+      let litT = expected ?? checker.getContextualType(n) ?? typeOf(n); if (isOptional(litT)) litT = baseOf(litT); if (!isRecordish(litT) || own) litT = typeOf(n); // the literal's own record type, not its first source's
       const ld = dtype(litT, n);
       return `${external(`lit_spread_${mangle(ld)}_${hash(layout)}`, types, ld)}(${vals.join(', ')})`;
     }
@@ -4050,6 +4070,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
   function unitCall(f, callee, n, argNodes, sig, shift) { // a same-file unit applied to argument nodes (its own arguments, or a receiver put first by call/apply)
         if (failedUnits.has(callee.name)) fail(n, `callee ${callee.name} was not translated`);
+        { const hv = argNodes === n.arguments && shift === 0 ? heldCall(checker, n) : null; if (hv && hv.decl === callee.fn) return heldVariantCall(callee, n, hv); } // a held value handed to it, or its result held: the callee read once more at Any
         if (!core && kindOf.get(callee) === 'method') fail(n, `${f.text} loops, so it is a Dafny method and cannot be called inside an expression`);
         const args = unitArgs(callee, n, argNodes, sig, shift);
         const muts = mutatedOf(callee);
@@ -4534,7 +4555,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   }
 
   // ----- shared statement analysis -----
-  const retType = (u) => { if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t) && !(isHandleT(t) && promiseHandleUnit(u))) t = checker.getTypeArguments(t)[0]; else if (isPromiseT(t)) return t; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
+  const retType = (u) => { if (variantMode?.u === u && variantMode.result) return checker.getAnyType(); if (u.fn.asteriskToken && !u.isAsync) return checker.createArrayType(generators.shape(u).element); let t = checker.getSignatureFromDeclaration(u.fn).getReturnType(); if (isPromiseT(t) && !(isHandleT(t) && promiseHandleUnit(u))) t = checker.getTypeArguments(t)[0]; else if (isPromiseT(t)) return t; else if (u.isAsync && checker.getAwaitedType) { const aw = checker.getAwaitedType(t); if (aw) t = aw; } return t; };
   // `return;` yields `undefined`, the value a path without a return yields: Unit in a constructor (`new` yields the receiver) or a void unit, the absent value where the result admits undefined
   const bareReturn = (u, s) => {
     if (u.isCtor) return 'Unit';
@@ -5037,6 +5058,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         const t = truthy(e.left);
         return [e.left.text, op === K.BarBarEqualsToken ? `(if ${outerParens(t)} then ${name} else ${val})` : `(if ${outerParens(t)} then ${val} else ${name})`];
       }
+      if (heldCompound(e)) return [e.left.text, heldCompound(e)(name, e.right)];
       const sym = op === K.PlusEqualsToken ? '+' : op === K.MinusEqualsToken ? '-' : '*';
       return [e.left.text, `${name} ${sym} ${expr(e.right)}`];
     }
@@ -6430,6 +6452,25 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const txt = found.kind === K.ThisKeyword ? 'this' : found.getText(sf);
     return { node: found, message: `\`${txt}\` is read here after a call that may change it (the call is handed a value that may be or hold this object), and this reading takes the object as it was before the call; read what you need before the call, or pass it to the call and use the call's result` };
   }
+  // A same-file unit read once more for a call (common.mjs heldCall): the parameters the call hands a held value read
+  // at Any, the result Any when the body's result is held under that reading. Emitted once per reading, by the unit's
+  // own emission under that reading, beside it; the caller's translation state is kept around it.
+  function heldVariantCall(callee, n, hv) {
+    if (effectfulUnits.has(callee.name) || mutatedOf(callee).length || recursiveUnits.has(callee.name) || heapT?.isCore(callee) || numericOpaque.has(callee.name) || kindOf.get(callee) === 'method') fail(n, `type-assertion: \`${n.getText().slice(0, 60)}\` hands a value whose type nothing checked to ${callee.name}, or reads its held result, and ${callee.name} is not read once more at Any (it threads the world, mutates a parameter, recurses, or is read by the heap core)`);
+    const suffix = `_held${hv.held.map((i) => `_${i}`).join('')}${hv.result ? '_r' : ''}`;
+    const name = fname(`${callee.name}${suffix}`);
+    if (fns.has(`${callee.name}${suffix}`)) fail(n, `type-assertion: a unit named ${callee.name}${suffix} takes the name of ${callee.name}'s reading at Any`);
+    if (!heldVariants.has(name)) {
+      heldVariants.add(name);
+      const saved = { currentUnit, handedSites, tempCount, faultMode, loopCount, labels: new Map(labelIds), yieldState, pending, currentSlots, valueOperands, completionMode, objectData, variantMode };
+      pending = []; valueOperands = null; completionMode = false; objectData = null;
+      variantMode = { u: callee, held: new Set(hv.held.map((i) => callee.params[i])), result: hv.result, suffix };
+      try { withHeldParams(variantMode.held, () => emitUnit(callee)); }
+      finally { ({ currentUnit, handedSites, tempCount, faultMode, loopCount, yieldState, pending, currentSlots, valueOperands, completionMode, objectData, variantMode } = saved); labelIds.clear(); for (const [k, v] of saved.labels) labelIds.set(k, v); }
+    }
+    const args = callee.params.map((p, i) => hv.held.includes(i) ? expr(n.arguments[i], anyTarget()) : expr(n.arguments[i], typeOf(p.name)));
+    return `${name}(${args.join(', ')})`;
+  }
   function emitUnit(u) {
     currentUnit = u;
     handedSites = new Map(); // the fresh objects a unit hands are numbered from its own start
@@ -6446,7 +6487,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (asyncGenerator(u)) { if (!core) fail(u.node, 'async generators need --core'); emitAsyncGenerator(u); currentUnit = null; return; }
     if (u.fn.asteriskToken) { if (!core) fail(u.node, 'generators need --core'); let name = 'yielded_'; while (new RegExp(`\\b${name}\\b`).test(sf.text)) name += '_'; yieldState = { name, sym: null, node: u.node, synthetic: true, element: generators.shape(u).element, d: dtype(retType(u), u.node) }; }
     const rt = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
-    const name = fname(u.name);
+    const name = fname(variantMode?.u === u ? `${u.name}${variantMode.suffix}` : u.name);
     const specs = [];
     const argNames = u.params.map((p, i) => (ts.isIdentifier(p.name) ? dn(p.name.text) : `arg${i}_`)).join(', ');
     const sub = (e) => (core ? e.replace(/\bresult\b/g, `${name}(${argNames})`) : e);

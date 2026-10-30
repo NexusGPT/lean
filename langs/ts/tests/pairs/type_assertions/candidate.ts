@@ -64,3 +64,48 @@ export function twice(x: any): number {
 export function plain(x: number): number {
   return 1 + x;
 }
+
+// a held value in a field of a literal: the field is typed Any in the literal's datatype, so the unit's result is the
+// same uninterpreted conversion of the same record on both sides
+export function fieldHeld(x: any): { v: number } {
+  const v = x as number;
+  return { v };
+}
+
+// the same field holding `+ 0` of the held value: an operation on Any, a different record ("a" + 0 is "a0")
+export function fieldBumped(x: any): { v: number } {
+  return { v: (x as number) + 0 };
+}
+
+// a same-file callee given a held value: it is read once more at Any for that call, so its sum is the sum on Any
+export function paramHeld(x: any): string {
+  const n: number = x;
+  return `${n + n}`;
+}
+
+// the callee's `+ 0` on the held value is an operation on Any: the string flows on and gains a "0"
+export function paramKept(x: any): string {
+  return `${x as number}`;
+}
+
+// a same-file unit whose result is held returns Any: its caller reads the value it is
+export function resultHeld(x: unknown): string {
+  return `${x as number}`;
+}
+
+// `+ 0` on what such a unit returns is an operation on Any
+export function resultBumped(x: unknown): string {
+  return `${x as number}`;
+}
+
+// a compound write of a held value reads the target's real type: `t += v` on an Any total is the sum on Any
+export function compoundHeld(x: any): string {
+  const v: number = x;
+  return `${0 + v}`;
+}
+
+// the same write against `0 + v` read as numbers: "a" makes "0a", which the number reading would call 0 + v
+export function compoundBumped(x: any): string {
+  const v: number = x;
+  return `${v}`;
+}

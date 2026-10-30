@@ -1,5 +1,5 @@
 {
-  "why": "`e as T` checks nothing at run time (the emit drops it), and neither does an any or unknown value filling a typed slot. The proof lane read such a value as an uninterpreted conversion into T and then read T's operations exactly, so `x as number` on a string | number, `x as string` on unknown, `JSON.parse(s) as { a: number }` and an any parameter in a number local were each proved equal to a candidate adding 0 or \"\" (\"a\" + 0 is \"a0\"). Now the value is read with its real type (common.mjs assertionHeld): the opaque Any for an any or unknown source or a source mixing types, the source's own type for one primitive family. `v + 0` is then an uninterpreted operation on Any and differs from `v`: the four are not proved, lane B witnesses each. widen (to a supertype), rank (a literal into its union), bump (a number asserted to a literal union, read as the number) and twice (the same operation on an opaque value on both sides) are proved beside plain. optAny holds an any value in a string | undefined local: it is read opaque in its definedness and its payload, so `s + \"\"` differs from `s` (not proved, lane B WITNESS); optChecked fills the same slot through a typeof test and is proved. Lane B: optChecked is a WITNESS on -0 (an unknown parameter meets the special numbers, design/gen-walk.md 2026-10-30): the parent returns -0 and the candidate's n + 0 returns +0, so JavaScript tells them apart; lane A's proof is over the reals (real-only), which leave -0 out.",
+  "why": "`e as T` checks nothing at run time (the emit drops it), and neither does an any or unknown value filling a typed slot. The proof lane read such a value as an uninterpreted conversion into T and then read T's operations exactly, so `x as number` on a string | number, `x as string` on unknown, `JSON.parse(s) as { a: number }` and an any parameter in a number local were each proved equal to a candidate adding 0 or \"\" (\"a\" + 0 is \"a0\"). Now the value is read with its real type (common.mjs assertionHeld): the opaque Any for an any or unknown source or a source mixing types, the source's own type for one primitive family. `v + 0` is then an uninterpreted operation on Any and differs from `v`: the four are not proved, lane B witnesses each. widen (to a supertype), rank (a literal into its union), bump (a number asserted to a literal union, read as the number) and twice (the same operation on an opaque value on both sides) are proved beside plain. optAny holds an any value in a string | undefined local: it is read opaque in its definedness and its payload, so `s + \"\"` differs from `s` (not proved, lane B WITNESS); optChecked fills the same slot through a typeof test and is proved. Lane B: optChecked is a WITNESS on -0 (an unknown parameter meets the special numbers, design/gen-walk.md 2026-10-30): the parent returns -0 and the candidate's n + 0 returns +0, so JavaScript tells them apart; lane A's proof is over the reals (real-only), which leave -0 out. The four slots a held value could not reach (design/type-assertions.md, 2026-10-30): a field of a literal (fieldHeld proved: the field is Any in the literal's own datatype, and the record reaches the declared result type by one uninterpreted conversion; fieldBumped not proved), a same-file callee's parameter (paramHeld: the callee is read once more with that parameter at Any; paramKept not proved), a call of a unit whose result is held (resultHeld: the call reads the unit once more, returning Any; resultBumped not proved), a compound write (compoundHeld: `t += v` reads the target's real type, Any; compoundBumped not proved). The six rows of the last three slots return a template string: a number result read from Any may be the input itself, so the identity guard withholds it (as anyAs). paramHeld, resultHeld and compoundHeld are real-only, as twice: the real lemma proves, the doubles reading does not encode Any. Each must-not-prove row is witnessed by lane B on the emitted JavaScript, where the assertion is gone and a string flows on (\"a\" + 0 is \"a0\").",
   "scope": [
     "any_as",
     "as_cast",
@@ -11,7 +11,15 @@
     "twice",
     "plain",
     "opt_any",
-    "opt_checked"
+    "opt_checked",
+    "field_held",
+    "field_bumped",
+    "param_held",
+    "param_kept",
+    "result_held",
+    "result_bumped",
+    "compound_held",
+    "compound_bumped"
   ],
   "equal": {
     "any_as": false,
@@ -24,7 +32,15 @@
     "twice": "real-only",
     "plain": true,
     "opt_any": false,
-    "opt_checked": "real-only"
+    "opt_checked": "real-only",
+    "field_held": true,
+    "field_bumped": false,
+    "param_held": "real-only",
+    "param_kept": false,
+    "result_held": "real-only",
+    "result_bumped": false,
+    "compound_held": "real-only",
+    "compound_bumped": false
   },
   "b": {
     "anyAs": "WITNESS",
@@ -37,6 +53,14 @@
     "twice": "PASS-bounded",
     "plain": "PASS-bounded",
     "optAny": "WITNESS",
-    "optChecked": "WITNESS"
+    "optChecked": "WITNESS",
+    "fieldHeld": "PASS-bounded",
+    "fieldBumped": "WITNESS",
+    "paramHeld": "PASS-bounded",
+    "paramKept": "WITNESS",
+    "resultHeld": "PASS-bounded",
+    "resultBumped": "WITNESS",
+    "compoundHeld": "PASS-bounded",
+    "compoundBumped": "WITNESS"
   }
 }
