@@ -2,24 +2,30 @@
 // lean convert: rewrite code toward the subset the proof lane reads, one syntax-tree transform per advice entry, and
 // prove every change with the pull-request check before keeping it.
 //
-//   node convert.mjs <file|folder>... [--project <tsconfig>|--no-project] [--strict-labels] [--dry-run] [--no-prove]
+//   node convert.mjs <file|folder>... [--project <tsconfig>|--no-project] [--narrowed] [--dry-run] [--no-prove]
 //                    [--n 100] [--dafny-seconds 30] [--cache-dir <dir>] [--out report.md] [--json report.json]
 //
 // For each file: the lint runs with its advice (lintFile, advisory on); every finding whose rule has a transform in
-// langs/ts/convert/ is planned at its site. The advice label decides what may be applied:
-//   proved       applied when the transform's shape matches the site;
-//   conditional  applied when the lint decided the precondition at the site (label proved there), or when the lint
-//                decides no flag for the rule and the transform decides the precondition on the syntax tree;
-//                a site the lint left conditional is listed;
-//   migration    applied only in the narrowed shape the transform states, whose own guard makes the rewrite keep
-//                behaviour (reported as `narrowed`); with --strict-labels it is listed;
-//   a rule with no transform is listed for a person with the lint's advice.
+// langs/ts/convert/ is planned at its site. The advice label, as the lint gives it at the site, decides what may be
+// applied, and nothing else does:
+//   proved       applied when the transform's shape matches the site (the static label, or the label the lint
+//                decided at the site: loose-equality, bound-function, arguments);
+//   conditional  listed with its precondition: a conditional site the lint has confirmed carries the label proved
+//                there, so a site still labelled conditional is one whose precondition nobody established;
+//   migration    listed for a person with the lint's advice;
+//   flag-only    listed;
+//   a rule with no transform is listed with the lint's advice.
+// The strict family is the one door beside the labels: an edit TypeScript erases (an annotation an any-type finding
+// proposes) is applied when the file's emitted JavaScript is unchanged, which proves it whatever the label (PASS-erased).
+// --narrowed opens a second door a person asks for: a migration site in the narrowed shape a transform states, whose
+// own guard keeps behaviour, and a conditional site whose precondition the transform decides on the syntax tree
+// (`var`, which the lint does not decide), each still proved by pr.mjs; without it they are listed.
 // Transforms run in rounds (a rewrite may open another); a round whose result types worse than its input (a new
 // ts-strict finding or a syntax error) is undone site by site. Then, per folder, the changes are checked with pr.mjs
 // against the commit the folder started from (HEAD, the working tree as head): a WITNESS on a changed function, or on
 // an unchanged caller through it, reverts that file; an ASK keeps the file only when the parent against itself asks
 // the same (the reason is lean's own, not the rewrite's), else reverts it. The report is a table per file: findings,
-// applied, left for a person, verdicts.
+// applied, left for a person, verdicts; the exit code is 1 when a WITNESS remains, else 0.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -55,14 +61,16 @@ function filesUnder(target) {
   return out;
 }
 
-// what the label lets the converter do at this site: 'apply' with how it was decided, or 'list' with why
-export function policy(finding, strict) {
-  if (finding.label === 'proved') return { act: 'apply', how: finding.labelDecided ? 'proved (decided at the site)' : 'proved' };
+// what the label lets the converter do at this site: 'apply' with how it was decided, or 'list' with why. The label is
+// the lint's at the site (lint.mjs: decided at the site for the three deciding rules, else the advice table's).
+export function policy(finding, narrowed = false) {
+  if (finding.label === 'proved') return { act: 'apply', how: finding.labelDecided ? 'proved (decided at the site by the lint)' : 'proved' };
   if (finding.label === 'conditional') {
     if (finding.labelDecided) return { act: 'list', why: `conditional: the lint did not establish the precondition here (${finding.precondition})` };
-    return { act: 'apply', how: 'conditional (precondition decided by the transform)' };
+    if (narrowed) return { act: 'apply', how: 'conditional, precondition decided by the transform (--narrowed)' };
+    return { act: 'list', why: `conditional: the lint does not decide this precondition; a person checks it (${finding.precondition})` };
   }
-  if (finding.label === 'migration') return strict ? { act: 'list', why: 'migration: a person decides' } : { act: 'apply', how: 'narrowed' };
+  if (finding.label === 'migration') return narrowed ? { act: 'apply', how: 'narrowed (--narrowed)' } : { act: 'list', why: 'migration: a person decides' };
   return { act: 'list', why: `${finding.label}: no rewrite is proposed` };
 }
 
@@ -90,14 +98,14 @@ function applyEdits(text, edits) {
 }
 
 // plan every finding of one lint; the non-overlapping plans in source order
-function planAll(file, sf, checker, findings, transforms, strict, skip) {
+function planAll(file, sf, checker, findings, transforms, narrowed, skip) {
   const plans = [], listed = [];
   for (const f of findings) {
     if (f.env) continue;
     const t = transforms.get(f.rule);
     const key = `${f.rule}:${f.text}`;
-    if (!t) { listed.push({ ...f, why: 'no transform for this rule' }); continue; }
-    const pol = strictPolicy(f) ?? policy(f, strict);
+    if (!t) { listed.push({ ...f, why: f.label === 'migration' || !f.label ? 'migration: no transform; a person decides' : `${f.label}: no transform for this rule` }); continue; }
+    const pol = strictPolicy(f) ?? policy(f, narrowed);
     if (pol.act === 'list') { listed.push({ ...f, why: pol.why }); continue; }
     if (skip.has(key)) { listed.push({ ...f, why: skip.get(key) }); continue; }
     let res;
@@ -113,7 +121,7 @@ function planAll(file, sf, checker, findings, transforms, strict, skip) {
 
 // convert one file in rounds; returns { applied, listed, before, after, original, text }
 export function convertFile(file, opts) {
-  const { transforms, project = true, strict = false, rounds = 6 } = opts;
+  const { transforms, project = true, narrowed = false, rounds = 6 } = opts;
   const original = fs.readFileSync(file, 'utf8');
   let cur = lintText(file, project);
   const before = cur.findings.filter((f) => !f.env);
@@ -122,7 +130,7 @@ export function convertFile(file, opts) {
   try {
     for (let r = 0; r < rounds; r++) {
       const text = fs.readFileSync(file, 'utf8');
-      const { chosen, listed } = planAll(file, cur.loaded.sf, cur.loaded.checker, cur.findings, transforms, strict, skip);
+      const { chosen, listed } = planAll(file, cur.loaded.sf, cur.loaded.checker, cur.findings, transforms, narrowed, skip);
       lastListed = listed;
       if (!chosen.length) break;
       const baseTyping = typingCount(cur.findings), baseSyntax = cur.syntax;
@@ -140,9 +148,9 @@ export function convertFile(file, opts) {
     }
   } catch (e) { fs.writeFileSync(file, original); throw e; }
   const after = cur.findings.filter((f) => !f.env);
-  const finalPlan = planAll(file, cur.loaded.sf, cur.loaded.checker, cur.findings, transforms, strict, skip);
+  const finalPlan = planAll(file, cur.loaded.sf, cur.loaded.checker, cur.findings, transforms, narrowed, skip);
   lastListed = finalPlan.listed.concat(finalPlan.chosen.map((p) => ({ ...p.finding, why: 'more rounds needed' })));
-  return { file, applied, listed: lastListed.map((f) => ({ rule: f.rule, line: f.line, unit: f.unit, label: f.label, why: f.why, advice: f.advice ?? (ADVICE[f.rule] ? null : null), text: (f.text ?? '').replace(/\s+/g, ' ').slice(0, 100) })), before: before.length, after: after.length, original, text: fs.readFileSync(file, 'utf8') };
+  return { file, applied, listed: lastListed.map((f) => ({ rule: f.rule, line: f.line, unit: f.unit, label: f.label, why: f.why, advice: f.advice ?? ADVICE[f.rule]?.text ?? null, text: (f.text ?? '').replace(/\s+/g, ' ').slice(0, 100) })), before: before.length, after: after.length, original, text: fs.readFileSync(file, 'utf8') };
 }
 
 // prove the changed files of one folder with pr.mjs; revert a file on a WITNESS, or on an ASK the parent against
@@ -167,23 +175,38 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
     }
     if (r.verdict === 'WITNESS') { reverted.set(r.file, `WITNESS on ${r.unit}${r.caller ? ' (an unchanged caller)' : ''}: input ${r.witness?.input ?? '?'}`); continue; }
     if (r.verdict === 'ASK' || r.verdict === 'REFUSE' || r.verdict === null) {
-      // the control: the parent against itself; an ASK it shares is lean's own limit, not the rewrite's
-      const abs = path.join(repo, r.file);
-      const ctl = path.join(path.dirname(abs), `.lean_ctl_${process.pid}_${path.basename(abs)}`);
-      let same = false;
-      try {
-        fs.writeFileSync(ctl, git(repo, ['show', `${base}:${r.file}`]));
-        const res = await check({ parent: ctl, candidate: ctl, unit: r.unit, n, project, dafnySeconds });
-        same = res.verdict === r.verdict;
-      } catch { same = false; } finally { fs.rmSync(ctl, { force: true }); }
-      if (!same) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit} that the parent against itself does not share: ${String(r.reason ?? '').slice(0, 120)}`);
-      else r.control = 'the parent against itself asks the same';
+      // the control, lane by lane: an ASK is lean's own when every lane that did not pass failed on the parent alone;
+      // a row no lane answered (a timeout) checked nothing, and its file is reverted.
+      // Lane A: a refusal to translate the parent (stage translate-parent), or no lane A run, depends on the parent's
+      // text only; any other lane A answer (the candidate's translation, an unproved lemma) is about the rewrite.
+      // Lane B: the parent against itself must give lane B's same verdict and reason. The two lanes are judged apart
+      // because a self pair's combined verdict is lane A's identity on equal texts, which says nothing of lane B.
+      const A = r.certificate?.lanes?.A ?? null, B = r.certificate?.lanes?.B ?? null;
+      const passed = (v) => typeof v === 'string' && v.startsWith('PASS');
+      const aOwn = !A || passed(A.verdict) || A.stage === 'translate-parent';
+      let bOwn = !B || passed(B.verdict), ctlB = null;
+      if (!bOwn) {
+        const abs = path.join(repo, r.file);
+        const ctl = path.join(path.dirname(abs), `.lean_ctl_${process.pid}_${path.basename(abs)}`);
+        try {
+          fs.writeFileSync(ctl, git(repo, ['show', `${base}:${r.file}`]));
+          const res = await check({ parent: ctl, candidate: ctl, unit: r.unit, n, project, dafnySeconds });
+          ctlB = res.certificate?.lanes?.B ?? null;
+          bOwn = !!ctlB && ctlB.verdict === B.verdict && (ctlB.reason ?? null) === (B.reason ?? null);
+        } catch { bOwn = false; } finally { fs.rmSync(ctl, { force: true }); }
+      }
+      if (!A && !B) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: no lane answered (${String(r.reason ?? r.coverage ?? '').slice(0, 80)}), so the rewrite was not checked`);
+      else if (!aOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane A ${A.verdict}${A.stage ? ` at ${A.stage}` : ''}, an answer about the rewrite, not the parent: ${String(A.detail ?? r.reason ?? '').slice(0, 120)}`);
+      else if (!bOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane B ${B.verdict} that the parent against itself does not share (${ctlB ? `${ctlB.verdict}: ${String(ctlB.reason ?? '').slice(0, 80)}` : 'no control'}): ${String(B.reason ?? '').slice(0, 120)}`);
+      else r.control = `lean's own: lane A ${A ? `${A.verdict}${A.stage ? ` at ${A.stage}` : ''}` : 'not run'}, lane B ${B?.verdict ?? 'not run'}${ctlB ? ', the same on the parent against itself' : ''}`;
     }
   }
   for (const f of reverted.keys()) fs.writeFileSync(path.join(repo, f), git(repo, ['show', `${base}:${f}`]));
   if (reverted.size) {
+    // the rows of a reverted file stay in the report, marked, so the reason a rewrite was refused is readable
+    const gone = rows.filter((r) => reverted.has(r.file)).map((r) => ({ ...r, reverted: true }));
     const keptFiles = [...rel].filter((f) => !reverted.has(f));
-    rows = keptFiles.length ? await prReport({ repo, base, head: 'WORKTREE', n, dafnySeconds, project, cacheDir, paths: (f) => keptFiles.includes(f) }) : [];
+    rows = [...(keptFiles.length ? await prReport({ repo, base, head: 'WORKTREE', n, dafnySeconds, project, cacheDir, paths: (f) => keptFiles.includes(f) }) : []), ...gone];
   }
   return { rows, reverted };
 }
@@ -227,7 +250,7 @@ export function table(folder, results, proof, repo) {
   }
   const tot = (k) => results.reduce((s, r) => s + k(r), 0);
   const kept = results.filter((r) => !proof?.reverted.has(path.relative(repo, r.file)));
-  lines.push(`| total | ${tot((r) => r.before)} | ${kept.reduce((s, r) => s + r.applied.length, 0)} | ${tot((r) => (proof?.reverted.has(path.relative(repo, r.file)) ? r.before : r.listed.length))} | ${proof ? verdictCell(proof.rows.filter((x) => results.some((r) => path.relative(repo, r.file) === x.file))) : ''} |`);
+  lines.push(`| total | ${tot((r) => r.before)} | ${kept.reduce((s, r) => s + r.applied.length, 0)} | ${tot((r) => (proof?.reverted.has(path.relative(repo, r.file)) ? r.before : r.listed.length))} | ${proof ? verdictCell(proof.rows.filter((x) => !x.reverted && results.some((r) => path.relative(repo, r.file) === x.file))) : ''} |`);
   return lines.join('\n');
 }
 
@@ -237,7 +260,7 @@ function detail(results, repo) {
     if (!r.applied.length && !r.listed.length) continue;
     out.push(`#### ${path.relative(repo, r.file)}`, '');
     for (const a of r.applied) out.push(`- applied line ${a.line} \`${a.rule}\` by ${a.transform} [${a.how}]: ${a.guard}`);
-    for (const l of r.listed) out.push(`- listed line ${l.line} \`${l.rule}\` [${l.label}]: ${l.why}`);
+    for (const l of r.listed) out.push(`- listed line ${l.line} \`${l.rule}\` [${l.label}]: ${l.why}${l.advice ? `; advice: ${l.advice}` : ''}`);
     out.push('');
   }
   return out.join('\n');
@@ -248,9 +271,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const valued = new Set(['--project', '--n', '--dafny-seconds', '--cache-dir', '--out', '--json']);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const targets = a.filter((x, i) => !x.startsWith('--') && !valued.has(a[i - 1]));
-  if (!targets.length) { console.error('usage: convert.mjs <file|folder>... [--project <tsconfig>|--no-project] [--strict-labels] [--dry-run] [--no-prove] [--n 100] [--dafny-seconds 30] [--cache-dir <dir>] [--out report.md] [--json report.json]'); process.exit(2); }
+  if (!targets.length) { console.error('usage: convert.mjs <file|folder>... [--project <tsconfig>|--no-project] [--narrowed] [--dry-run] [--no-prove] [--n 100] [--dafny-seconds 30] [--cache-dir <dir>] [--out report.md] [--json report.json]'); process.exit(2); }
   const project = a.includes('--no-project') ? false : opt('--project', true);
-  const strict = a.includes('--strict-labels'), dry = a.includes('--dry-run'), noProve = a.includes('--no-prove') || dry;
+  const narrowed = a.includes('--narrowed'), dry = a.includes('--dry-run'), noProve = a.includes('--no-prove') || dry;
   const n = Number(opt('--n', 100)), dafnySeconds = Number(opt('--dafny-seconds', 30)), cacheDir = opt('--cache-dir', null) ?? undefined;
   const transforms = await loadTransforms();
   const md = ['# lean convert', ''], json = [];
@@ -266,7 +289,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     const results = [];
     for (const f of files) {
       let r;
-      try { r = convertFile(f, { transforms, project, strict }); }
+      try { r = convertFile(f, { transforms, project, narrowed }); }
       catch (e) { console.error(`${path.relative(repo, f)}: not converted: ${String(e.message).slice(0, 200)}`); continue; }
       if (dry) fs.writeFileSync(f, r.original);
       results.push(r);
@@ -279,11 +302,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     const changed = changedAll.filter((r) => !byErasure.includes(r)).map((r) => r.file);
     let proof = noProve || !changed.length ? null : await prove({ repo, base, files: changed, project, n, dafnySeconds, cacheDir });
     if (!noProve && byErasure.length) { proof ??= { rows: [], reverted: new Map() }; for (const r of byErasure) proof.rows.push(...await erasureRows(repo, r, { n, project, dafnySeconds })); }
-    if (proof) witness += proof.rows.filter((r) => r.verdict === 'WITNESS').length;
+    if (proof) witness += proof.rows.filter((r) => r.verdict === 'WITNESS' && !r.reverted).length; // a WITNESS on a reverted file was answered by the revert
     md.push(table(path.relative(repo, abs) || '.', results, proof, repo), '', detail(results, repo));
     // the strict family's proof, named per file: the emitted JavaScript compared under each setting erased() reads
     if (!noProve && byErasure.length) md.push('#### PASS-erased: the emitted JavaScript is identical', '', ...byErasure.map((r) => `- ${path.relative(repo, r.file)}: identical under ${ERASURE_SETTINGS}`), '');
-    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null, erasure: !noProve && byErasure.includes(r) ? ERASURE_SETTINGS : null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null, ...(r.verdict === 'PASS-erased' ? { certificate: r.certificate } : {}) })) ?? null });
+    json.push({ target: path.relative(repo, abs), base, files: results.map(({ original, text, ...r }) => ({ ...r, file: path.relative(repo, r.file), reverted: proof?.reverted.get(path.relative(repo, r.file)) ?? null, erasure: !noProve && byErasure.includes(r) ? ERASURE_SETTINGS : null })), rows: proof?.rows.map((r) => ({ file: r.file, unit: r.unit, verdict: r.verdict, coverage: r.coverage, laneA: r.laneA, laneB: r.laneB, caller: !!r.caller, reason: r.reason, control: r.control ?? null, reverted: !!r.reverted, ...(r.witness ? { witness: { input: r.witness.input ?? null } } : {}), ...(r.verdict === 'PASS-erased' ? { certificate: r.certificate } : {}) })) ?? null });
   }
   if (opt('--json')) fs.writeFileSync(opt('--json'), JSON.stringify(json, null, 1));
   if (opt('--out')) fs.writeFileSync(opt('--out'), md.join('\n'));
