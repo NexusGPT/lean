@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, elementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
-import { primitiveBrand } from '../common.mjs';
+import { primitiveBrand, readAfterCall } from '../common.mjs';
 import { originOf } from '../common.mjs';
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
@@ -231,6 +231,20 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   const generators = generatorReading(checker, sf, units);
   let current = null; // current unit's declaration statement, for locality tests
   let currentFn = null;
+  // read-after-call (common.mjs readAfterCall, one decision with the translator): the lint's own readings are a subset
+  // of the translator's, so it never refuses a unit the translator reads; a call is a method of an any or unknown
+  // value, a call of a function-valued parameter or an await; a member of a class instance is read through the world
+  const rafHooks = {
+    effect: (n) => { if (ts.isAwaitExpression(n)) return true; if (!ts.isCallExpression(n)) return false; const f = n.expression; if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && nonNull(tOf(f.expression)).some(isAny)) return true; if (ts.isIdentifier(f)) { const d = checker.getSymbolAtLocation(f)?.valueDeclaration; return !!d && ts.isParameter(d); } return false; },
+    typeOf: (n) => tOf(n),
+    worldRead: (m) => { const t = tOf(m.expression); return !!t && nonNull(t).some((x) => !!x.symbol && !!(x.symbol.flags & ts.SymbolFlags.Class)); },
+    worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf),
+    quiet: (n) => !!reactHook(checker, n) || /^Promise\.(resolve|reject|all|allSettled|race|any)$/.test(n.expression?.getText?.(sf) ?? ''),
+    deferred: (q) => /^use(Layout|Insertion)?Effect$/.test(reactHook(checker, q) ?? ''),
+    opaque: (st) => ts.isTryStatement(st) || ts.isSwitchStatement(st) || ts.isLabeledStatement(st) || ts.isIterationStatement(st, false), // weaker than the translator's own test: never more refusals
+    freshAlone: (a) => { let e = a; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; if (ts.isIdentifier(e)) { const d = checker.getSymbolAtLocation(e)?.valueDeclaration; e = d && ts.isVariableDeclaration(d) && d.initializer ? d.initializer : e; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; } return ts.isObjectLiteralExpression(e) || ts.isArrayLiteralExpression(e); },
+  };
+  const readAfter = (u) => { if (!u?.fn?.body) return; const rc = readAfterCall(checker, sf, u, rafHooks); if (rc) v(rc.node, 'read-after-call', rc.message); };
   let currentClass = null; // the class whose method is being checked; `this` is its receiver
   let objectMethod = null;
   let literalUnit = null; // the member of a module literal being checked as a unit: `this` is that literal (design/exported-units.md)
@@ -2182,6 +2196,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       }
       checkStringLiterals(u.node);
       if (u.body) { if (ts.isBlock(u.body)) stmts(u.body.statements); else expr(u.body); }
+      readAfter(u);
       current = null; currentFn = null;
       continue;
     }
@@ -2249,6 +2264,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
         checkStringLiterals(u.node);
         if (u.isStatic && !u.params.every((p) => ts.isIdentifier(p.name))) staticThis(u.body); // with plain parameters the unit is one opaque transition keyed by the file
         stmts(u.body.statements);
+        readAfter(u);
         current = null; currentFn = null; currentClass = null; thisParam = null;
       }
       continue;

@@ -70,7 +70,8 @@ import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits a
 import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { sealedMember } from '../common.mjs'; // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
-import { typeAssertion, assertionHeld, erasedReferenceSlot } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint
+import { typeAssertion, assertionHeld, erasedReferenceSlot, readAfterCall } from '../common.mjs';
+const PROMISE_COMBINATORS = new Set(['Promise.resolve', 'Promise.reject', 'Promise.all', 'Promise.allSettled', 'Promise.race', 'Promise.any']), EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect']); // read-after-call: calls that run no outside code while the unit runs, and hooks whose callback runs after the render // a value whose type nothing checked: read with its real type, one test with the lint
 import { callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList, formatUnitList } from '../common.mjs'; // a callback unit's captured inputs and its contextual types; a finding's unit; the one unit-list parser and its inverse
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
 const mangle = (t) => t.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -1680,7 +1681,7 @@ function translateOnce(file, fnName, opts = {}) {
   const partsPrim = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => primT(x) || (isArrayLike(checker, x) ? primT(checker.getTypeArguments(x)[0] ?? checker.getIndexTypeOfType(x, ts.IndexKind.Number)) : (isMapT(x) || isSetT(x)) ? checker.getTypeArguments(x).every(primT) : checker.getPropertiesOfType(x).every((s) => { const pt = checker.getTypeOfSymbolAtLocation(s, sf); return primT(pt) || isCallable(pt); }) && [checker.getIndexTypeOfType(x, ts.IndexKind.String)].every((it) => !it || primT(it))));
   function handedArg(a, code, d) {
     const t = typeOf(a);
-    if (!t || primT(t) || (isCallable(t) && !isAny(t)) || isAny(t)) return code; // no identity, a function value (its code and cells), or an opaque value (its own handle)
+    if (!t || primT(t) || (isCallable(t) && !isAny(t)) || isAny(t) || nonNull(t).every((y) => isPromiseT(y))) return code; // no identity, a function value (its code and cells), an opaque value or a promise (its own handle)
     const id = identityOf(a);
     if (id.kind === 'existing') return code;
     if (id.kind === 'unknown') fail(a, `copied-argument: this call may write or keep the object it is handed, and its argument is ${id.why}; bind it to a name of one kind (a parameter, or a new literal or copy) first`);
@@ -1739,7 +1740,7 @@ function translateOnce(file, fnName, opts = {}) {
     calleeName = `${spread ? 'call_seq' : 'call_args'}_${calleeName}`; // disjoint call forms: f(...xs) never collides with a function named f_seq(xs)
     if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && calleeName.endsWith(`_${n.expression.text}`) && reachOf.reachesFile(n.expression)) calleeName += `_${hash(reachOf.keyText(n.expression))}`; // a binding of this file called by name (a constant holding a function value) is named by the code it reaches (design/reach-keys.md)
     const throwingUnitValue = (a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && (exceptionUnits.has(a.text) || effectfulUnits.has(a.text)); // stage 5 rank 20: handed to an outside call, an opaque value named by its text
-    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? (cellWriter(a) && reactHandler(a)) || opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : isEff ? handedArg(a, expr(a, ptype(a, i)), pts[i]) : expr(a, ptype(a, i)));
+    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? (cellWriter(a) && reactHandler(a)) || opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : isEff && !quietCall(n) ? handedArg(a, expr(a, ptype(a, i)), pts[i]) : expr(a, ptype(a, i)));
     if (!isEff) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
@@ -6314,113 +6315,27 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // `r.tags.push(x)`, `Object.assign(r, s)`, `delete r.f`. The value reading binds a copy of the element, so it would
   // drop the write; the heap core reads it as the step on the element (design/element-writes.md). A unit outside the
   // core that holds one is refused by name, never translated without its write
-  // A read after a call that may change what it reads (design/alias-result.md, 2026-10-30). The ordinary lane reads
-  // an object as a value: `p.x`, `ext_Any_x_Any(g)`, `ext_Ext_C_x_Ext_C(self)`, a copy, a library read, the unit's
-  // result take the object as it was when the unit received it, while a call that runs outside code (isEffectCall, a
-  // clock or random read aside) only threads the world. Such a call may change any object it can reach: the values the
-  // run hands to the outside (a receiver, an argument, a called function value) and whatever they may alias or reach
-  // by type, an any or unknown value or a function value reaching anything (hash-keys.md: the outside runs code only
-  // through values this run hands it). A read of such an object without the world, after such a call, would read the
-  // value before the call: refused by name. Kept: the object handed on to a call that threads the world (a receiver, an
-  // argument), an alias, `typeof`, `===`, a truth test, and a local the unit made of primitive fields and only reads.
-  function readAfterCall(u) {
-    const body = u.fn?.body ?? u.node?.body;
-    if (!body) return null;
-    const P = (x) => { let p = x.parent; while (p && (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p))) { x = p; p = p.parent; } return { p, x }; };
-    const clock = (c) => { const t = ts.isCallExpression(c) ? c.expression.getText(sf) : ts.isNewExpression(c) ? `new ${c.expression.getText(sf)}` : ''; return ['Date.now', 'performance.now', 'process.hrtime', 'Math.random', 'crypto.randomUUID'].includes(t) || (t === 'new Date' && !(c.arguments && c.arguments.length)); };
-    const points = [], handed = [];
-    const effect = (n) => { try { return isEffectCall(n); } catch { return true; } };
-    const walk = (n) => {
-      if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && effect(n)) {
-        points.push(n);
-        if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
-          for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a)) { const id = identityOf(a); if (id.kind === 'fresh' && partsPrim(typeOf(id.site))) continue; } handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a) }); } // a new object of primitive parts reaches only itself
-          const f = n.expression;
-          if (ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) handed.push({ at: n, t: typeOf(f.expression) });
-        } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression) });
-      }
-      ts.forEachChild(n, walk);
-    };
-    walk(body);
-    if (!points.length) return null;
-    // may a value of type h reach (be, or hold through its fields) an object of type o? any, unknown, a function or an unread depth: yes
-    const prim = (t) => !!t && (t.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.Undefined | TF.Null | TF.Void | TF.Never | TF.ESSymbolLike)) && !(t.flags & TF.Union && t.types.some((x) => !prim(x)));
-    const reaches = (h, o, depth = 0, seen = new Set()) => {
-      if (h === null || !h || isAny(h)) return true;
-      if (h.flags & TF.Union) return h.types.some((x) => reaches(x, o, depth, seen));
-      if (prim(h) || primitiveBrand(h)) return false;
-      if (checker.getSignaturesOfType(h, ts.SignatureKind.Call).length) return false; // a function value reaches what it is handed, its arguments (hash-keys.md)
-      if (checker.isTypeAssignableTo(o, h) || checker.isTypeAssignableTo(h, o)) return true;
-      if (depth >= 4) return true;
-      if (seen.has(h)) return false; seen.add(h);
-      const inner = [...(checker.getTypeArguments?.(h) ?? []), ...checker.getPropertiesOfType(h).map((s) => { try { return checker.getTypeOfSymbolAtLocation(s, u.node); } catch { return undefined; } }).filter((x) => x !== undefined)];
-      const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
-      return [...inner, ...(idx ? [idx] : [])].some((x) => reaches(x, o, depth + 1, seen));
-    };
-    // a call reaches what it is handed and what calls started before it were handed (the outside may keep it), and in a loop what the loop hands
-    const ranBy = (h, c) => h === c || h.getEnd() <= c.getStart(sf) || (c.pos <= h.pos && h.end <= c.end) || loops(h).some((l) => loops(c).includes(l)); // h ran before c ends: c itself, a call before it, one inside its operands, or one its loop repeats
-    const reached = (o, c) => handed.some((h) => ranBy(h.at, c) && reaches(h.t, o));
-    const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
-    const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
-    const inFn = (x, top) => { for (let p = x.parent; p && p !== top; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
-    const between = (start, occ, t) => points.some((c) => {
-      if (!reached(t, c)) return false;
-      const inside = c.pos <= occ.pos && occ.end <= c.end;
-      if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
-      if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf)) return true;
-      const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside;
-    });
-    const declOfSym = (s) => s?.valueDeclaration ?? s?.declarations?.[0];
-    const writes = (s) => { const out = []; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };
-    const uses = (s) => { const out = []; const w = (x) => { if (ts.isIdentifier(x) && x !== declOfSym(s)?.name && checker.getSymbolAtLocation(x) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };
-    const primLit = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isObjectLiteralExpression(e)) return e.properties.every((m) => ts.isPropertyAssignment(m) && prim(typeOf(m.initializer))); if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => !ts.isSpreadElement(x) && prim(typeOf(x))); return false; };
-    const sealed = (s) => { // a local the unit made of primitive parts, never handed, aliased or given an object
-      const d = declOfSym(s);
-      if (!d || !ts.isVariableDeclaration(d) || !d.initializer || !primLit(d.initializer) || writes(s).length) return false;
-      return uses(s).every((x) => { const { p, x: y } = P(x); if (!((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === y)) return false; const q = p.parent; if (q && ts.isCallExpression(q) && q.expression === p) return false; if (q && ts.isBinaryExpression(q) && q.left === p && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) return prim(typeOf(q.right)); return true; });
-    };
-    const objectLike = (t) => !!t && !prim(t) && !primitiveBrand(t) && !(checker.getSignaturesOfType(t, ts.SignatureKind.Call).length && !isAny(t));
-    const kept = (occ) => { // the occurrence hands the object on, names it again or tests what never changes
-      const { p, x } = P(occ);
-      if (!p) return false;
-      if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && (p.arguments ?? []).includes(x)) return effect(p);
-      if (ts.isSpreadElement(p) && p.parent && (ts.isCallExpression(p.parent) || ts.isNewExpression(p.parent))) return false;
-      if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return effect(p.parent);
-      if (ts.isVariableDeclaration(p) && p.initializer === x) return true;
-      if (ts.isBinaryExpression(p)) { const k = p.operatorToken.kind; if (k === K.EqualsToken && p.right === x) return true; if ([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(k)) return true; if (k === K.InstanceOfKeyword && p.left === x) return true; }
-      if (ts.isTypeOfExpression(p)) return true;
-      if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true;
-      if (isAny(typeOf(x)) && (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === x))) return true; // an any value is a handle: returned as it is, only a read through it takes its state
-      if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isConditionalExpression(p)) && (p.expression ?? p.condition) === x) return true;
-      return false;
-    };
-    let found = null;
-    const visit = (n) => {
-      if (found) return;
-      const isThis = n.kind === K.ThisKeyword;
-      if (isThis || (ts.isIdentifier(n) && ts.isExpression(n) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && 'name' in n.parent && n.parent.name === n && !ts.isShorthandPropertyAssignment(n.parent)) && !(ts.isCallExpression(n.parent) && n.parent.expression === n))) {
-        const s = isThis ? null : checker.getSymbolAtLocation(n);
-        const d = s ? declOfSym(s) : null;
-        const t = typeOf(n);
-        if ((isThis || (d && d.getSourceFile() === sf && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isBindingElement(d)))) && objectLike(t) && !(s && sealed(s)) && !kept(n)) {
-          const local = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end;
-          let init = local && d.initializer; while (init && (ts.isParenthesizedExpression(init) || ts.isAwaitExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init))) init = init.expression;
-          const fresh = init && (ts.isCallExpression(init) || ts.isNewExpression(init)) && !writes(s).length; // obtained when it was bound
-          const start = fresh ? d.getEnd() : body.getStart(sf);
-          if (between(start, n, t)) found = n;
-        }
-      }
-      ts.forEachChild(n, visit);
-    };
-    visit(body);
-    if (!found) return null;
-    const txt = found.kind === K.ThisKeyword ? 'this' : found.getText(sf);
-    return { node: found, message: `\`${txt}\` is read here after a call that may change it (the call is handed a value that may be or hold this object), and this reading takes the object as it was before the call; read what you need before the call, or pass it to the call and use the call's result` };
+  // a same-file unit a call names (a function of the file, a method of this), or null
+  // calls that run no outside code while the unit runs: a React hook registers or reads (an effect hook's callback runs after the render), a Promise combinator adopts its arguments in later jobs
+  function quietCall(n) { return !!reactHook(checker, n) || PROMISE_COMBINATORS.has(n.expression?.getText?.(sf) ?? ''); } // runs no outside code while the unit runs: a React hook, a Promise combinator
+  function sameFileCallUnit(n) { if (!ts.isCallExpression(n)) return null; const f = n.expression; if (ts.isIdentifier(f) && originOf(checker, f, sf, currentUnit?.node ?? null).kind === 'unit') return fns.get(f.text) ?? null; if (ts.isPropertyAccessExpression(f) && f.expression.kind === K.ThisKeyword && currentUnit) return ownUnit(currentUnit, f.name.text); if (ts.isPropertyAccessExpression(f) && (f.name.text === 'call' || f.name.text === 'apply') && ts.isIdentifier(f.expression) && originOf(checker, f.expression, sf, currentUnit?.node ?? null).kind === 'unit') return fns.get(f.expression.text) ?? null; return null; } // `h.call(r, x)` of a same-file unit is that unit (declarations, not consts: emitUnit runs before this point of the file is reached)
+  // does the unit (or a same-file unit it calls) make a call that runs outside code? a cycle counts as yes
+  function reachesOutside(u) {
+    const outsideMemo = (reachesOutside.memo ??= new WeakMap()); // keyed by unit objects: a translation of another file never shares one
+    if (outsideMemo.has(u)) return outsideMemo.get(u) !== false;
+    outsideMemo.set(u, 'reading');
+    const cu = currentUnit; currentUnit = u;
+    let hit = false;
+    try {
+      const w = (n) => { if (hit) return; if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) { let e = false; try { e = isEffectCall(n); } catch { e = true; } if (e) { const callee = sameFileCallUnit(n); if (!callee || reachesOutside(callee)) hit = true; } } ts.forEachChild(n, w); };
+      w(u.fn?.body ?? u.node);
+    } finally { currentUnit = cu; }
+    outsideMemo.set(u, hit);
+    return hit;
   }
   function emitUnit(u) {
     currentUnit = u;
     handedSites = new Map(); // the fresh objects a unit hands are numbered from its own start
-    { const rc = readAfterCall(u); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: never translated
     { const why = callbackUntypedJsUnit(sf, u, checker); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
@@ -6462,7 +6377,8 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
+      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && partsPrim(typeOf(id.site)); } }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+        body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u))))); }
       catch (e) { if (!(e instanceof Unsupported) || !moduleShape.reads || !eff || u.isCtor) throw e; pending = savedPending; coreHelpers.length = savedHelpers; usedModuleOpaque = true; body0 = opaqueModuleBody(u); }
       const cleared = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
       const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;
