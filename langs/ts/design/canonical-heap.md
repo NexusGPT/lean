@@ -91,9 +91,10 @@ lemma: every step holds and the definitions are right. What fails is the solver'
 |---|---|---|---|
 | 8 and below | pair's `cells`, `named`, `roots` fail (the walk is not unfolded to its end) | same | same |
 | 9 to 12 | every expected part proves | same | same |
-| 13 to 19 | `pair_cells` or `attach_named` fails at 14, 16, 17, 18, 19 | at 13, 17, 18 | every part proves |
+| 13 to 19 | `pair_cells` or `attach_named` fails at 14, 16, 17, 18, 19 | at 13, 17, 18 | 15 proves (13, 14, 16 to 19 not measured) |
 | 20 | `pair_cells` fails | proves | proves |
-| 25, 30 | more parts fail (7 and 14 errors at 25 and 30) | 7 errors at 25 | proves to 40 |
+| 25 | `pair_cells`, `pair_named`; `library_ops` `drop_two_cells` | `pair_cells`, `pair_named` | proves |
+| 30 | 14 errors on `heap_canonical` (9 parts beyond the expected) | not measured | not measured |
 
 `pair`'s walk takes nine steps (two roots, the box's four fields, the fresh array's two items, the stop). A fuel below
 the walk leaves it unevaluated; a fuel far above it gives the solver instantiations it gets lost in, and where that starts
