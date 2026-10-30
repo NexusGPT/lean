@@ -1152,6 +1152,13 @@ function translateOnce(file, fnName, opts = {}) {
     if (f & TF.Void) return 'Unit';
     if (f & TF.TypeParameter) { // the unit's own type parameters and those of the declarations around it that it reads (unitTypeParameters): one Dafny type parameter each; two of one name (an inner T hiding an outer T) would read two types as one
       const nm = t.symbol?.name ?? checker.typeToString(t), tps = currentUnit ? unitTypeParameters(checker, currentUnit) : [];
+      // a call signature's own type parameter met in a value's type (a generic function held as a value, `<O>(x: O) =>
+      // R`, from this file or a library) neither is the unit's nor encloses it: each call fixes it where the call is
+      // written, and the checker reads that call instantiated; the value itself has no Dafny type (no polymorphic
+      // arrows), so the parameter is read opaque, its values uninterpreted as every opaque value is
+      const decl = t.symbol?.declarations?.[0];
+      const around = (d) => !!currentUnit && d.getSourceFile().fileName === sf.fileName && d.pos <= currentUnit.fn.pos && currentUnit.fn.end <= d.end; // by position: a reparsed file keeps them
+      if (!t.isThisType && decl && ts.isTypeParameterDeclaration(decl) && ts.isFunctionLike(decl.parent) && !around(decl.parent)) return anyType();
       if (!tps.some((g) => g.name.text === nm)) fail(n, `type parameter ${nm} is not one of this function's`);
       if (tps.filter((g) => g.name.text === nm).length > 1) fail(n, `type parameter ${nm} hides another of the same name`);
       return dn(nm);
@@ -1624,7 +1631,21 @@ function translateOnce(file, fnName, opts = {}) {
     const cargs = checker.getTypeArguments(ct);
     return cargs.length === args.length && !cargs.some((a) => a.flags & (TF.Any | TF.Unknown)) ? ct : null;
   };
-  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  // a name declared at a type parameter (`const y: T`, `x: T`) is held at it, while the checker may type its read at the
+  // parameter's constraint (`T extends "a" | "b"` read where a literal union is expected): the read is the held value,
+  // so its type is the parameter, and a conversion to the constraint is written where one is expected (convertD's cast)
+  // the same for a field read through `this` (`this.kind`, declared `kind: TKind`): the field's own symbol, read on the
+  // class's own instance, declares the parameter (an instantiated receiver's symbol declares the instance's type)
+  const heldAtTypeParameter = (n, t) => {
+    if (t.flags & TF.TypeParameter) return null;
+    const name = ts.isIdentifier(n) ? n : ts.isPropertyAccessExpression(n) && n.expression.kind === ts.SyntaxKind.ThisKeyword ? n.name : null;
+    if (!name) return null;
+    const sym = checker.getSymbolAtLocation(name), vd = sym?.valueDeclaration;
+    if (!vd || !(ts.isVariableDeclaration(vd) || ts.isParameter(vd) || ts.isPropertyDeclaration(vd)) || !(ts.isIdentifier(vd.name) || ts.isPrivateIdentifier(vd.name))) return null;
+    const d = checker.getTypeOfSymbol(sym);
+    return (d.flags & TF.TypeParameter) && !d.isThisType ? d : null;
+  };
   // the sign of zero is read exactly by the doubles reading (design/doubles.md): a number-bearing unit is decided over
   // binary64, so no unit is made opaque for a -0 it may produce (the opaque reading of design/signed-zero.md is lifted)
   if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
@@ -1653,6 +1674,10 @@ function translateOnce(file, fnName, opts = {}) {
       return id;
     }
     addPrelude(id, `function ${id}${tclause([...paramTypes, retType])}(${ps}): ${retType}`); // generic when a type parameter of the unit appears
+    // a type parameter only its result names (`this.kind` of a field `kind: TKind` read on an opaque receiver) is not
+    // inferred from the arguments: the call, written inside the unit that declares it, names the unit's parameters
+    const tc = tclause([...paramTypes, retType]);
+    if (tc && tclause([retType]) && tclause(paramTypes) !== tc) return `${id}${tc.replace(/\(==\)/g, '')}`;
     return id;
   }
   function externalValue(id) {

@@ -418,11 +418,16 @@ export function unitTypeParameters(checker, u) {
     const names = new Set(outer.map((g) => g.name.text)), found = new Set();
     const visit = (n) => {
       if (found.size === names.size) return;
-      const t = checker.getTypeAtLocation(n);
-      for (const nm of names) if (!found.has(nm) && typeMentions(checker, t, new Set([nm]))) found.add(nm);
+      // a node's type, and for a name the type its symbol declares: `this.type` is typed at its constraint where it is
+      // read, while the translator reads the field's declared type (`type: TRole`) through its accessor
+      const sym = ts.isIdentifier(n) || ts.isPrivateIdentifier(n) ? checker.getSymbolAtLocation(n) : undefined;
+      const types = [checker.getTypeAtLocation(n), ...(sym && !(sym.flags & ts.SymbolFlags.Alias) ? [checker.getTypeOfSymbol(sym)] : [])];
+      for (const nm of names) if (!found.has(nm) && types.some((t) => typeMentions(checker, t, new Set([nm])))) found.add(nm);
       ts.forEachChild(n, visit);
     };
     visit(u.fn);
+    // a constructor also runs its class's instance field initialisers (`items: T[] = []`)
+    if (ts.isConstructorDeclaration(u.fn)) for (const m of u.fn.parent.members) if (ts.isPropertyDeclaration(m) && m.initializer && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword)) visit(m);
     read = outer.filter((g) => found.has(g.name.text));
   }
   const all = [...read, ...own];

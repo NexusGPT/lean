@@ -44,3 +44,30 @@ export function marks<T>(rows: T[], x: T): boolean[] {
 export function grid<T>(rows: T[], cols: T[]): boolean[][] {
   return rows.map((r) => cols.map((c) => r === c));
 }
+
+// a field the class declares at its type parameter, read through `this` in an abstract class
+export type Kind = "a" | "b";
+export abstract class Note<TKind extends Kind = Kind> {
+  abstract readonly kind: TKind;
+  label(): Kind {
+    return this.kind;
+  }
+}
+
+// a field holding a generic function value: the signature's own O is fixed at each call, not by this class
+type Parse = <O>(text: string, options?: O) => string;
+export class Reader {
+  parse: Parse;
+  constructor(p: Parse) {
+    this.parse = p;
+  }
+}
+
+// a constructor runs its class's field initialisers, which read the class's type parameter
+export class Bin<T> {
+  items: T[] = [];
+  count: number;
+  constructor(n: number) {
+    this.count = n;
+  }
+}
