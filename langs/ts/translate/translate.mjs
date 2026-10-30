@@ -2874,7 +2874,17 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (map[op]) {
       // comparing an Option with a plain value: lift the plain side
       const lt = typeOf(n.left), rt = typeOf(n.right);
-      if (isAny(lt) || isAny(rt)) return `(${expr(n.left, anyTarget())} ${o} ${expr(n.right, anyTarget())})`;
+      if (isAny(lt) || isAny(rt)) {
+        // an operand typed any or unknown may be NaN (NaN === NaN is false) or a signed zero (-0 === 0 is true), so Dafny
+        // equality on Any, reflexive and exact, is not ===: the comparison is one uninterpreted test over Any, the same
+        // term on both sides, negated for !== and != (design/type-assertions.md, 2026-10-30). Against a string or boolean
+        // literal the literal's type settles it (neither NaN nor a zero): the exact reading stays
+        const settled = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword; };
+        if (settled(n.left) || settled(n.right)) return `(${expr(n.left, anyTarget())} ${o} ${expr(n.right, anyTarget())})`;
+        const A = anyType(), strict = op === K.EqualsEqualsEqualsToken || op === K.ExclamationEqualsEqualsToken;
+        const test = `${external(strict ? 'op_strict_eq_Any' : 'op_loose_eq_Any', [A, A], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
+        return o === '!=' ? `!${test}` : test;
+      }
       if ((isOptional(lt) || isNullish(lt)) && (isOptional(rt) || isNullish(rt))) {
         const joined = checker.getUnionType([lt, rt]);
         if (bothAbsent(joined)) return `(${expr(n.left, joined)} ${o} ${expr(n.right, joined)})`;

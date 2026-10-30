@@ -99,5 +99,28 @@ Pair `asany_record_key` (lane A read unit by unit through check.mjs, since the r
 `setByKey`, `hasOther` were proved equal at b8efb60f and are now ASK `reference-key`, lane B WITNESS against the
 constant candidates; `countByString` proved; `countByNumber` not proved, WITNESS.
 
-Open: `p === p` on a parameter typed any is read as Dafny equality on Any, which is reflexive, and is proved equal to
-`true`; JavaScript returns false for NaN, and lane B draws no NaN for an any parameter.
+Open (closed below, same date): `p === p` on a parameter typed any was read as Dafny equality on Any.
+
+## 2026-10-30: === and !== on an any or unknown operand are one uninterpreted test
+
+A value typed any or unknown may be NaN, where `===` is false on equal operands, or a signed zero, where `-0 === 0`
+is true on two values. The translator read `===` and `!==` with such an operand as Dafny `==` and `!=` on Any. Dafny
+equality is reflexive, so `p === p` was proved equal to `true` (pair `any_equality`, `selfEq`, at 7f13803a).
+
+The rule (`translate.mjs`, the equality branch for an Any operand): the comparison is
+`ext_op_strict_eq_Any_Any_Any(l, r)`, negated for `!==`. This is the reading this file already gives every other
+operation on Any ("an uninterpreted application"), and `in` (`in_Any`), `Object.is` (an outside call) and a switch
+over an any value (an opaque block) were read this way already. Both sides apply the same function to the same terms,
+so `p !== q` against `!(p === q)` still proves.
+
+Why not the other choice: a value domain holding NaN and -0 would need Any to carry the double model and lane B to
+draw NaN and -0 for any parameters. `numbers-bitwise-nan.md` keeps the finite model on purpose and names a NaN-holding
+datatype as future work that every observer would need to migrate to. The uninterpreted test needs neither.
+
+Kept exact: a comparison against a string or boolean literal, whose type settles it (neither NaN nor a zero), and
+against null or undefined, which the absence test reads already. A comparison narrowed to number by `typeof` is the
+number comparison and its doubles reading, unchanged. `==` with an any operand stays refused `loose-equality` by the
+lint. The cost: a proof that needs `===` on Any to be symmetric or reflexive (`p === q` against `q === p`) is lost.
+
+Lane B draws no NaN for an any parameter, so `selfEq` and `switchSelf` (NaN takes the default) are PASS-bounded, not
+witnessed. Lane A no longer proves them.
