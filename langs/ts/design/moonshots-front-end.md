@@ -281,3 +281,30 @@ explicit receiver, its fields in the world), never a machine; the hook runtime i
 
 10, 4, 5, 1, 6, 2, 3, 8, 9, 7: the measure first, then the two cheapest checks, then the proofs. Ten tests,
 one after the other, about eight working days (CLAIM).
+
+## The three lost mutation witnesses (2026-10-30)
+
+R8 caught 44 of 71 at dcbc61c and 41 from 6589b7d on. Bisected one mutant at a time, one worktree at a time:
+
+- ProcessionDemo change-text and swap-setters flip at f96481c1 (a function the tree holds and lane B never fires is
+  compared by its descriptor, not its text). Both old WITNESS verdicts were the text hash of `renderItem`, a function
+  the mutation never touched: a text-only difference, no behaviour. SelectionActions swap-setters flips at ea71acad
+  (an escaping function is observed by what it does when called): its old WITNESS was the text hash of `place` in an
+  effect's deps. Both commits are sound; they removed the text and nothing behavioural was left to see.
+- The real difference in change-text ("Order created." after the order is placed) shows only after `onComplete`
+  arms `window.setTimeout` and the timer fires. Lane B's sandbox (exec/run.mjs) gives `window` as undefined, so the
+  held `onComplete` throws a TypeError on both sides and the created view is never rendered. In a browser `window`
+  is the global object; the fix makes it so (`g.window = g`, lane/proposed-run.mjs.patch, run.mjs belongs to another
+  lane). With it, change-text is a WITNESS on the sequence `div[0]:onComplete`, a text patch on `span[0]`. The
+  design/process-write.md line "window as undefined" goes when the patch lands.
+- The two swap-setters mutants stay PASS-bounded, rightly: each swaps two setters inside one callback (a click handler,
+  a requestAnimationFrame callback), and React 18 and 19 apply them as one batch (10.2b above; apps-ui declares react
+  ^18.3 || ^19). No observation separates them, so a WITNESS there would be unsound.
+- Measured with the patch (the R8 per-mutant command over the mutants R8 wrote at f3cb5b4, in two halves under the
+  15-minute stop): 71 applicable, 42 caught; per operator change-text 15 of 20, flip-conditional 14 of 16, key-index
+  8 of 10, remove-cleanup 2 of 5, drop-dep 3 of 11, swap-setters 0 of 9. No other mutant changed against dcbc61c.
+  The bar of 44 counted two text-hash verdicts on equivalent mutants; 42 is the sound count.
+- Pair tests/pairs/window_timers: red at 497cc8c8 (SaveDone, a real difference after a window timer, was
+  PASS-decided; SaveAlias, setTimeout against window.setTimeout, was a WITNESS), green with the patch.
+- Left: `window.addEventListener` and `document` are still absent in the sandbox, so an effect that subscribes to
+  them throws on both sides before its cleanup (the remove-cleanup misses named on 2026-10-26).

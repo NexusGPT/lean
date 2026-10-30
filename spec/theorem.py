@@ -102,17 +102,21 @@ def balanced(text, start):
 
 
 def split_top(s):
-    out, depth, cur = [], 0, ''
+    # the top-level commas of a parameter list: a comma inside (), <>, [] or {} belongs to a type. The `>` of a Dafny
+    # arrow `->` (a function type: `f: (int) -> Unit`) is not a closing angle bracket; counting it as one made every
+    # parameter after an arrow-typed one part of that parameter, and the lemma then called the unit with too few arguments
+    out, depth, cur, prev = [], 0, '', ''
     for ch in s:
         if ch in '(<[{':
             depth += 1
-        elif ch in ')>]}':
+        elif ch in ')]}' or (ch == '>' and prev != '-'):
             depth -= 1
         if ch == ',' and depth == 0:
             out.append(cur)
             cur = ''
         else:
             cur += ch
+        prev = ch
     if cur.strip():
         out.append(cur)
     return [p.strip() for p in out]

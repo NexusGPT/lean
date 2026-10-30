@@ -1,0 +1,27 @@
+{
+ "scope": [
+  "aliased",
+  "looped",
+  "moved",
+  "typed_alias",
+  "passed",
+  "other_any"
+ ],
+ "equal": {
+  "aliased": true,
+  "looped": false,
+  "moved": true,
+  "typed_alias": true,
+  "passed": true,
+  "other_any": true
+ },
+ "why": "A field read moved across a call that can change the object. In JavaScript every pair here except moved differs: aliased reads through f = e after e.preventDefault(); otherAny reads g.x after e.bump() where g may be e; typedAlias reads the record p after e.bump() where p may be e; passed reads p.x after f(p) where f may write q.x; looped reads e.done before each e.step() (hoisted in the candidate). The equal block states today's verdicts: aliased, otherAny, typedAlias and passed proved [CLAIM \u2014 false proof, open]; looped not proved only because its loop lemma is not found, the same gap [CLAIM \u2014 false proof, open]. Lane B witnesses aliased, looped and otherAny; on typedAlias and passed it gives PASS-bounded because it never passes one object as two parameters and its fake functions never write their arguments [CLAIM \u2014 lane B gap, open]. moved moves a pure computation across the call: proved, equal in JavaScript. The rule a sound reading needs (design/top-blockers.md, class-and-this): after a transition, a field read of any object the transition may reach is a world read ordered with the transitions. Owned by the false-proof lane (pair alias_after_call); when it lands, these rows flip to not proved and this file changes with it.",
+ "b": {
+  "aliased": "WITNESS",
+  "looped": "WITNESS",
+  "moved": "PASS-bounded",
+  "typedAlias": "PASS-bounded",
+  "passed": "PASS-bounded",
+  "otherAny": "WITNESS"
+ }
+}

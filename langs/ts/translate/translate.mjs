@@ -130,6 +130,19 @@ function translateOnce(file, fnName, opts = {}) {
     const o = sourceOriginOf(checker, id, sf, node);
     return callbackInputs.get(node)?.some(c => c.decl === o.decl) ? { ...o, kind: 'local' } : o;
   };
+  // an optional call `f?.(x)` (or `p.f?.(x)`) in a callback unit whose callee `f` (or root `p`) is one of the callback's captured inputs: the input is
+  // the callback's own parameter (callbackEnvironment), as a plain call `f(x)` reads it, so optionalCallShape (lower.mjs,
+  // which reads locality through common.mjs originOf) is given the function that declares `f` as the scope its locality
+  // is read against (design/top-blockers.md, callbacks-function-values)
+  const optionalScope = (call, node) => {
+    let f = call.expression; // the callee, or the root name of its record path (`p.onDone?.(x)`, `p.cbs.done?.(x)`)
+    while (ts.isPropertyAccessExpression(f) && !f.questionDotToken) f = f.expression;
+    if (!node || !ts.isIdentifier(f)) return node;
+    const o = sourceOriginOf(checker, f, sf, node);
+    if (!o.decl || !callbackInputs.get(node)?.some((c) => c.decl === o.decl && !c.mutable)) return node;
+    let p = o.decl; while (p && !ts.isFunctionLike(p)) p = p.parent;
+    return p ?? node;
+  };
   const exceptionUnits = analyze('exceptions', () => exceptionUnitsOf(sf, checker, fns));
   const generators = analyze('generators', () => generatorReading(checker, sf, fns));
   let yieldState = null;
@@ -2862,7 +2875,17 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (map[op]) {
       // comparing an Option with a plain value: lift the plain side
       const lt = typeOf(n.left), rt = typeOf(n.right);
-      if (isAny(lt) || isAny(rt)) return `(${expr(n.left, anyTarget())} ${o} ${expr(n.right, anyTarget())})`;
+      if (isAny(lt) || isAny(rt)) {
+        // an operand typed any or unknown may be NaN (NaN === NaN is false) or a signed zero (-0 === 0 is true), so Dafny
+        // equality on Any, reflexive and exact, is not ===: the comparison is one uninterpreted test over Any, the same
+        // term on both sides, negated for !== and != (design/type-assertions.md, 2026-10-30). Against a string or boolean
+        // literal the literal's type settles it (neither NaN nor a zero): the exact reading stays
+        const settled = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword; };
+        if (settled(n.left) || settled(n.right)) return `(${expr(n.left, anyTarget())} ${o} ${expr(n.right, anyTarget())})`;
+        const A = anyType(), strict = op === K.EqualsEqualsEqualsToken || op === K.ExclamationEqualsEqualsToken;
+        const test = `${external(strict ? 'op_strict_eq_Any' : 'op_loose_eq_Any', [A, A], 'bool')}(${expr(n.left, anyTarget())}, ${expr(n.right, anyTarget())})`;
+        return o === '!=' ? `!${test}` : test;
+      }
       if ((isOptional(lt) || isNullish(lt)) && (isOptional(rt) || isNullish(rt))) {
         const joined = checker.getUnionType([lt, rt]);
         if (bothAbsent(joined)) return `(${expr(n.left, joined)} ${o} ${expr(n.right, joined)})`;
@@ -3990,7 +4013,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // the value of an optional chain that stopped, in the chain's own type: a void call's result is Unit either way
   function absentIn(t, n) { const none = checker.getUndefinedType(); return dtype(t, n) === 'Unit' ? 'Unit' : convert(absentValue(none), none, t, n); }
   function optionalCall(n, awaited) {
-    const shape = optionalCallShape(checker, n, sf, { current: currentUnit?.node, currentClass: currentUnit?.cls, thisParam: thisParamOf(currentUnit), units: fns, valueOperands, valueType: typeOf, materializeReceiver: dtype }).emittedCalleeShape;
+    const shape = optionalCallShape(checker, n, sf, { current: optionalScope(n, currentUnit?.node), currentClass: currentUnit?.cls, thisParam: thisParamOf(currentUnit), units: fns, valueOperands, valueType: typeOf, materializeReceiver: dtype }).emittedCalleeShape;
     if (shape.why) fail(n, `optional-chain: ${shape.why}`);
     if (!shape.absent) return null;
     const f = shape.callee, calleeT = shape.calleeType;
@@ -6235,8 +6258,109 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // `r.tags.push(x)`, `Object.assign(r, s)`, `delete r.f`. The value reading binds a copy of the element, so it would
   // drop the write; the heap core reads it as the step on the element (design/element-writes.md). A unit outside the
   // core that holds one is refused by name, never translated without its write
+  // A read after a call that may change what it reads (design/alias-result.md, 2026-10-30). The ordinary lane reads
+  // an object as a value: `p.x`, `ext_Any_x_Any(g)`, `ext_Ext_C_x_Ext_C(self)`, a copy, a library read, the unit's
+  // result take the object as it was when the unit received it, while a call that runs outside code (isEffectCall, a
+  // clock or random read aside) only threads the world. Such a call may change any object it can reach: the values the
+  // run hands to the outside (a receiver, an argument, a called function value) and whatever they may alias or reach
+  // by type, an any or unknown value or a function value reaching anything (hash-keys.md: the outside runs code only
+  // through values this run hands it). A read of such an object without the world, after such a call, would read the
+  // value before the call: refused by name. Kept: the object handed on to a call that threads the world (a receiver, an
+  // argument), an alias, `typeof`, `===`, a truth test, and a local the unit made of primitive fields and only reads.
+  function readAfterCall(u) {
+    const body = u.fn?.body ?? u.node?.body;
+    if (!body) return null;
+    const P = (x) => { let p = x.parent; while (p && (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p))) { x = p; p = p.parent; } return { p, x }; };
+    const clock = (c) => { const t = ts.isCallExpression(c) ? c.expression.getText(sf) : ts.isNewExpression(c) ? `new ${c.expression.getText(sf)}` : ''; return ['Date.now', 'performance.now', 'process.hrtime', 'Math.random', 'crypto.randomUUID'].includes(t) || (t === 'new Date' && !(c.arguments && c.arguments.length)); };
+    const points = [], handed = [];
+    const effect = (n) => { try { return isEffectCall(n); } catch { return true; } };
+    const walk = (n) => {
+      if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && effect(n)) {
+        points.push(n);
+        if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
+          for (const a of n.arguments ?? []) handed.push(typeOf(ts.isSpreadElement(a) ? a.expression : a));
+          const f = n.expression;
+          if (ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) handed.push(typeOf(f.expression));
+        } else if (ts.isPropertyAccessExpression(n)) handed.push(typeOf(n.expression));
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(body);
+    if (!points.length) return null;
+    // may a value of type h reach (be, or hold through its fields) an object of type o? any, unknown, a function or an unread depth: yes
+    const prim = (t) => !!t && (t.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.Undefined | TF.Null | TF.Void | TF.Never | TF.ESSymbolLike)) && !(t.flags & TF.Union && t.types.some((x) => !prim(x)));
+    const reaches = (h, o, depth = 0, seen = new Set()) => {
+      if (h === null || !h || isAny(h)) return true;
+      if (h.flags & TF.Union) return h.types.some((x) => reaches(x, o, depth, seen));
+      if (prim(h) || primitiveBrand(h)) return false;
+      if (checker.getSignaturesOfType(h, ts.SignatureKind.Call).length) return false; // a function value reaches what it is handed, its arguments (hash-keys.md)
+      if (checker.isTypeAssignableTo(o, h) || checker.isTypeAssignableTo(h, o)) return true;
+      if (depth >= 4) return true;
+      if (seen.has(h)) return false; seen.add(h);
+      const inner = [...(checker.getTypeArguments?.(h) ?? []), ...checker.getPropertiesOfType(h).map((s) => { try { return checker.getTypeOfSymbolAtLocation(s, u.node); } catch { return undefined; } }).filter((x) => x !== undefined)];
+      const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
+      return [...inner, ...(idx ? [idx] : [])].some((x) => reaches(x, o, depth + 1, seen));
+    };
+    const reached = (o) => handed.some((h) => reaches(h, o));
+    const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
+    const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
+    const inFn = (x, top) => { for (let p = x.parent; p && p !== top; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
+    const between = (start, occ) => points.some((c) => {
+      const inside = c.pos <= occ.pos && occ.end <= c.end;
+      if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
+      if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf)) return true;
+      const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside;
+    });
+    const declOfSym = (s) => s?.valueDeclaration ?? s?.declarations?.[0];
+    const writes = (s) => { const out = []; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };
+    const uses = (s) => { const out = []; const w = (x) => { if (ts.isIdentifier(x) && x !== declOfSym(s)?.name && checker.getSymbolAtLocation(x) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };
+    const primLit = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isObjectLiteralExpression(e)) return e.properties.every((m) => ts.isPropertyAssignment(m) && prim(typeOf(m.initializer))); if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => !ts.isSpreadElement(x) && prim(typeOf(x))); return false; };
+    const sealed = (s) => { // a local the unit made of primitive parts, never handed, aliased or given an object
+      const d = declOfSym(s);
+      if (!d || !ts.isVariableDeclaration(d) || !d.initializer || !primLit(d.initializer) || writes(s).length) return false;
+      return uses(s).every((x) => { const { p, x: y } = P(x); if (!((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === y)) return false; const q = p.parent; if (q && ts.isCallExpression(q) && q.expression === p) return false; if (q && ts.isBinaryExpression(q) && q.left === p && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) return prim(typeOf(q.right)); return true; });
+    };
+    const objectLike = (t) => !!t && !prim(t) && !primitiveBrand(t) && !(checker.getSignaturesOfType(t, ts.SignatureKind.Call).length && !isAny(t));
+    const kept = (occ) => { // the occurrence hands the object on, names it again or tests what never changes
+      const { p, x } = P(occ);
+      if (!p) return false;
+      if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && (p.arguments ?? []).includes(x)) return effect(p);
+      if (ts.isSpreadElement(p) && p.parent && (ts.isCallExpression(p.parent) || ts.isNewExpression(p.parent))) return false;
+      if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return effect(p.parent);
+      if (ts.isVariableDeclaration(p) && p.initializer === x) return true;
+      if (ts.isBinaryExpression(p)) { const k = p.operatorToken.kind; if (k === K.EqualsToken && p.right === x) return true; if ([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(k)) return true; if (k === K.InstanceOfKeyword && p.left === x) return true; }
+      if (ts.isTypeOfExpression(p)) return true;
+      if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true;
+      if (isAny(typeOf(x)) && (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === x))) return true; // an any value is a handle: returned as it is, only a read through it takes its state
+      if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isConditionalExpression(p)) && (p.expression ?? p.condition) === x) return true;
+      return false;
+    };
+    let found = null;
+    const visit = (n) => {
+      if (found) return;
+      const isThis = n.kind === K.ThisKeyword;
+      if (isThis || (ts.isIdentifier(n) && ts.isExpression(n) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && 'name' in n.parent && n.parent.name === n && !ts.isShorthandPropertyAssignment(n.parent)) && !(ts.isCallExpression(n.parent) && n.parent.expression === n))) {
+        const s = isThis ? null : checker.getSymbolAtLocation(n);
+        const d = s ? declOfSym(s) : null;
+        const t = typeOf(n);
+        if ((isThis || (d && d.getSourceFile() === sf && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isBindingElement(d)))) && objectLike(t) && !(s && sealed(s)) && !kept(n)) {
+          const local = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end;
+          let init = local && d.initializer; while (init && (ts.isParenthesizedExpression(init) || ts.isAwaitExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init))) init = init.expression;
+          const fresh = init && (ts.isCallExpression(init) || ts.isNewExpression(init)) && !writes(s).length; // obtained when it was bound
+          const start = fresh ? d.getEnd() : body.getStart(sf);
+          if (between(start, n) && reached(t)) found = n;
+        }
+      }
+      ts.forEachChild(n, visit);
+    };
+    visit(body);
+    if (!found) return null;
+    const txt = found.kind === K.ThisKeyword ? 'this' : found.getText(sf);
+    return { node: found, message: `\`${txt}\` is read here after a call that may change it (the call is handed a value that may be or hold this object), and this reading takes the object as it was before the call; read what you need before the call, or pass it to the call and use the call's result` };
+  }
   function emitUnit(u) {
     currentUnit = u;
+    { const rc = readAfterCall(u); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: never translated
     { const why = callbackUntypedJsUnit(sf, u, checker); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent

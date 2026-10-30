@@ -1,0 +1,11 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "Browser code reaches its timers through `window`, and in a browser `window` is the global object. Lane B's sandbox gave `window` as undefined, so `window.setTimeout` in a handler threw a TypeError on both sides and the state after the timer was never rendered (ProcessionDemo change-text, mutation benchmark). SaveDone: the text after the timer differs, WITNESS on the sequence that fires onSave. SaveAlias: setTimeout against window.setTimeout, the same timer, PASS-decided by the finite explorer. SaveReset: two setters swapped inside one handler and inside one timer callback, one React batch either way, PASS-bounded. Lane A refuses the unresolved component by design, so the pair checks lane B alone.",
+ "b": {
+  "SaveDone": "WITNESS",
+  "SaveAlias": "PASS-decided",
+  "SaveReset": "PASS-bounded"
+ }
+}
