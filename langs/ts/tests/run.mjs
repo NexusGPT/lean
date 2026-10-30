@@ -654,6 +654,10 @@ async function adviceLabels(add) {
     ['linked-dependencies', scriptRow('runtime', 'linked-dependencies', 'a declaration behind a node_modules link out of the tree reaches the lane B child', [path.join(here, 'linked-dependencies.mjs')], lastLine)],
     // a finite exploration where every handler fire threw one same error on both sides is ASK naming it, never PASS-decided (exec/finite.mjs; design/microtask-worker.md)
     ['same-error', scriptRow('runtime', 'same-error', 'a component whose every handler threw the same sandbox error is ASK, not PASS-decided', [path.join(here, 'same-error.mjs')], lastLine)],
+    // the converter: a dry run writes no source file even when killed mid-round; census.mjs answers --help; a forEach rewrite is refused when the list's type rests on an assertion (converter lane, 2026-10-30)
+    ['convert-dry-run-kill', scriptRow('runtime', 'convert-dry-run-kill', 'a converter dry run killed mid-round leaves the tree byte-identical', [path.join(here, 'convert_dry_run_kill.mjs')], lastLine)],
+    ['census-usage', scriptRow('runtime', 'census-usage', 'census.mjs prints usage on --help (exit 0) and on no arguments (exit 2)', [path.join(here, 'census_usage.mjs')], lastLine)],
+    ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
   ].map(([key, go]) => ({ key: `runtime/${key}`, go }));
