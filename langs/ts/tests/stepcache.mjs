@@ -49,9 +49,8 @@ export const dafnyVersionString = () => dafnyVersion ??= (spawnSync('dafny', ['-
 const UNSTABLE = /timed out|out of resource|spin-bound|__timeout__|harness timeout|ASK:harness|"harness":|killed \(|ENOSPC|EAGAIN/i;
 let hits = 0, misses = 0, stored = 0;
 export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, dir: CACHE_DIR });
-// run(cmd, args, env) is the suite's own runner; files: what the command reads; outs: what it writes (restored on a hit)
-export function cachedRun(run, cmd, args, { root, files = [], outs = [], env = null, normalise = [] } = {}) {
-  if (!stepCacheOn) return run(cmd, args, env ?? undefined);
+// the key of one command, and the stored entry when there is one (a hit); shared by the sync and the async runner
+function lookup(cmd, args, { root, files = [], outs = [], env = null, normalise = [] }) {
   const norm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(from).join(to) : t), String(s));
   const denorm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(to).join(from) : t), String(s)); // a stored output names this run's paths again: a result replayed in another checkout or temp folder must point at that checkout (the witness-lines check compares the site's file to the pair's)
   const inputs = files.map((f) => { try { return [norm(f), sha(fs.readFileSync(f))]; } catch { return [norm(f), null]; } });
@@ -59,14 +58,18 @@ export function cachedRun(run, cmd, args, { root, files = [], outs = [], env = n
   const kind = producerKind(cmd, args);
   const keyObj = { v: 2, cmd, args: args.map(norm), env: env ?? {}, inputs, kind, producer: kind === 'dafny' ? dafnyVersionString() : producerHash(root, kind) }; // v2: outputs stored normalised
   const key = sha(JSON.stringify(keyObj)), file = path.join(CACHE_DIR, key.slice(0, 2), key + '.json');
+  const step = { norm, denorm, keyObj, key, file, outs };
   try {
     const e = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (e.key === key && e.digest === sha(JSON.stringify(e.outs))) {
       for (const [rel, content] of Object.entries(e.outs)) { const p = outs.find((o) => norm(o) === rel); if (p) { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, denorm(content)); } }
-      hits++; return { status: e.status, stdout: denorm(e.stdout), stderr: denorm(e.stderr), signal: null, cached: true };
+      hits++; return { step, hit: { status: e.status, stdout: denorm(e.stdout), stderr: denorm(e.stderr), signal: null, cached: true } };
     }
   } catch (err) { if (err.code && err.code !== 'ENOENT') console.error(`step cache read ${err.code}: ${file}`); }
-  const r = run(cmd, args, env ?? undefined);
+  return { step, hit: null };
+}
+let nextSeq = 0; // two commands of one process may store at once (the async runner): each writes its own temporary file
+function store({ norm, keyObj, key, file, outs }, r) {
   misses++;
   const text = (r.stdout ?? '') + (r.stderr ?? '');
   const outContents = {}; let complete = true;
@@ -75,10 +78,24 @@ export function cachedRun(run, cmd, args, { root, files = [], outs = [], env = n
   if (stable) {
     try {
       fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
-      const next = `${file}.${process.pid}.next`;
-      fs.writeFileSync(next, JSON.stringify({ key, cmd, args: keyObj.args, status: r.status, stdout: norm(r.stdout ?? ''), stderr: norm(r.stderr ?? ''), outs: outContents, digest: sha(JSON.stringify(outContents)), date: new Date().toISOString() }), { mode: 0o600, flag: 'wx' });
+      const next = `${file}.${process.pid}.${nextSeq++}.next`;
+      fs.writeFileSync(next, JSON.stringify({ key, cmd: keyObj.cmd, args: keyObj.args, status: r.status, stdout: norm(r.stdout ?? ''), stderr: norm(r.stderr ?? ''), outs: outContents, digest: sha(JSON.stringify(outContents)), date: new Date().toISOString() }), { mode: 0o600, flag: 'wx' });
       fs.renameSync(next, file); stored++;
     } catch (err) { console.error(`step cache write ${err.code ?? err.message}: ${file}`); }
   }
   return r;
+}
+// run(cmd, args, env) is the suite's own runner; files: what the command reads; outs: what it writes (restored on a hit)
+export function cachedRun(run, cmd, args, opts = {}) {
+  if (!stepCacheOn) return run(cmd, args, opts.env ?? undefined);
+  const { step, hit } = lookup(cmd, args, opts);
+  if (hit) return hit;
+  return store(step, run(cmd, args, opts.env ?? undefined));
+}
+// the same around an async runner (a child process the suite's pool runs): the key, the hit and the store are the sync ones
+export async function cachedRunAsync(runAsync, cmd, args, opts = {}) {
+  if (!stepCacheOn) return runAsync(cmd, args, opts.env ?? undefined);
+  const { step, hit } = lookup(cmd, args, opts);
+  if (hit) return hit;
+  return store(step, await runAsync(cmd, args, opts.env ?? undefined));
 }
