@@ -45,7 +45,6 @@ Baseline is base f3cb5b41, "after" is afa1c0f1 (outputs: lane/battery-*.json).
 
 ## Siblings run by hand, all pass
 - On the final code: for_desugar, fake_throw, gen_walk, generics, lane_b_reach and the three cause pairs.
-- Also on the world rule: generators, callback_behaviour, callback_behaviour_tree, rest_param and witness_args.
-- I stopped microtask_worker at 15 minutes, by my own task, and it has no result. It is a spin-bound pair; please run it in the suite.
-- These were not run: service, class_new, counter, heap_methods, try_catch, two_callers, promise_handle, exceptions_across and for_each.
-  They read services through `this`, so the full-world rule reaches them. The admission suite should cover them before merge.
+- Also: generators, callback_behaviour(_tree), rest_param, witness_args, special_numbers, numbers, absent_number.
+- I stopped microtask_worker (spin-bound) at 15 minutes: no result, please run it in the suite.
+- Not run, and reached by the full-world rule: service, class_new, counter, heap_methods, try_catch, two_callers, promise_handle, exceptions_across, for_each.
