@@ -1,0 +1,6 @@
+{
+ "scope": ["long_name", "long_tag", "is_ada", "is_ada_tag", "wide", "long"],
+ "equal": {"long_name": true, "long_tag": false, "is_ada": true, "is_ada_tag": false, "wide": true, "long": false},
+ "why": "A strict-mode error names a value whose type nothing checked: that value is read at the opaque Any, as a value an assertion holds is (design/strict-fixer.md, 2026-10-30), and the error is advice, never a refusal. Possibly absent (TS18048): longName reads the same field through a local, proved; longTag's test gives false where the parent throws on an absent tag, witnessed. Assignability whose only cause is absence (TS2322): isAda keeps the value and the upper-casing, proved; isAdaTag's `?? \"\"` gives false where the parent throws, witnessed. A member one member of the union declares (TS2339): wide reads it through a local, proved; long tests the tag and gives true for a circle where the parent compares undefined, witnessed. Each unit compares the opaque read with a literal, so the identity guard keeps its lemma. A member no type declares stays refused (escape strict_value_unchecked_own).",
+ "b": {"longName": "PASS-bounded", "longTag": "WITNESS", "isAda": "PASS-bounded", "isAdaTag": "WITNESS", "wide": "PASS-bounded", "long": "WITNESS"}
+}

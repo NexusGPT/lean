@@ -15,7 +15,7 @@ import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { primitiveBrand } from '../common.mjs';
 import { originOf } from '../common.mjs';
-import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment } from '../common.mjs';
+import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment, strictValue } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
@@ -23,7 +23,7 @@ import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or f
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
 import { absenceCarried, absenceHome, payloadRead, payloadStatement, strandedLetReads } from '../common.mjs'; // a value that may be absent: one test with the translator (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys (a spread, Object.assign onto a literal): one test with the value reading and the heap core
-import { typeAssertion, erasedReferenceSlot } from '../common.mjs'; // a narrowing `as`: one test with the translator
+import { typeAssertion, erasedReferenceSlot, assertionHeld } from '../common.mjs'; // a narrowing `as`: one test with the translator
 import { spreadReadWhy, openRecordReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries (open-datatype)
 import { untypedThisParam } from '../common.mjs'; // a `this` parameter typed any or unknown, or untyped: one test with the translator
 // untypedJsUnit (common.mjs): a JavaScript unit whose parameter has no declared type, refused as untyped-js by the lint's unit loop and at the head of the translator's emitUnit
@@ -2046,6 +2046,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     expr(e.expression);
     const parts = nonNull(rt);
     if (parts.some(isAny)) return; // a read on an opaque value: uninterpreted accessor
+    if (!onWritePath(e) && (() => { const h = assertionHeld(checker, e.expression); return !!h && isAny(h); })()) return; // a read on a value held at Any (an assertion, a strict-mode error's value): uninterpreted accessor, one test with the translator's typeOf
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
     if (execMatchMember(e, checker)) return; // `m.index` / `m.input` of a match of a non-global regular expression literal (common.mjs)
@@ -2344,6 +2345,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     return !guarded;
   };
   // compiler diagnostics (strict mode) that fall inside a checked region; unresolved-module codes get their own rule
+  const strictAdvice = [];
   for (const d of diagnostics) {
     if (d.file !== sf || d.start === undefined) continue;
     const hit = !ranges || checkedDiagSpans.some((n) => d.start >= n.getStart(sf) && d.start <= n.getEnd());
@@ -2351,6 +2353,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (d.code === 7029) continue; // switch fall-through is an ordered clause continuation
     if (IMPLICIT_ANY.has(d.code)) continue; // implicit any: opaque, admitted
     if (d.code === 18046 && !ownUnknown(d)) continue; // an unknown the unit did not write: opaque, admitted
+    if (strictValue(checker, sf, d)) { strictAdvice.push(d); continue; } // a value whose type the error says nothing checked: held at Any (common.mjs strictValue), advice only
     if (d.code === 2683 || d.code === 7041) { // an implicit receiver: an input the function does not declare, which the translator refuses
       out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'implicit-this', msg: `TS${d.code}: \`this\` the function does not declare; declare the receiver as a \`this\` parameter`, text: ownText.slice(d.start, d.start + (d.length ?? 4)) });
       continue;
@@ -2372,6 +2375,8 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   }
   // Optional mechanical advice never enters the proof gate. The editor and --advice ask for it.
   if (opts.advisory) {
+    // a strict-mode error the proof reads at Any: advice with the compiler's code, never a refusal
+    for (const d of strictAdvice) out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'ts-strict', msg: `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')} (the value is read at Any: no fact of its type is used; narrow it to give the proof its type)`, text: ownText.slice(d.start, d.start + (d.length ?? 4)), advisory: true });
     const note = (node, rule, msg) => {
       if (!overlaps(sf, node, ranges)) return;
       v(node, rule, msg);

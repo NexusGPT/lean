@@ -967,6 +967,7 @@ function translateOnce(file, fnName, opts = {}) {
       if (!unitEffectful()) fail(n, 'internal: a static cell read in a pure unit');
       const d = dtype(dt, n);
       const code = hoist(`${staticAccessor(st, 'get', d)}(${WORLD})`, d);
+      if (heldAtAny(dt, typeOf(n))) return convert(code, dt, typeOf(n), n);
       return isOptional(dt) && !isOptional(typeOf(n)) && !isNullish(typeOf(n)) ? `${code}.value` : code;
     }
     const init = st.decl.initializer;
@@ -1099,6 +1100,9 @@ function translateOnce(file, fnName, opts = {}) {
   }
   const someD = (code, d) => `${d.startsWith('Nullish<') ? 'Nullish.' : ''}Some(${code})`;
   const inputType = (p) => checker.getUnionType([typeOf(p.name), checker.getUndefinedType()]);
+  // a read typeOf holds at Any (an assertion, a strict-mode error's value) of storage declared another type: the stored
+  // value as it is, boxed; never its payload, which only a guard that narrowed it may take (common.mjs assertionHeld)
+  const heldAtAny = (declared, here) => !!declared && !!here && isAny(here) && !isAny(declared);
   // the type of storage before a flow guard narrows a read
   function storedType(n) {
     while (ts.isParenthesizedExpression(n)) n = n.expression;
@@ -1107,6 +1111,7 @@ function translateOnce(file, fnName, opts = {}) {
     return typeOf(n);
   }
   function narrowed(code, declared, here, n) {
+    if (heldAtAny(declared, here)) return convert(code, declared, here, n);
     if (isNullish(here)) return absentValue(here);
     if (isOptional(declared) && !isOptional(here)) return `${code}.value`;
     if (bothAbsent(declared) && !bothAbsent(here)) return convert(code, declared, here, n);
@@ -1744,7 +1749,7 @@ function translateOnce(file, fnName, opts = {}) {
     }
     const sequence = spread ? callSequence(args) : null;
     const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a.__tupleElem ? a.node : a) : dtype(a.__tupleElem ? a.type : typeOf(a), a.__tupleElem ? a.node : a); });
-    let rt = n.__plainReturn ?? (sig ? sig.getReturnType() : typeOf(n)); // an optional call's present branch returns what the callee returns
+    let rt = n.__plainReturn ?? (sig && !isAny(typeOf(n)) ? sig.getReturnType() : typeOf(n)); // an optional call's present branch returns what the callee returns; a call typeOf holds at Any (on a held receiver) returns Any, as its uses read it
     if (isPromiseT(rt) && !(isHandleT(rt) && !calleeName.startsWith('await_'))) rt = checker.getTypeArguments(rt)[0]; // an awaited call yields the value; a held one of a value with no identity yields the handle
     else if (calleeName.startsWith('await_') || calleeName.includes('await_')) { const aw = checker.getAwaitedType ? checker.getAwaitedType(rt) : null; if (aw) rt = aw; }
     let rd = dtype(rt, n);
@@ -2337,6 +2342,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (state) {
       const dt = checker.getTypeAtLocation(state.name), d = dtype(dt, n);
       const code = hoist(`${moduleAccessor(n, 'get', d)}(${WORLD})`, d);
+      if (heldAtAny(dt, typeOf(n))) return convert(code, dt, typeOf(n), n);
       return isOptional(dt) && !isOptional(typeOf(n)) && !isNullish(typeOf(n)) ? `${code}.value` : code;
     }
     if (outsideRoot(checker, n, sf, currentUnit?.node) && n.text !== 'require') { const d = dtype(typeOf(n), n); addPrelude('World', 'type World'); return hoist(`${external(`global_read_${n.text}`, ['World'], `(World, ${d})`)}(${WORLD})`, d); }
@@ -2355,7 +2361,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const dt = symType(o.sym, n);
       if (optionalAnyParam(o.sym, n)) return lowerOptionAny(code);
       code = narrowed(code, dt, typeOf(n), n);
-      if (isNullish(typeOf(n))) return code;
+      if (isNullish(typeOf(n)) || heldAtAny(dt, typeOf(n))) return code; // a held read is the stored value boxed whole (narrowed)
       const declaredD = dtype(dt, n);
       const members = sums.get(optionalD(declaredD) ? innerOf(declaredD) : declaredD);
       const valueD = optionalD(declaredD) && !isOptional(typeOf(n)) && !isNullish(typeOf(n)) ? innerOf(declaredD) : declaredD;
@@ -3605,7 +3611,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         let rd = isAny(declared) ? anyType() : dtype(declared, n);
         if (dOpt && !optionalD(rd)) { usesOption = true; rd = `Option<${rd}>`; }
         const code = `${external(`${T}_${name}`, [T], rd)}(${recvCode})`;
-        if (dOpt && !isOptional(ft) && !isNullish(ft) && !n.__keepOption) return `${code}.value`;
+        if (dOpt && !isOptional(ft) && !isNullish(ft) && !isAny(ft) && !n.__keepOption) return `${code}.value`;
         return n.__keepOption ? code : narrowed(code, declared, ft, n);
       }
     }
