@@ -1,0 +1,123 @@
+# node v24.22.2, Linux 6.8.0-139-generic; listener pid 4056730 on 127.0.0.1:47391
+
+## units the parent holds (the lane B worker, under --permission), LEAN_NET=open
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit reachHost --n 1 --no-project --out <tmp>/reachHost.json
+  exit 0 | WITNESS -> <tmp>/reachHost.json 
+  verdict WITNESS | outcome {"returned":"ok: pid number, permission object"}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit fileRead --n 1 --no-project --out <tmp>/fileRead.json
+  exit 0 | WITNESS -> <tmp>/fileRead.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-read to manage permissions."}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit envRead --n 1 --no-project --out <tmp>/envRead.json
+  exit 0 | WITNESS -> <tmp>/envRead.json 
+  verdict WITNESS | outcome {"returned":"ok: 32 variables"}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit fileWrite --n 1 --no-project --out <tmp>/fileWrite.json
+  exit 0 | WITNESS -> <tmp>/fileWrite.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-write to manage permissions."}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit childProcess --n 1 --no-project --out <tmp>/childProcess.json
+  exit 0 | WITNESS -> <tmp>/childProcess.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-child-process to manage permissions."}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit nativeAddon --n 1 --no-project --out <tmp>/nativeAddon.json
+  exit 0 | WITNESS -> <tmp>/nativeAddon.json 
+  verdict WITNESS | outcome {"returned":"ERR_DLOPEN_DISABLED: Cannot load native addon because loading addons is disabled."}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit workerThread --n 1 --no-project --out <tmp>/workerThread.json
+  exit 0 | WITNESS -> <tmp>/workerThread.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-worker to manage permissions."}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit rawBinding --n 1 --no-project --out <tmp>/rawBinding.json
+  exit 0 | WITNESS -> <tmp>/rawBinding.json 
+  verdict WITNESS | outcome {"returned":"binding ERR_ACCESS_DENIED: process.binding; _linkedBinding ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-addons to manage permissions."}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit unseal --n 1 --no-project --out <tmp>/unseal.json
+  exit 0 | WITNESS -> <tmp>/unseal.json 
+  verdict WITNESS | outcome {"returned":"ok: redefined"}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit netSocket --n 1 --no-project --out <tmp>/netSocket.json
+  exit 0 | WITNESS -> <tmp>/netSocket.json 
+  verdict WITNESS | outcome {"returned":"ok: connected"}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit hostFetch --n 1 --no-project --out <tmp>/hostFetch.json
+  exit 0 | WITNESS -> <tmp>/hostFetch.json 
+  verdict WITNESS | outcome {"returned":"ok: status 200"}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit dnsLookup --n 1 --no-project --out <tmp>/dnsLookup.json
+  exit 0 | WITNESS -> <tmp>/dnsLookup.json 
+  verdict WITNESS | outcome {"returned":"ok: ::1"}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit udpSend --n 1 --no-project --out <tmp>/udpSend.json
+  exit 0 | WITNESS -> <tmp>/udpSend.json 
+  verdict WITNESS | outcome {"returned":"ok: sent"}
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit sandboxFetch --n 1 --no-project --out <tmp>/sandboxFetch.json
+  exit 0 | WITNESS -> <tmp>/sandboxFetch.json 
+  verdict WITNESS | outcome {"returned":"object"}
+
+## a unit with no parent (exec/new-unit.mjs, its own child), LEAN_NET=open
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitReach --n 1 --no-project --out <tmp>/newUnitReach.json
+  exit 0 | NEW -> <tmp>/newUnitReach.json 
+  verdict NEW | outcome "write ok; spawn ok (exit 0)"
+$ LEAN_NET=open node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitNet --n 1 --no-project --out <tmp>/newUnitNet.json
+  exit 0 | NEW -> <tmp>/newUnitNet.json 
+  verdict NEW | outcome "connect ok"
+
+## units the parent holds (the lane B worker, under --permission), LEAN_NET=deny
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit reachHost --n 1 --no-project --out <tmp>/reachHost.json
+  exit 0 | WITNESS -> <tmp>/reachHost.json 
+  verdict WITNESS | outcome {"returned":"ok: pid number, permission object"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit fileRead --n 1 --no-project --out <tmp>/fileRead.json
+  exit 0 | WITNESS -> <tmp>/fileRead.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-read to manage permissions."}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit envRead --n 1 --no-project --out <tmp>/envRead.json
+  exit 0 | WITNESS -> <tmp>/envRead.json 
+  verdict WITNESS | outcome {"returned":"ok: 32 variables"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit fileWrite --n 1 --no-project --out <tmp>/fileWrite.json
+  exit 0 | WITNESS -> <tmp>/fileWrite.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-fs-write to manage permissions."}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit childProcess --n 1 --no-project --out <tmp>/childProcess.json
+  exit 0 | WITNESS -> <tmp>/childProcess.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-child-process to manage permissions."}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit nativeAddon --n 1 --no-project --out <tmp>/nativeAddon.json
+  exit 0 | WITNESS -> <tmp>/nativeAddon.json 
+  verdict WITNESS | outcome {"returned":"ERR_DLOPEN_DISABLED: Cannot load native addon because loading addons is disabled."}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit workerThread --n 1 --no-project --out <tmp>/workerThread.json
+  exit 0 | WITNESS -> <tmp>/workerThread.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-worker to manage permissions."}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit rawBinding --n 1 --no-project --out <tmp>/rawBinding.json
+  exit 0 | WITNESS -> <tmp>/rawBinding.json 
+  verdict WITNESS | outcome {"returned":"binding ERR_ACCESS_DENIED: process.binding; _linkedBinding ERR_ACCESS_DENIED: Access to this API has been restricted. Use --allow-addons to manage permissions."}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit unseal --n 1 --no-project --out <tmp>/unseal.json
+  exit 0 | WITNESS -> <tmp>/unseal.json 
+  verdict WITNESS | outcome {"returned":"error: Cannot redefine property: connect"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit netSocket --n 1 --no-project --out <tmp>/netSocket.json
+  exit 0 | WITNESS -> <tmp>/netSocket.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: net.connect ERR_ACCESS_DENIED: the network is denied (LEAN_NET=deny)"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[{"api":"net.connect","target":"127.0.0.1:47391","side":"parent","failed":"ERR_ACCESS_DENIED"}]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit hostFetch --n 1 --no-project --out <tmp>/hostFetch.json
+  exit 0 | WITNESS -> <tmp>/hostFetch.json 
+  verdict WITNESS | outcome {"returned":"error: fetch failed (cause ERR_ACCESS_DENIED: net.connect ERR_ACCESS_DENIED: the network is denied (LEAN_NET=deny))"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[{"api":"net.connect","target":"127.0.0.1:47391","side":"parent","failed":"ERR_ACCESS_DENIED"}]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit dnsLookup --n 1 --no-project --out <tmp>/dnsLookup.json
+  exit 0 | WITNESS -> <tmp>/dnsLookup.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: dns.lookup ERR_ACCESS_DENIED: the network is denied (LEAN_NET=deny)"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[{"api":"dns.lookup","target":"localhost","side":"parent","failed":"ERR_ACCESS_DENIED"}]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit udpSend --n 1 --no-project --out <tmp>/udpSend.json
+  exit 0 | WITNESS -> <tmp>/udpSend.json 
+  verdict WITNESS | outcome {"returned":"ERR_ACCESS_DENIED: dgram.send ERR_ACCESS_DENIED: the network is denied (LEAN_NET=deny)"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[{"api":"dgram.send","target":"127.0.0.1:47391","side":"parent","failed":"ERR_ACCESS_DENIED"}]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/probes.ts --candidate fixtures/sandbox/blank.ts --unit sandboxFetch --n 1 --no-project --out <tmp>/sandboxFetch.json
+  exit 0 | WITNESS -> <tmp>/sandboxFetch.json 
+  verdict WITNESS | outcome {"returned":"object"}
+  record.sandbox {"network":"deny","by":"lean's bindings under the permission model (this Node has no --allow-net)","denied":[]}
+
+## a unit with no parent (exec/new-unit.mjs, its own child), LEAN_NET=deny
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitReach --n 1 --no-project --out <tmp>/newUnitReach.json
+  exit 0 | NEW -> <tmp>/newUnitReach.json 
+  verdict NEW | outcome "write ok; spawn ok (exit 0)"
+  record.sandbox {"network":"deny","by":"lean's bindings only: this process runs without the permission model, so the raw bindings are not refused","denied":[]}
+$ LEAN_NET=deny node langs/ts/exec/run.mjs --parent fixtures/sandbox/blank.ts --candidate fixtures/sandbox/new-unit-probe.ts --unit newUnitNet --n 1 --no-project --out <tmp>/newUnitNet.json
+  exit 0 | NEW -> <tmp>/newUnitNet.json 
+  verdict NEW | outcome "connect ERR_ACCESS_DENIED: net.connect ERR_ACCESS_DENIED: the network is denied (LEAN_NET=deny)"
+  record.sandbox {"network":"deny","by":"lean's bindings only: this process runs without the permission model, so the raw bindings are not refused","denied":[{"api":"net.connect","target":"127.0.0.1:47391","side":null,"failed":"ERR_ACCESS_DENIED"}]}
+
+# listener 4056730 stopped (exit 0); requests it answered: see the probes above

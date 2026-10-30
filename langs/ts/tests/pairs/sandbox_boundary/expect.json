@@ -1,0 +1,14 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "The sandbox boundary (design/sandbox-boundary.md). statusOf calls fetch: an outside call, the same fake on both sides, destructured in the candidate: PASS-bounded, and under LEAN_NET=deny it opens no socket (the record names the mode and no denied attempt). reachNet and reachFetch leave the vm context through a host intrinsic and attempt a real connection (net.connect, the worker's own fetch); under LEAN_NET=deny each attempt fails with ERR_ACCESS_DENIED before a socket exists, on both sides alike (PASS-bounded), and the record names the attempt. They are not lane B rows in the open mode: there the answer is the machine's (ECONNREFUSED or a listener), not the unit's.",
+ "b": {
+  "statusOf": "PASS-bounded"
+ },
+ "netDeny": {
+  "statusOf": { "verdict": "PASS-bounded", "denied": [] },
+  "reachNet": { "verdict": "PASS-bounded", "denied": ["net.connect 127.0.0.1:9"] },
+  "reachFetch": { "verdict": "PASS-bounded", "denied": ["net.connect 127.0.0.1:1080"] }
+ }
+}
