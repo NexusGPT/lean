@@ -23,7 +23,7 @@
 //   Never exact: a parameter, a field, an element, a call result, NaN, Infinity, a non-integer literal.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ts, topLevelFunctions } from '../common.mjs';
+import { ts, topLevelFunctions, fileDiagnostics } from '../common.mjs';
 import { calleesOf } from '../exec/callees.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -425,6 +425,6 @@ export function faithfulNumbers(loaded) {
   const next = ts.createProgram({ rootNames: roots, options, host, oldProgram: program });
   const nsf = next.getSourceFile(sf.fileName);
   if (!nsf) return { loaded, units, ops: [], mapOffset: (o) => o };
-  const diagnostics = [...next.getSyntacticDiagnostics(nsf), ...next.getSemanticDiagnostics(nsf)];
+  const diagnostics = fileDiagnostics(next, nsf);
   return { loaded: { ...loaded, program: next, sf: nsf, checker: next.getTypeChecker(), diagnostics }, units, ops: [...ops].sort(), text: out, mapOffset };
 }

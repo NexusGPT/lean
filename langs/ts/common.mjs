@@ -79,7 +79,7 @@ export function loadProgram(file, opts = {}) {
   const sf = program.getSourceFile(abs);
   if (!sf) throw new Error(`cannot read ${file}`);
   const checker = program.getTypeChecker();
-  const diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)];
+  const diagnostics = fileDiagnostics(program, sf);
   return { program, sf, checker, diagnostics, abs, projectFile: configFile };
 }
 
@@ -160,7 +160,7 @@ function loadChunk(cfg, absList, opts, budget) {
     const sf = program.getSourceFile(abs);
     if (!sf) { out.set(abs, { error: `cannot read ${abs}`, ...(closure ? { closure } : {}) }); continue; }
     let diagnostics;
-    try { diagnostics = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)]; }
+    try { diagnostics = fileDiagnostics(program, sf); }
     catch (e) { out.set(abs, { error: `diagnostics: ${String(e.message).slice(0, 200)}`, ...(closure ? { closure } : {}) }); continue; }
     out.set(abs, { program, sf, checker, diagnostics, abs, projectFile: project, ...(closure ? { closure } : {}) });
   }
@@ -1718,6 +1718,71 @@ function writesOf(checker, sym) {
 // included), so `k + 1` on a number asserted to `1 | 2` is the number's own sum; any other real type (Any, a union of
 // families, an object) makes the operation one on the opaque value
 const primitiveFamily = (t) => { const TF = ts.TypeFlags; const ps = t.flags & TF.Union ? t.types : [t]; return [TF.NumberLike, TF.StringLike, TF.BooleanLike].some((f) => ps.every((x) => x.flags & f)); };
+// The diagnostics of a file, read in one place and remembered for the file: the strict values below are read from them.
+// Every program lean builds over a file reads its diagnostics through here (loadProgram, loadMany, the apply/call
+// normalisation, the faithful rewrite, pr.mjs), so the lint and the translator see the same strict values.
+const diagnosticsOfFile = new WeakMap();
+const strictValuesOfFile = new WeakMap();
+export function fileDiagnostics(program, sf) {
+  const d = [...program.getSyntacticDiagnostics(sf), ...program.getSemanticDiagnostics(sf)];
+  diagnosticsOfFile.set(sf, d); strictValuesOfFile.delete(sf);
+  return d;
+}
+// A strict-mode error about a value names a value whose type nothing checked: the code used it as a type the compiler
+// could not confirm. TypeScript emits the code unchanged, so the value at run time is whatever arrives, exactly as for
+// `e as T` (design/strict-fixer.md, 2026-10-30). That value is held at Any (heldOf below), so every operation on it is an
+// uninterpreted application and no fact of the unconfirmed type enters a proof. The families:
+// - possibly absent (TS2531, 2532, 2533, 18047, 18048, 18049): the value is the expression the error spans, used as
+//   present;
+// - assignability (TS2322, 2345) whose only cause is absence: the source with null and undefined removed is assignable
+//   to the slot, so the error is strict null checking's; the value is the source (an initializer, the right side of
+//   `=`, a returned expression, an argument);
+// - a member some members of a union declare and others do not (TS2339, 2551 on a union receiver): the value is the
+//   receiver, whose union the code never narrowed.
+// A member no type declares, a name that does not resolve, any other type error stays the unit's (null here).
+export const ABSENT_CODES = new Set([2531, 2532, 2533, 18047, 18048, 18049]);
+const exactNode = (sf, start, length) => {
+  let hit = null;
+  const w = (x) => { const s = x.getStart(sf); if (s > start || x.getEnd() < start + length) return; if (s === start && x.getEnd() === start + length && ts.isExpression(x) && !hit) hit = x; ts.forEachChild(x, w); };
+  w(sf);
+  return hit;
+};
+export function strictValue(checker, sf, d) {
+  if (!d || d.file !== sf || d.start === undefined) return null;
+  const TF = ts.TypeFlags;
+  if (ABSENT_CODES.has(d.code)) return exactNode(sf, d.start, d.length ?? 0);
+  if (d.code === 2322 || d.code === 2345) {
+    let at = exactNode(sf, d.start, d.length ?? 0), v = null;
+    if (!at) { // a `return` keyword: the returned expression
+      const w = (x) => { if (!v && ts.isReturnStatement(x) && x.getStart(sf) === d.start && x.expression) v = x.expression; else if (!v && x.pos <= d.start && x.end >= d.start) ts.forEachChild(x, w); };
+      w(sf);
+    } else if (ts.isIdentifier(at) && at.parent && (ts.isVariableDeclaration(at.parent) || ts.isPropertyDeclaration(at.parent) || ts.isParameter(at.parent)) && at.parent.name === at) v = at.parent.initializer ?? null;
+    else if (ts.isIdentifier(at) && at.parent && ts.isPropertyAssignment(at.parent) && at.parent.name === at) v = at.parent.initializer;
+    else if (at.parent && ts.isBinaryExpression(at.parent) && at.parent.operatorToken.kind === ts.SyntaxKind.EqualsToken && at.parent.left === at) v = at.parent.right;
+    else if (!(at.parent && ts.isShorthandPropertyAssignment(at.parent))) v = at;
+    if (!v) return null;
+    let source = null, target = null;
+    try { source = checker.getTypeAtLocation(v); target = checker.getContextualType(v); } catch { return null; }
+    if (!source || !target) return null;
+    const present = checker.getNonNullableType(source);
+    if (present === source || (present.flags & TF.Never)) return null; // nothing absent to remove: a type error of its own
+    return checker.isTypeAssignableTo(present, target) ? v : null;
+  }
+  if (d.code === 2339 || d.code === 2551) {
+    const at = exactNode(sf, d.start, d.length ?? 0);
+    const pa = at && at.parent && ts.isPropertyAccessExpression(at.parent) && at.parent.name === at ? at.parent : null;
+    if (!pa) return null;
+    let rt = null; try { rt = checker.getTypeAtLocation(pa.expression); } catch { return null; }
+    if (!rt || !(rt.flags & TF.Union)) return null;
+    return rt.types.some((m) => !!checker.getPropertyOfType(m, pa.name.text)) ? pa.expression : null; // some member declares it
+  }
+  return null;
+}
+const strictValues = (checker, sf) => {
+  let s = strictValuesOfFile.get(sf);
+  if (!s) { s = new Set(); for (const d of diagnosticsOfFile.get(sf) ?? []) { const v = strictValue(checker, sf, d); if (v) s.add(v); } strictValuesOfFile.set(sf, s); }
+  return s;
+};
 // the real type of a held value (a TypeScript type; the any type for an opaque one), or null when the value is not held
 export function assertionHeld(checker, n, seen = new Map()) {
   if (!n) return null;
@@ -1730,6 +1795,7 @@ export function assertionHeld(checker, n, seen = new Map()) {
 function heldOf(checker, n, seen) {
   const any = () => checker.getAnyType();
   const opaqueOperand = (x) => { const h = assertionHeld(checker, x, seen); return !!h && !primitiveFamily(h); };
+  { const sf = n.getSourceFile?.(); if (sf && strictValues(checker, sf).has(n)) return any(); } // the value a strict-mode error is about
   if (ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isSatisfiesExpression(n)) return assertionHeld(checker, n.expression, seen);
   if (ts.isAwaitExpression(n)) return assertionHeld(checker, n.expression, seen) ? any() : null;
   if (ts.isAsExpression(n) || ts.isTypeAssertionExpression(n)) {
@@ -2235,7 +2301,7 @@ export function normaliseApplyCalls(loaded) {
     const nsf = next.getSourceFile(sf.fileName);
     if (!nsf) return cur;
     unitSourceOrigin.set(nsf, unitSourceOrigin.get(sf) ?? sf); // a rewrite carries the source the user wrote
-    const diagnostics = [...next.getSyntacticDiagnostics(nsf), ...next.getSemanticDiagnostics(nsf)];
+    const diagnostics = fileDiagnostics(next, nsf);
     cur = { ...cur, program: next, sf: nsf, checker: next.getTypeChecker(), diagnostics };
   }
   return cur;

@@ -30,7 +30,25 @@ reports values typed `any` or `unknown` at their declaration with a proposed typ
 - TS2683 and TS7041, a `this` the function does not declare: the receiver is an input the function does not name, and
   the translator refuses it. New rule `implicit-this` (escape `implicit_any_receiver`), advice `conditional`: declare
   `this: T`, a type annotation only, read by the declared-receiver reading.
-- The null codes (`policy:ts-null`) stay: the Option and Nullish model needs strict null checks.
+- The null codes (`policy:ts-null`) stay: the Option and Nullish model needs strict null checks. Since 2026-10-30 the
+  value a null code is about is read at Any instead of refused (below); the model keeps strict null checks.
+
+## 2026-10-30: three more families, read at Any (strict-fixer.md, same date)
+
+This policy reads a value strict mode alone types any as opaque. The same holds for a value a strict error says the
+code used as a type nobody confirmed; `common.mjs strictValue` names it and `assertionHeld` holds it at Any:
+
+- possibly absent (TS2531, 2532, 2533, 18047, 18048, 18049): the value is the field or local itself, read as present by
+  the code; boxed whole (the absent option apart from every present value), never its payload;
+- assignability whose only cause is absence (TS2322, 2345, the source without null and undefined fits the slot): the
+  slot receives the source unchanged, so the source is held and a local it fills is held in turn;
+- a member some members of a union declare (TS2339, 2551): the receiver is one of the members at run time, held so
+  the read is an accessor of it.
+
+Unlike the implicit-any codes these are listed under `--advice` (rule `ts-strict`, advisory, with the code): the type
+the code meant is known and a narrowing gives it to the proof. A member no type declares and a mismatch that absence
+does not explain stay refused (escape `strict_value_unchecked_own`). The gap the Any reading has (a read through an
+absent value throws; the accessor is total) is stated in strict-fixer.md.
 
 ## Soundness
 
