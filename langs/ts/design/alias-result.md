@@ -194,7 +194,8 @@ for the identity, as it already does for a handed argument. A proof that relies 
 object fails at the inputs where they differ, because the lemma ranges over all values.
 
 A recorded form that the body translates another way (a translator path that does not pass through `propAccess` or
-`pathUpdate`) is refused at the unit's end (`worldUsed`). It is never read as the value before the call.
+`pathUpdate`) is refused at the unit's end (`worldUsed`). So is a read whose object the reading already holds under another name (a
+value bound before the call, so the read never names the object). Neither is ever read as the value before the call.
 
 **What stays refused** (`read-after-call`, as before): a copy, a spread, a destructuring (`const { a } = x`, which reads
 the fields; it was kept as an alias, a hole now closed), an element read, a library method on the object itself, the

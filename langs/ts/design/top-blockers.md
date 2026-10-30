@@ -47,6 +47,11 @@ pair whose units read a field after a call.
 
 **Closed (2026-10-30, later the same day).** The narrowed read-after-call rule (design/alias-result.md) refuses the parent file at typedAlias and passed, so the four rows are no longer proved: the pair's expectations are candidateOnly verdicts now (lane B witnesses aliased, otherAny and looped; typedAlias and passed are PASS-bounded with the refusal named; moved is proved). The reading that keeps these units instead of refusing them is the world read after a transition, below, still to build.
 
+**Built (2026-10-30, world read).** A field read after a transition is now `ext_now_<T>(wld, x)` at that point of the
+run (design/alias-result.md, world read). The lint's text test `opaque-mutation` for a later read is withdrawn.
+typedAlias and passed are WITNESS: lane B makes an any argument a view of a pooled record, and its fakes may write
+what they are handed. Pair `world_read_after_call`.
+
 **Pair** `blocker_opaque_receiver` (2026-10-30, after the lead's routing). Its equal block states today's verdicts, so
 the suite stays green. aliased, otherAny, typedAlias and passed are proved, and its why text marks each one
 `[CLAIM — false proof, open]`. The false-proof lane owns the read-model fix and its own pair, alias_after_call. When
