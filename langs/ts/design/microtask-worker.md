@@ -106,3 +106,16 @@ ASK names it. The ratio is capped at `CONTENTION_CAP` (3): an efficiency core ru
 core, so a reading above that is the sampler disturbed, not the unit starved; without the cap a spin test stretched six
 times ran 734 s. Measured on the eleven-worker suite: with the stretch every verdict held (this_param bump, the self-pair
 counts), where the unstretched bound had flipped two rows under a load average of 150.
+
+### The workers' heaps fit the machine; the call watchdog stretches by the same measured slowdown (2026-10-30)
+
+An admission suite at eleven workers lost one unit to `FATAL ERROR: Ineffective mark-compacts near heap limit` at
+4 GB on a 48 GB machine, while the worker carried a 12 GB heap flag: the operating system refused the next page, so
+V8 aborted the process at whatever size it had, and the unit's verdict was ASK (the worker exited) where the same run
+alone gives PASS-bounded. Two rules follow. The process that runs units in parallel states each worker's heap
+(`LEAN_WORKER_HEAP_MB`; the suite gives each of its JOBS workers an equal part of 60 percent of memory, never below
+1 GB), so the harness's own limit is the bound that ends a runaway allocation, never the machine's state; a lone run
+keeps a quarter of the machine. And the in-process call watchdog's wall allowance stretches by the unit's measured CPU
+slowdown (the same sample that stretches the unit's CPU bound, capped at three) instead of the run queue over the
+cores (capped at ten): a spinning call allocates for its whole wall allowance, so ten times the idle allowance under
+eleven workers is what exhausted the machine. Without a baseline (a run outside the suite) the run-queue rule stands.

@@ -43,6 +43,8 @@ const tmp = argvAt('--tmp') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-')
 // CPU bound by the unit's own measured slowdown against it (exec/run.mjs cpuContention), so a unit near its bound keeps
 // its verdict when the pool shares the cores
 if (!process.env.LEAN_CPU_BASELINE && !PAIR_ONLY) { const { cpuRateNsPerIter } = await import('../exec/run.mjs'); process.env.LEAN_CPU_BASELINE = String(cpuRateNsPerIter()); }
+// every lane B worker's heap is its equal share of 60 percent of the machine (exec/run.mjs workerFlags): the heaps of JOBS workers must fit, or the operating system, not V8's limit, ends a spinning unit
+if (!process.env.LEAN_WORKER_HEAP_MB && !PAIR_ONLY) process.env.LEAN_WORKER_HEAP_MB = String(Math.max(1024, Math.floor(os.totalmem() * 0.6 / JOBS / 1048576)));
 const t0 = Date.now();
 
 const run = (cmd, args, env) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26, env: env ? { ...process.env, ...env } : process.env });

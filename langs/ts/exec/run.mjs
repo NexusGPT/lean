@@ -309,7 +309,7 @@ const callTimedOut = () => { crumb.timedOut++; tellCrumb(); }; // a call that hi
 // the unit's CPU slowdown is sampled at its start and at every input (a short spin, about 10 ms): a thread moves between
 // cores of different speed and shares them, so one sample at the start is not the unit's rate; the running mean is
 const rateSamples = [];
-const sampleContention = () => { const base = Number(process.env.LEAN_CPU_BASELINE); if (!(base > 0)) return; rateSamples.push(cpuRateNsPerIter(2_000_000, 3)); const mean = rateSamples.reduce((a, b) => a + b, 0) / rateSamples.length; crumb.contention = Math.min(CONTENTION_CAP, Math.max(1, mean / base)); };
+const sampleContention = () => { const base = Number(process.env.LEAN_CPU_BASELINE); if (!(base > 0)) return; rateSamples.push(cpuRateNsPerIter(2_000_000, 3)); const mean = rateSamples.reduce((a, b) => a + b, 0) / rateSamples.length; crumb.contention = Math.min(CONTENTION_CAP, Math.max(1, mean / base)); loadFactor = crumb.contention; }; // the measured slowdown is also the wall allowance of every in-process watchdog: one model of this core's speed, not a run-queue estimate beside it
 const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; crumb.side = null; if (input !== null) sampleContention(); tellCrumb(); };
 export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
 // a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
@@ -997,9 +997,12 @@ function watchCpu(pid, bound, handlers) {
   return { stop: () => { cpuWatched.delete(pid); if (!cpuWatched.size && cpuPoll) { clearInterval(cpuPoll); cpuPoll = null; } } };
 }
 // The in-process watchdogs (guardedCall, withTimeout) are wall clocks too: a call's bound of ms is allowed the wall
-// time ms of CPU takes on this machine, read from the load average at the start of the unit (os.loadavg: the
-// 1-minute run queue over the cores), floored at 1 and capped at FAR_GUARD; a call that ran past ms both ways is a
-// timeout whether or not the watchdog interrupted it, as on an idle machine
+// time ms of CPU takes on this machine. Under the suite that is the unit's measured CPU slowdown (sampleContention,
+// capped at CONTENTION_CAP, re-read at every input); without a baseline it is read from the load average at the start
+// of the unit (os.loadavg: the 1-minute run queue over the cores), floored at 1 and capped at FAR_GUARD. A call that
+// ran past ms both ways is a timeout whether or not the watchdog interrupted it, as on an idle machine. The stretch
+// is bounded because a spinning call allocates for its whole wall allowance: ten times the idle allowance under eleven
+// workers exhausted a 48 GB machine (see workerFlags)
 // CPU seconds buy less work when the core is shared (a sibling hardware thread, cache pressure): the bound on a unit's
 // CPU time is stated for an idle core. cpuRateNsPerIter spins a fixed integer loop and reads this thread's CPU per
 // iteration; the suite measures it once before its pool starts (LEAN_CPU_BASELINE), each unit measures it at its start,
@@ -1057,10 +1060,15 @@ function workerReads(opts) {
 function workerFlags(opts) {
   const flags = ['--permission', ...workerReads(opts).map((p) => `--allow-fs-read=${p}`)];
   if (process.env.LEAN_LIBRARY_CASES) { const d = path.resolve(process.env.LEAN_LIBRARY_CASES); fs.mkdirSync(d, { recursive: true }); flags.push(`--allow-fs-write=${d}`, `--allow-fs-read=${d}`); }
-  // the worker's heap: a quarter of the machine, never below V8's default; a spinning call allocates for its whole
-  // wall allowance (a chunking loop pushing empty slices reached 4 GB in 16 s), and an exhausted heap aborts the process,
-  // which loses the unit where the per-call bound would have skipped one input
-  const heapMb = Math.max(4096, Math.floor(os.totalmem() / 4 / 1048576));
+  // the worker's heap: its share of the machine when the process that runs units in parallel states one
+  // (LEAN_WORKER_HEAP_MB: the suite gives each of its JOBS workers an equal part of 60 percent of memory), else a quarter
+  // of the machine, never below V8's default. A spinning call allocates for its whole wall allowance (a chunking loop
+  // pushing empty slices reached 4 GB in 16 s); the heaps of every worker together must fit the machine, or the
+  // operating system refuses the next page and V8 aborts the process at whatever size it had (an admission suite lost
+  // one unit that way at 4 GB on a 48 GB machine under eleven workers), where its own limit would have been the
+  // harness's bound. An exhausted heap still aborts the process and loses the unit (ASK: the worker exited).
+  const fromEnv = Number(process.env.LEAN_WORKER_HEAP_MB);
+  const heapMb = fromEnv > 0 ? Math.floor(fromEnv) : Math.max(4096, Math.floor(os.totalmem() / 4 / 1048576));
   return [...process.execArgv.filter((x) => !/^--(permission|allow-|max-old-space-size)/.test(x)), `--max-old-space-size=${heapMb}`, ...flags];
 }
 const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefined ? ` (input ${c.input})` : ''}${c.side ? `, the ${c.side} side running` : ''}${c.loading ? `, loading ${c.loading}` : ''}` : 'start');
