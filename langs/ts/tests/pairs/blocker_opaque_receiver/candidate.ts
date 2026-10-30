@@ -1,4 +1,4 @@
-// A method call on an opaque value, then reads of a value of the same name (design/top-blockers.md, class-and-this)
+// A method call on an opaque value, then reads of a value of the same name (design/top-blockers.md, class-and-this; pair blocker_opaque_receiver)
 export function aliased(e: any): number {
   const f = e;
   const d = f.defaultPrevented;

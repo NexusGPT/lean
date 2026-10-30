@@ -13,7 +13,7 @@ read. Lint finding today: `opaque-mutation`, `.preventDefault() on e may change 
 **Finding at f3cb5b41.** The guard compares the receiver by its text and scans the whole unit for a later
 `<same text>.field`. It refuses too much: in `ChatPanel.tsx` (blocks) the later `e.key` belongs to another arrow's own
 `e`. It also misses real cases, and lane A then proves programs that JavaScript tells apart
-(`design/opaque-receiver/`, rows in `rows-f3cb5b41.txt`):
+(pair `blocker_opaque_receiver`; the f3cb5b41 rows are in `design/opaque-receiver/rows-f3cb5b41.txt`):
 
 | unit | parent | candidate | lane A | lane B |
 |---|---|---|---|---|
@@ -44,6 +44,11 @@ receiver. The rule a sound reading needs:
 
 Estimated work: more than 90 minutes. It changes the read model in translate.mjs, used by every field read, and every
 pair whose units read a field after a call.
+
+**Pair** `blocker_opaque_receiver` (2026-10-30, after the lead's routing). Its equal block states today's verdicts, so
+the suite stays green. aliased, otherAny, typedAlias and passed are proved, and its why text marks each one
+`[CLAIM — false proof, open]`. The false-proof lane owns the read-model fix and its own pair, alias_after_call. When
+that fix lands, these rows flip to not proved, and this pair changes with it.
 
 ## 2026-10-30 type-system: a parameter of a type the checkout cannot resolve
 
@@ -103,7 +108,7 @@ is one line, in a file this lane does not own:
 **Pair** `blocker_optional_callback`. Before: the lint refused parent.ts, so no theorem was generated. After, with the
 theorem.py fix applied locally and then reverted: `Equal_notify_all`, `Equal_notify_named` and `Equal_notify_later`
 proved, notifyNext not proved, and lane B rows as expected (9 of 9). Without the fix, the three proof rows fail with
-the arity error. The pair is red until that line is merged.
+the arity error. The lead merged that fix (497cc8c8). On the merged head, the pair passes 9 of 9.
 
 ## 2026-10-30 async-await: awaited port calls and a handed async arrow
 

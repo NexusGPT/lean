@@ -2,10 +2,10 @@
 
 Two soundness and proof defects outside this lane's files need the lead first:
 - **False proofs, class-and-this.** Lane A proves aliased, otherAny, typedAlias and passed equal. JavaScript tells
-  each pair apart: a field read moved across a call that can change the object. Evidence is in
-  langs/ts/design/opaque-receiver/ (rows in rows-f3cb5b41.txt). Lane B gives PASS-bounded on typedAlias and passed.
-- **No proof for a function-typed parameter.** spec/theorem.py:109 `split_top` counts the `>` of `->` as a closing
-  bracket, and the lemma loses parameters (ASK translation-defect). The one-line fix is in design/top-blockers.md.
+  each pair apart: a field read moved across a call that can change the object. Pair blocker_opaque_receiver states
+  today's verdicts, each marked [CLAIM — false proof, open]. Its 13 rows pass. The false-proof lane owns the fix.
+- **No proof for a function-typed parameter.** spec/theorem.py `split_top` read the `>` of `->` as a closing bracket.
+  The lead fixed it (497cc8c8), and it is merged here (7505327e).
 
 Per bucket:
 - **class-and-this (9357 files).** No reading added. The readers ask to admit more calls on opaque values, and that
@@ -24,9 +24,7 @@ Per bucket:
   refused (lint.mjs). Pair blocker_import_meta: no theorem before, 7/7 after.
 - **callbacks-function-values (5334).** An optional call `f?.(x)` inside a callback, with f an immutable captured
   input, is now admitted as the plain call already was (optionalScope in lint.mjs and translate.mjs). Pair
-  blocker_optional_callback: the lint refused parent.ts before. With the theorem.py fix applied locally and then
-  reverted, 9/9 pass. Without it, the three proof rows fail on the arity error, so this pair is red until that fix
-  merges. Still refused: a function field of a captured record, `p.onDone?.()` inside a callback.
+  blocker_optional_callback: the lint refused parent.ts before. On the merged head, 9/9 pass. Still refused: a function field of a captured record, `p.onDone?.()` inside a callback.
 
 Sibling pairs re-run by hand, all pass:
 - **Doubles change:** numbers, signed_zero, absent_number, env_programs, for_each, this_param, this_receiver,
@@ -36,9 +34,11 @@ Sibling pairs re-run by hand, all pass:
 - **Optional-call change:** optional-call, optional_calls, null_undefined, lint_misfires, callback_units, callbacks,
   named_callbacks, effectful_callbacks, callback_patterns.
 - **import.meta change:** local_declarations, new_unit, stack_text, module_forms.
+- **After the 497cc8c8 merge:** all five blocker_ pairs and any_equality pass.
 
 Files touched:
 - langs/ts/translate/smt-fp.mjs, langs/ts/translate/translate.mjs, langs/ts/lint/lint.mjs
-- langs/ts/tests/pairs/blocker_unresolved_type/, blocker_optional_callback/, blocker_import_meta/, blocker_async_port/
+- langs/ts/tests/pairs/blocker_unresolved_type/, blocker_optional_callback/, blocker_import_meta/, blocker_async_port/,
+  blocker_opaque_receiver/
 - langs/ts/design/top-blockers.md, langs/ts/design/opaque-receiver/
 - lane/blockers-result.md
