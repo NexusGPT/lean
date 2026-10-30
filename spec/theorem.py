@@ -1033,7 +1033,12 @@ def main(argv=None):
     ap.add_argument('--out', required=True)
     a = ap.parse_args(argv)
     try:
-        pt, ct = open(a.parent).read(), open(a.candidate).read()
+        # an input the translator did not produce (a refused side) is a refusal here, never a traceback: the suite reads
+        # the last stderr line, and a Python stack trace names nothing a reader can act on
+        for side, f in (('parent', a.parent), ('candidate', a.candidate), ('scope', a.scope), ('edit', a.edit)):
+            if not os.path.isfile(f):
+                raise Refusal(f'the {side} input {f} does not exist (the translator produced no file for this side)')
+        pt, ct = open(a.parent, encoding='utf-8').read(), open(a.candidate, encoding='utf-8').read()
         pt, ct, prelude = merge_preludes(a.parent, a.candidate, pt, ct)
         text = generate(pt, ct, json.load(open(a.scope)), json.load(open(a.edit)), prelude)
     except Refusal as e:
