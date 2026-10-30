@@ -2,7 +2,8 @@
 // cached by the content it depends on: the program and its arguments (temporary and repository paths normalised), the
 // content of every file it reads, the environment it is given, and a producer hash over lean's own sources (every .mjs,
 // .json, .py and .d.ts under langs/ts except tests, design, audit and vendor, plus spec/ and the pinned TypeScript); a
-// Dafny verification by the theorem text and the Dafny version alone. A hit returns the stored result and rewrites the
+// Dafny verification by the theorem text, the Dafny version and the version of the Z3 it is given (solve/z3.mjs: a
+// result proved under one Z3 is not replayed under another). A hit returns the stored result and rewrites the
 // files the command wrote. A result that may change on a rerun (a timeout, a bound hit, a harness error, a killed
 // process, a missing output) is never stored. LEAN_STEP_CACHE=0 turns it off; LEAN_STEP_CACHE_DIR moves it.
 import fs from 'node:fs';
@@ -10,6 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
+import { z3Binary } from '../solve/z3.mjs';
 
 export const CACHE_DIR = process.env.LEAN_STEP_CACHE_DIR || path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), 'lean', 'steps');
 export const stepCacheOn = process.env.LEAN_STEP_CACHE !== '0';
@@ -56,7 +58,7 @@ function lookup(cmd, args, { root, files = [], outs = [], env = null, normalise 
   const inputs = files.map((f) => { try { return [norm(f), sha(fs.readFileSync(f))]; } catch { return [norm(f), null]; } });
   if (env) for (const v of Object.values(env)) { if (typeof v === 'string' && fs.existsSync(v) && fs.statSync(v).isFile()) inputs.push([norm(v), sha(fs.readFileSync(v))]); } // a table or fixture named by the environment
   const kind = producerKind(cmd, args);
-  const keyObj = { v: 2, cmd, args: args.map(norm), env: env ?? {}, inputs, kind, producer: kind === 'dafny' ? dafnyVersionString() : producerHash(root, kind) }; // v2: outputs stored normalised
+  const keyObj = { v: 2, cmd, args: args.map(norm), env: env ?? {}, inputs, kind, producer: kind === 'dafny' ? `${dafnyVersionString()} with ${z3Binary().version ?? z3Binary().source}` : producerHash(root, kind) }; // v2: outputs stored normalised
   const key = sha(JSON.stringify(keyObj)), file = path.join(CACHE_DIR, key.slice(0, 2), key + '.json');
   const step = { norm, denorm, keyObj, key, file, outs };
   try {

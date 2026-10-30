@@ -26,8 +26,9 @@
 // The certificate lists what was checked: file hashes, the unit, the bound, the theorem and prelude hashes, the
 // time limit, and the lemma results, so a reader can re-run every step. Its `tools` record holds the Node version
 // (always) and, once lane A has run Dafny, the text of `dafny --version` and the text of the version Z3 reports,
-// with `z3Source` saying where that Z3 came from (the one bundled beside the dafny executable, else the `z3` on PATH
-// that Dafny itself falls back to, else null with the reason).
+// with `z3Path` the executable and `z3Source` saying where it came from (solve/z3.mjs: LEAN_Z3, else the one bundled
+// beside the dafny executable, else the `z3` on PATH, else null with the reason). That one Z3 is the one Dafny is given
+// (--solver-path) and the one the doubles reading runs, so the record names the binary that ran.
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -42,6 +43,7 @@ import { lintFile } from './lint/lint.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
+import { z3Binary, dafnySolverArgs } from './solve/z3.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -52,22 +54,8 @@ export const dafnyName = (unit) => dn(snake(unit));
 // the parts of the canonical-heap certificate of the unit whose Dafny name is f: `EqualCanon_<f>_<part>`, a part one
 // lower-case word (spec/theorem.py), so the parts of a unit `f_g` are never read as parts of a unit `f`
 export const canonPartsOf = (keys, f) => keys.filter((k) => k.startsWith(`EqualCanon_${f}_`) && /^[a-z]+$/.test(k.slice(`EqualCanon_${f}_`.length)));
-// the Z3 Dafny verifies with: the binary bundled in a `z3/bin` folder beside the dafny executable, else the `z3` on PATH
-function z3Record() {
-  const version = (bin) => { const r = spawnSync(bin, ['--version'], { encoding: 'utf8', timeout: 20000 }); return r.status === 0 ? (r.stdout + r.stderr).trim() : null; };
-  const dirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean);
-  for (const d of dirs) {
-    const exe = path.join(d, 'dafny');
-    if (!fs.existsSync(exe)) continue;
-    const bin = path.join(path.dirname(fs.realpathSync(exe)), 'z3', 'bin');
-    const found = fs.existsSync(bin) ? fs.readdirSync(bin).filter((f) => /^z3/.test(f)).sort() : [];
-    for (const f of found) { const v = version(path.join(bin, f)); if (v) return { z3: v, z3Source: 'bundled beside dafny' }; }
-    break;
-  }
-  const v = version('z3');
-  if (v) return { z3: v, z3Source: 'z3 on PATH' };
-  return { z3: null, z3Source: 'no z3 beside the dafny executable and none on PATH answered --version' };
-}
+// the Z3 Dafny verifies with (check.mjs hands it over by --solver-path) and the doubles reading runs: solve/z3.mjs
+function z3Record() { const z = z3Binary(); return { z3: z.version, z3Path: z.path, z3Source: z.source }; }
 // the seconds a lane took, added to certificate.timing under its key (a lane run twice, as a translation the core
 // agreement repeats, sums): only around a lane that runs, so a lane that did not run is an absent key, never a zero
 const timer = (timing) => (key, go) => { const t0 = performance.now(); const add = () => { timing[key] = (timing[key] ?? 0) + (performance.now() - t0) / 1000; }; let out; try { out = go(); } catch (e) { add(); throw e; } if (out instanceof Promise) return out.finally(add); add(); return out; };
@@ -136,7 +124,7 @@ export async function check(opts) {
   const fpStart = performance.now();
   const fp = witnessed ? null : await solveUnit({ parent, candidate, unit, seconds: opts.fpSeconds ?? FP_SECONDS, project, keep: tmp });
   if (fp?.bearing) cert.timing.doubles = (performance.now() - fpStart) / 1000; // the doubles lane is timed when it reads the unit, as lanes.A.doubles is recorded
-  const doubles = fp && fp.bearing ? { verdict: adapter ? 'not applicable: an adapter' : fp.verdict, ...(fp.reason ? { reason: fp.reason } : {}), bearing: fp.bearing, solver: fp.solver, solverVersion: fp.solverVersion, seconds: fp.seconds, timeoutSeconds: fp.timeoutSeconds, encoded: fp.encoded, uninterpreted: fp.uninterpreted, query: fp.query, ...(fp.input ? { input: fp.input } : {}), ...(fp.cross ? { cross: fp.cross } : {}) } : null;
+  const doubles = fp && fp.bearing ? { verdict: adapter ? 'not applicable: an adapter' : fp.verdict, ...(fp.reason ? { reason: fp.reason } : {}), bearing: fp.bearing, solver: fp.solver, solverVersion: fp.solverVersion, solverPath: fp.solverPath, seconds: fp.seconds, timeoutSeconds: fp.timeoutSeconds, encoded: fp.encoded, uninterpreted: fp.uninterpreted, query: fp.query, ...(fp.input ? { input: fp.input } : {}), ...(fp.cross ? { cross: fp.cross } : {}) } : null;
   if (doubles && !adapter && fp.verdict === 'witness') {
     cert.lanes.A = { verdict: 'WITNESS', doubles };
     return finish('WITNESS', cert, { witness: { input: 'doubles counterexample', args: fp.input, parent: fp.parentObservation, candidate: fp.candidateObservation, where: { lane: 'A', reading: 'doubles: the solver\'s input replayed in Node through lane B\'s runner' } } });
@@ -178,7 +166,7 @@ export async function check(opts) {
     return finish('ASK', cert, { reason: `interface: ${withheldLine.replace(/^interface differs: /, '').slice(0, 600)}` });
   }
   if (witnessed) return witnessOut();
-  const v = timed('dafny', () => run('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), path.join(tmp, 'theorem.dfy')], (dafnySeconds + 60) * 1000 * Math.max(1, names.length)));
+  const v = timed('dafny', () => run('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), ...dafnySolverArgs(), path.join(tmp, 'theorem.dfy')], (dafnySeconds + 60) * 1000 * Math.max(1, names.length)));
   const text = v.out;
   const m = text.match(/finished with (\d+) verified, (\d+) error/);
   const lines = fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').split('\n');
