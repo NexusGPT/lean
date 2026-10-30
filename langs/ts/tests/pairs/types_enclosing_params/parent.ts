@@ -21,6 +21,10 @@ export class Shelf<T> {
     for (const z of ys) if (z === y) n = n + 1;
     return n;
   }
+  // a method generic in U of a class generic in T: the first of ys, else y
+  pick<U>(xs: T[], ys: U[], y: U): U {
+    return ys.length > 0 ? ys[0] : y;
+  }
 }
 
 // a constructor storing a value of the class's type parameter

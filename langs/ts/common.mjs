@@ -373,6 +373,64 @@ export function hintsOf(sf, node) {
 }
 
 /**
+ * The type parameters a unit's text sees from the declarations around it (design/types-inventory.md, form 2): every
+ * enclosing function, method, arrow or function expression's, and the enclosing class's unless the unit sits in a static
+ * member (a static member cannot name them), outermost first. The unit's own (`u.generics`) are not among them.
+ */
+export function enclosingTypeParameters(fn) {
+  let out = [];
+  for (let c = fn, p = fn.parent; p && !ts.isSourceFile(p); c = p, p = p.parent) {
+    const isStaticMember = ts.isClassStaticBlockDeclaration(c) || !!(ts.canHaveModifiers(c) && ts.getModifiers(c)?.some((m) => m.kind === ts.SyntaxKind.StaticKeyword));
+    if (ts.isClassLike(p) ? !isStaticMember : ts.isFunctionLike(p)) out = [...(p.typeParameters ?? []), ...out];
+  }
+  return out;
+}
+// whether a type mentions a type parameter named in `names`: through union and intersection members, a reference's
+// type arguments (an array, a tuple, a Promise, an instantiated generic), an object's members and a signature's
+// parameters and result. A type is walked once.
+function typeMentions(checker, t, names, seen = new Set()) {
+  if (!t || seen.has(t)) return false;
+  seen.add(t);
+  if (t.flags & ts.TypeFlags.TypeParameter) return names.has(t.symbol?.name);
+  if (t.flags & ts.TypeFlags.UnionOrIntersection) return t.types.some((x) => typeMentions(checker, x, names, seen));
+  if (!(t.flags & ts.TypeFlags.Object)) return false;
+  if (t.objectFlags & ts.ObjectFlags.Reference && checker.getTypeArguments(t).some((x) => typeMentions(checker, x, names, seen))) return true;
+  if (t.objectFlags & (ts.ObjectFlags.Anonymous | ts.ObjectFlags.Mapped)) {
+    for (const p of checker.getPropertiesOfType(t)) if (typeMentions(checker, checker.getTypeOfSymbol(p), names, seen)) return true;
+    for (const s of [...checker.getSignaturesOfType(t, ts.SignatureKind.Call), ...checker.getSignaturesOfType(t, ts.SignatureKind.Construct)]) {
+      if (s.getParameters().some((p) => typeMentions(checker, checker.getTypeOfSymbol(p), names, seen)) || typeMentions(checker, s.getReturnType(), names, seen)) return true;
+    }
+  }
+  return false;
+}
+/**
+ * A unit's type parameters, in the order its Dafny function declares them: the enclosing declarations' type parameters
+ * the unit reads (the type of one of its nodes mentions it), outermost first, then its own. A method of `C<T>` that
+ * reads `T` is parametric in `T` as `f<T>` is: each caller fixes `T` once for the call, so a proof over an arbitrary `T`
+ * holds at each instance. One that never reads `T` keeps its reading unchanged.
+ */
+const unitTypeParametersOf = new WeakMap();
+export function unitTypeParameters(checker, u) {
+  if (unitTypeParametersOf.has(u)) return unitTypeParametersOf.get(u);
+  const own = [...(u.generics ?? [])], outer = enclosingTypeParameters(u.fn);
+  let read = [];
+  if (outer.length) {
+    const names = new Set(outer.map((g) => g.name.text)), found = new Set();
+    const visit = (n) => {
+      if (found.size === names.size) return;
+      const t = checker.getTypeAtLocation(n);
+      for (const nm of names) if (!found.has(nm) && typeMentions(checker, t, new Set([nm]))) found.add(nm);
+      ts.forEachChild(n, visit);
+    };
+    visit(u.fn);
+    read = outer.filter((g) => found.has(g.name.text));
+  }
+  const all = [...read, ...own];
+  unitTypeParametersOf.set(u, all);
+  return all;
+}
+
+/**
  * A function-like unit at the top level: a function declaration, or `const f = (...) => ...` /
  * `const f = function (...) {...}` (exported or not). Returns a uniform record:
  *   {name, node (the declaration statement), fn (the FunctionDeclaration | ArrowFunction | FunctionExpression),
@@ -2602,17 +2660,10 @@ export function strandedLetReads(checker, d) {
 // A callback's identity comes from its call, not its position among unrelated calls.
 // This is also the prediction's inventory; topLevelFunctions supplies its existing units.
 const unitSourceOrigin = new WeakMap();
-// An arrow function has no `this` or type parameters of its own: inside a class member it reads the member's receiver
-// (`this.total` is the class's accessor) and the member's and the class's type parameters; a callback unit under one
-// therefore carries the member's class context (cls, className, isStatic) and the type parameters in scope, so the
-// translator reads `this.x` and `T` in it as in the member. A function expression binds its own `this`: no class context.
-const lexicalGenerics = (fn, scope) => {
-  const own = fn.typeParameters ?? [];
-  if (!ts.isArrowFunction(fn) || !scope) return own.length ? own : undefined;
-  const outer = [...(scope.typeParameters ?? []), ...(ts.isClassLike(scope.parent) ? scope.parent.typeParameters ?? [] : [])];
-  const all = [...outer, ...own];
-  return all.length ? all : undefined;
-};
+// An arrow function has no `this` of its own: inside a class member it reads the member's receiver (`this.total` is
+// the class's accessor); a callback unit under one therefore carries the member's class context (cls, className,
+// isStatic), so the translator reads `this.x` in it as in the member. A function expression binds its own `this`: no
+// class context. Type parameters are lexical for every unit: enclosingTypeParameters below.
 const lexicalClass = (fn, scope) => {
   if (!ts.isArrowFunction(fn) || !scope || !scope.parent || !ts.isClassLike(scope.parent) || !scope.parent.name) return {};
   if (!(ts.isMethodDeclaration(scope) || ts.isGetAccessorDeclaration(scope) || ts.isSetAccessorDeclaration(scope) || ts.isConstructorDeclaration(scope) || ts.isPropertyDeclaration(scope))) return {};
@@ -2643,7 +2694,7 @@ export function callbackUnits(sf, existing) {
         }
         const index = call.arguments.indexOf(arg);
         const key = `${call.expression.getText(sf)}(${call.arguments.slice(0, index).map(literal).filter((x) => x !== null).join(',')})#${index}`;
-        const u = { name: key, node: fn, fn, params: fn.parameters, body: fn.body, typeNode: fn.type, isAsync: !!fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: lexicalGenerics(fn, scope), form: 'callback', ...lexicalClass(fn, scope), call, argumentIndex: index, scope, orderNamed: false };
+        const u = { name: key, node: fn, fn, params: fn.parameters, body: fn.body, typeNode: fn.type, isAsync: !!fn.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword), isArrow: ts.isArrowFunction(fn), generics: fn.typeParameters, form: 'callback', ...lexicalClass(fn, scope), call, argumentIndex: index, scope, orderNamed: false };
         candidates.push(u); byFn.set(fn, u);
         if (!groups.has(scope)) groups.set(scope, new Map());
         const group = groups.get(scope);

@@ -4,6 +4,7 @@
   "shelf_rest",
   "shelf_both",
   "shelf_count",
+  "shelf_pick",
   "holder_constructor",
   "marks",
   "marks_rows_map___0",
@@ -15,7 +16,8 @@
   "shelf_all": true,
   "shelf_rest": false,
   "shelf_both": false,
-  "shelf_count": true,
+  "shelf_count": false,
+  "shelf_pick": true,
   "holder_constructor": true,
   "marks": true,
   "marks_rows_map___0": true,
@@ -23,12 +25,13 @@
   "grid_rows_map___0": false,
   "grid_rows_map___0_cols_map___0": false
  },
- "why": "Every unit reads a type parameter of the declaration around it: Shelf's methods read the class's T, count is also generic in its own U, Holder's constructor stores the class's D, the callbacks read the generic function's T (grid's inner callback through the outer one). all renames its loop variable and count writes y === z for z === y (proved: the same values for every T); rest drops one more element and both swaps its two elements (not proved; lane B witnesses them on drawn arrays); Holder's constructor binds d to a local first (proved); marks writes x === r for r === x (proved); grid's inner callback tests !== where the parent tested === (not proved, nor the callback and the function around it)",
+ "why": "Every unit reads a type parameter of the declaration around it: Shelf's methods read the class's T, count is also generic in its own U, Holder's constructor stores the class's D, the callbacks read the generic function's T (grid's inner callback through the outer one). all renames its loop variable (proved: the same values for every T); pick tests ys.length === 0 where the parent tested ys.length > 0 and swaps the branches (proved for every T and U); count writes y === z for z === y inside its loop: the same values, but lane A reads a loop from the bodies alone and proves no commuted test inside one (the same loop over string[], with no type parameter, is not proved either), so the row is not proved and lane B passes it; rest drops one more element and both swaps its two elements (not proved; lane B witnesses them on drawn arrays); Holder's constructor binds d to a local first (proved); marks writes x === r for r === x (proved); grid's inner callback tests !== where the parent tested === (not proved, nor the callback and the function around it)",
  "b": {
   "Shelf.all": "PASS-bounded",
   "Shelf.rest": "WITNESS",
   "Shelf.both": "WITNESS",
   "Shelf.count": "PASS-bounded",
+  "Shelf.pick": "PASS-bounded",
   "Holder.constructor": "PASS-bounded",
   "marks": "PASS-bounded",
   "grid": "WITNESS"

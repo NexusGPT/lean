@@ -65,6 +65,7 @@ const TF = ts.TypeFlags;
 class Unsupported extends Error {}
 
 import { dn } from '../common.mjs';
+import { unitTypeParameters } from '../common.mjs'; // a unit's type parameters: its own and the enclosing declarations' it reads (types-inventory.md, form 2)
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
 import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
@@ -866,6 +867,7 @@ function translateOnce(file, fnName, opts = {}) {
   const prelude = new Map(); // name -> text
   const recordByShape = new Map(); // 'a: int, b: string' -> datatype name
   const recordAlias = new Map(); // a name folded into another datatype with the same fields
+  const recordTParams = new Map(); // a record datatype generic in a unit's type parameters (its fields name them) -> those parameters, in order
   const addPrelude = (name, text) => {
     if (name === 'World') {
       usesOption = true;
@@ -1148,7 +1150,12 @@ function translateOnce(file, fnName, opts = {}) {
     if (f & TF.EnumLike) return (t.flags & TF.NumberLike) ? 'int' : 'string';
     if (f & (TF.Undefined | TF.Null)) return absentType();
     if (f & TF.Void) return 'Unit';
-    if (f & TF.TypeParameter) { const nm = t.symbol?.name ?? checker.typeToString(t); if (!currentUnit || !(currentUnit.generics ?? []).some((g) => g.name.text === nm)) fail(n, `type parameter ${nm} is not one of this function's`); return dn(nm); }
+    if (f & TF.TypeParameter) { // the unit's own type parameters and those of the declarations around it that it reads (unitTypeParameters): one Dafny type parameter each; two of one name (an inner T hiding an outer T) would read two types as one
+      const nm = t.symbol?.name ?? checker.typeToString(t), tps = currentUnit ? unitTypeParameters(checker, currentUnit) : [];
+      if (!tps.some((g) => g.name.text === nm)) fail(n, `type parameter ${nm} is not one of this function's`);
+      if (tps.filter((g) => g.name.text === nm).length > 1) fail(n, `type parameter ${nm} hides another of the same name`);
+      return dn(nm);
+    }
     if (f & TF.Union) {
       const parts = nonNull(t);
       if (parts.length !== t.types.length) {
@@ -1510,7 +1517,10 @@ function translateOnce(file, fnName, opts = {}) {
     if (name && typeArgs.length) name = `${name}_${hash(typeArgs.map((x) => checker.typeToString(x)).join(','))}`;
     if (!name) name = `Rec_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     name = dn(mangle(name));
-    if (recordAlias.has(name)) return recordAlias.get(name);
+    // a record whose fields mention a unit's type parameter (`Holder<D>` in a unit generic in D) is a datatype generic
+    // in it: the datatype declares the parameters its fields name, and every reference to it passes them
+    const applied = (nm) => recordTParams.has(nm) ? `${nm}<${recordTParams.get(nm).join(', ')}>` : nm;
+    if (recordAlias.has(name)) return applied(recordAlias.get(name));
     const key = `datatype ${name}`;
     if (!prelude.has(key)) {
       prelude.set(key, ''); // reserve for nested use
@@ -1531,11 +1541,13 @@ function translateOnce(file, fnName, opts = {}) {
       const shape = fs_.join(', ');
       const canonKey = ix ? `${shape} | ${open[0]}` : shape;
       const canon = recordByShape.get(canonKey);
-      if (canon && canon !== name && prelude.get(key) === '') { prelude.delete(key); recordAlias.set(name, canon); return canon; }
+      if (canon && canon !== name && prelude.get(key) === '') { prelude.delete(key); recordAlias.set(name, canon); return applied(canon); }
       recordByShape.set(canonKey, name);
-      prelude.set(key, `datatype ${name} = ${name}(${[shape, ...open].filter(Boolean).join(', ')})`);
+      const tps = unitTParams().filter((p) => [shape, ...open].some((x) => new RegExp(`\\b${p}\\b`).test(x)));
+      if (tps.length) recordTParams.set(name, tps);
+      prelude.set(key, `datatype ${name}${tps.length ? `<${tps.map((p) => `${p}(==)`).join(', ')}>` : ''} = ${name}(${[shape, ...open].filter(Boolean).join(', ')})`);
     }
-    return name;
+    return applied(name);
   }
   // two explicit operands read with the type the program gives them, not the `any` the checker reports: `arguments[k]`
   // with a literal k below the declared parameters is the k-th parameter; `Object.create(null)` typed as a dictionary
@@ -1622,7 +1634,7 @@ function translateOnce(file, fnName, opts = {}) {
   const symType = (sym, n) => { const vd = sym?.valueDeclaration, held = vd && (ts.isVariableDeclaration(vd) || ts.isParameter(vd)) && ts.isIdentifier(vd.name) ? assertionHeld(checker, vd.name) : null; if (held) return held; return checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n); }; // a local holding a value whose type nothing checked has its real type, as typeOf reads it
 
   // ----- externals -----
-  const unitTParams = () => (currentUnit?.generics ?? []).map((g) => dn(g.name.text));
+  const unitTParams = () => (currentUnit ? unitTypeParameters(checker, currentUnit) : []).map((g) => dn(g.name.text));
   const tclause = (types) => { const ps = unitTParams().filter((p) => types.some((t) => new RegExp(`\\b${p}\\b`).test(t))); return ps.length ? `<${ps.map((p) => `${p}(==)`).join(', ')}>` : ''; };
   function external(name, paramTypes, retType) {
     let id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
@@ -2013,6 +2025,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       case 'ObjectProtoNames': text = `const ${name}: set<string> := {${OBJECT_PROTO_NAMES.map((x) => JSON.stringify(x)).join(', ')}}`; break; // Object.getOwnPropertyNames(Object.prototype): the names \`in\` finds on every plain object
       default: fail(sf, `no helper ${kind}`);
     }
+    // a helper over a unit's type parameter (`Slice_T` in `f<T>`) is generic in it, as an external is (tclause): each
+    // function and lemma it declares takes the parameter, and every call infers it from its arguments
+    const tc = tclause(types);
+    if (tc) text = text.replace(new RegExp(`(^|\\n)((?:ghost )?(?:function|lemma|predicate)(?: \\{[^}]*\\})* ${name}\\w*)\\(`, 'g'), `$1$2${tc}(`);
     prelude.set(name, text);
     return name;
   }
