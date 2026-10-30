@@ -1625,6 +1625,75 @@ function translateOnce(file, fnName, opts = {}) {
     const rt = dtype(t, id);
     return `${external(id.text, [], rt)}()`;
   }
+  // A fresh object handed to a call that threads the world (design/alias-result.md, 2026-10-30, copied argument). The
+  // value reading reads a copy as its source (`Copy_Box(x) { x }`), so `g({ ...p })` and `g(p)` hand the outside one
+  // term, while JavaScript hands a new object in one and p itself in the other: a write the call makes reaches p in one
+  // only (SEMANTICS.md, reachable mutation), and a kept reference tells them apart. A handed object is classified by its
+  // identity: existing (a parameter, this, a module or imported value, a member or element read, a name bound to one,
+  // the result of an outside call) is handed as itself; fresh (a literal, `new`, a copy or a table row that makes a
+  // new object) is handed as `handed_fresh_<T>(v, k)`, k its allocation site's order among the sites the unit hands,
+  // uninterpreted, so it equals no existing object and two sites are two objects; anything else (a same-file call's
+  // result, a name written twice, a choice of both kinds) is refused. A fresh object is read so only when its fields or
+  // elements are primitives (an object inside it is an identity this reading does not hold) and its site is not
+  // repeated by a loop of the unit (every pass makes another object): else refused
+  let handedSites = new Map();
+  const FRESH_CALLS = new Set(['structuredClone', 'JSON.parse', 'Array.from', 'Array.of', 'Object.fromEntries', 'Object.keys', 'Object.values', 'Object.entries']);
+  const FRESH_METHODS = new Set(['slice', 'map', 'filter', 'concat', 'flat', 'flatMap', 'toSorted', 'toReversed', 'toSpliced', 'with', 'split']);
+  const EXISTING_METHODS = new Set(['find', 'findLast', 'at', 'get', 'pop', 'shift']);
+  function identityOf(e, seen = new Set()) {
+    while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e) || ts.isSatisfiesExpression(e) || ts.isTypeAssertionExpression(e)) e = e.expression;
+    if (ts.isAwaitExpression(e)) return ts.isCallExpression(e.expression) ? { kind: 'existing' } : identityOf(e.expression, seen);
+    if (ts.isObjectLiteralExpression(e) || ts.isArrayLiteralExpression(e) || ts.isNewExpression(e)) return { kind: 'fresh', site: e };
+    if (e.kind === K.ThisKeyword || ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) return { kind: 'existing' };
+    if (ts.isCallExpression(e)) {
+      const f = e.expression, text = f.getText(sf);
+      if (FRESH_CALLS.has(text) || (text === 'Object.assign' && e.arguments[0] && ts.isObjectLiteralExpression(e.arguments[0]) && !e.arguments[0].properties.length)) return { kind: 'fresh', site: e };
+      if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && isArrayLike(checker, baseOf(typeOf(f.expression)))) {
+        if (FRESH_METHODS.has(f.name.text)) return { kind: 'fresh', site: e };
+        if (EXISTING_METHODS.has(f.name.text)) return { kind: 'existing' };
+      }
+      const sameFile = (ts.isIdentifier(f) && originOf(checker, f, sf, currentUnit?.node ?? null).kind === 'unit') || (ts.isPropertyAccessExpression(f) && f.expression.kind === K.ThisKeyword && !!currentUnit && !!ownUnit(currentUnit, f.name.text));
+      if (sameFile) return { kind: 'unknown', why: `the result of the same-file call \`${text.slice(0, 40)}\`, which may be a new object or one the caller holds` };
+      if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && !isEffectCall(e)) return { kind: 'unknown', why: `the result of \`${text.slice(0, 40)}\`, a built-in that may return a new object or one it was given` };
+      return { kind: 'existing' }; // an outside call's answer: the object the outside gave
+    }
+    if (ts.isIdentifier(e)) {
+      const sym = checker.getSymbolAtLocation(e), d = sym?.valueDeclaration ?? sym?.declarations?.[0];
+      if (!d || seen.has(d)) return { kind: 'unknown', why: `\`${e.text}\`, a name read while it is being read` };
+      const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
+      const local = body && d.getSourceFile() === sf && d.pos >= body.pos && d.end <= body.end;
+      if (!local || ts.isParameter(d) || ts.isBindingElement(d) || !ts.isVariableDeclaration(d)) return { kind: 'existing' }; // a parameter, an element a loop binds, a module or imported value
+      seen.add(d);
+      const ws = []; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === sym) ws.push(x.right); ts.forEachChild(x, w); }; w(body);
+      if (ts.isForOfStatement(d.parent?.parent) || ts.isForInStatement(d.parent?.parent)) return { kind: 'existing' };
+      if (!d.initializer) return ws.length ? { kind: 'unknown', why: `\`${e.text}\`, a name written later` } : { kind: 'existing' };
+      if (ws.length) return { kind: 'unknown', why: `\`${e.text}\`, a name written more than once` };
+      return identityOf(d.initializer, seen);
+    }
+    if (ts.isConditionalExpression(e) || (ts.isBinaryExpression(e) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(e.operatorToken.kind))) {
+      const a = identityOf(ts.isConditionalExpression(e) ? e.whenTrue : e.left, seen), b = identityOf(ts.isConditionalExpression(e) ? e.whenFalse : e.right, seen);
+      return a.kind === 'existing' && b.kind === 'existing' ? a : { kind: 'unknown', why: 'a choice between objects of different identities' };
+    }
+    return { kind: 'unknown', why: `\`${e.getText(sf).slice(0, 40)}\`, an object this reading cannot name` };
+  }
+  const primT = (t) => !!t && (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.Undefined | TF.Null | TF.Void | TF.ESSymbolLike)) || !!primitiveBrand(x));
+  const partsPrim = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => primT(x) || (isArrayLike(checker, x) ? primT(checker.getTypeArguments(x)[0] ?? checker.getIndexTypeOfType(x, ts.IndexKind.Number)) : (isMapT(x) || isSetT(x)) ? checker.getTypeArguments(x).every(primT) : checker.getPropertiesOfType(x).every((s) => { const pt = checker.getTypeOfSymbolAtLocation(s, sf); return primT(pt) || isCallable(pt); }) && [checker.getIndexTypeOfType(x, ts.IndexKind.String)].every((it) => !it || primT(it))));
+  function handedArg(a, code, d) {
+    const t = typeOf(a);
+    if (!t || primT(t) || (isCallable(t) && !isAny(t)) || isAny(t)) return code; // no identity, a function value (its code and cells), or an opaque value (its own handle)
+    const id = identityOf(a);
+    if (id.kind === 'existing') return code;
+    if (id.kind === 'unknown') fail(a, `copied-argument: this call may write or keep the object it is handed, and its argument is ${id.why}; bind it to a name of one kind (a parameter, or a new literal or copy) first`);
+    if (!partsPrim(typeOf(id.site))) fail(a, 'copied-argument: a new object holding objects is handed to a call that may write or keep it; this reading does not hold the identities inside it: hand its primitive fields, or the objects themselves');
+    const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
+    for (let p = id.site.parent; p && p !== body; p = p.parent) {
+      if (ts.isFunctionLike(p)) break;
+      const within = (y) => !!y && y.pos <= id.site.pos && id.site.end <= y.end;
+      if (ts.isIterationStatement(p, false) && (within(p.statement) || (ts.isForStatement(p) && (within(p.condition) || within(p.incrementor))) || ((ts.isWhileStatement(p) || ts.isDoStatement(p)) && within(p.expression)))) fail(a, 'copied-argument: a new object made in a loop is handed to a call that may keep it; every pass makes another object, which this reading does not count: make it outside the loop, or hand its primitive fields');
+    }
+    if (!handedSites.has(id.site)) handedSites.set(id.site, handedSites.size);
+    return `${external(`handed_fresh_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.site)})`;
+  }
   function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
     const isEff = eff ?? isEffectCall(n);
     if (isEff && !unitEffectful()) fail(n, `internal: an effect in a unit not marked effectful (${calleeName})`);
@@ -1670,7 +1739,7 @@ function translateOnce(file, fnName, opts = {}) {
     calleeName = `${spread ? 'call_seq' : 'call_args'}_${calleeName}`; // disjoint call forms: f(...xs) never collides with a function named f_seq(xs)
     if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && calleeName.endsWith(`_${n.expression.text}`) && reachOf.reachesFile(n.expression)) calleeName += `_${hash(reachOf.keyText(n.expression))}`; // a binding of this file called by name (a constant holding a function value) is named by the code it reaches (design/reach-keys.md)
     const throwingUnitValue = (a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && (exceptionUnits.has(a.text) || effectfulUnits.has(a.text)); // stage 5 rank 20: handed to an outside call, an opaque value named by its text
-    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? (cellWriter(a) && reactHandler(a)) || opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : expr(a, ptype(a, i)));
+    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? (cellWriter(a) && reactHandler(a)) || opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : isEff ? handedArg(a, expr(a, ptype(a, i)), pts[i]) : expr(a, ptype(a, i)));
     if (!isEff) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
@@ -6265,7 +6334,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && effect(n)) {
         points.push(n);
         if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
-          for (const a of n.arguments ?? []) handed.push(typeOf(ts.isSpreadElement(a) ? a.expression : a));
+          for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a)) { const id = identityOf(a); if (id.kind === 'fresh' && partsPrim(typeOf(id.site))) continue; } handed.push(typeOf(ts.isSpreadElement(a) ? a.expression : a)); } // a new object of primitive parts reaches only itself
           const f = n.expression;
           if (ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) handed.push(typeOf(f.expression));
         } else if (ts.isPropertyAccessExpression(n)) handed.push(typeOf(n.expression));
@@ -6347,6 +6416,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   }
   function emitUnit(u) {
     currentUnit = u;
+    handedSites = new Map(); // the fresh objects a unit hands are numbered from its own start
     { const rc = readAfterCall(u); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: never translated
     { const why = callbackUntypedJsUnit(sf, u, checker); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
