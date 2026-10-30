@@ -789,3 +789,15 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | translate/translate.mjs:6231 | translate-refuse |  | decorators | one-decider | the route wrapper is not read: ${} |
 | translate/translate.mjs:6237 | translate-refuse |  | decorators | one-decider | a piped parameter is a plain required name |
 | translate/translate.mjs:6276 | translate-throw |  | numbers | one-decider | internal: an integer division was not placed under Math.floor |
+
+## 2026-10-30: an edit of comments and blank lines is intake, not a verdict
+
+Before admission, the change ledger (`ci/ledger.mjs`) routes every edited line. An edit outside every listed unit that
+changes no compiled token is inert: only comments and blank space differ, so nothing can run differently. The ledger
+reads this from the parsed tree, never from a scanner started at the line: a line inside a block comment is comment,
+and a line of a template literal that starts with `//` is the literal's text. A comment that the compiler or the runtime
+reads is not inert: a pragma such as `/// <reference>` or `@jsx`, a `@ts-` directive, the JSDoc of a JavaScript file and
+a shebang. Such an edit is `unassigned:directive comment` and stays ASK. An inert edit is `unassigned:comment` or
+`unassigned:whitespace` with no verdict. The report (`pr.mjs`) lists it in the intake table and leaves it out of the
+verdict table, its counts and the blocking rows. A comment inside a listed unit still goes to that unit. The rule is
+about what the edit is, decided once in the ledger. It never depends on a hash, a file name or the pull request.
