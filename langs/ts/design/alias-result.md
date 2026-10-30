@@ -92,3 +92,36 @@ freshAfter is proved. The refusal stops the file, so the pair reads lane A unit 
 Open: the cost is not measured on the census, and `this.x` after a call is refused whenever a handed value may reach the
 receiver's class. Reading such a field through the world (a read that takes the world after the call) would keep
 these units, and is the follow-up.
+
+## 2026-10-30: a fresh object handed to a call that threads the world (copied-argument)
+
+`g(p)` against `g({ ...p })`. The value reading reads a copy as its source (`function Copy_Box(x: Box): Box { x }`,
+open-datatype.md), which is exact for every read the unit makes itself. A call that runs outside code may also write or
+keep the object it is handed, and then identity counts: a write through `g` reaches `p` in the first version only, and
+the observation reads `p` after the call (SEMANTICS.md, reachable mutation). Lane A handed the outside one term in both,
+`ext_call_args_invoke_World_Box_Unit_Box(wld, g, p)`, and proved them equal (pair `copied_argument` at a7d53b84).
+
+The rule (`translate.mjs identityOf` and `handedArg`, called by `externalCall` for each object argument of a call
+that threads the world): an existing object is handed as itself. That is a parameter, `this`, a module or imported
+value, a member or element read, a name bound once to one, or an outside call's answer. A fresh object is handed as
+`handed_fresh_<T>(v, k)`: a literal, `new`, a copy, or a table row that makes a new object (`slice`, `map`, `filter`,
+`Array.from`, `structuredClone`, ...). The function is uninterpreted and `k` is the allocation site's order among the
+sites the unit hands, so a fresh object equals no existing one and two sites are two objects, as in the heap core,
+where fresh cells are named in allocation order (canonical-heap.md). The choice follows the existing design: the ordinary
+lane has no identity to give a value, so the identity is the one fact the call is told, and the same site handed twice
+is the same object. Refused `copied-argument`, where the identity cannot be named: a same-file call's result (fresh or
+held by the callee), a name written more than once, a choice between kinds, a fresh object holding objects (the
+identities inside it are not held), and one made in a loop (every pass makes another object). A handed fresh object of
+primitive parts reaches only itself, so `readAfterCall` no longer counts it as reaching the unit's other objects.
+`readAfterCall` also takes the handed values per call now: a call reaches what it is handed and what calls that ran
+before it were handed (the outside may keep those), never a value the unit hands only later. A call ran before another
+when it is that call, ends before it in the text, sits inside its operands, or repeats in a loop with it. The whole-unit
+set refused `outside(next(), ...xs, next())` (pair `spread_outside`), where `xs` is handed only to the outer call.
+
+Pair `copied_argument`: `hand` and `twice` (one copy handed twice against two copies) are not proved; `honest` (a copy
+made, read before the call, and handed, against the same copy made inline) is proved. Lane B passes all three, because
+its fake `g` neither writes nor keeps its argument.
+
+The arguments of a same-file call that threads the world go through `handedArg` too (`unitArgs`): `helper({ ...p })`
+against `helper(p)`, where `helper` hands its parameter to `g`, was proved at 1ffceb9b and is not now (pair unit
+`viaHelper`). Open: the receiver of an outside method (`{ ...p }.m()` on a typed object) is not classified.
