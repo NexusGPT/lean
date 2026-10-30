@@ -276,8 +276,15 @@ if (PAIR_ONLY) {
   const A = huntA.get(PAIR_ONLY) ?? null;
   let exp = {}; try { exp = JSON.parse(fs.readFileSync(path.join(pairsDir, PAIR_ONLY, 'expect.json'), 'utf8')); } catch { /* a pair without expectations has no hunt */ }
   const provedBy = A ? Object.fromEntries(Object.keys(exp.b ?? {}).map((u) => [dafnyName(u), A.proved(dafnyName(u))])) : null;
-  fs.writeFileSync(RESULT_FILE, JSON.stringify({ rows, hunt: A ? { adapters: A.adapters, provedBy } : null, cache: stepCacheStats() }));
-  process.exit(0);
+  if (RESULT_FILE) { fs.writeFileSync(RESULT_FILE, JSON.stringify({ rows, hunt: A ? { adapters: A.adapters, provedBy } : null, cache: stepCacheStats() })); process.exit(0); }
+  // run by hand (no `--result`): the pair's own table, as the whole suite prints it, and the exit code of its rows
+  const cols = ['kind', 'name', 'check']; const widths = Object.fromEntries(cols.map((c) => [c, Math.max(c.length, ...rows.map((r) => String(r[c]).length))]));
+  console.log(`| ${cols.map((c) => c.padEnd(widths[c])).join(' | ')} | res  | lsc accepts | detail`);
+  for (const r of rows) console.log(`| ${cols.map((c) => String(r[c]).padEnd(widths[c])).join(' | ')} | ${r.ok ? 'PASS' : 'FAIL'} | ${r.lsc.padEnd(11)} | ${r.detail}`);
+  const failed = rows.filter((r) => !r.ok).length;
+  console.log(`| TOTAL | ${rows.length} checks | ${failed === 0 ? 'ALL PASS' : `${failed} FAILED`} |`);
+  fs.rmSync(tmp, { recursive: true, force: true });
+  process.exit(failed === 0 ? 0 : 1);
 }
 
 // ----- the run: every section starts at once; their children share the pool (tests/pool.mjs) -----
