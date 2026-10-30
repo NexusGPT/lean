@@ -113,7 +113,10 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] });
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
   if (th.status !== 0) return;
-  const v = crun('dafny', ['verify', '--verification-time-limit', '30', '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
+  // lane A's time limit stretches with the measured contention, as lane B's bound does (exec/run.mjs sampleContention): a lemma
+  // that proves in 10 s alone is not refuted by 27 neighbours sharing the cores; the stretch is capped at the same 3
+  const dafnyStretch = Math.min(3, Math.max(1, os.loadavg()[0] / Math.max(1, os.cpus().length)));
+  const v = crun('dafny', ['verify', '--verification-time-limit', String(Math.round(30 * dafnyStretch)), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
