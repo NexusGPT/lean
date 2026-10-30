@@ -85,6 +85,14 @@ const strictPolicy = (f) => (STRICT_RULES.has(f.rule) ? { act: 'apply', how: 'pr
 // a strict finding is keyed by its site (a compiler message carries no source text, and two values may share a name)
 const strictFindings = (fs_) => fs_.filter((f) => f.rule !== 'any-type' || concreteType(f.proposal)).map((f) => (STRICT_RULES.has(f.rule) ? { ...f, text: `${f.line}:${f.col} ${f.text ?? f.msg}` } : f));
 
+// The text a round reads lives in memory, never in the source file (design/converter.md, 2026-10-30): the compiler
+// host reads every file through ts.sys.readFile, so a path held here is read from this map. A dry run therefore writes
+// no source file at any moment, and a run stopped mid-round leaves the tree as it was; a real run writes each file
+// once, after its rounds.
+const overlay = new Map();
+const sysReadFile = ts.sys.readFile;
+ts.sys.readFile = (p, enc) => { const k = path.resolve(p); return overlay.has(k) ? overlay.get(k) : sysReadFile.call(ts.sys, p, enc); };
+
 function lintText(file, project) {
   const loaded = loadProgram(file, { project });
   const syntax = loaded.program.getSyntacticDiagnostics(loaded.sf).length;
@@ -121,37 +129,52 @@ function planAll(file, sf, checker, findings, transforms, narrowed, skip) {
 
 // convert one file in rounds; returns { applied, listed, before, after, original, text }
 export function convertFile(file, opts) {
-  const { transforms, project = true, narrowed = false, rounds = 6 } = opts;
+  const { transforms, project = true, narrowed = false, rounds = 6, dry = false } = opts;
   const original = fs.readFileSync(file, 'utf8');
+  const key = path.resolve(file);
+  overlay.set(key, original);
   let cur = lintText(file, project);
   const before = cur.findings.filter((f) => !f.env);
   const applied = [], skip = new Map();
   let lastListed = [];
   try {
     for (let r = 0; r < rounds; r++) {
-      const text = fs.readFileSync(file, 'utf8');
+      const text = overlay.get(key);
       const { chosen, listed } = planAll(file, cur.loaded.sf, cur.loaded.checker, cur.findings, transforms, narrowed, skip);
       lastListed = listed;
       if (!chosen.length) break;
       const baseTyping = typingCount(cur.findings), baseSyntax = cur.syntax;
-      const tryEdits = (ps) => { fs.writeFileSync(file, applyEdits(text, ps.flatMap((p) => p.edits))); const l = lintText(file, project); return { l, ok: l.syntax <= baseSyntax && typingCount(l.findings) <= baseTyping }; };
+      const tryEdits = (ps) => { overlay.set(key, applyEdits(text, ps.flatMap((p) => p.edits))); const l = lintText(file, project); return { l, ok: l.syntax <= baseSyntax && typingCount(l.findings) <= baseTyping }; };
       let res = tryEdits(chosen), kept = chosen;
       if (!res.ok) {
         // undo site by site: keep the plans that type as well alone, then together
         kept = [];
         for (const p of chosen) { const one = tryEdits([p]); if (one.ok) kept.push(p); else skip.set(p.key, `the rewrite would not type: ${(one.l.findings.find((f) => f.rule === 'ts-strict')?.msg ?? 'a syntax error').slice(0, 140)}`); }
         res = kept.length ? tryEdits(kept) : null;
-        if (!res || !res.ok) { for (const p of kept) skip.set(p.key, 'the rewrites at this site and another type worse together'); fs.writeFileSync(file, text); cur = lintText(file, project); continue; }
+        if (!res || !res.ok) { for (const p of kept) skip.set(p.key, 'the rewrites at this site and another type worse together'); overlay.set(key, text); cur = lintText(file, project); continue; }
       }
       applied.push(...kept.map((p) => ({ rule: p.finding.rule, line: p.finding.line, unit: p.finding.unit, transform: p.transform, how: p.how, guard: p.guard, text: p.finding.text.replace(/\s+/g, ' ').slice(0, 100) })));
       cur = res.l;
     }
-  } catch (e) { fs.writeFileSync(file, original); throw e; }
+  } catch (e) { overlay.delete(key); throw e; }
+  const final = overlay.get(key);
+  overlay.delete(key);
+  if (!dry && final !== original) fs.writeFileSync(file, final);
   const after = cur.findings.filter((f) => !f.env);
   const finalPlan = planAll(file, cur.loaded.sf, cur.loaded.checker, cur.findings, transforms, narrowed, skip);
   lastListed = finalPlan.listed.concat(finalPlan.chosen.map((p) => ({ ...p.finding, why: 'more rounds needed' })));
-  return { file, applied, listed: lastListed.map((f) => ({ rule: f.rule, line: f.line, unit: f.unit, label: f.label, why: f.why, advice: f.advice ?? ADVICE[f.rule]?.text ?? null, text: (f.text ?? '').replace(/\s+/g, ' ').slice(0, 100) })), before: before.length, after: after.length, original, text: fs.readFileSync(file, 'utf8') };
+  return { file, applied, listed: lastListed.map((f) => ({ rule: f.rule, line: f.line, unit: f.unit, label: f.label, why: f.why, advice: f.advice ?? ADVICE[f.rule]?.text ?? null, text: (f.text ?? '').replace(/\s+/g, ' ').slice(0, 100) })), before: before.length, after: after.length, original, text: final };
 }
+
+// the control copies prove() writes beside a source (lane B imports them, so their relative imports must resolve
+// there); a run stopped by a signal while one exists removes them before it exits. The handlers are installed only
+// while a copy exists: that phase awaits lane B, so a handler runs at once, whereas a handler installed for the whole
+// run would hold a signal back until the synchronous rounds end (Node runs signal handlers on the event loop)
+const controls = new Set();
+const SIGNALS = [['SIGINT', 130], ['SIGTERM', 143], ['SIGHUP', 129]];
+const onSignal = Object.fromEntries(SIGNALS.map(([sig, code]) => [sig, () => { for (const c of controls) fs.rmSync(c, { force: true }); process.exit(code); }]));
+const holdControl = (c) => { if (!controls.size) for (const [sig] of SIGNALS) process.on(sig, onSignal[sig]); controls.add(c); };
+const dropControl = (c) => { fs.rmSync(c, { force: true }); controls.delete(c); if (!controls.size) for (const [sig] of SIGNALS) process.off(sig, onSignal[sig]); };
 
 // prove the changed files of one folder with pr.mjs; revert a file on a WITNESS, or on an ASK the parent against
 // itself does not share; returns the rows and the reverted files
@@ -189,11 +212,12 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
         const abs = path.join(repo, r.file);
         const ctl = path.join(path.dirname(abs), `.lean_ctl_${process.pid}_${path.basename(abs)}`);
         try {
+          holdControl(ctl);
           fs.writeFileSync(ctl, git(repo, ['show', `${base}:${r.file}`]));
           const res = await check({ parent: ctl, candidate: ctl, unit: r.unit, n, project, dafnySeconds });
           ctlB = res.certificate?.lanes?.B ?? null;
           bOwn = !!ctlB && ctlB.verdict === B.verdict && (ctlB.reason ?? null) === (B.reason ?? null);
-        } catch { bOwn = false; } finally { fs.rmSync(ctl, { force: true }); }
+        } catch { bOwn = false; } finally { dropControl(ctl); }
       }
       if (!A && !B) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: no lane answered (${String(r.reason ?? r.coverage ?? '').slice(0, 80)}), so the rewrite was not checked`);
       else if (!aOwn) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: lane A ${A.verdict}${A.stage ? ` at ${A.stage}` : ''}, an answer about the rewrite, not the parent: ${String(A.detail ?? r.reason ?? '').slice(0, 120)}`);
@@ -289,9 +313,8 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
     const results = [];
     for (const f of files) {
       let r;
-      try { r = convertFile(f, { transforms, project, narrowed }); }
+      try { r = convertFile(f, { transforms, project, narrowed, dry }); }
       catch (e) { console.error(`${path.relative(repo, f)}: not converted: ${String(e.message).slice(0, 200)}`); continue; }
-      if (dry) fs.writeFileSync(f, r.original);
       results.push(r);
       console.error(`${path.relative(repo, f)}: ${r.before} finding(s), ${r.applied.length} applied, ${r.listed.length} listed`);
     }
