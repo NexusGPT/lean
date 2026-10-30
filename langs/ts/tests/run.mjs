@@ -32,6 +32,10 @@ const PAIR_ONLY = argvAt('--pair');
 const RESULT_FILE = argvAt('--result');
 const JOBS = Math.max(1, Number(process.env.JOBS ?? Math.max(1, Math.min(8, os.cpus().length - 1))) || 1); // the owner's cap (29 Oct): up to 8 in parallel
 const tmp = argvAt('--tmp') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-'));
+// the idle-core CPU rate, measured once before any child runs and handed to every child: lane B stretches a unit's
+// CPU bound by the unit's own measured slowdown against it (exec/run.mjs cpuContention), so a unit near its bound keeps
+// its verdict when the pool shares the cores
+if (!process.env.LEAN_CPU_BASELINE && !PAIR_ONLY) { const { cpuRateNsPerIter } = await import('../exec/run.mjs'); process.env.LEAN_CPU_BASELINE = String(cpuRateNsPerIter()); }
 const t0 = Date.now();
 
 const run = (cmd, args, env) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26, env: env ? { ...process.env, ...env } : process.env });

@@ -300,13 +300,17 @@ async function observeJsx(v, env) {
 
 // the breadcrumb: the phase the harness is in, the input, and the file being loaded, so that a run whose event loop
 // drains before a verdict names what was pending
-export const crumb = { phase: 'start', input: null, loading: null, side: null, timedOut: 0 }; // timedOut: calls that hit their own --ms bound so far (the unit bound admits each one its budget)
+export const crumb = { phase: 'start', input: null, loading: null, side: null, timedOut: 0, contention: 1 }; // contention: this unit's measured CPU slowdown against the suite's idle-core baseline (cpuContention) // timedOut: calls that hit their own --ms bound so far (the unit bound admits each one its budget)
 // a listener of the breadcrumb (worker.mjs sends each step to the process that holds the bound, so a killed run names where it was)
 let crumbListener = null;
 export const onCrumb = (f) => { crumbListener = f; };
-const tellCrumb = () => { if (crumbListener) crumbListener({ phase: crumb.phase, input: crumb.input, side: crumb.side, loading: crumb.loading, timedOut: crumb.timedOut }); };
+const tellCrumb = () => { if (crumbListener) crumbListener({ phase: crumb.phase, input: crumb.input, side: crumb.side, loading: crumb.loading, timedOut: crumb.timedOut, contention: crumb.contention }); };
 const callTimedOut = () => { crumb.timedOut++; tellCrumb(); }; // a call that hit its own bound: paid for by that bound, reported to the process that holds the unit's
-const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; crumb.side = null; tellCrumb(); };
+// the unit's CPU slowdown is sampled at its start and at every input (a short spin, about 10 ms): a thread moves between
+// cores of different speed and shares them, so one sample at the start is not the unit's rate; the running mean is
+const rateSamples = [];
+const sampleContention = () => { const base = Number(process.env.LEAN_CPU_BASELINE); if (!(base > 0)) return; rateSamples.push(cpuRateNsPerIter(2_000_000, 3)); const mean = rateSamples.reduce((a, b) => a + b, 0) / rateSamples.length; crumb.contention = Math.min(FAR_GUARD, Math.max(1, mean / base)); };
+const step = (phase, input = null) => { crumb.phase = phase; crumb.input = input; crumb.side = null; if (input !== null) sampleContention(); tellCrumb(); };
 export const crumbText = () => `pending: ${crumb.phase}${crumb.input !== null ? ` (input ${crumb.input})` : ''}${crumb.loading ? `, loading ${crumb.loading}` : ''}${crumb.escaped ? `; an error escaped the harness: ${crumb.escaped}` : ''}`;
 // a run never ends without a verdict: when the event loop drains while the verdict is still owed (a promise nobody
 // will settle, no timer or handle left), the run reports ASK naming what was pending, writes it to --out, and exits 2
@@ -996,6 +1000,21 @@ function watchCpu(pid, bound, handlers) {
 // time ms of CPU takes on this machine, read from the load average at the start of the unit (os.loadavg: the
 // 1-minute run queue over the cores), floored at 1 and capped at FAR_GUARD; a call that ran past ms both ways is a
 // timeout whether or not the watchdog interrupted it, as on an idle machine
+// CPU seconds buy less work when the core is shared (a sibling hardware thread, cache pressure): the bound on a unit's
+// CPU time is stated for an idle core. cpuRateNsPerIter spins a fixed integer loop and reads this thread's CPU per
+// iteration; the suite measures it once before its pool starts (LEAN_CPU_BASELINE), each unit measures it at its start,
+// and the unit's bound stretches by the ratio (capped at FAR_GUARD): the same work, under contention, is the same bound
+export function cpuRateNsPerIter(iters = 4_000_000, samples = 5) { // the median of five short spins: one spin alone read four times its rate on a scheduling burst
+  const read = () => (typeof process.threadCpuUsage === 'function' ? process.threadCpuUsage() : process.cpuUsage());
+  const rates = [];
+  for (let k = 0; k < samples; k++) {
+    const a = read(); let x = 0x9e3779b9 | 0;
+    for (let i = 0; i < iters; i++) { x = (Math.imul(x ^ (x >>> 15), 0x85ebca6b) + i) | 0; }
+    const b = read(); if (x === 42) process.stderr.write(''); // keep the loop's result alive
+    rates.push(((b.user - a.user) + (b.system - a.system)) * 1000 / iters);
+  }
+  rates.sort((p, q) => p - q); return rates[Math.floor(rates.length / 2)];
+}
 let loadFactor = 1;
 export function readLoadFactor() { const cores = os.cpus().length || 1; const load = os.loadavg()[0] || 0; loadFactor = Math.min(FAR_GUARD, Math.max(1, load / cores)); return loadFactor; }
 const wallAllowance = (ms) => Math.round(ms * loadFactor);
@@ -1062,18 +1081,18 @@ export async function runPair(opts) {
     const child = fork(workerFile, [], { execArgv: workerFlags(opts), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
     const end = (res) => { if (done) return; done = true; clearTimeout(timer); cpuWatch.stop(); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
     const started = Date.now();
-    let cpuSeen = 0, timedOut = 0;
-    const allowance = () => seconds + timedOut * callMs / 1000; // the bound plus the budget of every call that hit its own
+    let cpuSeen = 0, timedOut = 0, contention = 1;
+    const allowance = () => seconds * contention + timedOut * callMs / 1000; // the bound for an idle core, stretched by the unit's measured CPU slowdown, plus the budget of every call that hit its own
     const killAt = (why) => {
       try { child.kill('SIGKILL'); } catch { /* already gone */ }
-      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds${timedOut ? ` plus ${timedOut} call(s) at their own ${callMs} ms bound` : ''}) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
+      end({ verdict: 'ASK', kind: 'spin-bound', unit: opts.unit, reason: `spin-bound: lane B passed its ${why} bound of ${seconds} s per unit (--unit-seconds${contention > 1 ? `, stretched ${contention.toFixed(2)} times by the measured CPU slowdown of a shared core` : ''}${timedOut ? `, plus ${timedOut} call(s) at their own ${callMs} ms bound` : ''}) after ${Math.round((Date.now() - started) / 1000)} s of wall time and ${Math.round(cpuSeen)} s of CPU time; the worker was killed at ${crumbOf(last)}`, bound: { unitSeconds: seconds, cpuSeconds: Math.round(cpuSeen), wallSeconds: Math.round((Date.now() - started) / 1000), killedAt: last, n: opts.n ?? 200, seed: opts.seed ?? 1, ms: opts.ms ?? 2000 } });
     };
     const wallGuard = () => setTimeout(() => killAt(psUnavailable ? 'wall-clock' : `far wall-clock guard (${FAR_GUARD} times the CPU-time)`), Math.max(0, allowance() * 1000 * (psUnavailable ? 1 : FAR_GUARD) - (Date.now() - started)));
     let timer = wallGuard();
     const cpuWatch = watchCpu(child.pid, seconds, { onSample: (cpu) => { cpuSeen = cpu; }, onBound: (cpu) => { cpuSeen = cpu; killAt('CPU-time'); },
       onUnavailable: () => { clearTimeout(timer); timer = setTimeout(() => killAt('wall-clock'), Math.max(0, allowance() * 1000 - (Date.now() - started))); } });
     child.on('message', (m) => {
-      if (m && m.crumb) { last = m.crumb; if (m.crumb.timedOut > timedOut) { timedOut = m.crumb.timedOut; const w = cpuWatched.get(child.pid); if (w) w.bound = allowance(); clearTimeout(timer); timer = wallGuard(); } return; }
+      if (m && m.crumb) { last = m.crumb; const c = Number(m.crumb.contention) || 1; if (m.crumb.timedOut > timedOut || c !== contention) { timedOut = Math.max(timedOut, m.crumb.timedOut || 0); contention = c; const w = cpuWatched.get(child.pid); if (w) w.bound = allowance(); clearTimeout(timer); timer = wallGuard(); } return; }
       if (!m || !Object.hasOwn(m, 'result')) return;
       if (m.drained && guarded) { done = true; clearTimeout(timer); cpuWatch.stop(); Object.assign(crumb, { phase: last?.phase ?? crumb.phase, input: last?.input ?? null, loading: last?.loading ?? null }); return; } // the child's event loop drained before a verdict: the caller's loop drains as the in-process run's did, and its guard names what was pending
       end(m.result);
@@ -1088,6 +1107,7 @@ export async function runPair(opts) {
 export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
 async function runPairInFlight(opts) {
   readLoadFactor(); // the machine's share of a core for this unit: the wall allowance of every in-process watchdog
+  rateSamples.length = 0; sampleContention(); tellCrumb(); // this unit's CPU slowdown against the suite's idle-core baseline, re-sampled at every input: the process that holds the bound stretches it
   const owner = enclosingUnitName(opts.candidate, opts.unit);
   if (owner) return { ...await runPairInFlight({ ...opts, unit: owner }), unit: opts.unit, 'covered-by': owner };
   const unitRecord = { schema: 'witness-record/v2', version: 2, invocation: { kind: 'unit' }, unit: opts.unit, seed: opts.seed ?? 1, leanHead: opts.recordHead ?? 'unknown', drawDomain: { parameters: [], status: 'not recorded', reason: 'input plan not reached' }, draws: [], reach: { status: 'not recorded', reason: 'sandbox statement markers retain only current/completed sites; no per-line visit accumulator or diff bitmap' } };
