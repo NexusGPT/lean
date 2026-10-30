@@ -18,6 +18,7 @@ import { cachedRun, cachedRunAsync, stepCacheStats, CACHE_DIR } from './stepcach
 import { createPool, spawnCollect } from './pool.mjs';
 import { faithfulPlacement } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
+import { dafnySolverArgs } from '../solve/z3.mjs'; // the one Z3 (solve/z3.mjs): the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -119,7 +120,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // EqualCanon_pair runs in 4 parts: 13 of 13 alone on 11 cores, 2 rows red twice under JOBS 28 on 32 cores at 30 s)
   const coresEach = Math.max(1, Math.floor(os.cpus().length / JOBS));
   const dafnyStretch = Math.min(4, Math.max(1, os.cpus().length / coresEach / 4));
-  const v = crun('dafny', ['verify', '--verification-time-limit', String(Math.round(30 * dafnyStretch)), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
+  const v = crun('dafny', ['verify', '--verification-time-limit', String(Math.round(30 * dafnyStretch)), ...dafnySolverArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
@@ -326,7 +327,7 @@ const runner = (key, group = null) => {
     job,
     run: prun,
     crun: (cmd, args, { files = [], outs = [], env = null } = {}) => cachedRunAsync(prun, cmd, args, { root, files, outs, env, normalise: NORMALISE }),
-    dafny: async (file) => dafnyResult(await prun('dafny', ['verify', '--verification-time-limit', '60', file])),
+    dafny: async (file) => dafnyResult(await prun('dafny', ['verify', '--verification-time-limit', '60', ...dafnySolverArgs(), file])),
     // "lsc accepts": does LemmaScript's `lsc gen --backend=dafny` take the file (exit 0)? Reach comparison only.
     lsc: async (file) => {
       if (!fs.existsSync(LSC)) return 'no binary';
@@ -683,6 +684,7 @@ async function adviceLabels(add) {
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
     // the certificate records the seconds of each lane that ran, a lane that did not run absent (check.mjs certificate.timing)
     ['certificate-timing', scriptRow('runtime', 'certificate-timing', 'certificate.timing holds positive seconds per lane that ran on numbers::average, readme_ledger::applyAll and component::Counter', [path.join(here, 'certificate-timing.mjs')], lastLine)],
+    ['z3-pinned', scriptRow('runtime', 'z3-pinned', 'the doubles reading and Dafny run the one Z3 the certificate names (solve/z3.mjs), by default and under LEAN_Z3', [path.join(here, 'z3-pinned.mjs')], lastLine)],
     // one entry point: bin/lean check | lint | pr | census, arguments and exit codes passed through; the README quickstart through it
     ['bin-lean', scriptRow('runtime', 'bin-lean', 'bin/lean check reproduces the README quickstart; lint, pr and census dispatched with their exit codes', [path.join(here, 'bin-lean.mjs')], lastLine)],
   ].map(([key, go]) => ({ key: `runtime/${key}`, go }));

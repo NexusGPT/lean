@@ -10,7 +10,8 @@
 //                      replay does not confirm while an operation is read uninterpreted (that function's model is free)
 //          'finding'   a sat model the replay does not confirm with every operation exact: the ENCODING is wrong,
 //                      named, never a witness
-//   The record names the solver, its version, the seconds, the operations encoded exactly and those read uninterpreted.
+//   The record names the solver, its version and executable (solve/z3.mjs: the Z3 Dafny is given), the seconds, the
+//   operations encoded exactly and those read uninterpreted.
 //
 // A second solver cross-checks when LEAN_FP_CROSS names one on PATH (`bitwuzla` or `cvc5`; neither is installed here):
 // a disagreement between a proof and a model is a 'finding'. The query file is kept beside the record (`query`).
@@ -20,6 +21,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { loadProgram, topLevelFunctions } from '../common.mjs';
 import { numberBearing, encodeUnit, equivalenceQuery } from '../translate/smt-fp.mjs';
+import { z3Binary } from './z3.mjs';
 
 export const FP_SECONDS = 60;
 // an SMT-LIB FloatingPoint value as a solver prints it, back to a double
@@ -48,9 +50,10 @@ export function modelValues(out, params) {
   return res;
 }
 const versionOf = (bin) => { const r = spawnSync(bin, ['--version'], { encoding: 'utf8' }); return r.status === 0 ? (r.stdout + r.stderr).trim().split('\n')[0] : null; };
-// one solver run on a query file: unsat | sat | unknown (a timeout is unknown), the seconds and the whole output
-export function runSolver(bin, file, seconds) {
-  const args = bin === 'z3' ? [`-T:${seconds}`, file] : bin === 'cvc5' ? [`--tlimit=${seconds * 1000}`, '--produce-models', file] : [`--time-limit=${seconds * 1000}`, '--produce-models', file];
+// one solver run on a query file: unsat | sat | unknown (a timeout is unknown), the seconds and the whole output; `kind`
+// picks the arguments, `bin` the executable (Z3 is the one solve/z3.mjs names, the cross solver its name on PATH)
+export function runSolver(bin, file, seconds, kind = bin) {
+  const args = kind === 'z3' ? [`-T:${seconds}`, file] : bin === 'cvc5' ? [`--tlimit=${seconds * 1000}`, '--produce-models', file] : [`--time-limit=${seconds * 1000}`, '--produce-models', file];
   const t0 = process.hrtime.bigint();
   const r = spawnSync(bin, args, { encoding: 'utf8', timeout: (seconds + 15) * 1000, maxBuffer: 1 << 26 });
   const secs = Number(process.hrtime.bigint() - t0) / 1e9;
@@ -95,11 +98,13 @@ export async function solveUnit({ parent, candidate, unit, seconds = FP_SECONDS,
   if (!bearing) return { bearing: null };
   const ep = encodeUnit(P.checker, P.sf, unit, 'parent'), ec = encodeUnit(C.checker, C.sf, unit, 'candidate');
   const q = equivalenceQuery(ep, ec);
-  const base = { bearing, solver: 'z3', solverVersion: versionOf('z3'), timeoutSeconds: seconds, encoded: q.encoded ?? [...new Set([...(ep.encoded ?? []), ...(ec.encoded ?? [])])].sort(), uninterpreted: q.uninterpreted ?? [...new Set([...(ep.uninterpreted ?? []), ...(ec.uninterpreted ?? [])])].sort() };
+  const z3 = z3Binary(); // the Z3 Dafny verifies with and the certificate's tools name (solve/z3.mjs)
+  const base = { bearing, solver: 'z3', solverVersion: z3.version, solverPath: z3.path, timeoutSeconds: seconds, encoded: q.encoded ?? [...new Set([...(ep.encoded ?? []), ...(ec.encoded ?? [])])].sort(), uninterpreted: q.uninterpreted ?? [...new Set([...(ep.uninterpreted ?? []), ...(ec.uninterpreted ?? [])])].sort() };
   if (!q.ok) return { ...base, verdict: 'unknown', reason: `not encoded: ${q.reason}`, seconds: 0 };
+  if (!z3.path) return { ...base, verdict: 'unknown', reason: `no Z3: ${z3.source}`, seconds: 0 };
   const dir = keep ?? fs.mkdtempSync(path.join(os.tmpdir(), 'lean-fp-'));
   const file = path.join(dir, `fp-${unit.replace(/\W/g, '_')}.smt2`); fs.writeFileSync(file, q.text);
-  const r = runSolver('z3', file, seconds);
+  const r = runSolver(z3.path, file, seconds, 'z3');
   const rec = { ...base, query: file, seconds: Number(r.seconds.toFixed(3)), answer: r.answer };
   const cross = process.env.LEAN_FP_CROSS;
   if (cross) {

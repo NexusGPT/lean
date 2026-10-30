@@ -54,9 +54,9 @@ test('certificate: the tools record holds the Node version, the Dafny version te
   // the Z3 the certificate names is one that answers --version with the text it recorded
   assert.equal(typeof t.z3, 'string', `z3 is null: ${t.z3Source}`);
   assert.match(t.z3, /^Z3 version \d+\.\d+/);
-  assert.ok(['bundled beside dafny', 'z3 on PATH'].includes(t.z3Source), t.z3Source);
-  const z3 = spawnSync('z3', ['--version'], { encoding: 'utf8' });
-  if (t.z3Source === 'z3 on PATH') assert.equal(t.z3, (z3.stdout + z3.stderr).trim());
+  assert.ok(['LEAN_Z3', 'bundled beside dafny', 'z3 on PATH'].includes(t.z3Source), t.z3Source);
+  const z3 = spawnSync(t.z3Path, ['--version'], { encoding: 'utf8' }); // the executable recorded answers with the text recorded
+  assert.equal(t.z3, (z3.stdout + z3.stderr).trim());
 });
 
 test('certificate: words given beside the files never reach the verdict or the certificate', () => {
