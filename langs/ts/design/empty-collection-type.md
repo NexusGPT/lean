@@ -21,7 +21,7 @@ two records with equal fields give one key where JavaScript keeps two (lane B wi
 for a proof). A slot of any other type (a union, `ReadonlyMap`, no annotation) keeps the checker's type,
 and so the refusal it had.
 
-Pair `empty_collection_type`: `tally` (the increment named in a local) and `emptyCounts` (an empty map returned) proved and
+Pair `empty_collection_type`: `tally` (the returned count named in a local) and `emptyCounts` (an empty map returned) proved and
 PASS-bounded; `weighted` (adds 2 in place of 1) and `seen` (size in place of membership) not proved and WITNESS.
 
 Bench: `Math.log` gramTfidf (driftbench `packages/core/src/text/grams.ts:49`,

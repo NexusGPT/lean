@@ -19,6 +19,6 @@ export function seen(words: readonly string[], key: string): boolean {
   return s.has(key);
 }
 
-export function emptyCounts(): Counts {
+export function emptyCounts(label: string): Counts {
   return new Map();
 }

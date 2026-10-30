@@ -3,11 +3,9 @@ export type Counts = Map<string, number>;
 
 export function tally(words: readonly string[], key: string): number {
   const counts: Counts = new Map();
-  for (const w of words) {
-    const before = counts.get(w) ?? 0;
-    counts.set(w, before + 1);
-  }
-  return counts.get(key) ?? 0;
+  for (const w of words) counts.set(w, (counts.get(w) ?? 0) + 1);
+  const total = counts.get(key) ?? 0;
+  return total;
 }
 
 export function weighted(words: readonly string[], key: string): number {
@@ -22,6 +20,6 @@ export function seen(words: readonly string[], key: string): boolean {
   return s.size > 0;
 }
 
-export function emptyCounts(): Counts {
+export function emptyCounts(label: string): Counts {
   return new Map();
 }
