@@ -1911,6 +1911,129 @@ export function erasedReferenceSlot(checker, n) {
     : { rule, message: `${what}; this comparison compares references, and the value reading would equate two objects with the same fields; compare fields` };
 }
 
+// A read after a call that may change what it reads (design/alias-result.md, 2026-10-30). The ordinary lane reads
+// an object as a value: `p.x`, `ext_Any_x_Any(g)`, `ext_Ext_C_x_Ext_C(self)`, a copy, a library read, the unit's
+// result take the object as it was when the unit received it, while a call that runs outside code (isEffectCall, a
+// clock or random read aside) only threads the world. Such a call may change any object it can reach: the values the
+// run hands to the outside (a receiver, an argument, a called function value) and whatever they may alias or reach
+// by type, an any or unknown value or a function value reaching anything (hash-keys.md: the outside runs code only
+// through values this run hands it). A read of such an object without the world, after such a call, would read the
+// value before the call: refused by name. Kept: the object handed on to a call that threads the world (a receiver, an
+// argument), an alias, `typeof`, `===`, a truth test, and a local the unit made of primitive fields and only reads.
+export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), quiet(call), deferred(call) }
+const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (TF.Any | TF.Unknown)), typeOf = (n) => h.typeOf(n);
+  const body = u.fn?.body ?? u.node?.body;
+  if (!body) return null;
+  const P = (x) => { let p = x.parent; while (p && (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p))) { x = p; p = p.parent; } return { p, x }; };
+  const clock = (c) => { const t = ts.isCallExpression(c) ? c.expression.getText(sf) : ts.isNewExpression(c) ? `new ${c.expression.getText(sf)}` : ''; return ['Date.now', 'performance.now', 'process.hrtime', 'Math.random', 'crypto.randomUUID'].includes(t) || (t === 'new Date' && !(c.arguments && c.arguments.length)); };
+  const points = [], handed = [];
+  const namespace = (x) => { if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.declarations?.[0]; return !!d && (d.getSourceFile() !== sf || ts.isImportSpecifier(d) || ts.isNamespaceImport(d) || ts.isImportClause(d)); }; // a lib global or an imported binding as receiver holds no object of this unit's unless it was handed one, which is counted there
+  const libraryReceiver = (x, call) => { if ((call.arguments ?? []).some((a) => ts.isFunctionLike(a) || ts.isIdentifier(a))) return false; const t = h.typeOf(x); if (!t || isAny(t)) return false; const ps = t.flags & TF.Union ? t.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [t]; return ps.length > 0 && ps.every((y) => !!(y.flags & TF.StringLike) || isArrayLike(checker, y) || ['Map', 'Set', 'ReadonlyMap', 'ReadonlySet'].includes(y.symbol?.name ?? '')); }; // a library op on an array, a Map, a Set or a string runs no outside code on its receiver (its row is the reading)
+  const answer = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isAwaitExpression(x)) x = x.expression; return ts.isCallExpression(x) || ts.isNewExpression(x); }; // the answer of a call reaches what the outside was handed, already counted
+  const fnOf = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; }; // a call in a nested function runs when that function runs
+  const madeClosure = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) if (ts.isFunctionLike(p)) { const q = p.parent; if (!(q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && (q.arguments ?? []).includes(p)) || h.quiet?.(q) || effect(q)) return true; } return false; }; // a function value the unit makes and keeps, or hands to a call that runs outside code or to a hook, is its code and its cells (SEMANTICS.md, function values): its body is no read of the unit; a callback of a library op is read inline and stays
+  const inOpaque = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) { if (ts.isFunctionLike(p)) return false; if (ts.isStatement(p) && h.opaque?.(p)) return true; } return false; }; // a statement the decider reads as one uninterpreted transition holds no read of its own
+  const effect = (n) => { try { return h.effect(n); } catch { return true; } };
+  const walk = (n) => {
+    if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
+      points.push(n);
+      if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
+        for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a) && (h.freshAlone(a) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts reaches only itself
+        const f = n.expression;
+        if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression });
+      } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression), node: n.expression });
+    }
+    ts.forEachChild(n, walk);
+  };
+  walk(body);
+  if (!points.length) return null;
+  // may a value of type h reach (be, or hold through its fields) an object of type o? any, unknown, a function or an unread depth: yes
+  const prim = (t) => !!t && (t.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.Undefined | TF.Null | TF.Void | TF.Never | TF.ESSymbolLike)) && !(t.flags & TF.Union && t.types.some((x) => !prim(x)));
+  const reaches = (h, o, depth = 0, seen = new Set()) => {
+    if (h === null || !h || isAny(h)) return true;
+    if (h.flags & TF.Union) return h.types.some((x) => reaches(x, o, depth, seen));
+    if (prim(h) || primitiveBrand(h)) return false;
+    if (checker.getSignaturesOfType(h, ts.SignatureKind.Call).length) return false; // a function value reaches what it is handed, its arguments (hash-keys.md)
+    if (checker.isTypeAssignableTo(o, h) || checker.isTypeAssignableTo(h, o)) return true;
+    if (depth >= 4) return true;
+    if (seen.has(h)) return false; seen.add(h);
+    const inner = [...(checker.getTypeArguments?.(h) ?? []), ...checker.getPropertiesOfType(h).map((s) => { try { return checker.getTypeOfSymbolAtLocation(s, body); } catch { return undefined; } }).filter((x) => x !== undefined)];
+    const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
+    return [...inner, ...(idx ? [idx] : [])].some((x) => reaches(x, o, depth + 1, seen));
+  };
+  // a call reaches what it is handed and what calls started before it were handed (the outside may keep it), and in a loop what the loop hands
+  const ranBy = (h, c) => h === c || h.getEnd() <= c.getStart(sf) || (c.pos <= h.pos && h.end <= c.end) || loops(h).some((l) => loops(c).includes(l)); // h ran before c ends: c itself, a call before it, one inside its operands, or one its loop repeats
+  const reached = (o, c) => handed.find((x) => ranBy(x.at, c) && reaches(x.t, o)) ?? null;
+  const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
+  const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
+  const inFn = (x, top) => { for (let p = x.parent; p && p !== top; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
+  let why = null;
+  // where a call counts: a call inside a callback runs during the call it is handed to (unless that call defers it, an
+  // effect hook); inside a function the unit makes and keeps, it runs when that function runs, so only for reads inside it
+  const anchorOf = (c) => { let x = c; for (;;) { const f = fnOf(x); if (!f) return x; const q = f.parent; if (q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && (q.arguments ?? []).includes(f) && !h.deferred?.(q)) { x = q; continue; } return null; } };
+  const between = (start, occ, t) => points.some((c0) => {
+    const cf = fnOf(c0), a = anchorOf(c0); if (!a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end)) return false;
+    const c = a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end) ? a : c0;
+    const hit = reached(t, c); if (!hit) return false;
+    why = { call: c, handed: hit.node };
+    const inside = c.pos <= occ.pos && occ.end <= c.end;
+    if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
+    if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf)) return true;
+    const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside;
+  });
+  const declOfSym = (s) => s?.valueDeclaration ?? s?.declarations?.[0];
+  const writes = (s) => { const out = []; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };
+  const uses = (s) => { const out = []; const w = (x) => { if (ts.isIdentifier(x) && x !== declOfSym(s)?.name && checker.getSymbolAtLocation(x) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };
+  const primLit = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; if (ts.isObjectLiteralExpression(e)) return e.properties.every((m) => ts.isPropertyAssignment(m) && prim(typeOf(m.initializer))); if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => !ts.isSpreadElement(x) && prim(typeOf(x))); return false; };
+  const sealed = (s) => { // a local the unit made of primitive parts, never handed, aliased or given an object
+    const d = declOfSym(s);
+    if (!d || !ts.isVariableDeclaration(d) || !d.initializer || !primLit(d.initializer) || writes(s).length) return false;
+    return uses(s).every((x) => { const { p, x: y } = P(x); if (!((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === y)) return false; const q = p.parent; if (q && ts.isCallExpression(q) && q.expression === p) return false; if (q && ts.isBinaryExpression(q) && q.left === p && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) return prim(typeOf(q.right)); return true; });
+  };
+  const promiseLike = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.Undefined | TF.Null | TF.Void)) || ['Promise', 'PromiseLike'].includes(x.symbol?.name ?? '')); // a promise is a handle: its state is read only through then or await, which thread the world
+  const objectLike = (t) => !!t && !prim(t) && !primitiveBrand(t) && !promiseLike(t) && !(checker.getSignaturesOfType(t, ts.SignatureKind.Call).length && !isAny(t));
+  const kept = (occ) => { // the occurrence hands the object on, names it again or tests what never changes
+    const { p, x } = P(occ);
+    if (!p) return false;
+    if (h.worldName?.(occ)) return true; // a name the decider reads through the world (module state): read as it is now
+    if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === x && p.parent && ts.isBinaryExpression(p.parent) && p.parent.left === p && p.parent.operatorToken.kind === K.EqualsToken) return true; // `x.f = v`, one level: a write, the output rebuilt from x on both sides and every call recorded with what it was handed (a deeper `x.a.b = v` reads `x.a` first and stays refused)
+    if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === x && h.worldRead(p)) return true; // a member the decider reads through the world (a field a method of its same-file class writes, a getter): read as it is now
+    if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && (p.arguments ?? []).includes(x)) return effect(p);
+    if (ts.isSpreadElement(p) && p.parent && (ts.isCallExpression(p.parent) || ts.isNewExpression(p.parent))) return false;
+    if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return effect(p.parent);
+    if (ts.isVariableDeclaration(p) && p.initializer === x) return true;
+    if (ts.isBinaryExpression(p)) { const k = p.operatorToken.kind; if (k === K.EqualsToken && p.right === x) return true; if ([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(k)) return true; if (k === K.InstanceOfKeyword && p.left === x) return true; }
+    if (ts.isTypeOfExpression(p)) return true;
+    if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true;
+    if (isAny(typeOf(x)) && (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === x))) return true; // an any value is a handle: returned as it is, only a read through it takes its state
+    if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isConditionalExpression(p)) && (p.expression ?? p.condition) === x) return true;
+    return false;
+  };
+  let found = null;
+  const visit = (n) => {
+    if (found) return;
+    const isThis = n.kind === K.ThisKeyword;
+    if (isThis || (ts.isIdentifier(n) && ts.isExpression(n) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && 'name' in n.parent && n.parent.name === n && !ts.isShorthandPropertyAssignment(n.parent)) && !(ts.isCallExpression(n.parent) && n.parent.expression === n))) {
+      const s = isThis ? null : checker.getSymbolAtLocation(n);
+      const d = s ? declOfSym(s) : null;
+      const t = typeOf(n);
+      if (!inOpaque(n) && !madeClosure(n) && (isThis || (d && d.getSourceFile() === sf && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isBindingElement(d)))) && objectLike(t) && !(s && sealed(s)) && !kept(n)) {
+        const local = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end;
+        let init = local && d.initializer; while (init && (ts.isParenthesizedExpression(init) || ts.isAwaitExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init))) init = init.expression;
+        const fresh = init && (ts.isCallExpression(init) || ts.isNewExpression(init)) && !writes(s).length; // obtained when it was bound
+        const bound = d && ts.isBindingElement(d) ? (() => { let v = d.parent; while (v && !ts.isVariableDeclaration(v)) v = v.parent; let e = v?.initializer; while (e && (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e))) e = e.expression; return v && v.pos >= body.pos && e && (ts.isCallExpression(e) || ts.isNewExpression(e)) ? v : null; })() : null; // a name destructured from a call's answer is obtained at its binding
+        const start = bound ? bound.getEnd() : fresh ? d.getEnd() : d && ts.isCatchClause(d.parent) ? d.parent.getStart(sf) : body.getStart(sf); // a caught value is obtained at its catch
+        if (between(start, n, t)) found = n;
+      }
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(body);
+  if (!found) return null;
+  const txt = found.kind === K.ThisKeyword ? 'this' : found.getText(sf);
+  const at = (x) => `\`${x.getText(sf).replace(/\s+/g, ' ').slice(0, 50)}\` (line ${sf.getLineAndCharacterOfPosition(x.getStart(sf)).line + 1})`;
+  return { node: found, message: `\`${txt}\` is read here after ${at(why.call)}, a call that may change it: it is handed ${at(why.handed)}, which may be or hold this object, and this reading takes the object as it was before the call; read what you need before the call, or pass it to the call and use the call's result` };
+}
 /** A named promise handler (`p.then(h)`, `p.catch(h)`, `p.finally(h)`, `h` a name or a member path): one decision the lint
  * and the translator take (design/named-then.md). Admitted, the handler is called with the settled argument: a unit of
  * this file by its own function (`origin: 'unit'`), an import or another file's function as one transition named by its

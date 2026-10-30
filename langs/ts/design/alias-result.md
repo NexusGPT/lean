@@ -125,3 +125,37 @@ its fake `g` neither writes nor keeps its argument.
 The arguments of a same-file call that threads the world go through `handedArg` too (`unitArgs`): `helper({ ...p })`
 against `helper(p)`, where `helper` hands its parameter to `g`, was proved at 1ffceb9b and is not now (pair unit
 `viaHelper`). Open: the receiver of an outside method (`{ ...p }.m()` on a typed object) is not classified.
+
+## 2026-10-30: read-after-call narrowed (one decider, seven over-counts cut)
+
+The first rule refused 25 suite pairs. It also had no catalogue entry, so the withdrawal audit listed
+`translate.mjs:6363`. `readAfterCall(checker, sf, u, h)` now lives in common.mjs, and both deciders call it with their
+own readings `h`. The translator passes `isEffectCall`, its world-field tests and `identityOf`. The lint passes a
+subset: a call is a method of an any value, a call of a function parameter or an await; a member of a class instance is
+read through the world; try, switch, labeled statements and loops are opaque. So the lint never refuses a unit the
+translator reads. `read-after-call` and `copied-argument` are catalogued under the mutation reading (readings.mjs).
+The message names the call and the value it was handed.
+
+Cut, each a read the rule counted that is not a read without the world, or a call that runs no outside code:
+- a member the translator reads through the world: a field a method of its same-file class writes
+  (`ext_Account_get_balance(wld, a)`), and a getter;
+- a module-state name (read through the world);
+- a function the unit makes and keeps (a JSX handler, a returned closure): its body is no read of the unit (SEMANTICS.md,
+  function values). A call inside a callback counts where the callback is handed, except for an effect hook, whose
+  callback runs after the render;
+- a call's answer as a receiver or argument, and a lib global or imported name as receiver: they reach what the outside
+  was handed, which is counted there; the receiver of an array, Map, Set or string op without a function argument;
+- a React hook and a Promise combinator: they run no outside code while the unit runs;
+- a same-file call whose body, and its callees' bodies, make no call that runs outside code; `h.call(r, x)` of a
+  same-file unit is that unit;
+- a caught value starts at its catch, a name destructured from a call starts at its binding, an occurrence inside an
+  opaque block is the block's, a promise is a handle, and a one-level write `x.f = v` is a write.
+- a unit the translator reads whole (an opaque module block or accessor body) holds no read of its own: the check runs
+  inside the body translation, so a refusal there takes the module fallback as any body refusal does;
+- a read inside a callback handed to a call that runs outside code, or to a hook, is part of a function value (code and
+  cells); the calls inside it still count at the call it is handed to. A React hook or a Promise combinator also hands
+  its arguments to no outside code, so `copied-argument` does not classify them.
+
+The last cut is reasoned, not probed: the output is rebuilt from `x` on both sides, and every call is recorded with the
+value it was handed, so a different call order or argument is a different world. A deeper `x.a.b = v` reads `x.a` first
+and stays refused. The four `alias_after_call` units stay refused; freshAfter stays proved.
