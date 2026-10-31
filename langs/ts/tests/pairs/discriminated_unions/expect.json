@@ -1,0 +1,31 @@
+{
+ "scope": [
+  "area",
+  "caption",
+  "perimeter",
+  "score",
+  "settled",
+  "grow",
+  "speed"
+ ],
+ "equal": {
+  "area": false,
+  "caption": true,
+  "perimeter": true,
+  "score": true,
+  "settled": true,
+  "speed": false,
+  "grow": "real-only"
+ },
+ "why": "design/heap-stage5.md section 12: a discriminated union of records is a reference whose cell is one of the alternatives with one of its discriminant values, and a test of the discriminant (an if, a switch case) narrows it. area adds one to a square's area (WITNESS); caption is a switch with a default against an if (proved); perimeter is a default clause against an exhaustive switch with no default, the operands swapped (proved only through the hypothesis: the kind holds one of three values); score is an if-chain on a string tag against a switch (proved); settled is an if-chain on a numeric tag (a union of number literals is a number) against a test of the third value (proved through the hypothesis); grow is a procedure whose switch clauses end in break (the statements after the switch run), two empty-bodied cases sharing one clause, against an if (the real lemma proves; the doubles reading leaves a number update of a union member unplaced, as heap5_unions' grow); speed tells two records apart by `in`, which stays out (an object may hold more keys than its type names: { swim: 1, fly: 2 } is a Fish, and the two sides answer 1 and 2).",
+ "b": {
+  "area": "WITNESS",
+  "caption": "PASS-bounded",
+  "perimeter": "PASS-bounded",
+  "score": "PASS-bounded",
+  "settled": "PASS-bounded",
+  "speed": "WITNESS",
+  "grow": "PASS-bounded"
+ },
+ "heap": true
+}

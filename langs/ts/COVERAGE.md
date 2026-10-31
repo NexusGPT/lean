@@ -121,6 +121,7 @@ reading no value model can give; the lint says what to write instead).
 |---|---|---|---|---|
 | `if`, `switch` with `return`/`break` per case, `?:`, early return | 21,957, 1,076, 13,560 | exact | same | done |
 | `switch` with fall-through | | exact for scalar discriminants: lazy first-match search, default in source position, ordered clause suffixes; reference/unknown discriminants opaque | exact: the clause list with the fall-through as a chain | partial (lane) |
+| `switch` in the heap core (a discriminated union by its kind) | | a pure primitive discriminant once, constant cases by `===` in source order, empty clauses sharing the next body, default after every case, a clause ending in `return` or a final `break`; an exhaustive literal union's last case the else; a numeric literal-union discriminant is a number ([design](design/heap-stage5.md) 12a) | the same | partial (lane: fall-through into a next clause, a switch in a loop body, `in`/`typeof`/`instanceof` narrowing refused) |
 | `for..of`, counted `for`, `while` with a bound | 4,595, 1,397, 477 | exact (a recursive helper) | same | done |
 | `while` without a bound, labelled statements | 477 (some), 10 | exact for a stable integer counter/constant or length bound, including guarded `while (true)` and `for (;;)`; other bounds opaque; loop labels thread named break/continue/return completions through nested helpers; block labels refused (`label`) | a label is a named exit of the helper | partial (lane) |
 | `for..in` | 76 | a loop over `Object.keys(o)`, a string each (dev) | same | done (dev) |

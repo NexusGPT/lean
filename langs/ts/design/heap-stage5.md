@@ -238,6 +238,42 @@ Census (resolved, 39 roots), strict graph 672 -> 706, own syntax 1675 -> 1759; `
 {"files":23359,"units":53918,"core":706,"heapOwnFit":1759,"mirrorMismatch":1617,"planErrorCount":0,"seconds":377}
 ```
 
+### 12a. A switch on the discriminant, a numeric discriminant (2026-10-31)
+
+Two places where the reading above stopped short of its own construct. A `switch` was no statement of the heap core,
+so a union read by a switch on its kind, the usual form, stayed out whole (`statement SwitchStatement`). A numeric
+discriminant (`tag: 1 | 2 | 3`) entered the shape as above, but its read had the type `1 | 2 | 3`, a union, which the
+core's number test did not take: a comparison of it was refused (`call .__lean_eq`, the doubles rewrite's equality).
+Reading: `switch (d) { .. }` (`heap.mjs` `switchForm`) evaluates `d` once and each case expression in source order,
+compared by `===`: `var w := d; if w == c1 then P1 else if w == c2 then P2 else F`. The first match selects its
+clause; an empty clause runs the next non-empty one (`case "square": case "rect":` is one body); `default`, wherever it
+stands, runs only after every case failed. Each clause ends its path: a `return`, or a final `break` (or the end of the
+last clause), which leads to the statements after the switch, carried into the branch as an `if` carries them in a
+procedure. With no `default`, a literal union every case covers has no unmatched path, and the last case is the else
+(TypeScript's exhaustiveness, the value lane's `coreSwitch` reading): the lemma's hypothesis gives the discriminant one
+of its alternatives' values. A union of number literals is a number (`isNumT`): a member of the union is one of them.
+Soundness: the discriminant is a pure read (no call, no allocation) of a primitive, and each case is a constant of the
+same primitive (`constExpr`), so evaluating them in order changes nothing and `==` on the primitive is `===`; the
+narrowing inside a clause is TypeScript's, the alternative's reads apply as after an `if` (nothing in the core writes a
+discriminant, above). A clause that falls into the next one, a `break` or `continue` anywhere but a clause's end, a
+labelled statement, a switch inside a loop body, a switch over a reference or over an expression that calls, and a case
+that is not a constant keep the unit out, each with its reason.
+Stays refused, and why: a union told apart by `in`, `typeof` or `instanceof` (above: an object may hold more keys than
+its type names, so `"swim" in p` is true of a `Fish` that also holds `fly`; the pair's `speed` answers 1 and 2 on
+`{ swim: 1, fly: 2 }`). Found outside this lane's files, reported, not fixed: the doubles rewrite (`faithful.mjs`)
+writes `r.tag === 0` as `Math.__lean_eq(r.tag, 0)` (a 0 is not pinned: `-0 === 0`), so TypeScript no longer narrows `r`
+in the branch, a narrowed read is `any`, and the unit is refused (`receiver type: any or unknown`); and `__lean_eq(t, 0)`
+is uninterpreted, so an if-chain on a tag 0 is never proved against a test of the other values. A discriminant 0 is
+then read only by a switch (the faithful reading leaves a switch over a number unplaced: the doubles lane decides it).
+Pair `discriminated_unions`: `area` (a switch on a three-way kind, one case changed: WITNESS), `caption` (a switch with
+a default against an if: proved), `perimeter` (a default clause against an exhaustive switch with no default, the cases
+reordered: proved through the hypothesis), `score` (an if-chain on a string tag against a switch: proved), `settled`
+(an if-chain on a numeric tag against a test of the third value: proved through the hypothesis), `grow` (a procedure's
+switch whose clauses end in `break`, two cases sharing a body, against an if: the real lemma proves, the doubles reading
+leaves a number update of a union member unplaced, as `heap5_unions`' `grow`), `speed` (`in`: not proved, WITNESS).
+Red on the base (5 of 15 checks fail), all pass after. Lint: unchanged. Census: the lane's result file
+(`lane/core-discriminated-unions-result.md`).
+
 ## 13. Arithmetic
 
 Reading: `*` is exact; `%` is the truncated remainder (the dividend's sign), `RemT_int`, and in a real file `/` is
