@@ -608,6 +608,30 @@ Census (resolved, 39 roots), strict graph 876 -> 886, own syntax 2159 -> 2182; `
 {"files":23359,"units":53918,"core":886,"heapOwnFit":2182,"mirrorMismatch":2040,"planErrorCount":0,"seconds":330}
 ```
 
+### 16b. Lane B draws the argument itself as a key or an item (2026-10-31)
+
+Found: the heap core read every form of this section (pair `map_set_copy`: a Map keyed by records, a Set of records, `new
+Set` of an array of records, `new Set(s)`, `new Map(m)`, `Array.from` of a set, each proved or unproved as written), but
+lane B never reached a difference that only identity shows. `exec/korat.mjs` pooled record fields, record arguments and
+arrays of records, and left a `Set<Tag>` or a `Map<Tag, V>` to the seeded generator, which fills it with fresh records:
+no item or key was ever an object an argument holds, so `s.has(t)` was false on every input and a candidate asking
+`s.has({ name: t.name })` (another key under SameValueZero) stayed PASS-bounded.
+Reading: a Set whose items are records, and a Map whose keys are records, is a pool slot like an array of records, in
+an argument or a record field: it ranges over every sequence of distinct pool objects up to k (the items or keys in
+insertion order, so `{a, b}` and `{b, a}` are two heaps); a Map's values are drawn per entry position by a generator
+seeded by the slot, so one structure draws the same values on every build and each side still gets its own objects.
+Soundness: this widens what lane B tries, never what it concludes; distinct indices keep a Set's items and a Map's keys
+distinct, as the cell holds them. Stays to the generator: an item or key type that may be absent (`Set<Tag | null>`: the
+pool holds no null), an optional or nullable Set or Map field, a Map whose values only are records (the values are
+drawn, not pooled).
+Pair `map_set_copy`: `hasTag` and `isSeen` (a Map and a Set asked for a new record with the argument's name: unproved,
+WITNESS; PASS-bounded before), `countFor` (the get of a record key named before `??`: proved), `distinctTags`,
+`copySeen`, `copyCounts`, `tagList` (named copies: proved), `bumpCopy`, `addCopy` (the copy written, then read in place
+of the source: WITNESS). Left: korat's odometer varies a record's first slot slowest, so with the suite's 30 inputs a
+Map field placed first in a record of three slots reaches its first key past input 30 (`check.mjs`, 200 inputs, finds
+it); the pair asks the identity questions of Map and Set arguments. The census lints and never runs lane B, so it is
+unchanged (the numbers in `lane/core-map-set-copy-forms-result.md`).
+
 ## 17. Tuples and intersections
 
 Reading: a tuple of required elements of one shape (`[number, number]`) is an array of that shape whose length is fixed

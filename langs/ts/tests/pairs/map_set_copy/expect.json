@@ -1,0 +1,7 @@
+{
+ "scope": ["count_for", "has_tag", "is_seen", "distinct_tags", "copy_seen", "copy_counts", "tag_list", "bump_copy", "add_copy"],
+ "equal": {"count_for": true, "has_tag": false, "is_seen": false, "distinct_tags": true, "copy_seen": true, "copy_counts": true, "tag_list": true, "bump_copy": false, "add_copy": false},
+ "why": "a Map keyed by records and a Set of records compare keys and items by identity (SameValueZero on objects), and the copy forms allocate a fresh cell of the source's contents (design/heap-stage5.md section 16): countFor names the get of a record key before ?? (proved); hasTag and isSeen ask a Map and a Set for a new record with the same name (another key: unproved; lane B's enumerated heaps hold the argument itself as a key and an item, WITNESS); distinctTags names the Set of an array of records before its size (proved); copySeen, copyCounts and tagList name the copy of a Set, a Map and Array.from of a Set before returning it (proved); bumpCopy reads the copy the set wrote, not the source (unproved, WITNESS); addCopy reads the size of the copy the add grew, not the source's (unproved, WITNESS).",
+ "b": {"countFor": "PASS-bounded", "hasTag": "WITNESS", "isSeen": "WITNESS", "distinctTags": "PASS-bounded", "copySeen": "PASS-bounded", "copyCounts": "PASS-bounded", "tagList": "PASS-bounded", "bumpCopy": "WITNESS", "addCopy": "WITNESS"},
+ "heap": true
+}
