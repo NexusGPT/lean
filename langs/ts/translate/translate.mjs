@@ -6731,7 +6731,11 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   if (tolerant && reportOut) fs.writeFileSync(reportOut, JSON.stringify(report, null, 1));
 
   // integer division placeholders left by `/` under Math.floor are resolved in call(); a leftover is a defect
-  const qualify = (text) => usesNullish ? text.replace(/("(?:\\.|[^"\\])*")|(?<![.\w])Some\(/g, (m, literal) => literal ?? 'Option.Some(') : text;
+  // an Option's constructor is written Option.Some on every side, whether this file uses Nullish or not: the theorem holds
+  // the union of the parent's and the candidate's preludes, so a Nullish one side declares meets the other side's text,
+  // and an unqualified Some there is ambiguous (design/heap-stage5.md 8b, read 2026-10-31); a `case` pattern resolves by
+  // its scrutinee's type and takes no qualifier
+  const qualify = (text) => text.replace(/("(?:\\.|[^"\\])*")|(?<![.\w])(?<!\bcase\s+)Some\(/g, (m, literal) => literal ?? 'Option.Some(');
   const main = qualify(chunks.join('\n\n'));
   if (main.includes('__DIV__')) throw new Unsupported('internal: an integer division was not placed under Math.floor');
 
@@ -6743,7 +6747,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (usesOption) pre.push('datatype Option<T> = None | Some(value: T)');
     if (usesNullish) pre.push('datatype Nullish<T> = Null | Undef | Some(value: T)');
     for (const [k, text] of prelude) pre.push(qualify(text));
-    for (const text of heapPre) pre.push(text);
+    for (const text of heapPre) pre.push(qualify(text)); // the heap's rows too (the table's Map.get answers Some)
   }
   // the units nested in another emitted unit (a callback passed as an argument, common.mjs enclosingUnit): the theorem reads
   // them as covered by the unit that encloses them when the scope does not list them, never as smuggled entry points

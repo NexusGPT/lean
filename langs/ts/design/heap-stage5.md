@@ -337,6 +337,40 @@ Found on the way, outside these constructs: the ordinary lane's `m.get(k) ?? d` 
 `foundValue`) writes an unqualified `Some`. When the file also uses `Nullish`, whose constructor is also `Some`, the
 theorem has a resolution error, and nothing in the file is proved (never a false proof).
 
+### 8b, the two places it left: an Option's constructor and a literal union's order (2026-10-31)
+
+An Option's constructor. The translator already wrote `Option.Some` when the file used `Nullish` (`qualify`, at the
+end of `translate`), so `m.get(k) ?? d` in one file was never ambiguous. The defect is between the two files: the
+theorem holds the union of the parent's and the candidate's preludes (`theorem.py`, the merged prelude), and each side
+decided the qualification by its own use of `Nullish`. When one side alone reads a value with both absences (a local
+typed `number | null | undefined`), the other side's `Some(..)` meets the merged `Nullish`: a resolution error, or,
+when both sides declare the same prelude block (`Find_int`), the block written two ways, refused by the theorem. The
+heap's table rows (`MapGet_<shape>`, from `library.json`) were never qualified at all. The rule now writes
+`Option.Some` on every side whatever the file holds, over the main text and every prelude text, the heap's rows
+included; a `case` pattern stays bare (Dafny takes no qualifier there, and the scrutinee's type resolves it). The
+text of a file no longer depends on what the other file declares.
+Pair `map_get_nullish`: `orZero` (a Map.get bound to a local with both absences, then `?? 0`, against `m.get(k) ?? 0`:
+proved), `firstOr` (the same through `find`: proved), `bumpOr` (another default: unproved, WITNESS), `plain`
+(untouched: proved). Before: the theorem refused (`Find_int` differs); with the main text qualified and the heap rows
+not: a resolution error at `MapGet_M_string_int`, nothing proved.
+Found on the way: the suite's cached theorem step (`tests/run.mjs`) keyed on the two main texts and not on the two
+preludes `theorem.py` includes, so a change in a prelude alone replayed the theorem written before it. It now keys on
+both preludes.
+
+A literal union's order. The ordinary lane read it already (`strT`: a union every member of which is string-like);
+the heap checker and its emission tested the operands' `StringLike` flag alone, which a union of string literals and a
+branded string (`string & { brand }`) do not carry, so such a unit stayed out of the heap core. Both are their string at
+run time, and `shapeOf` already reads both as the primitive `string` (`literals`, the intersection rule). The order now
+reads `StrLt` when each operand has the flag or the shape of the primitive string. A type parameter bounded by `string`
+has no shape and stays out, as does a union with an absence (`'a' | undefined`: `undefined < 'a'` is false through
+NaN, which no Option order reads).
+Pair `string_union_order`: `levelOrder` (`b > a` for `a < b` over `'high' | 'low' | 'mid'`: proved), `dropped` (the
+candidate allocates a record it drops, then orders its copied field: proved up to the dropped allocation, the canonical
+reading only a heap unit has), `strict` (`<=` for `<`: unproved, WITNESS), `idOrder` (a branded string: proved).
+Before: 4 rows red (none of the four in the heap core). Pairs `stage4_corrections` and `heap5_absences`: unchanged.
+Lint: unchanged. Census: not run (the memory rule's gate, fewer than 6 census processes, stayed closed for two hours);
+nexus: not run, memory.
+
 ## 9. Module scope
 
 Reading: a name declared outside the unit, read as a value. A module-level `const` of a primitive shape whose
