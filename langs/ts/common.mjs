@@ -2148,8 +2148,31 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
     return [...inner, ...(idx ? [idx] : [])].some((x) => reaches(x, o, depth + 1, seen));
   };
+  // a call on a path that leaves the function before x runs: c sits in a block that, from c's statement on, reaches a
+  // return or a throw of its own with no break or continue before it, x lies outside that block in the same function,
+  // and no try or label encloses the block (a catch or a finally runs after the throw or the return; a labeled break
+  // resumes the function); `if (!p) throw new E(p)` then `p.x`. Text order counted such a call before every later read
+  // (design/census-reach-2026-10-31.md)
+  const holds = (y, x) => y.pos <= x.pos && x.end <= y.end;
+  const resumes = (n) => { let hit = false; const w = (y) => { if (hit || ts.isFunctionLike(y)) return; if (ts.isBreakStatement(y) || ts.isContinueStatement(y) || ts.isLabeledStatement(y) || ts.isTryStatement(y)) { hit = true; return; } ts.forEachChild(y, w); }; w(n); return hit; };
+  const exitsBefore = (c, x) => {
+    if (fnOf(c) !== fnOf(x)) return false;
+    let exit = null;
+    for (let p = c; p && p !== body && !ts.isFunctionLike(p); p = p.parent) {
+      const par = p.parent;
+      if (!par) return false;
+      if (exit) { if (ts.isTryStatement(par) || ts.isLabeledStatement(par)) return false; continue; }
+      if (holds(p, x)) return false;
+      if (ts.isReturnStatement(p) || ts.isThrowStatement(p)) { exit = p; if (ts.isTryStatement(par) || ts.isLabeledStatement(par)) return false; continue; }
+      if ((ts.isBlock(par) || ts.isCaseClause(par) || ts.isDefaultClause(par)) && !holds(par, x)) {
+        const i = par.statements.indexOf(p), j = par.statements.findIndex((st, k) => k >= i && (ts.isReturnStatement(st) || ts.isThrowStatement(st)));
+        if (i >= 0 && j >= 0 && !par.statements.slice(i, j).some(resumes)) { exit = par; if (ts.isTryStatement(par.parent) || ts.isLabeledStatement(par.parent)) return false; }
+      }
+    }
+    return !!exit;
+  };
   // a call reaches what it is handed and what calls started before it were handed (the outside may keep it), and in a loop what the loop hands
-  const ranBy = (h, c) => h === c || h.getEnd() <= c.getStart(sf) || (c.pos <= h.pos && h.end <= c.end) || loops(h).some((l) => loops(c).includes(l)); // h ran before c ends: c itself, a call before it, one inside its operands, or one its loop repeats
+  const ranBy = (h, c) => h === c || ((h.getEnd() <= c.getStart(sf) && !exitsBefore(h, c)) || (c.pos <= h.pos && h.end <= c.end)) || loops(h).some((l) => loops(c).includes(l)); // h ran before c ends: c itself, a call before it, one inside its operands, or one its loop repeats
   const reached = (o, c) => handed.find((x) => ranBy(x.at, c) && reaches(x.t, o)) ?? null;
   const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
   const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
@@ -2165,7 +2188,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     why = { call: c, handed: hit.node };
     const inside = c.pos <= occ.pos && occ.end <= c.end;
     if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
-    if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf)) return true;
+    if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf) && !exitsBefore(c, occ)) return true;
     const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside;
   });
   const declOfSym = (s) => s?.valueDeclaration ?? s?.declarations?.[0];
