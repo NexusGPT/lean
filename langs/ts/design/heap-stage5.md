@@ -289,7 +289,8 @@ Pair `string_union_order`: `levelOrder` (`b > a` for `a < b` over `'high' | 'low
 candidate allocates a record it drops, then orders its copied field: proved up to the dropped allocation, the canonical
 reading only a heap unit has), `strict` (`<=` for `<`: unproved, WITNESS), `idOrder` (a branded string: proved).
 Before: 4 rows red (none of the four in the heap core). Pairs `stage4_corrections` and `heap5_absences`: unchanged.
-Lint: unchanged.
+Lint: unchanged. Census: not run (the memory rule's gate, fewer than 6 census processes, stayed closed for two hours);
+nexus: not run, memory.
 
 ## 9. Module scope
 
