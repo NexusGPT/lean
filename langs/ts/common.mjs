@@ -949,23 +949,33 @@ function matchOfName(r, at, checker) {
   return { regex, arg };
 }
 
-// The pattern a regular expression operand denotes: a literal itself, or a name a literal holds. A const of this file
-// bound to a literal, not exported (nor a top-level const of a script, which every script sees), each other mention of it
+// The pattern a regular expression operand denotes: a literal (or `new RegExp` of written strings) itself, or a name such
+// a pattern holds. A const of this file bound to one, not exported (nor a top-level const of a script, which every script sees), each other mention of it
 // the receiver of `.exec(x)`, `.test(x)` or `.lastIndex`, or the pattern argument of a string's match, matchAll,
 // replace, replaceAll, search or split, holds one RegExp whose source and flags nothing changes (only a call handed the
-// object, `compile` (Annex B) or a store could). Returns the literal or null. heldRegexLiteral: such a literal without
+// object, `compile` (Annex B) or a store could). Returns the pattern node or null. heldRegexLiteral: such a literal without
 // g and y, whose calls neither read lastIndex to start nor write it (RegExpBuiltinExec, 22.2.7.2), so a match of the
 // name is the match of its literal.
 const HELD_PATTERN_CALLS = new Set(['match', 'matchAll', 'replace', 'replaceAll', 'search', 'split']);
+// newRegExpText: `new RegExp("src")` or `new RegExp("src", "flags")` of the global RegExp, both written strings: a fresh
+// pattern like a literal's, whose text is `/src/flags` (patternText reads either form's text).
+const writtenString = (x) => !!x && (ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x));
+function newRegExpText(x, checker) {
+  if (!ts.isNewExpression(x) || !ts.isIdentifier(x.expression) || x.expression.text !== 'RegExp' || !x.arguments?.length || x.arguments.length > 2 || !x.arguments.every(writtenString)) return null;
+  const decls = checker.getSymbolAtLocation(x.expression)?.declarations ?? [];
+  if (!decls.length || !decls.every((d) => d.getSourceFile().hasNoDefaultLib)) return null; // the global, not a local RegExp
+  return `/${x.arguments[0].text}/${x.arguments[1]?.text ?? ''}`;
+}
+export function patternText(x, checker) { return !x ? null : ts.isRegularExpressionLiteral(x) ? x.text : newRegExpText(x, checker); }
 export function regexLiteralOf(x, checker) {
   while (x && ts.isParenthesizedExpression(x)) x = x.expression;
   if (!x) return null;
-  if (ts.isRegularExpressionLiteral(x)) return x;
+  if (ts.isRegularExpressionLiteral(x) || newRegExpText(x, checker) !== null) return x;
   if (!ts.isIdentifier(x)) return null;
   const sym = checker.getSymbolAtLocation(x), d = sym?.valueDeclaration, sf = x.getSourceFile();
   if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !(d.parent.flags & ts.NodeFlags.Const) || !d.initializer || d.getSourceFile() !== sf) return null;
   let lit = d.initializer; while (ts.isParenthesizedExpression(lit)) lit = lit.expression;
-  if (!ts.isRegularExpressionLiteral(lit)) return null;
+  if (!ts.isRegularExpressionLiteral(lit) && newRegExpText(lit, checker) === null) return null;
   const stmt = d.parent.parent;
   if (stmt && ts.isVariableStatement(stmt) && stmt.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) return null;
   if (stmt?.parent === sf && !ts.isExternalModule(sf)) return null;
@@ -989,7 +999,7 @@ export function regexLiteralOf(x, checker) {
 }
 export function heldRegexLiteral(x, checker) {
   const lit = regexLiteralOf(x, checker);
-  return lit && !/[gy]/.test(lit.text.slice(lit.text.lastIndexOf('/') + 1)) ? lit : null;
+  return lit && ts.isRegularExpressionLiteral(lit) && !/[gy]/.test(lit.text.slice(lit.text.lastIndexOf('/') + 1)) ? lit : null;
 }
 
 // The capture groups of a regular expression literal, in the order of their opening parentheses: { name, always } each,
@@ -1135,13 +1145,14 @@ export function matchArrayType(checker, t) {
 function matchSources(r, checker) {
   const unp = (x) => { while (x && (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x))) x = x.expression; return x; };
   r = unp(r);
+  if (ts.isBinaryExpression(r) && [ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(r.operatorToken.kind) && ts.isArrayLiteralExpression(unp(r.right)) && !unp(r.right).elements.length) return matchSources(r.left, checker); // `x || []`: the match, or an empty list, whose items are past its end
   if (ts.isCallExpression(r)) return [r];
   if (!ts.isIdentifier(r)) return null;
   const sym = checker.getSymbolAtLocation(r), d = sym?.valueDeclaration;
   if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name)) return null;
   if (ts.isForOfStatement(d.parent.parent) && d.parent.parent.initializer === d.parent) { const it = unp(d.parent.parent.expression); return ts.isCallExpression(it) && ts.isPropertyAccessExpression(it.expression) && it.expression.name.text === 'matchAll' ? [it] : null; } // `for (const m of s.matchAll(re))`: each m a match of re
   const out = [];
-  const add = (v) => { v = unp(v); if (!v || v.kind === ts.SyntaxKind.NullKeyword || (ts.isIdentifier(v) && v.text === 'undefined')) return true; if (!ts.isCallExpression(v)) return false; out.push(v); return true; };
+  const add = (v) => { v = unp(v); if (!v || v.kind === ts.SyntaxKind.NullKeyword || (ts.isIdentifier(v) && v.text === 'undefined')) return true; if (ts.isBinaryExpression(v)) { const more = matchSources(v, checker); if (!more) return false; out.push(...more); return true; } if (!ts.isCallExpression(v)) return false; out.push(v); return true; };
   if (d.initializer && !add(d.initializer)) return null;
   if (!(d.parent.flags & ts.NodeFlags.Const)) {
     let ok = true;
@@ -1158,11 +1169,11 @@ export function matchItemKind(r, i, checker) {
   for (const c of calls) {
     if (!ts.isPropertyAccessExpression(c.expression) || c.arguments.length !== 1) return null;
     const m = c.expression.name.text;
-    const lit = m === 'exec' ? regexLiteralOf(c.expression.expression, checker) : m === 'match' || m === 'matchAll' ? regexLiteralOf(c.arguments[0], checker) : null;
-    if (!lit) return null;
-    const flags = lit.text.slice(lit.text.lastIndexOf('/') + 1);
+    const text = patternText(m === 'exec' ? regexLiteralOf(c.expression.expression, checker) : m === 'match' || m === 'matchAll' ? regexLiteralOf(c.arguments[0], checker) : null, checker);
+    if (text === null) return null;
+    const flags = text.slice(text.lastIndexOf('/') + 1);
     if (m === 'match' && flags.includes('g')) continue; // the matched texts
-    const caps = regexCaptures(lit.text); if (!caps) return null;
+    const caps = regexCaptures(text); if (!caps) return null;
     if (i === null ? caps.some((x) => !x.always) : !(i <= caps.length && caps[i - 1].always)) kind = 'may';
   }
   return kind;
@@ -1176,7 +1187,7 @@ export function matchCapture(e, checker) {
   const mm = i !== null && kind !== null ? matchOfName(r, e, checker) : null; // a name read through `!` keeps its throw: not this reading
   if (mm && !(matchMayBeNull(r, checker) && !e.questionDotToken)) return { ...mm, recv: r, chained: !!e.questionDotToken, index: i, always: kind === 'string' };
   if (kind === 'string') return { string: true };
-  return { refuse: kind === 'may' ? `item ${i ?? 'k'} of this match is undefined when its group does not take part (a group in one alternative, under \`?\` or \`*\`, in a lookaround, or past the pattern's groups); read it with a literal index on a const match of a regular expression literal, as present or absent (\`m[${i ?? 1}] ?? d\`)` : 'the pattern of this match is not known here (not a regular expression literal, nor a const of this file holding one), so whether its item may be undefined is not known; match a literal or such a const' };
+  return { refuse: kind === 'may' ? `item ${i ?? 'k'} of this match is undefined when its group does not take part (a group in one alternative, under \`?\` or \`*\`, in a lookaround, or past the pattern's groups); read it with a literal index on a const match of a regular expression literal, as present or absent (\`m[${i ?? 1}] ?? d\`)` : 'the pattern of this match is not known here (not a regular expression literal or `new RegExp` of written strings, nor a const of this file holding one), so whether its item may be undefined is not known; match a literal or such a const' };
 }
 
 // A bucket map: `const m = new Map<K, T[]>()` declared in the unit, never rebound, whose arrays no other live name holds
