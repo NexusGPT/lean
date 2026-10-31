@@ -284,10 +284,14 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     return null; };
   // the string methods read exactly through the ordinary lane's helpers (design/strings.md: the BMP envelope, so a
   // character is a code unit): a pure function of the receiver and the arguments, each argument a string or a number
-  // as the method takes it. split of a literal separator allocates a fresh array of the pieces. Out: a regular
-  // expression or a function argument, a split limit, lastIndexOf (its helper carries a precondition), repeat (a
-  // negative count throws), the index methods in a real file (a fractional position is truncated).
-  const STR_METHODS = { trimStart: [0, 0], trimEnd: [0, 0], toLowerCase: [0, 0], toUpperCase: [0, 0], split: [1, 1], includes: [1, 2], indexOf: [1, 2], startsWith: [1, 2], endsWith: [1, 2], slice: [0, 2], substring: [1, 2], charAt: [1, 1], at: [1, 1], padStart: [1, 2], padEnd: [1, 2], replaceAll: [2, 2], concat: [1, 1] };
+  // as the method takes it. split of a literal separator allocates a fresh array of the pieces; a limit keeps the
+  // first ToUint32(limit) of them. lastIndexOf searches back from its position clamped to the length (the clamp's
+  // postcondition is the helper's precondition, so the unit carries no obligation of its own). repeat takes a count
+  // written as a non-negative integer literal (any other count may throw). concat joins any number of strings. In a
+  // real file a position or a count is truncated toward zero (ToIntegerOrInfinity) and a found index is a real.
+  // Out: a regular expression or a function argument, repeat by any other count.
+  const STR_METHODS = { trimStart: [0, 0], trimEnd: [0, 0], toLowerCase: [0, 0], toUpperCase: [0, 0], split: [1, 2], includes: [1, 2], indexOf: [1, 2], lastIndexOf: [1, 2], startsWith: [1, 2], endsWith: [1, 2], slice: [0, 2], substring: [1, 2], charAt: [1, 1], at: [1, 1], padStart: [1, 2], padEnd: [1, 2], replaceAll: [2, 2], concat: [0, Infinity], repeat: [1, 1] };
+  const countLit = (x) => ts.isNumericLiteral(x) && Number.isSafeInteger(Number(x.text)) && Number(x.text) >= 0; // a count no run can make throw
   const strMethod = (e) => {
     if (!helper || !ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.questionDotToken || e.expression.questionDotToken) return null;
     const m = e.expression.name.text; if (!Object.hasOwn(STR_METHODS, m)) return null;
@@ -295,12 +299,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const [lo, hi] = STR_METHODS[m]; const a = e.arguments; if (a.length < lo || a.length > hi || a.some((x) => ts.isSpreadElement(x))) return null;
     const str = (x) => shapeOf(typeOf(x))?.kind === 'prim' && shapeOf(typeOf(x)).d === 'string', num = (x) => shapeOf(typeOf(x))?.kind === 'prim' && shapeOf(typeOf(x)).d !== 'string' && shapeOf(typeOf(x)).d !== 'bool';
     const lit = (x) => ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x);
-    if (m === 'split') return lit(a[0]) ? m : null;
+    if (m === 'split') return lit(a[0]) && (!a[1] || num(a[1])) ? m : null;
     if (m === 'replaceAll') return lit(a[0]) && str(a[1]) ? m : null;
-    if (m === 'concat') return str(a[0]) ? m : null;
-    if (['includes', 'indexOf', 'startsWith', 'endsWith'].includes(m)) return str(a[0]) && (!a[1] || num(a[1])) && !isReal ? m : null;
-    if (['slice', 'substring', 'charAt', 'at'].includes(m)) return a.every(num) && !isReal ? m : null;
-    if (m === 'padStart' || m === 'padEnd') return num(a[0]) && (!a[1] || str(a[1])) && !isReal ? m : null;
+    if (m === 'concat') return a.every(str) ? m : null;
+    if (m === 'repeat') return countLit(a[0]) ? m : null;
+    if (['includes', 'indexOf', 'lastIndexOf', 'startsWith', 'endsWith'].includes(m)) return str(a[0]) && (!a[1] || num(a[1])) ? m : null;
+    if (['slice', 'substring', 'charAt', 'at'].includes(m)) return a.every(num) ? m : null;
+    if (m === 'padStart' || m === 'padEnd') return num(a[0]) && (!a[1] || str(a[1])) ? m : null;
     return a.length === 0 ? m : null;
   };
   // a regular expression literal in a call: `/p/f.test(s)`, `s.replace(/p/f, r)` (and `replaceAll` with the g flag,
@@ -1162,19 +1167,24 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     }
     // a string method through the ordinary lane's exact helper: the receiver, then the arguments, once each, in order
     function strEmit(e) {
-      const m = strMethod(e); const S = bind(expr(e.expression.expression), 's'); const a = e.arguments.map((x) => bind(expr(x), 'g'));
-      const h = (k) => helper(k, ['string']);
+      const m = strMethod(e); const S = bind(expr(e.expression.expression), 's');
+      const a = e.arguments.map((x) => { const v = bind(expr(x), 'g'); return isReal && !(typeOf(x).flags & TF.StringLike) ? `(if ${v} < 0.0 then -((-${v}).Floor) else ${v}.Floor)` : v; }); // a real position truncated toward zero
+      const h = (k) => helper(k, ['string']); const found = (r) => (isReal ? `(${r} as real)` : r);
       switch (m) {
         case 'trimStart': return `${h('TrimStart')}(${S})`;
         case 'trimEnd': return `${h('TrimEnd')}(${S})`;
         case 'toLowerCase': return `${h('Lower')}(${S})`;
         case 'toUpperCase': return `${h('Upper')}(${S})`;
-        case 'split': { const sh = shapeOf(typeOf(e)); const out = fresh('r'); lines.push(`var (${HW}, ${out}) := Alloc_${sh.key}(${HW}, ${h('StrSplit')}(${S}, ${a[0]}));`); return out; } // a fresh array of the pieces
-        case 'includes': case 'indexOf': case 'startsWith': case 'endsWith': {
-          const P = `${helper('StrClamp', ['int'])}(${a[1] ?? (m === 'endsWith' ? `|${S}|` : '0')}, |${S}|)`;
+        case 'split': { // a fresh array of the pieces; a limit keeps the first ToUint32(limit) (22.1.3.23: the pieces are pushed in order until the limit)
+          const sh = shapeOf(typeOf(e)); const out = fresh('r'); let pieces = `${h('StrSplit')}(${S}, ${a[0]})`;
+          if (a[1] !== undefined) { const ps = fresh('ps'), l = fresh('lim'); lines.push(`var ${ps} := ${pieces};`); lines.push(`var ${l} := ${a[1]} % 4294967296;`); pieces = `${ps}[..if ${l} < |${ps}| then ${l} else |${ps}|]`; }
+          lines.push(`var (${HW}, ${out}) := Alloc_${sh.key}(${HW}, ${pieces});`); return out;
+        }
+        case 'includes': case 'indexOf': case 'lastIndexOf': case 'startsWith': case 'endsWith': {
+          const P = `${helper('StrClamp', ['int'])}(${a[1] ?? (m === 'endsWith' || m === 'lastIndexOf' ? `|${S}|` : '0')}, |${S}|)`;
           if (m === 'endsWith') return `${h('StrEnds')}(${S}, ${a[0]}, ${P})`;
           if (m === 'startsWith') return `(var pp_ := ${P}; pp_ + |${a[0]}| <= |${S}| && ${S}[pp_..pp_ + |${a[0]}|] == ${a[0]})`;
-          const search = `${h('StrFind')}(${S}, ${a[0]}, ${P})`; return m === 'includes' ? `(${search} >= 0)` : search;
+          const search = `${h(m === 'lastIndexOf' ? 'StrLast' : 'StrFind')}(${S}, ${a[0]}, ${P})`; return m === 'includes' ? `(${search} >= 0)` : found(search);
         }
         case 'slice': return `${helper('Slice', ['char'])}(${S}, ${a[0] ?? '0'}, ${a[1] ?? `|${S}|`})`;
         case 'substring': return `${h('StrSubstring')}(${S}, ${a[0]}, ${a[1] ?? `|${S}|`})`;
@@ -1183,7 +1193,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         case 'padStart': return `${h('PadStart')}(${S}, ${a[0]}, ${a[1] ?? '" "'})`;
         case 'padEnd': return `${h('PadEnd')}(${S}, ${a[0]}, ${a[1] ?? '" "'})`;
         case 'replaceAll': return `${h('StrReplace')}(${S}, ${a[0]}, ${a[1]}, 0, true)`;
-        case 'concat': return `(${S} + ${a[0]})`;
+        case 'concat': return a.length ? `(${[S, ...a].join(' + ')})` : S;
+        case 'repeat': return `${h('Repeat')}(${S}, ${Number(e.arguments[0].text)})`; // n copies of the receiver (22.1.3.18): the literal count, an integer in either file
       }
       throw new Error(`heap: no string reading for .${m}`);
     }

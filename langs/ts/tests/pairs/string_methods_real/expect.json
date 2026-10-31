@@ -1,0 +1,7 @@
+{
+ "scope": ["cut", "half", "tagged", "tail", "padded"],
+ "equal": {"cut": false, "half": true, "tagged": true, "tail": true, "padded": true},
+ "why": "the string methods of design/heap-stage5.md section 5 in a real file, read in the heap core: a position or a count truncated toward zero (ToIntegerOrInfinity), a found index a real. cut slices one character more (unproved, WITNESS on a score of 0); half slices to 1.5 against 1 (proved: truncated); tagged tests includes against indexOf >= 0 (proved); tail slices after lastIndexOf against lastIndexOf from past the end (proved: clamped); padded pads to 4.9 against 4 (proved: truncated). Each returns the pieces of a split, which the value reading's identity guard withholds.",
+ "b": {"cut": "WITNESS", "half": "PASS-bounded", "tagged": "PASS-bounded", "tail": "PASS-bounded", "padded": "PASS-bounded"},
+ "heap": true
+}
