@@ -172,6 +172,43 @@ Census (resolved, 39 roots), strict graph 487 -> 564, own syntax 1177 -> 1449; `
 {"files":23359,"units":53918,"core":564,"heapOwnFit":1449,"mirrorMismatch":1307,"planErrorCount":0,"seconds":1239}
 ```
 
+### 6b. The named captures of a match (2026-10-31)
+
+The readings above (`test`, `replace`, `replaceAll` with g, `search`, `split` by a literal) were in place at this head
+(`heap.mjs` `reCall`; pair `heap5_regex`); the one form of a regular expression literal still refused was `.groups`
+(library row `match-groups`). Reading: for a match of a non-global, non-sticky literal bound to a const
+(`const m = s.match(/re/)` or `/re/.exec(s)`, `s` a literal or a name the unit never writes: the same test as `m.index`,
+`common.mjs` `matchOfName`), `m.groups.k` is `regex_group(re, s, "k")`, one bodiless function of the pattern, the string
+and the name, the same on both sides; `m?.groups?.k` is that value when m is a match and absent when it is not;
+`m.groups` (or `m?.groups`) as a presence test (`!`, an equality with null or undefined, a condition, an operand of
+`&&`/`||` in one) is an object exactly when the pattern names a group (`regex_groups(re, s)`, whose keys and values are
+never read through it) and absent when m is.
+Soundness: a non-global, non-sticky literal starts at 0 and leaves `lastIndex` alone (RegExpBuiltinExec, 22.2.7.2), and
+`s.match(re)` of such a pattern is `re.exec(s)`, so the captures are functions of the pattern and the string. The
+groups object holds undefined for a group that did not take part, under TypeScript's `string`; so `k` is read only when
+it names exactly one group of the pattern and that group takes part in every match (`common.mjs` `regexCaptures`, a
+parse of the literal: a group in one alternative of a disjunction, under a quantifier of minimum 0, or inside a
+lookaround may be left undefined; a pattern it cannot parse reads nothing). Where the section is silent this note
+chooses the refusal: the value of such a group would be read as a string it may not be.
+Out (refused by row `match-groups`, rule `unsupported-member`): a group that may not take part, a name the pattern does
+not give, `m.groups` held in a name, passed or destructured (`const { k } = m.groups`: its values are not read as
+strings), `m.groups["k"]`, `m!.groups`, a pattern held in a name, a global or sticky pattern. A unit of the heap core
+that matches stays out of the heap core (`match` and `exec`, above) and is read by the value reading.
+Found, not fixed (outside this note's construct): the numbered captures carry the same undefined, `m[1]` of
+`/(a)|(b)/` on `"b"`; the match reads as `seq<string>`, so `return m[1] ?? "z"` and `return m[1]` translate to the
+same Dafny body while JavaScript returns `"z"` and undefined: a proof lane B contradicts (lane B finds the WITNESS on
+input `"b"`). The same parse (`regexCaptures`) decides it for `m[i]`, i a literal.
+Pair `regular_expressions`: `isCode` (the same literal on a renamed string compared with true: proved), `tidy` (another
+replacement: WITNESS), `year` (`!m || !m.groups` then `m.groups.y`, against `m?.groups?.y ?? ""`: proved), `month`
+(another named capture of the same match: WITNESS). Lint: the escape fixture `library_members_match_groups` now holds
+a group in one alternative (still refused); its earlier form, `m?.groups?.host` of `/@(?<host>[a-z.]+)/`, is read.
+Census (`census.mjs` on the copies under `/root/da/census/repos/`, base b5c07450 against this reading; units whose
+first stop was `.groups` before): langchainjs 2 units, both entered (entered 2,766 -> 2,768); n8n 11 units, none moved
+(two stop first by another rule; the rest by forms left out: a pattern held in a name, destructuring, a string the unit
+writes, a match through `?.match`, a string rooted at `this`); nexus, read under `--include apps/vibe-agent` (the only
+nexus file with a match's `.groups`; the whole-root run was stopped by the machine's memory), 2 units:
+`assumedRoleArnToRoleArn` entered (213 -> 214), `resolveRoleArn` moved to `copied-argument`.
+
 ## 8. Void results
 
 Reading: a unit whose result is `void` is a procedure: it returns the unit value, `(HWorld, ())`. Its body may fall

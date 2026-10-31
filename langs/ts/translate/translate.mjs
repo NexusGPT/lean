@@ -34,7 +34,7 @@ import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, first
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normaliseApplyCalls, applyCall, faithfulOp } from '../common.mjs';
-import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
+import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember, matchGroups, matchGroupRead } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
@@ -3697,6 +3697,29 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     return fail(pattern, 'pattern is not translated');
   }
   const elemType = (arrNode) => { const t = baseOf(typeOf(arrNode)); return checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); };
+  // `m.groups.k` (or `m?.groups?.k`): the text group k captured, `regex_group(re, s, "k")`, one uninterpreted function of
+  // the pattern, the string and the name; the lint admits k only for a group named once that takes part in every match,
+  // so the text is a string whenever m is a match. `m.groups` in a presence test: an object exactly when the pattern
+  // names a group, `regex_groups(re, s)` (its keys and values are not read through it). Behind `?.` on a match that may
+  // be null, absent when m is; the payload is read only where m is a match.
+  function matchGroupsRead(n, gr) {
+    const re = expr(gr.regex), str = outerParens(expr(gr.arg));
+    const recvT = typeOf(gr.recv), mayBeNull = isOptional(recvT) || isNullish(recvT);
+    const D = dtype(typeOf(n), n), optD = optionalD(D);
+    let value;
+    if (gr.key !== undefined) value = `${external('regex_group', ['Ext_RegExp', 'string', 'string'], 'string')}(${re}, ${str}, ${strEsc(gr.key)})`;
+    else {
+      const G = dtype(baseOf(typeOf(n)), n);
+      if (!gr.named) { if (!optD) fail(n, '`.groups` of a pattern that names no group is undefined'); usesOption = true; return 'None'; }
+      value = `${external('regex_groups', ['Ext_RegExp', 'string'], G)}(${re}, ${str})`;
+    }
+    if (!optD) { if (mayBeNull) fail(n, 'a named capture of a match that may be null, read without `?.`'); return value; }
+    if (D !== `Option<${gr.key !== undefined ? 'string' : dtype(baseOf(typeOf(n)), n)}>`) fail(n, `a named capture read as ${D}`);
+    usesOption = true;
+    if (!mayBeNull) return `Some(${value})`;
+    const r = `mg${tempCount++}_`;
+    return `(var ${r} := ${expr(gr.recv)}; if ${r}.Some? then Some(${value}) else None)`;
+  }
   function propAccess(n, keepOption = false) {
     { const b = worldBase(n); if (worldAfter?.get(b) === 'read' && !n.__worldNow) { // a field read after a call that may change the object: of the object as the world holds it now
       worldUsed.add(b); const now = nowOf(b);
@@ -3706,6 +3729,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       pending.push(now.line, ...lines);
       return text;
     } }
+    { const gr = matchGroupRead(n, checker) ?? matchGroups(n, checker); if (gr) return matchGroupsRead(n, gr); } // the named captures of a match of a non-global regular expression literal (common.mjs)
     { const mm = execMatchMember(n, checker); if (mm) return mm.name === 'input' ? expr(mm.arg) : `${external('regex_index', ['Ext_RegExp', 'string'], NUM)}(${expr(mm.regex)}, ${outerParens(expr(mm.arg))})`; } // the place of a match of a non-global regular expression: a function of the pattern and the string
     { const rb = hookBinding(n.expression); if (rb && !rb.field && Object.hasOwn(rb.row.result, n.name.text) && !rb.row.result['*']) return `${expr(n.expression)}.${n.name.text}`; } // a field of a hook result: the table's datatype
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);

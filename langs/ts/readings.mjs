@@ -120,9 +120,9 @@ export const READINGS = [
   {
     id: 'regex', construct: 'a regular expression literal: an opaque constant named by its text; the match members of a non-global literal as functions of the pattern and the string',
     kinds: ['RegularExpressionLiteral'],
-    assumptions: { runtime: 'regex_<hash of the literal> of type Ext_RegExp; exec and match of a non-global literal read index and input as regex_index(pattern, string) and the string', aliasing: 'a literal is a new object, never shared', exceptions: 'a literal never throws', termination: 'terminates' },
+    assumptions: { runtime: 'regex_<hash of the literal> of type Ext_RegExp; exec and match of a non-global literal read index and input as regex_index(pattern, string) and the string, groups.k of a group named once that takes part in every match as regex_group(pattern, string, k), groups as a presence test as whether the pattern names a group', aliasing: 'a literal is a new object, never shared', exceptions: 'a literal never throws', termination: 'terminates' },
     refusal: 'this regular expression form has no reading',
-    design: ['design/library-rows.md'],
+    design: ['design/library-rows.md', 'design/heap-stage5.md'],
     versions: [{ version: 1, status: 'current' }],
   },
   {

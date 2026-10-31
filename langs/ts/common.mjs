@@ -837,6 +837,12 @@ export function syncLoopCallback(n, checker) {
 export function execMatchMember(e, checker) {
   if (!e || !ts.isPropertyAccessExpression(e) || e.questionDotToken || !['index', 'input'].includes(e.name.text)) return null;
   let r = e.expression; while (ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r)) r = r.expression;
+  const mm = matchOfName(r, e, checker);
+  return mm && { ...mm, name: e.name.text };
+}
+// the match a name holds: r a const bound to `re.exec(s)` or `s.match(re)`, re a literal without g and y, s a literal or
+// a name (a field path on one) the unit never writes, in scope at `at` as at the call. Returns { regex, arg } or null.
+function matchOfName(r, at, checker) {
   if (!ts.isIdentifier(r)) return null;
   const sym = checker.getSymbolAtLocation(r), d = sym?.valueDeclaration;
   if (!d || !ts.isVariableDeclaration(d) || !(d.parent.flags & ts.NodeFlags.Const) || !d.initializer) return null;
@@ -853,14 +859,101 @@ export function execMatchMember(e, checker) {
   if (!ts.isStringLiteral(arg) && !ts.isNoSubstitutionTemplateLiteral(arg)) {
     if (!ts.isIdentifier(root)) return null;
     const rs = checker.getSymbolAtLocation(root), rd = rs?.valueDeclaration;
-    if (!rd || checker.getSymbolsInScope(e, ts.SymbolFlags.Value).find((x) => x.name === root.text) !== rs) return null;
+    if (!rd || checker.getSymbolsInScope(at, ts.SymbolFlags.Value).find((x) => x.name === root.text) !== rs) return null;
     let fn = rd.parent; while (fn && !ts.isFunctionLike(fn) && !ts.isSourceFile(fn)) fn = fn.parent;
     let written = false;
     const w = (y) => { if ((ts.isBinaryExpression(y) && y.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && y.operatorToken.kind <= ts.SyntaxKind.LastAssignment && (() => { let l = unp(y.left); while (ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l)) l = unp(l.expression); return ts.isIdentifier(l) && checker.getSymbolAtLocation(l) === rs; })()) || ((ts.isPrefixUnaryExpression(y) || ts.isPostfixUnaryExpression(y)) && ts.isIdentifier(unp(y.operand)) && checker.getSymbolAtLocation(unp(y.operand)) === rs)) written = true; ts.forEachChild(y, w); };
     if (fn) w(fn);
     if (written) return null;
   }
-  return { regex, arg, name: e.name.text };
+  return { regex, arg };
+}
+
+// The capture groups of a regular expression literal, in the order of their opening parentheses: { name, always } each,
+// `always` when the group takes part in every match (ECMA-262 22.2.2: a group in one alternative of a disjunction, under
+// a quantifier whose minimum is 0, or inside a lookaround may be left undefined by a match). null when the text does not
+// parse as the grammar this reads. A quantifier misread on an atom without groups changes nothing here.
+export function regexCaptures(text) {
+  const end = text.lastIndexOf('/'), src = text.slice(1, end), classSets = text.slice(end + 1).includes('v');
+  const caps = [], stack = [{ atom: 0, from: 0, alts: 1, look: false }];
+  const optional = (from, to) => { for (let k = from; k < to; k++) caps[k].always = false; };
+  let i = 0;
+  while (i < src.length) {
+    const c = src[i]; let from = caps.length;
+    if (c === '(') {
+      let look = false, name = null, capture = false;
+      if (src[i + 1] !== '?') { capture = true; i += 1; }
+      else if (src[i + 2] === '=' || src[i + 2] === '!') { look = true; i += 3; }
+      else if (src[i + 2] === '<' && (src[i + 3] === '=' || src[i + 3] === '!')) { look = true; i += 4; }
+      else if (src[i + 2] === '<') { const q = /^\(\?<([$\w\u0080-\uffff]+)>/.exec(src.slice(i)); if (!q) return null; capture = true; name = q[1]; i += q[0].length; }
+      else { const q = /^\(\?[a-z]*(?:-[a-z]*)?:/.exec(src.slice(i)); if (!q) return null; i += q[0].length; } // (?: and the modifier groups
+      if (capture) caps.push({ name, always: true });
+      stack.push({ atom: caps.length - (capture ? 1 : 0), from: caps.length, alts: 1, look }); // atom: the group itself and its inner groups; from: its inner groups
+      continue;
+    }
+    if (c === '|') { stack[stack.length - 1].alts++; i++; continue; }
+    if (c === ')') { if (stack.length === 1) return null; const f = stack.pop(); if (f.alts > 1 || f.look) optional(f.from, caps.length); from = f.atom; i++; }
+    else if (c === '\\') i += 2;
+    else if (c === '[') { i++; let depth = 1; while (i < src.length && depth) { if (src[i] === '\\') i += 2; else { if (src[i] === '[' && classSets) depth++; else if (src[i] === ']') depth--; i++; } } if (depth) return null; }
+    else i++;
+    // a quantifier on the atom just read: a minimum of 0 may skip its groups
+    let min = null;
+    if (src[i] === '*' || src[i] === '?') { min = 0; i++; } else if (src[i] === '+') { min = 1; i++; }
+    else if (src[i] === '{') { const q = /^\{(\d+)(?:,\d*)?\}/.exec(src.slice(i)); if (q) { min = Number(q[1]); i += q[0].length; } }
+    if (min !== null && src[i] === '?') i++;
+    if (min === 0) optional(from, caps.length);
+  }
+  if (stack.length !== 1) return null;
+  if (stack[0].alts > 1) optional(0, caps.length);
+  return caps;
+}
+
+// The named captures of a match (ECMA-262 22.2.7.2 RegExpBuiltinExec, step 33): `m.groups` is an object when the
+// pattern names a group and undefined when it names none; `m.groups.k` is the text group k captured, a string when the
+// group takes part in every match (regexCaptures), undefined otherwise (TypeScript types it string either way). m is a
+// name matchOfName reads, plain where the compiler narrowed it to a match or behind `?.`. matchGroups(e) reads e =
+// `m.groups` / `m?.groups`: { regex, arg, recv, chained, named } (named: the pattern names a group). matchGroupRead(e)
+// reads e = `G.k` or `G?.k` on such a G, k a group named once in the pattern and taking part in every match:
+// { regex, arg, recv, chained, key }. A group that may not take part, or a key the pattern does not name, is not read:
+// its value would be undefined under a string type.
+export function matchGroups(e, checker) {
+  while (e && ts.isParenthesizedExpression(e)) e = e.expression;
+  if (!e || !ts.isPropertyAccessExpression(e) || e.name.text !== 'groups') return null;
+  let r = e.expression; while (ts.isParenthesizedExpression(r)) r = r.expression;
+  const mm = matchOfName(r, e, checker); if (!mm) return null;
+  const nullable = !!(checker.getTypeAtLocation(r).flags & ts.TypeFlags.Null) || (checker.getTypeAtLocation(r).isUnion?.() && checker.getTypeAtLocation(r).types.some((t) => t.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined)));
+  if (nullable && !e.questionDotToken) return null; // a read the compiler did not narrow (a strict-mode error): not this reading
+  const caps = regexCaptures(mm.regex.text); if (!caps) return null;
+  return { ...mm, recv: r, chained: !!e.questionDotToken, named: caps.some((c) => c.name !== null), caps };
+}
+// `m.groups` read as a presence: the operand of `!`, of an equality with null or undefined, a condition, or an operand
+// of `&&` / `||` in such a place. Its value there is whether the pattern names a group (and m is present).
+export function matchGroupsTested(e, checker) {
+  const g = matchGroups(e, checker); if (!g) return null;
+  const K = ts.SyntaxKind;
+  const tested = (x) => {
+    while (x.parent && ts.isParenthesizedExpression(x.parent)) x = x.parent;
+    const p = x.parent; if (!p) return false;
+    if (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken) return true;
+    if ((ts.isIfStatement(p) || ts.isWhileStatement(p) || ts.isDoStatement(p) || ts.isForStatement(p)) && (p.expression ?? p.condition) === x) return true;
+    if (ts.isConditionalExpression(p) && p.condition === x) return true;
+    if (!ts.isBinaryExpression(p)) return false;
+    const op = p.operatorToken.kind, other = p.left === x ? p.right : p.left;
+    let o = other; while (ts.isParenthesizedExpression(o)) o = o.expression;
+    if ([K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(op)) return o.kind === K.NullKeyword || (ts.isIdentifier(o) && o.text === 'undefined');
+    return (op === K.AmpersandAmpersandToken || op === K.BarBarToken) && tested(p);
+  };
+  return tested(e) ? g : null;
+}
+export function matchGroupRead(e, checker) {
+  if (!e) return null;
+  let key = null;
+  if (ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.name)) key = e.name.text;
+  else return null;
+  const g = matchGroups(e.expression, checker); if (!g) return null;
+  const named = g.caps.filter((c) => c.name === key);
+  if (named.length !== 1 || !named[0].always) return null;
+  return { regex: g.regex, arg: g.arg, recv: g.recv, chained: g.chained || !!e.questionDotToken, key };
 }
 
 // A bucket map: `const m = new Map<K, T[]>()` declared in the unit, never rebound, whose arrays no other live name holds
