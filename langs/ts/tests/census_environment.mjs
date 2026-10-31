@@ -59,7 +59,7 @@ const unbox = O.records.find((r) => r.file === path.join('src', 'use.ts'))?.unre
 say(unbox?.kind === 'absent' && unbox?.from === 'handle-source', "origin: unbox, typed through types.ts's unresolved import, names that import's kind", JSON.stringify(unbox));
 say(O.environment.blockedKinds.unresolved === undefined, 'origin: no unit is labelled unresolved', JSON.stringify(O.environment.blockedKinds));
 say(O.units === 2 && O.environmentBlocked === 2, 'origin: two units, both environment-blocked', `${O.units}, ${O.environmentBlocked}`);
-say(!O.records.some((r) => /\._use\.ts$|blob\.ts$/.test(r.file)), 'origin: no record for the AppleDouble or the binary file', O.records.map((r) => r.file).join(', '));
+say(!O.records.some((r) => /\._use\.ts$/.test(r.file)) && O.records.filter((r) => /blob\.ts$/.test(r.file)).every((r) => r.skipped === 'binary' && !r.units), 'origin: no record for the AppleDouble file; the binary file only as skipped', O.records.map((r) => `${r.file}${r.skipped ? ' ' + r.skipped : ''}`).join(', '));
 say(O.skipped?.appledouble === 1 && O.skipped?.binary === 1 && O.files === 2, 'origin: one AppleDouble and one binary file skipped, two files read', `${JSON.stringify(O.skipped)}, ${O.files} files`);
 
 console.log(`census-environment: ${fail ? fail + ' failed' : 'all hold'}`);

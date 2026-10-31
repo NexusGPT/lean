@@ -14,7 +14,7 @@
 // value whose type does not resolve (environmentOf), under the kind of that symbol's diagnostic, its reason naming the
 // symbol and its import; a unit refused on a value whose type resolves keeps its reading.
 // Walks .ts/.tsx/.mts under the root (skipping node_modules, dist, build, .next, coverage, tests, stories,
-// declarations; --js also walks .js/.jsx/.mjs/.cjs, counted apart under `languages`), lints each file inside its project, and reports: units, units inside the subset, the rule counts
+// declarations, AppleDouble `._*` files, and files TypeScript reads as binary, counted under `skipped`; --js also walks .js/.jsx/.mjs/.cjs, counted apart under `languages`), lints each file inside its project, and reports: units, units inside the subset, the rule counts
 // with three examples each, per package and in total. Read-only: nothing is written into the repository.
 import fs from 'node:fs';
 import os from 'node:os';
@@ -44,7 +44,8 @@ export function stratumOf(relPath, text) {
 // resolve, an import its module lacks, a name no declaration holds, a member a dependency's declaration lacks), and it
 // reaches anything, so the refusal was judged on an unknown type. The values a finding names: its own node (a lint
 // finding's span) and each `code` its message quotes, on the line it gives as `(line N)` or else on the finding's line.
-// A finding naming such a value is the environment's; the origin names the unresolved symbol and its import.
+// A finding naming such a value is the environment's; the origin names the unresolved symbol and its import, and `site`,
+// the file that holds the import or the unresolved name (the origin's file), whose diagnostics give the kind.
 const isErrorType = (t) => !!t && !!(t.flags & ts.TypeFlags.Any) && t.intrinsicName === 'error';
 const libraryFile = (d) => /[\\/]node_modules[\\/]|[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/.test(d.getSourceFile().fileName);
 export function unresolvedOrigin(checker, node) {
@@ -59,9 +60,9 @@ export function unresolvedOrigin(checker, node) {
     if (!s || seen.has(s)) return null; seen.add(s);
     if (s.flags & ts.SymbolFlags.Alias) {
       const spec = importOf(s);
-      if (spec && !checker.getSymbolAtLocation(spec)) return { name, from: spec.text, how: 'module' }; // the module does not resolve
+      if (spec && !checker.getSymbolAtLocation(spec)) return { name, from: spec.text, how: 'module', site: spec.getSourceFile() }; // the module does not resolve
       const target = checker.getAliasedSymbol(s);
-      if (!target?.declarations?.length) return spec ? { name, from: spec.text, how: 'member' } : null; // the module lacks the name
+      if (!target?.declarations?.length) return spec ? { name, from: spec.text, how: 'member', site: spec.getSourceFile() } : null; // the module lacks the name
       return ofSymbol(target, name);
     }
     for (const d of s.declarations ?? []) {
@@ -75,7 +76,7 @@ export function unresolvedOrigin(checker, node) {
   const ofEntity = (e) => { // a type's name or a typeof's expression
     if (ts.isQualifiedName(e)) { const o = isErrorType(checker.getTypeAtLocation(e.left)) || !checker.getSymbolAtLocation(e.left) ? ofEntity(e.left) : null; return o ?? ofSymbol(checker.getSymbolAtLocation(e), e.getText()); }
     const s = checker.getSymbolAtLocation(e);
-    return s ? ofSymbol(s, e.getText()) : { name: e.getText(), from: null, how: 'global' };
+    return s ? ofSymbol(s, e.getText()) : { name: e.getText(), from: null, how: 'global', site: e.getSourceFile() };
   };
   const ofType = (tn) => { // the first reference in a type node whose type does not resolve
     let hit = null;
@@ -103,9 +104,9 @@ export function unresolvedOrigin(checker, node) {
       const s = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(n) ? n.name : n.argumentExpression);
       if (s) return ofSymbol(s, n.getText());
       const holder = checker.getTypeAtLocation(n.expression), decl = (holder.symbol ?? holder.aliasSymbol)?.declarations?.[0];
-      return decl && libraryFile(decl) ? { name: n.getText(), from: null, how: 'member' } : null; // a member a dependency's declaration lacks; one the source's own type lacks is the source's
+      return decl && libraryFile(decl) ? { name: n.getText(), from: null, how: 'member', site: decl.getSourceFile() } : null; // a member a dependency's declaration lacks; one the source's own type lacks is the source's
     }
-    if (ts.isIdentifier(n)) { const s = checker.getSymbolAtLocation(n); return s ? ofSymbol(s, n.text) : { name: n.text, from: null, how: 'global' }; }
+    if (ts.isIdentifier(n)) { const s = checker.getSymbolAtLocation(n); return s ? ofSymbol(s, n.text) : { name: n.text, from: null, how: 'global', site: n.getSourceFile() }; }
     return null;
   };
   return isErrorType(checker.getTypeAtLocation(node)) ? ofValue(node) : null;
@@ -134,15 +135,21 @@ export function environmentOf(checker, sf, f) {
   for (const n of namedValues(sf, f)) { const o = unresolvedOrigin(checker, n); if (o) return { ...o, value: n.getText(sf).replace(/\s+/g, ' ').slice(0, 60) }; }
   return null;
 }
+// the diagnostics of a file of the program other than the one being read (an origin's file), read once per file
+const otherDiagnostics = new WeakMap();
+const diagnosticsOf = (program, osf) => { let d = otherDiagnostics.get(osf); if (!d) { d = [...program.getSyntacticDiagnostics(osf), ...program.getSemanticDiagnostics(osf)]; otherDiagnostics.set(osf, d); } return d; };
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
 const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts|js|jsx|mjs|cjs)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
 
 // the files the census reads: TypeScript by default; `ext` widens it (the reach-gap count reads JavaScript files too)
 export const TS_EXT = /\.(ts|tsx|mts)$/, JS_EXT = /\.(js|jsx|mjs|cjs)$/, ANY_EXT = /\.(ts|tsx|mts|js|jsx|mjs|cjs)$/;
-export function* walk(dir, ext = TS_EXT) {
+// A macOS AppleDouble file (`._<name>`, the resource fork a copy from macOS leaves beside each file) is no source: it is
+// skipped, and `onSkip` hears its path
+export const APPLEDOUBLE = /^\._/;
+export function* walk(dir, ext = TS_EXT, onSkip = () => {}) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (e.isDirectory()) { if (!SKIP_DIR.has(e.name) && !e.name.startsWith('.')) yield* walk(path.join(dir, e.name), ext); continue; }
-    if (ext.test(e.name)) { const p = path.join(dir, e.name); if (!SKIP_FILE.test(p)) yield p; }
+    if (e.isDirectory()) { if (!SKIP_DIR.has(e.name) && !e.name.startsWith('.')) yield* walk(path.join(dir, e.name), ext, onSkip); continue; }
+    if (ext.test(e.name)) { const p = path.join(dir, e.name); if (SKIP_FILE.test(p)) continue; if (APPLEDOUBLE.test(e.name)) { onSkip(p); continue; } yield p; }
   }
 }
 function packageOf(root, file) {
@@ -152,9 +159,10 @@ function packageOf(root, file) {
 }
 
 // The files a census reads, in walk order: the supervisor plans its walk from this list and census() walks it.
-export function censusFiles(root, { limit = 0, include = null, js = false } = {}) {
+// `onSkip` hears each AppleDouble file the walk skips inside the --include prefix.
+export function censusFiles(root, { limit = 0, include = null, js = false, onSkip = () => {} } = {}) {
   const list = [];
-  for (const file of walk(root, js ? ANY_EXT : TS_EXT)) {
+  for (const file of walk(root, js ? ANY_EXT : TS_EXT, (p) => { if (!include || path.relative(root, p).startsWith(include)) onSkip(p); })) {
     if (include && !path.relative(root, file).startsWith(include)) continue;
     if (limit && list.length >= limit) break;
     list.push(file);
@@ -182,7 +190,9 @@ export function census(root, opts = {}) {
   const typeBlocked = { units: 0, byReading: {} }; // units environment-blocked by a refusal judged on a value whose type does not resolve (environmentOf), by the rule that refused
   const strata = { written: { files: 0, units: 0, entered: 0 }, generated: { files: 0, units: 0, entered: 0 }, minified: { files: 0, units: 0, entered: 0 } }; // machine-written code counted beside written code (stratumOf) // nested: units inside another unit's body (callbacks), covered by it
   const t0 = Date.now();
-  const list = censusFiles(root, { limit, include, js });
+  // skipped, never units: AppleDouble files (the walk) and files TypeScript reads as binary (TS1490, below)
+  const skipped = { appledouble: 0, binary: 0 };
+  const list = censusFiles(root, { limit, include, js, onSkip: () => skipped.appledouble++ });
   // one program per tsconfig (in chunks), every file of the project as a root: the type checker is built once per
   // chunk, not per file, and a chunk is dropped once its files are linted
   // (lowering-cache) the chunks are read one at a time and released: a chunk's Map is cleared once its files are lowered,
@@ -197,6 +207,9 @@ export function census(root, opts = {}) {
     opts.alive?.(); // a supervised walk stops once its supervisor is gone (walk-supervisor.mjs)
     const file = abs;
     const closure = loaded.get(abs)?.closure; // an indivisible import closure over the source budget: read whole, reported
+    // a file TypeScript reads as binary (TS1490: an invalid UTF-8 sequence) holds no source: its record names it skipped
+    // (so the supervisor counts it walked), and it is no file, unit or finding of the census
+    { const L = loaded.get(abs); if (L?.sf && L.diagnostics?.some((d) => d.code === 1490 && d.file === L.sf)) { skipped.binary++; records.push({ file: path.relative(root, file), pkg: packageOf(root, file), skipped: 'binary' }); continue; } }
     if (closure) oversizedClosures++;
     files++;
     const pkg = packageOf(root, file);
@@ -224,10 +237,15 @@ export function census(root, opts = {}) {
       const kindOf = (o) => {
         if (install.status === 'install-failed') return 'install-failed';
         if (!o.from && o.how === 'member') return 'member';
-        const key = `'${o.from ?? o.name.split('.')[0]}'`; // the checker's own diagnostic for the name, classified as the unresolved-module findings are
-        const d = L.diagnostics.find((x) => x.file === sf && ts.flattenDiagnosticMessageText(x.messageText, ' ').includes(key));
+        // the checker's own diagnostic for the name, classified as the unresolved-module findings are: read in the origin's
+        // file (where the import or the unresolved name sits; a value typed through another file names that file's
+        // import), else in the unit's own file (an origin in a declaration file the program does not check)
+        const key = `'${o.from ?? o.name.split('.')[0]}'`;
+        const match = (osf) => (osf === sf ? L.diagnostics : diagnosticsOf(L.program, osf)).find((x) => x.file === osf && ts.flattenDiagnosticMessageText(x.messageText, ' ').includes(key));
+        const at = o.site && o.site !== sf ? match(o.site) : null;
+        const d = at ?? match(sf);
         if (!d) return o.how === 'member' ? 'member' : 'unresolved';
-        const c = env.classify(file, `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+        const c = env.classify(at ? path.resolve(o.site.fileName) : file, `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
         return c.kind + (c.generated ? ' (generated)' : '');
       };
       for (const o of origins.values()) o.kind = kindOf(o);
@@ -295,7 +313,7 @@ export function census(root, opts = {}) {
     P.units += unitNames.length; P.entered += unitNames.length - blocked.size;
     if (files % 50 === 0) { heap('files'); log(`${files} files, ${units} units, ${entered} inside, ${Math.round((Date.now() - t0) / 1000)} s`); }
   }
-  opts.onChunk?.({ kind: 'chunk', complete: false, files, units, entered, failedFiles, oversizedClosures, readings: [...readings.values()], records: records.slice(chunkStart) });
+  opts.onChunk?.({ kind: 'chunk', complete: false, files, units, entered, failedFiles, oversizedClosures, skipped: { ...skipped }, readings: [...readings.values()], records: records.slice(chunkStart) });
   heap('chunk processed');
   }
   for (const loaded of timedChunks()) {
@@ -309,7 +327,7 @@ export function census(root, opts = {}) {
   const blockedKinds = Object.fromEntries([...refusalGroups.values()].filter((r) => r.rule.startsWith('environment: ')).map((r) => [r.rule.slice(13), r.units]).sort((a, b) => b[1] - a[1]));
   const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds, unresolvedTypes: { units: typeBlocked.units, byReading: Object.fromEntries(Object.entries(typeBlocked.byReading).sort((a, b) => b[1] - a[1])) } };
   const shareWritten = strata.written.units ? Math.round((1000 * strata.written.entered) / strata.written.units) / 10 : null;
-  return { complete: true, root, date, depth, oversizedClosures, languages, strata, shareWritten, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  return { complete: true, root, date, depth, oversizedClosures, languages, strata, shareWritten, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, skipped, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
 
 // Render only the saved census result. No files are read and no units are linted here.
@@ -320,6 +338,7 @@ export function censusReport(res) {
     `# Census: ${code(path.basename(res.root))}`, '',
     `Date: ${res.date} (UTC)`, '',
     `Units: ${res.units}. Inside the subset: ${res.entered} (${res.share ?? 'n/a'} percent). Refused: ${res.refused}. Files unreadable: ${res.failedFiles}.`, '',
+    ...(res.skipped ? [`Skipped: appledouble/binary ${res.skipped.appledouble + res.skipped.binary} (${res.skipped.appledouble} AppleDouble, ${res.skipped.binary} binary), never units.`, ''] : []),
     ...(res.strata ? [`By stratum (census.mjs stratumOf): written ${res.strata.written.units} units (${res.strata.written.entered} inside, ${res.strata.written.files} files; ${res.shareWritten ?? 'n/a'} percent); generated ${res.strata.generated.units} units (${res.strata.generated.entered} inside, ${res.strata.generated.files} files); minified ${res.strata.minified.units} units (${res.strata.minified.entered} inside, ${res.strata.minified.files} files). The share above is over all code; the regression floor R6 binds that share.`, ''] : []),
     ...(res.languages?.js ? [`By language: TypeScript ${res.languages.ts?.units ?? 0} units (${res.languages.ts?.entered ?? 0} inside, ${res.languages.ts?.files ?? 0} files); JavaScript ${res.languages.js.units} units (${res.languages.js.entered} inside, ${res.languages.js.files} files).`, ''] : []),
     '| Entered | Environment-blocked | Language-refused |', '| ---: | ---: | ---: |', `| ${res.entered} | ${res.environmentBlocked ?? 0} | ${res.languageRefused ?? res.refused} |`, '',
@@ -439,6 +458,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
   console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked (${res.environment.unresolvedTypes.units} on an unresolved type), ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);
+  console.log(`  skipped: appledouble/binary ${res.skipped.appledouble + res.skipped.binary} (${res.skipped.appledouble} appledouble, ${res.skipped.binary} binary)`);
   const st = res.environment.install;
   console.log(`  environment: install ${st.status}${st.exit !== undefined ? ` (exit ${st.exit}, ${st.command})` : ''}; ${res.environment.units} units reach an unresolved module or global: ${Object.entries(res.environment.kinds).map(([k, n]) => `${k} ${n}`).join(', ') || 'none'}`);
   for (const r of res.rules.slice(0, 25)) console.log(`  ${String(r.units).padStart(6)} units  ${r.rule.padEnd(22)} ${r.examples[0] ?? ''}`);
