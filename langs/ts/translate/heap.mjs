@@ -352,15 +352,23 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // int file is the floor division, a zero divisor marking the world), String(x) of a primitive (the template
   // conversion), Array.isArray of an array or a primitive (true, false), Object.keys of a dictionary (a fresh array of
   // its keys in JavaScript's order, a bodiless function of the insertion sequence). Each a global of the platform, never
-  // a name the file declares. Out: Math.random (the world), Number and JSON (a parse may be NaN or any), Object.keys of
-  // a record (an object of a record type may hold more keys than its type names).
+  // a name the file declares. Number(x) of a number is x and of a boolean 1 or 0 (ToNumber, exact); Number.isInteger,
+  // isFinite, isNaN and isSafeInteger of a number are bodiless, the ordinary lane's external (nothing assumed of what
+  // they answer); JSON.stringify of one primitive is a bodiless function of it (SerializeJSONProperty reads `toJSON` of
+  // an object or a bigint only, so a primitive runs no user code and never throws). Out: Math.random (the world),
+  // Number of a string and parseInt (NaN), JSON.parse (any), JSON.stringify of a reference, an optional value or with a
+  // replacer, Object.keys of a record (an object of a record type may hold more keys than its type names).
   const isGlobalName = (id, name) => ts.isIdentifier(id) && id.text === name && originOf(checker, id, sf, null).kind === 'global';
+  const NUMBER_TESTS = ['isInteger', 'isFinite', 'isNaN', 'isSafeInteger'];
   const globalCall = (e) => {
     if (!ts.isCallExpression(e) || e.questionDotToken || e.arguments.some((a) => ts.isSpreadElement(a))) return null;
     const c = e.expression, a = e.arguments; const num = (x) => isNumT(typeOf(x));
     if (isGlobalName(c, 'String') && a.length === 1) { const sh = shapeOf(typeOf(a[0])); return sh && (sh.kind === 'prim' || sh.kind === 'opt') ? 'String' : null; }
+    if (isGlobalName(c, 'Number') && a.length === 1) { const sh = shapeOf(typeOf(a[0])); return sh?.kind === 'prim' && (sh.d === NUM || sh.d === 'bool') ? 'Number' : null; }
     if (!ts.isPropertyAccessExpression(c) || c.questionDotToken) return null;
     const m = c.name.text;
+    if (isGlobalName(c.expression, 'Number')) return NUMBER_TESTS.includes(m) && a.length === 1 && num(a[0]) && external ? `Number.${m}` : null;
+    if (isGlobalName(c.expression, 'JSON')) { const sh = m === 'stringify' && a.length === 1 ? shapeOf(typeOf(a[0])) : null; return sh?.kind === 'prim' && external ? 'JSON.stringify' : null; }
     if (isGlobalName(c.expression, 'Math')) {
       if ((m === 'max' || m === 'min') && a.length >= 1 && a.every(num)) return `Math.${m}`;
       if (m.startsWith('__lean_') && external && a.every(num)) return `Math.${m}`; // an uninterpreted number operation of the faithful reading (translate/faithful.mjs): the ordinary lane's external, the same symbol
@@ -1131,6 +1139,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (globalCall(e)) { // a pure global: its arguments in order, then the operation
         const g = globalCall(e); const a = e.arguments;
         if (g === 'String') return toStr(a[0]);
+        if (g === 'Number') { const v = expr(a[0]); return shapeOf(typeOf(a[0])).d === 'bool' ? `(if ${v} then ${isReal ? '1.0' : '1'} else ${isReal ? '0.0' : '0'})` : v; } // ToNumber of a number is itself, of a boolean 1 or 0
+        if (g.startsWith('Number.')) { const v = expr(a[0]); return `${external(`call_args_${g.replace('.', '_')}`, [NUM], 'bool')}(${v})`; } // the ordinary lane's symbol
+        if (g === 'JSON.stringify') { const sh = shapeOf(typeOf(a[0])); const v = expr(a[0]); return `${external('JSON_stringify_prim', [sh.d], 'string')}(${v})`; } // a function of the primitive alone
         if (g.startsWith('Math.__lean_')) { const vs = a.map((x) => expr(x)); return `${external(`call_args_${g}`, vs.map(() => NUM), /__lean_(lt|le|gt|ge|eq|truthy)$/.test(g) ? 'bool' : NUM)}(${vs.join(', ')})`; }
         if (g === 'Array.isArray') { expr(a[0]); return shapeOf(typeOf(a[0])).kind === 'arr' ? 'true' : 'false'; } // the argument is read (a pure read) and its shape decides
         if (g === 'Object.keys') { const s = shapeOf(typeOf(a[0])); const r = bind(expr(a[0]), 'o'); const rs = shapeOf(typeOf(e)); strUsed.add('dictkeys'); const out = fresh('r'); lines.push(`var (${HW}, ${out}) := Alloc_${rs.key}(${HW}, DictKeysJs(if Is${s.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${s.key} else []));`); return out; }
