@@ -261,7 +261,7 @@ export const READINGS = [
     id: 'arrays', construct: 'array literals and spreads: a sequence; a spread the sequence of its source\'s elements (an array, a Set, a Map, their iterators, a fixed tuple)',
     kinds: ['SpreadElement', 'ArrayLiteralExpression'],
     lint: ['spread'],
-    translate: rx('^spread arguments need an ordinary array$', '^a spread among other arguments is not translated$'),
+    translate: rx('^spread arguments need an ordinary array$', '^a spread among other arguments is not translated$', '^a tuple of .* read as a sequence needs one element type$'),
     assumptions: { runtime: 'an array literal is the concatenation of its segments; a spread argument to an outside call is one sequence (call_seq_)', aliasing: 'elements are copied as values', exceptions: 'none', termination: 'terminates' },
     refusal: 'this spread has no sequence reading',
     design: ['design/tuple-spread.md', 'design/spread-outside-callees.md'],

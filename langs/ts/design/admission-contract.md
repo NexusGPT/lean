@@ -783,6 +783,7 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | translate/translate.mjs:6072 | translate-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (parameterMutationConflicts) | param-assign: parameter `${}` is rebound and also changed in place |
 | translate/translate.mjs:6175 | translate-refuse | untyped-js | types | shared (callbackUntypedJsUnit) | untyped-js: ${} |
 | translate/translate.mjs:6177 | translate-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (firstElementMutation) | alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so t |
+| translate/translate.mjs (emitUnit) | translate-refuse | alias-mutation | mutation | exception:shared-object-vs-value-reading (sharedMutation) | alias-mutation: `${}` is changed in place while ${} holds the same object (line ${}); this reading reads an object as a value |
 | translate/translate.mjs:6181 | translate-refuse |  | generators | shared (asyncGenerator) | async generators need --core |
 | translate/translate.mjs:6182 | translate-refuse |  | generators | one-decider | generators need --core |
 | translate/translate.mjs:6206 | translate-refuse |  | control-flow | one-decider | a path ends without a return |
