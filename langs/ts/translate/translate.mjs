@@ -2866,14 +2866,19 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     return call(inner, true);
   }
-  // the bitwise reading both lanes share (the heap core receives it): `x | 0` and `~~x` are ToInt32, a literal shift
-  // count is reduced to its low five bits, the rest the helper of its operator; `ex` writes an operand
+  // the bitwise reading both lanes share (the heap core receives it): `x | 0`, `0 | x`, `x ^ 0` and `~~x` are ToInt32, a
+  // literal shift count is reduced to its low five bits (a count of 0 there: ToInt32 of the left operand), the rest the
+  // helper of its operator; `ex` writes an operand. Under the faithful reading an operand the model does not hold
+  // arrives as `Math.__lean_int32(x)` (faithful.mjs), so the same forms meet in one term on both sides
   function bitwiseOf(n, ex) {
     if (ts.isPrefixUnaryExpression(n)) { let inner = n.operand; while (ts.isParenthesizedExpression(inner)) inner = inner.expression; if (ts.isPrefixUnaryExpression(inner) && inner.operator === K.TildeToken) return `${helper('JsInt32', [NUM])}(${ex(inner.operand)})`; return `${helper('JsBitNot', [NUM])}(${ex(n.operand)})`; }
     const op = n.operatorToken.kind;
     const bit = { [K.AmpersandToken]: 'JsBitAnd', [K.BarToken]: 'JsBitOr', [K.CaretToken]: 'JsBitXor', [K.LessThanLessThanToken]: 'JsShl', [K.GreaterThanGreaterThanToken]: 'JsShr', [K.GreaterThanGreaterThanGreaterThanToken]: 'JsUshr' }[op];
-    if (op === K.BarToken && ts.isNumericLiteral(n.right) && Number(n.right.text) === 0) return `${helper('JsInt32', [NUM])}(${ex(n.left)})`;
-    const left = ex(n.left), count = finiteLiteral(n.right);
+    const zero = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return ts.isNumericLiteral(e) && Number(e.text) === 0; };
+    const count = finiteLiteral(n.right);
+    if ((op === K.BarToken || op === K.CaretToken) && (zero(n.right) || zero(n.left))) return `${helper('JsInt32', [NUM])}(${ex(zero(n.right) ? n.left : n.right)})`; // `x | 0`, `0 | x`, `x ^ 0`: ToInt32(x) | 0 is ToInt32(x) (the literal operand has no effect)
+    if ((op === K.LessThanLessThanToken || op === K.GreaterThanGreaterThanToken) && count !== null && Number.isFinite(count) && ((count >>> 0) & 31) === 0) return `${helper('JsInt32', [NUM])}(${ex(n.left)})`; // a shift by a literal count of low five bits 0: ToInt32 of the left operand
+    const left = ex(n.left);
     const right = ['JsShl', 'JsShr', 'JsUshr'].includes(bit) && count !== null && Number.isFinite(count) ? numLit(String((count >>> 0) & 31), n.right) : ex(n.right);
     return `${helper(bit, [NUM])}(${left}, ${right})`;
   }

@@ -96,7 +96,8 @@ The decision of 29 Oct: the reading is exact where the model is provably faithfu
 and opaque where the model forgets. A number is read exactly, as a Dafny int or real holding its value, only under two
 discharged obligations:
 1. **Integrality.** The value is built from integral sources: an integer literal, `.length` of a string, array or
-   tuple, an index result (`indexOf`, `findIndex`, `search`), a counter, a bitwise result, Math.trunc/floor/ceil/round
+   tuple, an index result (`indexOf`, `findIndex`, `search`), a counter, the result of a bitwise operator (whatever its
+   operands: each enters through ToInt32, below), Math.trunc/floor/ceil/round
    of such a value, `+` and `-` of such values, `*` when both are nonnegative or one is a positive literal, `%` with a
    nonnegative dividend and a divisor that is never 0, `floor(a / b)` with a >= 0 and b > 0.
 2. **The safe range.** `|v| <= 2^53`, discharged by interval arithmetic over those sources. A length lies below 2^32,
@@ -111,8 +112,12 @@ Every other number is a double the model does not compute. The translator (`--co
 rewrites the source in memory, line for line, as `common.mjs normaliseApplyCalls` does. Each operation on such a number
 becomes an uninterpreted function `Math.__lean_<op>` (declared in `lean-number.d.ts`). The translator reads it as a
 pure external keyed by name and types, the same symbol on both sides. The rewritten operations:
-- arithmetic, bitwise, relational and equality operators;
-- unary minus and `~`;
+- arithmetic, relational and equality operators;
+- unary minus;
+- an operand of a bitwise operator (`~` included): ECMA-262 6.1.6.1 reads each operand through ToInt32 (ToUint32 for a
+  shift count and the left of `>>>`, both ToInt32 modulo 2^32), so the operand alone becomes `Math.__lean_int32(x)`,
+  an uninterpreted int32, and the operator stays, read exactly by the translator (`bitwiseOf`: `x | 0`, `0 | x`,
+  `x ^ 0`, `~~x` and a shift by a literal count of low five bits 0 are all JsInt32 of it; heap-stage5.md 21b);
 - truthiness (`Math.__lean_truthy`): a condition, `!`, `&&`, `||`;
 - the exact Math functions over an opaque argument;
 - a compound assignment or an update statement, rewritten as `x = Math.__lean_add(x, 1)`.
