@@ -913,6 +913,45 @@ Map field placed first in a record of three slots reaches its first key past inp
 it); the pair asks the identity questions of Map and Set arguments. The census lints and never runs lane B, so it is
 unchanged (the numbers in `lane/core-map-set-copy-forms-result.md`).
 
+### 16c. Every slot within the suite's inputs; nullable items, record values (2026-10-31, lane korat-order-nullable)
+
+Found: two of 16b's leftovers. The odometer varied the first slot slowest (the arguments, then the first shape's first
+field), so a slot early in that order took its second value only after every later slot had run through its choices:
+in `map_set_copy`, the `byTag` Map of `Board { byTag, seen, tags }` held no record in any of the suite's 30 inputs
+(`tests/korat-slots.mjs` on the base: 3 slots never drawn, all that one), and on a deeper spec the 20,000 assignments
+ran out before a nullable argument was ever non-null (`exec/korat.test.mjs`, the deep chain: no slot drawn). And a
+`Set<Tag | null>`, a `Map<Tag | null, V>` and a Map whose values are records were left to the seeded generator, whose
+records are fresh: no item or value was ever an object an argument holds.
+Reading:
+- The order: after the all-default assignment, a breadth-first prefix. The pool objects the arguments reach are found
+  breadth-first (the arguments' slots, then the slots of each object reached, by the number of links; a default link
+  first, so the assignment that reaches an object is the smallest the search meets). Each slot, one per argument and
+  one per field of a shape (not per pool object), takes its first choice that holds a pool object, on the shallowest
+  object of its shape, with the assignment that reaches that object. Then each slot whose item, key or value admits
+  null takes its first choice holding the absent value. Then the odometer as before, skipping what the prefix built.
+- The bound: with a argument slots, S fields that are slots over the record shapes reachable from the arguments, and N
+  of them nullable sides, every slot holds a pool object (and every nullable side the absent value) within the first
+  1 + a + S + N inputs. An assignment whose heap an earlier input already drew is no input, and that earlier heap drew
+  the slot (isomorphism keeps the field names). So within the suite's 30: shapes up to depth d and width w (each shape w
+  slot fields, each to a shape of its own) when a + w(w^d - 1)/(w - 1) + N <= 29, d at most korat's DEPTH 4 (a field
+  past it is a primitive draw, no slot): a chain (w = 1) to depth 4 with up to 25 arguments; w = 2 to depth 3 (14
+  fields) with up to 15 arguments; w = 3 or 4 to depth 2 (12 or 20 fields). Shapes shared structurally (a recursive
+  `next`) count once. Past the bound the prefix still goes shallowest first, so what the 30 inputs miss is the deepest.
+- A nullable item, key or value is one more letter of the slot's alphabet, placed second (`[0, absent, 1]`), so a Set's
+  first three choices are `[]`, `[o0]`, `[absent]`. The absent value is `null` where the union names null, `undefined`
+  otherwise.
+- A Map whose values are records: the values range over the sequences of pool objects of the entries' length (repeats
+  allowed: two keys may hold one object), with keys pooled too when they are records. Primitive keys are drawn by a
+  generator seeded by the slot, distinct (a key drawn twice is drawn again, at most eight times).
+Soundness: the order and the alphabet change which inputs lane B tries first, never what a verdict concludes.
+Stays to the generator: an optional or nullable Set or Map field (unchanged from 16b).
+Pair `korat_nullable_values` (lane B alone: the heap core leaves a Set of optional items and a Map's reference values
+out): `isSeenOrNone`, `isOwnValue`, `distinctValues` (WITNESS; PASS-bounded on the base), `knowsTag` (the `byTag` case:
+WITNESS; PASS-bounded on the base), `holdsNone`, `valueCount` (equal, PASS-bounded). Unit test `exec/korat.test.mjs`
+(four cases, all red on the base). Counter `tests/korat-slots.mjs` (the slots the suite's first 30 enumerated inputs
+never draw) and sweep `tests/laneb-sweep.mjs` (lane B on every pair unit, per tree): the numbers in
+`lane/korat-order-nullable-result.md`.
+
 ## 17. Tuples and intersections
 
 Reading: a tuple of required elements of one shape (`[number, number]`) is an array of that shape whose length is fixed
