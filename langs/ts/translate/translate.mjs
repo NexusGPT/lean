@@ -2686,10 +2686,26 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // Set iterator is already the sequence it yields
   function seqOf(e) {
     const t = baseOf(typeOf(e));
+    if (checker.isTupleType(t) && dtype(t, e).startsWith('(')) { const ds = checker.getTypeArguments(t).map((a) => dtype(a, e)); if (!ds.every((d) => d === ds[0])) fail(e, `a tuple of ${ds.join(', ')} read as a sequence needs one element type`); return `[${tupleParts(e).join(', ')}]`; } // a fixed tuple where a sequence is asked (`[...t]` into an array, `t.concat()`): its elements in order, a new sequence
     if (isAny(t)) return `${external('Any_to_seq', [anyType()], 'seq<Any>')}(${expr(e, anyTarget())})`;
     if (isSetT(t)) { dtype(t, e); return member(expr(e), 'items'); }
     if (isMapT(t)) { dtype(t, e); return `OMapEntries(${outerParens(expr(e))})`; }
     return expr(e);
+  }
+  // the elements of a fixed tuple, each its projection (a Dafny tuple's `.i`); a tuple with an optional or rest element
+  // has no fixed list of elements here and stays refused
+  function tupleParts(e) {
+    const t = baseOf(typeOf(e));
+    if (!fixedTuple(t) || !dtype(t, e).startsWith('(')) return fail(e, `expression SpreadElement is not translated`);
+    const code = expr(e), k = checker.getTypeArguments(t).length;
+    const base = /^[A-Za-z_][\w']*$/.test(code) ? code : `(${code})`;
+    return Array.from({ length: k }, (_, i) => `${base}.${i}`);
+  }
+  // a write in place (pop, splice, reverse, ...) through a tuple read as a Dafny tuple: the write's result is a sequence,
+  // which the tuple-typed name cannot hold (a length-changing write leaves the tuple's type behind as well); refused
+  function tupleWrite(recv, name) {
+    const t = baseOf(typeOf(recv));
+    if (checker.isTupleType(t) && dtype(t, recv).startsWith('(')) fail(recv, `.${name}() on a tuple writes it in place; the tuple is read as a Dafny tuple of its positions, which a sequence cannot replace: copy it first ([...t])`);
   }
   const exactPromiseForm = (n) => promiseReadings.has(`${unparen(n).pos}:${unparen(n).end}`) ? promiseForm(unparen(n), checker, sf) : null;
   // an opaque promise call evaluates its receiver and arguments, then records one outside transition
@@ -4079,6 +4095,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // statement, as the statement forms bind them (the lint admits that form only where the call runs on every path and the
   // statement reads the receiver nowhere else)
   function mutatorValue(n, name, recv, R, A) {
+    tupleWrite(recv, name);
     const fresh = freshArray(checker, recv, (id) => originOf(checker, id, sf, currentUnit?.node ?? null).kind === 'global');
     let id = recv; while (ts.isParenthesizedExpression(id) || ts.isNonNullExpression(id) || ts.isAsExpression(id)) id = id.expression;
     if (!fresh && !ts.isIdentifier(id)) fail(n, `.${name}() as a value needs a local array or a fresh one`);
@@ -4609,7 +4626,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       if (shape && (containsEffect(shape.cb.body) || cellCallback(shape.cb) || loopFaults(shape))) return callbackValue(n, shape); // a callback that throws is a loop with a fault exit
       { const named = namedCallbackShape(n); if (named) return callbackValue(n, named); }
       const A = () => dtype(elemType(recv), n);
-      const R = expr(recv);
+      const R = seqOf(recv); // 23.1.3: a method reads its receiver's length and indices, so a fixed tuple read as a Dafny tuple is the sequence of its positions
       const cb0 = n.arguments[0];
       const cb = cb0;
       const et = () => elemType(recv);
@@ -5279,6 +5296,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (isMutCall(e)) {
       // push/unshift/add/set/delete on a local, a parameter, or a path on one: the path is rebuilt with the new contents
       const r = e.expression.expression, m = e.expression.name.text;
+      tupleWrite(r, m);
       const t = baseOf(typeOf(r));
       const a0 = e.arguments[0];
       const piece = (m === 'push' || m === 'unshift') ? callSequence([...e.arguments], dtype(checker.getTypeArguments(t)[0], r)).code : null;

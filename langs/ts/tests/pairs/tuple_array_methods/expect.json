@@ -1,0 +1,7 @@
+{
+  "scope": ["mapped", "sliced", "has", "position", "any_empty", "joined", "tagged", "kept"],
+  "equal": { "mapped": true, "sliced": false, "has": true, "position": true, "any_empty": false, "joined": true, "tagged": true, "kept": true },
+  "why": "Array methods on a fixed tuple of one element type, in the value reading (heap off): the receiver is the sequence of the tuple's positions. mapped (map against the two positions written out), has (includes against two comparisons), position (indexOf), joined (join) and tagged (an indexed map callback), each against the same method on the array literal of the tuple's positions, and kept (filter, untouched) prove; sliced (slice() against slice(1)) and anyEmpty (some against every) differ and lane B witnesses. Red before the reading: the receiver was the Dafny tuple where a sequence is expected, so the theorem file did not resolve. (indexOf, join and an indexed map over a two-element literal against their unrolled forms are not proved for an array literal either: the helpers' recursion is unfolded once.)",
+  "heap": false,
+  "b": { "mapped": "PASS-bounded", "sliced": "WITNESS", "has": "PASS-bounded", "position": "PASS-bounded", "anyEmpty": "WITNESS", "joined": "PASS-bounded", "tagged": "PASS-bounded", "kept": "PASS-bounded" }
+}

@@ -1571,13 +1571,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     return [...risks];
   }
   // an array method whose result the library table marks fresh (translate/library.json: map, filter, flatMap, slice,
-  // concat, flat, toSorted, toReversed, toSpliced, with), called on an array, whose result's element type holds no
+  // concat, flat, toSorted, toReversed, toSpliced, with), called on an array (a tuple is one), whose result's element type holds no
   // reference: the result is a new array carrying no input reference, so it exposes nothing and its identity is one node
   const FRESH_ARRAY_METHODS = new Set(['map', 'filter', 'flatMap', 'slice', 'concat', 'flat', 'toSorted', 'toReversed', 'toSpliced', 'with']);
   const freshPrimArrayCall = (e) => {
     e = unparen(e);
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || !FRESH_ARRAY_METHODS.has(e.expression.name.text)) return false;
-    const recvT = nonNull(typeOf(e.expression.expression))[0]; if (!recvT || !checker.isArrayType(recvT)) return false;
+    const recvT = nonNull(typeOf(e.expression.expression))[0]; if (!recvT || !(checker.isArrayType(recvT) || checker.isTupleType(recvT))) return false; // a tuple is an array object: the method makes a new array of it alike (23.1.3, ArraySpeciesCreate)
     const rt = nonNull(typeOf(e))[0]; if (!rt || !checker.isArrayType(rt)) return false;
     const el = checker.getTypeArguments(rt)[0]; return !!el && !isRefType(el);
   };
