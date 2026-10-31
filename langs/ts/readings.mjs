@@ -404,7 +404,7 @@ export const READINGS = [
           {
             "who": "lint",
             "rule": "alias-mutation",
-            "message": "`${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `++`, `--`) is read only in a `forEach` statement of one parameter over plain data records; write the element through its array in an index loop, `for (let i = 0; i < xs.length; i++) xs[i].f = v` (escape element_write_loop_callback)"
+            "message": "`${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `++`, `--`) is read only in a `forEach` statement of one parameter (and an index) over plain data records; write the element through its array in an index loop, `for (let i = 0; i < xs.length; i++) xs[i].f = v` (escape element_write_loop_callback)"
           },
           {
             "who": "translate",

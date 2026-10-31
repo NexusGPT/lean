@@ -544,9 +544,12 @@ function translateOnce(file, fnName, opts = {}) {
     let e = st.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'forEach' || e.arguments.length !== 1) return null;
     const cb = e.arguments[0];
-    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null; // an async callback is not awaited by forEach: not a loop
+    if (!ts.isArrowFunction(cb) || cb.parameters.length < 1 || cb.parameters.length > 2 || !ts.isIdentifier(cb.parameters[0].name) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null; // an async callback is not awaited by forEach: not a loop
     let recvT; try { recvT = baseOf(typeOf(e.expression.expression)); } catch { return null; }
     if (!(isArrayLike(checker, recvT) || isSetT(recvT) || isMapT(recvT) || isAny(recvT))) return null;
+    // a second parameter over an array is the index (ECMA-262 23.1.3.15: the position), bound to the loop's counter (coreLoop);
+    // a Set or a Map passes another value there, and a receiver of type any may be either: no loop
+    if (cb.parameters.length === 2) { const ix = cb.parameters[1]; if (!isArrayLike(checker, recvT) || isAny(recvT) || !ts.isIdentifier(ix.name) || ix.initializer || ix.dotDotDotToken || ix.questionToken) return null; }
     return { call: e, cb };
   };
   // an inline array callback is a loop body; its return supplies the method's result
@@ -4940,7 +4943,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         case 'filter': return `${helper('Filter', [A()])}(${R}, ${lambda1(cb, 1)})`;
         case 'map': return `${helper('Map', [A(), dtype(typeOf(n), n).replace(/^seq<(.*)>$/, '$1')])}(${R}, ${lambda1(cb, 1)})`;
         case 'flatMap': { const inner = dtype(typeOf(n), n); return `${helper('Flat', [inner.replace(/^seq<(.*)>$/, '$1')])}(${helper('Map', [A(), inner])}(${R}, ${lambda1(cb, 1)}))`; }
-        case 'reduce': { const U = dtype(typeOf(cb.parameters[0].name), cb); return `${helper('Fold', [A(), U])}(${R}, ${lambda(cb, 2, [typeOf(cb.parameters[0].name), et()])}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`; }
+        case 'reduce': { if (n.arguments.length !== 2) fail(n, 'reduce without an initial value throws a TypeError on an empty array, which this reading of a value has no channel for; the heap core reads it (a mark the lemma shows never set)'); const U = dtype(typeOf(cb.parameters[0].name), cb); return `${helper('Fold', [A(), U])}(${R}, ${lambda(cb, 2, [typeOf(cb.parameters[0].name), et()])}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`; }
         case 'some': return `(exists ii_ :: 0 <= ii_ < |${R}| && ${lambda1(cb, 1)}(${R}[ii_]))`;
         case 'every': return `(forall ii_ :: 0 <= ii_ < |${R}| ==> ${lambda1(cb, 1)}(${R}[ii_]))`;
         case 'find': return foundValue(`${helper('Find', [A()])}(${R}, ${lambda1(cb, 1)})`, et(), typeOf(n), n);

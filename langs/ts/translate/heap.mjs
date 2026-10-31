@@ -316,28 +316,34 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     let loop = null; const e = ts.isExpressionStatement(s) ? unparen(s.expression) : null;
     if (e && ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && !e.questionDotToken && !e.expression.questionDotToken && e.expression.name.text === 'forEach' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0]) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') {
       const cb = e.arguments[0];
-      if (cb.parameters.length === 1 && ts.isIdentifier(cb.parameters[0].name) && !cb.parameters[0].initializer && !cb.modifiers?.length) {
+      const ix = cb.parameters[1]; // the index (ECMA-262 23.1.3.15): the position the loop's counter holds, bound at each step
+      if ((cb.parameters.length === 1 || (cb.parameters.length === 2 && ts.isIdentifier(ix.name) && !ix.initializer && !ix.dotDotDotToken && !ix.questionToken)) && ts.isIdentifier(cb.parameters[0].name) && !cb.parameters[0].initializer && !cb.modifiers?.length) {
         const body = ts.isBlock(cb.body) ? cb.body : { kind: K.ExpressionStatement, expression: cb.body, pos: cb.body.pos, end: cb.body.end, parent: cb, flags: 0 };
-        loop = { kind: K.ForOfStatement, awaitModifier: undefined, expression: e.expression.expression, initializer: { kind: K.VariableDeclarationList, flags: ts.NodeFlags.Const, declarations: [{ kind: K.VariableDeclaration, name: cb.parameters[0].name, initializer: undefined }] }, statement: body, pos: s.pos, end: s.end, parent: s.parent, flags: 0 };
+        loop = { kind: K.ForOfStatement, awaitModifier: undefined, expression: e.expression.expression, initializer: { kind: K.VariableDeclarationList, flags: ts.NodeFlags.Const, declarations: [{ kind: K.VariableDeclaration, name: cb.parameters[0].name, initializer: undefined }] }, statement: body, pos: s.pos, end: s.end, parent: s.parent, flags: 0, index: cb.parameters.length === 2 ? ix.name : null };
       }
     }
     forEachMemo.set(s, loop); return loop;
   };
   const CB1 = new Set(['map', 'filter', 'some', 'every', 'find', 'findIndex']); // the array methods of one pure callback the core reads
   // a callback's body as bindings and a result: `(x) => e`, or `(x) => { const a = e1; …; return e; }`, each binding a
-  // `const` of one name with an initializer, written in place in the Dafny lambda as its value (cbCode); any other block
-  // (a `let`, a branch, a second return) has no reading here
+  // `const` of one name with an initializer, written in place in the Dafny lambda as its value (cbCode). A `let` of one
+  // name with an initializer that nothing in the callback assigns again is that const (its one assignment is its
+  // initializer, so every read is its value); a `let` assigned again, a `var` (hoisted), a branch or a second return
+  // has no reading here (cbFormWhy names the rebinding)
+  const letRebound = (cb) => { const lets = new Set(); for (const s of ts.isBlock(cb.body) ? cb.body.statements : []) if (ts.isVariableStatement(s) && (s.declarationList.flags & ts.NodeFlags.Let)) for (const d of s.declarationList.declarations) if (ts.isIdentifier(d.name)) lets.add(d.name.text); return [...lets].some((x) => bodyAssigns(cb.body, x)); };
   const cbParts = (cb) => {
     if (!ts.isBlock(cb.body)) return { binds: [], ret: cb.body };
     const st = cb.body.statements; const last = st[st.length - 1];
     if (!last || !ts.isReturnStatement(last) || !last.expression) return null;
+    if (letRebound(cb)) return null;
     const binds = [];
     for (const s of st.slice(0, -1)) {
-      if (!ts.isVariableStatement(s) || !(s.declarationList.flags & ts.NodeFlags.Const)) return null;
+      if (!ts.isVariableStatement(s) || !(s.declarationList.flags & (ts.NodeFlags.Const | ts.NodeFlags.Let))) return null;
       for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer) return null; binds.push(d); }
     }
     return { binds, ret: last.expression };
   };
+  const cbFormWhy = (cb) => (ts.isBlock(cb.body) && letRebound(cb) ? 'callback form: a let assigned again in the callback (a let is read as the const of its one assignment)' : 'callback form');
   const cbBody = (cb) => cbParts(cb)?.ret ?? null;
   // a name of the unit: a parameter or a local declared in its text, or, in a callback unit, a binding of the enclosing
   // units it captures, which the translator appends to its parameters (common.mjs callbackEnvironment: each a binding no
@@ -529,6 +535,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   };
   const presName = (d) => `has_${dn(d.name.text)}_`; // the read's truthiness beside the name (a generated name ends in an underscore, a name of the unit never does)
   const ownName = (d) => `own_${dn(d.name.text)}_`, keyName = (d) => `key_${dn(d.name.text)}_`; // whether the key was owned, and the key itself
+  let emptyMarkUsed = false; // EmptyMark in the prelude: reduce without an initial value on an empty array
   let keyMarkUsed = false; const foreignUsed = new Map(); // ForeignSet_<shape>_<field> -> the field's Dafny type
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
   const pureExpr = (x) => { x = unparen(x); if (ts.isIdentifier(x) || ts.isNumericLiteral(x) || ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || [K.TrueKeyword, K.FalseKeyword, K.ThisKeyword].includes(x.kind)) return true; if (ts.isPropertyAccessExpression(x)) return pureExpr(x.expression); if (ts.isBinaryExpression(x)) return pureExpr(x.left) && pureExpr(x.right); if (ts.isPrefixUnaryExpression(x)) return pureExpr(x.operand); return false; };
@@ -684,7 +691,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'structuredClone' && e.arguments.length === 1) { const s = shapeOf(typeOf(e.arguments[0])); if (!s || s.kind === 'prim') return no('clone of a non-cell'); { const cs = copySource(checker, e.arguments[0]); if (cs.kind !== 'plain' && cs.kind !== 'built') return no('a copy of a record the unit did not build (a cell holds declared fields alone; the value lane reads it through the one copy reading, its rest included)'); } const flat = s.kind === 'rec' ? s.fields.every((f) => f.shape.kind === 'prim') : s.kind === 'arr' || s.kind === 'set' ? s.elem.kind === 'prim' : s.kind === 'map' ? s.k.kind === 'prim' && s.v.kind === 'prim' : true; /* a clone copies every element too (HTML 2.7.3): a reference element would be a new object, not the source's */ if (!flat) return no('clone of a nested graph (one level of a plain cell only)'); return checkExpr(e.arguments[0]); }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && CB1.has(e.expression.name.text) && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])) { // map and filter (the table's rows), some, every, find, findIndex: a pure one-parameter arrow with an expression body
         const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${m} of a non-array`);
-        const cb = e.arguments[0]; if (cb.parameters.length < 1 || cb.parameters.length > 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken) || !cbParts(cb) || cb.modifiers?.length) return no('callback form');
+        const cb = e.arguments[0]; if (cb.parameters.length < 1 || cb.parameters.length > 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken) || !cbParts(cb) || cb.modifiers?.length) return no(cbFormWhy(cb));
         if ((m === 'map' || m === 'filter') && lambdaDepth) return no('allocation inside a callback');
         if (m === 'map') { const rs = shapeOf(typeOf(e)); if (!rs || rs.kind !== 'arr') return no(`map result type: ${shapeWhy(typeOf(e))}`); }
         if (m === 'find' && (s.elem.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'opt')) return no('find of references (an absent reference is not read)');
@@ -692,8 +699,15 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (ps.length === 2 && shapeOf(typeOf(cb.parameters[1].name))?.kind !== 'prim') return no('callback index type'); // the index: a number the method passes, 0 to the length less one
         checkExpr(e.expression.expression); for (const x of ps) names.add(x); lambdaDepth++; checkCb(cb); lambdaDepth--; for (const x of ps) names.delete(x); return;
       }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0]) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') { // reduce without an initial value: the first item the accumulator, a left fold over the rest; an empty array throws, marking the world
+        const cb = e.arguments[0]; if (cb.parameters.length !== 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken) || !cbParts(cb) || cb.modifiers?.length) return no(cbFormWhy(cb));
+        if (lambdaDepth) return no('reduce without an initial value inside a callback (its empty-array mark has nowhere to go)');
+        const [acc, x] = cb.parameters.map((p) => p.name.text); if (acc === x || names.has(acc) || names.has(x) || acc === HW || x === HW || /_$/.test(acc) || /_$/.test(x)) return no('name reused');
+        const as = shapeOf(typeOf(cb.parameters[0].name)), es = shapeOf(typeOf(e.expression.expression)).elem; if (!as || as.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'prim' || valD(as) !== valD(es) || !shapeOf(typeOf(cb.parameters[1].name))) return no('reduce accumulator type (a primitive, the element type)');
+        usesIndex = true; checkExpr(e.expression.expression); names.add(acc); names.add(x); lambdaDepth++; checkCb(cb); lambdaDepth--; names.delete(acc); names.delete(x); return;
+      }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 2 && ts.isArrowFunction(e.arguments[0]) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') { // reduce with an initial value: a left fold over the items
-        const cb = e.arguments[0]; if (cb.parameters.length !== 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken) || !cbParts(cb) || cb.modifiers?.length) return no('callback form');
+        const cb = e.arguments[0]; if (cb.parameters.length !== 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken) || !cbParts(cb) || cb.modifiers?.length) return no(cbFormWhy(cb));
         const [acc, x] = cb.parameters.map((p) => p.name.text); if (acc === x || names.has(acc) || names.has(x) || acc === HW || x === HW) return no('name reused');
         const as = shapeOf(typeOf(cb.parameters[0].name)); if (!as || as.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'prim' || !shapeOf(typeOf(cb.parameters[1].name))) return no('reduce accumulator type (a primitive)');
         checkExpr(e.expression.expression); checkExpr(e.arguments[1]); names.add(acc); names.add(x); lambdaDepth++; checkCb(cb); lambdaDepth--; names.delete(acc); names.delete(x); return;
@@ -773,7 +787,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         const sh = shapeOf(typeOf(s.expression)); if (!sh || sh.kind !== 'arr') return no('for-of over a non-array');
         const x = dl.declarations[0].name.text; if (names.has(x) || /_$/.test(x)) return no('name reused'); if (!shapeOf(typeOf(dl.declarations[0].name))) return no('loop element type');
         if (bodyAssigns(s.statement, x)) return no('loop element assigned');
-        checkExpr(s.expression); names.add(x);
+        const ix = s.index?.text; // an indexed forEach: its index a plain number the step binds to its position
+        if (ix) { if (names.has(ix) || ix === x || /_$/.test(ix)) return no('name reused'); if (shapeOf(typeOf(s.index))?.kind !== 'prim') return no('callback index type'); if (bodyAssigns(s.statement, ix)) return no('loop index assigned'); }
+        checkExpr(s.expression); names.add(x); if (ix) names.add(ix);
       } else if (ts.isForStatement(s)) {
         const f = indexLoop(s); if (!f) return no('loop form (for (let i = 0; i < a.length; i++) over an array name)');
         if (isReal) return no('index loop in a real file');
@@ -1035,6 +1051,7 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
       else { out.push('function TruncDivI(a: int, b: int): int requires b != 0 { var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }'); out.push('function TruncDivT(a: int, b: int): int { if b == 0 then 0 else TruncDivI(a, b) }'); out.push('function FloorDivT(a: int, b: int): int { if b == 0 then 0 else var q := TruncDivI(a, b); if a - b * q != 0 && (a < 0) != (b < 0) then q - 1 else q }'); } // Math.trunc and Math.floor of an int division
     }
     if (isReal && (divUsed || strUsed.has('truncr'))) out.push('function TruncR(a: real): int { if a < 0.0 then -(-a).Floor else a.Floor }'); // the truncation of a real toward zero
+    if (emptyMarkUsed) out.push('function EmptyMark(hw: HWorld, empty: bool): HWorld { if empty then hw.(oob := true) else hw }'); // reduce without an initial value on an empty array throws a TypeError: not modelled from there
     if (keyMarkUsed) out.push('function KeyMark(hw: HWorld, present: bool): HWorld { if present then hw else hw.(oob := true) }'); // a node read through a key, used where the key was not owned: not modelled
     for (const [key, T] of [...foreignUsed].sort()) { out.push(`function ${key.replace('ForeignSet_', 'ForeignStep_')}(hw: HWorld, k: string, v: ${T}): HWorld`); out.push(`function ${key}(hw: HWorld, k: string, v: ${T}): HWorld { ${key.replace('ForeignSet_', 'ForeignStep_')}(hw, k, v).(oob := hw.oob) }`); } // a field written through Object.prototype's member under key k: a transition of the world, any world after it; the out-of-model flag is the reading's own, kept
     if (strUsed.has('dictkeys')) out.push('function DictKeysJs(keys: seq<string>): seq<string>'); // Object.keys of a dictionary: integer-like keys first, ascending, then the rest in insertion order: a function of the insertion sequence
@@ -1268,6 +1285,13 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
         if (e.expression.name.text === 'filter') { lines.push(`var (${HW}, ${out}) := Filter_${s.key}(${HW}, ${r}, ${lam});`); return out; }
         const rs = shapeExpr(e); mapInstances.add(`${s.key}|${rs.key}`);
         lines.push(`var (${HW}, ${out}) := Map_${s.key}_${rs.key}(${HW}, ${r}, ${lam});`); return out;
+      }
+      if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])) { // ECMA-262 23.1.3.24: no initial value, the first item is the accumulator and the fold visits the rest; an empty array throws a TypeError, which marks the world
+        const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const cb = e.arguments[0]; const ash = shapeOf(typeOf(cb.parameters[0].name));
+        const [acc, x] = cb.parameters.map((p) => p.name.text); const U = valD(ash), E = valD(s.elem);
+        const it = bind(`Items_${s.key}(${HW}, ${r})`, 'it'); emptyMarkUsed = true; lines.push(`var ${HW} := EmptyMark(${HW}, |${it}| == 0);`);
+        inLam++; const body = cbCode(cb, ash); inLam--;
+        return `(if |${it}| == 0 then ${dflt(ash)} else ${helper('Fold', [E, U])}(${it}[1..], ((${dn(acc)}: ${U}, ${dn(x)}: ${E}) => ${body}), ${it}[0]))`;
       }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 2 && ts.isArrowFunction(e.arguments[0])) {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const init = exprAs(e.arguments[1], shapeOf(typeOf(e.arguments[0].parameters[0].name))); const cb = e.arguments[0];
@@ -1514,7 +1538,7 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
     // measure; nothing in the body grows an array, so the guard on the current length decides), the locals the body
     // assigns (returned, in name order), the names it reads; `for (const x of e)` evaluates e once, the index loop
     // reads its array name. The helper is written beside the unit and named <unit>_loop<n>.
-    const helpers = []; let loopId = 0;
+    const helpers = []; let loopId = 0; const keepsMark = new Set(); // the loop helpers whose result keeps the mark of the world they were given
     const base = suffix && fname(u.name).endsWith(suffix) ? fname(u.name).slice(0, -suffix.length) : fname(u.name);
     function loopCall(s) {
       const id = loopId++; const name = `${base}_loop${id}${suffix}`;
@@ -1542,11 +1566,17 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
       const ret = carried.length ? `(HWorld, ${carried.map((c) => c.d).join(', ')})` : 'HWorld';
       const done = carried.length ? `(${HW}, ${carried.map((c) => dn(c.x)).join(', ')})` : HW;
       const saved = lines.splice(0);
-      const head = forOf ? `var ${dn(s.initializer.declarations[0].name.text)} := ${isReal ? 'ItemAt' : 'Idx'}_${sh.key}(${HW}, ${A}, ${ctr});` : ''; // in a real file the counter and the length stay integers (|Items_|) and the item is read totally
+      const head = forOf ? `var ${dn(s.initializer.declarations[0].name.text)} := ${isReal ? 'ItemAt' : 'Idx'}_${sh.key}(${HW}, ${A}, ${ctr});${s.index ? `\nvar ${dn(s.index.text)} := ${isReal ? `(${ctr} as real)` : ctr};` : ''}` : ''; // an indexed forEach's index: the counter, the position (a real of it in a real file) // in a real file the counter and the length stay integers (|Items_|) and the item is read totally
       const lenI = (r) => (isReal ? `|Items_${sh.key}(${HW}, ${r})|` : `Len_${sh.key}(${HW}, ${r})`);
       const bodyText = stmts(block(s.statement), () => `${name}(${args(`${ctr} + 1`, false)})`);
       const still = !/var\s+\(?\s*hw_\b/.test([head, bodyText].join('\n')); // a body that never rebinds the world: the helper returns the world it was given (proved by its own recursion), so a mark after the loop reads the world before it
-      helpers.push([`function ${name}(${params.join(', ')}): ${still ? `(r_: ${ret})` : ret}`, ...(still ? [`  ensures ${carried.length ? 'r_.0' : 'r_'} == ${HW}`] : []), `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < ${lenI(A)}) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
+      // a body whose every rebinding of the world is a field write (Set_, which never marks) or a loop helper that keeps
+      // the mark: the helper returns a world with the mark it was given (proved by its own recursion), so a lemma that
+      // shows no mark after the loop needs no induction over it (an INRANGE unit's loop of field writes)
+      const keeps = !still && [head, bodyText].join('\n').split('\n').every((l) => { if (!/\bvar\s+\(?\s*hw_\b/.test(l)) return true; const m = /\bvar\s+(?:hw_|\(\s*hw_\b[^)]*\))\s*:=\s*([A-Za-z_][A-Za-z0-9_]*)\(/.exec(l); return !!m && (/^Set_/.test(m[1]) || keepsMark.has(m[1])) && !/\bvar\s+\(?\s*hw_\b/.test(l.slice(m.index + m[0].length)); });
+      if (keeps) keepsMark.add(name);
+      const R = carried.length ? 'r_.0' : 'r_';
+      helpers.push([`function ${name}(${params.join(', ')}): ${still || keeps ? `(r_: ${ret})` : ret}`, ...(still ? [`  ensures ${R} == ${HW}`] : keeps ? [`  ensures ${R}.oob == ${HW}.oob`] : []), `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < ${lenI(A)}) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
       lines.push(...saved);
       const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', lenI(arr), ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
       // a helper that returns the world it was given leaves this one's world as it is (its ensures), so a loop around it
