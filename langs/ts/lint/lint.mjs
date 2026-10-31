@@ -265,6 +265,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   let thisParam = null; // the current free function's declared `this` parameter: its receiver operand, written and read like any parameter
   const RECEIVER_WRITE = 'a write through the declared `this` of a free function rebuilds a nonoptional data record; a class, array, dictionary or optional receiver (or a container on the path) has no such value: take the value as a parameter and return the new one';
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
+  const indexedForEach = []; // the forEach statements with an index read as their loop: advice only (opts.advisory), the converter's counted for
   let switchDepth = 0;
   let loopDepth = 0;
   const promiseCallbacks = new Set(); // inline promise bodies have their own fault channel
@@ -1681,7 +1682,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
             let use = e; while (use.parent && ts.isParenthesizedExpression(use.parent)) use = use.parent;
             const outer = use.parent;
             if (!(outer && (ts.isExpressionStatement(outer) || (ts.isArrowFunction(outer) && outer.body === use && outer.parent && ts.isCallExpression(outer.parent) && ts.isPropertyAccessExpression(outer.parent.expression) && outer.parent.expression.name.text === 'forEach')))) return v(e, 'foreach', 'forEach is read as a statement; put it in a block before returning a value');
-            expr(recv); checkCallbackControl(cb);
+            expr(recv); checkCallbackControl(cb); if (indexed) indexedForEach.push(e);
             checkType(tOf(cb.parameters[0].name), cb.parameters[0]);
             loopDepth++; forEachDepth++;
             try { if (ts.isBlock(cb.body)) stmts(cb.body.statements); else exprStmt(cb.body); } finally { loopDepth--; forEachDepth--; }
@@ -2441,6 +2442,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       ts.forEachChild(node, walkAdvice);
     };
     walkAdvice(sf);
+    // an indexed forEach is read as its loop (heap-stage5.md 11d); the counted for the converter writes (convert/foreach.mjs)
+    // names the index as the loop does, a migration a person may take, never a refusal
+    for (const c of indexedForEach) note(c, 'foreach', 'forEach with an index is read as the loop over the positions; a counted for states the index and the element');
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
