@@ -534,7 +534,8 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     # sites, writes}`. Tree equality implies graph equality only when the unit is not exposed, or when both sides have one
     # readable identity shape and the shapes agree. Otherwise the Equal lemma is withheld: the proof lane says nothing and
     # the bounded run decides (ASK:identity). A candidate identical to the parent by text (Dafny-identical, and for an
-    # exposed unit the same source) is the same function and keeps its lemma whatever its shape.
+    # exposed unit that writes a node it did not allocate the same source) is the same function and keeps its lemma
+    # whatever its shape.
     guards = {}
     for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
         for m in re.finditer(r'^// GUARD ([A-Za-z_][A-Za-z0-9_]*): (.+)$', text, flags=re.M):
@@ -574,10 +575,11 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         gp, gc = g['parent'], g['candidate']
         if not gp.get('exposed') and not gc.get('exposed'):
             continue
-        # an exposed unit's value reading is a tree, not the graph (a write through another name of an input may leave
-        # no trace in it), so Dafny-identical bodies are the same function only when the two sources are the same
-        # (`// SOURCE`, as for an in-range unit); bodies identical in Dafny alone keep the guard
-        if f in aliased and f in same_source:
+        # an exposed unit that writes a node it did not allocate carries its source (`// SOURCE`): the value reading
+        # writes a copy, which may leave no trace in the Dafny text (a write through another name of an input), so
+        # Dafny-identical bodies are the same function only when the two sources are the same, as for an in-range
+        # unit. A unit exposed by its result alone shows the result's identity in its terms (a copy is Copy_<T>)
+        if f in aliased and (f in same_source or f not in sources):
             continue
         aliasable = gp.get('aliasable') or gc.get('aliasable')
         if aliasable:  # two input positions of one shape may be one object, and the unit writes through one: the value reading says nothing
