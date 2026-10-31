@@ -107,8 +107,19 @@ try {
   write('fresh.ts', "register('only', 1);\n"); git('add', 'fresh.ts'); // tracked: an untracked file is outside the diff
   const fresh = routeChanges(buildChangeManifest({ repo: tmp, base: initBase, head: 'WORKTREE' }));
   const freshEdits = fresh.edits.filter(e => e.file === 'fresh.ts');
-  assert(freshEdits.length >= 1 && freshEdits.every(e => e.primary.kind === 'unassigned' && e.primary.reason === 'module-level statement'), 'an added file has no parent evaluation to compare: its statements stay named and unassigned');
+  // A file present on one side only: its module unit is that side's alone (NEW at the head, removed at the parent), as a
+  // function present on one side is; its statements are that unit's, never unassigned.
+  assert(freshEdits.length >= 1 && freshEdits.every(e => e.primary.kind === 'unit' && e.primary.unit === '(module)' && e.primary.side === 'new' && e.links.length === 1 && e.links[0].unit === '(module)'), 'an added file\'s statements are its module unit\'s');
+  assert.equal(ledgerRowsOf(fresh).filter(r => r.file === 'fresh.ts').length, 0, 'no unassigned row is left for an added file\'s statements');
+  assert.equal(reconcileEdits(fresh).complete, true);
   git('rm', '-qf', 'fresh.ts');
+  git('rm', '-q', 'init.ts'); // tracked removal: the parent's statements of a deleted file
+  const dropped = routeChanges(buildChangeManifest({ repo: tmp, base: initBase, head: 'WORKTREE' }));
+  const droppedEdits = dropped.edits.filter(e => e.file === 'init.ts');
+  assert(droppedEdits.filter(e => e.old.start === 2).every(e => e.primary.kind === 'unit' && e.primary.unit === 'g' && e.primary.side === 'old'), 'a deleted file\'s function stays its function\'s');
+  assert(droppedEdits.filter(e => e.old.start !== 2 && e.old.count).length >= 3 && droppedEdits.filter(e => e.old.start !== 2 && e.old.count).every(e => e.primary.kind === 'unit' && e.primary.unit === '(module)' && e.primary.side === 'old'), 'a deleted file\'s statements are its module unit\'s');
+  assert.equal(ledgerRowsOf(dropped).filter(r => r.file === 'init.ts').length, 0, 'no unassigned row is left for a deleted file\'s statements');
+  git('reset', '-q', 'HEAD', '--', 'init.ts'); git('checkout', '-q', '--', 'init.ts');
   write('configuration.ts', 'export function configure(x: number) { return x + 1; }\n');
   git('add', '-A'); git('commit', '-qm', 'classified source base'); const classifiedBase = git('rev-parse', 'HEAD');
   write('configuration.ts', 'export function configure(x: number) { return x + 2; }\n');

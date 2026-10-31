@@ -2,6 +2,7 @@
 // constant, a unit exported by one module and imported by this one (directly, or through a module that re-exports it)
 import { LIMIT, grow, label } from './limits';
 import { FIRST as NAME } from './limits';
+import * as ns from './limits';
 
 const MAX = 10;
 let seen = 0;
@@ -48,4 +49,24 @@ export function relayed(i: Item): number {
 
 export function step(s: string): string {
   return label(s);
+}
+
+export function spaced(i: Item): boolean {
+  return i.id < ns.LIMIT;
+}
+
+export function tagged(i: Item): string {
+  return i.name + ns.FIRST;
+}
+
+export function routed(i: Item): boolean {
+  return i.id < ns.LIMIT;
+}
+
+export function joined(i: Item): boolean {
+  return i.id < LIMIT;
+}
+
+export function grown(i: Item): number {
+  return ns.grow(i.id);
 }

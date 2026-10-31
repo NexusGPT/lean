@@ -3,6 +3,8 @@
 import { LIMIT, grow } from './limits';
 import { SECOND as NAME } from './limits';
 import { grow as relay, label as mark } from './lib';
+import * as ns from './limits';
+import * as lib from './lib';
 
 const MAX = 10;
 let seen = 0;
@@ -49,4 +51,24 @@ export function relayed(i: Item): number {
 
 export function step(s: string): string {
   return mark(s);
+}
+
+export function spaced(i: Item): boolean {
+  return i.id < ns.LIMIT;
+}
+
+export function tagged(i: Item): string {
+  return i.name + ns.SECOND;
+}
+
+export function routed(i: Item): boolean {
+  return i.id < lib.LIMIT;
+}
+
+export function joined(i: Item): boolean {
+  return i.id < ns.LIMIT;
+}
+
+export function grown(i: Item): number {
+  return lib.grow(i.id);
 }
