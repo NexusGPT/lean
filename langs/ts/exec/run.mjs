@@ -859,7 +859,7 @@ const treeFunctions = (v, pick, at = [], out = []) => { if (Array.isArray(v)) { 
 // function is observed by what it does when called, and what a held function does after a re-render is reached only by
 // calling it, letting React re-render, and calling the new one (design/callbacks.md)
 const treeHandlers = (v) => [...treeFunctions(v, (k, x) => /^on[A-Z]/.test(k) && typeof x === 'function'), ...treeFunctions(v, (k, x) => !/^on[A-Z]/.test(k) && typeof x === 'function' && !x.__isFake)];
-// the render row's targets (bound.render.targets, design/render-row.md): per handler label, the props that make its
+// the render row's targets (bound.render.targets, design/certificate-timing.md, 2026-10-31): per handler label, the props that make its
 // element addressable on a page (key, id, data-testid, role, aria-label as the name), each a string or number else null;
 // read from a raw tree (every command label of treeHandlers) or an observed one (an `on[A-Z]` prop observed as $handler)
 const addressable = (x) => (typeof x === 'string' || typeof x === 'number' ? x : null);
@@ -1303,7 +1303,7 @@ async function runPairOnce(opts) {
       else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     } else { const u = undrivenOf(oP) ?? undrivenOf(oC); if (u) (diffs.undriven ??= []).push({ input: i, reasons: [u] }); } // equal, with a callback lean could not drive: the gap is carried
   }
-  // the render row (design/render-row.md): whether the unit returned an element, lean's clock epoch and head (the witness
+  // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run
   const renderRow = { component: states.some((x) => Object.hasOwn(x, 'tree') && isJsxValue(x.tree)), clock: { epoch: CLOCK_EPOCH }, sequences: [], targets: [], leanHead: opts.recordHead ?? 'unknown' };
