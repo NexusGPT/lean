@@ -1,0 +1,7 @@
+{
+ "scope": ["stem", "ext", "rule", "head", "line", "retag"],
+ "equal": {"stem": false, "ext": true, "rule": true, "head": true, "line": true, "retag": true},
+ "why": "the string methods of design/heap-stage5.md section 5 the heap core refused at its first reading, read through the ordinary lane's exact helpers in the core: stem keeps the last dot where the parent drops it (unproved, WITNESS on a title with no dot: the parent drops its last character); ext is lastIndexOf against lastIndexOf from the end (proved: the position clamped); rule is a repeat by a non-negative integer literal against its three dashes (proved); head is a split limited to two pieces against the first two pieces of the whole split (proved: a limit takes a prefix); line is concat of two strings against +; retag writes a split limited to one piece against the first piece sliced from the whole split (proved).",
+ "b": {"stem": "WITNESS", "ext": "PASS-bounded", "rule": "PASS-bounded", "head": "PASS-bounded", "line": "PASS-bounded", "retag": "PASS-bounded"},
+ "heap": true
+}
