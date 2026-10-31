@@ -42,6 +42,7 @@ export class Environment {
     this.shapes = null;     // the unit's spec (defs, literals, strings, regexes, receiver, imports): typed answers draw from it
     this.world = null;      // a full-world input (enterWorld): its turn and the caller's keys, else null
     this.scheduler = null;  // the race explorer's hold (program.mjs): every promise the world answers waits for its release; null is the default schedule
+    this.handedLog = null;  // while a render is checked for purity, the world's writes to the objects it was handed (handedMark)
   }
   // clock answers advance with the seeded history and are recorded beside port requests
   clock(path, args = [], op = 'call') {
@@ -86,10 +87,19 @@ export class Environment {
         const d = Object.getOwnPropertyDescriptor(o, k);
         if (!d || !Object.hasOwn(d, 'value') || !d.writable) continue;
         const v = d.value, nv = typeof v === 'number' ? (Number.isFinite(v) ? v + 1 : 0) : typeof v === 'string' ? `${v}~` : typeof v === 'boolean' ? !v : undefined;
-        if (nv !== undefined) o[k] = nv; // seen through the object, by every name of it
+        if (nv !== undefined) { o[k] = nv; this.handedLog?.push({ o, k, was: v, now: nv }); } // seen through the object, by every name of it; journaled while a render is checked for purity (handedMark)
       }
     });
   }
+  // The world's writes to handed objects since a mark, as a journal (exec/run.mjs, the purity check): a render that hands
+  // an object to the world sees the world's write, and the check's second render must start from the state the first
+  // started from, its world writing the same again (the calls are counted from the same index), or the world's own write
+  // reads as the component's impure render. Undone in reverse, each field only while it still holds the world's value:
+  // a field the unit wrote after the world is the unit's, never undone, so its own write to what it was handed still shows.
+  handedMark() { const outer = this.handedLog; this.handedLog = []; return outer; } // returns the enclosing journal, handed back to handedTake
+  handedTake(outer) { const log = this.handedLog ?? []; this.handedLog = outer; return log; }
+  handedUndo(log) { for (let i = log.length - 1; i >= 0; i--) { const { o, k, was, now } = log[i]; if (Object.is(o[k], now)) o[k] = was; } }
+  handedRedo(log) { for (const { o, k, was, now } of log) if (Object.is(o[k], was)) o[k] = now; }
   // an object the unit holds as an any value too (exec/korat.mjs): its own fields are the object's, a member it lacks
   // is a fake whose call may write the object (its receiver) and what it is handed
   view(path, obj) {

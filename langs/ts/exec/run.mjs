@@ -840,20 +840,23 @@ async function observeWindow(side, spec, args, ms) {
   try {
     const slotsBefore = (env.hookSlots ?? []).slice(), framesBefore = cloneFrames(env.childFrames), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
     const call = () => { const r = guardedCall(env, () => unit.call(args), ms); returnedPromise = promiseName(r); return r; }; // a promise the world made and the unit returned as it is: its name joins the outcome
-    let v = await commitRender(env, call, ms);
+    // each render's own pending continuations settle before its requests are read: work a render started (a promise
+    // chain in a hook) is that render's, never the next render's, so the two traces compare like with like
+    const settleRender = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); };
+    const outerHanded = env.handedMark(); // the world's writes to the objects the first render hands it, journaled (fake.mjs writeHanded)
+    let v, handed1;
+    try { v = await commitRender(env, call, ms); if (isJsxValue(v) && env.react) await settleRender(); } finally { handed1 = env.handedTake(outerHanded); outerHanded?.push(...handed1); }
     outcomeSite = env.siteState?.completed ?? null;
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
-      // each render's own pending continuations settle before its requests are read: work a render started (a promise
-      // chain in a hook) is that render's, never the next render's, so the two traces compare like with like
-      const settleRender = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); };
-      await settleRender();
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
       const framesAfter = env.childFrames; env.hookSlots = slotsBefore.slice(); env.childFrames = cloneFrames(framesBefore); env.calls = new Map(callsBefore); env.demand = demandBefore; // a deep child's frames start the second render as they started the first
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) };
       const paused = pauseEscapes(env); // the second render's functions are new objects the observation never shows: numbered, not driven
       let second;
-      try { const v2 = await commitRender(env, call, ms); await settleRender(); second = { tree: render(v2), trace: env.trace.slice(traceAfter) }; } finally { resumeEscapes(env, paused); }
+      env.handedUndo(handed1); // the props as the first render was handed them: the world's write is the world's, and the second render's world (its calls counted from the same index) writes it again
+      const outer2 = env.handedMark();
+      try { const v2 = await commitRender(env, call, ms); await settleRender(); second = { tree: render(v2), trace: env.trace.slice(traceAfter) }; } finally { resumeEscapes(env, paused); env.handedUndo(env.handedTake(outer2)); env.handedRedo(handed1); } // what the world wrote in the one render the observation keeps, the first
       env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.childFrames = framesAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(canonHandles(first)) !== JSON.stringify(canonHandles(second))) return { impure: { first, second } }; // each render makes its own closures: a function is compared by its place (handles renamed by first sight in each render), what it does is driven
     }

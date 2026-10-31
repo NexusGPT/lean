@@ -867,6 +867,30 @@ Pair `outside_calls`: `used_once`, `used_twice` (two fields of a returned refere
 (WITNESS), `read_first` (WITNESS), `guarded` (WITNESS) unproved. Census before and after: lane result
 `lane/core-outside-calls-result.md`.
 
+### 15c. The objects a fake is handed, and the purity check's two renders (2026-10-31, lane fix-render-impure-handed)
+
+Lane B's side of "the transition may write every object": since 59c02366e a fake's call writes the primitive fields of
+each plain object it is handed, on a seeded draw (`exec/fake.mjs` writeHanded). The purity check
+(`exec/run.mjs` observeWindow) renders a component twice from one state and refuses it when the two trees or traces
+differ. Its invariant: the two renders see the same props and the same world answers. It restored the hook slots,
+the child frames, the call counters and the demand, but not the objects the world wrote. A render that hands a prop
+object to the world (`runtime.cardRuntime(card)` in R8's BoardRow) saw `{title: "a"}` in the first render and the
+world's write `{title: "a~~"}` in the second. Lean's own write was reported as the component's impure render. The
+parent was refused (REFUSE render-impure, side parent), and with it every mutant of the component: R8 went from 42
+to 38 of 71, the four BoardRow mutants.
+Reading: the world's writes to handed objects are journaled while the first render runs (`handedMark`, `handedTake`).
+Before the second render they are undone, so it starts from the state the first started from. Its world, counted from
+the same call index, makes the same writes again. After the second render its own writes are undone and the first
+render's are replayed, because the observation keeps one render, the first. A field is undone only while it still holds
+the world's value. A field the unit wrote after the world (`card.title = card.title + "!"`) is the unit's write and stays,
+so a component that writes its own props in render is still refused. writeHanded is unchanged everywhere: the pooled
+record views it was added for (`alias_after_call`, `blocker_opaque_receiver`) read as before.
+Pair `render_handed_card`: `Cards` (unchanged, hands each card) PASS-bounded, `Row` (the effect's dependency dropped)
+WITNESS, `Marked` (writes its prop after the world's call) REFUSE on both sides. `Cards` and `Row` read REFUSE at
+v0.1.3. Runtime row `render-handed` (`tests/render-handed.mjs`): the journal's undo and replay, and BoardRow
+(`tests/fixtures/render-handed-boardrow`, the census copy) against itself PASS-bounded and its four mutants
+(drop-dep, key-index, flip-conditional, change-text) WITNESS.
+
 ## 16. Map and Set with record keys or items, the copy forms
 
 Reading: a Map's keys and a Set's items may be references (`Set<Tag>`, `Map<Tag, number>`): the table's rows already
