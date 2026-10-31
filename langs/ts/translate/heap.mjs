@@ -84,6 +84,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     t = parts[0];
     if ((t.flags & TF.TypeParameter) && t.isThisType) { t = checker.getBaseConstraintOfType(t); if (!t) return null; } // `this` in an instance method: the class's instance type
     if (t.flags & TF.TypeParameter) { const b = boundShape(t, depth); return b; } // a type parameter bounded by a record (an intersection of records): the record of the bound's fields
+    if (t.flags & (TF.StringLiteral | TF.NumberLiteral)) { const l = literals([t]); if (l) return l; } // one literal (`kind: 'circle'`, a union alternative's discriminant) is its primitive holding that value, as a union of literals is
     if (t.flags & TF.NumberLike) return { kind: 'prim', d: NUM };
     if (t.flags & TF.StringLike) return { kind: 'prim', d: 'string' };
     if (t.flags & TF.BooleanLike) return { kind: 'prim', d: 'bool' };
@@ -186,10 +187,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   }
   // a field every alternative of a union declares the same way: read through whichever constructor the cell holds
   const unionField = (s, name) => { const fs = s.alts.map((a) => fieldOf(a.shape, name)); return fs.every((g) => g && fieldD(g.shape) === fieldD(fs[0].shape) && keyOf(g.shape) === keyOf(fs[0].shape)) ? fs[0] : null; };
-  // `'a' | 'b'` or `1 | 2`: the primitive with its values (`values`); the shape key is the primitive's, so a field of a
+  // `'a' | 'b'` or `1 | 2` (or one literal, `'a'`): the primitive with its values (`values`); the shape key is the primitive's, so a field of a
   // literal union and a field of its primitive are one constructor (one object may be seen through both types)
   function literals(types) {
-    if (types.length < 2 || types.some((x) => x.flags & TF.EnumLiteral)) return null;
+    if (!types.length || types.some((x) => x.flags & TF.EnumLiteral)) return null;
     if (types.every((x) => x.flags & TF.StringLiteral)) return { kind: 'prim', d: 'string', values: types.map((x) => x.value).sort() };
     if (types.every((x) => x.flags & TF.NumberLiteral) && types.every((x) => Number.isInteger(x.value) && x.value >= 0)) return { kind: 'prim', d: NUM, values: types.map((x) => x.value).sort((a, b) => a - b) }; // non-negative integers: the int reading writes them as they are
     return null;

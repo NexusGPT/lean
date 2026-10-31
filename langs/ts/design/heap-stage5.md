@@ -690,6 +690,22 @@ leaves a number update of a union member unplaced, as `heap5_unions`' `grow`), `
 Red on the base (5 of 15 checks fail), all pass after. Lint: unchanged. Census: the lane's result file
 (`lane/core-discriminated-unions-result.md`).
 
+### 12b. An alternative's hypothesis states its discriminant (2026-10-31)
+
+A reference typed as one alternative (`c: Circle`, `Circle = { kind: 'c'; r: number }`) had the hypothesis
+`IsR_<Circle>(hw_, c)` and nothing about `kind`: the hypothesis states a field's literals only for a union of two or
+more (`literals`), and one literal read as its plain primitive. Shapes are views, so the constructor alone does not
+say which alternative the cell holds, and `size(c)` for `size(s: Shape)` could take the `Square` branch:
+`circ` (`return size(c)` against `return c.r`) was not proved. Reading: one literal (`'c'`, a non-negative integer
+`3`) is its primitive holding that value, as a union of literals is (`shapeOf`, `literals` of one type); the key is the
+primitive's, so no constructor changes. The hypothesis then states what the type says, one rule wherever a reference
+parameter's field (or a primitive parameter, or a captured `const`) has a literal type:
+`IsR_<Circle>(hw_, c) && Get_<Circle>_kind(hw_, c) == "c"`.
+Soundness: the hypothesis holds on entry, where TypeScript's type gives the value; it says nothing about the world after
+a write, and nothing in the core writes a discriminant of an alternative (section 12). Pair `wider_record_argument`:
+`circ` not proved at base, proved now (9 checks). Across every pair's heap translation only hypotheses change:
+`type_tests` `structural` (`kind == "public"`), `callback_units` (`offset == 2`), both ALL PASS.
+
 ## 13. Arithmetic
 
 Reading: `*` is exact; `%` is the truncated remainder (the dividend's sign), `RemT_int`, and in a real file `/` is
@@ -1063,7 +1079,8 @@ caller leaves the core, and its callee with it (one calling convention per calle
 checks): `who` passes a `Person` to `greet(p: Named)`; lane A proved it equal to `return ""` at base, now not proved
 (WITNESS). `circ` passes a `Circle` to `size(s: Shape)` and stays in the core with `size`. It is not proved, at base as
 now, because its hypothesis `IsR_<Circle>(hw_, c)` does not state the alternative's discriminant value, so `size` may
-take the other branch. That is an incompleteness of the hypothesis, left as it is.
+take the other branch. That is an incompleteness of the hypothesis, left as it is. (Read since, section 12b: the
+hypothesis states `kind == "c"`, and `circ` is proved.)
 
 **The step cache keys a Dafny input with every file it includes** (`tests/stepcache.mjs` `withIncludes`). The theorem
 step reads `parent.dfy` and `candidate.dfy`, and theorem.py merges the `.pre.dfy` each includes. The key held only the
