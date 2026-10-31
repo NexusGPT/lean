@@ -126,7 +126,16 @@ the file was proved), `total` (a loop over `xs ?? []`: proved), `bumped`
 against a block: proved; returning `t?.tags ?? []` itself is withheld by the identity guard, a result that may carry
 an input's array), `blank` (`Object.keys(d ?? {}).length` against a test of d: proved, unproved before),
 `named` (untouched expression body). Lint: unchanged (the lint admits every form here).
-CENSUS_PLACEHOLDER
+Census (`census.mjs`, base b5c074508 against 776f55c7b, each root alone; nexus in 54 `--include` pieces, 53 counted
+here: the base's whole-root run was killed by the machine's OOM killer, and piece 39 runs last), no unit lost:
+```text
+n8n:          9,610 units, entered 2,680 -> 2,683 (2 copied-argument -> entered, 1 nested with them)
+langchainjs:  6,709 units, entered 2,766 -> 2,767 (1 copied-argument -> entered; 1 copied-argument -> read-after-call)
+nexus (53/54): 31,162 units, entered 16,724 -> 16,729 (1 copied-argument, 1 read-after-call -> entered; 3 nested)
+```
+Every unit that moved is an empty `[]` of primitives handed to a call, which `copied-argument` and `read-after-call`
+judged by never[] as an array that may hold objects. No census unit moved by the `??` or `{}` reading: those change what
+lane A proves (pair `empty_literals`), not what the lint admits.
 
 ## 3. Conditional expressions
 
