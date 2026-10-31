@@ -290,6 +290,29 @@ Census (resolved, 39 roots), strict graph 706 -> 735, own syntax 1759 -> 1853; `
 {"files":23359,"units":53918,"core":735,"heapOwnFit":1853,"mirrorMismatch":1711,"planErrorCount":0,"seconds":330}
 ```
 
+### 13, 2026-10-31: the bitwise reading over doubles the model does not hold
+What was lost: the faithful number reading (`translate/faithful.mjs`, `design/doubles.md`, 29 Oct) read a bitwise
+operator as exact only when both operands were exact; on a field, a parameter or a call result it became an
+uninterpreted `Math.__lean_bitor` and kin. Those symbols commute for nothing, so the lemma lost every proof this
+section gives (pair `heap5_arith` `bump`, `|` with its operands swapped: proved on 27 Oct, unproved since 8b4cf444).
+The binary64 decision proves the pure-value units again, but it does not encode a field write.
+What is read: a bitwise operator reads ToInt32 of its operands (ToUint32 for the left of `>>>` and for a shift count:
+the same 32 bits, which the helpers read modulo 2^32). Its result is an int32 (a uint32 for `>>>`) whatever the double
+holds, so the result is exact in the faithful reading, with the interval I32 (U32). An operand the model does not hold
+passes through one uninterpreted function, `Math.__lean_toint32` (the same symbol on both sides, an integer the helper
+reads modulo 2^32). The operator is then the ordinary lane's bv32 helper, as this section says. `~x` is read the same
+way. One mechanism: `exactOf` (a bitwise result is exact), and `bitOperand`, which wraps such an operand in `text`.
+Soundness: under the interpretation of `__lean_toint32` as ToInt32 of the double, each helper computes JavaScript's
+operator. The value of the uninterpreted function is used only modulo 2^32, so no range is assumed for it.
+What stays out: the bitwise compound writes (`|=` and kin: the lint refuses them, as above). A chain of bitwise
+operators whose lemma needs the 32 bits to survive the int round trip (`x & ~1` against `(x >> 1) << 1`): the reading
+is exact, but Z3 4.12 does not decide `bv2int` against `int2bv` within the time limit. Reading the chain as one bv32 term
+with a single ToInt32 at its top was tried and left out: Z3 still times out once `bv2int` appears in the query, even
+with the bv32 equality given as an assertion. Pair `arithmetic_core` keeps that unit (`clearlow`) unproved and names it.
+Pair `arithmetic_core` (a real file): the proved units are `orflag`, `toint`, `nibble`, `twice`, `uint`, `shift`,
+`bump`, `ratio`, `setflag`, `stamp` and `store`. Witnessed: `parity` and `orwitness` (binary64), `setwitness` (lane B).
+`heap5_arith` `bump` is proved again.
+
 ## 14. Pure globals
 
 Reading: a global of the platform (never a name the file declares), each a function of its arguments: `Math.max` and
