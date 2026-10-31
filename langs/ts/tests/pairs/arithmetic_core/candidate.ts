@@ -66,3 +66,7 @@ export function store(c: Cell): void {
 export function setwitness(c: Cell): void {
   c.flags = c.flags | 8;
 }
+
+export function lenparity(xs: number[]): number {
+  return xs.length % 2;
+}

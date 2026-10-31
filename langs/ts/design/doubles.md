@@ -117,7 +117,8 @@ pure external keyed by name and types, the same symbol on both sides. The rewrit
 - an operand of a bitwise operator (`~` included): ECMA-262 6.1.6.1 reads each operand through ToInt32 (ToUint32 for a
   shift count and the left of `>>>`, both ToInt32 modulo 2^32), so the operand alone becomes `Math.__lean_int32(x)`,
   an uninterpreted int32, and the operator stays, read exactly by the translator (`bitwiseOf`: `x | 0`, `0 | x`,
-  `x ^ 0`, `~~x` and a shift by a literal count of low five bits 0 are all JsInt32 of it; heap-stage5.md 21b);
+  `x ^ 0`, `~~x` and a shift by a literal count of low five bits 0 are all the bits of it; heap-stage5.md 21b; the
+  chain is one inline bv32 term and `x & (2^k - 1)` reads through the low-bits lemma, design/bitwise-lemmas.md);
 - truthiness (`Math.__lean_truthy`): a condition, `!`, `&&`, `||`;
 - the exact Math functions over an opaque argument;
 - a compound assignment or an update statement, rewritten as `x = Math.__lean_add(x, 1)`.
