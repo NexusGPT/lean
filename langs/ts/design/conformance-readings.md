@@ -229,6 +229,26 @@ the base: the section is read as it says.
 - The census is lint-only, and neither the lint nor the lowering changed: before and after are the same counts
   (lane/conformance-this-m-result.md).
 
+### 2026-10-31: a member with no unit is named by its code, never by its bare name (lane fix-shifted-false-proof)
+
+The obligation above withheld `Shifted.run`'s verdict, but the lemma under it was a false proof: the proof hunt
+(tests/run.mjs proofHunt) found lane A proving `Equal_shifted_run` while lane B witnessed at 420 (842 against 844).
+The unsound rule: a call whose member has no unit and no inherited key (`this.#m()`, `o.#m()`, `this.f()` for a field
+holding a function, `super.m()` or `a?.m()` on such a member, a member of a class another source file declares) was an
+external named `<T>_<m>`, the bare name. Both sides called one uninterpreted function, so an unchanged caller proved
+equal over a changed `#m`, whatever the obligation said. (The bare name also dropped the `#`: `this.#m()` and `this.m()`
+shared a name.)
+
+- `reach.mjs memberKeyText(access)`: the key of every declaration of the member as a class member in a source file
+  (its reach, as `keyText` reads it), and every member of that name a class of this file below the declaring class
+  declares (the one a subclass instance runs; a `#m` has none). `translate.mjs memberCode` appends `_code_<hash>` to
+  the external's name at the four bare-name fallbacks (this, super, optional call, a member on a record or opaque
+  value). A member declared only by a type (an interface, a record) or a declaration file keeps the bare name: its
+  code is the environment's, one on both sides.
+- So the two sides share the external exactly when the member's code is the same text: `Shifted.run` is not proved
+  (`shifted_run` false in the pair), `Named.run` stays not proved, the units over an unchanged `#m` still prove.
+  The obligation stays as it was. Inlining `#m` as a unit (the complete reading) is still left to the unit list's lane.
+
 ## What stays as it was
 
 - `super.m()` keeps `inheritedKeyText`. A static method's `this.m()` keeps its reading (a static unit naming `this`

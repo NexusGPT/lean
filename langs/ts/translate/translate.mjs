@@ -1516,6 +1516,10 @@ function translateOnce(file, fnName, opts = {}) {
   // site's own text, so two sides reaching the receiver by other locals name one request
   // an instance method a same-file class inherits: the nearest same-file class above c declaring a non-static method
   // named name (the chain's first declaring class), or null when c declares it, or no same-file base does
+  // a member call read as an external because lane A holds no unit for the member (a #m method, a field holding a
+  // function, a class member of another source file): named by the code the class declares for it (reach.mjs
+  // memberKeyText), so a changed member under an unchanged caller is another external; '' for a member of a type alone
+  function memberCode(f) { const k = reachOf.memberKeyText(f); return k ? `_code_${hash(k)}` : ''; }
   function inheritedSameFileMethod(c, name) {
     const ch = chainOf(c); const owner = ch.classes.find((k) => k.members.some((m) => ts.isMethodDeclaration(m) && m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === K.StaticKeyword)));
     return owner && owner !== c ? owner : null;
@@ -4782,7 +4786,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if (LOCALE_READS.has(name) && (pt.flags & (TF.NumberLike | TF.BigIntLike | TF.StringLike))) { const P = dtype(pt, n); return externalCall(`${pt.flags & TF.BigIntLike ? 'bigint' : pt.flags & TF.StringLike ? 'str' : P}_${name}`, n, [...n.arguments], `${v}.value`, P, true, `${v}.Some?`); }
       }
       const Td = isAny(base) ? anyType() : dtype(base, n);
-      return externalCall(`${awaited ? 'await_' : ''}${isAny(base) ? 'Any' : Td}_${name}`, n, [...n.arguments], `${v}.value`, Td, null, `${v}.Some?`);
+      return externalCall(`${awaited ? 'await_' : ''}${isAny(base) ? 'Any' : Td}_${name}${memberCode(f)}`, n, [...n.arguments], `${v}.value`, Td, null, `${v}.Some?`);
     }
     if (recv.kind === K.SuperKeyword && classOf(currentUnit)) {
       // `super.m(args)`: the parent class's method on this receiver, a transition of the world (its body is not read here),
@@ -4792,7 +4796,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       const T = selfType(currentUnit);
       const inherited = reachOf.inheritedKeyText(n);
       if (inherited.key) { if (!inherited.admitted) superObligations.add(`${currentUnit.name}\u0000${name}`); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_of_${inherited.base}_${createHash('sha256').update(inherited.key).digest('hex').slice(0, 16)}`, n, [...n.arguments], SELF, T, true); }
-      return externalCall(`${awaited ? 'await_' : ''}super_${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
+      return externalCall(`${awaited ? 'await_' : ''}super_${mangle(T)}_${name}${memberCode(f)}`, n, [...n.arguments], SELF, T, true);
     }
     if (recv.kind === K.ThisKeyword && (classOf(currentUnit) || literalOf(currentUnit))) {
       const callee = ownUnit(currentUnit, name);
@@ -4816,7 +4820,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       // transition; where the reading does not hold the name stays unkeyed and the cell audit keeps the read an obligation
       const inherited = reachOf.inheritedKeyText(n);
       if (inherited.key) { if (inherited.admitted) inheritedReads.add(`${currentUnit.name}\u0000${name}`); return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}_of_${inherited.base}_${createHash('sha256').update(inherited.key).digest('hex').slice(0, 16)}`, n, [...n.arguments], SELF, T, true); }
-      return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}`, n, [...n.arguments], SELF, T, true);
+      return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_${name}${memberCode(f)}`, n, [...n.arguments], SELF, T, true);
     }
     {
       // a method of a same-file class: on the class itself (static) or on a receiver typed by it; the file's own unit
@@ -5049,7 +5053,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     if (LOCALE_READS.has(name) && (base.flags & (TF.NumberLike | TF.BigIntLike))) { const T = dtype(base, n); return externalCall(`${base.flags & TF.BigIntLike ? 'bigint' : T}_${name}`, n, [...n.arguments], expr(recv), T, true); }
     // a method on a record or an opaque value: uninterpreted, keyed by the receiver type
     const T = dtype(base, n);
-    return externalCall(`${awaited ? 'await_' : ''}${T}_${name}`, n, [...n.arguments], expr(recv), T);
+    return externalCall(`${awaited ? 'await_' : ''}${T}_${name}${memberCode(f)}`, n, [...n.arguments], expr(recv), T);
   }
 
   // ----- shared statement analysis -----
