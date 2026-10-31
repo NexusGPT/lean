@@ -592,6 +592,14 @@ export function pickUnit(exportsObj, spec, env) {
   if (typeof method !== 'function' && !spec.accessor && !spec.isStatic) return null;
   if (spec.isStatic && spec.accessor) return { call: (args) => spec.accessor === 'get' ? Reflect.get(Cls, member, Cls) : (Reflect.set(Cls, member, args[0], Cls), undefined), receiver: null };
   if (spec.isStatic) { const sm = Cls[member]; return typeof sm === 'function' ? { call: (args) => sm.apply(Cls, argsFor(spec, args)), receiver: null } : null; }
+  if (spec.branded) {
+    // a class holding a private name: the receiver is an instance its constructor made (a proxy holds no brand, spec.mjs
+    // branded), made here, before the observation; a constructor taking arguments is not drawn yet: the unit asks
+    if (spec.branded.required) { env.callbackRefusal = `private-brand: ${spec.className} holds a private name, so its receiver is an instance its constructor makes, and the constructor takes ${spec.branded.required} argument(s) lane B does not draw`; return null; }
+    let inst; try { inst = Reflect.construct(Cls, []); } catch (e) { env.callbackRefusal = `private-brand: ${spec.className} holds a private name and its constructor threw: ${String(e && e.message).slice(0, 160)}`; return null; }
+    const own = { __own: () => ({ ...inst }) };
+    return { call: (args) => spec.accessor === 'get' ? inst[member] : spec.accessor === 'set' ? (inst[member] = args[0], undefined) : routeCall(env, Cls, member, args, spec, (a) => method.apply(inst, argsFor(spec, a))), receiver: own };
+  }
   // the receiver: real prototype methods, every field a fake
   const base = Object.create(Cls.prototype);
   const self = new Proxy(base, {
