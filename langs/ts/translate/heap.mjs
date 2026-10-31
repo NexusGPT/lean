@@ -29,6 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { originOf } from '../common.mjs';
 import { unitTypeParameters } from '../common.mjs'; // a unit's own type parameters and the enclosing ones it reads
+import { importIdentity } from '../common.mjs'; // an imported name is the binding it denotes: the declaring module and its name there, re-exports read through
 import { builtRecord } from '../common.mjs'; // the record-node build takes a spread of a record the unit built (open-datatype)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
@@ -362,12 +363,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // sides is the same value (the module is the environment's, read once), another import is another constant. Out: a
   // `let` or `var` of the module (a cell the world would carry), a constant whose initializer calls or allocates (a
   // changed callee would change it under the same text), an object-valued constant (a shared heap object).
-  const importKey = (d0) => { let imp = d0; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent; if (!imp || !ts.isStringLiteral(imp.moduleSpecifier)) return null; const name = ts.isImportSpecifier(d0) ? (d0.propertyName ?? d0.name).text : ts.isImportClause(d0) ? 'default' : null; return name === null ? null : `Imp_${name.replace(/[^A-Za-z0-9]/g, '_')}_${hash(imp.moduleSpecifier.text + '\0' + name)}`; };
+  const importKey = (d0, id) => { const name = ts.isImportSpecifier(d0) ? (d0.propertyName ?? d0.name).text : ts.isImportClause(d0) ? 'default' : null; const ident = name === null ? null : importIdentity(checker, id); return ident === null ? null : `Imp_${name.replace(/[^A-Za-z0-9]/g, '_')}_${hash(ident)}`; }; // keyed by the binding the name denotes, re-exports read through (common.mjs importIdentity)
   function outsideValue(id, depth = 0) {
     if (depth > 8) return null;
     const sh = shapeOf(typeOf(id)); if (!sh || sh.kind !== 'prim') return null;
     const sym = checker.getSymbolAtLocation(id); const d0 = sym?.declarations?.[0];
-    if (d0 && (ts.isImportSpecifier(d0) || ts.isImportClause(d0))) { if (d0.isTypeOnly || d0.parent?.isTypeOnly) return null; const key = importKey(d0); return key ? { kind: 'import', key, sh } : null; }
+    if (d0 && (ts.isImportSpecifier(d0) || ts.isImportClause(d0))) { if (d0.isTypeOnly || d0.parent?.isTypeOnly) return null; const key = importKey(d0, id); return key ? { kind: 'import', key, sh } : null; }
     const d = sym?.valueDeclaration;
     if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || d.getSourceFile() !== sf || d.parent?.parent?.parent !== sf || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || !d.initializer || (ts.getCombinedModifierFlags(d) & ts.ModifierFlags.Ambient)) return null;
     return constExpr(d.initializer, depth + 1) ? { kind: 'const', init: d.initializer, sh } : null;
@@ -437,7 +438,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (!ts.isCallExpression(e) || e.questionDotToken || e.typeArguments || !ts.isIdentifier(e.expression) || e.arguments.some((a) => ts.isSpreadElement(a))) return null;
     const sym = checker.getSymbolAtLocation(e.expression); const d0 = sym?.declarations?.[0];
     if (!d0 || !(ts.isImportSpecifier(d0) || ts.isImportClause(d0)) || d0.isTypeOnly || d0.parent?.isTypeOnly) return null;
-    const ik = importKey(d0); if (!ik) return null;
+    const ik = importKey(d0, e.expression); if (!ik) return null;
     const sig = checker.getResolvedSignature(e); if (!sig) return null;
     const rt = sig.getReturnType(); const rs = isVoidT(rt) ? { kind: 'void' } : shapeOf(rt); if (!rs) return null;
     const as = e.arguments.map((a) => (isAbsent(a) ? null : shapeOf(typeOf(a)))); if (as.some((x) => !x)) return null;

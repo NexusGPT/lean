@@ -157,7 +157,7 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | candidate-only unit | measured in results-new-unit/census-report.md | isolated load and drawn execution; `NEW`, local-link `REFUSE(load)`, environment/test `ASK`; no equality claim | same under the stated fake boundary | done (lane) |
-| imported function, imported value, module constant | | transition / uninterpreted | same | done |
+| imported function, imported value, module constant | | transition / uninterpreted, an import keyed by the binding it denotes (declaring module and name, re-exports read through: [design](design/heap-stage5.md) 9b) | same | done |
 | module-level `let` state | | module-keyed get/set world transitions; const collections too; literal primitive consts stay values; aliases crossing effects use an opaque unit | a world field, like a field of `this` | partial (lane) |
 | code at module level that runs on import | | refused (`toplevel-effect`) | by design for a unit; lane B runs it | by design |
 | `process.env`, `window`, `document`, `localStorage`, `navigator` | 1,245, 500, 535, 63, 81 | process/window property and element reads are world transitions; existing outside calls retained | same | partial (lane) |

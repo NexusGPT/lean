@@ -249,6 +249,36 @@ Census (resolved, 39 roots), strict graph 572 -> 647, own syntax 1471 -> 1609; `
 {"files":23359,"units":53918,"core":647,"heapOwnFit":1609,"mirrorMismatch":1467,"planErrorCount":0,"seconds":427}
 ```
 
+### 9b. An imported name is the binding it denotes (2026-10-31)
+
+Two defects in what "keyed by its module specifier and its exported name" was taken to mean, both at the one place an
+imported name becomes a symbol of the theorem. The value lane named an imported constant, an imported function and a
+member of an imported namespace by the local name alone (`ext_NAME`, `ext_call_args_relay_..`), so `import { FIRST as
+NAME }` and `import { SECOND as NAME }` were one constant: a unit the heap core leaves to the value lane (one that writes
+a module `let`) was proved equal across two different values, a false proof. The heap core keyed by the specifier text,
+so one declaration reached through a module that re-exports it (`export { grow } from './limits'`, imported from
+`./lib`) was another constant and another transition: never proved.
+
+Reading: an imported name is the binding it denotes, the module that declares it and the name it has there, read
+through every re-export (`common.mjs importIdentity`, one function both lanes call: the heap core's `Imp_`/`Call_` keys,
+the value lane's externals and its function-value code ids). The declaring module is named by its path from the
+importing file's directory with the extension left out (`pr.mjs` writes the base version beside the head one, so both
+sides name it alike), a file inside a package by its path from the package folder; a namespace import or `import x =
+require(..)` is the module itself. The local name stays in the symbol for reading, the identity is its hash.
+Soundness: a module is instantiated once per resolved file (ECMA-262 HostLoadImportedModule returns one Module Record
+for one module) and a re-export is the same binding, not a copy (ResolveExport resolves it to the declaring module's), so one declaration is one value on both sides and two declarations are two
+uninterpreted symbols, never assumed equal. The environment assumption is unchanged: an imported module's code is the
+environment's, the same on both sides.
+Where silent, the choice that keeps soundness: a bare specifier (`'pkg'`) stays named by its text and imported name (a
+package's entry is its public identity; the module behind it depends on an install, which two checkouts need not share);
+a relative specifier that does not resolve stays named by its text. Each is at worst another symbol on one side, an
+unproved unit, never two values made one. Still out, as above: a module `let` or `var` in the heap core (the value lane
+reads it as a world cell, design/module-forms.md), an object-valued or function-valued imported binding read as a value.
+Pair `module_scope`: `capped` (the literal for `MAX`: proved), `bounded` (WITNESS), `tally` and `peek` (a module `let`,
+the value lane's cell: proved), `counted` (value lane) and `named` (heap core) read `NAME` bound to another constant
+(unproved, WITNESS; `counted` was a false proof before), `limited` and `next` (the same import: proved), `relayed` and
+`step` (the same declaration through a re-export, heap core: proved; unproved before). Lint: unchanged.
+
 ## 11. Array callbacks and the other array methods
 
 Reading: beside `map` and `filter`, a pure one-parameter callback with an expression body is read for `some` and

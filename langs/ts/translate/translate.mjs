@@ -40,6 +40,7 @@ import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest, routeWrapper, decorationTable, recordKeys, isDictionary } from '../decorators.mjs';
 import { OBJECT_PROTO_NAMES, prototypeMaker, literalProtoMember, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { primitiveBrand } from '../common.mjs';
+import { importIdentity } from '../common.mjs'; // an imported name is the binding it denotes, re-exports read through (design/heap-stage5.md section 9, 2026-10-31)
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, openRecordReadWhy } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the lint
@@ -656,7 +657,7 @@ function translateOnce(file, fnName, opts = {}) {
       return { code: hoist(`${external('call_args_invoke', ['World', FD, ...argDs], `(World, ${rd})`)}(${[WORLD, ident(cb), ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
     }
     const reach = reachOf.reachesFile(cb) ? `_${hash(reachOf.keyText(cb))}` : ''; // a binding of this file (a constant holding a function value) is named by the code it reaches, never by its name alone (design/reach-keys.md)
-    return { code: hoist(`${external(`call_args_${cb.text}${reach}`, ['World', ...argDs], `(World, ${rd})`)}(${[WORLD, ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
+    return { code: hoist(`${external(`call_args_${outsideName(cb)}${reach}`, ['World', ...argDs], `(World, ${rd})`)}(${[WORLD, ...passed.map(([code]) => code)].join(', ')})`, rd), type: ret };
   }
   // a pure named global as a callback: the reading its direct call has, of the element (and the index for parseInt)
   function namedGlobalLambda(cb, arity, paramTypes) {
@@ -1712,6 +1713,10 @@ function translateOnce(file, fnName, opts = {}) {
   // ----- externals -----
   const unitTParams = () => (currentUnit ? unitTypeParameters(checker, currentUnit) : []).map((g) => dn(g.name.text));
   const tclause = (types) => { const ps = unitTParams().filter((p) => types.some((t) => new RegExp(`\\b${p}\\b`).test(t))); return ps.length ? `<${ps.map((p) => `${p}(==)`).join(', ')}>` : ''; };
+  // the name an external takes for an identifier: an imported name is the binding it denotes (the declaring module and
+  // its name there, common.mjs importIdentity), never its local name, so `{ A as N }` and `{ B as N }` are two
+  // externals and one declaration reached through a re-export is one; any other name is its text
+  const outsideName = (id) => { const ident = importIdentity(checker, id); return ident === null ? id.text : `${id.text}_Imp_${createHash('sha256').update(ident).digest('hex').slice(0, 16)}`; };
   function external(name, paramTypes, retType) {
     let id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
     const ps = paramTypes.map((t, i) => `a${i}: ${t}`).join(', ');
@@ -1740,7 +1745,7 @@ function translateOnce(file, fnName, opts = {}) {
     { const form = id.parent && promiseForm(id.parent, checker, sf); if (form?.handler === id && isCallable(t)) { const named = namedPromiseHandler(checker, id, sf, currentUnit?.node ?? null, form.kind === 'finally' ? 0 : 1); if (!named.admit) fail(id, `${named.rule}: ${named.message}`); } } // a named handler the shared decision refuses is refused by its name, as the lint names it
     if (isCallable(t)) fail(id, `${id.text} is a function value; call it`);
     const rt = dtype(t, id);
-    return `${external(id.text, [], rt)}()`;
+    return `${external(outsideName(id), [], rt)}()`;
   }
   // A fresh object handed to a call that threads the world (design/alias-result.md, 2026-10-30, copied argument). The
   // value reading reads a copy as its source (`Copy_Box(x) { x }`), so `g({ ...p })` and `g(p)` hand the outside one
@@ -2797,7 +2802,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           const eff = effectfulUnits.has(u.name);
           const callCode = `${fname(u.name)}(${[...(eff ? [WORLD] : []), ...fuelArg(u), ...args].join(', ')})`;
           value = eff ? hoist(callCode, ownR) : callCode;
-        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${cb.text}${reachOf.reachesFile(cb) ? `_${hash(reachOf.keyText(cb))}` : ''}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
+        } else value = hoist(`${external(`call_args_${isPromiseT(sg.getReturnType()) ? 'await_' : ''}${outsideName(cb)}${reachOf.reachesFile(cb) ? `_${hash(reachOf.keyText(cb))}` : ''}`, ['World', ...params.map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, cb), cb))], `(World, ${ownR})`)}(${[WORLD, ...args].join(', ')})`, ownR);
         return promiseGuard(promisePair(convert(value, checker.getAwaitedType(sg.getReturnType()) ?? sg.getReturnType(), outputT, cb)), R);
       });
     }
@@ -3522,7 +3527,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         if (o.kind === 'import') {
           const d = checker.getSymbolAtLocation(n)?.declarations?.[0];
           let imp = d; while (imp && !ts.isImportDeclaration(imp)) imp = imp.parent;
-          if (imp) imports.add(`${n.text}:${imp.moduleSpecifier.text}:${ts.isImportSpecifier(d) ? (d.propertyName ?? d.name).text : '*'}`);
+          if (imp) imports.add(`${n.text}:${importIdentity(checker, n) ?? `${imp.moduleSpecifier.text}:${ts.isImportSpecifier(d) ? (d.propertyName ?? d.name).text : '*'}`}`);
         }
       }
       ts.forEachChild(n, walk);
@@ -3684,7 +3689,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         // a member of an external object: ext_<obj>_<member>()
         const t = typeOf(n);
         if (isCallable(t)) fail(n, `${n.expression.text}.${name} is a function; call it`);
-        return `${external(`${n.expression.text}_${name}`, [], dtype(t, n))}()`;
+        return `${external(`${outsideName(n.expression)}_${name}`, [], dtype(t, n))}()`;
       }
     }
     if (isWorldField(n)) {
@@ -4408,7 +4413,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         const a0 = n.arguments[0], code = expr(a0); let d = null; try { d = dtype(typeOf(a0), a0); } catch { d = null; }
         return d ? copyOf(a0, code, d) : code;
       }
-      return externalCall(awaited ? `await_${f.text}` : f.text, n, [...n.arguments]);
+      return externalCall(awaited ? `await_${outsideName(f)}` : outsideName(f), n, [...n.arguments]);
     }
     if (f.kind === K.SuperKeyword && currentUnit?.isCtor) { const Tn = selfType(currentUnit); const key = currentUnit.cls ? reachOf.superInitKeyText(currentUnit.cls) : ''; return externalCall(`super_init_${mangle(Tn)}${key ? '_' + createHash('sha256').update(key).digest('hex').slice(0, 16) : ''}`, n, [...n.arguments], SELF, Tn, true); } // `super(args)`: the parent's constructor on this handle, a transition named by the code of the classes above (design/inherited-method.md)
     if (!ts.isPropertyAccessExpression(f)) fail(n, 'call through a computed callee is not translated');
@@ -4561,7 +4566,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (ts.isIdentifier(recv)) {
       const o = originOf(checker, recv, sf, currentUnit?.node ?? null);
       if (!moduleState(checker, recv, sf) && (o.kind === 'import' || o.kind === 'other' || o.kind === 'module' || o.kind === 'global') && !(isArrayLike(checker, base) || base.flags & TF.StringLike || isSetT(base) || isMapT(base))) {
-        return externalCall(`${awaited ? 'await_' : ''}${recv.text}_${name}`, n, [...n.arguments]);
+        return externalCall(`${awaited ? 'await_' : ''}${outsideName(recv)}_${name}`, n, [...n.arguments]);
       }
     }
     if (isArrayLike(checker, base)) {

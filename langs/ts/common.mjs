@@ -594,6 +594,37 @@ export function originOf(checker, id, sf, current) {
   return { kind: 'module-mutable', sym: s, decl };
 }
 
+// The binding an imported name denotes (design/heap-stage5.md section 9, 2026-10-31): the module that declares it and
+// the name it has there, read through every re-export (`export { x } from './a'`), so two specifiers that reach one
+// declaration are one binding, and two names of one module (`{ A as N }`, `{ B as N }`) are two bindings whatever the
+// local name. A module instance is one per resolved file (ECMA-262 HostLoadImportedModule; ResolveExport reads a
+// re-export to the declaring module's binding), so one declaration is one value on both sides. A resolved file is named by its path from the importing file's directory (pr.mjs writes the
+// base version beside the head one, so both sides name it alike), a file inside a package by its path from the
+// package folder, the extension left out; a relative module that does not resolve, and a bare specifier, by its
+// specifier text (a package's entry is its public identity; its inside depends on an install). Null when the name is
+// not bound by an import.
+export function importIdentity(checker, id) {
+  let sym = null; try { sym = checker.getSymbolAtLocation(id); } catch { return null; }
+  const d0 = sym?.declarations?.[0];
+  if (!d0 || !(ts.isImportSpecifier(d0) || ts.isImportClause(d0) || ts.isNamespaceImport(d0) || ts.isImportEqualsDeclaration(d0))) return null;
+  let imp = d0; while (imp && !ts.isImportDeclaration(imp) && !ts.isImportEqualsDeclaration(imp)) imp = imp.parent;
+  if (!imp) return null;
+  const ref = ts.isImportDeclaration(imp) ? imp.moduleSpecifier : ts.isExternalModuleReference(imp.moduleReference) ? imp.moduleReference.expression : null;
+  if (!ref || !ts.isStringLiteral(ref)) return null;
+  const spec = ref.text;
+  const imported = ts.isImportSpecifier(d0) ? (d0.propertyName ?? d0.name).text : ts.isImportClause(d0) ? 'default' : '*';
+  const unresolved = `${spec}\u0000${imported}`;
+  if (!spec.startsWith('.')) return unresolved;
+  let target = null; try { target = checker.getAliasedSymbol(sym); } catch { return unresolved; }
+  const decl = target?.declarations?.[0]; if (!decl) return unresolved;
+  const file = ts.isSourceFile(decl) ? decl : decl.getSourceFile(); if (!file) return unresolved;
+  const strip = (p) => p.replace(/\\/g, '/').replace(/\.d\.[cm]?ts$|\.[cm]?[jt]sx?$/, '');
+  const at = file.fileName.replace(/\\/g, '/'), nm = at.lastIndexOf('/node_modules/');
+  const where = nm >= 0 ? `pkg:${strip(at.slice(nm + '/node_modules/'.length))}` : strip(path.posix.relative(path.posix.dirname(id.getSourceFile().fileName.replace(/\\/g, '/')), at));
+  const name = ts.isSourceFile(decl) || imported === '*' ? '*' : target.name; // a namespace or `import x = require(..)` is the module itself
+  return `${where}\u0000${name}`;
+}
+
 /** The value of an infinity spelling: +1 for the global `Infinity` and `Number.POSITIVE_INFINITY`, -1 for
  * `Number.NEGATIVE_INFINITY`, a prefix minus flips the sign and parentheses are looked through; 0 for anything else (a
  * local or an import named Infinity included). The three spellings of one value are one reading (ECMA-262 21.1.2.6 and
