@@ -291,7 +291,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // real file a position or a count is truncated toward zero (ToIntegerOrInfinity) and a found index is a real.
   // Out: a regular expression or a function argument, repeat by any other count.
   const STR_METHODS = { trimStart: [0, 0], trimEnd: [0, 0], toLowerCase: [0, 0], toUpperCase: [0, 0], split: [1, 2], includes: [1, 2], indexOf: [1, 2], lastIndexOf: [1, 2], startsWith: [1, 2], endsWith: [1, 2], slice: [0, 2], substring: [1, 2], charAt: [1, 1], at: [1, 1], padStart: [1, 2], padEnd: [1, 2], replaceAll: [2, 2], concat: [0, Infinity], repeat: [1, 1] };
-  const countLit = (x) => ts.isNumericLiteral(x) && Number.isSafeInteger(Number(x.text)) && Number(x.text) >= 0; // a count no run can make throw
+  const countLit = (x) => ts.isNumericLiteral(x) && Number.isSafeInteger(Number(x.text)) && Number(x.text) >= 0; // a count whose value never throws (22.1.3.18 throws on a negative or infinite count; the length limit is outside the sequence model, design/strings.md)
   const strMethod = (e) => {
     if (!helper || !ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.questionDotToken || e.expression.questionDotToken) return null;
     const m = e.expression.name.text; if (!Object.hasOwn(STR_METHODS, m)) return null;

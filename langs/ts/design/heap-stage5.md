@@ -124,6 +124,48 @@ Census (resolved, 39 roots), strict graph 418 -> 487, own syntax 970 -> 1177; `c
 {"files":23359,"units":53918,"core":487,"heapOwnFit":1177,"mirrorMismatch":1035,"planErrorCount":0,"seconds":1263}
 ```
 
+### 5b. The string methods the first reading left out (2026-10-31, lane core-string-methods)
+
+Read now in the core (`heap.mjs` `strMethod`, `strEmit`), each through the helper the ordinary lane uses
+(`translate.mjs`, the string branch of a method call). Each is a pure function of the receiver and its arguments,
+evaluated once and in order.
+- `lastIndexOf(t, p?)`. The search goes back from `p`, clamped to the length (`StrLast(s, t, StrClamp(p, |s|))`,
+  `|s|` when `p` is absent). `StrLast` requires `p <= |s|`, and that is `StrClamp`'s postcondition. So the
+  obligation is the helper's, the same for every unit: the unit body carries none that its operands decide.
+- `repeat(n)` with `n` written as a non-negative integer literal: `Repeat(s, n)`. A negative or infinite count
+  throws (22.1.3.18), so any other count stays out. The engine's string-length limit stays outside the sequence model,
+  as it does for `+` (`design/strings.md`).
+- `split(sep, limit)` with a literal separator and a number limit. It allocates the first `ToUint32(limit)` pieces of
+  the whole split: `ps[..min(limit % 2^32, |ps|)]`, where Dafny's `%` is Euclidean. 22.1.3.23 pushes the pieces in
+  order and returns when the count reaches the limit, so the result is a prefix of the unlimited split. This holds for
+  the empty separator too, and a limit of 0 gives `[]`. The ordinary lane still reads a limit as uninterpreted
+  (`strings.md`). That is sound on both sides, because a unit's two sides are read by the same lane (`agreeCore`).
+- `concat(...)` of any number of strings: `s + a + b ...`, or `s` itself for `concat()`.
+- In a real file, every index method the first reading kept to integer files (`includes`, `indexOf`,
+  `lastIndexOf`, `startsWith`, `endsWith`, `slice`, `substring`, `charAt`, `at`, `padStart`, `padEnd`, the split
+  limit). A number argument is truncated toward zero, `if p < 0.0 then -((-p).Floor) else p.Floor`
+  (ToIntegerOrInfinity on the real model, the ordinary lane's `integer`), and a found index is a real (`as real`).
+  NaN and the infinities are not values of the real model. A unit whose position is a real read from an input stays
+  unplaced by the faithful reading (rule C), so lane A does not prove it from the real lemma alone. The pair's `cut`
+  shows this.
+
+Still out: a regular expression or a function argument (step 6 reads the literal regular expressions), `repeat` by a
+count that is not a non-negative integer literal, a split whose separator is not a literal, a split inside a
+callback (an allocation inside a callback), and `trim` and `replace`, which stay stage 4's bodiless functions.
+
+Found on the way, not changed: Dafny does not prove an equality of two strings nested in a sequence.
+`[t + ": " + t] == [t + ":" + " " + t]` fails while the same equality at top level proves (sequence extensionality is
+not triggered under a sequence constructor). So a unit that writes a literal array of strings computed two different
+ways is not proved even when the strings are equal. This is not a false proof. Also, the ordinary lane reads
+`s.repeat(n)` for any `n` as `Repeat(s, n)`, which is `""` for a negative `n`, where JavaScript throws a RangeError.
+
+Pairs `string_methods`: `stem` (WITNESS), `ext` (`lastIndexOf` against `lastIndexOf` from past the end), `rule`
+(`repeat(2)` named first), `head` (`split(",", 2)` against `split(",").slice(0, 2)`), `line` (`concat` against `+`),
+`retag` (a limited split written to a field). On base `ext`, `rule`, `head`, `line` and `retag` are withheld by the
+value reading's identity guard (a split's array). `string_methods_real`: `cut` (WITNESS), `half` (`slice(0, 1.5)`
+against `slice(0, 1)`), `tagged` (`includes` against `indexOf >= 0`), `tail` (`lastIndexOf` + 1), `padded`
+(`padStart(4.9)` against `padStart(4)`). On base all four proved rows are withheld. Lint: unchanged.
+
 ## 6. Regular expressions
 
 Reading: a regular expression literal in a call is a bodiless function of the literal's text (pattern and flags) and
