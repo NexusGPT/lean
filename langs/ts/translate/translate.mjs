@@ -1668,7 +1668,37 @@ function translateOnce(file, fnName, opts = {}) {
     const cargs = checker.getTypeArguments(ct);
     return cargs.length === args.length && !cargs.some((a) => a.flags & (TF.Any | TF.Unknown)) ? ct : null;
   };
-  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  // an empty array or object literal (heap-stage5.md section 2): `[]` has no element type of its own (never[]) and `{}`
+  // no key (the type {}), so its type is the one its place gives it (the contextual type: a declaration, a parameter,
+  // the return type, a field, or the left operand of `??` and `||`), less null and undefined, when that is one array
+  // type of a known element, or one record or dictionary every key of which may be missing. An operand of `??`, `||`
+  // or `?:` whose contextual type is none of those (`Object.keys(d ?? {})`: the parameter's `{}`) is in the place of
+  // the expression it is an operand of, whose type the checker gives (the union of its operands, never[] and {}
+  // absorbed), read by the same rule. An empty array holds no element, so any element type describes it; an empty
+  // object holds no key, so it is every type that requires none.
+  // Out: a place of a union of such types, of any or unknown, of a record with a required key (`{}` does not hold it)
+  const emptyLiteralT = (n) => {
+    const arr = ts.isArrayLiteralExpression(n); if (arr ? n.elements.length : !(ts.isObjectLiteralExpression(n) && !n.properties.length)) return null;
+    const own = checker.getTypeAtLocation(n);
+    if (arr ? !(checker.isArrayType(own) && (checker.getTypeArguments(own)[0]?.flags & TF.Never)) : (own.flags & TF.Object) === 0 || checker.getPropertiesOfType(own).length || checker.getIndexInfosOfType(own).length) return null;
+    const known = (t) => !!t && !(t.flags & (TF.Any | TF.Unknown | TF.Never));
+    const fits = (pt) => {
+      if (!pt) return null; const ct = checker.getNonNullableType(pt);
+      if (ct.flags & (TF.Union | TF.Any | TF.Unknown | TF.TypeParameter) || !(ct.flags & TF.Object)) return null;
+      if (arr) return checker.isArrayType(ct) && known(checker.getTypeArguments(ct)[0]) ? ct : null;
+      if (checker.isArrayType(ct) || checker.isTupleType(ct) || ct.getCallSignatures().length || ct.getConstructSignatures().length) return null;
+      const props = checker.getPropertiesOfType(ct), idx = checker.getIndexInfosOfType(ct);
+      if (!props.length && !idx.length) return null;
+      return props.every((p) => p.flags & ts.SymbolFlags.Optional) && idx.every((i) => known(i.type)) ? ct : null;
+    };
+    let ct = null; try { ct = checker.getContextualType(n); } catch { return null; }
+    { const t = fits(ct); if (t) return t; }
+    let op = n; while (ts.isParenthesizedExpression(op.parent)) op = op.parent;
+    const p = op.parent;
+    const operand = (ts.isBinaryExpression(p) && [K.QuestionQuestionToken, K.BarBarToken].includes(p.operatorToken.kind) && p.right === op) || (ts.isConditionalExpression(p) && (p.whenTrue === op || p.whenFalse === op));
+    return operand ? fits(checker.getTypeAtLocation(p)) : null;
+  };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n) ?? emptyLiteralT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
   // a name declared at a type parameter (`const y: T`, `x: T`) is held at it, while the checker may type its read at the
   // parameter's constraint (`T extends "a" | "b"` read where a literal union is expected): the read is the held value,
   // so its type is the parameter, and a conversion to the constraint is written where one is expected (convertD's cast)

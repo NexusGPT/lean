@@ -85,6 +85,42 @@ Census (resolved, 39 roots), strict graph 283 -> 339, own syntax 632 -> 794; `cu
 {"files":23359,"units":53918,"core":339,"heapOwnFit":794,"mirrorMismatch":652,"planErrorCount":0,"seconds":492}
 ```
 
+### 2b. The type of an empty literal is its place's, in both lanes (2026-10-31)
+
+What was read: the heap core read the place of an empty literal (`arrShape`, `litShape`), but the translator's own
+`typeOf`, which both lanes ask, still gave `[]` its own type `never[]` and `{}` the type `{}`. Where an operand is
+converted to the type of its expression, the empty literal was then cast from that own type: `(xs ?? [])` was
+`ext_cast_seq_Any_seq_string_seq_Any([])`, an uninterpreted cast, so `(xs ?? []).length` was an unknown number and not
+`0`; `(o ?? {})` cast the `Opts` value it had already built. Now `typeOf` (translate.mjs `emptyLiteralT`, beside
+`emptyCollectionT` for `new Map()`) gives an empty array or object literal the contextual type of its place, less
+null and undefined: a declaration, a parameter, the return type, a field, and the left operand of `??` and `||` (the
+checker types the right operand by the left one when the expression has no place of its own). An operand of `??`,
+`||` or `?:` whose contextual type is none of those (`Object.keys(d ?? {})`: the parameter's `{}`) is in the place of
+the expression it is an operand of, whose type the checker gives with never[] and {} absorbed. The heap core asks the
+same `typeOf` (arrays: `arrShape`, as before), with one exception: an empty `{}` whose place is a dictionary stays out
+of the core (`litShape`), as on the base. The core reads `Object.keys` of a dictionary cell through the bodiless
+`DictKeysJs`, where the ordinary lane reads the order exactly (`DictIns`), so admitting the empty dictionary cell
+turned pair `dict_order`'s `indexFirst` (proved) into unproved. Giving `DictKeysJs` the `DictIns` fold as its body
+would admit it; that reading is outside this step and is left to the dictionary lane.
+Soundness: an array place is taken only when it is one array type whose element is known (not any, unknown or
+never): the empty array holds no element, so that type describes it. An object place is taken only when it is one
+record every key of which may be missing (each `?`), or a dictionary of a known value type: `{}` owns no key, so it
+is the value of that type with every key missing; its prototype is still `Object.prototype`, so a key read on it
+reads the prototype's names as any dictionary read does.
+Stays refused (the literal keeps its own type, as before): a place that is a union of several types (`string[] |
+number[]`), any, unknown or a type parameter (`Object.assign({}, a)`, a generic call); a record with a required key (a
+`??` right operand is not checked against its place, and `{}` does not hold the key); a tuple place; an array literal
+with no place at all (`const xs = []`, the evolving array of section 2's Out).
+Pair `empty_literals` (each candidate tests `== null`: `??` takes its right operand on null and undefined, and lane B
+draws both): `count` (`(xs ?? []).length` against a test of xs: proved, unproved before), `width` (`(o ?? {}).width`
+against a test of o: proved; before, the cast of the `Opts` value it had built was a Dafny type error, and no lemma of
+the file was proved), `total` (a loop over `xs ?? []`: proved), `bumped`
+(`xs ?? [0]` for `xs ?? []`: WITNESS), `tagsOf` (an expression-bodied arrow returning the length of `t?.tags ?? []`
+against a block: proved; returning `t?.tags ?? []` itself is withheld by the identity guard, a result that may carry
+an input's array), `blank` (`Object.keys(d ?? {}).length` against a test of d: proved, unproved before),
+`named` (untouched expression body). Lint: unchanged (the lint admits every form here).
+CENSUS_PLACEHOLDER
+
 ## 3. Conditional expressions
 
 Reading: `c ? a : b` reads the condition by its truthiness, then the selected operand only. When neither operand
