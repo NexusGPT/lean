@@ -389,8 +389,8 @@ now also takes an instance of a class of this file at any depth, the parameter i
 already read: it is only ever a call's receiver, never written.
 Soundness: a unit the core does not take is read as a value tree, where `const h = a` copies the record and the write
 through `h` never reaches `a`. The identity guard missed that write (it counted an alias one level down only), so the
-value reading would prove a changed unit equal. The guard now names a write through a local bound to an input itself
-(`layer1Risk`: "write through another name of an input"; `identitySkeleton`: such a local is an input alias, its write
+value reading would prove a changed unit equal. The guard now names a write through a const local bound to an input itself
+(a `let` name the lint admits a write through is fresh there, its flow-sensitive alias rule; `layer1Risk`: "write through another name of an input"; `identitySkeleton`: such a local is an input alias, its write
 an unreadable path), so that unit keeps no value lemma and lane B decides. A write through a held name of a class of
 another file or a handle stays refused: the core has no cell for it.
 Stays refused: a write through a name bound to a plain data record parameter itself (`const h = p` with `p` a plain
