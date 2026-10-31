@@ -1182,6 +1182,10 @@ function translateOnce(file, fnName, opts = {}) {
     if (f & TF.EnumLike) return (t.flags & TF.NumberLike) ? 'int' : 'string';
     if (f & (TF.Undefined | TF.Null)) return absentType();
     if (f & TF.Void) return 'Unit';
+    // the polymorphic `this` of a class or interface (form 4, design/types-inventory.md): read as its constraint, the
+    // instance type. A subclass instance carries more than that type names; a record's open rest holds it, and a class
+    // with methods is opaque already, so nothing a proof could use is dropped. A `this` with no constraint is opaque.
+    if ((f & TF.TypeParameter) && t.isThisType) { const c = checker.getBaseConstraintOfType(t); return c && c !== t && !(c.flags & TF.TypeParameter) ? dtype(c, n) : anyType(); }
     if (f & TF.TypeParameter) { // the unit's own type parameters and those of the declarations around it that it reads (unitTypeParameters): one Dafny type parameter each; two of one name (an inner T hiding an outer T) would read two types as one
       const nm = t.symbol?.name ?? checker.typeToString(t), tps = currentUnit ? unitTypeParameters(checker, currentUnit) : [];
       // a call signature's own type parameter met in a value's type (a generic function held as a value, `<O>(x: O) =>

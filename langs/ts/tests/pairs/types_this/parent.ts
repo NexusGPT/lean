@@ -12,6 +12,11 @@ export class Query {
     this.limit = n;
     return this;
   }
+  // a fluent method: raises the limit and returns the receiver
+  skip(n: number): this {
+    this.limit = this.limit + n;
+    return this;
+  }
   // the chain read back
   text(): string {
     return this.parts.join(" and ");
@@ -37,7 +42,22 @@ export class Named extends Query {
   }
 }
 
-// a function calling the chain on a value of the subclass
-export function built(q: Named, a: string, n: number): number {
-  return q.where(a).take(n).limit;
+// a second fluent class and its subclass, the same on both sides: a request on one of their instances is named by
+// their code, which neither side changes
+export class Path {
+  segs: string[] = [];
+  add(s: string): this {
+    this.segs.push(s);
+    return this;
+  }
+}
+export class Route extends Path {
+  joined(a: string, b: string): string {
+    return this.add(a).add(b).segs.join("/");
+  }
+}
+
+// a function calling the chain on a value of a subclass
+export function built(r: Route, a: string, b: string): number {
+  return r.add(a).add(b).segs.length;
 }

@@ -371,6 +371,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     return { label: ok ? 'proved' : 'migration' };
   };
   const tOf = (n) => checker.getTypeAtLocation(n);
+  const asInstance = (t) => ((t.flags & TF.TypeParameter) && t.isThisType ? checker.getBaseConstraintOfType(t) ?? t : t); // the polymorphic `this` of a class read as its constraint, the instance type (design/types-inventory.md, form 4)
   const localMethodLiteral = (t) => { const obj = methodLiteralOf(checker, t); return obj?.getSourceFile() === sf ? obj : null; };
   const methodLiteralPath = (n) => { for (;;) { if (localMethodLiteral(tOf(n))) return true; if (!(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isParenthesizedExpression(n))) return false; n = n.expression; } };
   const fileReal = fileUsesReals(sf); // a real file: `/` is real division, the translator's numbers are reals
@@ -1593,7 +1594,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (ts.isPropertyAccessExpression(f)) {
       // `a?.m()`: the call happens when a is present; the result is an Option (the receiver's type says whether it may be absent)
       const recv = f.expression, name = f.name.text;
-      const rt = tOf(recv);
+      const rt = asInstance(tOf(recv)); // a receiver typed `this` (a fluent call's result) is an instance of the class
       if (recv.kind === K.ThisKeyword) { if (!currentClass && !objectMethod && !thisParam) return v(e, 'this', '`this` outside a class method'); return argsOf(e); }
       if (ts.isIdentifier(recv) && (name === 'call' || name === 'apply' || name === 'bind') && declOf(recv).kind === 'unit') { // `h.call(o, a)` / `h.apply(o, [a])` on a same-file function: the receiver is its first operand (the declared `this` parameter, else ignored); `bind` fixes a receiver for a later call, outside the subset
         if (name === 'bind') return v(e, 'bound-function', '`bind` fixes a receiver for a later call; call the function with its receiver instead', uselessCallSite(e, units.get(recv.text)));

@@ -4,13 +4,18 @@ export class Query {
   limit = 0;
   // a fluent method: adds a part and returns the receiver
   where(p: string): this {
-    const part = p;
-    this.parts.push(part);
+    this.parts.push(p);
     return this;
   }
   // a fluent method: sets the limit and returns the receiver
   take(n: number): this {
     this.limit = n;
+    return this;
+  }
+  // a fluent method: raises the limit and returns the receiver
+  skip(n: number): this {
+    const k = n;
+    this.limit = this.limit + k;
     return this;
   }
   // the chain read back
@@ -19,7 +24,8 @@ export class Query {
   }
   // takes another value of the receiver's type
   longer(other: this): boolean {
-    return other.parts.length < this.parts.length;
+    const mine = this.parts.length;
+    return mine > other.parts.length;
   }
   // takes another value of the receiver's type
   sameLimit(other: this): boolean {
@@ -34,13 +40,28 @@ export class Named extends Query {
     return this.where(b).where(a).text();
   }
   capped(a: string, n: number): number {
-    const self = this.where(a);
-    return self.take(n).limit;
+    const part = a;
+    return this.where(part).take(n).limit;
   }
 }
 
-// a function calling the chain on a value of the subclass
-export function built(q: Named, a: string, n: number): number {
-  const r = q.where(a);
-  return r.take(n).limit;
+// a second fluent class and its subclass, the same on both sides: a request on one of their instances is named by
+// their code, which neither side changes
+export class Path {
+  segs: string[] = [];
+  add(s: string): this {
+    this.segs.push(s);
+    return this;
+  }
+}
+export class Route extends Path {
+  joined(a: string, b: string): string {
+    return this.add(a).add(b).segs.join("/");
+  }
+}
+
+// a function calling the chain on a value of a subclass
+export function built(r: Route, a: string, b: string): number {
+  const part = a;
+  return r.add(part).add(b).segs.length;
 }
