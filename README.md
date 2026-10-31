@@ -16,7 +16,7 @@ lean is a differential equivalence checker. Give it the old version and the new 
 - **Nothing to trust.** Every verdict carries the hashes of both sides, the theorem and the prover version, or the inputs, the seed and the bound. No verdict comes from a model's opinion; no `assume` anywhere a proof can see.
 - **Whole programs, not toy functions.** Services with injected ports, async pipelines, exceptions across calls, classes, generators, references into shared objects, Map and Set cells, timers, React components with hooks, effects and children.
 
-TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`. Python is at its first milestone ([`langs/py/subset.md`](langs/py/subset.md)).
+TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`. Python is at its second milestone ([`langs/py/subset.md`](langs/py/subset.md)).
 
 ## Three runs
 
@@ -80,9 +80,9 @@ Every refusal is a named rule with a fixture the suite checks, and lane B still 
 |---|---|---|
 | **by design** | a change through an alias of a parameter; a prototype write; `===` on two objects; `eval` and `new Function`; `super` as a value; a loop with no measure (`ASK`); a changed signature without a declared adapter (`ASK:interface`) | stays refused: no value model keeps the meaning, and a wrong proof would be worse than an `ASK` |
 | **backlog** | a value whose type nothing checked (`as T` from `any`) in a slot its reading does not reach: an array element, a callback result, a destructuring, a field write, a callee in a global script or a namespace; a strict-mode error no edit fixes (an absent read, a rejected cast, a missing initializer); type forms with no reading yet ([inventory](langs/ts/design/types-inventory.md)); a field read after a call on an object the reading cannot name (a copy, a spread, a name written twice); some `Promise` constructor shapes; a callback handed to an outside call that writes a local | each has a planned reading, written in its design note under [`langs/ts/design/`](langs/ts/design/); the lint names the construct and the rewrite today |
-| **environment** | a module the checkout cannot resolve; a dependency not installed | the census counts these apart from the subset; installing the project removes them |
+| **environment** | a module the checkout cannot resolve; a dependency not installed; a refusal whose every value has a type that does not resolve (an import its module lacks, a name with no declaration, a member a dependency's declaration lacks) | the census counts these apart from the subset; installing the project removes them |
 
-The lint tells you which kind you hit and what to write instead ([`docs/writing-provable-code.md`](docs/writing-provable-code.md)); `node langs/ts/census.mjs <repo>` counts the three kinds over a repository.
+The lint tells you which kind you hit and what to write instead ([`docs/writing-provable-code.md`](docs/writing-provable-code.md)); `node langs/ts/census.mjs <repo>` counts the three kinds over a repository (`node langs/ts/tests/census_environment.mjs`: `census-environment: all hold`), and exits non-zero, naming every file not walked, when its walk ends before the last file (`node langs/ts/tests/census_partial.mjs`: `ALL PASS`).
 
 ## Where it runs
 
@@ -204,7 +204,7 @@ An agent that writes code needs a judge that is not itself. Today it has the lin
 
 ### 6. Another language
 
-Python is the second language, at its first milestone: typed functions, dataclasses and plain classes over ints, strings, lists, tuples, dicts and optionals, with calls into the outside as transitions and raised exceptions as faults. [`langs/_template/`](langs/_template/) is the start point for the next.
+Python is the second language, at its second milestone: typed functions, dataclasses and plain classes over ints, strings, lists, tuples, dicts and optionals, with calls into the outside as transitions and raised exceptions as faults. [`langs/_template/`](langs/_template/) is the start point for the next.
 ## What couples with lean: differential attestation
 
 lean judges values, the reachable object graph, effects, schedules and a component's state machine. It names the state where two renders differ; it does not judge the pixels. The checks around that answer live in **DA, differential attestation**, [`github.com/NexusGPT/differential-attestation`](https://github.com/NexusGPT/differential-attestation): screen analysis (pixels, layout, the accessibility tree) of two builds on the same screens; open code review of a diff against a stated scope; the gate that assembles lean's table with those rows into one pull-request check; the benchmark that measures the gate on real repositories; containment for code that must not reach the host. Other checks of that kind couple with lean the same way: through a framework like DA, each row with its own parameters and its own report, lean's certificate one row among them. The obligations ledger both of lean's lanes share, and the worlds it threads one contract at a time, are described in [`docs/around-lean.md`](docs/around-lean.md).
@@ -213,7 +213,7 @@ lean judges values, the reachable object graph, effects, schedules and a compone
 
 The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.** Code written that way gets more than a test: the next change to it is a theorem. Two pairs: a function written the usual way, then lean-style. Each gets the same later refactor (`*.next.ts`), and lean checks it on both. Every check ran with `--no-project --n 30 --dafny-seconds 30`; the `#` lines are read from the certificate. Files: [`examples/showcase/`](examples/showcase/); run the commands from that folder.
 
-A local alias of a value you were handed (`const t = cart.totals; t.net += price`) was once refused by the lint; the heap core reads it now, so `examples/showcase/usual/cart.ts` proves against its refactor as the lean-style file does. Two habits the lint still asks for:
+A local alias of a value you were handed (`const t = cart.totals; t.net += price`) was once refused by the lint; the heap core reads it now, so `examples/showcase/usual/cart.ts` proves against its refactor as the lean-style file does. A `const` second name of a parameter that holds an instance of a class of the same file is carried by the value reading too, a write through either name rebinding the other, as long as neither is rebound, handed to a call or read by a closure (`node langs/ts/tests/carried-alias.mjs`: `carried-alias: all hold`). Two habits the lint still asks for:
 
 **1. A booking: write an effect under a condition as a branch, not an expression.** `confirm(b: Booking, late: boolean): number`; the refactor computes the price before the note (`const price = b.nights * b.rate`) and returns it.
 ```ts
@@ -257,7 +257,7 @@ The habits one by one, with what each buys: [`docs/writing-provable-code.md`](do
 
 | | command |
 |---|---|
-| one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit Class.method`; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--deep[=k]`, `--out verdict.json`) |
+| one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit Class.method`; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--dafny-wall-seconds`, `--deep[=k]`, `--sandbox-base <ref>`, `--out verdict.json`) |
 | a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m] [--preview] [--time-budget <s>] [--unit-budget <n>] [--out report.md]` |
 | lane B alone, in seconds | `node langs/ts/exec/run.mjs --parent old.ts --candidate new.ts --unit f` |
 | the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--advice]` |
@@ -269,13 +269,13 @@ The habits one by one, with what each buys: [`docs/writing-provable-code.md`](do
 **Lane B needs only Node**; Dafny and Python are for the proof lane, and without them lane A reports `ASK`. `check.mjs` exits 0 on every verdict and 2 when a run ends with no verdict; `lint.mjs` exits 1 on findings.
 ## What is built and what is planned
 
-**The container image has both lanes and nothing to install**: node 24.22.2, python3, Dafny 4.11.0 and the Z3 4.12.1 its release bundles, all pinned in the [`Dockerfile`](Dockerfile). 873 MB on disk, 216 MB to download. Lane B forks its worker with Node's `--permission`, which node 20 rejects.
+**The container image has both lanes and nothing to install**: node 24.22.2, python3, Dafny 4.11.0 and the Z3 4.12.1 its release bundles, all pinned in the [`Dockerfile`](Dockerfile). 894 MB on disk, 217 MB to download (`docker image ls` at v0.1.3). Lane B forks its worker with Node's `--permission`, which node 20 rejects.
 
 ```bash
 docker build -t lean:local .
 docker run --rm -v "$PWD:/work" -w /work lean:local check --parent old.ts --candidate new.ts --unit f --no-project
 docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     # any other command runs inside the checkout
-``` `check.mjs` exits 0 on every verdict and 2 when a run ends with no verdict; `lint.mjs` exits 1 on findings.
+```
 
 | capability | status |
 |---|---|
@@ -286,7 +286,7 @@ docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     
 | the front-end layers: a tree to a stated depth with context, resolved Tailwind styles with the project's theme | built |
 | the CI comment and block flag | built; runs on GitHub runners ([pull request #1](https://github.com/NexusGPT/lean/pull/1): the table posted as the comment, the image job building the container and running ten proof-lane pairs inside it) |
 | a container image with Dafny and Z3, so the proof lane needs nothing installed | built (above); one Z3 is looked up once and named in the certificate, and the step cache is keyed by the Dafny and Z3 versions |
-| the readings of the backlog kinds above | in progress, one design note each; landed 2026-10-30: the four type-assertion slots and a held value into an outside callee, strict-mode values, a field read or one-level write after a call as a world read, the faithful number reading on held values |
+| the readings of the backlog kinds above | in progress, one design note each; landed 2026-10-30: the four type-assertion slots and a held value into an outside callee, strict-mode values, a field read or one-level write after a call as a world read, the faithful number reading on held values; landed 2026-10-31 (v0.1.3, [`CHANGELOG.md`](CHANGELOG.md)): the stage-5 readings, from bitwise operators and class handles to Map and Set copies and discriminated unions, and the type inventory's forms 4 to 7 |
 | screen analysis, the gate, the benchmark, containment | in DA ([link](https://github.com/NexusGPT/differential-attestation)) |
 | more languages through the conformance suite | Python at its second milestone: the lint names the rewrite, lane B in the TypeScript record shape, five pairs ([`langs/py/design/milestone-2.md`](langs/py/design/milestone-2.md)) |
 
@@ -294,10 +294,10 @@ docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     
 
 lean says `ASK` rather than guess. Today it asks on: a `while` loop with no measure it can derive, a loop reshaped into a different loop when its body does more than guard and push, a result that may share an input (`ASK:identity`), a suspended render, two asynchronous schedules racing beyond the explored bound, a changed signature without a declared adapter (`ASK:interface`), and a difference that passes only through a module lean cannot load.
 
-Lane B's bound is real: a frozen world, generated inputs, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. Measured figures: [`langs/ts/design/`](langs/ts/design/). What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
+Lane B's bound is real: a frozen world, generated inputs, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. Measured figures: [`langs/ts/design/`](langs/ts/design/). Every Dafny call, the checker's own included, runs under a wall cap ((`--dafny-seconds` + 60) s per unit by default, `--dafny-wall-seconds` to set it), and on the cap lean kills Dafny's whole process tree and lane A reads `ASK:timeout`, never a proof (`node langs/ts/tests/wall-cap.mjs`: `PASS-bounded: not proved: wall cap 2 s exceeded`). What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
 ## What lean is not
 
-- **Not a jail.** The sandbox fakes the world, but it is a Node `vm` context, and code that leaves it (through a host intrinsic such as `Buffer.constructor`) reaches the worker process. Measured on Node 24 ([`langs/ts/design/sandbox-boundary.md`](langs/ts/design/sandbox-boundary.md), probe log beside it), that process denies file writes, child processes, native addons, worker threads and file reads outside the given trees. The network and the environment variables stay open: a probe connected to a local listener and read 32 variables. `LEAN_NET=deny` closes the network at the process's own bindings, and the unit's record names every attempt it refused. A unit with no parent runs without the permission model today. Containment of hostile code is the gate's, in [DA](https://github.com/NexusGPT/differential-attestation).
+- **Not a jail.** The sandbox fakes the world, but it is a Node `vm` context, and code that leaves it (through a host intrinsic such as `Buffer.constructor`) reaches the worker process. Measured on Node 24 ([`langs/ts/design/sandbox-boundary.md`](langs/ts/design/sandbox-boundary.md), probe log beside it), that process denies file writes, child processes, native addons, worker threads and file reads outside the given trees. The network stays open, and so do the environment variables lean keeps (`LEAN_*`, `NODE_OPTIONS`, `PATH`, `HOME`, `XDG_CACHE_HOME`): at v0.1.3 a probe connected to a local listener and read three, `HOME LEAN_NET PATH` (`bash fixtures/sandbox/probe.sh`). `LEAN_NET=deny` closes the network at the process's own bindings, and the unit's record names every attempt it refused. A unit with no parent runs in a child under the same permission model. A project's `.gate/sandbox.json`, read from the parent commit and never from the working tree, widens or narrows what lane B may read, write, start and install, and every name it refuses is a `sandbox` row of the certificate (`check.mjs --sandbox-base <ref>`, `pr.mjs` at `--base`; `node --test langs/ts/exec/sandbox-list.test.mjs`: `pass 8`, `fail 0`; [`langs/ts/design/sandbox-allow-list.md`](langs/ts/design/sandbox-allow-list.md)). Containment of hostile code is the gate's, in [DA](https://github.com/NexusGPT/differential-attestation).
 - **Not a pixel judge.** Pixels, layout and the accessibility tree are DA's screen-analysis row; lean names the state where two renders differ.
 - **Not a judge of what a model says.** The code around the call is lean's object: retries, routing, parsing, timers. The reply is an outside call, so a different call is a `WITNESS`. Here the candidate loops `<=` where the parent looped `<`:
 
