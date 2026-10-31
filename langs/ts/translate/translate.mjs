@@ -1293,7 +1293,7 @@ function translateOnce(file, fnName, opts = {}) {
   }
   function sumType(parts, n) {
     if (parts.filter((t) => t.flags & TF.BooleanLike).length > 1) parts = [...parts.filter((t) => !(t.flags & TF.BooleanLike)), checker.getBooleanType()];
-    const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike) ? runtimeTag(t) : null;
+    const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.ESSymbolLike) ? runtimeTag(t) : null; // a symbol arm is one `typeof` result of its own (ECMA-262 13.5.3), its value opaque (dtype): every operation on it uninterpreted
     const records = parts.every(isRecordish) && parts.every((t) => checker.getPropertiesOfType(t).length && !checker.getPropertiesOfType(t).some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n))));
     const cats = parts.map(category);
     if (!(records && parts.every((t, i) => parts.slice(i + 1).every((u) => disjointTags(t, u, n)))) && !(cats.every(Boolean) && new Set(cats).size === cats.length)) return null;
@@ -2511,6 +2511,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     if (t.flags & TF.StringLike) return `(|${expr(n)}| > 0)`;
     if (t.flags & (TF.NumberLike | TF.BigIntLike)) return `(${expr(n)} != ${real ? '0.0' : '0'})`;
     if (isNullish(t)) return 'false';
+    // a value read opaque though its type is no `any` (a union no sum reads, holding 0, 0n or ""; a type parameter) has
+    // the opaque truth valueTruth gives it, uninterpreted: no static truth holds of every one of its values
+    { const d = dtype(t, n); if (d === 'Any' || unitTParams().includes(d)) return valueTruth(expr(n), d); }
     return 'true';
   }
 

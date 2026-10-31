@@ -62,6 +62,7 @@ export function specOf(file, unitName, opts = {}) {
     if (f & TF.StringLike) return { kind: 'string' };
     if (f & TF.NumberLike) return { kind: 'number' };
     if (f & TF.BigIntLike) return { kind: 'bigint' };
+    if (f & TF.ESSymbolLike) return symbolSpec(t);
     if (f & TF.BooleanLike) return { kind: 'boolean' };
     if (f & TF.Null) return { kind: 'null' };
     if (f & (TF.Undefined | TF.Void)) return { kind: 'undefined' };
@@ -95,6 +96,15 @@ export function specOf(file, unitName, opts = {}) {
     }
     if (f & TF.TypeParameter) return { kind: 'tparam' }; // a value of an unknown type: drawn from a small shared pool so that equal values occur
     return { kind: 'opaque' };
+  }
+  // a symbol: `symbol` holds every symbol value, so one is drawn (gen.mjs); a `unique symbol` holds one value only, the
+  // constant it was declared by, drawn as the unit's module exports it (`unique` its export name); one the module does
+  // not export stays opaque, as before: no other symbol is a value of its type
+  function symbolSpec(t) {
+    if (!(t.flags & TF.UniqueESSymbol)) return { kind: 'symbol' };
+    const own = checker.getSymbolAtLocation(sf), decl = t.symbol;
+    const name = own && decl ? checker.getExportsOfModule(own).find((e) => (e.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(e) : e) === decl)?.name : null;
+    return name ? { kind: 'symbol', unique: name } : { kind: 'opaque' };
   }
   function recordSpec(t, depth) {
     const key = checker.typeToString(t);
@@ -539,6 +549,7 @@ export function fits(spec, v, defs, d = 0) {
     case 'string': return typeof v === 'string';
     case 'number': return typeof v === 'number';
     case 'boolean': return typeof v === 'boolean';
+    case 'symbol': return typeof v === 'symbol';
     case 'null': return v === null;
     case 'literal': return spec.values.some((x) => x === v);
     case 'union': return spec.options.some((o) => fits(o, v, defs, d + 1));
