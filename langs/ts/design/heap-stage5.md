@@ -649,6 +649,35 @@ No unit entered or left the core. The destructurings met in these roots are of `
 is not known, and each generic unit had a second stop. 12 nexus rows differ only in a unique symbol's id between two
 program builds (`__@NARROWING_DECIDED@<id>`), which is not a move.
 
+### 17c. Array methods on a fixed tuple (2026-10-31)
+
+Read (`translate/translate.mjs`: the array-method dispatch, `seqOf`, `tupleParts`, `tupleWrite`; `translate/heap.mjs`:
+`freshPrimArrayCall`):
+- The value reading holds a fixed tuple (every element required, no rest) as a Dafny tuple `(A, A)`. An array method
+  reads its receiver's `length` and its indices 0 .. length - 1 (23.1.3), so the dispatch reads the receiver through
+  `seqOf`, which reads a fixed tuple of one element type as the sequence of its positions, `[t.0, t.1]`. Every method
+  of the dispatch (map, filter, some, every, find, includes, indexOf, slice, join, concat, ...) takes that sequence.
+  Before, the receiver was the tuple itself where a sequence is expected: the file did not resolve, and every lemma of
+  it went unproved (lane conformance-array-copies' finding).
+- The identity guard's fact that map, filter, slice, ... over primitives make a fresh array holds of a tuple receiver
+  too: a tuple is an array object, and the method makes a new array of it as of any array (ArraySpeciesCreate).
+
+Stays refused, and why:
+- A tuple of differing element types (`[string, number]`) or with an optional element: no one element type holds every
+  position (`a tuple of .. read as a sequence needs one element type`).
+- A write in place through such a tuple (`pop`, `shift`, `splice` as a value; `pop`, `reverse`, `sort`, ... as a
+  statement, on a local; the lint already refuses them on a parameter): the write's result is a sequence, which the
+  tuple-typed name cannot hold, and a write that changes the length leaves the tuple's type behind. Before, these also
+  emitted a file that did not resolve.
+
+Pair `tuple_array_methods` (17 checks, heap off, `[string, string]`): `mapped` (map against its positions written out),
+`has` (includes against two comparisons), `position` (indexOf), `joined` (join), `tagged` (an indexed map callback),
+the last three against the same method on the literal of the tuple's positions, and `kept` (filter, untouched):
+proved; `sliced` (`slice()` against `slice(1)`) and `anyEmpty` (`some` against `every`): unproved, lane B WITNESS.
+Red on the base: 6 rows (the file did not resolve; `mapped` and `tagged` were also withheld by the identity guard).
+indexOf, join and an indexed map on a two-element literal are not proved against their unrolled forms (`a === v ? 0 :
+..`) for an array literal either (the helpers' recursion is unfolded once): a limit of the prover, not of this reading.
+
 ## 18. Class instances and handles
 
 Reading: a handle is a parameter or local of an object type with methods that is not a record the core reads (an
