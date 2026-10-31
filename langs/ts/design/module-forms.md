@@ -46,8 +46,10 @@ executable statements remain toplevel-effect. No initializer is run by the proof
 
 Lane B runs module initializers in fresh sandboxes, real Map operations, and relative
 handler modules. It observes counter changes through returned values and repeated
-same-file calls, and process.env through the recording proxy. It does not currently
-observe every hidden module write or generate arbitrary historical module state; the
+same-file calls, and process.env through the recording proxy. Each call also observes the
+change it made to the bindings of the unit's own file (heap-stage5.md 21, 2026-10-31); a
+write into another module's state is observed only through what reaches the arguments or
+the result. It does not generate arbitrary historical module state; the
 world-quantified proof covers more entry states than the bounded sandbox.
 
 The pair binds a numeric Map once on each side before has/get versus get/null-check.
