@@ -28,7 +28,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, loadProgramOptions, fileDiagnostics, topLevelFunctions, findingUnit, parseUnitList, formatUnitList } from './common.mjs';
+import { ts, loadProgram, loadProgramOptions, fileDiagnostics, topLevelFunctions, findingUnit, parseUnitList, formatUnitList, MODULE_UNIT } from './common.mjs';
 import { check } from './check.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { lintFile } from './lint/lint.mjs';
@@ -144,6 +144,8 @@ function keySide(file, unit, loaded, project, repo, readingAlreadyLoaded) {
   }
   const { sf, checker, fileContext, imports, tsconfig } = loaded.get(file), units = topLevelFunctions(sf);
   const textOf = (name) => units.get(name)?.node.getFullText(sf) ?? null;
+  // the module unit's own text is the file outside its functions (fileContext); it calls no unit of the file at evaluation
+  if (unit === MODULE_UNIT) return { text: fileContext, callees: [], fileContext, imports, tsconfig };
   return { text: textOf(unit), callees: calleesOf(sf, checker, unit).map(({ callee }) => ({ callee, text: textOf(callee) })).sort((a, b) => a.callee.localeCompare(b.callee)), fileContext, imports, tsconfig };
 }
 
@@ -284,6 +286,8 @@ function changedFiles(opts, temps, ledger) {
       if (shared) entry.keyReading = shared;
       const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
       entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile).filter(u => routed.has(u.name));
+      // the module unit (common.mjs MODULE_UNIT): the file's top-level statements, the whole file's lines; the ledger routes to it
+      if (routed.has(MODULE_UNIT)) entry.units.push({ name: MODULE_UNIT, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
     } catch (e) {
       entry.error = String(e.message).slice(0, 300);
       try { entry.units = changedUnits({ sf: ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true) }, ranges, entry.headFile); } catch (f) { entry.error = String(f.message).slice(0, 300); }
@@ -498,7 +502,8 @@ async function prWorker(opts) {
         rows.push({ editIds: unitRoutes.filter(e => e.file === rel && e.links.some(link => link.unit === u.name)).map(e => e.id), file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, ...(u.enclosingUnit ? { 'covered-by': u.enclosingUnit } : {}), verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
         if (!opts.preview && !u.enclosingUnit && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });      }
       if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;
-      const changedNames = new Set(units.map((u) => u.name));
+      const changedNames = new Set(units.map((u) => u.name).filter((n) => n !== MODULE_UNIT)); // the module unit has no caller
+      if (!changedNames.size) continue;
       let loaded;
       try { loaded = loadProgram(entry.headFile, { project: false }); } catch { continue; }
       const { sf, checker } = loaded;

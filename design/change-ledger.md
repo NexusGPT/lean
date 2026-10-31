@@ -72,3 +72,11 @@ Full pair step (`node langs/ts/tests/run.mjs`), baseline `fea80f8` in a detached
 - **The hash list outlives the snapshot.** `sources.json` in the run folder lists each copied file with its bytes and sha256, plus the repository and head. The snapshot itself is still deleted once every task is terminal.
 
 Red: `node langs/ts/ci/worktree.test.mjs` exit 1 (`ENOENT ... sources.json`). Green: exit 0, including a run with a 1-byte cap that ends `failed:snapshot-cap` with a complete reconciliation and no `sources` folder.
+
+## The module unit (2026-10-31)
+
+An edit of a source file present on both sides that touches no listed unit, is not type-only, and whose every compiled
+token runs at the module's evaluation (outside every function's parameters and body and every class's members) is
+routed to the file's module unit, `(module)`: one unit per file, the top-level statements in init order, run by lane B
+as the module's evaluation, its witness naming the statement on both sides. An edit inside an unlisted function, a
+class member, a type, or a file present on one side only keeps its named unassigned context. `langs/ts/design/module-unit.md`.

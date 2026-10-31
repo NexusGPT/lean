@@ -282,6 +282,13 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const ok = got?.verdict === 'WITNESS' && JSON.stringify(names) === JSON.stringify(want) && (want.length ? w.where?.cause === 'callee' && got.unitTextEqual === true : w.where?.cause !== 'callee');
     add('pair', name, `through ${unit} ${want.join(', ') || 'none'}`, ok, w ? `${names.join(', ') || 'no callee'}; cause ${w.where?.cause ?? w.where?.field ?? 'none'}; unit text ${got.unitTextEqual ? 'equal' : 'changed'}` : `no witness (${got?.verdict ?? 'no result'})`);
   }
+  // the statement a WITNESS names on each side (where.lines): its kind, and the text of the parent's and the candidate's statement
+  for (const [unit, want] of Object.entries(exp.statement ?? {})) {
+    let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
+    const L = got?.witnesses?.[0]?.where?.lines ?? null;
+    const ok = got?.verdict === 'WITNESS' && !!L && L.kind === want.kind && ['parent', 'candidate'].every((k) => L[k]?.file?.endsWith(`/${k}.ts`) && L[k].start >= 1 && L[k].text === want[k]);
+    add('pair', name, `statement ${unit} ${want.kind}`, ok, L ? `${L.kind}: parent ${L.parent ? `${L.parent.start}-${L.parent.end} ${JSON.stringify(L.parent.text)}` : 'none'}; candidate ${L.candidate ? `${L.candidate.start}-${L.candidate.end} ${JSON.stringify(L.candidate.text)}` : 'none'}` : `no statement (${got?.verdict ?? 'no result'})`);
+  }
   // the small heaps lane B enumerated for the unit (korat.mjs): at least `min` non-isomorphic graphs, reported in bound.heaps
   for (const [unit, want] of Object.entries(exp.heaps ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).bound?.heaps ?? null; } catch { /* keep */ }
