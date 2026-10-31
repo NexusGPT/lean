@@ -152,6 +152,36 @@ them differ.
 - Cost: a receiver made by `new C` here runs C's unit, and inside it `this.m()` is now a request too, though the
   receiver is exactly a C; carrying the maker into the callee's reading would recover those proofs (not done here).
 
+### 2026-10-31: the section measured on its own examples; a private name's receiver in lane B (lane conformance-this-m)
+
+Pair `this_method_override` (34 checks) puts each case of the section in one file: a final receiver (`@final` on the
+method, `Tagged`; a private name `#base`, `Named`), an override in the file (`Broken`, `@final` on the class defeated
+by `Mute` below it; `Top`, overridden two levels down by `Bottom`; `viaMute` and `viaBottom` run the difference), and
+an override outside the file (a `protected` base in `Guarded`, `this.base` in a constructor in `Built`, inside an
+arrow of a method in `Mapped`, an m inherited from a same-file base in `Leaf`). Lane A held every one of these rows at
+the base: the section is read as it says.
+
+- **Lane B, read.** A class whose chain declares a private name (a `#x` field or method) is nominal: a value of it is an
+  object its constructor made (the brand, ECMA-262 7.3.31 PrivateBrandCheck). The receiver lane B made, a proxy over
+  the prototype, has none, so `this.#x` threw on it and on no value of the type. That gave a false WITNESS when the
+  candidate inlined `#base` (only the parent threw) and a vacuous PASS-bounded when both sides read `#base`, a changed
+  `#base` included (both threw alike). `exec/spec.mjs` `branded`: the chain, through every class declaration the
+  checker resolves, declares a non-static private name; the value is the required parameter count of the constructor
+  the chain runs. `exec/run.mjs` pickUnit makes the receiver with that constructor before the observation when it
+  takes no argument: a real instance, its fields the constructor's, not fakes (fewer receivers, every one a value of
+  the type). `Shifted` (a changed `#base` under an unchanged run) is now witnessed, 842 against 844.
+- **Lane B, refused.** A branded class whose constructor takes a required argument: those arguments are not drawn yet,
+  so the unit asks (`private-brand`), never a witness (`Counted`). A base the checker does not resolve to a declaration
+  is no brand lane B can see: the proxy stays, as before.
+- **Lane A, refused (a finding).** A `#m` method is no unit (`common.mjs classMethodUnits` takes identifier names only),
+  so the section's "m is a private name" has no own unit to read: `this.#m()` stays the external of the receiver named
+  by the bare name, and the cell audit's obligation `this #m: read without a transition` turns any lemma into
+  `ASK:obligation` (check.mjs). Sound, not complete: `Named.run` is not proved. Making `#m` a unit changes the unit
+  list every reader of `classMethodUnits` and `topLevelFunctions` shares (the lint, the census, the reports, and lane B,
+  which cannot call `#m` from outside), so it is left to the lane that owns the unit list.
+- The census is lint-only, and neither the lint nor the lowering changed: before and after are the same counts
+  (lane/conformance-this-m-result.md).
+
 ## What stays as it was
 
 - `super.m()` keeps `inheritedKeyText`. A static method's `this.m()` keeps its reading (a static unit naming `this`

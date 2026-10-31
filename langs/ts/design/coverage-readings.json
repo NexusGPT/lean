@@ -61,8 +61,12 @@
   "faithful": "callable record Fn(code, env) on the ledger"
  },
  "ThisKeyword": {
-  "today": "exact as the receiver (self) of a class unit; a field read a world read; a write a world write",
+  "today": "exact as the receiver (self) of a class unit; a field read a world read; a write a world write; `this.m()` the class's own unit only when no subclass can hold another m (private, `@sealed`/`@final`, no same-file override), else a held request keyed by the code of the classes the receiver's type admits (conformance-readings section 4)",
   "faithful": "the receiver as a heap node"
+ },
+ "PrivateIdentifier": {
+  "today": "`this.#m()` an external of the receiver with the cell obligation `read without a transition` (ASK:obligation): a #m method is no unit; lane B runs a class holding a private name on an instance its constructor made, and asks (private-brand) when the constructor takes arguments (conformance-readings section 4, 2026-10-31)",
+  "faithful": "#m as a unit of its class, `this.#m()` its own unit (a private name is never looked up on the chain)"
  },
  "ParenthesizedExpression": {
   "today": "exact",
