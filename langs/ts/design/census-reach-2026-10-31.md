@@ -110,3 +110,57 @@ those as language refusals, although its own rule says a unit judged on unknown 
 counts that only for a unit holding the unresolved finding, not for one reading a module constant or an import whose
 type did not resolve. Re-counting them moves no unit into the subset. Running R6 with the census's install
 (`--install-under`) would read them on their real types. Both are harness decisions, outside this lane.
+
+## Environment behind a reading's refusal (2026-10-31, lane census-environment)
+
+Until now the census counted a unit as environment-blocked only when an `unresolved-module` finding fell inside it. A
+unit that reads an import, a module constant or a parameter whose type does not resolve carries no such finding (the
+finding sits on the import line, at the top level). So its read-after-call or copied-argument refusal was counted as the
+reading's, although the reading judged an unknown type: an error-typed value reaches anything.
+
+The rule (census.mjs `environmentOf`: one rule, with no repository, file or unit name in it). The values a stopping
+finding names are its own node (a lint finding's span) and each `code` its message quotes, on the line the message gives
+as `(line N)`, else on the finding's line. A finding is the environment's when one of those values has the checker's
+error type and the error traces to a name that does not resolve: an import of a module that does not resolve, an import
+its module lacks, a name no declaration holds, or a member a dependency's declaration lacks (a member the source's own
+type lacks is the source's). A source `any` (`JSON.parse`) is not the error type and keeps its reading. A unit all of
+whose stopping findings are the environment's is environment-blocked under `environment: <kind>`, the kind of that
+name's own diagnostic as census-env.mjs classifies it. Its reason names the value, the symbol, its import and the
+refusal it replaces. A unit with even one finding judged on resolved types is stopped by that finding, its reading.
+Records carry `unresolvedTypes` per file; `environment.unresolvedTypes` gives the total, split by the refusing rule.
+Test `tests/census_environment.mjs` (row census-environment): with the module absent, the unit refused on its value is
+`environment: absent` naming `Handle` from 'handle-source', and a unit refused on a typed callback stays read-after-call.
+With the module present, the first is entered and the second stays read-after-call. At the base, 3 of 9 checks fail.
+
+Measured on nexus (`/root/da/census/repos/nexus`, one root, 25,466 files, 43,949 units, both runs complete). No install:
+the sources copied without any `node_modules` folder. Install: the lockfile's pinned pnpm, frozen, `--ignore-scripts`,
+fails on one private package (`@agent-nexus/console-ui`, 404 without registry credentials) and links nothing, and the
+lockfile is pnpm's, so `npm ci` does not apply. The install run therefore reads the copy's own complete pnpm tree (the same
+lockfile), copied to scratch. Units stopped per class, the nested units a stopped unit covers left out (8,678 and
+8,045), each run classed by this rule and the old way from its own records:
+
+| class | no install | no install, old classing | install | install, old classing |
+| --- | ---: | ---: | ---: | ---: |
+| entered | 17,329 | 17,329 | 22,760 | 22,760 |
+| environment | 6,227 | 4,596 | 283 | 70 |
+| of which on an unresolved type | 1,631 | | 213 | |
+| read-after-call | 1,444 | 2,813 | 2,026 | 2,216 |
+| copied-argument | 2,312 | 2,312 | 2,244 | 2,244 |
+| type-assertion | 1,812 | 1,850 | 2,046 | 2,066 |
+| ts-strict | 2,556 | 2,528 | 2,201 | 2,193 |
+| every other class | 3,591 | 3,843 | 4,344 | 4,355 |
+
+Without install, the rule moves 1,631 units into environment: 1,299 from read-after-call, 67 from type-assertion, 60
+from closure-mutation, 45 from property-assign and 160 from fourteen other rules. Their imports are `zod`, `react`, the
+workspace's `@nexus/types`, `@nestjs/common`, `typescript`, `path` and `process`. With the install, environment falls to
+283. Of the 1,631 units, 564 enter, 153 stay environment, and the rest are refused by a reading on their real types (477
+read-after-call, 123 copied-argument, 79 type-assertion). The 213 units still unresolved rest mostly on the generated
+Prisma client (`@nexus/prisma/client`, 113): its generator has not run in the copy.
+
+The reading counts do not hold between the two runs, and the table says why: with the dependencies' declarations, the
+readings judge other types. Of the 11,715 units a reading stops without install (first language finding), 8,790 keep
+that class with the install and 2,925 change: they enter, or are stopped by another reading. A unit that names no
+error-typed value can still be judged differently, because values the message does not quote change type too. Within one
+run the rule moves units only into environment and, for a unit with both kinds of finding, to its first finding on
+resolved types (ts-strict +28 without install). 397 of the 1,631 units carry the kind `unresolved`: the import their
+value's type comes from sits in another file, and the kind is read from the unit's own file's diagnostics.

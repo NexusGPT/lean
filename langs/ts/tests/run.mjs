@@ -718,6 +718,8 @@ async function adviceLabels(add) {
     // an incomplete census (its walk killed, or ended early with exit 0) exits non-zero, names the files not walked and writes partial: true (design/2026-10-31-census-partial.md)
     ['census-partial', scriptRow('runtime', 'census-partial', 'a census whose walk is killed or ends early exits non-zero, names the files not walked, and writes partial: true with their count', [path.join(here, 'census_partial.mjs')], lastLine)],
     ['census-example-message',scriptRow('runtime', 'census-example-message', 'each refusal example carries its finding\'s message', [path.join(here, 'census_example_message.mjs')], lastLine)],
+    // a unit refused only on a value whose type does not resolve is environment-blocked, named by the symbol and its import; one refused on resolved types keeps its reading (census-environment lane, 2026-10-31)
+    ['census-environment', scriptRow('runtime', 'census-environment', 'a refusal judged on an unresolved import is environment, one on resolved types keeps its reading', [path.join(here, 'census_environment.mjs')], lastLine)],
     ['refusal-path-space', scriptRow('runtime', 'refusal-path-space', 'a translator refusal in a path with a space keeps its rule', [path.join(here, 'refusal-path-space.mjs')], lastLine)],
     ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
