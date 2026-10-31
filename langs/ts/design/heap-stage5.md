@@ -101,6 +101,37 @@ Census (resolved, 39 roots), strict graph 339 -> 418, own syntax 794 -> 970; `cu
 {"files":23359,"units":53918,"core":418,"heapOwnFit":970,"mirrorMismatch":828,"planErrorCount":0,"seconds":1269}
 ```
 
+### 3a. 2026-10-31: the arm taken carries the arguments a call in it changes (lane core-conditional-expressions)
+
+The heap core already read the section above. What still stopped a conditional was outside it: the lint's
+`conditional-effect` refused a same-file call that changes its argument inside an operand (`on ? record(t, s) : 0`),
+because the value reading bound the new argument inside the branch only, so the name read after the conditional was
+the old one. The refusal sat in the lowering every unit of the file reads, so it stopped the whole file, the heap-core
+units included.
+
+Reading (`translate.mjs` `operandParts`, `carried`): the same one as the heap core's world, for the value reading's
+names. Each operand is translated with its hoisted lines apart and with the names a same-file call in it rebinds (the
+arguments it changes, `unitCall`); a rebinding inside a nested operand rebinds the name in the operand around it. When
+an operand rebinds a name, the conditional is
+`var (t, b) := if c then (var (r, m) := record(b, s); var b := m; (r, b)) else (0, b);` (the world first when an
+operand has transitions): the condition, then the arm taken, which returns its value and every name either arm
+rebinds, so the values read after the conditional are the ones the arm taken left. With no name rebound the emitted text
+is the one before, byte for byte (the lines go where they were hoisted). The lint's `conditional-effect` now refuses a
+short-circuit right operand only.
+Soundness: JavaScript evaluates the condition, then one operand; a call in the other operand never runs, so the
+untaken arm returns its names unchanged. Where the section is silent: a name declared inside the conditional (a
+callback's local) is not carried, being out of scope after it; a name the reading cannot place stays refused by the
+call's own rule (an argument that is not a name or a fresh literal).
+Stays refused: a changing call in the right operand of `&&`, `||`, `??` (the same carry would read it; it is another
+construct's reading, left to its lane), and the section's own outs (a condition on a reference, two shapes).
+Pair `conditional_expressions` (red at the base: the parent does not translate): the heap core reads `note` (a ternary
+in a return), `route` (nested), `doubled` (as an argument), proved, and `stray`, `skewed` (planted, lane B WITNESS);
+the value reading reads `tally`, `ladder` (proved: a local counter changed through a callee in the arm taken) and `leak`
+(planted, lane B WITNESS). The planted rows are `false` in lane A, not `witness`: the doubles reading does not encode a
+write through a record (`not encoded: a write outside the unit's locals`), so it has no counterexample to replay.
+Found on the way, outside this construct: any caller of a callee that writes through an input, read by the value
+reading, is withheld by the identity guard (`identity shape unreadable`), with or without a conditional.
+
 ## 5. String methods
 
 Reading: the string methods read exactly through the ordinary lane's helpers (`translate.mjs` `helper`, design
