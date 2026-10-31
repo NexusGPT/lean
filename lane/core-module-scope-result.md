@@ -160,5 +160,5 @@ total; the 2,400 files both journals hold in finished chunks are identical.
 ## What is left
 
 - A nexus before/after census on a quiet machine.
-- A namespace import's member (`ns.X`) in the heap core stays out, as before (the value lane now names it by its
-  module).
+- A pair row for a namespace import's member (`ns.X`, named by its module in the value lane now) was not added; its
+  heap-core reading was not examined.
