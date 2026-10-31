@@ -261,7 +261,7 @@ export const READINGS = [
     id: 'arrays', construct: 'array literals and spreads: a sequence; a spread the sequence of its source\'s elements (an array, a Set, a Map, their iterators, a fixed tuple)',
     kinds: ['SpreadElement', 'ArrayLiteralExpression'],
     lint: ['spread'],
-    translate: rx('^spread arguments need an ordinary array$', '^a spread among other arguments is not translated$'),
+    translate: rx('^spread arguments need an ordinary array$', '^a spread among other arguments is not translated$', '^a tuple of .* read as a sequence needs one element type$'),
     assumptions: { runtime: 'an array literal is the concatenation of its segments; a spread argument to an outside call is one sequence (call_seq_)', aliasing: 'elements are copied as values', exceptions: 'none', termination: 'terminates' },
     refusal: 'this spread has no sequence reading',
     design: ['design/tuple-spread.md', 'design/spread-outside-callees.md'],
@@ -346,7 +346,7 @@ export const READINGS = [
     lintText: [
       ['unsupported-call', /(takes no argument|takes one (comparator|callback|pattern|value \(a start index stays out\))|needs a callback( and an initial value)?|takes plain arguments)$|^(Set|Map)\.(forEach|clear) is|^new [^ (]+\(\.\.\.\) reads an array|^\.[^ ]+\(\) (in an optional chain|as a value changes|reads the host's locale|on .* reads Object\.prototype)|^method \.[^ ]+\(\) on .* is outside the subset; narrow the union|^sort as a statement|^splice as a (value|statement)|^(lastIndexOf|toString|substr|matchAll|search|fill) /],
     ],
-    translate: rx('^array method \\..*\\(\\) is not translated$', '^Set\\..*\\(\\) is not translated as an expression$', '^Map\\..*\\(\\) is not translated as an expression$', '^\\..*\\(\\) as a value needs a local array or a fresh one$', '^\\..*\\(\\) is not translated here$'),
+    translate: rx('^array method \\..*\\(\\) is not translated$', '^Set\\..*\\(\\) is not translated as an expression$', '^Map\\..*\\(\\) is not translated as an expression$', '^\\..*\\(\\) as a value needs a local array or a fresh one$', '^\\..*\\(\\) is not translated here$', '^\\..*\\(\\) on a tuple writes it in place; .*$'),
     assumptions: { runtime: 'each row of the library table is a prelude helper (Filter, Map, Fold, Slice, StrFind, ...) or a world transition (a locale read, Math.random); lane B checks every row\'s result fact on every run', aliasing: 'a row says whether its result is fresh, the receiver or an element', exceptions: 'a row that may throw on correct inputs (JSON.parse, URL, BigInt) is a faulting call', termination: 'the helpers decrease their sequence' },
     refusal: 'this library call has no row',
     design: ['design/library-rows.md', 'design/ordered-collections.md'],
