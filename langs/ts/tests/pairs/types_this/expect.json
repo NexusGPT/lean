@@ -1,0 +1,42 @@
+{
+ "scope": [
+  "query_where",
+  "query_take",
+  "query_skip",
+  "query_text",
+  "query_longer",
+  "query_same_limit",
+  "named_both",
+  "named_capped",
+  "path_add",
+  "route_joined",
+  "built"
+ ],
+ "equal": {
+  "query_where": true,
+  "query_take": true,
+  "query_skip": true,
+  "query_text": true,
+  "query_longer": true,
+  "query_same_limit": false,
+  "named_both": false,
+  "named_capped": false,
+  "path_add": true,
+  "route_joined": true,
+  "built": true
+ },
+ "why": "Form 4 of the types inventory: the polymorphic `this` type of a class is read as its constraint, the class's instance type. Query.where, Query.take and Query.skip are fluent methods whose result type is `this`: where and take are unchanged (proved), skip binds its argument to a local first (proved). text reads the chain back, unchanged (proved). longer takes `other: this` and binds its own count to a local first, reading the two receivers in the same order (proved); sameLimit takes `other: this` and compares the limit with the other's part count instead of its limit (witnessed). Named extends Query and calls the chain it inherits on this, every link typed `this`: both swaps the order of the two parts (witnessed); capped binds its argument to a local first, the same values (lane B passes it), but lane A does not prove it: a call on an instance of this file's classes is a request named by the code of every class the receiver's type admits (heldKey, design/conformance-readings.md), and the candidate changes Query and Named, so each side calls its own request (the same row with `Query` written for `this` is not proved either). Path and Route are the same on both sides: Path.add is fluent (proved), Route.joined calls the inherited chain on this (proved), and built calls it on a Route value from a free function, binding its argument to a local first (proved: the classes the request is named by are unchanged).",
+ "b": {
+  "Query.where": "PASS-bounded",
+  "Query.take": "PASS-bounded",
+  "Query.skip": "PASS-bounded",
+  "Query.text": "PASS-bounded",
+  "Query.longer": "PASS-bounded",
+  "Query.sameLimit": "WITNESS",
+  "Named.both": "WITNESS",
+  "Named.capped": "PASS-bounded",
+  "Path.add": "PASS-bounded",
+  "Route.joined": "PASS-bounded",
+  "built": "PASS-bounded"
+ }
+}
