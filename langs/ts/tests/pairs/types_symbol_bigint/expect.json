@@ -6,6 +6,7 @@
   "tag_name",
   "fee",
   "rem",
+  "or_else",
   "amount",
   "amount_or"
  ],
@@ -16,10 +17,11 @@
   "tag_name": true,
   "fee": true,
   "rem": false,
+  "or_else": true,
   "amount": true,
   "amount_or": false
  },
- "why": "Forms 5 and 6 of design/types-inventory.md: a union with a symbol member (string | unique symbol, string | number | symbol) and a union with a bigint member (Intl's number | bigint | `${number}` | \"Infinity\" | ...) are read opaque (Any), as a lone symbol is; on base the translator refused the whole file at the first such union. settle, keyLabel and amount bind the value to a local first (proved: the same value); mark appends '!' on the string arm (not proved; lane B witnesses on a drawn string); amountOr returns 0n where the parent returned 0: the file reads its numbers as int, and a bigint is read as BigInt, a synonym of int whose conversions are its own, so the two literals are two values of the opaque type, never one injection (not proved; lane B witnesses). Tagged is keyed by a unique symbol: the candidate declares two symbols before TAG, so the checker numbers TAG otherwise, and the field is named by its key's declared name, one datatype on both sides; tagName binds the name to a local first (proved). fee commutes bigint arithmetic (proved); rem takes the remainder of each operand where the parent took the remainder of their sum (not proved: 2n, 2n gives 1n against 4n; lane B witnesses)",
+ "why": "Forms 5 and 6 of design/types-inventory.md: a union with a symbol member (string | unique symbol, string | number | symbol) and a union with a bigint member (Intl's number | bigint | `${number}` | \"Infinity\" | ...) are read opaque (Any), as a lone symbol is; on base the translator refused the whole file at the first such union. settle, keyLabel and amount bind the value to a local first (proved: the same value); mark appends '!' on the string arm (not proved; lane B witnesses on a drawn string); amountOr returns 0n where the parent returned 0: the file reads its numbers as int, and a bigint is read as BigInt, a synonym of int whose conversions are its own, so the two literals are two values of the opaque type, never one injection (not proved; lane B witnesses). Tagged is keyed by a unique symbol: the candidate declares two symbols before TAG, so the checker numbers TAG otherwise, and the field is named by its key's declared name, one datatype on both sides; tagName binds the name to a local first (proved). fee commutes bigint arithmetic (proved); rem takes the remainder of each operand where the parent took the remainder of their sum (not proved: 2n, 2n gives 1n against 4n; lane B witnesses); orElse writes a !== 0n ? a : b for a || b (proved: a captured bigint is falsy at 0n, as a number is at 0)",
  "b": {
   "settle": "PASS-bounded",
   "mark": "WITNESS",
@@ -27,6 +29,7 @@
   "tagName": "PASS-bounded",
   "fee": "PASS-bounded",
   "rem": "WITNESS",
+  "orElse": "PASS-bounded",
   "amount": "PASS-bounded",
   "amountOr": "WITNESS"
  }

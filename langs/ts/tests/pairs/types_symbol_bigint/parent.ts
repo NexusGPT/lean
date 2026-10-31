@@ -38,6 +38,11 @@ export function rem(a: bigint, b: bigint): bigint {
   return (a + b) % 3n;
 }
 
+// 0n is falsy
+export function orElse(a: bigint, b: bigint): bigint {
+  return a || b;
+}
+
 // a number-format argument (Intl.NumberFormat.format)
 export type Amount = number | bigint | `${number}` | "Infinity" | "-Infinity" | "+Infinity";
 
