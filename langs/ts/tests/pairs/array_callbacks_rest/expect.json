@@ -1,0 +1,7 @@
+{
+ "scope": ["flag_some", "flag_every", "pick_tag", "first_big", "where_rush", "last_tag", "weigh", "keep_first", "doubled", "number_lines"],
+ "equal": {"flag_some": true, "flag_every": false, "pick_tag": true, "first_big": true, "where_rush": true, "last_tag": true, "weigh": true, "keep_first": true, "doubled": true, "number_lines": true},
+ "why": "heap-stage5.md section 11, the rest: a callback with an index, a callback with a block body of bindings, a forEach with an index, and indexOf, findIndex and at in a real file, each in a unit that writes the lines a forEach statement walks (only the heap core reads that write, so a callback form the core refuses refuses the unit). flagSome swaps the conjuncts of an indexed some (proved); flagEvery admits a zero price (unproved, WITNESS); pickTag swaps an indexed find's tests, i !== 0 for i > 0 (proved); firstBig swaps an indexed findIndex's conjuncts (proved); whereRush names the tags before indexOf (proved); lastTag reads at(-1) as at(length - 1) (proved); weigh swaps an indexed map's factors (proved); keepFirst swaps an indexed filter's conjuncts (proved); doubled writes a block body's binding in place (proved); numberLines writes i * 2 as i + i in a forEach with an index (proved).",
+ "b": {"flagSome": "PASS-bounded", "flagEvery": "WITNESS", "pickTag": "PASS-bounded", "firstBig": "PASS-bounded", "whereRush": "PASS-bounded", "lastTag": "PASS-bounded", "weigh": "PASS-bounded", "keepFirst": "PASS-bounded", "doubled": "PASS-bounded", "numberLines": "PASS-bounded"},
+ "heap": true
+}
