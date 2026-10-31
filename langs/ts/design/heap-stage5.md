@@ -1310,6 +1310,23 @@ proved on the canonical heap, PASS-bounded), `blank` (tag set to the empty strin
 heap core's records hold no key order) and a subclass field that redefines an inherited one (`extends` stays outside the
 heap core).
 
+### 2026-10-31: a parameter property with a default (lane parameter-property-default)
+
+`constructor(public x = 0)` is the parameter with its default (a call that leaves it out, or passes undefined, binds the
+default, evaluated at the call) followed by the field store `this.x = x`, TypeScript's emit in both class-field modes.
+The field holds the parameter's type either way, so the class's record is the one it would have without the default.
+`classWhy` refused the form (`parameter property form`), so the class was no record of the heap core: its methods, and
+every unit holding one of its instances, left the core. It now admits it; an optional parameter property (`public x?:
+T`) and a pattern stay refused. The constructor unit itself still takes no defaulted parameter in the core (`parameter
+form`, as every unit), so it, and a unit that constructs the class, is read in the ordinary lane, whose default reading
+(an `Option` parameter, then the stores) already held it. Lint: unchanged (it admitted the form already).
+Pair `constructors`: `Knob.constructor` (`public turn = 0, readonly label = "knob"`, a body storing through a local:
+proved), `knob`, `knobbed` (the argument left out: proved), `Knob.twice` (the turn doubled in place against through a
+local: proved; at 9b5d13c98, the base reading, unproved: the class was out of the core and the ordinary lane did not
+prove it), `Dial.constructor` and `dialed` (the default 1 became 2: withheld by the
+interface check, WITNESS). A default whose text changes but whose value does not (`0` against `1 - 1`) stays withheld:
+the interface check compares the defaults' text (section 0b's note).
+
 ## 0b. The identity guard reads destructured and rest parameters
 
 Found by lane lint-2, a measurement defect of step 0's kind: `identitySkeleton` and `layer1Risk` collected identifier
