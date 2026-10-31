@@ -18,6 +18,7 @@ import { compileSide, compiledSide, loadSide, OpaqueHit, opaqueValue, canon } fr
 import { makeBridge, NoBridge, OutOfDomain, Opaque, show } from './bridge.mjs';
 import { domainOf } from './dafny-text.mjs';
 import { heapBridge } from './heap.mjs';
+import { causeOf } from './cause.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const translate = path.join(here, '../translate/translate.mjs');
@@ -151,20 +152,6 @@ function compare(m, prep, p, node, paramNames) {
   return { status: 'agree' };
 }
 const safeCanon = (x) => { try { return canon(x).slice(0, 120); } catch { return '?'; } };
-// a disagreement's cause: the kind of value that differs, read off the difference itself
-function causeOf(d, tsSig, drawn) {
-  if (/"\$ref":\d+\}/.test(JSON.stringify(drawn ?? null))) return 'aliased arguments: one object at two places of the input';
-  if (/\$negativeZero/.test(d)) return 'signed zero: Node -0, the model 0';
-  if (/\$bigint/.test(d) || [...d.matchAll(/-?\d{16,}/g)].some((m) => (BigInt(m[0]) < 0n ? -BigInt(m[0]) : BigInt(m[0])) > 2n ** 53n)) return 'an integer past 2^53: the model is exact, Node rounds to binary64';
-  if (tsSig?.params?.some((p) => p.rest)) return 'a rest parameter: lane B passes the drawn array as one argument';
-  if (/model -?\d+\/\d+ \(/.test(d)) return 'real arithmetic: the model is exact, Node rounds to binary64';
-  if (/model -?\d+ against -?\d+(\.\d+)?(e[+-]?\d+)?$/.test(d)) return 'integer value';
-  if (/model "[^"]*" against "/.test(d)) return 'string value';
-  if (/rest|undeclared key|no key|has the key/.test(d)) return 'record keys';
-  if (/model None|model undefined|model null|\$undefined/.test(d)) return 'absence (undefined, null, missing)';
-  if (/sequence of/.test(d)) return 'sequence length';
-  return 'value';
-}
 
 // the product: both models with one table for the parts with no body, under a seed
 function product(fnames, lives, seed) {
