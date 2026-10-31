@@ -26,7 +26,7 @@ stopped nothing.
 | read-after-call | 10,152 (7,663 + 2,489) | f0047f87, merged 79be14b5; narrowed 91d8b609 | on purpose; mostly met through the environment; one over-count fixed here |
 | copied-argument | 2,268 (2,011 + 257) | 417fe138, 1ac7ed49, 24736a05, merged c5f1be03 | on purpose; one over-count fixed here |
 | type-assertion | 55 (42 + 13) | 4f73cf5b (lane A1), merged fc6c6498 | on purpose: a hole closed (type-assertions.md names GalleryView) |
-| loops | 2 | see "loops" below | open |
+| loops | 2 | read-after-call at 79be14b5, then 91d8b609 (merged def3f1d1) | on purpose; entered again at master and here |
 | uncatalogued | 1 | the copied-argument merge | defect in naming, fixed here (the unit stays refused) |
 
 Reproduced units (entered at f3cb5b41, stopped at 2a6c7bb6): agent-nexus `check-publish-pin.ts` readBundlePin
@@ -73,6 +73,13 @@ is handed as one new object now (translate.mjs freshTree). Pair `fresh_tree_hand
 a caller's object inside the literal (existingInside) and one object in two slots (shared) stay refused, and lane B
 witnesses both. The rest hold a name, a member, a spread or a `new`, whose identity the reading does not carry.
 Carrying them (hand the literal with each inner object replaced by its own handed identity) is the next lever.
+
+### loops
+
+nexus-landing drawMesh, in two copies of one scene file. Bisected: entered to 4cf4e6f0 except where read-after-call
+stopped it (6b15e649, 4cf4e6f0), and from def3f1d1 (91d8b609, one decider) stopped by the loop-counter finding of a
+callee it reaches (`raised at line 378, outside this unit`), as the narrowed rule reads a same-file callee's body.
+Both copies are entered at master and on this branch.
 
 ### uncatalogued
 
