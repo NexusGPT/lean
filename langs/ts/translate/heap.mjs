@@ -1228,9 +1228,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (m === 'splice') { const a = expr(e.arguments[0]), d = expr(e.arguments[1]); const ins = e.arguments.slice(2).map((x) => `[${expr(x)}]`); lines.push(`var (${HW}, ${out}) := Splice_${s.key}(${HW}, ${r}, ${a}, ${d}, ${ins.length ? ins.join(' + ') : `[]`});`); return out; }
       throw new Error(`heap: no table row for .${m}`);
     }
-    // an element's receiver and index, each evaluated once and bound
     // a callback's body inside its lambda: each binding written in place, in order, as a Dafny let, then the result
     const cbCode = (cb, sh = null) => { const { binds, ret } = cbParts(cb); const bs = binds.map((d) => `var ${dn(d.name.text)} := ${exprAs(d.initializer, shapeOf(typeOf(d.name)))};`); const v = sh ? exprAs(ret, sh) : expr(ret); return bs.length ? `(${bs.join(' ')} ${v})` : v; };
+    // an element's receiver and index, each evaluated once and bound
     const bind = (code, p) => { if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(code) || /^-?\d+(\.\d+)?$/.test(code)) return code; if (inLam) return `(${code})`; const x = fresh(p); lines.push(`var ${x} := ${code};`); return x; }; // a name or a literal is its own value; anything else is bound once (inside a callback, where nothing writes, it is written in place)
     // a numeric operator on two evaluated operands: * exact, % and / total with a zero divisor marking the world, the
     // bitwise operators through the ordinary lane's helpers
