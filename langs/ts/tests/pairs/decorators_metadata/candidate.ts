@@ -1,5 +1,7 @@
+/// <reference path="./types.d.ts" />
 // stage 5 step 20, decorators read as metadata: a decorated class, a decorated method and a decorated property; a
 // decorator that installs an accessor on a field, or returns another descriptor for a method or an accessor
+import { Injectable } from "@nestjs/common";
 import { Column, Count, Entity, Track } from "./meta";
 
 @Entity()
@@ -117,4 +119,18 @@ export function made(): number {
 export function seeds(): number {
   const s = Dial.seed();
   return s + s;
+}
+
+@Injectable()
+export class Registry {
+  n = 2;
+
+  private size(): number {
+    return 2;
+  }
+
+  twice(): number {
+    const s = this.size();
+    return s + s;
+  }
 }

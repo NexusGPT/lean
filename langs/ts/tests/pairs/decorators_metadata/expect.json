@@ -17,7 +17,9 @@
   "dial_ticks",
   "dial_curs",
   "made",
-  "seeds"
+  "seeds",
+  "registry_size",
+  "registry_twice"
  ],
  "equal": {
   "ledger_add": true,
@@ -37,9 +39,11 @@
   "dial_ticks": false,
   "dial_curs": false,
   "made": false,
-  "seeds": false
+  "seeds": false,
+  "registry_size": true,
+  "registry_twice": true
  },
- "why": "Step 20, decorators read as metadata (meta.ts holds the decorators; Entity and Track return nothing, Column installs a counting accessor on the prototype, Count returns a counting descriptor). A decorated class (Ledger, @Entity): its methods are read as their text; add's compound write as an assignment (proved), net adds one (WITNESS); charge is untouched and unproved: in a decorated class its call this.add() is a transition keyed by the file's method code, which add's change changed (lane B: PASS-bounded, the same total). A decorated method (Meter.raise, @Track) is read as its text: raise steps by 2 for 1 (WITNESS); peak, a method of the class naming its field through a local, is proved; pump is untouched and unproved: its call of the decorated raise is a transition over raise's changed code (lane B: WITNESS). A decorated property (Row.name, @Column): the decorator may install an accessor, so the class is out of the heap core and every read and write of the field is a transition of the world: label reads it twice for once and rename returns its argument for the field read back (unproved, lane B WITNESS: the accessor counts reads); grow reads and writes the undecorated size in the same order on both sides (proved). Note.text is a decorated optional field: the decorator keeps the class out whatever the field's form, so shown, two reads for one, is unproved (WITNESS). Dial's members carry a decorator that returns another descriptor, so none is read as its declared text: a private method through this (ticks), a getter through this (curs), a method of an instance made by new (made) and a static method (seeds) are each a request of the world, two calls for one (unproved; lane B WITNESS on ticks and curs, where each call counts; on made and seeds lane B reports PASS-bounded, though the two sides return 5 and 4 when run: lane B does not run the decorated member of an instance made by new or of the class itself, a finding of the lane-B harness). Dial's own members (tick, read, the getter cur, seed) are untouched: each its own text, proved (lane B asks on the getter unit cur).",
+ "why": "Step 20, decorators read as metadata (meta.ts holds the decorators; Entity and Track return nothing, Column installs a counting accessor on the prototype, Count returns a counting descriptor). A decorated class (Ledger, @Entity): its methods are read as their text; add's compound write as an assignment (proved), net adds one (WITNESS); charge is untouched and unproved: in a decorated class its call this.add() is a transition keyed by the file's method code, which add's change changed (lane B: PASS-bounded, the same total). A decorated method (Meter.raise, @Track) is read as its text: raise steps by 2 for 1 (WITNESS); peak, a method of the class naming its field through a local, is proved; pump is untouched and unproved: its call of the decorated raise is a transition over raise's changed code (lane B: WITNESS). A decorated property (Row.name, @Column): the decorator may install an accessor, so the class is out of the heap core and every read and write of the field is a transition of the world: label reads it twice for once and rename returns its argument for the field read back (unproved, lane B WITNESS: the accessor counts reads); grow reads and writes the undecorated size in the same order on both sides (proved). Note.text is a decorated optional field: the decorator keeps the class out whatever the field's form, so shown, two reads for one, is unproved (WITNESS). Dial's members carry a decorator that returns another descriptor, so none is read as its declared text: a private method through this (ticks), a getter through this (curs), a method of an instance made by new (made) and a static method (seeds) are each a request of the world, two calls for one (unproved; lane B WITNESS on ticks and curs, where each call counts; on made and seeds lane B reports PASS-bounded, though the two sides return 5 and 4 when run: lane B does not run the decorated member of an instance made by new or of the class itself, a finding of the lane-B harness). Dial's own members (tick, read, the getter cur, seed) are untouched: each its own text, proved (lane B asks on the getter unit cur). Registry is decorated by a decorator of the table whose row says the body is unchanged (@nestjs/common Injectable, a marker): it is metadata, so its private size is read as its text through this and twice, two calls for one, is proved.",
  "b": {
   "Ledger.add": "PASS-bounded",
   "Ledger.charge": "PASS-bounded",
@@ -58,7 +62,9 @@
   "Dial.tick": "PASS-bounded",
   "Dial.read": "PASS-bounded",
   "Dial.cur": "ASK",
-  "Dial.seed": "PASS-bounded"
+  "Dial.seed": "PASS-bounded",
+  "Registry.size": "PASS-bounded",
+  "Registry.twice": "PASS-bounded"
  },
  "heap": true
 }

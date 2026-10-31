@@ -70,7 +70,8 @@ import { elementWritePath } from '../common.mjs'; // a field write through a par
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
 import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
-import { sealedMember, decoratorMayReplace } from '../common.mjs'; // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
+import { sealedMember } from '../common.mjs';
+import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the heap core // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
 import { typeAssertion, assertionHeld, erasedReferenceSlot, readAfterCall, heldRecord, heldField, heldCall, withHeldParams } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint; the read-after-call decision shared with the lint
 const PROMISE_COMBINATORS = new Set(['Promise.resolve', 'Promise.reject', 'Promise.all', 'Promise.allSettled', 'Promise.race', 'Promise.any']), EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect']); // read-after-call: calls that run no outside code while the unit runs, and hooks whose callback runs after the render // a value whose type nothing checked: read with its real type, one test with the lint
 import { callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList, formatUnitList } from '../common.mjs'; // a callback unit's captured inputs and its contextual types; a finding's unit; the one unit-list parser and its inverse
@@ -787,7 +788,7 @@ function translateOnce(file, fnName, opts = {}) {
     for (const m of cls.members) if (!ts.isConstructorDeclaration(m)) walk(m);
     // a decorated field lives in the world whether or not a method writes it: its decorator may install an accessor on the
     // prototype (step 20), so each read and write runs code the field's text does not show
-    for (const m of cls.members) if (ts.isPropertyDeclaration(m) && ts.isIdentifier(m.name) && !m.modifiers?.some((x) => x.kind === K.StaticKeyword) && m.modifiers?.some((x) => x.kind === K.Decorator)) out.add(m.name.text);
+    for (const m of cls.members) if (ts.isPropertyDeclaration(m) && ts.isIdentifier(m.name) && !m.modifiers?.some((x) => x.kind === K.StaticKeyword) && replacinglyDecorated(checker, m)) out.add(m.name.text);
     return out;
   }
   const isWorldField = (n) => !!(ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && currentUnit?.cls && !accessorOf(n, 'get') && !accessorOf(n, 'set') && !fns.has(`${currentUnit.className}.${n.name.text}`) && (mutatedFields(currentUnit.cls).has(n.name.text) || currentUnit.isCtor)); // in a constructor every field of this is written through the world: that is what the constructor does
@@ -905,6 +906,7 @@ function translateOnce(file, fnName, opts = {}) {
   const thisRequest = (u, name) => {
     const callee = ownUnit(u, name);
     if (!callee || !u?.cls || callee.isStatic || u.isStatic || callee.accessor) return false;
+    if (decoratorMayReplace(checker, u.cls, name)) return true; // the property the chain finds is a decorator's result, not the class's text (step 20)
     const s = sealedMember(checker, sf, u.cls, name);
     if (s) { if (s.assumed) assumeLines.add(`// ASSUME ${fname(u.name)}: sealed receiver ${u.className}.${name} (${s.why})`); return false; }
     return true;
@@ -1477,7 +1479,7 @@ function translateOnce(file, fnName, opts = {}) {
   function madeDispatch(recv, cls, name) {
     const made = madeBy(recv);
     if (!made) return false;
-    if (made.some((c) => decoratorMayReplace(checker, c, name))) return false; // an instance made here holds what a decorator returned (common.mjs decoratorMayReplace): a request, as on any receiver
+    if (made.some((c) => decoratorMayReplace(checker, c, name))) return false; // an instance made here holds what a decorator returned (decorators.mjs decoratorMayReplace): a request, as on any receiver
     return made.every((c) => { const ch = chainOf(c); const owner = ch.classes.find((k) => k.members.some((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === K.StaticKeyword))); return owner === cls; });
   }
   // the name of a request on a held receiver carries the code a made instance of its type would run: the reach of every
@@ -4452,7 +4454,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       const asClass = classRef(recv); const sfc = asClass ?? (isOptional(typeOf(recv)) ? null : sameFileClassOf(typeOf(recv)));
       const callee = sfc ? fns.get(`${sfc.name.text}.${name}`) : null;
       if (callee && asClass && callee.isStatic && staticReplaced(sfc, callee)) {
-        // a static method a decorator may replace (step 20, common.mjs decoratorMayReplace): the class's property is the
+        // a static method a decorator may replace (step 20, decorators.mjs decoratorMayReplace): the class's property is the
         // decorator's result, so the call is a request of the world named by the class's code, decorators included
         const T = classTypeD(sfc);
         return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_static_${name}_held_${hash(reachOf.keyText(sfc))}`, n, [...n.arguments], null, null, true);
