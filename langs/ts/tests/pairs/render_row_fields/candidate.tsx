@@ -14,6 +14,6 @@ export function total(xs: number[]): number {
   return s;
 }
 export function Toggle(props: { start: number }) {
-  const [on, setOn] = useState(props.start > 1000000);
+  const [on, setOn] = useState(false);
   return <button data-testid="toggle" onClick={() => setOn(!on)}>{on ? "ON" : "off"}</button>;
 }
