@@ -1,0 +1,24 @@
+{
+ "candidateOnly": [
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "nested",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "existingInside",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "shared",
+   "verdict": "WITNESS"
+  }
+ ],
+ "why": "A new object whose object parts are literals written inside it, down to primitive or function leaves, is handed as one new object, handed_fresh_<T>(v, k) (translate.mjs freshTree, design/census-reach-2026-10-31.md): no name of the unit holds an inner object and no inner object is another's, so the identities inside are the site's. nested hands such a tree on both sides and is proved; it was refused copied-argument before (a new object holding objects). What stays refused is where an inner object has an identity of its own: existingInside hands p inside a literal (g may write p) and shared hands one object in two slots (g may compare them); their parents are refused copied-argument by lane A, and lane B witnesses both (its fake g writes and compares what it is handed)."
+}

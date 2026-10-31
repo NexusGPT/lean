@@ -2183,6 +2183,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   const points = [], handed = [];
   const namespace = (x) => { if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.declarations?.[0]; return !!d && (d.getSourceFile() !== sf || ts.isImportSpecifier(d) || ts.isNamespaceImport(d) || ts.isImportClause(d)); }; // a lib global or an imported binding as receiver holds no object of this unit's unless it was handed one, which is counted there
   const libraryReceiver = (x, call) => { if ((call.arguments ?? []).some((a) => ts.isFunctionLike(a) || ts.isIdentifier(a))) return false; const t = h.typeOf(x); if (!t || isAny(t)) return false; const ps = t.flags & TF.Union ? t.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [t]; return ps.length > 0 && ps.every((y) => !!(y.flags & TF.StringLike) || isArrayLike(checker, y) || ['Map', 'Set', 'ReadonlyMap', 'ReadonlySet'].includes(y.symbol?.name ?? '')); }; // a library op on an array, a Map, a Set or a string runs no outside code on its receiver (its row is the reading)
+  const inline = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x) || ts.isNonNullExpression(x)) x = x.expression; return ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x) || ts.isNewExpression(x); }; // a new object written in the call itself
   const answer = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isAwaitExpression(x)) x = x.expression; return ts.isCallExpression(x) || ts.isNewExpression(x); }; // the answer of a call reaches what the outside was handed, already counted
   const fnOf = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; }; // a call in a nested function runs when that function runs
   const madeClosure = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) if (ts.isFunctionLike(p)) { const q = p.parent; if (!(q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && (q.arguments ?? []).includes(p)) || h.quiet?.(q) || effect(q)) return true; } return false; }; // a function value the unit makes and keeps, or hands to a call that runs outside code or to a hook, is its code and its cells (SEMANTICS.md, function values): its body is no read of the unit; a callback of a library op is read inline and stays
@@ -2192,7 +2193,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
       points.push(n);
       if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
-        for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a) && (h.freshAlone(a) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts reaches only itself
+        for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a) && ((inline(a) && h.freshAlone(a)) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts written in the call reaches only itself, which no name of the unit holds; one bound to a name is that name's object, which the call may write (`const x = { n: 1 }; g(x); x.n`), so it is handed (design/census-reach-2026-10-31.md)
         const f = n.expression;
         if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression });
       } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression), node: n.expression });
@@ -2215,8 +2216,31 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
     return [...inner, ...(idx ? [idx] : [])].some((x) => reaches(x, o, depth + 1, seen));
   };
+  // a call on a path that leaves the function before x runs: c sits in a block that, from c's statement on, reaches a
+  // return or a throw of its own with no break or continue before it, x lies outside that block in the same function,
+  // and no try or label encloses the block (a catch or a finally runs after the throw or the return; a labeled break
+  // resumes the function); `if (!p) throw new E(p)` then `p.x`. Text order counted such a call before every later read
+  // (design/census-reach-2026-10-31.md)
+  const holds = (y, x) => y.pos <= x.pos && x.end <= y.end;
+  const resumes = (n) => { let hit = false; const w = (y) => { if (hit || ts.isFunctionLike(y)) return; if (ts.isBreakStatement(y) || ts.isContinueStatement(y) || ts.isLabeledStatement(y) || ts.isTryStatement(y)) { hit = true; return; } ts.forEachChild(y, w); }; w(n); return hit; };
+  const exitsBefore = (c, x) => {
+    if (fnOf(c) !== fnOf(x)) return false;
+    let exit = null;
+    for (let p = c; p && p !== body && !ts.isFunctionLike(p); p = p.parent) {
+      const par = p.parent;
+      if (!par) return false;
+      if (exit) { if (ts.isTryStatement(par) || ts.isLabeledStatement(par)) return false; continue; }
+      if (holds(p, x)) return false;
+      if (ts.isReturnStatement(p) || ts.isThrowStatement(p)) { exit = p; if (ts.isTryStatement(par) || ts.isLabeledStatement(par)) return false; continue; }
+      if ((ts.isBlock(par) || ts.isCaseClause(par) || ts.isDefaultClause(par)) && !holds(par, x)) {
+        const i = par.statements.indexOf(p), j = par.statements.findIndex((st, k) => k >= i && (ts.isReturnStatement(st) || ts.isThrowStatement(st)));
+        if (i >= 0 && j >= 0 && !par.statements.slice(i, j).some(resumes)) { exit = par; if (ts.isTryStatement(par.parent) || ts.isLabeledStatement(par.parent)) return false; }
+      }
+    }
+    return !!exit;
+  };
   // a call reaches what it is handed and what calls started before it were handed (the outside may keep it), and in a loop what the loop hands
-  const ranBy = (h, c) => h === c || h.getEnd() <= c.getStart(sf) || (c.pos <= h.pos && h.end <= c.end) || loops(h).some((l) => loops(c).includes(l)); // h ran before c ends: c itself, a call before it, one inside its operands, or one its loop repeats
+  const ranBy = (h, c) => h === c || ((h.getEnd() <= c.getStart(sf) && !exitsBefore(h, c)) || (c.pos <= h.pos && h.end <= c.end)) || loops(h).some((l) => loops(c).includes(l)); // h ran before c ends: c itself, a call before it, one inside its operands, or one its loop repeats
   const reached = (o, c) => handed.find((x) => ranBy(x.at, c) && reaches(x.t, o)) ?? null;
   const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
   const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
@@ -2232,7 +2256,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     why = { call: c, handed: hit.node };
     const inside = c.pos <= occ.pos && occ.end <= c.end;
     if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
-    if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf)) return true;
+    if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf) && !exitsBefore(c, occ)) return true;
     const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside;
   });
   const declOfSym = (s) => s?.valueDeclaration ?? s?.declarations?.[0];

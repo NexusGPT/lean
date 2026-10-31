@@ -699,6 +699,7 @@ async function adviceLabels(add) {
     ['census-usage', scriptRow('runtime', 'census-usage', 'census.mjs prints usage on --help (exit 0) and on no arguments (exit 2)', [path.join(here, 'census_usage.mjs')], lastLine)],
     // a census refusal example carries the finding's message, the form the rule refused (types inventory lane, 2026-10-30)
     ['census-example-message', scriptRow('runtime', 'census-example-message', 'each refusal example carries its finding\'s message', [path.join(here, 'census_example_message.mjs')], lastLine)],
+    ['refusal-path-space', scriptRow('runtime', 'refusal-path-space', 'a translator refusal in a path with a space keeps its rule', [path.join(here, 'refusal-path-space.mjs')], lastLine)],
     ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],

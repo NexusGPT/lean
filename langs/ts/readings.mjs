@@ -665,7 +665,9 @@ export function readingOfFinding(rule, msg = '') {
 }
 // the reading a translator refusal is: its rule prefix (`rule: text`, the lint's rule the translator names) through the
 // lint's table, else the first reading whose pattern matches; the message is the text after `file:line: `
-export const translatorText = (message) => String(message).replace(/^[^\s:]+\.(?:[cm]?[jt]sx?):\d+: /, '');
+// the translator's `<file>:<line>: ` prefix; the path may hold spaces or a drive colon (`page 2.tsx`, `C:\a b\x.ts`), so it is
+// the text before the first `.<ext>:<line>: ` that holds no `: ` (a rule's text starts with one), never a run of non-space characters (design/census-reach-2026-10-31.md)
+export const translatorText = (message) => String(message).replace(/^(?:(?!: )[^\n])*?\.(?:[cm]?[jt]sx?):\d+: /, '');
 export function readingOfRefusal(message) {
   const text = translatorText(message);
   const m = /^([a-z][a-z0-9-]*): ([\s\S]*)$/.exec(text);

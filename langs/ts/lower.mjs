@@ -700,6 +700,12 @@ function cacheWrite(file, key, json) {
   finally { try { fs.unlinkSync(next); } catch (e) { if (e.code !== 'ENOENT') console.error(`lowering cache cleanup ${e.code}: ${next}`); } }
 }
 // the record of every unit the ranges reach; opts as the lint takes them (project, loaded, advisory, anyType)
+// The gate's first finding in a translator refusal, `outside the subset:\n  <file>:<line>:<col> <rule> <msg>`, or null. The
+// path is the text before the first `:<line>:<col> ` that holds no `: ` (it may hold spaces, `page 2.tsx`), never a run of non-space characters.
+export function gateFinding(message) {
+  const g = /^outside the subset:\n\s+(?:(?!: )[^\n])*?:(\d+):\d+\s+(\S+)\s+(.*)$/m.exec(String(message));
+  return g ? { line: Number(g[1]), rule: g[2], msg: g[3] } : null;
+}
 export function lowerFile(file, ranges = null, opts = {}) {
   const abs = path.resolve(file);
   const given = opts.loaded ?? measureLowering('load file', () => loadProgram(file, { project: opts.project ?? true }));
@@ -741,8 +747,8 @@ export function lowerFile(file, ranges = null, opts = {}) {
       catch (e) {
         const message = String(e?.message ?? e);
         if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }
-        const gate = /^outside the subset:\n\s+\S+?:(\d+):\d+\s+(\S+)\s+(.*)$/m.exec(message); // the gate over the unit and its callees: its first finding
-        if (gate) { const [, line, rule, msg] = gate; refuse(u, readingOfFinding(rule, msg) ?? (rule === 'withdrawn' || rule === 'no-reading' ? rule : 'uncatalogued'), rule, msg, Number(line), 'gate'); continue; }
+        const gate = gateFinding(message); // the gate over the unit and its callees: its first finding
+        if (gate) { const { line, rule, msg } = gate; refuse(u, readingOfFinding(rule, msg) ?? (rule === 'withdrawn' || rule === 'no-reading' ? rule : 'uncatalogued'), rule, msg, line, 'gate'); continue; }
         const text = translatorText(message.split('\n')[0]), id = readingOfRefusal(text) ?? 'uncatalogued';
         const m = /^([a-z][a-z0-9-]*): /.exec(text), line = Number(/:(\d+): /.exec(message)?.[1] ?? u.lines[0]);
         refuse(u, id, m && m[1] !== 'internal' ? m[1] : id, text, line, 'translate', translatorSite(e.stack));

@@ -1,0 +1,19 @@
+{
+ "candidateOnly": [
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "local",
+   "verdict": "PASS-bounded",
+   "laneA": "read-after-call"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "inline",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  }
+ ],
+ "why": "A new record of primitive fields handed to a call that threads the world reaches only itself (design/alias-result.md, copied-argument). common.mjs readAfterCall skipped such an argument entirely, also when it was a name bound to the literal, so `const x = { n: 1 }; g(x); return x.n` read x.n as before the call and lane A proved local equal to a candidate returning 1; a g that writes its argument tells them apart. Now only a literal written in the call itself is skipped (no name of the unit holds it); a name bound to one is handed, so the read after the call is refused or read through the world (design/census-reach-2026-10-31.md). inline hands a literal written in the call on both sides and stays proved. Lane B passes local at n 30: its fake g did not write the handed record on the drawn calls; the row is PASS-bounded, never PASS-proved."
+}
