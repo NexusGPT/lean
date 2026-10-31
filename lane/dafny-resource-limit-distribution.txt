@@ -1,0 +1,58 @@
+calls 447 (index 447, no CSV 0); rows 11503; conditions 11503; outcomes {"Passed":10459,"Failed":1044}
+max 177525077  p99 948087  p90 98781  median 31507
+ten largest (resource count, seconds at that run, outcome, condition, file):
+  177525077	32.2 s	Failed	EqualCanon_retitle_named (correctness)	/tmp/lean-ts-KfZpYi/pair_heap_shapes/theorem.dfy
+  78587652	120.0 s	Failed	JsUnsigned_bv32 (well-formedness)	/tmp/lean-ts-KfZpYi/pair_heap_shapes/theorem.dfy
+  71893778	120.0 s	Failed	JsUnsigned_bv32 (well-formedness)	/tmp/lean-ts-KfZpYi/pair_numbers_bits/theorem.dfy
+  52872394	120.0 s	Failed	JsUnsigned_bv32 (well-formedness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+  50242576	120.1 s	Failed	EqualCanon_bump_named (correctness)	/tmp/lean-ts-KfZpYi/pair_heap5_arith/theorem.dfy
+  49349391	120.1 s	Failed	EqualCanon_setflag_named (correctness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+  37283198	120.1 s	Failed	EqualCanon_clearlow_named (correctness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+  21153268	8.0 s	Failed	EqualCanon_mark_read_named (correctness)	/tmp/lean-ts-KfZpYi/pair_heap_3/theorem.dfy
+  16697049	6.6 s	Passed	JsBitsInjective (correctness)	/tmp/lean-ts-KfZpYi/pair_object_methods/theorem.dfy
+  16697049	17.0 s	Passed	JsBitsInjective (correctness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+rate over 107 rows >= 1e6 resources: slowest 310464/s (EqualCanon_clearlow_named (correctness), 120.1 s), median 1920767/s, fastest 31578431/s
+  not passed: Failed	16131	0.1 s	Equal_window_size (correctness)	/tmp/lean-ts-KfZpYi/pair_clock_read/theorem.dfy
+  not passed: Failed	15669	0.1 s	Equal_across_port (correctness)	/tmp/lean-ts-KfZpYi/pair_clock_read/theorem.dfy
+  not passed: Failed	19314	0.1 s	Equal_high_resolution_window (correctness)	/tmp/lean-ts-KfZpYi/pair_clock_read/theorem.dfy
+  not passed: Failed	17738	0.1 s	Equal_date_window (correctness)	/tmp/lean-ts-KfZpYi/pair_clock_read/theorem.dfy
+  not passed: Failed	16131	0.1 s	Equal_performance_window (correctness)	/tmp/lean-ts-KfZpYi/pair_clock_read/theorem.dfy
+  not passed: Failed	673798	0.6 s	Equal_read_mechanic (correctness)	/tmp/lean-ts-KfZpYi/pair_absent_number/theorem.dfy
+  not passed: Failed	89010	0.3 s	Equal_nth_of (correctness)	/tmp/lean-ts-KfZpYi/pair_absent_number/theorem.dfy
+  not passed: Failed	77483	0.2 s	Equal_entry_kind (correctness)	/tmp/lean-ts-KfZpYi/pair_absent_number/theorem.dfy
+  not passed: Failed	23516	0.1 s	Equal_entry_let (correctness)	/tmp/lean-ts-KfZpYi/pair_absent_number/theorem.dfy
+  not passed: Failed	673798	0.8 s	Equal_read_mechanic (correctness)	/tmp/lean-check-lD65hm/theorem.dfy
+  not passed: Failed	5330	0.2 s	Equal_self_eq (correctness)	/tmp/lean-ts-KfZpYi/pair_any_equality/theorem.dfy
+  not passed: Failed	14965	0.1 s	Equal_narrowed (correctness)	/tmp/lean-ts-KfZpYi/pair_any_equality/theorem.dfy
+  not passed: Failed	15532	0.1 s	Equal_switch_self (correctness)	/tmp/lean-ts-KfZpYi/pair_any_equality/theorem.dfy
+  not passed: Failed	5330	0.1 s	Equal_same_self (correctness)	/tmp/lean-ts-KfZpYi/pair_any_equality/theorem.dfy
+  not passed: Failed	23516	0.1 s	Equal_entry_let (correctness)	/tmp/lean-check-zjHxZJ/theorem.dfy
+  not passed: Failed	49349391	120.1 s	EqualCanon_setflag_named (correctness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+  not passed: Failed	37283198	120.1 s	EqualCanon_clearlow_named (correctness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+  not passed: Failed	52872394	120.0 s	JsUnsigned_bv32 (well-formedness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+  not passed: Failed	280471	0.3 s	EqualCanon_setwitness_initial (correctness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+  not passed: Failed	172711	0.2 s	Equal_stamp (correctness)	/tmp/lean-ts-KfZpYi/pair_arithmetic_core/theorem.dfy
+
+proved conditions 10459: max 16697049  p99 598680  p90 92107  median 31082
+  16697049	6.6 s	JsBitsInjective (correctness)	pair_object_methods/theorem.dfy
+  16697049	17.0 s	JsBitsInjective (correctness)	pair_arithmetic_core/theorem.dfy
+  16696259	7.8 s	JsBitsInjective (correctness)	pair_numbers_bits_rebase/theorem.dfy
+  15569653	10.2 s	EqualCanon_pair_named (correctness)	pair_heap_canonical/theorem.dfy
+  14665278	7.4 s	EqualCanon_attach_named (correctness)	pair_heap_canonical/theorem.dfy
+  14498714	2.9 s	JsHalfBitsNat (correctness)	pair_object_methods/theorem.dfy
+  14498714	3.7 s	JsHalfBitsNat (correctness)	pair_arithmetic_core/theorem.dfy
+  14497889	2.7 s	JsHalfBitsNat (correctness)	pair_numbers_bits_rebase/theorem.dfy
+  12565575	9.6 s	CheckReplace (correctness)	string_helpers.dfy
+  9030423	4.7 s	EqualCanon_unhook_named (correctness)	pair_heap_canonical/theorem.dfy
+
+not proved conditions 1044; the ten largest:
+  177525077	32.2 s	EqualCanon_retitle_named (correctness)	pair_heap_shapes/theorem.dfy	120
+  78587652	120.0 s	JsUnsigned_bv32 (well-formedness)	pair_heap_shapes/theorem.dfy	120
+  71893778	120.0 s	JsUnsigned_bv32 (well-formedness)	pair_numbers_bits/theorem.dfy	120
+  52872394	120.0 s	JsUnsigned_bv32 (well-formedness)	pair_arithmetic_core/theorem.dfy	120
+  50242576	120.1 s	EqualCanon_bump_named (correctness)	pair_heap5_arith/theorem.dfy	120
+  49349391	120.1 s	EqualCanon_setflag_named (correctness)	pair_arithmetic_core/theorem.dfy	120
+  37283198	120.1 s	EqualCanon_clearlow_named (correctness)	pair_arithmetic_core/theorem.dfy	120
+  21153268	8.0 s	EqualCanon_mark_read_named (correctness)	pair_heap_3/theorem.dfy	120
+  11924208	0.4 s	Equal_strategy_refactor (correctness)	pair_object_methods/theorem.dfy	120
+  8679479	0.6 s	Equal_strategy (correctness)	pair_object_methods/theorem.dfy	120
