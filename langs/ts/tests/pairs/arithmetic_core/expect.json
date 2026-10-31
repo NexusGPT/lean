@@ -28,7 +28,7 @@
   "parity": "witness",
   "orwitness": "witness",
   "setflag": true,
-  "clearlow": true,
+  "clearlow": false,
   "stamp": true,
   "store": true,
   "setwitness": false

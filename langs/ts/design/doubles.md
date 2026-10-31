@@ -96,7 +96,8 @@ The decision of 29 Oct: the reading is exact where the model is provably faithfu
 and opaque where the model forgets. A number is read exactly, as a Dafny int or real holding its value, only under two
 discharged obligations:
 1. **Integrality.** The value is built from integral sources: an integer literal, `.length` of a string, array or
-   tuple, an index result (`indexOf`, `findIndex`, `search`), a counter, a bitwise result, Math.trunc/floor/ceil/round
+   tuple, an index result (`indexOf`, `findIndex`, `search`), a counter, a bitwise result (whatever its operands hold:
+   below), Math.trunc/floor/ceil/round
    of such a value, `+` and `-` of such values, `*` when both are nonnegative or one is a positive literal, `%` with a
    nonnegative dividend and a divisor that is never 0, `floor(a / b)` with a >= 0 and b > 0.
 2. **The safe range.** `|v| <= 2^53`, discharged by interval arithmetic over those sources. A length lies below 2^32,
@@ -111,8 +112,12 @@ Every other number is a double the model does not compute. The translator (`--co
 rewrites the source in memory, line for line, as `common.mjs normaliseApplyCalls` does. Each operation on such a number
 becomes an uninterpreted function `Math.__lean_<op>` (declared in `lean-number.d.ts`). The translator reads it as a
 pure external keyed by name and types, the same symbol on both sides. The rewritten operations:
-- arithmetic, bitwise, relational and equality operators;
-- unary minus and `~`;
+- arithmetic, relational and equality operators;
+- unary minus;
+- the operand of a bitwise operator or of `~` (`Math.__lean_toint32`): the operator reads ToInt32 of it (ToUint32 for
+  the left of `>>>` and a shift count, the same 32 bits), so the operator's result is an exact int32 (uint32 for `>>>`)
+  whatever the double holds, and the operator itself is read by the ordinary lane's bv32 helpers
+  (heap-stage5.md section 13, 2026-10-31);
 - truthiness (`Math.__lean_truthy`): a condition, `!`, `&&`, `||`;
 - the exact Math functions over an opaque argument;
 - a compound assignment or an update statement, rewritten as `x = Math.__lean_add(x, 1)`.

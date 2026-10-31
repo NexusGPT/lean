@@ -13,7 +13,8 @@
 // Exact sources (each with a static interval, the safe-range obligation discharged by interval arithmetic):
 //   an integer literal within 2^53; `.length` of a string, an array or a tuple (ECMA-262: an array length is a Uint32,
 //   a string length below 2^53; both below 2^32 here as the lead's axiom); indexOf, lastIndexOf, findIndex,
-//   findLastIndex, search ([-1, 2^32)); the result of a bitwise operator on exact operands (int32 / uint32);
+//   findLastIndex, search ([-1, 2^32)); the result of a bitwise operator (int32 / uint32), its operands any numbers:
+//   an operand the model does not hold passes through the uninterpreted ToInt32 (`Math.__lean_toint32`);
 //   Math.trunc/floor/ceil/round/abs/min/max/sign of exact operands; `a + b`, `a - b`; `a * b` when both are nonnegative
 //   or one is a positive literal; `a % b` with a nonnegative dividend and a divisor that is never 0; `Math.floor(a / b)`
 //   and `Math.trunc(a / b)` with a >= 0 and b > 0; unary minus of an exact value that is never 0; a conditional of two
@@ -87,10 +88,10 @@ export function faithfulNumbers(loaded) {
     if (!isNum(n)) return null;
     const lv = literalValue(n); if (lv !== null) return fits({ lo: lv, hi: lv });
     if (ts.isPrefixUnaryExpression(n)) {
+      if (n.operator === K.TildeToken) return isNum(n.operand) ? I32 : null; // ToInt32 of any double, negated bit by bit: an int32 (its operand, when not exact, passes through the uninterpreted ToInt32: bitOperand)
       const o = exact(n.operand); if (!o) return null;
       if (n.operator === K.PlusToken) return o;
       if (n.operator === K.MinusToken) return has0(o) ? null : { lo: -o.hi, hi: -o.lo };
-      if (n.operator === K.TildeToken) return I32;
       return null;
     }
     if (ts.isPropertyAccessExpression(n) && n.name.text === 'length' && isSeqT(typeAt(n.expression))) return { lo: 0n, hi: LEN - 1n };
@@ -99,9 +100,9 @@ export function faithfulNumbers(loaded) {
       const op = n.operatorToken.kind;
       if (op === K.CommaToken) return exact(n.right);
       if (!isNum(n.left) || !isNum(n.right)) return null;
+      if (BITS[op]) return op === K.GreaterThanGreaterThanGreaterThanToken ? U32 : I32; // ToInt32 (ToUint32) of any two doubles, combined on 32 bits: an int32 (a uint32 for >>>) whatever the operands hold
       const a = exact(n.left), b = exact(n.right);
       if (!a || !b) return null;
-      if (BITS[op]) return op === K.GreaterThanGreaterThanGreaterThanToken ? U32 : I32;
       if (op === K.PlusToken) return fits({ lo: a.lo + b.lo, hi: a.hi + b.hi });
       if (op === K.MinusToken) return fits({ lo: a.lo - b.hi, hi: a.hi - b.lo });
       if (op === K.AsteriskToken) {
@@ -299,12 +300,23 @@ export function faithfulNumbers(loaded) {
   // ----- the rewrite: text of each node, children first -----
   const ops = new Set();
   const call = (name, args) => { ops.add(name); return `Math.__lean_${name}(${args.join(', ')})`; };
+  // an operand of a bitwise operator the model does not hold: the operator reads it through ToInt32 (ToUint32 for the
+  // left of >>> and a shift count: the same 32 bits, which the bitwise helpers read modulo 2^32), one uninterpreted
+  // function of the double, the same symbol on both sides; the operator itself is then exact (exactOf above)
+  const bitOperand = (n) => {
+    if (!ts.isExpression(n) || !isNum(n) || exact(n) || ts.isNumericLiteral(n)) return false;
+    let x = n, p = n.parent; while (p && (ts.isParenthesizedExpression(p) || ts.isAsExpression(p) || ts.isNonNullExpression(p) || ts.isTypeAssertionExpression(p) || (ts.isSatisfiesExpression && ts.isSatisfiesExpression(p)))) { x = p; p = p.parent; }
+    if (!p || p === n) return false;
+    if (ts.isPrefixUnaryExpression(p)) return p.operator === K.TildeToken;
+    return ts.isBinaryExpression(p) && !!BITS[p.operatorToken.kind] && isNum(p.left) && isNum(p.right);
+  };
   const truthy = new Set(), wrapping = new Set(); // conditions holding a non-exact number: read by the uninterpreted truthiness
   const opaqueIn = new Set(); // the units whose text the rewrite changed: their numbers pass through uninterpreted operations
   const touched = (n) => { const u = unitOfNode(n); if (u) opaqueIn.add(u.name); };
   function text(n) {
     if (truthy.has(n) && !wrapping.has(n)) { wrapping.add(n); touched(n); try { return call('truthy', [text(n)]); } finally { wrapping.delete(n); } }
     const own = rewrite(n);
+    if (bitOperand(n)) { touched(n); return call('toint32', [own ?? splice(n)]); }
     if (own !== null) { touched(n); return own; }
     return splice(n);
   }
@@ -355,7 +367,6 @@ export function faithfulNumbers(loaded) {
     if (ts.isPrefixUnaryExpression(n) && numOperand(n.operand)) {
       if (n.operator === K.MinusToken && !exact(n) && !ts.isNumericLiteral(unparen(n.operand))) return call('neg', [text(n.operand)]);
       if (n.operator === K.MinusToken && ts.isNumericLiteral(unparen(n.operand)) && literalValue(unparen(n.operand)) === 0n) return call('neg', [text(n.operand)]); // `-0`
-      if (n.operator === K.TildeToken && !exact(n.operand)) return call('bitnot', [text(n.operand)]);
       if (n.operator === K.ExclamationToken && !exact(n.operand)) return `!${call('truthy', [text(n.operand)])}`;
       return null;
     }
@@ -399,7 +410,7 @@ export function faithfulNumbers(loaded) {
     ts.forEachChild(n, (c) => { const st = c.getStart(sf); if (st < at) return; copy(at, st); emit(c); at = c.end; });
     copy(at, n.end);
   }
-  const rewriteProbe = (n) => rewrite(n) !== null; // rewrite is a pure function of the node but for the reasons it records (kept once each)
+  const rewriteProbe = (n) => rewrite(n) !== null || bitOperand(n); // rewrite is a pure function of the node but for the reasons it records (kept once each)
   let at0 = 0;
   ts.forEachChild(sf, (c) => { const st = c.getStart(sf); copy(at0, st); emit(c); at0 = c.end; });
   copy(at0, sf.text.length);
