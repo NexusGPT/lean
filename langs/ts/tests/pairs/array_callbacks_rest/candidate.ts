@@ -42,3 +42,26 @@ export function doubled(o: Order): void {
   const big = o.prices.some((p) => p * 2 > 100);
   o.lines.forEach((l) => { l.big = big; });
 }
+
+export function numberLines(o: Order): void {
+  const lines = o.lines;
+  lines.forEach((l, i) => { l.qty = i; });
+}
+
+export function total(o: Order): void {
+  const sum = o.prices.reduce((a, p) => a + p, 0);
+  o.lines.forEach((l) => { l.qty = sum; });
+}
+
+export function totalGuarded(o: Order): void {
+  const prices = o.prices;
+  if (prices.length === 0) return;
+  const sum = prices.reduce((a, p) => a + p);
+  o.lines.forEach((l) => { l.qty = sum; });
+}
+
+export function weighLet(o: Order): void {
+  const prices = o.prices;
+  const ws = prices.map((p) => { let w = p * 2; return w + 1; });
+  o.lines.forEach((l) => { l.qty = ws.length; });
+}

@@ -265,6 +265,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   let thisParam = null; // the current free function's declared `this` parameter: its receiver operand, written and read like any parameter
   const RECEIVER_WRITE = 'a write through the declared `this` of a free function rebuilds a nonoptional data record; a class, array, dictionary or optional receiver (or a container on the path) has no such value: take the value as a parameter and return the new one';
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
+  const indexedForEach = []; // the forEach statements with an index read as their loop: advice only (opts.advisory), the converter's counted for
   let switchDepth = 0;
   let loopDepth = 0;
   const promiseCallbacks = new Set(); // inline promise bodies have their own fault channel
@@ -950,7 +951,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (!decision?.admissionRefused) return null;
     const w = decision.target, r = decision.root, d = decision.sourceDecl, call = decision.sourceCall;
     if (call.expression.name.text === 'reduce' && d.parent.parameters[0] === d) return v(w, 'alias-mutation', `\`${r.text}\` is the accumulator \`reduce\` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (\`{}\`, \`[]\`, \`new Map()\`), every step returns the accumulator, and the write is one step deep (\`acc[k] = v\`) (escape reduce_accumulator_element)`);
-    return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
+    return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter (and an index) over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
   }
   function exprStmt(e) {
     if (ts.isYieldExpression(e)) return expr(e);
@@ -1631,17 +1632,20 @@ export function admissionFindings(file, ranges = null, opts = {}) {
           const cb = e.arguments[0]; const r0 = e.expression.expression; const rt0 = tOf(r0);
           const iterable = isArrayExpr(r0) || nonNull(rt0).every((t) => isSetT(t) || isMapT(t)) || nonNull(rt0).some(isAny);
           if (e.arguments.length === 1 && ts.isArrowFunction(cb) && (cb.modifiers?.some((m) => m.kind === K.AsyncKeyword) || isPromiseT(checker.getSignatureFromDeclaration(cb).getReturnType()))) return v(e, 'foreach', 'forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x of xs)` and await inside');
-          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && cb.parameters.length === 1 && ts.isIdentifier(cb.parameters[0].name) && iterable) {
+          // the second parameter, over an array, is the index (ECMA-262 23.1.3.15: the position, 0 below the length read
+          // once): a plain name, read as the loop's position; a Set or Map passes another value there, never read here
+          const indexed = ts.isArrowFunction(cb) && cb.parameters.length === 2 && isArrayExpr(r0) && ts.isIdentifier(cb.parameters[1].name) && !cb.parameters[1].initializer && !cb.parameters[1].dotDotDotToken && !cb.parameters[1].questionToken;
+          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && (cb.parameters.length === 1 || indexed) && ts.isIdentifier(cb.parameters[0].name) && iterable) {
             let use = e; while (use.parent && ts.isParenthesizedExpression(use.parent)) use = use.parent;
             const outer = use.parent;
             if (!(outer && (ts.isExpressionStatement(outer) || (ts.isArrowFunction(outer) && outer.body === use && outer.parent && ts.isCallExpression(outer.parent) && ts.isPropertyAccessExpression(outer.parent.expression) && outer.parent.expression.name.text === 'forEach')))) return v(e, 'foreach', 'forEach is read as a statement; put it in a block before returning a value');
-            expr(recv); checkCallbackControl(cb);
+            expr(recv); checkCallbackControl(cb); if (indexed) indexedForEach.push(e);
             checkType(tOf(cb.parameters[0].name), cb.parameters[0]);
             loopDepth++; forEachDepth++;
             try { if (ts.isBlock(cb.body)) stmts(cb.body.statements); else exprStmt(cb.body); } finally { loopDepth--; forEachDepth--; }
             return;
           }
-          return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter');
+          return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter (and an index, over an array)');
         }
         if (name === 'sort' || name === 'reverse') {
           // in place on a value nobody else holds (a literal, a spread copy, a call result): the result is a new sequence
@@ -1654,6 +1658,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
         if (Object.hasOwn(cbNames, name)) {
           if (!e.arguments.length) return v(e, 'unsupported-call', `${name} needs a callback`);
           callback(e.arguments[0], cbNames[name]);
+          // reduce without an initial value (ECMA-262 23.1.3.24): the first element is the accumulator, the fold runs over the
+          // rest, and an empty array throws a TypeError; read for an inline pure arrow only (no loop of effects to fault in)
+          if (name === 'reduce' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0]) && !callbackNeedsLoop(e.arguments[0])) return;
           if (name === 'reduce') { if (e.arguments.length !== 2) return v(e, 'unsupported-call', 'reduce needs a callback and an initial value'); expr(e.arguments[1]); }
           return;
         }
@@ -2392,6 +2399,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       ts.forEachChild(node, walkAdvice);
     };
     walkAdvice(sf);
+    // an indexed forEach is read as its loop (heap-stage5.md 11d); the counted for the converter writes (convert/foreach.mjs)
+    // names the index as the loop does, a migration a person may take, never a refusal
+    for (const c of indexedForEach) note(c, 'foreach', 'forEach with an index is read as the loop over the positions; a counted for states the index and the element');
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
