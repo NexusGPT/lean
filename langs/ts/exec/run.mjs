@@ -37,6 +37,7 @@ import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
 import { stylesLayer, projectConfig } from './styles.mjs';
 import { contextRow } from '../hooks.mjs';
+import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 
 const require = createRequire(import.meta.url);
@@ -286,7 +287,8 @@ function reactRuntime(env) {
       const slots = (env.hookSlots ??= []);
       if (!(i in slots)) { slots[i] = typeof initial === 'function' ? initial() : initial; env.record('hook', key, [render(slots[i])]); }
       const value = slots[i];
-      const setter = (next) => { const v = typeof next === 'function' ? next(slots[i]) : next; if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; // no trace record: the slots after the handler are the observation (observeJsx), so the order of setter calls inside one handler, React's batching, is not
+      const setter = (next) => { const v = typeof next === 'function' && !next.__isFake ? next(slots[i]) : next; // a fake is the value the world answered, never an updater: calling it would ask the world what the app never asked
+      if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; // no trace record: the slots after the handler are the observation (observeJsx), so the order of setter calls inside one handler, React's batching, is not
       ownFunction(setter, env); // a setter handed on is this side's function: its handle is numbered and it is driven like the unit's own (design/callbacks.md)
       (env.setterIndex ??= new WeakMap()).set(setter, i); // the slot a setter writes: the loader's __lean_s mark turns it into position -> slot on the current frame
       return [value, setter];
@@ -505,7 +507,7 @@ export function sandbox(env, root) {
     parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
   };
-  g.globalThis = g; g.global = g; g.window = g;
+  { const named = bridgeGlobal(env, g); g.globalThis = named; g.global = named; g.window = named; } // the global object by name: a member the host app sets and the sandbox does not (a preload bridge) is the bridge fake (exec/bridge.mjs, design/bridge-fake.md)
   // the loader's marks (leanMarks): a handler attribute's function value and a useState pair, each with its source position
   g.__lean_h = (pos, fn, file) => { if (typeof fn === 'function') (env.handlerPos ??= new WeakMap()).set(fn, { pos, file }); return fn; };
   g.__lean_s = (pos, pair, file) => { const i = Array.isArray(pair) && typeof pair[1] === 'function' ? env.setterIndex?.get(pair[1]) : undefined; if (i !== undefined) { const holder = env.hookFrame ?? env; (holder.statePos ??= new Map()).set(`${file}:${pos}`, i); } return pair; };
@@ -860,7 +862,8 @@ async function observeWindow(side, spec, args, ms) {
       try { const cleanup = await awaitUnit(env, Promise.resolve(callUnit(env, effect)), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); if (es) { es.ran = true; es.lastDeps = es.deps; es.cleanup = typeof cleanup === 'function' ? cleanup : null; } }
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
-    if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
+    if (env.reactEffects?.length) { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); } // the mount's effects settle as settleEffects settles a later round: a continuation they started (an answered call's then) runs before the state is read
+    if ((isJsxValue(v) || env.reactEffects?.length) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (env.timers.queue.length) await runTimers(env, ms, 50, env.timerPerm ? { perm: env.timerPerm } : {}); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace; on a timer-order input (gen.mjs, repr.mjs) the ties at one instant in another legal order
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
@@ -1422,6 +1425,7 @@ async function runPairOnce(opts) {
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
+  const bridgeSeen = { calls: new Set(), callbacks: new Set() }; // the bridge calls the fake for an unset global answered on the parent's mounts, and the callbacks it fired, by path (exec/bridge.mjs)
   const states = []; // every state lane B reached: the input as drawn and, for a rendered unit, the tree it rendered (bound.states)
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
@@ -1483,6 +1487,7 @@ async function runPairOnce(opts) {
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     states.push({ input: i, args: sides.parent.drawn, ...(sides.parent.sawJsx && oP.outcome && Object.hasOwn(oP.outcome, 'returned') ? { tree: oP.outcome.returned } : {}) }); // the state reached on input i, as both sides started it
+    { const b = bridgeCounts(sides.parent.env); b.calls.forEach((x) => bridgeSeen.calls.add(x)); b.callbacks.forEach((x) => bridgeSeen.callbacks.add(x)); }
     const stopped = atGuard(oP, sides.parent) && atGuard(oC, sides.candidate);
     if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
@@ -1498,7 +1503,7 @@ async function runPairOnce(opts) {
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run
-  const renderRow = { component: states.some((x) => Object.hasOwn(x, 'tree') && isJsxValue(x.tree)), clock: { epoch: CLOCK_EPOCH }, sequences: [], targets: [], leanHead: opts.recordHead ?? 'unknown' };
+  const renderRow = { component: states.some((x) => Object.hasOwn(x, 'tree') && isJsxValue(x.tree)), clock: { epoch: CLOCK_EPOCH }, sequences: [], targets: [], leanHead: opts.recordHead ?? 'unknown', bridge: { calls: bridgeSeen.calls.size, callbacks: bridgeSeen.callbacks.size } };
   for (const x of states) if (Object.hasOwn(x, 'tree')) addTargets(renderRow.targets, treeTargets(x.tree, true));
   const walkedInto = (i, r) => { if (!r) return; for (const labels of r.walked ?? []) if (!renderRow.sequences.some((x) => x.input === i && JSON.stringify(x.labels) === JSON.stringify(labels))) renderRow.sequences.push({ input: i, labels }); addTargets(renderRow.targets, r.targets ?? []); };
   const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
