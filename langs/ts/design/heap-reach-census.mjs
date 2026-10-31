@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, topLevelFunctions, COMPILER_OPTIONS, loadProgramOptions } from '../common.mjs';
+import { ts, topLevelFunctions, COMPILER_OPTIONS, loadProgramOptions, callbackEnvironment } from '../common.mjs';
 import { makeHeap } from '../translate/heap.mjs';
 
 const args = process.argv.slice(2);
@@ -637,6 +637,9 @@ for (const repo of repos) {
     for (const file of chunk) {
       const sf = program.getSourceFile(file); if (!sf) continue;
       const fns = topLevelFunctions(sf);
+      // a callback unit's captured bindings are its parameters, as the translator plans the core (translate.mjs, the
+      // 'units' analysis): without them every callback that reads an outer name is out, and so is the unit around it
+      for (const u of fns.values()) if (u.form === 'callback') { let caps = []; try { caps = callbackEnvironment(checker, u); } catch { caps = []; } u.params = [...u.params, ...caps.map((c) => Object.assign(Object.create(c.decl), { name: c.decl.name, initializer: undefined, questionToken: undefined, dotDotDotToken: undefined, modifiers: undefined }))]; }
       const order = [...fns.values()];
       const calls = new Map(order.map((u) => [u.name, new Set()]));
       for (const u of order) { const w = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text)) calls.get(u.name).add(n.expression.text); ts.forEachChild(n, w); }; w(u.body); }

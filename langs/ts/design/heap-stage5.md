@@ -213,6 +213,74 @@ Census (resolved, 39 roots), strict graph 647 -> 672, own syntax 1609 -> 1675; `
 {"files":23359,"units":53918,"core":672,"heapOwnFit":1675,"mirrorMismatch":1533,"planErrorCount":0,"seconds":377}
 ```
 
+### 11b. The rest of the array callbacks (2026-10-31)
+
+Read now, beside the one-parameter expression callbacks above:
+- **A callback with an index** `(x, i) => e` for `some`, `every`, `find`, `findIndex`, `map` and `filter`. The index is
+  the item's position, an integer from 0 below the length; in a real file the callback's number is that position as a
+  real (`(x: E, j: int) => (var i := j as real; e)`). `some` and `every` are the quantifiers over the position, `find`
+  and `findIndex` the ordinary lane's `FindIdx` and `FindIndexIdx`, `filter` a fresh cell of `FilterIdx` over the items,
+  `map` a fresh cell of `seq(|it|, (k: int) requires 0 <= k < |it| => f(it[k], k))`: the items as they are at the call,
+  allocated as the one-parameter rows allocate.
+- **A block body of bindings** `(x) => { const a = e1; …; return e; }`: each binding a `const` of one name with an
+  initializer, written in place in the lambda as a Dafny let (`(var a := e1; e)`), in source order; `reduce`'s callback
+  takes the same form.
+- **`indexOf`, `findIndex` and `at` in a real file.** A position is an integer the file reads as a real
+  (`IndexOf(..) as real`); `at`'s number is ToIntegerOrInfinity of it, its truncation (`At(it, JsTrunc_real(n))`), so
+  `at(-1.5)` is `at(-1)`.
+- **A callback's captured bindings.** Every callback is its own unit (common.mjs `callbackUnits`), linked to the unit
+  around it (heap.mjs `plan`: a unit is out when a nested callback unit is out). The translator appends the bindings a
+  callback captures to that unit's parameters (`callbackEnvironment`: each a binding no later write reaches), but the
+  core read them as outside names (`outside name o`), so every unit whose callback reads an outer name stayed out of
+  the core: the section's own `forEach` reading reached only callbacks that read nothing around them. The core now
+  reads a captured binding as the callback unit's input, in its checks, its emission and its loop helpers' free names.
+Soundness: the index is the position the method passes, and every reading above is the one-parameter reading with that
+position beside the item; the callbacks still read and never write (no allocation, element access, division or
+narrowed field read inside them). A `const` binding is evaluated once, in order, before the result, and nothing in a
+callback writes, so a Dafny let is exact. A real position is an integer, so `as real` is exact, and truncation is
+ToIntegerOrInfinity on the finite numbers the real reading holds. A captured binding is one the callback reads as it
+was when the callback was created and no later write reaches, so the callback unit is a function of it; a write to a
+captured name (the enclosing unit's binding) stays out, since the unit's own parameter would hide it.
+Where the section is silent, the choice kept soundness: a callback parameter or a binding whose name ends in an
+underscore stays out, as for the unit's own names (the generated names do).
+Still out, and why: `forEach((x, i) => …)` (the lint reads a `forEach` callback of one parameter only and the ordinary
+lane has no indexed `forEach`: a heap-only reading would never reach a unit, so it is the lint's and the ordinary
+lane's reading together); `reduce` with an index or without an initial value (the latter throws on an empty array);
+`find` of references (an absent reference has no shape); `map` or `filter` inside a callback (an allocation); any other
+block body (a `let`, a branch, a second `return`); a callback of more than two parameters.
+Measured on the way: the core reads an operator on numbers as one bodiless function per operator
+(`ext_call_args_Math_lean_lt_int_int`) and a callback handed to `find`, `findIndex`, `map` or `filter` as a function
+value, so two sides prove equal only when their tests are written alike and those callbacks' text is the same (the
+pairs' equal edits swap the conjuncts of a quantifier, name a receiver or write a binding in place); an edit inside a
+`forEach` body changes its loop helper and is not proved (no induction across two helpers).
+Pairs `array_callbacks_rest` (an int file: `flagSome`, `pickTag`, `firstBig`, `weigh`, `keepFirst` an indexed `some`,
+`find`, `findIndex`, `map`, `filter`, `doubled` a block body, all proved; `flagEvery` an indexed `every` admitting a
+zero, WITNESS) and `array_callbacks_rest_real` (a real file: `whereRush` `indexOf`, `firstBig` `findIndex`, `lastTag`
+`at(-1.5)` for `at(-1)`, `flagSome` an indexed `some`, proved; `whereTag`, WITNESS). Each unit writes the lines a
+`forEach` statement walks, a write only the core reads, so at the base the translator refused every unit
+(`alias-mutation: … the heap core does not read this unit`); each unit's first base reason is this reading's
+(`callback form`, `indexOf in a real file`, `findIndex in a real file`, `at in a real file`). Lint: unchanged.
+Census (`node langs/ts/census.mjs <root> --out <json>`, `NODE_OPTIONS=--max-old-space-size=12288`, one root at a
+time, base `b5c074508` against this reading): n8n 9,610 units, 2,680 entered before and after; langchainjs 6,709 units,
+2,766 entered before and after; `census.mjs --diff` 0 gains and 0 losses in every reading on both, and every unit's
+stop is the same. nexus did not finish either run (the machine's out-of-memory killer, 118 of 122 GB in use, stopped
+the census at 13,712 and 6,000 files); over the 10,094 units of the chunks both finished, 5,552 entered before and
+after, every stop the same. The lint census moves no unit because a unit whose callback the core refused still reaches
+the value lane, which reads it, except for a write through a `forEach` element, and the units holding such a write are
+stopped first by other readings (n8n: one unit stopped by `the heap core does not read this unit`, still stopped).
+Heap reach (`design/heap-reach-census.mjs <concepts.json> <out> --resolve --repos n8n,langchainjs`, the census input
+pointing at the copies under `/root/da/census/repos/`): the tool now plans the core as the translator does, a callback
+unit's captured bindings among its parameters (before, every such callback was out in the tool whatever the core
+read, and the indexed, block and real-file readings moved nothing: core 112, own syntax 490 on both heaps). With it,
+the base heap against this reading:
+```text
+base:  {"files":10784,"units":16319,"core":112,"heapOwnFit":490,"mirrorMismatch":447,"planErrorCount":0,"seconds":145}
+11b:   {"files":10784,"units":16319,"core":114,"heapOwnFit":566,"mirrorMismatch":523,"planErrorCount":0,"seconds":159}
+```
+n8n core 82 -> 82, own syntax 375 -> 427; langchainjs core 30 -> 32 (a unit testing every item of a copy, and its
+callback), own syntax 115 -> 139; no unit left the core. The mirror (`makeMirror`) does not follow the core's
+readings since stage 4, so its mismatch count grows with every reading; it is no check of this core.
+
 ## 12. Discriminated unions of records
 
 Reading: a union of records `A | B` where every alternative declares one field as literals and the alternatives'
