@@ -1,0 +1,7 @@
+{
+ "scope": ["where_rush", "where_tag", "first_big", "last_tag", "flag_some"],
+ "equal": {"where_rush": true, "where_tag": false, "first_big": true, "last_tag": true, "flag_some": true},
+ "why": "heap-stage5.md section 11, the rest in a real file: indexOf, findIndex and at, and an indexed callback, each in a unit that then writes the lines a forEach statement walks (only the heap core reads that write). A real file reads an order of two numbers as one bodiless function per operator, so the edits keep each test as written. whereRush names the tags before indexOf (proved); whereTag finds the first tag that is not rush (unproved, WITNESS); firstBig names the prices before findIndex (proved); lastTag reads at(-1.5), truncated to at(-1) (proved); flagSome swaps an indexed some's tests (proved).",
+ "b": {"whereRush": "PASS-bounded", "whereTag": "WITNESS", "firstBig": "PASS-bounded", "lastTag": "PASS-bounded", "flagSome": "PASS-bounded"},
+ "heap": true
+}

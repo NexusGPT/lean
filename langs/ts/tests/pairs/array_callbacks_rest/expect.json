@@ -1,0 +1,7 @@
+{
+ "scope": ["flag_some", "flag_every", "pick_tag", "first_big", "weigh", "keep_first", "doubled"],
+ "equal": {"flag_some": true, "flag_every": false, "pick_tag": true, "first_big": true, "weigh": true, "keep_first": true, "doubled": true},
+ "why": "heap-stage5.md section 11, the rest: a callback with an index and a callback with a block body of bindings, each in a unit that then writes the lines a forEach statement walks (only the heap core reads that write, so a callback form the core refuses refuses the unit), the forEach callback reading the value it captures. The core reads an operator on numbers as a bodiless function and a callback handed to find, findIndex, map or filter as a function value, so an equal edit keeps each test as written and those callbacks' text. flagSome swaps an indexed some's tests (proved); flagEvery admits a zero price (unproved, WITNESS); pickTag names the tags before an indexed find (proved); firstBig names the prices before an indexed findIndex (proved); weigh names the prices before an indexed map (proved); keepFirst names the prices before an indexed filter (proved); doubled writes a block body's binding in place (proved).",
+ "b": {"flagSome": "PASS-bounded", "flagEvery": "WITNESS", "pickTag": "PASS-bounded", "firstBig": "PASS-bounded", "weigh": "PASS-bounded", "keepFirst": "PASS-bounded", "doubled": "PASS-bounded"},
+ "heap": true
+}
