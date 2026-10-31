@@ -6,6 +6,7 @@
 import fs from 'node:fs'; import os from 'node:os'; import path from 'node:path'; import { spawnSync } from 'node:child_process'; import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url)), ts = path.join(here, '../..'), root = path.join(ts, '../..');
 const { faithfulPlacement } = await import(path.join(ts, 'check.mjs'));
+const { spawnCollect } = await import(path.join(ts, 'exec/capped.mjs')), { dafnyVerifyArgs } = await import(path.join(ts, 'exec/dafny-args.mjs')); // the one bound of every `dafny verify`, under the Dafny wall cap
 const cases = JSON.parse(fs.readFileSync(path.join(here, 'faithful.json'), 'utf8'));
 const run = (cmd, args) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
 let fails = 0;
@@ -16,7 +17,7 @@ for (const c of cases) {
   const th = run('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(d, 'parent.dfy'), '--candidate', path.join(d, 'candidate.dfy'), '--scope', path.join(d, 'scope.json'), '--edit', path.join(d, 'edit.json'), '--out', path.join(d, 'theorem.dfy')]);
   let proved = false, detail = '';
   if (th.status !== 0) detail = 'theorem: ' + (th.stderr || th.stdout).trim().slice(-120);
-  else { const v = run('dafny', ['verify', '--verification-time-limit', '30', path.join(d, 'theorem.dfy')]); const out = v.stdout + v.stderr; const lines = fs.readFileSync(path.join(d, 'theorem.dfy'), 'utf8').split('\n'); const a = lines.findIndex((l) => /^lemma .*Equal_f\(/.test(l)) + 1, b = lines.findIndex((l) => /^\} \/\/ END Equal_f\b/.test(l)) + 1; const errs = [...out.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1])); proved = /finished with \d+ verified/.test(out) && a > 0 && !errs.some((L) => a <= L && L <= b); detail = (out.match(/finished with[^\n]*/) ?? [''])[0]; }
+  else { const v = await spawnCollect('dafny', ['verify', ...dafnyVerifyArgs(), path.join(d, 'theorem.dfy')], { cwd: root, maxBuffer: 1 << 26, dir: d }); const out = v.stdout + v.stderr; const lines = fs.readFileSync(path.join(d, 'theorem.dfy'), 'utf8').split('\n'); const a = lines.findIndex((l) => /^lemma .*Equal_f\(/.test(l)) + 1, b = lines.findIndex((l) => /^\} \/\/ END Equal_f\b/.test(l)) + 1; const errs = [...out.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1])); proved = /finished with \d+ verified/.test(out) && a > 0 && !errs.some((L) => a <= L && L <= b); detail = (out.match(/finished with[^\n]*/) ?? [''])[0]; }
   const pl = faithfulPlacement(d, 'f');
   const reading = pl.placed ? (pl.congruence ? 'congruence' : 'exact') : 'unplaced';
   const got = proved && pl.placed ? 'proved' : 'not proved';

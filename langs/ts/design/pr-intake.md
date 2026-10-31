@@ -40,6 +40,7 @@ failed:timeout means a timeout left no usable verdict.
 failed:translation-defect names the proof harness failure.
 failed:harness names an exception caught outside a lane.
 A bounded or stronger verdict survives a proof lane timeout.
+A proof past its resource limit is ASK:resource-limit, coverage checked: a verdict the same on every machine (design/suite.md, 2026-10-31).
 A JavaScript file is listed unit by unit (design/exported-units.md); a unit whose parameters carry no declared type is refused:untyped-js.
 skipped:binary and skipped:secret-path name excluded files.
 skipped:budget names a unit left after a budget stop.

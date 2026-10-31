@@ -58,7 +58,8 @@ The certificate of `langs/ts/check.mjs` (line 66 onward) holds: the tool name; e
 hex digits of its SHA-256 (line 32); the unit; lane B's verdict, reason and bound (inputs run, seed, time limit, fake
 policy) with each witness's input, its drawn arguments and the source lines on each side (line 79); lane A's lemma
 results, the Dafny summary line, the SHA-256 prefixes of the theorem and the prelude, the output of `dafny --version`,
-the time limit and the temporary folder (line 150).
+the resource limit that bounds the proof (`resourceLimit`; `resourceOut` when the unit's lemma ran out of it), the
+per-batch wall-clock bound that only stops a hung solver (`timeLimitSeconds`) and the temporary folder (line 150).
 `check: certificate: the input files by SHA-256, the bound with its seed, the theorem hash and the Dafny version`
 
 - Held: `timing`, the wall-clock seconds of each lane that ran (`B`, `correspondence`, `doubles`, `translate`, `theorem`,

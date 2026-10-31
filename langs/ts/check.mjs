@@ -18,7 +18,11 @@
 // --unit-seconds bounds lane B's wall clock for the unit (exec/run.mjs runPair: a child process, killed at the bound; the
 // lane B verdict is then ASK spin-bound). Lane A runs after it either way.
 //
-// --dafny-wall-seconds bounds lane A's Dafny call (by default (--dafny-seconds + 60) for each translated unit): past it
+// Lane A's proof is bounded by the solver's resource count, the same on every machine and under every load
+// (exec/dafny-args.mjs DAFNY_RESOURCE_LIMIT): a unit whose own lemma fails only on that limit is ASK:resource-limit, the
+// reason `not proved: the proof needs more than <N> resources`. --dafny-seconds is the wall-clock bound of one assertion
+// batch, a guard against a hung solver only: it may raise exec/dafny-args.mjs DAFNY_TIME_LIMIT_S, never lower it.
+// --dafny-wall-seconds bounds lane A's Dafny call (by default that per-batch bound + 60 s for each translated unit): past it
 // Dafny and every process under it (its solvers) are killed (exec/capped.mjs spawnCollect, the suite's own wall cap),
 // and lane A is ASK:timeout with the reason `not proved: wall cap <N> s exceeded`.
 //
@@ -53,7 +57,8 @@ import { lintFile } from './lint/lint.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
-import { z3Binary, dafnySolverArgs } from './solve/z3.mjs';
+import { z3Binary } from './solve/z3.mjs';
+import { dafnyVerifyArgs, dafnyTimeLimitS, outOfResourceLines, DAFNY_RESOURCE_LIMIT } from './exec/dafny-args.mjs';
 import { spawnCollect, wallCapMs } from './exec/capped.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -73,10 +78,11 @@ const timer = (timing) => (key, go) => { const t0 = performance.now(); const add
 const run = (cmd, args, timeoutMs) => { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: !!r.error && r.error.code === 'ETIMEDOUT' }; };
 
 // the wall cap of a `node check.mjs` child (tests/run.mjs): three times the bounds its command line states (lane B's
-// --unit-seconds, the Dafny --dafny-seconds, the doubles --fp-seconds, each its default when not named) plus 60 s
+// --unit-seconds, Dafny's per-batch bound (--dafny-seconds, never below exec/dafny-args.mjs DAFNY_TIME_LIMIT_S), the
+// doubles --fp-seconds, each its default when not named) plus 60 s
 export function checkWallCapMs(args) {
   const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
-  return wallCapMs(unitSecondsValue(opt('--unit-seconds', undefined)) + Number(opt('--dafny-seconds', 60)) + Number(opt('--fp-seconds', FP_SECONDS)));
+  return wallCapMs(unitSecondsValue(opt('--unit-seconds', undefined)) + dafnyTimeLimitS(opt('--dafny-seconds', 60)) + Number(opt('--fp-seconds', FP_SECONDS)));
 }
 
 export async function check(opts) {
@@ -193,7 +199,8 @@ export async function check(opts) {
   }
   if (witnessed) return witnessOut();
   // Dafny under its wall cap (exec/capped.mjs): on the cap Dafny and its solvers are killed, none left running
-  const v = await timed('dafny', async () => { const r = await spawnCollect('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), ...dafnySolverArgs(), path.join(tmp, 'theorem.dfy')], { maxBuffer: 1 << 26, dir: tmp, wallCapMs: (dafnyWallSeconds ?? (dafnySeconds + 60) * Math.max(1, names.length)) * 1000 }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: r.error?.code === 'ETIMEDOUT', capLine: r.error?.code === 'ETIMEDOUT' ? r.stderr.trim().split('\n').pop() : null }; });
+  // bounded by the resource limit (exec/dafny-args.mjs); --dafny-seconds may raise the per-batch hang bound, never lower it
+  const v = await timed('dafny', async () => { const r = await spawnCollect('dafny', ['verify', ...dafnyVerifyArgs({ seconds: dafnySeconds }), path.join(tmp, 'theorem.dfy')], { maxBuffer: 1 << 26, dir: tmp, wallCapMs: (dafnyWallSeconds ?? (dafnyTimeLimitS(dafnySeconds) + 60) * Math.max(1, names.length)) * 1000 }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: r.error?.code === 'ETIMEDOUT', capLine: r.error?.code === 'ETIMEDOUT' ? r.stderr.trim().split('\n').pop() : null }; });
   const text = v.out;
   const m = text.match(/finished with (\d+) verified, (\d+) error/);
   const lines = fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').split('\n');
@@ -216,8 +223,12 @@ export async function check(opts) {
   if (m) lemmas[main] = isProved(main) || (canon?.proved ?? false);
   const inductionLine = (lines.find((ln) => ln.startsWith(`// INDUCTION ${main}: `)) ?? '').replace(`// INDUCTION ${main}: `, '');
   const adapterLine = (lines.find((ln) => ln.startsWith(`// ADAPTER ${main}: `)) ?? '').replace(`// ADAPTER ${main}: `, '');
+  // the unit's own lemma failed only on batches that ran out of the resource limit: a fact about the proof's size (it
+  // needs more than DAFNY_RESOURCE_LIMIT resources), not a counterexample and not the machine's load
+  const ownErrs = spans[main] ? errs.filter((L) => spans[main][0] <= L && L <= spans[main][1]) : [], outLines = new Set(outOfResourceLines(text));
+  const resourceOut = m && !lemmas[main] && ownErrs.length && ownErrs.every((L) => outLines.has(L)) ? `the proof needs more than ${DAFNY_RESOURCE_LIMIT} resources (--resource-limit, exec/dafny-args.mjs)` : null;
   const unguarded = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED ${main}: (.*)$`, 'm')) || [])[1] ?? null; // the identity guard withheld the lemma: the value reading could not be shown to be a graph reading
-  cert.lanes.A = { verdict: unguarded ? (unguarded.startsWith('interface') ? 'ASK:interface' : 'ASK:identity') : m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, reading: m && lemmas[main] ? (canon && canon.proved && !(spans[main] && !errs.some((L) => spans[main][0] <= L && L <= spans[main][1])) ? 'canonical heap: equal up to a renaming of fresh cells and up to dropped allocations' : 'whole heap') : null, canonical: canon, heapCore: parseUnitList(heapOf('candidate')), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], ...(v.capLine ? { wallCap: v.capLine } : {}), theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp, restsOn, ...(through.length ? { ownLemma, unprovedThrough: through } : {}), ...(inductionLine ? { induction: { measure: (inductionLine.match(/^decreases (\S+)/) ?? [])[1] ?? null, component: ((inductionLine.match(/ over ([\w,]+);/) ?? [])[1] ?? '').split(',').filter(Boolean), termination: inductionLine.replace(/^.*?; termination: /, '') } } : {}), ...(adapterLine ? { adapter: { ...adapter, theorem: adapterLine } } : {}) };
+  cert.lanes.A = { verdict: unguarded ? (unguarded.startsWith('interface') ? 'ASK:interface' : 'ASK:identity') : m ? (lemmas[main] ? 'PASS-proved' : resourceOut ? 'ASK:resource-limit' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, reading: m && lemmas[main] ? (canon && canon.proved && !(spans[main] && !errs.some((L) => spans[main][0] <= L && L <= spans[main][1])) ? 'canonical heap: equal up to a renaming of fresh cells and up to dropped allocations' : 'whole heap') : null, canonical: canon, heapCore: parseUnitList(heapOf('candidate')), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], ...(v.capLine ? { wallCap: v.capLine } : {}), theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnyTimeLimitS(dafnySeconds), resourceLimit: DAFNY_RESOURCE_LIMIT, ...(resourceOut ? { resourceOut } : {}), dir: tmp, restsOn, ...(through.length ? { ownLemma, unprovedThrough: through } : {}), ...(inductionLine ? { induction: { measure: (inductionLine.match(/^decreases (\S+)/) ?? [])[1] ?? null, component: ((inductionLine.match(/ over ([\w,]+);/) ?? [])[1] ?? '').split(',').filter(Boolean), termination: inductionLine.replace(/^.*?; termination: /, '') } } : {}), ...(adapterLine ? { adapter: { ...adapter, theorem: adapterLine } } : {}) };
   // the facts the translation took from the file's own declarations (a receiver declared @sealed, so `this.m()` is the
   // class's own m: common.mjs sealedMember), each an `// ASSUME` line of a side: named in the certificate, since a proof
   // under them holds under them and no further; TypeScript checks none of them (design/conformance-readings.md)
@@ -253,7 +264,7 @@ export async function check(opts) {
   }
   if (m && lemmas[main] && !unguarded) { cert.provedBy = 'dafny'; cert.lanes.A.provedBy = 'dafny'; return finish('PASS-proved', cert, adapter ? { reason: `proved through the declared adapter: ${adapterLine}` } : assumed.length ? { reason: `proved under ${assumed.length} declared assumption(s): ${assumed.join('; ')}` } : {}); }
   if (m && through.length && !unguarded) return finish(rung(), cert, unreached({ reason: `unproved through ${through.join(', ')}` })); // its own lemma holds given summaries that are not proved
-  return finish(rung(), cert, unreached(v.capLine && !m ? { reason: `not proved: ${v.capLine}` } : {}));
+  return finish(rung(), cert, unreached(v.capLine && !m ? { reason: `not proved: ${v.capLine}` } : resourceOut ? { reason: `not proved: ${resourceOut}` } : {}));
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
 // lane A's number decision for one unit, as check.mjs takes it (for a reader that runs lane A without lane B, such

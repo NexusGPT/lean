@@ -16,7 +16,9 @@ import { spawn, spawnSync } from 'node:child_process';
 // tree and killed (killTree); the result is then spawnSync's on its own timeout: status null, signal SIGKILL, error
 // ETIMEDOUT, and the last stderr line `wall cap <N> s exceeded`. Every Dafny child carries one by default: three times
 // its --verification-time-limit (Dafny's default 30 s when the call names none) plus 60 seconds, so a solver that does
-// not honour its own time limit never holds the run.
+// not honour its own time limit never holds the run. The cap is the outer kill of a hung solver, never a verdict's
+// bound: a `dafny verify` is bounded by its resource limit, and its time limit is set where it cannot fire first
+// (exec/dafny-args.mjs: 720 s, so a cap of 2,220 s).
 let named = 0;
 export function spawnCollect(cmd, args, { cwd, env, maxBuffer = 1024 * 1024, dir = os.tmpdir(), onSpawn = null, wallCapMs = isDafny(cmd) ? dafnyWallCapMs(args) : null } = {}) {
   return new Promise((resolve) => {

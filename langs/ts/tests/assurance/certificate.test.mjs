@@ -29,7 +29,7 @@ before(() => {
 });
 after(() => { if (dir) fs.rmSync(dir, { recursive: true, force: true }); });
 
-test('certificate: the input files by SHA-256, the bound with its seed, the theorem hash and the Dafny version', () => {
+test('certificate: the input files by SHA-256, the bound with its seed, the theorem hash and the Dafny version', async () => {
   const c = res.certificate;
   assert.equal(c.parent.sha256, sha16(parent));
   assert.equal(c.candidate.sha256, sha16(candidate));
@@ -40,7 +40,9 @@ test('certificate: the input files by SHA-256, the bound with its seed, the theo
   assert.ok(dafny.stdout.trim().length > 0);
   assert.equal(c.lanes.A.dafnyVersion, (dafny.stdout + dafny.stderr).trim());
   assert.match(c.lanes.A.theoremSha256 ?? '', /^[0-9a-f]{16}$/);
-  assert.equal(c.lanes.A.timeLimitSeconds, 30);
+  const { DAFNY_RESOURCE_LIMIT, DAFNY_TIME_LIMIT_S } = await import(pathToFileURL(path.join(lean, 'exec/dafny-args.mjs')).href);
+  assert.equal(c.lanes.A.resourceLimit, DAFNY_RESOURCE_LIMIT); // the proof's bound: resources, the same under any load
+  assert.equal(c.lanes.A.timeLimitSeconds, DAFNY_TIME_LIMIT_S); // --dafny-seconds 30 never lowers the hung-solver bound
   assert.equal(res.verdict, 'PASS-proved', `${res.verdict}: ${res.reason ?? ''}`);
 });
 
