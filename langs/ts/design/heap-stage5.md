@@ -391,7 +391,16 @@ proof; now not proved, lane B WITNESS on "a"), `first` (`m[1]` of a group in eve
 groups: proved), `keyed` (`m.groups["y"]`: proved), `held` (a module const pattern: proved), and `either` (a group of one
 alternative, another default: WITNESS). The escape fixture `library_members_match_groups` now holds a group of one
 alternative read as a string (still refused); its earlier form, returned as `string | undefined`, is read.
-Census: CENSUS_LINE
+Also read again: `matchOfName`'s write test counted every prefix unary as a write, so `if (!t) return` before `t.match(re)`
+refused the match. Only `++` and `--` write (pair unit `tested`).
+Census (`census.mjs`, n8n copy, base 09032a59 against this head; nexus: not run, memory): entered 2,752 -> 2,752,
+language-refused 4,634 -> 4,634. Entered: `extractDomain` (a pattern held in a const). Lost: `executeRegexExtractValue`
+(`packages/core/src/ExtractValue.ts`), which returns item 1 of a caller's `RegExp` as a string: undefined when the
+group does not take part, so this is the false-proof class this note closes. Moved, still out: `useJsonFieldCompletions`
+(its destructured groups read; it stops at a `type-assertion`); `splitName` (stops first at `const [_, fullName] =
+match` of `(.+)?`, a group that may not take part). The other `.groups` units of the first reading stay out by named
+forms: a pattern held in a parameter default (`getDomainBase`, `getDomainPath`), a `let` pattern (`splitExpression`),
+a string rooted at `this` (`runCodeEachItem`).
 
 ## 8. Void results
 
