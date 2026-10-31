@@ -21,7 +21,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | IfStatement | 23894 | 38.1% | admitted | exact | same |
 | NumericLiteral | 18802 | 30% | admitted | exact as int or real by file; -0 witnessed in lane B, refused from the heap core | same |
 | ArrowFunction | 17699 | 28.2% | admitted | exact as a pure lambda; a React handler as a descriptor; a synchronous array-method callback writing outer cells as a loop body (stage 5 rank 19); a const arrow only ever called as a statement spliced at each call (stage 5 rank 21); otherwise opaque by text and captures; a changing capture refused | callable record Fn(code, env) on the ledger |
-| ThisKeyword | 17059 | 27.2% | admitted | exact as the receiver (self) of a class unit; a field read a world read; a write a world write | the receiver as a heap node |
+| ThisKeyword | 17059 | 27.2% | admitted | exact as the receiver (self) of a class unit; a field read a world read; a write a world write; `this.m()` the class's own unit only when no subclass can hold another m (private, `@sealed`/`@final`, no same-file override), else a held request keyed by the code of the classes the receiver's type admits (conformance-readings section 4) | the receiver as a heap node |
 | ParenthesizedExpression | 16252 | 25.9% | admitted | exact | same |
 | TemplateExpression | 16167 | 25.8% | admitted | exact (string concatenation of converted parts) | same |
 | AwaitExpression | 15997 | 25.5% | admitted | exact as a settled source with the try fault channel (promise forms) | same, with pending reactions on the ledger |
@@ -73,7 +73,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | DoStatement | 196 | 0.3% | admitted | exact for the admitted forms | same |
 | TaggedTemplateExpression | 186 | 0.3% | admitted | refused (unsupported-syntax) unless the tag is a known pure tag | a call with the strings array |
 | SatisfiesExpression | 113 | 0.2% | admitted | exact (erased assertion) | same |
-| PrivateIdentifier | 90 | 0.1% | no case (refused by default, or reached through its parent) |  |  |
+| PrivateIdentifier | 90 | 0.1% | no case (refused by default, or reached through its parent) | `this.#m()` an external of the receiver with the cell obligation `read without a transition` (ASK:obligation): a #m method is no unit; lane B runs a class holding a private name on an instance its constructor made, and asks (private-brand) when the constructor takes arguments (conformance-readings section 4, 2026-10-31) | #m as a unit of its class, `this.#m()` its own unit (a private name is never looked up on the chain) |
 | FunctionExpression | 90 | 0.1% | admitted | as ArrowFunction; a this-capturing one refused (this) | callable record |
 | ForInStatement | 81 | 0.1% | admitted | refused unless the dynamic-record reading applies | key iteration on the ledger |
 | TypeAliasDeclaration | 60 | 0.1% | admitted | erased at run time, inside a function too (stage 5 rank 16); its uses are read through the checker | none |
