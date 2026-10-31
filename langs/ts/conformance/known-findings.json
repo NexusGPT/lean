@@ -1,5 +1,5 @@
 {
- "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity). Re-baselined on the admission head of 2026-10-29 (the doubles merge, all 204 pairs, --jobs 4): 118 entries not seen in a pair that ran were retired (70 an integer past 2^53: the model is exact, Node rounds to binary64, 43 signed zero: Node -0, the model 0, 3 real arithmetic: the model is exact, Node rounds to binary64, 2 aliased arguments: one object at two places of the input): the faithful number reading makes a unit's inexact operations uninterpreted, so those units no longer execute against Node; 2 added (signed zero on a pass-through unit: proof_hunt_13/spreadCopy, reach_absent/Changed.f). The retired entries are in the git history of this file at e2c729a0. 2026-10-30: one entry added, blocker_unresolved_type/negated (signed zero), a new unit of the known class from the pair the top-blockers lane landed that day. 2026-10-31 (lane conformance-disagree, base lead-30569d74): 85 disagreeing units, 78 known; of the 7 new, types_symbol_bigint fee and orElse were a bridge defect (a model BigInt compared as a number against lane B's {$bigint} rendering; fixed in bridge.mjs, the entries never added); four signed-zero units of the known class and class_handles/spill (a write through a second name of an input, withheld by the identity guard) are added, each from a pair new that night. 2026-10-31 (lane conformance-causeof-spill): class_handles/spill retired, not deleted while seen: the value reading now carries `const h = b` of a parameter's instance of a class of this file (lower.mjs carriedAliases; a write through either name rebinds the other), so the model returns 1 as Node does (8 agree, 0 disagree at the lane's head); the entry is in the git history of this file at 09032a59.",
+ "about": "disagreements and coupling findings the model conformance step has seen: 184 from the run on 4edf56b (the translator of f409bd8), re-baselined on 600dd759 (lane oracle-cost: 0 vanished, 7 added, each with its reason in `added`); each names its board row: d7e54baf until the lead opens a row per cause Four rows added on 29 Oct at the merge of lane copy-override-readings (pair array_copy_identity, class array identity). Re-baselined on the admission head of 2026-10-29 (the doubles merge, all 204 pairs, --jobs 4): 118 entries not seen in a pair that ran were retired (70 an integer past 2^53: the model is exact, Node rounds to binary64, 43 signed zero: Node -0, the model 0, 3 real arithmetic: the model is exact, Node rounds to binary64, 2 aliased arguments: one object at two places of the input): the faithful number reading makes a unit's inexact operations uninterpreted, so those units no longer execute against Node; 2 added (signed zero on a pass-through unit: proof_hunt_13/spreadCopy, reach_absent/Changed.f). The retired entries are in the git history of this file at e2c729a0. 2026-10-30: one entry added, blocker_unresolved_type/negated (signed zero), a new unit of the known class from the pair the top-blockers lane landed that day. 2026-10-31 (lane conformance-disagree, base lead-30569d74): 85 disagreeing units, 78 known; of the 7 new, types_symbol_bigint fee and orElse were a bridge defect (a model BigInt compared as a number against lane B's {$bigint} rendering; fixed in bridge.mjs, the entries never added); four signed-zero units of the known class and class_handles/spill (a write through a second name of an input, withheld by the identity guard) are added, each from a pair new that night. 2026-10-31 (lane conformance-causeof-spill): class_handles/spill retired, not deleted while seen: the value reading now carries `const h = b` of a parameter's instance of a class of this file (lower.mjs carriedAliases; a write through either name rebinds the other), so the model returns 1 as Node does (8 agree, 0 disagree at the lane's head); the entry is in the git history of this file at 09032a59. 2026-10-31 (lane conformance-new-41, base lead-09032a59): 101 disagreeing units and 22 coupling inputs, 41 new (19 units, 22 inputs); the coupling inputs (this_method_override/Shifted.run, a lemma under a cell obligation), class_fields_define made and blank (the conformance translation ignored the pair's project) and identity_destructured/fallback (null drawn into an optional property) were harness readings, fixed in pair.mjs and node-side.mjs, never added; 11 signed-zero units and 5 array-identity units of the known classes are added, each from a pair new that night.",
  "findings": [
   {
    "kind": "disagree",
@@ -830,6 +830,187 @@
    "first": "input 16, parent and candidate: result.1: model 0 against {\"$negativeZero\":true} ([p.name, p.age])",
    "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
    "added": "31 Oct 2026, lane conformance-disagree: the pair is new tonight (merge 9c3a9341a); the unit passes an input -0 on untouched ([p.name, p.age]), the model holds one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copies_identity",
+   "unit": "spreadIdA",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "side": "candidate",
+   "first": "input 0, candidate: [[0, 1, -1]]: Node {\"returned\": false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 7f4831e74, lane conformance-array-copies); a copy compared with its source by `===`: Node false (another object), the value reading true (equal elements); the identity guard exposes it (`identity comparison of two references`)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copies_identity",
+   "unit": "concatIdA",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "side": "candidate",
+   "first": "input 0, candidate: [[0, 1, -1]]: Node {\"returned\": false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 7f4831e74, lane conformance-array-copies); a copy compared with its source by `===`: Node false (another object), the value reading true (equal elements); the identity guard exposes it (`identity comparison of two references`)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copies_identity",
+   "unit": "concatIdS",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "side": "candidate",
+   "first": "input 0, candidate: [[0, 1, -1]]: Node {\"returned\": false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 7f4831e74, lane conformance-array-copies); a copy compared with its source by `===`: Node false (another object), the value reading true (equal elements); the identity guard exposes it (`identity comparison of two references`)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copies_identity",
+   "unit": "concatEmptyIdA",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "not proved",
+   "side": "candidate",
+   "first": "input 0, candidate: [[0, 1, -1]]: Node {\"returned\": false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 7f4831e74, lane conformance-array-copies); a copy compared with its source by `===`: Node false (another object), the value reading true (equal elements); the identity guard exposes it (`identity comparison of two references`)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "array_copies_identity",
+   "unit": "copiesBothA",
+   "cause": "value",
+   "row": "f5c7ef3d",
+   "laneA": "proved",
+   "first": "input 0, parent: [[0, 1, -1]]: Node {\"returned\": false}; result: model true against false",
+   "class": "array identity: the executable model compares two arrays by value, so `b === a` after a copy ([...a], a.slice(), Array.from(a), a.concat()) reads true where Node reads false (the copy is another object); the heap core allocates every copy and the identity guard withholds the proof (lane copy-override-readings, design/conformance-readings.md); known per unit, a new unit of the class is NEW",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 7f4831e74, lane conformance-array-copies); a copy compared with its source by `===`: Node false (another object), the value reading true (equal elements); the identity guard exposes it (`identity comparison of two references`)"
+  },
+  {
+   "kind": "disagree",
+   "pair": "destructured_aliases",
+   "unit": "sweep",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 20, parent: [{\"n\": {\"$negativeZero\": true}, \"rows\": []}]: Node {\"returned\": {\"$negativeZero\": true}}; result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 7856986cf, lane fix-destructured-aliases); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "empty_literals",
+   "unit": "named",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: [{\"k0\": \"v3s1w\", \"name\": \"  padded  \", \"size\": {\"$negativeZero\": true}, \"tags\": [\"vdec\", \"veac8\"]}]: Node {\"returned\": \"  padded  \"}; argument t after the call: .size: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge eeefd6532, lane core-empty-literals); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "map_set_copy",
+   "unit": "hasTag",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 20, parent: [{\"$map\": [[{\"has\": \"a\", \"name\": \"\"}, {\"$negativeZero\": true}]]}, {\"has\": \" \", \"name\": \"v6dvx\"}]: Node {\"returned\": false}; argument m after the call: .$map.0.1: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 6e30d4abf, lane core-map-set-copy-forms); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "string_methods_real",
+   "unit": "cut",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "side": "parent",
+   "first": "input 16, parent: [{\"body\": \"  padded  \", \"score\": {\"$negativeZero\": true}, \"split\": \"vesvs\", \"title\": \",\"}]: Node {\"returned\": [\"\"]}; argument d after the call: .score: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 0f0baff3f, lane core-string-methods); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "string_methods_real",
+   "unit": "half",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: [{\"body\": \"  padded  \", \"score\": {\"$negativeZero\": true}, \"split\": \"vesvs\", \"title\": \",\"}]: Node {\"returned\": [\"\", \"\"]}; argument d after the call: .score: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 0f0baff3f, lane core-string-methods); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "string_methods_real",
+   "unit": "tagged",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: [{\"body\": \"  padded  \", \"indexOf\": \"vesvs\", \"score\": {\"$negativeZero\": true}, \"title\": \"#\"}]: Node {\"returned\": []}; argument d after the call: .score: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 0f0baff3f, lane core-string-methods); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "string_methods_real",
+   "unit": "tail",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: [{\"body\": \"  padded  \", \"score\": {\"$negativeZero\": true}, \"split\": \"vesvs\", \"title\": \"/\"}]: Node {\"returned\": [\"\"]}; argument d after the call: .score: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 0f0baff3f, lane core-string-methods); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "string_methods_real",
+   "unit": "padded",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: [{\"body\": \"  padded  \", \"score\": {\"$negativeZero\": true}, \"split\": \"vesvs\", \"title\": \"0\"}]: Node {\"returned\": [\"\", \"\", \"\", \"\", \"\"]}; argument d after the call: .score: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 0f0baff3f, lane core-string-methods); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "template_literals",
+   "unit": "status",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "proved",
+   "first": "input 16, parent: [{\"done\": true, \"k0\": \"v88wr\", \"name\": \"  padded  \", \"qty\": {\"$negativeZero\": true}}]: Node {\"returned\": \"  padded  : done\"}; argument it after the call: .qty: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge a6d9dc82a, lane core-template-literals); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "template_literals",
+   "unit": "shade",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: [{\"done\": false, \"name\": \"open\", \"open\": \"vhuf8\", \"qty\": {\"$negativeZero\": true}}]: Node {\"returned\": \"open is open\"}; argument it after the call: .qty: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge a6d9dc82a, lane core-template-literals); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
+  },
+  {
+   "kind": "disagree",
+   "pair": "wider_record_argument",
+   "unit": "circ",
+   "cause": "signed zero: Node -0, the model 0",
+   "row": "d7e54baf",
+   "laneA": "not proved",
+   "first": "input 16, parent: [{\"kind\": \"c\", \"r\": {\"$negativeZero\": true}}]: Node {\"returned\": {\"$negativeZero\": true}}; result: model 0 against {\"$negativeZero\":true}",
+   "class": "signed-zero: model collapses -0 (the number model has one zero; the fix belongs to the number-model lane, doubles; known per unit until it lands, a new unit of the class is NEW)",
+   "added": "31 Oct 2026, lane conformance-new-41 (base lead-09032a59): the pair is new that night (merge 7856986cf, lane fix-destructured-aliases); a drawn -0 passed on untouched (a field the unit does not write, or returned as drawn): the int model has one zero"
   }
  ]
 }

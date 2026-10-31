@@ -319,3 +319,68 @@ only class_handles' two differ.
 Not carried: an array or a plain record bound to a second name (`const b = a`, section 3's array_copies_alias). The
 same rebinding would be exact there too, but it would move pair rows this lane does not own (sourcePushed from lane A
 ASK to a proof or a counterexample); those stay refused.
+
+## 7. One project, one absence, one lane A answer: the 41 new findings of the night (2026-10-31, lane conformance-new-41)
+
+The full conformance row at lead-09032a59 (all pairs, `--jobs 8`): 1756 units in 250 pairs (50 skipped), 682
+executable, 581 agree, 101 disagree, 22 coupling findings, 41 NEW (19 disagreeing units and 22 coupling inputs). No
+known finding vanished. Every new unit belongs to a pair added inside 30569d74..09032a59; each pair run alone
+(`LEAN_PAIRS=<pair>`) at the first-parent merge that added it shows the same finding, so the merge that added the pair
+introduced it. Three pairs (destructured_aliases, wider_record_argument, template_literals) did not translate at their
+own merge (translate.mjs: `matchGroupRead is not defined`, an import the template-literals merge resolution dropped)
+and show their findings from d2b005b95 on, which restored the import.
+
+| pair | units | count (input, side) | kind | merge | resolution |
+|---|---|---|---|---|---|
+| this_method_override | Shifted.run | 22 coupling inputs | a number (the #base result) | c75543f83 (conformance-this-m) | **fixed**: conformance read lane A as proved; check.mjs answers ASK:obligation (pair.mjs laneAOf) |
+| class_fields_define | made, blank | 60 (parent) | a record (a key holding undefined) | 5bb79e921 (fix-constructor-module-write) | **fixed**: the conformance translation ignored the pair's `project` (pair.mjs, node-side.mjs) |
+| identity_destructured | fallback | 2 | a record against null | e6b00fe0b (core-identity-destructured) | **fixed**: null drawn into an optional property is outside the model's domain (pair.mjs absenceIn) |
+| array_copies_identity | spreadIdA, concatIdA, concatIdS, concatEmptyIdA, copiesBothA | 120 | a boolean (array identity) | 7f4831e74 (conformance-array-copies) | known finding added: class array identity |
+| string_methods_real | cut, half, tagged, tail, padded | 9 | a number (-0) | 0f0baff3f (core-string-methods) | known finding added: class signed-zero |
+| template_literals | status, shade | 4 | a number (-0) | a6d9dc82a (core-template-literals), visible from d2b005b95 | known finding added: class signed-zero |
+| destructured_aliases | sweep | 2 | a number (-0) | 7856986cf (fix-destructured-aliases), visible from d2b005b95 | known finding added: class signed-zero |
+| wider_record_argument | circ | 2 | a number (-0) | 7856986cf (fix-destructured-aliases), visible from d2b005b95 | known finding added: class signed-zero |
+| empty_literals | named | 2 | a number (-0) | eeefd6532 (core-empty-literals) | known finding added: class signed-zero |
+| map_set_copy | hasTag | 2 | a number (-0) | 6e30d4abf (core-map-set-copy-forms) | known finding added: class signed-zero |
+
+The three fixed groups are readings of the conformance step itself, each making it read what lane A and lane B read:
+
+- **The pair's project, in both lanes.** tests/run.mjs reads a pair with the tsconfig its expect.json names
+  (`project`), in both lanes. The conformance translation passed `--no-project`, while lane B's sandbox, loading the
+  file in the same process, discovered the tsconfig beside it (exec/run.mjs `fieldsProject` defaults to discovery). For
+  class_fields_define (target ES2022, so `useDefineForClassFields`) the model was translated at lean's single-file
+  options, where Note's optional `tag` is a missing key (`Alloc_R_…(hw_, Pres<string>.PMissing, …)`), and Node ran it
+  at the project's, where the key holds undefined. Node is right for the project the pair states. pair.mjs now
+  translates with `--project <pair>/<project>` or `--no-project` exactly as the suite, and node-side.mjs hands the same
+  value to lane B's input plan and its emit mode (exec/run.mjs `setFieldsProject`). made and blank: 60 of 60 agree.
+- **An optional mark's absence is undefined.** The bridge reads a None as the absence the signature declares, from
+  the TypeScript type text: `null` alone, `undefined` alone, else either. `{ tag?: Tag }` names neither, so a drawn
+  `{"tag": null}` became the model's None and `{ tag = { label: "none" } }` took the default, where Node keeps the
+  null (ECMA-262 KeyedBindingInitialization: a binding default applies on undefined only): input 0 `[{"none":"","tag":null}]`, Node `null`,
+  the model `Tag("none")`. The model is right on its type: under strict TypeScript `tag?: Tag` admits undefined, never
+  null. An optional mark (`k?:` in the type text, or an optional parameter) now declares undefined, and a null there is
+  outside the model's domain (fallback: 28 agree, 32 outside, 0 disagree; no other unit's row moved in the full row).
+- **A lemma under a cell obligation is withheld.** Shifted's `#base` changes under an unchanged `run`; lane A reads
+  `this.#base(x)` as the receiver's external (a `#m` method is no unit), proves the lemma by identity and the cell audit
+  withholds it (`// CELLS shifted_run_candidate: … "obligations":["this #base: read without a transition"]`; check.mjs
+  ASK:obligation). The product check found both models agreeing under every seed of that external while Node's two
+  results differ (input `[420]`: Node 842 against 844), which is what the obligation names; conformance had read the
+  pair's `shifted_run: true` as a proof and counted each input as a coupling finding. pair.mjs `laneAOf` reads lane A as
+  check.mjs answers it: a proved lemma whose candidate cell audit holds an obligation is withheld, its sampled agreement
+  listed, no finding.
+
+The first suspects, checked: no new finding differs in a bitwise or a bigint value. arithmetic_core's bitwise units
+(clearlow, setflag, orflag, nibble, shift, uint, …) are not executable at every input (the bitwise operations are parts
+with no body in the executable model), so there is no input at which the model and Node can differ; types_symbol_bigint
+agrees on every executable unit (section 5 holds).
+
+The signed-zero and array-identity units are the known classes, each Node right at the quoted input (the int model
+has one zero; the value reading compares arrays by value): string_methods_real/half input 16
+`[{"body":"  padded  ","score":-0,…}]`, argument d after the call `.score` the model 0 against -0;
+array_copies_identity/concatIdS input 0 `[[0,1,-1]]`, `a.concat() === a` Node false, the model true. Entries added
+per unit, with the input that shows it.
+
+At the head (this lane, all pairs, `--jobs 8`): `1756 units in 250 pairs (50 skipped) | 682 executable: 584 agree, 98
+disagree | … | 0 coupling finding(s) (123 sampled) | NO NEW FINDING`, exit 0; known findings not seen: 0. Between base
+and head, three unit rows moved (class_fields_define made and blank, identity_destructured fallback: DISAGREE to
+agree), every other unit's row is the same, word for word (`lane/conformance-new-41-result.md`).

@@ -86,6 +86,7 @@ const siteCompiles = new Map();
 // the class-field emit mode is the file's own (common.mjs fileClassFieldsDefine, the rule lane A reads from its program):
 // its project's, the run's --project, or lean's single-file options under --no-project
 let fieldsProject = true;
+export const setFieldsProject = (p) => { fieldsProject = p; }; // a caller that loads files itself (conformance/node-side.mjs): the run's project, as runPair sets it
 function compileWithSites(src, tsName, abs) {
   const define = fileClassFieldsDefine(abs, fieldsProject);
   const old = siteCompiles.get(abs);

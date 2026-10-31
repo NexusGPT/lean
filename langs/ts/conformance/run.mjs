@@ -89,7 +89,7 @@ for (const r of results) {
     for (const c of u.coupling) { totals.coupled++; couplings.push({ pair: r.pair, unit: u.unit, laneA: u.laneA, ...c }); }
   }
 }
-const laneAText = (x) => (x === true ? 'proved' : x === false ? 'not proved' : x === 'withheld' ? 'withheld' : 'unlisted');
+const laneAText = (x) => (x === true ? 'proved' : x === false ? 'not proved' : x === 'withheld' ? 'withheld' : x === 'obligation' ? 'proved, withheld by a cell obligation' : 'unlisted');
 const isKnown = (f, kind) => known.find((k) => k.kind === kind && k.pair === f.pair && k.unit === f.unit && (!k.cause || k.cause === f.cause) && (!k.side || k.side === f.side));
 
 // ----- the table -----
