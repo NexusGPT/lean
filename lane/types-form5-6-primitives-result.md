@@ -9,7 +9,8 @@ Branch `lane/types-form5-6-primitives`, from lean `b5c074508` (lead-b5c07450). C
 | 6d55a238c | the pair's `orElse` (`a \|\| b` over bigints) |
 | 273cc7d3b | the reading (translate.mjs, common.mjs, spec/theorem.py) |
 | 3d3cf709d | design note: types-inventory.md "Forms 5 and 6, read (2026-10-31)", the forms table rows, coverage-matrix.md's BigIntLiteral row |
-| (this commit) | this file, with the n8n census |
+| 04a570832 | this file, with the n8n census |
+| (this commit) | the langchainjs census; nexus not run (memory) |
 
 ## What I did and why
 
@@ -104,13 +105,20 @@ types-inventory.mjs's own union test: `node /root/lanes/types-form5-6-primitives
 | Root | Units | Form 5 | Form 6 | Stopped by `types` | Entered | Where the form 5/6 units went | Other units whose stop changed |
 | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
 | n8n | 9,610 | 5 → 0 | 0 → 0 | 37 → 32 | 4,308 → 4,313 | entered 5 | 0 |
-| langchainjs | pending: the head run waits for 25 GB available (base complete) | | | | | | |
-| nexus (41 directories) | pending: waits for 25 GB available | | | | | | |
+| langchainjs | 6,709 | 37 → 0 | 0 → 0 | 96 → 59 | 3,504 → 3,506 | entered 2; `reference-key` 35 (a Map keyed by `ZodTypeDef`, another reading's refusal) | 0 |
+| nexus (41 directories) | not run: see below | | | | | | |
 
 No unit entered at base is stopped at head (the script's "entered at base, stopped at head": 0 on every root run).
 
-At this commit the langchainjs and nexus runs wait at the memory gate (1 to 15 GB available from 01:05 on); the
-script `/tmp/t56/census2.sh` runs them when memory frees, and the next commit fills their rows.
+The nexus census did not run. A full nexus census ran past two hours on the inventory's run, so nexus was to be
+censused in the 41 top directories that hold every form 5 or 6 finding of that run (the A3 journal
+`/root/lanes/A3-types-inventory/census/nexus.json.records.jsonl`: 91 findings in 46 directories, folded to 41), base
+and head, one `--include <dir>/` run each. From 01:05 the machine had 1 to 16 GB available, below the 25 GB a census
+may start under (the lead's broadcast rule, adopted here), and the background runner reached its two-hour limit
+waiting at that gate. `/root/lanes/types-form5-6-primitives/census/nexus_one.sh <i>` runs directory i, base then head, when memory allows.
+
+Every form 5 and 6 unit of the two roots left `types`; what `types` still stops at head (32 on n8n, 59 on
+langchainjs) holds no form 5 or 6 message.
 
 ## What is left
 

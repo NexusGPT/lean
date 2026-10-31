@@ -230,6 +230,18 @@ injection.
 - Lane B draws no symbol: a planted difference reached only on a symbol arm is not witnessed by drawing. The pair plants
   its differences on the string and bigint arms.
 
+**The census.** Base `b5c074508`, head `273cc7d3b`, each a `git archive` in its own folder:
+`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs /root/da/census/repos/<root> --out <json>`, one at a
+time. Each unit attributed as the census attributes it, forms 5 and 6 told apart by this script's union test.
+
+| Root | Units | Form 5 | Form 6 | Stopped by `types` | Entered | Where the form 5/6 units went | Other units that moved |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| n8n | 9,610 | 5 → 0 | 0 → 0 | 37 → 32 | 4,308 → 4,313 | entered 5 | 0 |
+| langchainjs | 6,709 | 37 → 0 | 0 → 0 | 96 → 59 | 3,504 → 3,506 | entered 2; `reference-key` 35 (a Map keyed by `ZodTypeDef`) | 0 |
+
+No unit entered at base is stopped at head. nexus (84 + 7 units of these forms in the inventory) was not censused: the
+machine stayed below the memory a census may start with for the rest of the night.
+
 **Seen and left to their readings.** Any `/` makes a file read its numbers as reals (common.mjs `fileUsesReals`), a
 bigint division included, though a bigint is never real. A bigint rendered in JSX (`{n}`) now converts through an
 uninterpreted cast where it was formatted as a number (same text in React; not proved where it was).
