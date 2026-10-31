@@ -147,11 +147,18 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     }
     return { s, els };
   };
-  // a call of a generic same-file unit: an argument for a parameter typed by a type parameter must hold the bound's own
-  // shape, since the callee reads its cell through the bound's constructor (a wider record is another constructor)
-  const genericArgWhy = (e) => {
-    const name = ts.isCallExpression(e) && ts.isIdentifier(e.expression) ? e.expression.text : null; const cu = name && fns.get(name); if (!cu || !unitTypeParameters(checker, cu).length) return null;
-    for (const [i, p] of cu.params.entries()) { const ps = shapeOf(typeOf(p.name)); const a = e.arguments[i]; if (!ps || !a || !isRefShape(ps)) continue; const as = shapeOf(typeOf(a)); if (!as || keyOf(as) !== keyOf(ps)) return 'an argument of another shape for a generic unit (its cell would be read through the bound\'s constructor)'; }
+  // a call of a same-file unit (a function, a method, a constructor): the callee reads a reference parameter's cell
+  // through the constructors of the parameter's shape, so every cell the argument may hold must be one of them. A wider
+  // record (a `Person` for a `Named`, a subclass for its base, a type parameter's argument for its bound) is another
+  // constructor, and the reads there would be the prelude's defaults. A union reads each alternative's constructor; a
+  // handle's cell is never read through one (its method calls are world transitions)
+  const cellsOf = (s) => (s.kind === 'union' ? s.alts.map((a) => a.shape.key) : [s.key]);
+  const argShapeWhy = (cu, args) => {
+    for (const [i, p] of cu.params.entries()) {
+      const ps = shapeOf(typeOf(p.name)); const a = args[i]; if (!ps || !a || !isRefShape(ps) || ps.kind === 'handle') continue;
+      const as = shapeOf(typeOf(a)); const reads = new Set(cellsOf(ps));
+      if (!as || !isRefShape(as) || !cellsOf(as).every((k) => reads.has(k))) return `an argument of another shape than its parameter (${p.name.getText(cu.fn.getSourceFile())}: its cell would be read through the parameter's constructor)`;
+    }
     return null;
   };
   // a discriminated union of records `A | B`: every alternative a record, and one field every alternative declares as
@@ -633,7 +640,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (s.kind === 'rec' && fieldOf(s, e.name.text).shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') usesIndex = true; // a narrowed read: its lemma shows the value is there
         return checkExpr(e.expression);
       }
-      if (newClass(e)) { const cd = newClass(e); if (lambdaDepth) return no('allocation inside a callback'); const cw = ctorWhy(cd); if (cw) return no(`constructor: ${cw}`); if (ctorOf(cd) && !ctorUnitOf(cd)) return no('constructor unit'); if (!ctorUnitOf(cd)) for (const m of fieldInits(cd)) checkExpr(m.initializer); for (const a of e.arguments ?? []) checkExpr(a); return; } // a construction
+      if (newClass(e)) { const cd = newClass(e); if (lambdaDepth) return no('allocation inside a callback'); const cw = ctorWhy(cd); if (cw) return no(`constructor: ${cw}`); if (ctorOf(cd) && !ctorUnitOf(cd)) return no('constructor unit'); if (ctorUnitOf(cd)) { const aw = argShapeWhy(fns.get(ctorUnitOf(cd)), e.arguments ?? []); if (aw) return no(aw); } if (!ctorUnitOf(cd)) for (const m of fieldInits(cd)) checkExpr(m.initializer); for (const a of e.arguments ?? []) checkExpr(a); return; } // a construction
       if (copyForm(e)) { if (lambdaDepth) return no('allocation inside a callback'); return checkExpr(copyForm(e).src); } // a fresh cell with the source's contents
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && !e.questionDotToken && e.expression.name.text === 'get' && e.arguments.length === 1 && shapeOf(typeOf(e.expression.expression))?.kind === 'map') { const s = shapeOf(typeOf(e.expression.expression)); if (s.v.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'opt') return no('get of a reference value (an absent reference is not read)'); checkExpr(e.expression.expression); return checkExpr(e.arguments[0]); } // a value or absent
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set') && !(e.arguments ?? []).length) { if (!shapeOf(typeOf(e))) return no(`new ${e.expression.text} type: ${shapeWhy(typeOf(e))}`); return; } // an empty cell
@@ -692,7 +699,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (!spread && s.fields.some((f) => !given.has(f.name) && !(f.shape.kind === 'opt' && f.shape.absent === 'u'))) return no('object literal misses a field'); // an optional field may be missing
         return;
       }
-      if (calleeOf(e, u)) { const gw = genericArgWhy(e); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); return; }
+      if (calleeOf(e, u)) { const gw = argShapeWhy(fns.get(calleeOf(e, u)), e.arguments); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); return; }
       if (outsideCall(e)) { if (lambdaDepth) return no('a call outside the file inside a callback'); callsOut = true; if (outsideCall(e).recv) checkExpr(outsideCall(e).recv); for (const a of e.arguments) checkExpr(a); return; } // a world transition
       if (globalCall(e)) { const g = globalCall(e); if (g === 'Object.keys' && lambdaDepth) return no('allocation inside a callback'); const fd = (g === 'Math.floor' || g === 'Math.trunc') ? floorDiv(e) : null; if (fd) { if (lambdaDepth) return no('division inside a callback'); usesIndex = true; checkExpr(fd.left); return checkExpr(fd.right); } for (const a of e.arguments) checkExpr(a); return; } // a pure global
       if (reCall(e)) { const rc = reCall(e); if (rc.m === 'split' && lambdaDepth) return no('allocation inside a callback'); if (isReal && rc.m === 'search') return no('search in a real file'); checkExpr(rc.s); if (rc.r) checkExpr(rc.r); return; } // a regular expression literal: uninterpreted
@@ -792,7 +799,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           }
           if (isAssignCall(e) && assignLiterals(e)) { const al = assignLiterals(e); if (al.why) return no(al.why); checkExpr(e.arguments[0]); for (const x of al.writes) checkExpr(x.value); continue; } // literal sources: field writes on the target's node
           if (isAssignCall(e)) return no('assign of a source whose keys are not known exactly (a record value may carry keys its type does not name, and Object.assign copies them)'); // the table's same-shape row read only the declared fields: a false proof against field-by-field writes
-          if (calleeOf(e, u)) { const gw = genericArgWhy(e); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); continue; }
+          if (calleeOf(e, u)) { const gw = argShapeWhy(fns.get(calleeOf(e, u)), e.arguments); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); continue; }
           if (outsideCall(e)) { checkExpr(e); continue; } // a transition as a statement: its world kept, its result dropped
           return no(ts.isCallExpression(e) ? (ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file') : `expression statement ${K[e.kind]}`);
         }
@@ -1501,11 +1508,20 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // the parameters a same-file unit writes through (a field, an element, a mutator, Object.assign, delete), itself or
   // through a same-file callee it passes them to, by position, to a fixpoint: a caller passing an input there writes
   // through that input, which its own text does not show. A name bound to a path of a parameter, an element of a loop
-  // over one (for-of, or the parameter of an array callback) is that parameter
+  // over one (for-of, or the parameter of an array callback) is that parameter, and so is every name a destructuring
+  // pattern binds over one of these (a declaration, a parameter, a loop or callback element)
   const LOOP_CB = new Set(['forEach', 'map', 'filter', 'some', 'every', 'find', 'findIndex', 'flatMap', 'reduce']);
-  const elementNames = (n, rooted) => { // the names a loop or an array callback binds to the elements of a rooted array
-    if (ts.isForOfStatement(n) && rooted(n.expression)) { const dl = n.initializer; return ts.isVariableDeclarationList(dl) ? dl.declarations.filter((d) => ts.isIdentifier(d.name)).map((d) => d.name.text) : []; }
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && LOOP_CB.has(n.expression.name.text) && rooted(n.expression.expression)) { const cb = n.arguments[0]; if (cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb))) return cb.parameters.filter((q) => ts.isIdentifier(q.name)).map((q) => q.name.text); }
+  // the names a binding (a name or a pattern) binds, each with its depth below the bound value: a pattern's field or
+  // element one level down, a rest at the value's own level (a fresh object or array of the value's members, so a write
+  // through one of its members is a write below the value), a nested pattern one level further
+  const boundNames = (name, d = 0, out = []) => {
+    if (ts.isIdentifier(name)) { out.push({ name, depth: d }); return out; }
+    for (const el of name.elements ?? []) { if (!el || ts.isOmittedExpression(el)) continue; if (ts.isIdentifier(el.name)) out.push({ name: el.name, depth: el.dotDotDotToken ? d : d + 1 }); else boundNames(el.name, d + 1, out); }
+    return out;
+  };
+  const elementNames = (n, rooted) => { // the names a loop or an array callback binds to the elements of a rooted array, each with its depth below the element
+    if (ts.isForOfStatement(n) && rooted(n.expression)) { const dl = n.initializer; return ts.isVariableDeclarationList(dl) ? dl.declarations.flatMap((d) => boundNames(d.name)) : []; }
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && LOOP_CB.has(n.expression.name.text) && rooted(n.expression.expression)) { const cb = n.arguments[0]; if (cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb))) return cb.parameters.flatMap((q) => boundNames(q.name)); }
     return [];
   };
   let writesThroughMemo = null;
@@ -1517,12 +1533,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     for (const u of units) {
       const pos = new Map(); u.params.forEach((q, i) => { if (ts.isIdentifier(q.name)) pos.set(q.name.text, i); });
       const alias = new Map(); // local -> the parameter position its value is a path of
+      u.params.forEach((q, i) => { if (!ts.isIdentifier(q.name)) for (const { name } of boundNames(q.name)) alias.set(name.text, i); }); // a destructured parameter's names are paths of its argument
       const at = (x) => { const r = rootOf(x); if (!ts.isIdentifier(r)) return null; return pos.has(r.text) ? pos.get(r.text) : alias.has(r.text) ? alias.get(r.text) : null; };
       const mark = (x) => { const i = at(x); if (i !== null && unparen(x) !== rootOf(x)) out.get(u.name).add(i); };
       const calls = [];
       const walk = (n) => {
-        if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && at(n.initializer) !== null) alias.set(n.name.text, at(n.initializer));
-        for (const nm of elementNames(n, (x) => at(x) !== null)) alias.set(nm, at(ts.isForOfStatement(n) ? n.expression : n.expression.expression));
+        if (ts.isVariableDeclaration(n) && n.initializer && at(n.initializer) !== null) for (const { name } of boundNames(n.name)) alias.set(name.text, at(n.initializer));
+        for (const { name } of elementNames(n, (x) => at(x) !== null)) alias.set(name.text, at(ts.isForOfStatement(n) ? n.expression : n.expression.expression));
         if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) mark(n.left);
         if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) mark(n.operand);
         if (ts.isDeleteExpression(n)) mark(n.expression);
@@ -1539,6 +1556,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   }
   // a same-file call that writes through one of its arguments, and that argument
   const calleeWrites = (n) => (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text) ? n.arguments.filter((a, k) => writesThrough().get(n.expression.text)?.has(k)) : []);
+  // a same-file unit whose value reading makes a write on a copy (layer1Risk writesCopy), memoised; a unit met again
+  // while it is read (a call cycle) counts as one, as does a unit the reading cannot follow
+  const copyWriters = new Map();
+  const writesCopyOf = (name) => { if (!copyWriters.has(name)) { copyWriters.set(name, true); const cu = fns.get(name); let w = true; try { w = !cu?.body || !!layer1Risk(cu).writesCopy; } catch { w = true; } copyWriters.set(name, w); } return copyWriters.get(name); };
   function layer1Risk(u) {
     const constLocal = (x) => { const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isVariableDeclaration(d) && !!(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const); }; // a let name the lint admits a write through is fresh at that write (its flow-sensitive alias rule)
     const risks = new Set();
@@ -1546,8 +1567,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const aliases = new Map(); // local -> the depth of the input path it was bound to (`c = p` is 0, `c = p.inner` is 1)
     // a destructured parameter: each field binding is the input path one level down, a rest holds the input's members
     // (a fresh object whose members are the input's, so a write through one of them is a write below the input)
-    const bindNames = (pat, d) => { for (const el of pat.elements ?? []) { if (!el || ts.isOmittedExpression(el)) continue; if (ts.isIdentifier(el.name)) aliases.set(el.name.text, el.dotDotDotToken ? d : d + 1); else bindNames(el.name, d + 1); } };
-    for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) bindNames(p.name, 0);
+    for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) for (const { name, depth: d } of boundNames(p.name)) aliases.set(name.text, d);
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
     const effDepth = (x) => { const r = rootOf(x); return depth(x) + (ts.isIdentifier(r) && aliases.has(r.text) ? aliases.get(r.text) : 0); }; // the depth of a write below its input root, aliases unfolded
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
@@ -1583,18 +1603,19 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     for (const p of u.params) { const t = typeOf(p.name); const s = shapeOf(t); if (s) countShapes(s, 0); else if (isRefType(t)) { const key = checker.typeToString(t); positions.set(key, (positions.get(key) ?? 0) + 1); } }
     if (u.cls && !u.isStatic) { const key = `this:${u.className}`; positions.set(key, (positions.get(key) ?? 0) + 1); for (const p of u.params) if (checker.typeToString(typeOf(p.name)) === u.className) positions.set(key, positions.get(key) + 1); }
     const aliasable = [...positions].filter(([, c]) => c >= 2).map(([k]) => k);
-    let writesInput = false;
+    let writesInput = false, writesCopy = false; // writesCopy: a write the value reading makes on a copy, leaving the input it reaches untouched there (through another name for an input's node, the node a call returns, or such a same-file callee)
     const walk = (n) => {
-      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || ts.isPropertyAccessExpression(unparen(n.initializer)) || ts.isElementAccessExpression(unparen(n.initializer)) || unparen(n.initializer).kind === K.ThisKeyword)) aliases.set(n.name.text, effDepth(n.initializer)); // an element or a dictionary value of an input is a node below it too (heap shapes)
-      for (const nm of elementNames(n, inputRooted)) aliases.set(nm, effDepth(ts.isForOfStatement(n) ? n.expression : n.expression.expression) + 1); // an element of an input array: one level below it
+      if (ts.isVariableDeclaration(n) && n.initializer && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || ts.isPropertyAccessExpression(unparen(n.initializer)) || ts.isElementAccessExpression(unparen(n.initializer)) || unparen(n.initializer).kind === K.ThisKeyword)) for (const { name, depth: d } of boundNames(n.name)) if (isRefType(typeOf(name))) aliases.set(name.text, effDepth(n.initializer) + d); // an element or a dictionary value of an input is a node below it too (heap shapes); a pattern's names one level down per pattern
+      for (const { name, depth: d } of elementNames(n, inputRooted)) aliases.set(name.text, effDepth(ts.isForOfStatement(n) ? n.expression : n.expression.expression) + 1 + d); // an element of an input array: one level below it
       for (const a of calleeWrites(n)) if (inputRooted(a)) { writesInput = true; risks.add('write through an input in a same-file callee'); } // the callee's writes are the caller's
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text) && n.expression.text !== u.name && writesCopyOf(n.expression.text)) writesCopy = true; // a callee's copy write is the caller's: its value reading returns no trace of it either
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
         const L = unparen(n.left);
         if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { writesInput = true; if (effDepth(L) >= 2) risks.add('nested write through an input'); else if (n.operatorToken.kind === K.EqualsToken && isRefType(typeOf(n.right)) && !fresh(n.right)) risks.add('input field assigned a reference'); }
       }
       if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && inputRooted(n.expression.expression)) { writesInput = true; const recv = unparen(n.expression.expression); if (effDepth(recv) >= 1) risks.add('nested write through an input'); }
       if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) writesInput = true; if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L) && effDepth(L) >= 2) risks.add('nested write through an input'); }
-      { const t = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? unparen(n.left) : (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? unparen(n.operand) : ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) ? n.expression.expression : isAssignCall(n) ? n.arguments[0] ?? null : null; if (t && t !== rootOf(t) && ts.isCallExpression(rootOf(t))) risks.add('write through the result of a call'); if (t && ts.isIdentifier(rootOf(t)) && !params.has(rootOf(t).text) && aliases.get(rootOf(t).text) === 0 && constLocal(rootOf(t)) && (t !== rootOf(t) || ts.isCallExpression(n))) risks.add('write through another name of an input'); } // the node a call returns, written: the value reading writes a copy (heap shapes); a local bound to an input itself (`const h = a`), written: the value reading writes a copy, the input keeps its fields (design/heap-stage5.md 18)
+      { const t = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? unparen(n.left) : (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? unparen(n.operand) : ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) ? n.expression.expression : isAssignCall(n) ? n.arguments[0] ?? null : null; if (t && t !== rootOf(t) && ts.isCallExpression(rootOf(t))) { risks.add('write through the result of a call'); writesCopy = true; } if (t && ts.isIdentifier(rootOf(t)) && !params.has(rootOf(t).text) && aliases.has(rootOf(t).text) && (t !== rootOf(t) || ts.isCallExpression(n))) writesCopy = true; if (t && ts.isIdentifier(rootOf(t)) && !params.has(rootOf(t).text) && aliases.get(rootOf(t).text) === 0 && constLocal(rootOf(t)) && (t !== rootOf(t) || ts.isCallExpression(n))) risks.add('write through another name of an input'); } // the node a call returns, written: the value reading writes a copy (heap shapes); a local bound to an input itself (`const h = a`), written: the value reading writes a copy, the input keeps its fields (design/heap-stage5.md 18)
       if (refCompare(n)) risks.add('identity comparison of two references'); // `a === b` on two objects is node identity, which a value tree does not hold (heap shapes)
       if (callsRefCompare(n)) risks.add('identity comparison of two references in a same-file callee'); // the caller's lemma would unfold the callee's value reading of it
       if (isAssignCall(n) && n.arguments[0] && inputRooted(n.arguments[0])) { writesInput = true; if (effDepth(n.arguments[0]) >= 1) risks.add('nested write through an input'); } // Object.assign onto a node below an input writes that node's fields (heap shapes)
@@ -1605,7 +1626,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     let nested = 0;
     if (ts.isBlock(u.body)) walk(u.body); else { walk(u.body); if (!fresh(u.body)) risks.add('result may carry an input or shared reference'); }
     if (writesInput && aliasable.length) risks.add(`write through an input that another input position of the same shape may alias (${aliasable.join(', ')})`);
-    return [...risks];
+    return Object.assign([...risks], { writesCopy }); // the theorem needs the source of a unit whose value reading may show no trace of a write
   }
   // an array method whose result the library table marks fresh (translate/library.json: map, filter, flatMap, slice,
   // concat, flat, toSorted, toReversed, toSpliced, with), called on an array (a tuple is one), whose result's element type holds no
@@ -1743,10 +1764,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // const names bound to a path below an input (`const names = b.names`, `const h = this.cfg.headers`) or to another
     // such name: a write through one is a write of that node, which the value reading copies (heap shapes)
     const inputAlias = new Set();
-    { const w = (n) => { if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const)) { const x = unparen(n.initializer); const r = rootOf(x); if ((ts.isIdentifier(r) && (params.has(r.text) || inputAlias.has(r.text))) || r.kind === K.ThisKeyword) inputAlias.add(n.name.text); } ts.forEachChild(n, w); }; w(u.body); }
+    { const w = (n) => { if (ts.isVariableDeclaration(n) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const)) { const x = unparen(n.initializer); const r = rootOf(x); if ((ts.isIdentifier(r) && (params.has(r.text) || inputAlias.has(r.text))) || r.kind === K.ThisKeyword) for (const { name } of boundNames(n.name)) inputAlias.add(name.text); } ts.forEachChild(n, w); }; w(u.body); } // a const pattern over such a path: each of its names a node below it
     for (const [name, tm] of destructured) if (!written.has(name)) bound.set(name, tm); // a binding the unit writes again has no fixed skeleton
     const walk = (n) => {
-      for (const nm of elementNames(n, paramsOrThis)) elementOf.add(nm);
+      for (const { name } of elementNames(n, paramsOrThis)) elementOf.add(name.text);
       if (calleeWrites(n).some((a) => paramsOrThis(a))) nestedWrite = true; // a callee writes through an input: the path of its write is not read here
       if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && (n.parent.flags & ts.NodeFlags.Const) && !written.has(n.name.text)) { const tm = term(n.initializer); if (tm !== null) bound.set(n.name.text, tm); }
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
@@ -1785,7 +1806,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     let exposed = [], sk = { determinate: false, sites: [], writes: [] };
     try { exposed = layer1Risk(u); } catch (e) { exposed = [`unreadable: ${String(e.message).slice(0, 80)}`]; }
     if (exposed.length) { try { sk = identitySkeleton(u); } catch (e) { sk = { determinate: false, sites: [], writes: [], error: String(e.message).slice(0, 80) }; } }
-    return { exposed, determinate: !!sk.determinate, sites: sk.sites ?? [], writes: sk.writes ?? [], aliasable: exposed.find((r) => r.startsWith('write through an input that another input position')) ?? null }; // aliasable: no skeleton rescues it, the theorem withholds the lemma
+    // writesCopy: the value reading makes a write on a copy, leaving no trace of it in the Dafny text (an unreadable unit
+    // counts as one): the theorem then needs the unit's source to take Dafny-identical bodies as one function
+    return { exposed, writesCopy: exposed.writesCopy !== false, determinate: !!sk.determinate, sites: sk.sites ?? [], writes: sk.writes ?? [], aliasable: exposed.find((r) => r.startsWith('write through an input that another input position')) ?? null }; // aliasable: no skeleton rescues it, the theorem withholds the lemma
   }
   return { plan, isCore, needsInRange, emit, prelude, shapes, shapeLegend, core: () => core, whyNot: whyNotOf, layer1Risk, identitySkeleton, guard };
 }

@@ -1,0 +1,39 @@
+{
+ "scope": [
+  "zero",
+  "head",
+  "sweep",
+  "touch",
+  "reset",
+  "clear",
+  "wipe",
+  "peek",
+  "poke",
+  "prod"
+ ],
+ "equal": {
+  "zero": false,
+  "head": false,
+  "sweep": false,
+  "touch": true,
+  "reset": false,
+  "clear": true,
+  "wipe": false,
+  "peek": true,
+  "poke": true,
+  "prod": false
+ },
+ "why": "A name a destructuring pattern binds over an input path is that path one level down per pattern (heap.mjs boundNames; design/heap-stage5.md 17c). The value reading writes a copy of the node behind such a name, so the identity guard must see the write: zero (`const { inner } = b`) and head (`const [first] = b.items`) write a node the candidate leaves alone (the guard withholds the lemma, WITNESS); sweep writes through a for-of pattern over an input array; reset and wipe call a same-file unit that writes through a destructured local and a destructured parameter, which writesThrough now counts as a write through the argument (withheld, WITNESS). sweep, reset and wipe have Dafny bodies identical to the candidate's, the write leaving no trace in the value reading: an exposed unit carries its source key (`// SOURCE`) and keeps the identity shortcut only when the two sources are the same (spec/theorem.py), so their lemmas are withheld. touch and clear are untouched (the same source: proved); peek reads through the pattern and writes nothing (proved). poke and prod are the same shape through `const i = b.inner`, which the heap core reads (the world it threads shows the write: prod not proved, poke untouched), unchanged by the reading. Before the reading lane A proved zero, head, sweep, reset and wipe equal.",
+ "b": {
+  "zero": "WITNESS",
+  "head": "WITNESS",
+  "sweep": "WITNESS",
+  "touch": "PASS-bounded",
+  "reset": "WITNESS",
+  "clear": "PASS-bounded",
+  "wipe": "WITNESS",
+  "peek": "PASS-bounded",
+  "poke": "PASS-bounded",
+  "prod": "WITNESS"
+ }
+}

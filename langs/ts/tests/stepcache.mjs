@@ -1,6 +1,6 @@
 // The step cache (the owner's rule, 29 Oct: the tests run as fast as possible on merges). A command the suite runs is
 // cached by the content it depends on: the program and its arguments (temporary and repository paths normalised), the
-// content of every file it reads, the environment it is given, and a producer hash over lean's own sources (every .mjs,
+// content of every file it reads (a Dafny file with every file it includes), the environment it is given, and a producer hash over lean's own sources (every .mjs,
 // .json, .py and .d.ts under langs/ts except tests, design, audit and vendor, plus spec/ and the pinned TypeScript); a
 // Dafny verification by the theorem text, the Dafny version and the version of the Z3 it is given (solve/z3.mjs: a
 // result proved under one Z3 is not replayed under another). A hit returns the stored result and rewrites the
@@ -50,13 +50,28 @@ export function producerKind(cmd, args) {
 let dafnyVersion = null;
 export const dafnyVersionString = () => dafnyVersion ??= (spawnSync('dafny', ['--version'], { encoding: 'utf8', timeout: dafnyWallCapMs([]), killSignal: 'SIGKILL' }).stdout ?? '').trim() || 'dafny version unknown';
 const UNSTABLE = /timed out|out of resource|spin-bound|__timeout__|harness timeout|ASK:harness|"harness":|killed \(|ENOSPC|EAGAIN/i;
+// the files a command reads, a Dafny file's includes added after it, transitively (a path relative to the including
+// file's folder, as Dafny and theorem.py resolve it): the text a .dfy means is its own and its includes' (a translation's
+// .pre.dfy prelude), so a changed prelude is a changed input
+const INCLUDE = /^include\s+"([^"]+)"\s*$/gm;
+function withIncludes(files) {
+  const out = [], seen = new Set();
+  const visit = (f) => {
+    const key = path.resolve(f); if (seen.has(key)) return; seen.add(key); out.push(f);
+    if (!f.endsWith('.dfy')) return;
+    let text; try { text = fs.readFileSync(f, 'utf8'); } catch { return; } // a missing input is keyed as missing by the caller
+    for (const m of text.matchAll(INCLUDE)) visit(path.resolve(path.dirname(f), m[1]));
+  };
+  files.forEach(visit);
+  return out;
+}
 let hits = 0, misses = 0, stored = 0;
 export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, dir: CACHE_DIR });
 // the key of one command, and the stored entry when there is one (a hit); shared by the sync and the async runner
 function lookup(cmd, args, { root, files = [], outs = [], env = null, normalise = [] }) {
   const norm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(from).join(to) : t), String(s));
   const denorm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(to).join(from) : t), String(s)); // a stored output names this run's paths again: a result replayed in another checkout or temp folder must point at that checkout (the witness-lines check compares the site's file to the pair's)
-  const inputs = files.map((f) => { try { return [norm(f), sha(fs.readFileSync(f))]; } catch { return [norm(f), null]; } });
+  const inputs = withIncludes(files).map((f) => { try { return [norm(f), sha(fs.readFileSync(f))]; } catch { return [norm(f), null]; } });
   if (env) for (const v of Object.values(env)) { if (typeof v === 'string' && fs.existsSync(v) && fs.statSync(v).isFile()) inputs.push([norm(v), sha(fs.readFileSync(v))]); } // a table or fixture named by the environment
   const kind = producerKind(cmd, args);
   const keyObj = { v: 2, cmd, args: args.map(norm), env: env ?? {}, inputs, kind, producer: kind === 'dafny' ? `${dafnyVersionString()} with ${z3Binary().version ?? z3Binary().source}` : producerHash(root, kind) }; // v2: outputs stored normalised

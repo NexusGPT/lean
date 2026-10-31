@@ -533,8 +533,9 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     # the identity guard (references, layer 1): a unit read as a value tree carries `// GUARD <name>: {exposed, determinate,
     # sites, writes}`. Tree equality implies graph equality only when the unit is not exposed, or when both sides have one
     # readable identity shape and the shapes agree. Otherwise the Equal lemma is withheld: the proof lane says nothing and
-    # the bounded run decides (ASK:identity). A candidate identical to the parent by text is the same function and keeps
-    # its lemma whatever its shape.
+    # the bounded run decides (ASK:identity). A candidate identical to the parent by text (Dafny-identical, and for an
+    # exposed unit whose value reading writes a copy the same source) is the same function and keeps its lemma
+    # whatever its shape.
     guards = {}
     for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
         for m in re.finditer(r'^// GUARD ([A-Za-z_][A-Za-z0-9_]*): (.+)$', text, flags=re.M):
@@ -569,10 +570,17 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
                     unguarded[f] = f"interface differs: the adapter for {f} maps {expr[:60]} to the candidate's {n}: {ct_[n]}, a reference the heap core allocates; an adapter is an expression over values, so the core does not read this shape"
                     break
     for f, g in guards.items():
-        if f not in funcs or f in aliased or 'parent' not in g or 'candidate' not in g:
+        if f not in funcs or 'parent' not in g or 'candidate' not in g:
             continue
         gp, gc = g['parent'], g['candidate']
         if not gp.get('exposed') and not gc.get('exposed'):
+            continue
+        # an exposed unit whose value reading writes a copy carries its source (`// SOURCE`): a write through another
+        # name for an input's node, through a call's result or in such a callee leaves no trace in the Dafny text, so
+        # Dafny-identical bodies are the same function only when the two sources are the same, as for an in-range
+        # unit. A write through a parameter's own path is the parameter's output, and a result's identity shows in
+        # its terms (a copy is Copy_<T>): those Dafny texts differ where the units do
+        if f in aliased and (f in same_source or f not in sources):
             continue
         aliasable = gp.get('aliasable') or gc.get('aliasable')
         if aliasable:  # two input positions of one shape may be one object, and the unit writes through one: the value reading says nothing
