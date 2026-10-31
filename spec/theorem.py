@@ -792,7 +792,7 @@ def prelude_functions(text):
     return out
 
 
-PRIMS = {'int', 'nat', 'real', 'bool', 'string', 'char'}
+PRIMS = {'int', 'nat', 'real', 'bool', 'string', 'char', 'BigInt'}  # BigInt: the translator's synonym of int for a bigint
 
 
 def canon_walk_bound(f, roots, hyp, ret_ref, defs, prelude_defs, legend, ret_shapes=()):

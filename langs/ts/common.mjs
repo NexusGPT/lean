@@ -39,7 +39,11 @@ export const RESERVED = new Set(['abstract', 'allocated', 'as', 'assert', 'assum
   'real', 'refines', 'requires', 'return', 'returns', 'reveal', 'seq', 'set', 'static', 'string', 'then', 'this', 'trait', 'true', 'type', 'unchanged',
   'var', 'while', 'witness', 'yield', 'yields', 'result', 'Option', 'None', 'Some', 'value', 'Nullish', 'Absent', 'Null', 'Undef', 'PromiseHandle',
   'fresh', 'twostate', 'ORDINAL', 'array', 'iset', 'imap', 'bv', 'least', 'greatest', 'continue', 'default', 'extern', 'exports', 'synthesize', 'opened', 'reveals']);
-export const dn = (name) => { let n = name.replace(/[^A-Za-z0-9_]/g, '_'); if (n.startsWith('_')) n = 'u' + n; return RESERVED.has(n) ? `${n}_` : n; };
+// a symbol-keyed property's name is the checker's `__@<key>@<id>`; the id numbers the symbols of one program in the
+// order it met them, so the same key declared in a parent and in its candidate carries two ids. The key is named by the
+// name it was declared under, as a string key is by its text (design/types-inventory.md, forms 5 and 6 read)
+export const stableKey = (name) => name.replace(/^(__@.+)@\d+$/, '$1');
+export const dn = (name) => { let n = stableKey(name).replace(/[^A-Za-z0-9_]/g, '_'); if (n.startsWith('_')) n = 'u' + n; return RESERVED.has(n) ? `${n}_` : n; };
 
 /**
  * loadProgram(file, {project}) — project: a tsconfig path, true (search upward from the file), or false
