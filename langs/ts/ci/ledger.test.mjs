@@ -113,13 +113,13 @@ try {
   assert.equal(ledgerRowsOf(fresh).filter(r => r.file === 'fresh.ts').length, 0, 'no unassigned row is left for an added file\'s statements');
   assert.equal(reconcileEdits(fresh).complete, true);
   git('rm', '-qf', 'fresh.ts');
-  git('rm', '-q', 'init.ts'); // tracked removal: the parent's statements of a deleted file
+  git('rm', '-qf', 'init.ts'); // tracked removal: the parent's statements of a deleted file
   const dropped = routeChanges(buildChangeManifest({ repo: tmp, base: initBase, head: 'WORKTREE' }));
   const droppedEdits = dropped.edits.filter(e => e.file === 'init.ts');
   assert(droppedEdits.filter(e => e.old.start === 2).every(e => e.primary.kind === 'unit' && e.primary.unit === 'g' && e.primary.side === 'old'), 'a deleted file\'s function stays its function\'s');
   assert(droppedEdits.filter(e => e.old.start !== 2 && e.old.count).length >= 3 && droppedEdits.filter(e => e.old.start !== 2 && e.old.count).every(e => e.primary.kind === 'unit' && e.primary.unit === '(module)' && e.primary.side === 'old'), 'a deleted file\'s statements are its module unit\'s');
   assert.equal(ledgerRowsOf(dropped).filter(r => r.file === 'init.ts').length, 0, 'no unassigned row is left for a deleted file\'s statements');
-  git('reset', '-q', 'HEAD', '--', 'init.ts'); git('checkout', '-q', '--', 'init.ts');
+  git('reset', '-q', 'HEAD', '--', 'init.ts'); git('checkout', '-q', '--', 'init.ts'); // the file back as the base has it
   write('configuration.ts', 'export function configure(x: number) { return x + 1; }\n');
   git('add', '-A'); git('commit', '-qm', 'classified source base'); const classifiedBase = git('rev-parse', 'HEAD');
   write('configuration.ts', 'export function configure(x: number) { return x + 2; }\n');

@@ -1194,8 +1194,8 @@ export function workerFlags(opts) {
 }
 const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefined ? ` (input ${c.input})` : ''}${c.side ? `, the ${c.side} side running` : ''}${c.loading ? `, loading ${c.loading}` : ''}` : 'start');
 // a unit whose parent does not hold it runs as today (new-unit.mjs starts its own bounded process); every other unit runs
-// in the child under the bound
-const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && (unit === MODULE_UNIT || topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit));
+// in the child under the bound, the module unit always (an added file's evaluation runs candidate-only there: runModuleUnit)
+const parentHolds = (parent, unit) => unit === MODULE_UNIT || (!!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit));
 let recordHeadCache = null;
 // lean's own head, as pr.mjs leanVersion reads it: the commit of the checkout that TRACKS this file; a copy of lean placed
 // inside some other repository (a harness's temp folder under its own checkout) must not name that repository's head
@@ -1383,7 +1383,8 @@ function moduleDifference(sides, oP, oC) {
 const comparable = (o, other) => ({ ...o, bindings: Object.fromEntries(Object.entries(o.bindings).filter(([k]) => Object.hasOwn(other.bindings, k))) });
 async function runModuleUnit(opts) {
   const { parent, candidate, n = 200, seed = 1, ms = 2000 } = opts, unit = MODULE_UNIT;
-  if (!parent || !fs.existsSync(parent) || !candidate || !fs.existsSync(candidate)) return { verdict: 'ASK', unit, reason: `module unit: the ${!parent || !fs.existsSync(parent) ? 'parent' : 'candidate'} file is absent; the module unit compares two evaluations` };
+  if (!candidate || !fs.existsSync(candidate)) return { verdict: 'ASK', unit, reason: 'module unit: the candidate file is absent; a file the head deleted has its module unit as a removed row' };
+  if (!parent || !fs.existsSync(parent)) return newModuleUnit(opts);
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots));
   const sides = { parent: moduleSideOf(parent), candidate: moduleSideOf(candidate) };
@@ -1403,6 +1404,29 @@ async function runModuleUnit(opts) {
   if (skipped.length) bound.skipped = { inputs: skipped.length, reason: 'both sides timed out on that input' };
   if (skipped.length >= n) return { verdict: 'ASK', unit, reason: `every input timed out (${skipped.length} of ${n})`, bound };
   return { verdict: 'PASS-bounded', unit, bound };
+}
+
+// the module unit of a file the parent does not have (an added file): its evaluation alone, as a function the parent does
+// not hold is run alone (new-unit.mjs): n evaluations, each seeded as the compared ones are; NEW records what they did
+// (the outcome, the shape of the requests and of the armed work, per input) and makes no equality claim. A harness stop
+// (a timeout, the budget) is ASK.
+async function newModuleUnit(opts) {
+  const { candidate, n = 200, seed = 1, ms = 2000 } = opts, unit = MODULE_UNIT;
+  const root = findRoot(candidate);
+  setRoots(sideLocations(candidate, candidate, { parent: root, candidate: root }));
+  const side = moduleSideOf(candidate);
+  const bound = { n, seed, ms, observation: 'the module\'s evaluation alone: its outcome, the requests in init order, the work it armed (never fired)', inputs: 'input i seeds the environment (the clock, random); while a module loads the world answers with handles', statements: { candidate: side.statements.length } };
+  const base = { candidateOnly: true, unit, file: candidate };
+  let faults = 0; const faultExamples = [], shapes = new Map();
+  for (let i = 0; i < n; i++) {
+    step('module', i);
+    const o = await observeModule(side, i, seed, ms, root);
+    if (o.harness) return { ...base, verdict: 'ASK', loaded: i > 0, inputs: i, faults, reason: `input ${i}: candidate ${o.harness}`, bound };
+    if (Object.hasOwn(o.outcome, 'threw')) { faults++; if (faultExamples.length < 3) faultExamples.push({ input: i, error: o.outcome.threw, where: { kind: 'module statement', candidate: lastEntered(side, o) ? siteLines(lastEntered(side, o).site) : null } }); }
+    const shape = { outcome: Object.hasOwn(o.outcome, 'threw') ? 'threw' : 'evaluated', trace: o.trace.map(({ op, path }) => ({ op, path })), pending: o.pending.map((x) => x.op) };
+    const key = JSON.stringify(shape); const entry = shapes.get(key) ?? { ...shape, inputs: 0 }; entry.inputs++; shapes.set(key, entry);
+  }
+  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [], faults, faultExamples, traceShape: [...shapes.values()], bound };
 }
 
 async function runPairOnce(opts) {

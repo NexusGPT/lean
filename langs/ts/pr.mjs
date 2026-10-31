@@ -261,7 +261,12 @@ function changedFiles(opts, temps, ledger) {
       if (bytes.includes(0)) return { ...entry, binary: true };
       const text = bytes.toString('utf8');
       if (original && !original.includes(0)) entry.removed = removedUnits(rel, original.toString('utf8'), entry.deleted ? null : text);
-      if (entry.deleted) { entry.units = []; return entry; } // a deleted file has no head side to read: its units are removed rows
+      if (entry.deleted) { // a deleted file has no head side to read: its units are removed rows
+        // its module unit too, when the ledger routes its top-level statements there (common.mjs MODULE_UNIT): the parent's lines
+        const mod = ledger.edits.find(e => e.file === rel && e.primary.kind === 'unit' && e.primary.unit === MODULE_UNIT);
+        if (mod) (entry.removed ??= []).push({ name: MODULE_UNIT, start: mod.primary.start, end: mod.primary.end });
+        entry.units = []; return entry;
+      }
       fs.mkdirSync(path.dirname(abs), { recursive: true });
       // A unique folder would change relative import resolution. Keep temporary siblings.
       const temporary = (side, content) => {
@@ -586,7 +591,9 @@ async function prWorker(opts) {
         save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'WITNESS', coverage: 'checked', laneB: 'WITNESS', laneA: null, caller: true, certificate: basicCertificate({ B: b }), witness: { ...(w.record ? { record: w.record } : {}), input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
         continue;
       }
-      if (!baseFile || entry.deleted) {
+      // an added file's module unit is its evaluation alone: lane B runs it candidate-only (NEW, no equality claim), as a
+      // function the parent does not hold is run (exec/run.mjs runModuleUnit)
+      if ((!baseFile && u.name !== MODULE_UNIT) || entry.deleted) {
         save({ file: rel, unit: u.name, verdict: 'ASK', coverage: u.findings?.length ? `refused:${u.findings[0].rule}` : 'checked', certificate: basicCertificate(), reason: entry.deleted ? 'deleted unit: no candidate to compare with' : 'new file: no parent to compare with', lines: [u.start, u.end] });
         continue;
       }
