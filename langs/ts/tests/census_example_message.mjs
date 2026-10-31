@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // census.mjs carries the finding's message in each refusal example (refusalRules[].directories[].example.message): the
-// rule alone does not say which form stopped a unit (a `types` refusal names its type only in the message,
-// design/types-inventory.md). The fixture fixtures/census-message holds a unit refused by the type reading and one
-// refused by a lint rule. Run: node langs/ts/tests/census_example_message.mjs
+// rule alone does not say which form stopped a unit (an `arrays` refusal names the tuple's types only in the message,
+// heap-stage5.md 17c; the `types` refusals the fixture first used are all read since the 31 October lanes). The fixture
+// fixtures/census-message holds a unit refused by the value reading and one refused by a lint rule. Run: node langs/ts/tests/census_example_message.mjs
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,7 +20,7 @@ try {
   const r = spawnSync(process.execPath, [census, repo, '--out', json], { encoding: 'utf8' });
   say(r.status === 0, 'census exits 0', r.status === 0 ? '' : `exit ${r.status} ${(r.stderr ?? '').slice(-300)}`);
   const res = JSON.parse(fs.readFileSync(json, 'utf8'));
-  const want = { types: 'union type string | symbol is not translatable', var: '`var` is outside the subset; use let or const' };
+  const want = { arrays: 'a tuple of string, int read as a sequence needs one element type', var: '`var` is outside the subset; use let or const' };
   for (const [rule, message] of Object.entries(want)) {
     const g = res.refusalRules.find((x) => x.rule === rule);
     const e = g?.directories[0]?.example;
