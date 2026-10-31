@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag } from '../common.mjs';
+import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag, matchGroups, matchGroupRead } from '../common.mjs';
 import { ts, loadProgram, classFieldsDefine, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
