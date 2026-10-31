@@ -625,7 +625,7 @@ Stays refused, and why:
   this reading does not decide it. A bound of `T & X` (an intersection holding a type parameter) has no shape.
 - A call of a generic unit with an argument of another shape, as above. The same reading of a non-generic callee (a
   `Person` passed to a `Named` parameter) is outside this section. It is reported in the lane's result
-  (`lane/core-tuples-intersections-result.md`) and left as it is.
+  (`lane/core-tuples-intersections-result.md`) and left as it is. Read since: 17c applies the rule to every call.
 
 Pair `tuples_intersections` (17 checks): `spread` (a tuple of one shape a callee returns, destructured, against indexed:
 proved, in range through the callee's allocation), `caption` (`=` for `:` between the positions of a destructured tuple
@@ -648,6 +648,67 @@ b5c07450 and after at 5bda69a7):
 No unit entered or left the core. The destructurings met in these roots are of `string[]` (`s.split(..)`), whose length
 is not known, and each generic unit had a second stop. 12 nexus rows differ only in a unique symbol's id between two
 program builds (`__@NARROWING_DECIDED@<id>`), which is not a move.
+
+### 17c. Destructured aliases, a wider argument, the cache of an included prelude (2026-10-31)
+
+Three defects 17b reported (`lane/core-tuples-intersections-result.md`, defects 2 to 4), each with the pair that was red
+before its mechanism and green after it.
+
+**A name a destructuring pattern binds over an input path is that path** (`translate/heap.mjs` `boundNames`). The
+names of a pattern, each one level below the bound value per pattern (a rest at the value's own level: a fresh object
+or array of the value's members, so a write through one of its members is a write below the value). One rule, read
+wherever a name is bound: a `const` or `let` pattern, a destructured parameter, a for-of or array-callback pattern.
+`writesThrough` maps each such name to the parameter position its value is a path of (it read only `const x = path`
+and identifier elements), and `layer1Risk` and the identity skeleton's `inputAlias` read them as they read a `const`
+name. A write through `const { inner } = b` is a nested write through `b`, and a caller of a unit that makes one writes
+through its argument.
+
+The guard alone was not enough. The value reading writes such a node as a copy, so when the copy is dead the Dafny text
+shows no trace of the write: `const { inner } = b; inner.v = 0; return b.n` reads as `b.n`, Dafny-identical to a
+candidate that never writes, and `alias_identical` (spec/theorem.py) aliased the two as one function before the guard
+was read. Dafny-identical is the same function only where the reading shows every effect, which is the in-range
+rule's point too (`// SOURCE`, design/absent-number.md). So `layer1Risk` reports `writesCopy`: a write through another name for an
+input's node (a `const`, a pattern, a loop or callback element), through a call's result, or in a same-file callee that
+makes one (`writesCopyOf`, memoised; a cycle or an unreadable unit counts as one). An exposed unit with `writesCopy`
+carries `// SOURCE` (`sourceKey`: its text and every same-file unit it reaches), and the identity shortcut skips the
+guard only when the two sources are the same. A write through a parameter's own path (`xs.push(..)`, `items[0]!.qty +=
+v`) is the parameter's output in the value reading, and a result's identity shows in its terms (a copy is
+`Copy_<T>`): those units carry no source, and their Dafny-identical bodies stay one function (spread_outside `append`,
+element_writes `bump`, open_datatype `assignCopy`, each proved at base and now).
+
+Pair `destructured_aliases` (21 checks): `zero` (`const { inner } = b`), `head` (`const [first] = b.items`), `sweep` (a
+for-of pattern over `b.rows`), `reset` and `wipe` (a same-file callee writing through a destructured local and a
+destructured parameter) against units that write nothing: lane A proved all five at base, now withheld (WITNESS in lane
+B). `touch` and `clear` are untouched (the same source: proved), `peek` reads through a pattern (proved), `poke` and
+`prod` are the same shapes through `const i = b.inner`, read by the heap core and unchanged.
+
+**A same-file call's argument holds a cell its parameter reads** (`argShapeWhy`, which replaces 17b's `genericArgWhy`).
+A callee reads a reference parameter's cell through the constructors of the parameter's shape, so every call in the core
+(a function, a method, a constructor) must pass, for each reference parameter, an argument whose cells are among them: a
+record of the same shape, one alternative (or a union of alternatives) of a union parameter. A handle is never read
+through a constructor and is not checked. A wider record (`Person` for `Named`), a subclass's instance for its base
+class, another record for a type parameter's bound are refused: the reads there were the prelude's defaults. The
+caller leaves the core, and its callee with it (one calling convention per callee). Pair `wider_record_argument` (9
+checks): `who` passes a `Person` to `greet(p: Named)`; lane A proved it equal to `return ""` at base, now not proved
+(WITNESS). `circ` passes a `Circle` to `size(s: Shape)` and stays in the core with `size`. It is not proved, at base as
+now, because its hypothesis `IsR_<Circle>(hw_, c)` does not state the alternative's discriminant value, so `size` may
+take the other branch. That is an incompleteness of the hypothesis, left as it is.
+
+**The step cache keys a Dafny input with every file it includes** (`tests/stepcache.mjs` `withIncludes`). The theorem
+step reads `parent.dfy` and `candidate.dfy`, and theorem.py merges the `.pre.dfy` each includes. The key held only the
+two files, so a change that moved prelude text alone replayed a theorem over the old prelude. A `.dfy` the command reads
+now adds the files it `include`s, transitively, resolved from the including file's folder as Dafny and theorem.py
+resolve them. Row `runtime/step-cache-includes` (`tests/step-cache-includes.mjs`): a changed prelude, and a changed file
+the prelude includes, each rerun the step (2 FAILED at base, all ok now).
+
+Regression, each `JOBS=1 node langs/ts/tests/run.mjs --pair <p>` at 8880f2c6, ALL PASS: heap_canonical 13, type_tests
+59, copied_argument 10, tuples_intersections 17, heap5_rest 7, heap5_tuples 11, tuple_spread 9, heap_shapes 36,
+open_datatype 25, spread_outside 47, element_writes 15, generics 7, alias_result 6, alias_after_call 7, theorem_alias 7,
+array_callbacks_rest 15, rest_param 7, heap5_unions 9, heap_unions 9, record_rest_any 11, callback_patterns 11,
+mutation 11, receiver_write 13, heap5_ctors 14, class_super 8, inherited_method 27, heap5_handles 12,
+types_enclosing_params 24, types_depth 17. Every other pair's lane A theorem was generated at base and at 8880f2c6
+(translate, agreeCore, theorem.py, as tests/run.mjs does, no Dafny) and compared with its comment lines dropped: the same
+text in each, so the same lemmas reach Dafny. Lane B and the lint import none of the changed sources.
 
 ## 18. Class instances and handles
 
