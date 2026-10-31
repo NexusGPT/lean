@@ -240,7 +240,8 @@ time. Each unit attributed as the census attributes it, forms 5 and 6 told apart
 | langchainjs | 6,709 | 37 → 0 | 0 → 0 | 96 → 59 | 3,504 → 3,506 | entered 2; `reference-key` 35 (a Map keyed by `ZodTypeDef`) | 0 |
 
 No unit entered at base is stopped at head. nexus (84 + 7 units of these forms in the inventory) was not censused: the
-machine stayed below the memory a census may start with for the rest of the night.
+machine stayed below the 25 GB a census may start with from 01:05 to the end of this lane (03:30). Its 41 directories
+holding those findings run one at a time with `nexus_one.sh` (lane folder `census/`).
 
 **Seen and left to their readings.** Any `/` makes a file read its numbers as reals (common.mjs `fileUsesReals`), a
 bigint division included, though a bigint is never real. A bigint rendered in JSX (`{n}`) now converts through an
