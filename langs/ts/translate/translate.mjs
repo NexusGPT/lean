@@ -65,7 +65,7 @@ const TF = ts.TypeFlags;
 
 class Unsupported extends Error {}
 
-import { dn } from '../common.mjs';
+import { dn, stableKey } from '../common.mjs';
 import { unitTypeParameters } from '../common.mjs'; // a unit's type parameters: its own and the enclosing declarations' it reads (types-inventory.md, form 2)
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
@@ -1177,7 +1177,7 @@ function translateOnce(file, fnName, opts = {}) {
     if (f & (TF.Any | TF.Unknown)) return anyType();
     if (isNodeT(t)) return jsxType();
     if (f & (TF.NumberLike)) return NUM;
-    if (f & TF.BigIntLike) return 'int';
+    if (f & TF.BigIntLike) { addPrelude('BigInt', 'type BigInt = int'); return 'BigInt'; } // an integer, named apart from a number read as int: a conversion is named by its Dafny type, so 0n and 0 put into an opaque value or a sum stay two values
     if (f & TF.BooleanLike) return 'bool';
     if (f & TF.StringLike) return 'string';
     if (f & TF.EnumLike) return (t.flags & TF.NumberLike) ? 'int' : 'string';
@@ -1224,7 +1224,7 @@ function translateOnce(file, fnName, opts = {}) {
         const lit = checker.getTypeArguments(t).every((a) => a.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral));
         const rest = !!t.target?.hasRestElement;
         const ro = !!t.target?.readonly;
-        if (ds.length && (lit || rest || (ro && ds.length >= 2 && !/^(int|real|bool|string|char)$/.test(ds[0]))) && ds.every((d) => d === ds[0])) return `seq<${ds[0]}>`; // a literal list (`as const`), a readonly table or an open tuple [T, ...T[]]: a sequence
+        if (ds.length && (lit || rest || (ro && ds.length >= 2 && !/^(int|real|bool|string|char|BigInt)$/.test(ds[0]))) && ds.every((d) => d === ds[0])) return `seq<${ds[0]}>`; // a literal list (`as const`), a readonly table or an open tuple [T, ...T[]]: a sequence
         return `(${ds.join(', ')})`;
       }
       if (isArrayLike(checker, t)) { const et = checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); if (!et) fail(n, `array-like type ${checker.typeToString(t)} has no element type`); return `seq<${dtype(et, n)}>`; } // arrays, tuples and interfaces that extend an array (a match result)
@@ -1510,7 +1510,7 @@ function translateOnce(file, fnName, opts = {}) {
     const sum = sumType(parts, n); if (sum) return sum;
     // overlapping unions and unions without a runtime discriminator stay opaque. Every read on it is an
     // uninterpreted accessor, every construction an uninterpreted injection; the proof asks the same calls on both sides
-    if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
+    if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
     return fail(n, `union type ${parts.map((x) => checker.typeToString(x)).join(' | ')} is not translatable`);
   }
   // the one copy reading (design/conformance-readings.md): a copy of a record the unit did not build (common.mjs copySource
@@ -1551,7 +1551,7 @@ function translateOnce(file, fnName, opts = {}) {
       return name;
     }
     const heldLit = heldRecord(checker, t); // a literal holding a held value: each held field at its real type (Any for an opaque one), so no field converts it to the declared type
-    const fields = props.map((p) => { const real = heldLit ? heldField(checker, p) : null; return { name: p.name, type: real ?? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional), held: !!real }; }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    const fields = props.map((p) => { const real = heldLit ? heldField(checker, p) : null; return { name: stableKey(p.name), type: real ?? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional), held: !!real }; }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
     if (heldLit) name = `Held_${hash(fields.map((f) => `${f.name}:${f.held ? '!' + dtype(f.type, n) : checker.typeToString(f.type)}`).join(','))}`; // named by its real field types: never one datatype with a literal of the same declared fields
     if (t.symbol?.declarations?.some((d) => ts.isBindingElement(d) && d.dotDotDotToken)) name = `Rest_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     if (literalRecord(t)) name = `Literal_${hash(fields.map((f) => f.name + ':' + checker.typeToString(f.type)).join(','))}`;
@@ -2225,7 +2225,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (td === 'JsxNode') {
       jsxType();
       if (fd === 'string') return `JsxText(${code})`;
-      if (fd === 'int' || fd === 'real') return `JsxText(${external('text_of_number', [fd], 'string')}(${code}))`;
+      if (fd === 'int' || fd === 'real' || fd === 'BigInt') return `JsxText(${external('text_of_number', [fd], 'string')}(${code}))`;
       if (fd === 'bool' || fd === 'Unit' || fd === 'Absent') return 'JsxNothing';
       if (fd === 'Any') return `${external('node_of_Any', ['Any'], 'JsxNode')}(${code})`;
       if (optionalD(fd)) { usesOption = true; const v = `jn_${hash(code).slice(0, 4)}`; return `(var ${v} := ${code}; if ${v}.Some? then ${convertD(`${v}.value`, innerOf(fd), 'JsxNode')} else JsxNothing)`; }
@@ -2318,7 +2318,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (members) return sumTruth(value, members);
     if (d === 'bool') return value;
     if (d === 'string') return `(|${value}| > 0)`;
-    if (d === 'int' || d === 'real') return `(${value} != ${d === 'real' ? '0.0' : '0'})`;
+    if (d === 'int' || d === 'real' || d === 'BigInt') return `(${value} != ${d === 'real' ? '0.0' : '0'})`; // 0n is falsy as 0 is
     if (d === 'Unit' || d === 'Absent') return 'false';
     if (d === 'Any' || unitTParams().includes(d)) return `${external(`truthy_${mangle(d)}`, [d], 'bool')}(${value})`;
     return 'true';
@@ -6216,7 +6216,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const resT = outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`;
     const hints = [...userHints];
     for (const m of M) {
-      if ((m.d === 'int' || m.d === 'real') && keepsNonneg(m.name, s.statement, factsIn)) hints.push(`${dn(m.name)} >= ${m.d === 'real' ? '0.0' : '0'}`);
+      if ((m.d === 'int' || m.d === 'real' || m.d === 'BigInt') && keepsNonneg(m.name, s.statement, factsIn)) hints.push(`${dn(m.name)} >= ${m.d === 'real' ? '0.0' : '0'}`);
     }
     const exitFact = !isOf && !isFor && !returns && !conditionLines.length && !jumps.length && !ts.isDoStatement(s) && !(derivedBound(s)?.body ?? [s.statement]).some((b) => escapingLabels(b).length > 0) ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
     const specs = [...requiresL.map((r) => `  requires ${r}`),

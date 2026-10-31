@@ -70,8 +70,8 @@ are summed over where the type is written (a file may count twice).
 | 2 | A type parameter of an enclosing class or function | 335 | 142 | 14 | reading gap |
 | 3 | A recursive type through a generic or a callable | 269 | 154 | 3 | reading gap |
 | 4 | The polymorphic `this` type of a class | 241 | 107 | 6 | read 2026-10-31 (below, "Form 4, read") |
-| 5 | A union with a symbol member | 179 | 117 | 10 | reading gap |
-| 6 | A union with a bigint member | 8 | 7 | 2 | reading gap |
+| 5 | A union with a symbol member | 179 | 117 | 10 | reading gap; read 2026-10-31 (below, forms 5 and 6 read) |
+| 6 | A union with a bigint member | 8 | 7 | 2 | reading gap; read 2026-10-31 (below, forms 5 and 6 read) |
 | 7 | `type nesting too deep`, the site not located by the walk | 18 | 15 | 4 | located: form 1 by other routes (below) |
 
 Forms a reader might expect and that do not occur: a mapped type, a conditional type, an indexed access, a template
@@ -253,6 +253,64 @@ with another flag.
 
 The reading it needs: the same as form 5, the union opaque. One change to `unionType` covers forms 5 and 6.
 
+#### Forms 5 and 6, read (2026-10-31)
+
+Lane `types-form5-6-primitives` writes the reading forms 5 and 6 need. Its pair is `tests/pairs/types_symbol_bigint`.
+
+**The rule.** `unionType`'s list of members an opaque union may hold now holds `ESSymbolLike` and `BigIntLike`
+(translate.mjs). A union none of the earlier readings takes (all strings, all numbers, all booleans, a sum separated by
+`typeof` or by a tag) and whose members include a symbol (`symbol`, a `unique symbol`) or a bigint (`bigint`, a bigint
+literal) is read opaque (Any), as a lone symbol already is. Nothing else about the union changes: a union a sum
+already reads (`number | bigint`, `string | false | 0 | 0n`: one member per `typeof` result) stays that sum.
+
+**Two defects the reading met, each fixed at its mechanism.**
+- *A bigint and an integer number were one Dafny type.* `dtype` read a bigint as `int`, and a file without a fraction
+  or a `/` reads its numbers as `int` too. Every conversion is named by its Dafny type (`Any_of_int`, `cast_int_<sum>`),
+  so `0n` and `0` put into an opaque value were the same injection, and lane A proved `zero ? 0 : v` equal to
+  `zero ? 0n : v`. On base the same text came out of a lone bigint returned as `unknown` (`return 0n` and `return 0`),
+  and of a `number | bigint` sum in such a file. A bigint is now read as `BigInt`, a Dafny synonym of `int` the prelude
+  declares (`type BigInt = int`): its arithmetic is int's, its conversions are its own (`Any_of_BigInt`). theorem.py
+  counts `BigInt` among its primitive types, as it counts `int`. The pair's `amount_or` row is the one that fails
+  without it (proved where the two differ).
+- *A symbol-keyed field was named by the checker's symbol id.* The checker names a property keyed by a unique symbol
+  `__@TAG@<id>`, the id counting the symbols of one program in the order it met them. A candidate that declares
+  another symbol before `TAG` gave the one record two datatypes, and theorem.py refused the pair (the prelude block
+  differs). A symbol key is now named by the name it was declared under (`__@TAG`, Dafny `u___TAG`; common.mjs
+  `stableKey`, used by `dn` and by `recordType`'s field list, which names and orders the fields). The checker
+  writes a string key that looks like one (`"__@TAG@1"`) with one more underscore, so only symbol keys take this
+  form. Two keys `[a.TAG]` and `[b.TAG]` from two modules in one record would read as one field name: Dafny refuses
+  the duplicate field, so the unit is not proved (no unit of the three roots has one).
+
+**Why it is sound.** As for every opaque union: every read on it is an uninterpreted accessor and every construction an
+uninterpreted injection named by the Dafny type it comes from, called alike on both sides, so a proof holds of every
+interpretation, the real one included. With the `BigInt` name, two values of different runtime kinds never share an
+injection.
+
+**What stays refused, and why.**
+- A symbol-keyed member read by its key (`t[TAG]`) is the lint's `dynamic-key` refusal ("a symbol key is outside the
+  open-key reading"), another reading's construct. The pair reads the record's other fields and passes it whole.
+- A `typeof x === "symbol"` arm of an opaque union is read through the uninterpreted `typeof` of Any: it narrows
+  nothing a proof could use. A sum with a symbol arm is the later refinement the section names.
+- Lane B draws no symbol: a planted difference reached only on a symbol arm is not witnessed by drawing. The pair plants
+  its differences on the string and bigint arms.
+
+**The census.** Base `b5c074508`, head `273cc7d3b`, each a `git archive` in its own folder:
+`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs /root/da/census/repos/<root> --out <json>`, one at a
+time. Each unit attributed as the census attributes it, forms 5 and 6 told apart by this script's union test.
+
+| Root | Units | Form 5 | Form 6 | Stopped by `types` | Entered | Where the form 5/6 units went | Other units that moved |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| n8n | 9,610 | 5 → 0 | 0 → 0 | 37 → 32 | 4,308 → 4,313 | entered 5 | 0 |
+| langchainjs | 6,709 | 37 → 0 | 0 → 0 | 96 → 59 | 3,504 → 3,506 | entered 2; `reference-key` 35 (a Map keyed by `ZodTypeDef`) | 0 |
+
+No unit entered at base is stopped at head. nexus (84 + 7 units of these forms in the inventory) was not censused: the
+machine stayed below the 25 GB a census may start with from 01:05 to the end of this lane (03:30). Its 41 directories
+holding those findings run one at a time with `nexus_one.sh` (lane folder `census/`).
+
+**Seen and left to their readings.** Any `/` makes a file read its numbers as reals (common.mjs `fileUsesReals`), a
+bigint division included, though a bigint is never real. A bigint rendered in JSX (`{n}`) now converts through an
+uninterpreted cast where it was formatted as a number (same text in React; not proved where it was).
+
 ### 7. Nesting sites the walk did not locate (18 units)
 
 The raised line holds a declaration whose type the walk does not find past depth 8, for example a method header whose
@@ -327,6 +385,7 @@ By units, and by how many roots each reading reaches:
 2. Form 2 (335 units, 14 roots): the enclosing declarations' type parameters as the unit's own.
 3. Form 4 (241 units, 6 roots): `this` read as its constraint. Read 2026-10-31 (section 4, "Form 4, read").
 4. Forms 5 and 6 (187 units, 12 roots): `ESSymbolLike` and `BigIntLike` among the members an opaque union may hold.
+   Read 2026-10-31 ("Forms 5 and 6, read", under form 6).
 
 The figure the plan quotes (7.8 percent) came from an earlier census. On this head `types` is 6.0 percent of the
 language-refused units over the 40 roots, and it is the top rule on no root. "The three roots where it is the top rule"
