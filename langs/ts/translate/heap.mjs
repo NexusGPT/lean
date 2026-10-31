@@ -233,7 +233,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         n++;
       } else if (ts.isIndexSignatureDeclaration(m)) return 'index signature';
     }
-    for (const p of ctor?.parameters ?? []) if (ts.isParameterPropertyDeclaration?.(p, ctor) || p.modifiers?.some((x) => [K.PublicKeyword, K.PrivateKeyword, K.ProtectedKeyword, K.ReadonlyKeyword].includes(x.kind))) { if (!ts.isIdentifier(p.name) || p.questionToken || p.initializer) return 'parameter property form'; n++; }
+    for (const p of ctor?.parameters ?? []) if (ts.isParameterPropertyDeclaration?.(p, ctor) || p.modifiers?.some((x) => [K.PublicKeyword, K.PrivateKeyword, K.ProtectedKeyword, K.ReadonlyKeyword].includes(x.kind))) { if (!ts.isIdentifier(p.name) || p.questionToken) return 'parameter property form'; n++; } // a default (`public x = 0`) is the parameter's (a call that leaves it out binds the default) and then the field store `this.x = x`: the field holds the parameter's type either way, so the class's record is the same; the constructor unit itself reads its default where defaults are read (the ordinary lane: the core takes no defaulted parameter)
     return n ? null : 'no fields';
   }
   function instanceShape(cd, depth) {
