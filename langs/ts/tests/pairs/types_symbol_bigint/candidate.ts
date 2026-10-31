@@ -58,3 +58,19 @@ export function amount(value: Amount, digits: number): Amount {
 export function amountOr(value: Amount, zero: boolean): Amount {
   return zero ? 0n : value;
 }
+
+// a sum with a symbol arm: typeof separates the arms at run time
+export function keyText(key: string | symbol): string {
+  if (typeof key === "string") return key;
+  return "sym";
+}
+
+// a planted difference on the symbol arm
+export function keyName(key: string | symbol): string {
+  return typeof key === "symbol" ? "symbol" : key;
+}
+
+// a planted difference reached only on the unique symbol arm
+export function choiceText(choice: Choice): string {
+  return typeof choice === "symbol" ? "cancelled" : choice;
+}
