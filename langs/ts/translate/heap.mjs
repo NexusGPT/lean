@@ -1464,11 +1464,20 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // the parameters a same-file unit writes through (a field, an element, a mutator, Object.assign, delete), itself or
   // through a same-file callee it passes them to, by position, to a fixpoint: a caller passing an input there writes
   // through that input, which its own text does not show. A name bound to a path of a parameter, an element of a loop
-  // over one (for-of, or the parameter of an array callback) is that parameter
+  // over one (for-of, or the parameter of an array callback) is that parameter, and so is every name a destructuring
+  // pattern binds over one of these (a declaration, a parameter, a loop or callback element)
   const LOOP_CB = new Set(['forEach', 'map', 'filter', 'some', 'every', 'find', 'findIndex', 'flatMap', 'reduce']);
-  const elementNames = (n, rooted) => { // the names a loop or an array callback binds to the elements of a rooted array
-    if (ts.isForOfStatement(n) && rooted(n.expression)) { const dl = n.initializer; return ts.isVariableDeclarationList(dl) ? dl.declarations.filter((d) => ts.isIdentifier(d.name)).map((d) => d.name.text) : []; }
-    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && LOOP_CB.has(n.expression.name.text) && rooted(n.expression.expression)) { const cb = n.arguments[0]; if (cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb))) return cb.parameters.filter((q) => ts.isIdentifier(q.name)).map((q) => q.name.text); }
+  // the names a binding (a name or a pattern) binds, each with its depth below the bound value: a pattern's field or
+  // element one level down, a rest at the value's own level (a fresh object or array of the value's members, so a write
+  // through one of its members is a write below the value), a nested pattern one level further
+  const boundNames = (name, d = 0, out = []) => {
+    if (ts.isIdentifier(name)) { out.push({ name, depth: d }); return out; }
+    for (const el of name.elements ?? []) { if (!el || ts.isOmittedExpression(el)) continue; if (ts.isIdentifier(el.name)) out.push({ name: el.name, depth: el.dotDotDotToken ? d : d + 1 }); else boundNames(el.name, d + 1, out); }
+    return out;
+  };
+  const elementNames = (n, rooted) => { // the names a loop or an array callback binds to the elements of a rooted array, each with its depth below the element
+    if (ts.isForOfStatement(n) && rooted(n.expression)) { const dl = n.initializer; return ts.isVariableDeclarationList(dl) ? dl.declarations.flatMap((d) => boundNames(d.name)) : []; }
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && LOOP_CB.has(n.expression.name.text) && rooted(n.expression.expression)) { const cb = n.arguments[0]; if (cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb))) return cb.parameters.flatMap((q) => boundNames(q.name)); }
     return [];
   };
   let writesThroughMemo = null;
@@ -1484,9 +1493,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const mark = (x) => { const i = at(x); if (i !== null && unparen(x) !== rootOf(x)) out.get(u.name).add(i); };
       const calls = [];
       const walk = (n) => {
-        if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && at(n.initializer) !== null) alias.set(n.name.text, at(n.initializer));
-        for (const nm of elementNames(n, (x) => at(x) !== null)) alias.set(nm, at(ts.isForOfStatement(n) ? n.expression : n.expression.expression));
+        if (ts.isVariableDeclaration(n) && n.initializer && at(n.initializer) !== null) for (const { name } of boundNames(n.name)) alias.set(name.text, at(n.initializer));
+        for (const { name } of elementNames(n, (x) => at(x) !== null)) alias.set(name.text, at(ts.isForOfStatement(n) ? n.expression : n.expression.expression));
         if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) mark(n.left);
+      u.params.forEach((q, i) => { if (!ts.isIdentifier(q.name)) for (const { name } of boundNames(q.name)) alias.set(name.text, i); }); // a destructured parameter's names are paths of its argument
         if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) mark(n.operand);
         if (ts.isDeleteExpression(n)) mark(n.expression);
         if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text)) { const i = at(n.expression.expression); if (i !== null) out.get(u.name).add(i); }
@@ -1509,8 +1519,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const aliases = new Map(); // local -> the depth of the input path it was bound to (`c = p` is 0, `c = p.inner` is 1)
     // a destructured parameter: each field binding is the input path one level down, a rest holds the input's members
     // (a fresh object whose members are the input's, so a write through one of them is a write below the input)
-    const bindNames = (pat, d) => { for (const el of pat.elements ?? []) { if (!el || ts.isOmittedExpression(el)) continue; if (ts.isIdentifier(el.name)) aliases.set(el.name.text, el.dotDotDotToken ? d : d + 1); else bindNames(el.name, d + 1); } };
-    for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) bindNames(p.name, 0);
+    for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) for (const { name, depth: d } of boundNames(p.name)) aliases.set(name.text, d);
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
     const effDepth = (x) => { const r = rootOf(x); return depth(x) + (ts.isIdentifier(r) && aliases.has(r.text) ? aliases.get(r.text) : 0); }; // the depth of a write below its input root, aliases unfolded
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
@@ -1548,8 +1557,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const aliasable = [...positions].filter(([, c]) => c >= 2).map(([k]) => k);
     let writesInput = false;
     const walk = (n) => {
-      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || ts.isPropertyAccessExpression(unparen(n.initializer)) || ts.isElementAccessExpression(unparen(n.initializer)) || unparen(n.initializer).kind === K.ThisKeyword)) aliases.set(n.name.text, effDepth(n.initializer)); // an element or a dictionary value of an input is a node below it too (heap shapes)
-      for (const nm of elementNames(n, inputRooted)) aliases.set(nm, effDepth(ts.isForOfStatement(n) ? n.expression : n.expression.expression) + 1); // an element of an input array: one level below it
+      if (ts.isVariableDeclaration(n) && n.initializer && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || ts.isPropertyAccessExpression(unparen(n.initializer)) || ts.isElementAccessExpression(unparen(n.initializer)) || unparen(n.initializer).kind === K.ThisKeyword)) for (const { name, depth: d } of boundNames(n.name)) if (isRefType(typeOf(name))) aliases.set(name.text, effDepth(n.initializer) + d); // an element or a dictionary value of an input is a node below it too (heap shapes); a pattern's names one level down per pattern
+      for (const { name, depth: d } of elementNames(n, inputRooted)) aliases.set(name.text, effDepth(ts.isForOfStatement(n) ? n.expression : n.expression.expression) + 1 + d); // an element of an input array: one level below it
       for (const a of calleeWrites(n)) if (inputRooted(a)) { writesInput = true; risks.add('write through an input in a same-file callee'); } // the callee's writes are the caller's
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
         const L = unparen(n.left);
@@ -1706,10 +1715,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // const names bound to a path below an input (`const names = b.names`, `const h = this.cfg.headers`) or to another
     // such name: a write through one is a write of that node, which the value reading copies (heap shapes)
     const inputAlias = new Set();
-    { const w = (n) => { if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const)) { const x = unparen(n.initializer); const r = rootOf(x); if ((ts.isIdentifier(r) && (params.has(r.text) || inputAlias.has(r.text))) || r.kind === K.ThisKeyword) inputAlias.add(n.name.text); } ts.forEachChild(n, w); }; w(u.body); }
+    { const w = (n) => { if (ts.isVariableDeclaration(n) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const)) { const x = unparen(n.initializer); const r = rootOf(x); if ((ts.isIdentifier(r) && (params.has(r.text) || inputAlias.has(r.text))) || r.kind === K.ThisKeyword) for (const { name } of boundNames(n.name)) inputAlias.add(name.text); } ts.forEachChild(n, w); }; w(u.body); } // a const pattern over such a path: each of its names a node below it
     for (const [name, tm] of destructured) if (!written.has(name)) bound.set(name, tm); // a binding the unit writes again has no fixed skeleton
     const walk = (n) => {
-      for (const nm of elementNames(n, paramsOrThis)) elementOf.add(nm);
+      for (const { name } of elementNames(n, paramsOrThis)) elementOf.add(name.text);
       if (calleeWrites(n).some((a) => paramsOrThis(a))) nestedWrite = true; // a callee writes through an input: the path of its write is not read here
       if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && isRefType(typeOf(n.name)) && (n.parent.flags & ts.NodeFlags.Const) && !written.has(n.name.text)) { const tm = term(n.initializer); if (tm !== null) bound.set(n.name.text, tm); }
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
