@@ -47,6 +47,7 @@ function run(root, out, { execArgv = [], onLine = () => {} } = {}) {
 const readJson = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch (e) { return { unreadable: String(e.message) }; } };
 const walkedIn = (journal) => {
   const files = new Set();
+  if (!fs.existsSync(journal)) return files; // a walk without a journal: nothing it walked is recorded
   for (const line of fs.readFileSync(journal, 'utf8').split('\n')) { let r; try { r = JSON.parse(line); } catch { continue; } for (const rec of r.records ?? []) files.add(rec.file); }
   return files;
 };
@@ -98,6 +99,45 @@ fs.appendFileSync = function (file, data, ...rest) { const r = append.call(this,
     const r = await run(root, out);
     const s = readJson(out);
     row('whole run: exit 0, complete, not partial', r.status === 0 && s.complete === true && s.partial === undefined && s.files === planned.length, JSON.stringify({ status: r.status, complete: s.complete, partial: s.partial, files: s.files }));
+  } finally { fs.rmSync(root, { recursive: true, force: true }); }
+}
+
+// 4 and 5. the reach census (design/heap-reach-census.mjs --resolve, one chunk per project) under the same rule: its
+// walk ended with exit 0 after its first chunk, then a whole run
+const reach = path.join(path.dirname(census), 'design', 'heap-reach-census.mjs');
+function reachRun(root, outDir, execArgv = []) {
+  const base = path.join(root, 'baseline');
+  fs.mkdirSync(path.join(base, 'concepts'), { recursive: true });
+  fs.writeFileSync(path.join(base, 'concepts-all.json'), JSON.stringify({ perRepo: { fixture: {} } }));
+  fs.writeFileSync(path.join(base, 'concepts', 'fixture.json'), JSON.stringify({ roots: [path.join(root, 'src')] }));
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [...execArgv, reach, path.join(base, 'concepts-all.json'), outDir, '--resolve'], { env: { ...process.env, LEAN_CACHE: '0' } });
+    let stderr = '';
+    child.stdout.on('data', (b) => process.stdout.write(b));
+    child.stderr.on('data', (b) => { process.stderr.write(b); stderr += b; });
+    child.on('error', reject);
+    child.on('close', (status, signal) => resolve({ status, signal, stderr }));
+  });
+}
+for (const early of [true, false]) {
+  const { root } = fixture();
+  try {
+    fs.mkdirSync(path.join(root, 'src'));
+    for (const dir of ['a', 'b', 'c', 'd']) fs.renameSync(path.join(root, dir), path.join(root, 'src', dir));
+    const planned = ['a', 'b', 'c', 'd'].flatMap((d) => ['one.ts', 'two.ts'].map((n) => path.join(root, 'src', d, n)));
+    const outDir = path.join(root, 'reach'), hook = path.join(root, 'exit-after-first-chunk.mjs');
+    fs.writeFileSync(hook, `import fs from 'node:fs'; const append = fs.appendFileSync;
+fs.appendFileSync = function (file, data, ...rest) { const r = append.call(this, file, data, ...rest); if (String(file).endsWith('.records.jsonl') && /"kind":"chunk"/.test(String(data))) process.exit(0); return r; };\n`);
+    const r = await reachRun(root, outDir, early ? ['--import', hook] : []);
+    const s = readJson(path.join(outDir, 'summary.json'));
+    if (early) {
+      const name = 'reach census walk exits 0 early';
+      row(`${name}: exit non-zero`, typeof r.status === 'number' && r.status !== 0, `status ${r.status} signal ${r.signal}`);
+      const walked = walkedIn(path.join(outDir, 'walk.records.jsonl'));
+      const expected = planned.filter((f) => !walked.has(f)).sort();
+      row(`${name}: summary partial true, names the files not walked`, s.partial === true && expected.length > 0 && s.filesNotWalked === expected.length && JSON.stringify([...s.notWalked].sort()) === JSON.stringify(expected), JSON.stringify({ partial: s.partial, filesNotWalked: s.filesNotWalked, notWalked: s.notWalked, expected }));
+      row(`${name}: stderr names the files not walked`, expected.length > 0 && expected.every((f) => r.stderr.includes(f)) && /incomplete/.test(r.stderr), JSON.stringify(r.stderr.trim().split('\n').slice(-4)));
+    } else row('reach census whole run: exit 0, summary not partial', r.status === 0 && s.partial === undefined && s.files === planned.length, JSON.stringify({ status: r.status, partial: s.partial, files: s.files, unreadable: s.unreadable }));
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 }
 
