@@ -446,9 +446,8 @@ before the call (a loop may run a later use first), and an accessor or a compute
 not read here). A use after a `return c` cannot run before the caller holds the instance, so `return c` is no sharing.
 Stays as before: `super`, a `return` in a constructor, a constructor that reads or hands `this`, a decorated class, a
 class that extends or is extended (the ordinary lane reads those: pair `constructors` `Square.constructor`, proved
-there, `Triangle.constructor`, WITNESS). Not changed here, the same assumption elsewhere: `this.m()` in a method
-(steps 18 and 20, `sealedMember`) still reads the class's text after `this` was handed to an outside callee; it is a
-finding for the lane that holds those steps.
+there, `Triangle.constructor`, WITNESS). Checked, not changed: `this.m()` in a method of an exported class after
+`patch(this)` was already a transition (`sealedMember`: another file may subclass it), so lane A did not prove it.
 Pair `constructors` (a sibling `outside.ts` installs `bumped`): `Meter.constructor` and `metered` (an initializer the
 body stores over: proved), `Gauge.constructor` (a changed initializer: WITNESS), `Span.constructor` (parameter
 properties, untouched), `span` (WITNESS), `Cell.constructor` and `sized` (private and public parameter properties, the
