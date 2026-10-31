@@ -357,6 +357,7 @@ function translateOnce(file, fnName, opts = {}) {
   // twice may differ. A pure library call (strings, arrays, Math, JSON) and a module constant stay world-free.
   const WORLD = 'wld';
   let pending = []; // hoisted `var (wld, tN) := ...;` lines of the statement being translated, in source order
+  let rebound = null; // inside a conditional's operand: the names a same-file call rebinds there (the arguments it changes), by their declarations
   let tempCount = 0;
   let faultMode = false;
   let completionMode = false;
@@ -860,6 +861,28 @@ function translateOnce(file, fnName, opts = {}) {
     const { lines, text } = captureParts(f);
     const body = `(${WORLD}, ${outerParens(text)})`;
     return lines.length ? `(\n${indentBlock(`${lines.join('\n')}\n${body}`)}\n)` : body;
+  }
+  // one operand of a conditional, its hoisted lines apart, with the names a same-file call rebinds in it (the arguments
+  // it changes); a rebinding inside a nested operand rebinds the name in this operand too
+  function operandParts(f) {
+    const outer = rebound; rebound = new Map();
+    try { return { ...captureParts(f), names: rebound }; } finally { const inner = rebound; rebound = outer; if (outer) for (const [k, v] of inner) outer.set(k, v); }
+  }
+  // the declaration a rebound argument name stands for (null for `this`)
+  function nameDecl(callee, argNodes, m) {
+    const a = stripParens(argNodes[callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m)]);
+    return ts.isIdentifier(a) ? checker.getSymbolAtLocation(a)?.valueDeclaration ?? null : null;
+  }
+  // `c ? a : b` whose operands rebind names (design/heap-stage5.md section 3, as the heap core threads its world): the
+  // condition, then the selected operand only, its lines inside its arm; each arm returns its value, the world when an
+  // operand has transitions, and every name either operand rebinds, so the values the arm taken left are the ones read
+  // after it. A name declared inside the conditional (a callback's local) is not carried: it is out of scope after it.
+  function carried(n, cond, pa, pb, world) {
+    const names = [...new Set([...pa.names, ...pb.names].filter(([, decl]) => !decl || decl.pos < n.pos || decl.pos >= n.end).map(([k]) => k))];
+    const arm = (p) => { const body = `(${[...(world ? [WORLD] : []), outerParens(p.text), ...names].join(', ')})`; return p.lines.length ? `(\n${indentBlock(`${p.lines.join('\n')}\n${body}`)}\n)` : body; };
+    const tv = valueOperands ? valueName() : `t${tempCount++}_`;
+    pending.push(`var (${[...(world ? [WORLD] : []), tv, ...names].join(', ')}) := if ${cond} then ${arm(pa)} else ${arm(pb)};`);
+    return tv;
   }
 
   // (effectful units are computed after the subset gate, below)
@@ -2405,22 +2428,34 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   function expressionValue(n, expected) {
     switch (n.kind) {
       case K.ParenthesizedExpression: return expr(n.expression, expected);
-      case K.ConditionalExpression:
+      case K.ConditionalExpression: {
+        const tt = expected ?? typeOf(n);
         if (containsEffect(n.whenTrue) || containsEffect(n.whenFalse)) {
           // `cond ? await a() : b`: the branch's transitions happen only when it is taken; the world and the value come out as one pair
           if (!unitEffectful()) fail(n, 'internal: an effect in a conditional branch of a pure unit');
-          const tt = expected ?? typeOf(n); const d = isAny(tt) ? anyType() : dtype(tt, n);
+          if (!isAny(tt)) dtype(tt, n); // the result's type is read first, as it always was
           const cond = outerParens(truthy(n.condition));
-          const a = branchWithWorld(() => expr(n.whenTrue, tt), d), b = branchWithWorld(() => expr(n.whenFalse, tt), d);
+          const pa = operandParts(() => expr(n.whenTrue, tt)), pb = operandParts(() => expr(n.whenFalse, tt));
+          if (pa.names.size || pb.names.size) return carried(n, cond, pa, pb, true);
+          const arm = (p) => { const body = `(${WORLD}, ${outerParens(p.text)})`; return p.lines.length ? `(\n${indentBlock(`${p.lines.join('\n')}\n${body}`)}\n)` : body; }; // branchWithWorld's pair
           const tv = valueOperands ? valueName() : `t${tempCount++}_`;
-          pending.push(`var (${WORLD}, ${tv}) := if ${cond} then ${a} else ${b};`);
+          pending.push(`var (${WORLD}, ${tv}) := if ${cond} then ${arm(pa)} else ${arm(pb)};`);
           return tv;
         }
         if (valueOperands) {
           const cond = truthy(n.condition);
-          return `(if ${cond} then ${valueBranch(() => expr(n.whenTrue, expected ?? typeOf(n)))} else ${valueBranch(() => expr(n.whenFalse, expected ?? typeOf(n)))})`;
+          const saved = valueOperands, branch = (e) => { valueOperands = new Map(saved); try { return operandParts(() => expr(e, tt)); } finally { valueOperands = saved; } }; // valueBranch's own operand map
+          const pa = branch(n.whenTrue), pb = branch(n.whenFalse);
+          if (pa.names.size || pb.names.size) return carried(n, cond, pa, pb, false);
+          const arm = (p) => wrapLet(p.lines.length ? `${p.lines.join('\n')}\n${p.text}` : p.text); // valueBranch's text
+          return `(if ${cond} then ${arm(pa)} else ${arm(pb)})`;
         }
-        return `(if ${outerParens(truthy(n.condition))} then ${outerParens(expr(n.whenTrue, expected ?? typeOf(n)))} else ${outerParens(expr(n.whenFalse, expected ?? typeOf(n)))})`;
+        const cond = outerParens(truthy(n.condition));
+        const pa = operandParts(() => expr(n.whenTrue, tt)), pb = operandParts(() => expr(n.whenFalse, tt));
+        if (pa.names.size || pb.names.size) return carried(n, cond, pa, pb, false);
+        pending.push(...pa.lines, ...pb.lines); // no name rebound: the lines stay where they were hoisted
+        return `(if ${cond} then ${outerParens(pa.text)} else ${outerParens(pb.text)})`;
+      }
       default: return coerce(rawExpr(n, expected), n, expected);
     }
   }
@@ -4199,7 +4234,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
           const t = valueOperands ? valueName() : `t${tempCount++}_`;
           const temps = names.map((nm, k) => (nm === '_' || nm === null ? `_` : `${t}m${k}`));
           pending.push(`var (${[...(eff ? [WORLD] : []), t, ...temps].join(', ')}) := ${fname(f.text)}(${[...(eff ? [WORLD] : []), ...fuelArg(callee), ...args].join(', ')});`);
-          names.forEach((nm, k) => { if (nm && nm !== '_') pending.push(`var ${nm} := ${t}m${k};`); });
+          names.forEach((nm, k) => { if (nm && nm !== '_') { pending.push(`var ${nm} := ${t}m${k};`); rebound?.set(nm, nameDecl(callee, argNodes, muts[k])); } });
           if (eff && (faultMode || (completionMode && exceptionUnits.has(callee.name)))) pending.push(FAULT_CHECK);
           return t;
         }
@@ -6496,11 +6531,11 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (fns.has(`${callee.name}${suffix}`)) fail(n, `type-assertion: a unit named ${callee.name}${suffix} takes the name of ${callee.name}'s reading at Any`);
     if (!heldVariants.has(name)) {
       heldVariants.add(name);
-      const saved = { currentUnit, handedSites, tempCount, faultMode, loopCount, labels: new Map(labelIds), yieldState, pending, currentSlots, valueOperands, completionMode, objectData, variantMode };
-      pending = []; valueOperands = null; completionMode = false; objectData = null;
+      const saved = { currentUnit, handedSites, tempCount, faultMode, loopCount, labels: new Map(labelIds), yieldState, pending, rebound, currentSlots, valueOperands, completionMode, objectData, variantMode };
+      pending = []; rebound = null; valueOperands = null; completionMode = false; objectData = null;
       variantMode = { u: callee, held: new Set(hv.held.map((i) => callee.params[i])), result: hv.result, suffix };
       try { withHeldParams(variantMode.held, () => emitUnit(callee)); }
-      finally { ({ currentUnit, handedSites, tempCount, faultMode, loopCount, yieldState, pending, currentSlots, valueOperands, completionMode, objectData, variantMode } = saved); labelIds.clear(); for (const [k, v] of saved.labels) labelIds.set(k, v); }
+      finally { ({ currentUnit, handedSites, tempCount, faultMode, loopCount, yieldState, pending, rebound, currentSlots, valueOperands, completionMode, objectData, variantMode } = saved); labelIds.clear(); for (const [k, v] of saved.labels) labelIds.set(k, v); }
     }
     const args = callee.params.map((p, i) => hv.held.includes(i) ? expr(n.arguments[i], anyTarget()) : expr(n.arguments[i], typeOf(p.name)));
     return `${name}(${args.join(', ')})`;
