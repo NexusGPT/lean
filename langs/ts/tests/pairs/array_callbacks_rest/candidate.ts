@@ -1,48 +1,44 @@
-// the array callbacks the core read with one parameter and an expression body, read now with an index, with a block
-// body of bindings, and as a forEach over the index; indexOf, findIndex and at in a real file (100.5 makes it one).
-// Each unit writes the lines it walks in a forEach statement, which only the heap core reads.
+// the array callbacks the core read with one parameter and an expression body, read now with an index and with a
+// block body of bindings. Each unit then writes the lines it walks in a forEach statement (only the heap core reads that
+// write) whose callback reads the value the unit computed: the same loop on both sides.
 export interface Line { qty: number; big: boolean; tag: string }
 export interface Order { lines: Line[]; prices: number[]; tags: string[] }
 
 export function flagSome(o: Order): void {
-  o.lines.forEach((l) => { l.big = o.prices.some((p, i) => p > 100 && l.qty > i); });
+  const hit = o.prices.some((p, i) => p > 100 && i < 2);
+  o.lines.forEach((l) => { l.big = hit; });
 }
 
 export function flagEvery(o: Order): void {
-  o.lines.forEach((l) => { l.big = o.prices.every((p, i) => i >= l.qty || p >= 0); });
+  const ok = o.prices.every((p, i) => i === 0 || p >= 0);
+  o.lines.forEach((l) => { l.big = ok; });
 }
 
 export function pickTag(o: Order): void {
-  o.lines.forEach((l) => { l.tag = o.tags.find((t, i) => t !== l.tag && i !== 0) ?? ""; });
+  const tags = o.tags;
+  const tag = tags.find((t, i) => i > 0 && t !== "") ?? "";
+  o.lines.forEach((l) => { l.tag = tag; });
 }
 
 export function firstBig(o: Order): void {
-  o.lines.forEach((l) => { l.qty = o.prices.findIndex((p, i) => i > 0 && p > 100.5); });
-}
-
-export function whereRush(o: Order): void {
-  const tags = o.tags;
-  o.lines.forEach((l) => { l.qty = tags.indexOf("rush"); });
-}
-
-export function lastTag(o: Order): void {
-  o.lines.forEach((l) => { l.tag = o.tags.at(o.tags.length - 1) ?? ""; });
+  const prices = o.prices;
+  const at = prices.findIndex((p, i) => p > 100 && i > 0);
+  o.lines.forEach((l) => { l.qty = at; });
 }
 
 export function weigh(o: Order): void {
-  const ws = o.prices.map((p, i) => i * p);
+  const prices = o.prices;
+  const ws = prices.map((p, i) => p * i);
   o.lines.forEach((l) => { l.qty = ws.length; });
 }
 
 export function keepFirst(o: Order): void {
-  const ks = o.prices.filter((p, i) => p > 0 && i < 3);
+  const prices = o.prices;
+  const ks = prices.filter((p, i) => i < 3 && p > 0);
   o.lines.forEach((l) => { l.qty = ks.length; });
 }
 
 export function doubled(o: Order): void {
-  o.lines.forEach((l) => { l.big = o.prices.some((p) => p * 2 > l.qty); });
-}
-
-export function numberLines(o: Order): void {
-  o.lines.forEach((l, i) => { l.qty = i + i; });
+  const big = o.prices.some((p) => p * 2 > 100);
+  o.lines.forEach((l) => { l.big = big; });
 }

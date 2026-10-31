@@ -274,7 +274,26 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     forEachMemo.set(s, loop); return loop;
   };
   const CB1 = new Set(['map', 'filter', 'some', 'every', 'find', 'findIndex']); // the array methods of one pure callback the core reads
-  const cbBody = (cb) => (!ts.isBlock(cb.body) ? cb.body : cb.body.statements.length === 1 && ts.isReturnStatement(cb.body.statements[0]) && cb.body.statements[0].expression ? cb.body.statements[0].expression : null); // `(x) => e` or `(x) => { return e; }`
+  // a callback's body as bindings and a result: `(x) => e`, or `(x) => { const a = e1; …; return e; }`, each binding a
+  // `const` of one name with an initializer, written in place in the Dafny lambda (`var a := e1; e`); any other block
+  // (a `let`, a branch, a second return) has no reading here
+  const cbParts = (cb) => {
+    if (!ts.isBlock(cb.body)) return { binds: [], ret: cb.body };
+    const st = cb.body.statements; const last = st[st.length - 1];
+    if (!last || !ts.isReturnStatement(last) || !last.expression) return null;
+    const binds = [];
+    for (const s of st.slice(0, -1)) {
+      if (!ts.isVariableStatement(s) || !(s.declarationList.flags & ts.NodeFlags.Const)) return null;
+      for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer) return null; binds.push(d); }
+    }
+    return { binds, ret: last.expression };
+  };
+  const cbBody = (cb) => cbParts(cb)?.ret ?? null;
+  // a name of the unit: a parameter or a local declared in its text, or, in a callback unit, a binding of the enclosing
+  // units it captures, which the translator appends to its parameters (common.mjs callbackEnvironment: each a binding no
+  // later write reaches), so the callback is a function of them as of the call
+  const capturedBy = (u, d) => !!d && u.form === 'callback' && u.params.some((p) => Object.getPrototypeOf(p) === d);
+  const ownDecl = (u, d) => !!d && d.getSourceFile() === sf && ((d.pos >= u.fn.pos && d.end <= u.fn.end) || capturedBy(u, d));
   // the string rows of the table read as pure functions of their operands: trim and replace (a string pattern) are
   // bodiless, the same on both sides; join of strings is the exact fold, join of numbers bodiless (it formats them)
   const strCall = (e) => { if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.questionDotToken) return null; const m = e.expression.name.text, recv = typeOf(e.expression.expression); const str = (x) => !!(typeOf(x).flags & TF.StringLike);
@@ -496,6 +515,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // a condition is read by its truthiness: a boolean, a number (not 0), a string (not ""), a value that may be absent
     const checkCond = (c) => { const sh = shapeOf(typeOf(c)); if (sh && isRefShape(sh) && (keyedLocal(c, u.fn) || pureExpr(c))) { if (lambdaDepth) return no('a reference tested inside a callback'); return checkExpr(c); } // a node read through a key: its presence; any other reference: present, an object, truthy
       if (!sh || !(sh.kind === 'prim' || sh.kind === 'opt')) return no('condition on a reference'); if ((sh.kind === 'prim' ? sh.d : sh.inner.d) === 'real') return no('truthiness of a real (NaN is falsy)'); return checkExpr(c); };
+    // a callback's body (cbParts): each binding's initializer in order, its name then in scope, then the result
+    const checkCb = (cb) => {
+      const { binds, ret } = cbParts(cb); const added = [];
+      for (const d of binds) { const x = d.name.text; if (names.has(x) || x === HW || /_$/.test(x)) { no('name reused'); break; } if (!shapeOf(typeOf(d.name))) { no(`local type: ${shapeWhy(typeOf(d.name))}`); break; } checkExpr(d.initializer); names.add(x); added.push(x); }
+      if (ok) checkExpr(ret);
+      for (const x of added) names.delete(x);
+    };
     // undefined or null where a value that may be absent is expected: an assignment, an initializer, a return, an
     // argument, a field of a literal (the contextual type says so)
     const absentOk = (e) => shapeOf(checker.getContextualType(e))?.kind === 'opt';
@@ -512,7 +538,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // hold, and a dictionary read of a record cell is empty; the unit stays in the ordinary lane (design/dict-order.md)
     { const w = (x) => { if (!ok) return; if (ts.isExpression(x) && shapeOf(typeOf(x))?.kind === 'rec') { const ct = checker.getContextualType(x); if (ct && shapeOf(ct)?.kind === 'dict') return no('a record read as a dictionary'); } ts.forEachChild(x, w); }; if (u.body) w(u.body); }
     if (!ok) return false;
-    const declaredInside = (id) => { const s = checker.getSymbolAtLocation(id); const d = s?.valueDeclaration ?? s?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; };
+    const declaredInside = (id) => { const s = checker.getSymbolAtLocation(id); const d = s?.valueDeclaration ?? s?.declarations?.[0]; return ownDecl(u, d); };
     const checkExpr = (e0) => {
       if (!ok) return;
       const e = unparen(e0);
@@ -544,23 +570,22 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'structuredClone' && e.arguments.length === 1) { const s = shapeOf(typeOf(e.arguments[0])); if (!s || s.kind === 'prim') return no('clone of a non-cell'); { const cs = copySource(checker, e.arguments[0]); if (cs.kind !== 'plain' && cs.kind !== 'built') return no('a copy of a record the unit did not build (a cell holds declared fields alone; the value lane reads it through the one copy reading, its rest included)'); } const flat = s.kind === 'rec' ? s.fields.every((f) => f.shape.kind === 'prim') : s.kind === 'arr' || s.kind === 'set' ? s.elem.kind === 'prim' : s.kind === 'map' ? s.k.kind === 'prim' && s.v.kind === 'prim' : true; /* a clone copies every element too (HTML 2.7.3): a reference element would be a new object, not the source's */ if (!flat) return no('clone of a nested graph (one level of a plain cell only)'); return checkExpr(e.arguments[0]); }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && CB1.has(e.expression.name.text) && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0])) { // map and filter (the table's rows), some, every, find, findIndex: a pure one-parameter arrow with an expression body
         const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression)); if (!s || s.kind !== 'arr') return no(`${m} of a non-array`);
-        const cb = e.arguments[0]; if (cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || !cbBody(cb) || cb.modifiers?.length) return no('callback form');
+        const cb = e.arguments[0]; if (cb.parameters.length < 1 || cb.parameters.length > 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken) || !cbParts(cb) || cb.modifiers?.length) return no('callback form');
         if ((m === 'map' || m === 'filter') && lambdaDepth) return no('allocation inside a callback');
         if (m === 'map') { const rs = shapeOf(typeOf(e)); if (!rs || rs.kind !== 'arr') return no(`map result type: ${shapeWhy(typeOf(e))}`); }
         if (m === 'find' && (s.elem.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'opt')) return no('find of references (an absent reference is not read)');
-        if (m === 'findIndex' && isReal) return no('findIndex in a real file');
-        const x = cb.parameters[0].name.text; if (names.has(x) || x === HW) return no('name reused'); if (!shapeOf(typeOf(cb.parameters[0].name))) return no('callback parameter type');
-        checkExpr(e.expression.expression); names.add(x); lambdaDepth++; checkExpr(cbBody(cb)); lambdaDepth--; names.delete(x); return;
+        const ps = cb.parameters.map((p) => p.name.text); if (ps.some((x) => names.has(x) || x === HW || /_$/.test(x)) || ps[0] === ps[1]) return no('name reused'); if (!shapeOf(typeOf(cb.parameters[0].name))) return no('callback parameter type');
+        if (ps.length === 2 && shapeOf(typeOf(cb.parameters[1].name))?.kind !== 'prim') return no('callback index type'); // the index: a number the method passes, 0 to the length less one
+        checkExpr(e.expression.expression); for (const x of ps) names.add(x); lambdaDepth++; checkCb(cb); lambdaDepth--; for (const x of ps) names.delete(x); return;
       }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 2 && ts.isArrowFunction(e.arguments[0]) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') { // reduce with an initial value: a left fold over the items
-        const cb = e.arguments[0]; if (cb.parameters.length !== 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name)) || !cbBody(cb) || cb.modifiers?.length) return no('callback form');
+        const cb = e.arguments[0]; if (cb.parameters.length !== 2 || !cb.parameters.every((p) => ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken) || !cbParts(cb) || cb.modifiers?.length) return no('callback form');
         const [acc, x] = cb.parameters.map((p) => p.name.text); if (acc === x || names.has(acc) || names.has(x) || acc === HW || x === HW) return no('name reused');
         const as = shapeOf(typeOf(cb.parameters[0].name)); if (!as || as.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'prim' || !shapeOf(typeOf(cb.parameters[1].name))) return no('reduce accumulator type (a primitive)');
-        checkExpr(e.expression.expression); checkExpr(e.arguments[1]); names.add(acc); names.add(x); lambdaDepth++; checkExpr(cbBody(cb)); lambdaDepth--; names.delete(acc); names.delete(x); return;
+        checkExpr(e.expression.expression); checkExpr(e.arguments[1]); names.add(acc); names.add(x); lambdaDepth++; checkCb(cb); lambdaDepth--; names.delete(acc); names.delete(x); return;
       }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['includes', 'indexOf', 'at'].includes(e.expression.name.text) && e.arguments.length === 1 && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') { // a search of the items (=== on references is identity), or an element counted from either end
         const m = e.expression.name.text; const s = shapeOf(typeOf(e.expression.expression));
-        if (m !== 'includes' && isReal) return no(`${m} in a real file`);
         if (m === 'at' && (s.elem.kind !== 'prim' || !(typeOf(e.arguments[0]).flags & TF.NumberLike))) return no('at of references or by a non-number');
         if (m !== 'at' && shapeOf(typeOf(e.arguments[0]))?.key !== s.elem.key && keyOf(shapeOf(typeOf(e.arguments[0])) ?? {}) !== keyOf(s.elem)) return no(`${m} of another shape`);
         checkExpr(e.expression.expression); return checkExpr(e.arguments[0]);
@@ -616,7 +641,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     };
     const checkTarget = (t0) => {
       const t = unparen(t0);
-      if (ts.isIdentifier(t)) return checkExpr(t);
+      if (ts.isIdentifier(t)) { const sy = checker.getSymbolAtLocation(t); if (capturedBy(u, sy?.valueDeclaration ?? sy?.declarations?.[0])) return no('a write to a name the callback captures (a binding of the unit around it)'); return checkExpr(t); }
       if (tuplePos(t)) return checkExpr(t.expression);
       if (ts.isElementAccessExpression(t)) { const why = elementWhy(t); if (why) return no(why.replace('element access', 'element write')); if (!safeIndex.has(t) && shapeOf(typeOf(t.expression)).kind !== 'dict') usesIndex = true; checkExpr(t.expression); return checkExpr(t.argumentExpression); }
       if (ts.isPropertyAccessExpression(t)) { const s = shapeOf(typeOf(t.expression)); if (!s || s.kind !== 'rec' || !fieldOf(s, t.name.text)) return no('write target'); return checkExpr(writeReceiver(t)); } // a field of a parameter's element: the element read, then the store
@@ -984,7 +1009,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // narrowed soundly: nothing else writes it), a narrowed field read marks the world when it finds no value (another
     // name of the same record, or a call, may have cleared it since the test)
     const locShape = (x) => shapeOf(typeOf(x));
-    const inUnit = (id) => { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration ?? sym?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; }; // a name of the unit (a parameter, a local), else one from outside it
+    const inUnit = (id) => { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration ?? sym?.declarations?.[0]; return ownDecl(u, d); }; // a name of the unit (a parameter, a local), else one from outside it
     const declShape = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; return d && (ts.isParameter(d) || ts.isVariableDeclaration(d)) && ts.isIdentifier(d.name) ? shapeOf(typeOf(d.name)) : null; };
     const absentCode = (x, to) => `Option<${to.inner.d}>.None`;
     function exprAs(x, to) { // x as a value of shape `to`
@@ -1065,11 +1090,17 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'has') { const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); return `${s.kind === 'map' ? 'MapHas' : 'SetHas'}_${s.key}(${HW}, ${r}, ${expr(e.arguments[0])})`; }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && CB1.has(e.expression.name.text) && ts.isArrowFunction(e.arguments[0])) {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const cb = e.arguments[0]; const x = cb.parameters[0].name.text; const xs = shapeOf(typeOf(cb.parameters[0].name));
-        inLam++; const body = expr(cbBody(cb)); inLam--; const lam = `((${dn(x)}: ${valD(xs)}) => ${body})`; const out = fresh('r');
-        const m = e.expression.name.text; const E = valD(s.elem);
-        if (m === 'some' || m === 'every') { const it = bind(`Items_${s.key}(${HW}, ${r})`, 'it'); const i = fresh('i'); return m === 'some' ? `(exists ${i} :: 0 <= ${i} < |${it}| && ${lam}(${it}[${i}]))` : `(forall ${i} :: 0 <= ${i} < |${it}| ==> ${lam}(${it}[${i}]))`; } // the items as they are at the call: the callback reads, never writes
-        if (m === 'find') return `${helper('Find', [E])}(Items_${s.key}(${HW}, ${r}), ${lam})`; // the first item the callback accepts, or absent
-        if (m === 'findIndex') return `${helper('FindIndex', [E])}(Items_${s.key}(${HW}, ${r}), ${lam})`;
+        const ix = cb.parameters[1] ? cb.parameters[1].name.text : null; const j = ix && isReal ? fresh('j') : null; // the index the method passes is an integer position; in a real file the callback's number is that position as a real
+        inLam++; const body = cbCode(cb); inLam--; const lam = ix ? `((${dn(x)}: ${valD(xs)}, ${j ?? dn(ix)}: int) => ${j ? `(var ${dn(ix)} := ${j} as real; ${body})` : body})` : `((${dn(x)}: ${valD(xs)}) => ${body})`; const out = fresh('r');
+        const m = e.expression.name.text; const E = valD(s.elem); const pos = (code) => (isReal ? `(${code} as real)` : code); // findIndex: a position, a number of the file's kind
+        if (m === 'some' || m === 'every') { const it = bind(`Items_${s.key}(${HW}, ${r})`, 'it'); const i = fresh('i'); const call = ix ? `${lam}(${it}[${i}], ${i})` : `${lam}(${it}[${i}])`; return m === 'some' ? `(exists ${i} :: 0 <= ${i} < |${it}| && ${call})` : `(forall ${i} :: 0 <= ${i} < |${it}| ==> ${call})`; } // the items as they are at the call: the callback reads, never writes
+        if (m === 'find') return ix ? `${helper('FindIdx', [E])}(Items_${s.key}(${HW}, ${r}), ${lam}, 0)` : `${helper('Find', [E])}(Items_${s.key}(${HW}, ${r}), ${lam})`; // the first item the callback accepts, or absent
+        if (m === 'findIndex') return pos(ix ? `${helper('FindIndexIdx', [E])}(Items_${s.key}(${HW}, ${r}), ${lam}, 0)` : `${helper('FindIndex', [E])}(Items_${s.key}(${HW}, ${r}), ${lam})`);
+        if (ix) { // an indexed map or filter: a fresh array of the items as they are at the call, as the one-parameter rows allocate
+          const it = bind(`Items_${s.key}(${HW}, ${r})`, 'it'); const i = fresh('i');
+          if (m === 'filter') { lines.push(`var (${HW}, ${out}) := Alloc_${s.key}(${HW}, ${helper('FilterIdx', [E])}(${it}, ${lam}, 0));`); return out; }
+          const rs = shapeExpr(e); lines.push(`var (${HW}, ${out}) := Alloc_${rs.key}(${HW}, seq(|${it}|, (${i}: int) requires 0 <= ${i} < |${it}| => ${lam}(${it}[${i}], ${i})));`); return out;
+        }
         if (e.expression.name.text === 'filter') { lines.push(`var (${HW}, ${out}) := Filter_${s.key}(${HW}, ${r}, ${lam});`); return out; }
         const rs = shapeExpr(e); mapInstances.add(`${s.key}|${rs.key}`);
         lines.push(`var (${HW}, ${out}) := Map_${s.key}_${rs.key}(${HW}, ${r}, ${lam});`); return out;
@@ -1077,12 +1108,13 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && e.expression.name.text === 'reduce' && e.arguments.length === 2 && ts.isArrowFunction(e.arguments[0])) {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const init = exprAs(e.arguments[1], shapeOf(typeOf(e.arguments[0].parameters[0].name))); const cb = e.arguments[0];
         const [acc, x] = cb.parameters.map((p) => p.name.text); const U = valD(shapeOf(typeOf(cb.parameters[0].name))), E = valD(s.elem);
-        inLam++; const body = exprAs(cbBody(cb), shapeOf(typeOf(cb.parameters[0].name))); inLam--;
+        inLam++; const body = cbCode(cb, shapeOf(typeOf(cb.parameters[0].name))); inLam--;
         return `${helper('Fold', [E, U])}(Items_${s.key}(${HW}, ${r}), ((${dn(acc)}: ${U}, ${dn(x)}: ${E}) => ${body}), ${init})`; // the receiver, then the initial value, then the fold
       }
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && ['includes', 'indexOf', 'at'].includes(e.expression.name.text) && e.arguments.length === 1 && shapeExpr(e.expression.expression)?.kind === 'arr') {
         const s = shapeExpr(e.expression.expression); const r = expr(e.expression.expression); const v = expr(e.arguments[0]); const it = `Items_${s.key}(${HW}, ${r})`; const E = valD(s.elem); const m = e.expression.name.text;
-        if (m === 'includes') return `(${v} in ${it})`; if (m === 'indexOf') return `${helper('IndexOf', [E])}(${it}, ${v})`; return `${helper('At', [E])}(${it}, ${v})`;
+        if (m === 'includes') return `(${v} in ${it})`; if (m === 'indexOf') return isReal ? `(${helper('IndexOf', [E])}(${it}, ${v}) as real)` : `${helper('IndexOf', [E])}(${it}, ${v})`;
+        return `${helper('At', [E])}(${it}, ${isReal ? `${helper('JsTrunc', ['real'])}(${v})` : v})`; // in a real file the position is ToIntegerOrInfinity of the number: its truncation
       }
       if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : e.operator === K.PlusToken ? expr(e.operand) : e.operator === K.TildeToken ? (bitwise ? bitwiseCode(e) : `${helper('JsBitNot', [NUM])}(${expr(e.operand)})`) : negZeroRisk(e) ? (() => { divUsed = true; const x = bind(expr(e.operand), 'n'); lines.push(`var ${HW} := NegZeroMark(${HW}, ${x} == ${isReal ? '0.0' : '0'});`); return `(-(${x}))`; })() : `(-(${expr(e.operand)}))`;
       if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { const ls = locShape(e); const a = expr(e.left); return ls.kind === 'opt' ? `OptOrOpt(${a}, ${exprAs(e.right, ls)})` : `OptOr(${a}, ${expr(e.right)})`; }
@@ -1197,6 +1229,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       throw new Error(`heap: no table row for .${m}`);
     }
     // an element's receiver and index, each evaluated once and bound
+    // a callback's body inside its lambda: each binding written in place, in order, as a Dafny let, then the result
+    const cbCode = (cb, sh = null) => { const { binds, ret } = cbParts(cb); const bs = binds.map((d) => `var ${dn(d.name.text)} := ${exprAs(d.initializer, shapeOf(typeOf(d.name)))};`); const v = sh ? exprAs(ret, sh) : expr(ret); return bs.length ? `(${bs.join(' ')} ${v})` : v; };
     const bind = (code, p) => { if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(code) || /^-?\d+(\.\d+)?$/.test(code)) return code; if (inLam) return `(${code})`; const x = fresh(p); lines.push(`var ${x} := ${code};`); return x; }; // a name or a literal is its own value; anything else is bound once (inside a callback, where nothing writes, it is written in place)
     // a numeric operator on two evaluated operands: * exact, % and / total with a zero divisor marking the world, the
     // bitwise operators through the ordinary lane's helpers
@@ -1300,7 +1334,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const assigned = new Set(), read = new Map(); let usesThis = false;
       const w = (n) => {
         if (n.kind === K.ThisKeyword) usesThis = true;
-        if (ts.isIdentifier(n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && ts.isPropertyAssignment(n.parent) && n.parent.name === n)) { const d = declaredIn(n); if (d && d.pos >= u.fn.pos && d.end <= u.fn.end && !inner(d) && (ts.isVariableDeclaration(d) || ts.isParameter(d))) read.set(n.text, d); }
+        if (ts.isIdentifier(n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && ts.isPropertyAssignment(n.parent) && n.parent.name === n)) { const d = declaredIn(n); if (d && ownDecl(u, d) && !inner(d) && (ts.isVariableDeclaration(d) || ts.isParameter(d))) read.set(n.text, d); }
         if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(unparen(n.left))) assigned.add(unparen(n.left).text);
         if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && ts.isIdentifier(unparen(n.operand))) assigned.add(unparen(n.operand).text); // an update is an assignment: the local is carried
         ts.forEachChild(n, w);
