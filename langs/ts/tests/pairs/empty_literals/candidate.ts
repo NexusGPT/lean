@@ -28,9 +28,9 @@ export const tagsOf = (t: Team | undefined): number => {
   return t.tags.length;
 };
 
-export const blank = (): Record<string, number> => {
-  const d: Record<string, number> = {};
-  return d;
+export const blank = (d: Record<string, number> | undefined): number => {
+  if (d == null) return 0;
+  return Object.keys(d).length;
 };
 
 export const named = (t: Team): string => t.name;

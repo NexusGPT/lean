@@ -23,6 +23,6 @@ export function bumped(xs: number[] | undefined): number[] {
 
 export const tagsOf = (t: Team | undefined): number => (t?.tags ?? []).length;
 
-export const blank = (): Record<string, number> => ({});
+export const blank = (d: Record<string, number> | undefined): number => Object.keys(d ?? {}).length;
 
 export const named = (t: Team): string => t.name;
