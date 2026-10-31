@@ -12,6 +12,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { z3Binary } from '../solve/z3.mjs';
+import { dafnyWallCapMs } from './pool.mjs'; // `dafny --version` runs no solver: spawnSync's own timeout kills all it started
 
 export const CACHE_DIR = process.env.LEAN_STEP_CACHE_DIR || path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), 'lean', 'steps');
 export const stepCacheOn = process.env.LEAN_STEP_CACHE !== '0';
@@ -47,7 +48,7 @@ export function producerKind(cmd, args) {
   return 'all';
 }
 let dafnyVersion = null;
-export const dafnyVersionString = () => dafnyVersion ??= (spawnSync('dafny', ['--version'], { encoding: 'utf8' }).stdout ?? '').trim() || 'dafny version unknown';
+export const dafnyVersionString = () => dafnyVersion ??= (spawnSync('dafny', ['--version'], { encoding: 'utf8', timeout: dafnyWallCapMs([]), killSignal: 'SIGKILL' }).stdout ?? '').trim() || 'dafny version unknown';
 const UNSTABLE = /timed out|out of resource|spin-bound|__timeout__|harness timeout|ASK:harness|"harness":|killed \(|ENOSPC|EAGAIN/i;
 let hits = 0, misses = 0, stored = 0;
 export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, dir: CACHE_DIR });

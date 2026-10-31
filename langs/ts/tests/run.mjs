@@ -52,9 +52,12 @@ const run = (cmd, args, env) => spawnSync(cmd, args, { cwd: root, encoding: 'utf
 const NORMALISE = [[tmp, '<tmp>'], [path.join(here, 'pairs'), '<pairs>'], [root, '<root>']];
 // the same, through the step cache: `files` what the command reads, `outs` what it writes (restored on a hit)
 const crun = (cmd, args, { files = [], outs = [], env = null } = {}) => cachedRun(run, cmd, args, { root, files, outs, env, normalise: NORMALISE });
+// a Dafny run past its wall cap (pool.mjs spawnCollect) is not proved, its summary the cap's own line
+const dafnyCapped = (r) => r.error?.code === 'ETIMEDOUT';
 const dafnyResult = (r) => {
   const text = (r.stdout ?? '') + (r.stderr ?? '');
   const m = text.match(/finished with (\d+) verified, (\d+) errors?/);
+  if (dafnyCapped(r)) return { ok: false, text, summary: (r.stderr ?? '').trim().split('\n').pop() };
   return { ok: r.status === 0 && !!m && m[2] === '0', text, summary: m ? `${m[1]} verified, ${m[2]} errors` : (text.trim().split('\n').pop() || 'no output') };
 };
 const signature = (dfy) => {
@@ -120,7 +123,8 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // EqualCanon_pair runs in 4 parts: 13 of 13 alone on 11 cores, 2 rows red twice under JOBS 28 on 32 cores at 30 s)
   const coresEach = Math.max(1, Math.floor(os.cpus().length / JOBS));
   const dafnyStretch = Math.min(4, Math.max(1, os.cpus().length / coresEach / 4));
-  const v = crun('dafny', ['verify', '--verification-time-limit', String(Math.round(30 * dafnyStretch)), ...dafnySolverArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { files: [path.join(tmpd, 'theorem.dfy')] }); // the cores split across the pairs running at once
+  // the one Dafny of the pair runs through the async runner: its wall cap kills Dafny and its solvers (pool.mjs spawnCollect)
+  const v = await cachedRunAsync((cmd, args, env) => spawnCollect(cmd, args, { cwd: root, env: env ? { ...process.env, ...env } : process.env, maxBuffer: 1 << 26, dir: tmp }), 'dafny', ['verify', '--verification-time-limit', String(Math.round(30 * dafnyStretch)), ...dafnySolverArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { root, files: [path.join(tmpd, 'theorem.dfy')], normalise: NORMALISE }); // the cores split across the pairs running at once
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
@@ -146,7 +150,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const fp = await doubles(f);
     const faithful = faithfulPlacement(tmpd, f); // rule C: the real lemma was read faithfully; placed on both sides, it decides a unit the doubles reading leaves unknown
     const proved = fp.bearing ? finished && !!sp && (fp.verdict === 'proved' || (fp.verdict === 'unknown' && faithful.placed && real)) : real;
-    const realText = real ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : 'not proved';
+    const realText = real ? (whole ? 'proved' : 'proved (canonical heap)') : through.length ? `not proved through ${through.map((k) => k.slice(6)).join(', ')}` : dafnyCapped(v) ? `not proved: ${dafnyResult(v).summary}` : 'not proved';
     const got = sp ? (fp.bearing ? `${fp.verdict === 'unknown' && faithful.placed && real ? `faithful ${faithful.congruence ? 'congruence' : 'exact'} proved; ` : fp.verdict === 'unknown' && !faithful.placed ? `unplaced (${(faithful.reasons ?? [])[0] ?? ''}); ` : ''}doubles ${fp.verdict}${fp.verdict === 'witness' ? ' at ' + JSON.stringify(fp.input).slice(0, 60) : fp.reason ? ': ' + fp.reason.slice(0, 80) : ''} (${fp.seconds ?? 0} s); real lemma ${realText}` : realText) : withheld ? `withheld: ${withheld.slice(withheld.indexOf(': ') + 2, withheld.indexOf(': ') + 120)}` : 'lemma missing';
     // "withheld": the identity guard must have withheld the lemma; "witness": the doubles reading's replayed counterexample;
     // "real-only": the real lemma proves, the doubles reading does not read the unit whole (unknown) and the faithful
@@ -680,6 +684,8 @@ async function adviceLabels(add) {
     ['children-shapes', scriptRow('runtime', 'children-shapes', 'seven children shapes read one way; no raw children reader outside the named exceptions', [path.join(here, 'children-shapes.mjs')], lastLine)],
     // lane B's input generator keeps its stated invariants (a special number's value depends on the input's turn and its field, arrays
     // of two or more, null beside the special value), so a witness found once is found again (lane lost-witnesses)
+    // a child past its wall cap is killed with every process under it and reads as a timeout; every Dafny child carries one (pool.mjs, design/suite.md)
+    ['wall-cap', scriptRow('runtime', 'wall-cap', 'a 2 s cap kills a fake Dafny and its sleeping child within 5 s, shaped as a timeout; a run under the cap unchanged', [path.join(here, 'wall-cap.mjs')], lastLine)],
     ['gen-invariants', scriptRow('runtime', 'gen-invariants', 'the input generator keeps its stated invariants over seeds 1 to 20', [path.join(here, '../exec/gen.test.mjs')], lastLine)],
     ['no-silent-exit', scriptRow('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', [path.join(here, 'no-silent-exit.mjs')], lastLine)],
     // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown

@@ -58,7 +58,7 @@ for (const s of exp.scope) if (!units.some((u) => dafnyName(u) === s)) result.no
 const models = {};
 for (const side of ['parent', 'candidate']) {
   const tCompile = performance.now();
-  const c = (ONLY && compiledSide({ dir: path.join(work, 'js'), label: side })) || compileSide({ dfy: path.join(work, `${side}.dfy`), prelude: path.join(work, `${side}.pre.dfy`), units: units.map((u) => `${dafnyName(u)}_${side}`), dir: path.join(work, 'js'), label: side });
+  const c = (ONLY && compiledSide({ dir: path.join(work, 'js'), label: side })) || await compileSide({ dfy: path.join(work, `${side}.dfy`), prelude: path.join(work, `${side}.pre.dfy`), units: units.map((u) => `${dafnyName(u)}_${side}`), dir: path.join(work, 'js'), label: side });
   if (!ONLY) result.timing[`compile_${side}S`] = secs(tCompile);
   if (!c.ok) { result.skipped = `the ${side} model does not compile: ${c.error}`; write(); process.exit(0); }
   const m = loadSide(c); m.bridge = makeBridge(m); m.heap = heapBridge(m); models[side] = m;
