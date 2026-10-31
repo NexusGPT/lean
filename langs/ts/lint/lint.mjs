@@ -17,7 +17,7 @@ import { primitiveBrand, readAfterCall } from '../common.mjs';
 import { originOf } from '../common.mjs';
 import { rawTag } from '../common.mjs'; // String.raw reads the raw parts only (design/heap-stage5.md section 1)
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment, strictValue } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, matchGroups, matchGroupsTested, matchGroupRead, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, matchGroups, matchGroupsTested, matchGroupRead, matchGroupsDestructure, matchCapture, matchArrayType, matchItemKind, absenceRead, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord, voidReturn } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
@@ -762,6 +762,10 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   function bindingNames(name, outNames) {
     if (ts.isIdentifier(name)) { outNames.push(name); return; }
     if (ts.isObjectBindingPattern(name) && localMethodLiteral(tOf(name))) v(name, 'object-method-mutation', 'read named fields on the literal object; copying accessors or detached methods needs a receiver');
+    if (ts.isArrayBindingPattern(name) && matchArrayType(checker, tOf(name))) { // `const [, a] = m`: item i of the match, a string only when its group takes part in every match (common.mjs matchItemKind)
+      const src = ts.isVariableDeclaration(name.parent) ? name.parent.initializer : null;
+      name.elements.forEach((el, i) => { if (ts.isOmittedExpression(el)) return; const kind = src ? matchItemKind(src, el.dotDotDotToken ? null : i, checker) : null; if (kind !== 'string') v(el, 'unsupported-member', memberRow('match-captures').message(kind === 'may' ? `a destructured item of this match may be undefined (its group does not take part in every match), and its name would hold it under a string type; read it as \`m[${i}]\` on a const match of a regular expression literal, present or absent` : 'the pattern of this match is not known here (not a regular expression literal or `new RegExp` of written strings, nor a const of this file holding one), so whether a destructured item may be undefined is not known')); });
+    }
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue;
       if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el) && !paramRecordRest(name, el)) { v(el, 'record-rest', 'record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without defaults; copy named fields explicitly'); continue; } if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el)) aliasLocals.add(el); bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
@@ -2028,7 +2032,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
     if (execMatchMember(e, checker)) return; // `m.index` / `m.input` of a match of a non-global regular expression literal (common.mjs)
-    if (matchGroupRead(e, checker) || matchGroupsTested(e, checker) || (matchGroups(e, checker) && matchGroupRead(e.parent, checker)?.recv && e.parent.expression === e)) return; // `m.groups.k` of a group in every match, `m.groups` as a presence or as that read's receiver (common.mjs)
+    { const gr = matchGroupRead(e, checker); if (gr) return gr.always || absenceRead(e, checker) ? undefined : v(e, 'unsupported-member', memberRow('match-groups').message(null, gr.key)); } // `m.groups.k`: a group that may not take part read as present or absent (common.mjs)
+    if (matchGroupsTested(e, checker) || (matchGroups(e, checker) && matchGroupRead(e.parent, checker)?.recv && e.parent.expression === e)) return; // `m.groups` as a presence or as a group read's receiver (common.mjs)
+    { const gd = matchGroupsDestructure(e, checker); if (gd) return gd.refuse === null ? undefined : v(e, 'unsupported-member', memberRow('match-groups').message(gd.refuse)); } // `const { k } = m.groups`: each name a group read (common.mjs)
     for (const t of parts) {
       if (t.flags & TF.Never) continue; // stage 5 rank 17: a read on never is unreachable; any reading is sound
       if (t.flags & TF.IndexedAccess) continue; // an indexed this type (`this["options"]`): an opaque value, read through an uninterpreted accessor (the translator types it Any)
@@ -2077,6 +2083,8 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       return v(e, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(e.expression));
     }
     expr(e.expression); expr(e.argumentExpression);
+    { const mc = matchCapture(e, checker); if (mc?.refuse) return v(e, 'unsupported-member', memberRow('match-captures').message(mc.refuse)); if (mc?.always === false && !absenceRead(e, checker)) return v(e, 'unsupported-member', memberRow('match-captures').message(`item ${mc.index} of this match is undefined when its group does not take part, and it is read here as a string; read it as present or absent (\`m[${mc.index}] ?? d\`, a test)`)); } // an item of a match that may be undefined (common.mjs)
+    { const gr = matchGroupRead(e, checker); if (gr && !gr.always && !absenceRead(e, checker)) return v(e, 'unsupported-member', memberRow('match-groups').message(null, gr.key)); } // `m.groups["k"]`
     const rt = tOf(e.expression), at = tOf(e.argumentExpression);
     const parts = nonNull(rt);
     if (parts.every(isStr) && isNum(at)) return; // s[i] is a char

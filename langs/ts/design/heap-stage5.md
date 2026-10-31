@@ -368,6 +368,67 @@ writes, a match through `?.match`, a string rooted at `this`); nexus, read under
 nexus file with a match's `.groups`; the whole-root run was stopped by the machine's memory), 2 units:
 `assumedRoleArnToRoleArn` entered (213 -> 214), `resolveRoleArn` moved to `copied-argument`.
 
+#### 6b, read again (2026-10-31, lane regex-groups-forms): a capture that may not take part, and the forms left out
+
+The false proof the note found is closed. Item i of a match is undefined when group i did not take part, or when the
+pattern has fewer groups (RegExpBuiltinExec 22.2.7.2, steps 22-34). TypeScript types it `string` anyway, and the match,
+read as `seq<string>`, made it a string. One rule now covers the numbered and the named captures (`common.mjs`):
+- `matchItemKind(r, i)` decides whether item i of the match r is a string. It reads the pattern of every call that may
+  make r: r itself, a name whose declaration and every assignment in the file is such a call (an exec loop on a `let`),
+  or the variable of a for-of over `matchAll`. That pattern's `regexCaptures` decides. Item 0 is the matched text of any
+  match, and a match of a g pattern by `String.prototype.match` lists matched texts, each a string.
+- `matchCapture`: `m[i]` with i a literal, on a const match `matchOfName` reads, is `regex_capture(re, s, i)` (a string)
+  when the group takes part in every match. Otherwise it is `regex_capture_may(re, s, i)`, present or absent.
+  `m.groups.k` of a group that may not take part is the same function at the group's number, so `m.groups.b` and
+  `m[2]` of `(?<a>x)|(?<b>y)` are one value. Elsewhere an item that is a string keeps the list's reading. An item that
+  may be undefined is refused (row `match-captures`): a non-literal index, a match not bound to a const or of a string
+  the unit writes. So is an item of a match whose pattern is not known (a pattern parameter, `new RegExp` of a computed string, an exported
+  const).
+- A value that may be undefined is read only as present or absent (`absenceRead`). That means the left of `??` or
+  `||`, a test, an equality with null or undefined, or a place whose expected type holds undefined. Anywhere it would be
+  a string (`return m[2]` from a function returning string, `const x = m[2]`), the lint refuses it, and the translator
+  refuses its conversion (`convertToD`) as a backstop.
+- `const [, a, b] = m`: each destructured item must be a string by `matchItemKind`, otherwise it is refused (the array
+  pattern's default applies past the end, not to undefined).
+
+The forms:
+- `m.groups["k"]` is `m.groups.k`.
+- `const { k, j: n, i = d } = m.groups` (m narrowed to a match) binds each name as that read. A group that may not take
+  part is bound only with a default, which it takes when absent. Without one it is refused, since the name would hold
+  undefined under a string type.
+- A pattern held in a name is read as its literal (`regexLiteralOf`, `heldRegexLiteral`) when the name is a const of
+  this file bound to a literal without g and y, not exported (nor a top-level const of a script), and every other
+  mention of it is the receiver of `.exec(x)`, `.test(x)` or `.lastIndex`, or the pattern argument of a string's
+  match, matchAll, replace, replaceAll, search or split. Nothing can then change its source or flags (only a call
+  handed the object, `compile` (Annex B) or a store could), and without g and y those calls ignore lastIndex. The
+  translator writes the literal for the name at those calls (a `.lastIndex` read stays the object's).
+- A group that may not take part stays Option everywhere, as above.
+
+Still refused, with reason: a group read as a string where it may not take part; `m.groups` held or passed; an item of
+a match whose pattern is not known; a non-literal index whose item may be undefined. Also refused: a held pattern that
+is exported, passed, or run by any other call, and a held g or y pattern in a group read (lastIndex). Left (not this
+note's construct): the whole match array used as a value (`m.slice(1)`, `m.join`, a for-of over m, a spread) still
+reads its items as strings when a group may not take part.
+Found, not fixed: `re.exec(s)` of a literal is a world transition (`ext_call_args_Ext_RegExp_exec_World`), and Dafny
+does not prove two functions equal when each begins `var (wld, t0_) := ...`. Bodies equal up to the order of an
+if's arms fail, while the same bodies with a plain let verify. So the pair's numbered unit `first` matches with
+`s.match`. (`month`, an exec, is a WITNESS unit.)
+Pair `regular_expressions` adds `second` (`m[2] ?? d` of `(a)|(b)`, another default: proved at the base, the false
+proof; now not proved, lane B WITNESS on "a"), `first` (`m[1]` of a group in every match: proved), `day` (destructured
+groups: proved), `keyed` (`m.groups["y"]`: proved), `held` (a module const pattern: proved), and `either` (a group of one
+alternative, another default: WITNESS). The escape fixture `library_members_match_groups` now holds a group of one
+alternative read as a string (still refused); its earlier form, returned as `string | undefined`, is read.
+Also read again: `matchOfName`'s write test counted every prefix unary as a write, so `if (!t) return` before `t.match(re)`
+refused the match. Only `++` and `--` write (pair unit `tested`).
+Census (`census.mjs`, n8n copy, base 09032a59 against this head; nexus: not run, memory): entered 2,752 -> 2,752,
+language-refused 4,634 -> 4,634. Entered: `extractDomain` (a pattern held in a const). Lost: `executeRegexExtractValue`
+(`packages/core/src/ExtractValue.ts`), which returns item 1 of a caller's `RegExp` as a string: undefined when the
+group does not take part, so this is the false-proof class this note closes. Moved, still out: `useJsonFieldCompletions`
+(its destructured groups read; it stops at a `type-assertion`); `splitName` (stops first at `const [_, fullName] =
+match` of `(.+)?`, a group that may not take part). The other `.groups` units of the first reading stay out by named
+forms: a pattern held in a parameter default (`getDomainBase`, `getDomainPath`), a `let` pattern (`splitExpression`),
+a string rooted at `this` (`runCodeEachItem`).
+
 ## 8. Void results
 
 Reading: a unit whose result is `void` is a procedure: it returns the unit value, `(HWorld, ())`. Its body may fall

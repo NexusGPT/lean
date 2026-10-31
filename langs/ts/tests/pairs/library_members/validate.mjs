@@ -54,6 +54,16 @@ cases['match-groups'] = [
   ['a group that did not take part', () => { const g = /(?<a>x)|(?<b>y)/.exec('y').groups; return [{ ...g }, { a: undefined, b: 'y' }]; }],
   ['the object has no prototype', () => [Object.getPrototypeOf(/(?<a>x)/.exec('x').groups), null]],
 ];
+// the claim: item i of a match is undefined when group i did not take part or the pattern has fewer groups; a match by
+// String.prototype.match of a g pattern lists the matched texts
+cases['match-captures'] = [
+  ['a group in the other alternative', () => [[.../(a)|(b)/.exec('a')], ['a', 'a', undefined]]],
+  ['a group under a quantifier of minimum 0', () => [[.../x(\d)?/.exec('x')], ['x', undefined]]],
+  ['a group in every match is a string', () => [[.../(\d+)-(\d+)/.exec('12-3')], ['12-3', '12', '3']]],
+  ['past the pattern\'s groups', () => [/(a)/.exec('a')[2], undefined]],
+  ['a g match lists the matched texts', () => ['a1b22'.match(/\d+/g), ['1', '22']]],
+  ['a named group is the numbered item of its place', () => { const m = /(?<a>x)|(?<b>y)/.exec('y'); return [[m.groups.b, m[2], m.groups.a, m[1]], ['y', 'y', undefined, undefined]]; }],
+];
 // the claim: one call, two receivers: the same indexOf means a substring on a string and an element identity on an array
 cases['method-on-union'] = [
   ['a string finds a substring', () => ['ab'.indexOf('b'), 1]],
