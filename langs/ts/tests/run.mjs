@@ -16,7 +16,7 @@ import { restsOf, restsClosure, provedLemma, commentAdapters, agreeCore, canonPa
 import { restsOnFunctionText } from '../exec/fake.mjs';
 import { cachedRun, cachedRunAsync, stepCacheStats, CACHE_DIR } from './stepcache.mjs'; // the step cache: a command keyed by what it reads (design: the owner's rule, the tests run fast on merges)
 import { createPool, spawnCollect } from './pool.mjs';
-import { faithfulPlacement } from '../check.mjs';
+import { faithfulPlacement, checkWallCapMs } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
 import { dafnySolverArgs } from '../solve/z3.mjs'; // the one Z3 (solve/z3.mjs): the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
@@ -52,6 +52,12 @@ const run = (cmd, args, env) => spawnSync(cmd, args, { cwd: root, encoding: 'utf
 const NORMALISE = [[tmp, '<tmp>'], [path.join(here, 'pairs'), '<pairs>'], [root, '<root>']];
 // the same, through the step cache: `files` what the command reads, `outs` what it writes (restored on a hit)
 const crun = (cmd, args, { files = [], outs = [], env = null } = {}) => cachedRun(run, cmd, args, { root, files, outs, env, normalise: NORMALISE });
+// a `node check.mjs` child under its wall cap: three times the bounds its arguments state plus 60 s (check.mjs
+// checkWallCapMs); on the cap it is killed with every process under it (tests/capped.mjs) and the run log names it
+const checkMjs = path.join(here, '../check.mjs');
+const capRun = (args) => async (cmd, a, env) => { const r = await spawnCollect(cmd, a, { cwd: root, maxBuffer: 1 << 26, env: env ? { ...process.env, ...env } : process.env, dir: tmp, wallCapMs: checkWallCapMs(args) }); if (r.error?.code === 'ETIMEDOUT') console.error(`check.mjs ${args.join(' ')}: ${r.stderr.trim().split('\n').pop()}`); return r; };
+const runCheck = (args, env) => capRun(args)('node', [checkMjs, ...args], env);
+const crunCheck = (args, { files = [], outs = [], env = null } = {}) => cachedRunAsync(capRun(args), 'node', [checkMjs, ...args], { root, files, outs, env, normalise: NORMALISE });
 // a Dafny run past its wall cap (pool.mjs spawnCollect) is not proved, its summary the cap's own line
 const dafnyCapped = (r) => r.error?.code === 'ETIMEDOUT';
 const dafnyResult = (r) => {
@@ -98,7 +104,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   if (exp.candidateOnly) {
     for (const [i, want] of exp.candidateOnly.entries()) {
       const out = path.join(tmpd, `new_${i}.json`);
-      crun('node', [path.join(here, '../check.mjs'), ...(want.parent ? ['--parent', path.join(d, want.parent)] : []), '--candidate', path.join(d, want.file), '--unit', want.unit, '--n', '30', ...(want.project ? [] : ['--no-project']), '--out', out], { files: [...(want.parent ? [path.join(d, want.parent)] : []), path.join(d, want.file)], outs: [out] });
+      await crunCheck([...(want.parent ? ['--parent', path.join(d, want.parent)] : []), '--candidate', path.join(d, want.file), '--unit', want.unit, '--n', '30', ...(want.project ? [] : ['--no-project']), '--out', out], { files: [...(want.parent ? [path.join(d, want.parent)] : []), path.join(d, want.file)], outs: [out] });
       let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
       const ok = got.verdict === want.verdict && (!want.kind || got.kind === want.kind) && (!want.environmentClass || got.environmentClass === want.environmentClass) && (!want.phase || got.phase === want.phase) && (!want.linkKind || got.link?.kind === want.linkKind) && (!want.reason || got.reason?.includes(want.reason)) && (!want.laneA || JSON.stringify(got.certificate?.lanes?.A ?? null).includes(want.laneA)) && (want.inputs === undefined || got.inputs === want.inputs) && (want.faults === undefined || got.faults === want.faults) && (got.verdict !== 'NEW' || (got.loaded === true && got.seed === 1 && Array.isArray(got.fakes) && got.traceShape?.reduce((n, s) => n + s.inputs, 0) === got.inputs && !got.certificate?.lanes?.A));
       add('pair', name, `${want.file} ${want.unit} ${want.verdict}${want.laneA ? ' (lane A ' + want.laneA + ')' : ''}`, ok, JSON.stringify({ verdict: got.verdict, inputs: got.inputs, faults: got.faults, reason: got.reason, ...(want.laneA ? { laneA: String(got.certificate?.lanes?.A?.detail ?? got.certificate?.lanes?.A?.verdict ?? '').slice(-160) } : {}) }));
@@ -241,7 +247,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // PASS-proved through its adapter, a changed signature without one is ASK:interface naming the door whatever lane B found
   for (const [unit, want] of Object.entries(exp.check ?? {})) {
     const out = path.join(tmpd, `check_${artifactName(unit)}.json`);
-    crun('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(typeof exp.adapters === 'string' ? ['--scope', path.join(d, exp.adapters)] : []), '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...(typeof exp.adapters === 'string' ? [path.join(d, exp.adapters)] : [])], outs: [out] });
+    await crunCheck(['--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(typeof exp.adapters === 'string' ? ['--scope', path.join(d, exp.adapters)] : []), '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...(typeof exp.adapters === 'string' ? [path.join(d, exp.adapters)] : [])], outs: [out] });
     let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
     const A = got.certificate?.lanes?.A ?? {};
     const ok = got.verdict === want.verdict && (!want.laneA || A.verdict === want.laneA) && (!want.reason || (got.reason ?? '').includes(want.reason)) && (!want.door || A.adapter?.door === want.door);
@@ -252,7 +258,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // (its verdict, the classes it could not read), each carrying its assumptions
   for (const [i, want] of (exp.layers ?? []).entries()) {
     const out = path.join(tmpd, `layers_${i}_${want.unit}.json`);
-    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', want.unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(want.deep ? [`--deep=${want.deep}`] : []), '--out', out]);
+    await runCheck(['--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', want.unit, '--n', '30', '--no-project', '--dafny-seconds', '30', ...(want.deep ? [`--deep=${want.deep}`] : []), '--out', out]);
     let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
     const L = got.certificate?.layers ?? null, T = L?.tree ?? {}, S = L?.styles ?? {};
     const names = (xs) => JSON.stringify((xs ?? []).map((x) => x.component).sort());
@@ -264,7 +270,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // head are the witness record's own (exec/record.mjs witnessRecord, the unit record lane B writes)
   for (const [unit, want] of Object.entries(exp.render ?? {})) {
     const out = path.join(tmpd, `render_${artifactName(unit)}.json`);
-    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', '--out', out]);
+    await runCheck(['--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', '--out', out]);
     let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
     const B = got.certificate?.lanes?.B ?? {}, R = B.bound?.render ?? null, J = (x) => JSON.stringify(x);
     const { witnessRecord } = await import('../exec/record.mjs'); const epoch = witnessRecord({ seed: 1, leanHead: 'h', input: 0, sides: {} }).clockEpoch;
@@ -318,7 +324,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   }
   for (const [unit, want] of Object.entries(exp.libraryCheck ?? {})) { // the proof lane refuses the operation while the row is wrong; lane B's own verdict stands
     const out = path.join(tmpd, `libc_${artifactName(unit)}.json`);
-    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', '--out', out], { LEAN_LIBRARY_TABLE: path.join(here, want.table) });
+    await runCheck(['--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', '--out', out], { LEAN_LIBRARY_TABLE: path.join(here, want.table) });
     let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
     const ok = got.verdict === want.verdict && new RegExp(want.reason).test(got.reason ?? '') && got.certificate?.lanes?.A?.verdict === 'ASK:library-model';
     add('pair', name, `library ${unit} proof refused on a wrong row`, ok, `${got.verdict ?? 'no result'}: ${(got.reason ?? '').slice(0, 120)} | A: ${got.certificate?.lanes?.A?.verdict ?? '-'} | B: ${got.certificate?.lanes?.B?.verdict ?? '-'}`);
@@ -357,7 +363,7 @@ const withEnv = (env) => (env ? { ...process.env, ...env } : process.env);
 // one job's runners: run, crun and dafny as above, each child on the pool; an item of a fan-out names its group
 const runner = (key, group = null) => {
   const job = pool.job(key, { group });
-  const prun = (cmd, args, env, { cwd = root, maxBuffer = 1 << 26 } = {}) => job.run(cmd, args, { cwd, env: withEnv(env), maxBuffer });
+  const prun = (cmd, args, env, { cwd = root, maxBuffer = 1 << 26, wallCapMs } = {}) => job.run(cmd, args, { cwd, env: withEnv(env), maxBuffer, ...(wallCapMs ? { wallCapMs } : {}) });
   return {
     job,
     run: prun,
@@ -959,7 +965,8 @@ async function witnessLines(add) {
       const R = runner('witness-lines/advice');
       const fixture = path.join(here, 'fixtures/witness-lines');
       const result = path.join(tmp, 'witness-lines-advice.json');
-      const r = await R.run('node', [path.join(here, '../check.mjs'), '--parent', path.join(fixture, 'parent.ts'), '--candidate', path.join(fixture, 'candidate.ts'), '--unit', 'frozen', '--n', '3', '--no-project', '--out', result]);
+      const args = ['--parent', path.join(fixture, 'parent.ts'), '--candidate', path.join(fixture, 'candidate.ts'), '--unit', 'frozen', '--n', '3', '--no-project', '--out', result];
+      const r = await R.run('node', [path.join(here, '../check.mjs'), ...args], undefined, { wallCapMs: checkWallCapMs(args) });
       let got = null; try { got = JSON.parse(fs.readFileSync(result, 'utf8')); } catch { /* A missing certificate fails. */ }
       const advice = got?.witness?.where?.advice;
       const expected = '[migration] A later write to a frozen object throws in strict code, and the proof lane has no fault for it. Keep the object unfrozen inside the function, or freeze a copy you never write.';

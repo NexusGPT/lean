@@ -3,7 +3,7 @@
 //
 //   node check.mjs --parent <file.ts> --candidate <file.ts> --unit <name|Class.method> [--out verdict.json]
 //                  [--n 200] [--seed 1] [--project <tsconfig>|--no-project] [--dafny-seconds 60] [--scope scope.json] [--deep[=k]]
-//                  [--values <values.json>|none] [--unit-seconds 120]
+//                  [--values <values.json>|none] [--unit-seconds 120] [--dafny-wall-seconds <s>]
 //
 // --values names the project's values file (exec/spec.mjs: per unit and parameter or per type name, values the inputs
 // are known to take); without it lane B reads the nearest `.lean/values.json` above the candidate, `none` reads none.
@@ -12,6 +12,10 @@
 //
 // --unit-seconds bounds lane B's wall clock for the unit (exec/run.mjs runPair: a child process, killed at the bound; the
 // lane B verdict is then ASK spin-bound). Lane A runs after it either way.
+//
+// --dafny-wall-seconds bounds lane A's Dafny call (by default (--dafny-seconds + 60) for each translated unit): past it
+// Dafny and every process under it (its solvers) are killed (tests/capped.mjs spawnCollect, the suite's own wall cap),
+// and lane A is ASK:timeout with the reason `not proved: wall cap <N> s exceeded`.
 //
 // Order: lane B (bounded execution) first; a WITNESS ends the question. Then lane A (proof): lint, translate both
 // sides (the effect set shared), theorem, Dafny. The verdict is the strongest statement the evidence supports:
@@ -35,7 +39,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt } from './exec/run.mjs';
+import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt, unitSecondsValue } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, enclosingUnitName, MODULE_UNIT } from './common.mjs';
@@ -44,6 +48,7 @@ import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
 import { z3Binary, dafnySolverArgs } from './solve/z3.mjs';
+import { spawnCollect, wallCapMs } from './tests/capped.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -61,13 +66,20 @@ function z3Record() { const z = z3Binary(); return { z3: z.version, z3Path: z.pa
 const timer = (timing) => (key, go) => { const t0 = performance.now(); const add = () => { timing[key] = (timing[key] ?? 0) + (performance.now() - t0) / 1000; }; let out; try { out = go(); } catch (e) { add(); throw e; } if (out instanceof Promise) return out.finally(add); add(); return out; };
 const run = (cmd, args, timeoutMs) => { const r = spawnSync(cmd, args, { encoding: 'utf8', timeout: timeoutMs }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: !!r.error && r.error.code === 'ETIMEDOUT' }; };
 
+// the wall cap of a `node check.mjs` child (tests/run.mjs): three times the bounds its command line states (lane B's
+// --unit-seconds, the Dafny --dafny-seconds, the doubles --fp-seconds, each its default when not named) plus 60 s
+export function checkWallCapMs(args) {
+  const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
+  return wallCapMs(unitSecondsValue(opt('--unit-seconds', undefined)) + Number(opt('--dafny-seconds', 60)) + Number(opt('--fp-seconds', FP_SECONDS)));
+}
+
 export async function check(opts) {
   const owner = enclosingUnitName(opts.candidate, opts.unit);
   if (owner) {
     const result = await check({ ...opts, unit: owner });
     return { ...result, 'covered-by': owner, certificate: { ...result.certificate, unit: opts.unit, 'covered-by': owner } };
   }
-  const { parent, candidate, unit, n = 200, seed = 1, project = true, dafnySeconds = 60, scope = null, deep = false, adapters = null } = opts;
+  const { parent, candidate, unit, n = 200, seed = 1, project = true, dafnySeconds = 60, dafnyWallSeconds = null, scope = null, deep = false, adapters = null } = opts;
   // an adapter for this unit (the scope file's "adapters", the caller's, or a // lean-adapter comment on the candidate): the
   // claim is f_candidate(A(x)) == f_parent(x); lane B runs both sides on the same raw inputs, so its WITNESS does not
   // answer that claim and never ends the question
@@ -173,7 +185,8 @@ export async function check(opts) {
     return finish('ASK', cert, { reason: `interface: ${withheldLine.replace(/^interface differs: /, '').slice(0, 600)}` });
   }
   if (witnessed) return witnessOut();
-  const v = timed('dafny', () => run('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), ...dafnySolverArgs(), path.join(tmp, 'theorem.dfy')], (dafnySeconds + 60) * 1000 * Math.max(1, names.length)));
+  // Dafny under its wall cap (tests/capped.mjs): on the cap Dafny and its solvers are killed, none left running
+  const v = await timed('dafny', async () => { const r = await spawnCollect('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), ...dafnySolverArgs(), path.join(tmp, 'theorem.dfy')], { maxBuffer: 1 << 26, dir: tmp, wallCapMs: (dafnyWallSeconds ?? (dafnySeconds + 60) * Math.max(1, names.length)) * 1000 }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: r.error?.code === 'ETIMEDOUT', capLine: r.error?.code === 'ETIMEDOUT' ? r.stderr.trim().split('\n').pop() : null }; });
   const text = v.out;
   const m = text.match(/finished with (\d+) verified, (\d+) error/);
   const lines = fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').split('\n');
@@ -197,7 +210,7 @@ export async function check(opts) {
   const inductionLine = (lines.find((ln) => ln.startsWith(`// INDUCTION ${main}: `)) ?? '').replace(`// INDUCTION ${main}: `, '');
   const adapterLine = (lines.find((ln) => ln.startsWith(`// ADAPTER ${main}: `)) ?? '').replace(`// ADAPTER ${main}: `, '');
   const unguarded = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED ${main}: (.*)$`, 'm')) || [])[1] ?? null; // the identity guard withheld the lemma: the value reading could not be shown to be a graph reading
-  cert.lanes.A = { verdict: unguarded ? (unguarded.startsWith('interface') ? 'ASK:interface' : 'ASK:identity') : m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, reading: m && lemmas[main] ? (canon && canon.proved && !(spans[main] && !errs.some((L) => spans[main][0] <= L && L <= spans[main][1])) ? 'canonical heap: equal up to a renaming of fresh cells and up to dropped allocations' : 'whole heap') : null, canonical: canon, heapCore: parseUnitList(heapOf('candidate')), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp, restsOn, ...(through.length ? { ownLemma, unprovedThrough: through } : {}), ...(inductionLine ? { induction: { measure: (inductionLine.match(/^decreases (\S+)/) ?? [])[1] ?? null, component: ((inductionLine.match(/ over ([\w,]+);/) ?? [])[1] ?? '').split(',').filter(Boolean), termination: inductionLine.replace(/^.*?; termination: /, '') } } : {}), ...(adapterLine ? { adapter: { ...adapter, theorem: adapterLine } } : {}) };
+  cert.lanes.A = { verdict: unguarded ? (unguarded.startsWith('interface') ? 'ASK:interface' : 'ASK:identity') : m ? (lemmas[main] ? 'PASS-proved' : 'ASK:unproved') : (v.timedOut ? 'ASK:timeout' : 'ASK:translation-defect'), identity: unguarded, lemmas, reading: m && lemmas[main] ? (canon && canon.proved && !(spans[main] && !errs.some((L) => spans[main][0] <= L && L <= spans[main][1])) ? 'canonical heap: equal up to a renaming of fresh cells and up to dropped allocations' : 'whole heap') : null, canonical: canon, heapCore: parseUnitList(heapOf('candidate')), dafny: (text.match(/Dafny program verifier finished[^\n]*/) || [''])[0], ...(v.capLine ? { wallCap: v.capLine } : {}), theoremSha256: sha(path.join(tmp, 'theorem.dfy')), preludeSha256: sha(path.join(tmp, 'candidate.pre.dfy')), dafnyVersion: run('dafny', ['--version'], 20000).out.trim(), timeLimitSeconds: dafnySeconds, dir: tmp, restsOn, ...(through.length ? { ownLemma, unprovedThrough: through } : {}), ...(inductionLine ? { induction: { measure: (inductionLine.match(/^decreases (\S+)/) ?? [])[1] ?? null, component: ((inductionLine.match(/ over ([\w,]+);/) ?? [])[1] ?? '').split(',').filter(Boolean), termination: inductionLine.replace(/^.*?; termination: /, '') } } : {}), ...(adapterLine ? { adapter: { ...adapter, theorem: adapterLine } } : {}) };
   // the facts the translation took from the file's own declarations (a receiver declared @sealed, so `this.m()` is the
   // class's own m: common.mjs sealedMember), each an `// ASSUME` line of a side: named in the certificate, since a proof
   // under them holds under them and no further; TypeScript checks none of them (design/conformance-readings.md)
@@ -233,7 +246,7 @@ export async function check(opts) {
   }
   if (m && lemmas[main] && !unguarded) { cert.provedBy = 'dafny'; cert.lanes.A.provedBy = 'dafny'; return finish('PASS-proved', cert, adapter ? { reason: `proved through the declared adapter: ${adapterLine}` } : assumed.length ? { reason: `proved under ${assumed.length} declared assumption(s): ${assumed.join('; ')}` } : {}); }
   if (m && through.length && !unguarded) return finish(rung(), cert, unreached({ reason: `unproved through ${through.join(', ')}` })); // its own lemma holds given summaries that are not proved
-  return finish(rung(), cert, unreached({}));
+  return finish(rung(), cert, unreached(v.capLine && !m ? { reason: `not proved: ${v.capLine}` } : {}));
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
 // lane A's number decision for one unit, as check.mjs takes it (for a reader that runs lane A without lane B, such
@@ -339,7 +352,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const files = { parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit') };
   const guard = verdictGuard(opt('--out', null), (r) => harnessAsk(r.reason, files));
-  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined), fpSeconds: Number(opt('--fp-seconds', FP_SECONDS)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
+  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), dafnyWallSeconds: opt('--dafny-wall-seconds', null) === null ? null : Number(opt('--dafny-wall-seconds')), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined), fpSeconds: Number(opt('--fp-seconds', FP_SECONDS)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
   guard.settle();
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);
