@@ -1007,7 +1007,16 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (sh.kind === 'prim') return primStr(expr(x), sh);
       const o = bind(expr(x), 't'); return `(if (${o}).Some? then ${primStr(`(${o}).value`, sh.inner)} else ${sh.absent === 'n' ? '"null"' : '"undefined"'})`;
     }
-    function expr(e0) {
+    // the operands of an expression are evaluated in source order (heap-stage5.md section 15): a read of the world is
+    // code over `hw_`, written where it is used, so when a later operand of the same expression may write a cell (a
+    // transition: an outside call, a same-file unit or constructor, an array written in place) the earlier operand's
+    // code is bound where it stands, in the world it read, before that operand's lines run
+    const writesMemo = new Map();
+    const writesCells = (n) => { if (!writesMemo.has(n)) { let w = false; const go = (x) => { if (w) return; if (ts.isCallExpression(x) && (outsideCall(x) || calleeOf(x, u) || isAssignCall(x) || (ts.isPropertyAccessExpression(x.expression) && ['reverse', 'splice'].includes(x.expression.name.text)))) w = true; else if (ts.isNewExpression(x) && newClass(x) && ctorUnitOf(newClass(x))) w = true; else ts.forEachChild(x, go); }; go(n); writesMemo.set(n, w); } return writesMemo.get(n); };
+    const heldBefore = (e) => { for (let c = e, p = e.parent; p && p !== u.fn && !ts.isStatement(p) && !ts.isFunctionLike(p); c = p, p = p.parent) { let after = false, w = false; ts.forEachChild(p, (k) => { if (after && !w && writesCells(k)) w = true; if (k === c) after = true; }); if (w) return true; } return false; };
+    const reads = new RegExp(`\\b${HW}\\b`);
+    function expr(e0) { const c = exprAt(e0); return reads.test(c) && heldBefore(e0) ? bind(c, 's') : c; }
+    function exprAt(e0) {
       const e = unparen(e0);
       if (isAbsent(e)) return absentCode(e, shapeOf(checker.getContextualType(e)));
       if (ts.isIdentifier(e) && !inUnit(e)) { const ov = outsideValue(e); if (ov.kind === 'const') return `(${expr(ov.init)})`; impUsed.set(ov.key, ov.sh.d); return `${ov.key}()`; } // a module constant by its initializer, an import by its key
@@ -1102,7 +1111,14 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isBinaryExpression(e) && [K.LessThanToken, K.LessThanEqualsToken, K.GreaterThanToken, K.GreaterThanEqualsToken].includes(e.operatorToken.kind) && (typeOf(e.left).flags & TF.StringLike)) { const l = expr(e.left), r = expr(e.right); const lt = helper('StrLt', ['string']); const k = e.operatorToken.kind; return k === K.LessThanToken ? `${lt}(${l}, ${r})` : k === K.GreaterThanToken ? `${lt}(${r}, ${l})` : k === K.LessThanEqualsToken ? `!${lt}(${r}, ${l})` : `!${lt}(${l}, ${r})`; } // the order of code units (design/strings.md)
       if (ts.isBinaryExpression(e)) {
         const op = { [K.PlusToken]: '+', [K.MinusToken]: '-', [K.LessThanToken]: '<', [K.LessThanEqualsToken]: '<=', [K.GreaterThanToken]: '>', [K.GreaterThanEqualsToken]: '>=', [K.EqualsEqualsEqualsToken]: '==', [K.ExclamationEqualsEqualsToken]: '!=', [K.AmpersandAmpersandToken]: '&&', [K.BarBarToken]: '||' }[e.operatorToken.kind];
-        const l = expr(e.left), r = expr(e.right); // source order: the left operand's allocations come first
+        const l = expr(e.left); // source order: the left operand's allocations come first
+        if (op === '&&' || op === '||') { // the right operand runs only when the left does not decide: its lines (a transition, an allocation, a mark) stay inside its branch, as a conditional's operands do
+          const saved = lines.splice(0); const r = expr(e.right); const lr = lines.splice(0); lines.push(...saved);
+          if (!lr.length) return `(${l} ${op} ${r})`;
+          const q = fresh('q'); const arm = `(${[...lr, `(${HW}, ${r})`].join(' ')})`;
+          lines.push(`var (${HW}, ${q}) := if ${l} then ${op === '&&' ? arm : `(${HW}, true)`} else ${op === '&&' ? `(${HW}, false)` : arm};`); return q;
+        }
+        const r = expr(e.right);
         return `(${l} ${op} ${r})`;
       }
       if (ts.isArrayLiteralExpression(e) && arrShape(e)?.tuple) { const s = arrShape(e); const vs = e.elements.map((x, i) => exprField(x, fieldOf(s, `_${i}`).shape)); const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${s.key}(${HW}, ${s.fields.map((f) => vs[Number(f.name.slice(1))]).join(', ')});`); return r; } // the positions in source order, stored by field

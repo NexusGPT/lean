@@ -13,7 +13,7 @@
   "faithful": "heap read on the ledger for every reference-typed receiver"
  },
  "CallExpression": {
-  "today": "exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; refused for unsupported calls and .call/.apply",
+  "today": "exact for a same-file unit and a pure callback; transition for a service, a global or a library effect; in the heap core an outside call reads its operands in order, each in the world before the transition (heap-stage5.md 15b); refused for unsupported calls and .call/.apply",
   "faithful": "same, plus the library table as transitions and callable records for escaped functions"
  },
  "ReturnStatement": {
@@ -25,7 +25,7 @@
   "faithful": "same"
  },
  "BinaryExpression": {
-  "today": "exact for arithmetic, comparison and boolean logic; mixed-value || && ?? exact since the mixed-logic reading; === between a primitive-or-record union and a literal exact on the literal's primitive arm since the mixed-vs-literal reading; assignment a write; bitwise refused unless the integer file",
+  "today": "exact for arithmetic, comparison and boolean logic; in the heap core the right of && and || runs in its branch and an operand is read before a later operand's transition (heap-stage5.md 15b); mixed-value || && ?? exact since the mixed-logic reading; === between a primitive-or-record union and a literal exact on the literal's primitive arm since the mixed-vs-literal reading; assignment a write; bitwise refused unless the integer file",
   "faithful": "same"
  },
  "VariableDeclaration": {

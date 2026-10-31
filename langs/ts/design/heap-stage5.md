@@ -362,6 +362,34 @@ Census (resolved, 39 roots), strict graph 790 -> 876, own syntax 1994 -> 2159; `
 {"files":23359,"units":53918,"core":876,"heapOwnFit":2159,"mirrorMismatch":2017,"planErrorCount":0,"seconds":330}
 ```
 
+### 15b. The operands before the transition, the right of && and || in its branch (2026-10-31, lane core-outside-calls)
+
+Two parts of the reading above were not what the emission did. "The arguments are evaluated in order, then the
+transition": a world read is code over `hw_`, written where its value is used, and a call's line is pushed before
+that use, so in `total(i.qty, bump(i))` and `i.qty - bump(i)` the quantity was read in the world `bump` returned.
+And a transition in the right operand of `&&` or `||` had its line pushed with the left operand's, so
+`c && bump(i) > 0` ran `bump` whatever `c` held. Both proved a changed unit: pair `outside_calls` (sibling
+`store.ts`, where `bump` writes its argument), at lead-b5c07450 `read_first` (the quantity read after the call
+instead of before) and `guarded` (the call moved out of the `&&`) proved while lane B witnessed them, and their
+same-order twins `read_first_named` and `guarded_if` unproved.
+Reading: an operand followed, in the same expression, by an operand that may write a cell (an outside call or a method
+transition, a same-file unit or constructor, `Object.assign`, `reverse`, `splice`) has its code bound where it
+stands when that code reads the world; the order is source order up to the enclosing statement (an assignment's
+target receiver comes before its right side, as JavaScript evaluates it). A right operand of `&&` or `||` that emits
+lines (a transition, an allocation, a mark) runs in its branch, `var (hw_, q) := if l then (lines; (hw_, r)) else
+(hw_, false)`, as a conditional's operands already did. The mechanism is the expression's, not the call's: the same
+order held wrongly for a same-file unit that writes (`i.qty - bump(i)` with `bump` in the file), which the lint does
+not refuse; the `&&` case of a same-file writer is refused by the lint (`conditional-effect`).
+Stays as it was, and why: a field written after a transition and read back is not the value written
+(`written_back`, unproved): the transition leaves no frame, so the argument's cell after it is unknown (a callee may
+install an accessor whose setter keeps nothing); the doubles reading does not encode an outside call, so a
+number-bearing unit with one rests on its real lemma (the faithful congruence) as before; the census admission is
+unchanged (the test of what enters the core is untouched, only what it is translated to).
+Pair `outside_calls`: `used_once`, `used_twice` (two fields of a returned reference), `passed_on`, `passed_local`,
+`read_first_named`, `guarded_if` proved; `written_back`, `called_twice`, `passed_swapped` (WITNESS), `passed_ref`
+(WITNESS), `read_first` (WITNESS), `guarded` (WITNESS) unproved. Census before and after: lane result
+`lane/core-outside-calls-result.md`.
+
 ## 16. Map and Set with record keys or items, the copy forms
 
 Reading: a Map's keys and a Set's items may be references (`Set<Tag>`, `Map<Tag, number>`): the table's rows already
