@@ -8,7 +8,7 @@
 //            same arguments: the coupling the theorem assumes
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawnCollect } from '../tests/pool.mjs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { compilable, declarations, signature, jsName } from './dafny-text.mjs';
@@ -20,13 +20,13 @@ export const BigNumber = require(path.join(here, 'vendor/bignumber.js/bignumber.
 export class OpaqueHit extends Error { constructor(symbol, args) { super(`opaque: ${symbol}`); this.symbol = symbol; this.args = args; } }
 
 // compile one side: the main file and its prelude made compilable, `dafny translate js` with the runtime included
-export function compileSide({ dfy, prelude, units, dir, label }) {
+export async function compileSide({ dfy, prelude, units, dir, label }) {
   const main = fs.readFileSync(dfy, 'utf8'), pre = prelude && fs.existsSync(prelude) ? fs.readFileSync(prelude, 'utf8') : null;
   const c = compilable(main, pre, units);
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${label}.dfy`);
   fs.writeFileSync(file, c.text);
-  const r = spawnSync('dafny', ['translate', 'js', '--no-verify', '--include-runtime', '--allow-warnings', '--optimize-erasable-datatype-wrapper:false', file], { cwd: dir, encoding: 'utf8', maxBuffer: 1 << 26 });
+  const r = await spawnCollect('dafny', ['translate', 'js', '--no-verify', '--include-runtime', '--allow-warnings', '--optimize-erasable-datatype-wrapper:false', file], { cwd: dir, maxBuffer: 1 << 26 }); // the suite's Dafny wall cap (tests/pool.mjs)
   const js = path.join(dir, `${label}.js`);
   if (r.status !== 0 || !fs.existsSync(js)) return { ok: false, error: ((r.stdout ?? '') + (r.stderr ?? '')).split('\n').filter((l) => /Error|error/.test(l)).slice(0, 3).join(' | ').slice(0, 400) || `dafny exit ${r.status}`, text: c.text };
   fs.writeFileSync(path.join(dir, `${label}.externs.json`), JSON.stringify(c.externs));
