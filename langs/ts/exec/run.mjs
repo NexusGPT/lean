@@ -23,7 +23,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork, spawnSync, execFile } from 'node:child_process';
 import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, CLOCK_EPOCH, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
-import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
+import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName, fileClassFieldsDefine } from '../common.mjs';
 import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles , enterWorld } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength, walkLength } from './gen.mjs';
@@ -83,9 +83,13 @@ const leanMarks = (file) => (context) => {
 
 // A file is compiled once per source text. Each sandbox receives its own marker.
 const siteCompiles = new Map();
+// the class-field emit mode is the file's own (common.mjs fileClassFieldsDefine, the rule lane A reads from its program):
+// its project's, the run's --project, or lean's single-file options under --no-project
+let fieldsProject = true;
 function compileWithSites(src, tsName, abs) {
+  const define = fileClassFieldsDefine(abs, fieldsProject);
   const old = siteCompiles.get(abs);
-  if (old?.src === src) return old;
+  if (old?.src === src && old.define === define) return old;
   const sites = [];
   let stateName = '__lean_site';
   while (src.includes(stateName)) stateName += '_';
@@ -105,7 +109,7 @@ function compileWithSites(src, tsName, abs) {
     };
     return tree => ts.visitNode(tree, visit);
   };
-  const emit = (before) => ts.transpileModule(src, { compilerOptions: COMPILE, fileName: tsName, transformers: { before } }).outputText;
+  const emit = (before) => ts.transpileModule(src, { compilerOptions: { ...COMPILE, useDefineForClassFields: define }, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
   const marked = emit([callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
   const functions = (text) => {
@@ -116,7 +120,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) };
+  const compiled = { src, define, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -510,6 +514,7 @@ export function sandbox(env, root) {
     const tsName = /\.(mjs|cjs|js)$/.test(abs) ? abs.replace(/\.(mjs|cjs|js)$/, '.ts') : abs; // a script file is read as TypeScript so its imports become requires
     const src2 = src.replace(/\bimport\.meta\.url\b/g, JSON.stringify('file://' + abs)).replace(/\bimport\.meta\b/g, '({})'); // a script's import.meta under CommonJS
     const compiled = compileWithSites(src2, tsName, abs);
+    if (env.classFieldsDefine === undefined) env.classFieldsDefine = compiled.define; // the unit's file loads first: its emit mode is the record's
     env.siteState.files[abs] = compiled.sites;
     let js = compiled.js;
     // a decorator is run (so its reads and calls are recorded) but its result never replaces the class or the member:
@@ -1216,6 +1221,7 @@ export async function runPair(opts) {
 export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
 async function runPairInFlight(opts) {
   readLoadFactor(); // the machine's share of a core for this unit: the wall allowance of every in-process watchdog
+  fieldsProject = opts.project ?? true; // the emit mode every file of this run compiles with (compileWithSites)
   rateSamples.length = 0; sampleContention(); tellCrumb(); // this unit's CPU slowdown against the suite's idle-core baseline, re-sampled at every input: the process that holds the bound stretches it
   if (netMode() === 'deny') denyNetwork({ side: () => crumb.side }); // the network-denied mode (net-deny.mjs): once per process, before the unit's code loads
   const deniedFrom = deniedAttempts().length; // this unit's refused attempts are the ones made from here on

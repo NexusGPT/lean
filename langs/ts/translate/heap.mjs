@@ -46,7 +46,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 export const HW = 'hw_';
 const OBJECT_PROTO = Object.getOwnPropertyNames(Object.prototype).sort(); // the keys `in` finds on an ordinary object it does not own
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null, defineFields = false }) {
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -230,7 +230,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const ctor = cd.members.find((m) => ts.isConstructorDeclaration(m) && m.body);
     const decls = [...cd.members.filter((m) => ts.isPropertyDeclaration(m) && !m.modifiers?.some((x) => x.kind === K.StaticKeyword)), ...(ctor?.parameters ?? []).filter((p) => p.modifiers?.some((x) => [K.PublicKeyword, K.PrivateKeyword, K.ProtectedKeyword, K.ReadonlyKeyword].includes(x.kind)))];
     const fields = [];
-    for (const m of decls) { const ft = checker.getTypeAtLocation(m.name); if (ft.getCallSignatures().length) return null; const s = shapeOf(ft, depth + 1); if (!s) return null; fields.push({ name: m.name.text, shape: s }); }
+    for (const m of decls) { const ft = checker.getTypeAtLocation(m.name); if (ft.getCallSignatures().length) return null; const s = shapeOf(ft, depth + 1); if (!s) return null; fields.push({ name: m.name.text, shape: s, declared: !!m.modifiers?.some((x) => x.kind === K.DeclareKeyword) }); } // a `declare` field is emitted in no mode
     fields.sort((a, b) => (a.name < b.name ? -1 : 1));
     return { kind: 'rec', fields, key: `R_${hash(fields.map((f) => `${f.name}:${keyOf(f.shape)}`).join(','))}` };
   }
@@ -244,6 +244,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   let optUsed = false; // the Option and Pres helpers are written when a core unit or a shape needs them
   const dflt = (s) => (s.kind === 'prim' ? (s.d === 'string' ? '""' : s.d === 'bool' ? 'false' : isReal ? '0.0' : '0') : s.kind === 'opt' ? `Option<${s.inner.d}>.None` : '0');
   const fieldDflt = (s) => (s.kind === 'opt' && s.absent === 'u' ? `Pres<${s.inner.d}>.PMissing` : dflt(s));
+  // a new instance's field before anything stores it: under the define emit mode (common.mjs classFieldsDefine) every declared
+  // field is defined first, so an optional one is the key holding undefined; else it has no key until it is stored
+  const instanceDflt = (f) => (defineFields && !f.declared && f.shape.kind === 'opt' && f.shape.absent === 'u' ? `Pres<${f.shape.inner.d}>.PUndef` : fieldDflt(f.shape));
   const unions = new Map(); // the unions a core unit reads: a predicate and the common-field reads in the prelude
   // a handle has no cell the heap models
   function register(s) { if (!s || s.kind === 'prim' || s.kind === 'handle') return; if (s.kind === 'opt') { optUsed = true; return; } if (s.kind === 'union') { if (!unions.has(s.key)) { unions.set(s.key, s); for (const a of s.alts) register(a.shape); } return; } if (!shapes.has(s.key)) { shapes.set(s.key, s); if (s.kind === 'arr' || s.kind === 'set') register(s.elem); else if (s.kind === 'map' || s.kind === 'dict') { if (s.kind === 'map') register(s.k); register(s.v); } else if (s.kind === 'rec') for (const f of s.fields) register(f.shape); } }
@@ -1139,7 +1142,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isElementAccessExpression(e)) { const [s, r, i] = element(e); if (!safeIndex.has(e)) lines.push(`var ${HW} := Oob_${s.key}(${HW}, ${r}, ${i});`); return `Idx_${s.key}(${HW}, ${r}, ${i})`; } // the receiver, then the index, once each; an index loop's own a[i] is in range by its guard
       if (newClass(e)) { const cd = newClass(e); const cu = ctorUnitOf(cd); const sh = instanceShape(cd, 0);
         if (cu) { const ps = fns.get(cu).params; const args = ps.map((p, j) => { const ash = shapeOf(typeOf(p.name)); return e.arguments?.[j] ? exprAs(e.arguments[j], ash) : `Option<${ash.inner.d}>.None`; }); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(cu)}(${[HW, ...args].join(', ')});`); return r; }
-        const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => fieldDflt(f.shape)).join(', ')});`); for (const m of fieldInits(cd)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${r}, ${exprField(m.initializer, f.shape)});`); } return r; } // allocated first, then the initializers in order
+        const r = fresh('r'); lines.push(`var (${HW}, ${r}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => instanceDflt(f)).join(', ')});`); for (const m of fieldInits(cd)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${r}, ${exprField(m.initializer, f.shape)});`); } return r; } // allocated first, then the initializers in order
       if (copyForm(e)) { const c = copyForm(e); const r = bind(expr(c.src), 'o'); const out = fresh('r'); const items = c.from === 'map' ? null : `(if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].items_${c.ss.key} else [])`;
         if (c.from === 'map') lines.push(`var (${HW}, ${out}) := Alloc_${c.to.key}(${HW}, (if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].keys_${c.ss.key} else []), (if Is${c.ss.key}(${HW}, ${r}) then ${HW}.heap[${r}].m_${c.ss.key} else map[]));`);
         else if (c.to.kind === 'set' && c.from === 'arr') { dedupUsed.add(c.to.key); lines.push(`var (${HW}, ${out}) := Alloc_${c.to.key}(${HW}, Dedup_${c.to.key}(${items}, []));`); }
@@ -1436,7 +1439,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const into = still ? fresh('w') : HW;
       lines.push(carried.length ? `var (${into}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${into} := ${call};`);
     }
-    if (u.isCtor) { const sh = instanceShape(u.cls, 0); const me = dn('this'); lines.push(`var (${HW}, ${me}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => fieldDflt(f.shape)).join(', ')});`); for (const p of paramProps(u.cls)) lines.push(`var ${HW} := Set_${sh.key}_${dn(p.name.text)}(${HW}, ${me}, ${dn(p.name.text)});`); for (const m of fieldInits(u.cls)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${me}, ${exprField(m.initializer, f.shape)});`); } } // the instance first, then the parameter properties and the initializers
+    if (u.isCtor) { const sh = instanceShape(u.cls, 0); const me = dn('this'); lines.push(`var (${HW}, ${me}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => instanceDflt(f)).join(', ')});`); for (const p of paramProps(u.cls)) lines.push(`var ${HW} := Set_${sh.key}_${dn(p.name.text)}(${HW}, ${me}, ${dn(p.name.text)});`); for (const m of fieldInits(u.cls)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${me}, ${exprField(m.initializer, f.shape)});`); } } // the instance first, then the parameter properties and the initializers
     const body = u.isCtor ? (() => { const pre = flush(); const b = stmts([...u.body.statements], () => `(${HW}, ${dn('this')})`); return pre ? `${pre}\n${b}` : b; })() : ts.isBlock(u.body) ? stmts([...u.body.statements], proc ? () => `(${HW}, ())` : null) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`
     const self = u.cls && !u.isCtor ? instanceShape(u.cls, 0) : null; // an instance method's receiver (a constructor allocates its own): a reference to the record of its fields
     const params = [...(self ? [`${dn('this')}: Ref`] : []), ...u.params.map((p) => `${dn(p.name.text)}: ${valD(shapeOf(typeOf(p.name)))}`)];
