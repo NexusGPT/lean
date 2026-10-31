@@ -42,6 +42,12 @@ capped at 2 s; both processes are gone within 5 s of the cap and the result has 
 its default cap passes through unchanged. The test fails without the cap (the child is still running at 20 s). It also
 fails when the cap kills only the parent: the sleeping child survives it.
 
-Not covered: check.mjs's own Dafny call. That is the checker, not a runner. Its spawnSync already has a timeout, and the
-suite reaches it only through a `node check.mjs` child, so it cannot hold a runner past that timeout. It can still leave
-a z3 orphan behind.
+2026-10-31 (lane check-wall-cap): the checker's own Dafny call is under the same cap. spawnCollect, killTree and the cap
+rule now live in tests/capped.mjs, which pool.mjs re-exports and check.mjs imports. check.mjs's `dafny verify` keeps its
+own budget, (--dafny-seconds + 60) for each translated unit, or --dafny-wall-seconds. On the cap it kills Dafny's pid tree
+(the spawnSync `timeout` it replaces left z3 running), lane A reads ASK:timeout with `wallCap`, and the verdict's reason is
+`not proved: wall cap <N> s exceeded`. run.mjs's `node check.mjs` children carry a cap of 3 x (--unit-seconds +
+--dafny-seconds + --fp-seconds) + 60 s (check.mjs checkWallCapMs; 690 s at the suite's --dafny-seconds 30). wall-cap.mjs
+part 4 runs check.mjs with a fake `dafny` that hangs on `verify`; it fails on the spawnSync timeout (the sleeping child
+outlives it). A check capped this way still exits 0, so the step cache reads the cap's line as unstable (stepcache.mjs
+UNSTABLE) and never stores it; part 4 runs through the cache and fails without that entry.
