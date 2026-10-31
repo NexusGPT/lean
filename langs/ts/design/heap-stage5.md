@@ -1199,11 +1199,32 @@ Out (unchanged, reported): the reading that relies on a `body: unchanged` row do
 `// DECORATORS` line (a contradicted row already turns the reading back to replacing, so no proof rests on it, but
 the certificate does not name the row's version); `new C()` of a decorated class in the value reading allocates inline (step 21 refuses it in
 the heap core only); a decorated static accessor and `this.m()` inside a static method keep their readings; lane B
-returns PASS-bounded on `made` and `seeds` although the two sides return 5 and 4 when run (the harness does not run
-the decorated member of an instance made by `new`, or of the class itself).
+returned PASS-bounded on `made` and `seeds` although the two sides return 5 and 4 when run (closed by 20c).
 Pair `decorators_metadata` (41 checks): `Registry.size`, `Registry.twice` (proved: a listed marker), `Ledger.add` (proved), `Ledger.charge` (unproved, PASS-bounded), `Ledger.net`,
 `Meter.raise`, `Meter.pump` (WITNESS), `Meter.peak`, `Row.grow` (proved), `Row.label`, `Row.rename`, `Note.shown`,
 `Dial.ticks`, `Dial.curs` (unproved, WITNESS), `made`, `seeds` (unproved), the four untouched Dial members (proved).
+
+### 20c. Lane B runs what a decorator installed (2026-10-31, lane decorators-lane-b)
+
+Found by 20b's pair: lane B returned PASS-bounded on `made` and `seeds` although the two sides return 5 and 4 when
+run, and asked on the getter unit `Dial.cur`. Lane B's loader replaced TypeScript's `__decorate` with one that ran
+each decorator and discarded its result, so `Count`'s descriptor never reached the prototype or the class: the
+instance made by `new` in `made`, and `Dial.seed` in `seeds`, ran the declared text on both sides. `Dial.cur` names
+the getter by its property, and the inventory names the unit `Dial.get_cur`, so lane B found no unit of that name.
+Reading (`exec/run.mjs`, contract in SEMANTICS.md "Lane B"): a decorator of the package's own code is applied as
+TypeScript's helper applies it (last first; a truthy result replaces the class or the descriptor, which is defined on
+the target). A decorator lane B fakes (an import leaving the package) is still run for its reads and calls only: what
+it would install is unknown, and the table's rows are its model. A unit `C.m` that no side holds, where a side holds
+the getter unit `C.get_m`, is that getter, driven by reading the property (`propertyRead`; a setter is reached only by
+a write). The programs on one constructed instance (`exec/programs.mjs`) build a class that declares no constructor
+as `new C()` does, with no arguments, as `runClassRaces` already did. Before, they stopped with `no constructor unit`.
+Check: `tests/lane-b-routes.mjs` runs every PASS-bounded lane-B row of every pair again, through the routes the
+source gives it: a call; a method on an instance its constructor built; a static member through the class; a getter by
+reading the property. It uses its own loader (TypeScript's emit with its helper untouched; outside imports are lane
+B's fake modules) on lane B's inputs. At lean-09032a59 it prints `made` and `seeds` (5 against 4); after this note,
+0 rows (the lane's result file).
+Pair `decorators_metadata` (41 checks): `made`, `seeds` WITNESS; `Dial.cur` PASS-bounded (the same counting getter on
+both sides).
 
 ## 21. Constructors
 

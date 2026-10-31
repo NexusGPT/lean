@@ -365,8 +365,9 @@ export function verdictGuard(out, shape = (r) => r) {
 // guards, then method guards): a guard that answers false throws ForbiddenException before the body. A pipe row
 // registers its pipes on the parameter, and the call passes the argument through each. A metadata row writes a cell of
 // the sandbox's metadata store (keyed by the target object, then the key), which the sandbox's Reflect.getMetadata and
-// Nest's Reflector read. Every other decorator keeps the rule of the loader below: run for its reads, its result never
-// replaces the class or the member.
+// Nest's Reflector read. Every other decorator keeps the rule of the loader below: one of the package's own code is
+// applied as TypeScript's __decorate applies it; a fake one is run for its reads, its result never replaces the class or
+// the member.
 class ForbiddenException extends Error { constructor() { super('Forbidden resource'); this.name = 'ForbiddenException'; } }
 const decoStore = (env) => (env.decorations ??= { guards: new Map(), pipes: new Map(), cells: new Map(), written: [] });
 const seededUnit = (env, tag) => crypto.createHash('sha256').update(`${env.seed}:${tag}`).digest().readUInt32BE(0) / 4294967296; // the same on both sides for the same question, never drawn from the shared stream
@@ -536,10 +537,13 @@ export function sandbox(env, root) {
     if (env.classFieldsDefine === undefined) env.classFieldsDefine = compiled.define; // the unit's file loads first: its emit mode is the record's
     env.siteState.files[abs] = compiled.sites;
     let js = compiled.js;
-    // a decorator is run (so its reads and calls are recorded) but its result never replaces the class or the member:
-    // the decorated code stays the code under test, whatever the fake decorator returned
+    // a decorator is applied as TypeScript's emitted __decorate applies it (last first; a result replaces the class or the
+    // member's descriptor, which is defined on the target), so a method of an instance made by `new`, a static method
+    // and a getter run what the decorator installed. A fake decorator (an outside package's, not the package's own code)
+    // is run for its reads and calls, but its result never replaces: what it would install is unknown, and the declared
+    // code stays the code under test (the decorator table's rows apply in decoratedModule)
     js = js.replace(/var __decorate = \(this && this\.__decorate\) \|\| function \(decorators, target, key, desc\) \{[\s\S]*?\n\};/,
-      'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { try { c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; } } } return r; };');
+      'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { var own = !d.__isFake, v; try { v = c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; v = undefined; } if (own && v && !v.__isFake) r = v; } } return c > 3 && r && Object.defineProperty(target, key, r), r; };');
     const mod = { exports: {} };
     cache.set(abs, mod);
     loadedFiles.add(abs);
@@ -1207,7 +1211,20 @@ const leanHeadForRecords = () => {
   if (!head || head.status !== 0) console.error(`witness record head unavailable (${head ? `exit ${head.status}: ${head.stderr ?? head.error?.message}` : 'this copy of lean has no git history of its own'})`);
   return recordHeadCache = head && head.status === 0 ? head.stdout.trim() : 'unknown';
 };
+// a member named by its property, `C.m`, where neither side holds a unit of that name and a side holds the getter unit
+// `C.get_m` (common.mjs names an accessor unit by its kind): the source reaches `C.m` by reading the property, so the
+// unit run is the getter, driven by that read (pickUnit). A setter is reached by a write only: never by the property's name
+function propertyRead(parent, candidate, unit) {
+  const at = unit.lastIndexOf('.');
+  if (at <= 0 || unit === MODULE_UNIT) return null;
+  const units = [parent, candidate].map((f) => (f && fs.existsSync(f) ? topLevelFunctions(ts.createSourceFile(f, fs.readFileSync(f, 'utf8'), ts.ScriptTarget.Latest, true)) : new Map()));
+  if (units.some((u) => u.has(unit))) return null;
+  const getter = `${unit.slice(0, at)}.get_${unit.slice(at + 1)}`;
+  return units.some((u) => u.has(getter)) ? getter : null;
+}
 export async function runPair(opts) {
+  const read = opts.unit ? propertyRead(opts.parent, opts.candidate, opts.unit) : null;
+  if (read) return { ...await runPair({ ...opts, unit: read }), unit: opts.unit, 'read-as': read };
   if (!opts.recordHead) opts = { ...opts, recordHead: leanHeadForRecords() }; // the lean head every record names, read once per process
   if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
   // the unit's CPU bound covers its real work; a call that hits its own --ms bound is paid for by that bound, so the

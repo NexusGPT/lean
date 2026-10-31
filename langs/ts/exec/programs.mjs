@@ -43,8 +43,11 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, r
       const Cls = (exportsObj.__lean_units ?? {})[className] ?? exportsObj[className];
       if (typeof Cls !== 'function') return { harness: `${name}: class ${className} not exported` };
       let inst = null, constructorArgs;
-      if (ctorSpec) { const args = inputsFor(ctorSpec, seed, 0, env); constructorArgs = snapshot(env, args); try { inst = rt.guardedCall(env, () => Reflect.construct(Cls, argsFor(ctorSpec, args)), ms); } catch (e) { return { harness: `${name}: constructor threw ${String(e && e.message).slice(0, 120)}` }; } }
-      if (!inst) return { harness: `${name}: no constructor unit to build an instance` };
+      // the constructor's arguments are drawn from its unit; a class that declares no constructor is built as `new C()`
+      // builds it, with no arguments (its implicit constructor, as runClassRaces builds it)
+      const args = ctorSpec ? inputsFor(ctorSpec, seed, 0, env) : []; constructorArgs = snapshot(env, args);
+      try { inst = rt.guardedCall(env, () => Reflect.construct(Cls, ctorSpec ? argsFor(ctorSpec, args) : []), ms); } catch (e) { return { harness: `${name}: constructor threw ${String(e && e.message).slice(0, 120)}` }; }
+      if (!inst) return { harness: `${name}: the constructor built no instance` };
       await new Promise((r) => setImmediate(r));
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the constructor did is the program's starting state, not a command
       sides[name] = { env, Cls, inst, args: constructorArgs, commands: [] };
