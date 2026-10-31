@@ -164,3 +164,23 @@ error-typed value can still be judged differently, because values the message do
 run the rule moves units only into environment and, for a unit with both kinds of finding, to its first finding on
 resolved types (ts-strict +28 without install). 397 of the 1,631 units carry the kind `unresolved`: the import their
 value's type comes from sits in another file, and the kind is read from the unit's own file's diagnostics.
+
+## The kind read in the origin's file; AppleDouble and binary files skipped (2026-10-31, lane census-unresolved-origin)
+
+The kind of an environment stop on an unresolved type was read from the unit's own file's diagnostics. When the value's
+type comes through another file (a field of a type declared in `types.ts`, whose import of a missing module sits there),
+the unit's file holds no diagnostic for that module, and the stop was labelled `unresolved`. Now `unresolvedOrigin` also
+carries the origin's file (`site`): the file that holds the import whose module does not resolve or lacks the name, or the
+name no declaration holds. `kindOf` reads the checker's diagnostic for the name in that file first, then in the unit's
+own file (an origin in a declaration file the program does not check), and classifies it by the origin's file (its
+tsconfig and its install state). Only the labels move; which units are environment-blocked does not change. Test
+`tests/census_environment.mjs`, fixture `census-environment/origin`: `unbox` in `use.ts` reads `b.h`, whose type `Handle`
+`types.ts` imports from the absent `handle-source`. It is now `environment: absent`, where it was `unresolved` before.
+
+The census copies hold macOS AppleDouble files (`._<name>`, the resource fork a copy from macOS leaves beside each file;
+8,175 of them in n8n). The walk read them as sources (`TS1490: File appears to be binary`, `Cannot find name 'Mac'`). The
+walk (`walk`, shared with reach-gap.mjs) now skips every file whose name starts with `._`. A file TypeScript itself reads
+as binary (TS1490, an invalid UTF-8 sequence) gets a record `skipped: 'binary'`, so the supervisor counts it walked, and it
+is no file, unit or finding of the census. Both are counted under `skipped` (`appledouble`, `binary`), on the summary's
+`skipped: appledouble/binary` line and in the report. The same test's copy holds one of each: both are skipped, and
+neither gives a unit.

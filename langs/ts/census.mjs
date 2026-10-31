@@ -45,7 +45,7 @@ export function stratumOf(relPath, text) {
 // reaches anything, so the refusal was judged on an unknown type. The values a finding names: its own node (a lint
 // finding's span) and each `code` its message quotes, on the line it gives as `(line N)` or else on the finding's line.
 // A finding naming such a value is the environment's; the origin names the unresolved symbol and its import, and `site`,
-// the file that holds the import or the unresolved name (the origin's file), whose diagnostics give the kind.
+// the name of the file that holds the import or the unresolved name (the origin's file), whose diagnostics give the kind.
 const isErrorType = (t) => !!t && !!(t.flags & ts.TypeFlags.Any) && t.intrinsicName === 'error';
 const libraryFile = (d) => /[\\/]node_modules[\\/]|[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/.test(d.getSourceFile().fileName);
 export function unresolvedOrigin(checker, node) {
@@ -60,9 +60,9 @@ export function unresolvedOrigin(checker, node) {
     if (!s || seen.has(s)) return null; seen.add(s);
     if (s.flags & ts.SymbolFlags.Alias) {
       const spec = importOf(s);
-      if (spec && !checker.getSymbolAtLocation(spec)) return { name, from: spec.text, how: 'module', site: spec.getSourceFile() }; // the module does not resolve
+      if (spec && !checker.getSymbolAtLocation(spec)) return { name, from: spec.text, how: 'module', site: spec.getSourceFile().fileName }; // the module does not resolve
       const target = checker.getAliasedSymbol(s);
-      if (!target?.declarations?.length) return spec ? { name, from: spec.text, how: 'member', site: spec.getSourceFile() } : null; // the module lacks the name
+      if (!target?.declarations?.length) return spec ? { name, from: spec.text, how: 'member', site: spec.getSourceFile().fileName } : null; // the module lacks the name
       return ofSymbol(target, name);
     }
     for (const d of s.declarations ?? []) {
@@ -76,7 +76,7 @@ export function unresolvedOrigin(checker, node) {
   const ofEntity = (e) => { // a type's name or a typeof's expression
     if (ts.isQualifiedName(e)) { const o = isErrorType(checker.getTypeAtLocation(e.left)) || !checker.getSymbolAtLocation(e.left) ? ofEntity(e.left) : null; return o ?? ofSymbol(checker.getSymbolAtLocation(e), e.getText()); }
     const s = checker.getSymbolAtLocation(e);
-    return s ? ofSymbol(s, e.getText()) : { name: e.getText(), from: null, how: 'global', site: e.getSourceFile() };
+    return s ? ofSymbol(s, e.getText()) : { name: e.getText(), from: null, how: 'global', site: e.getSourceFile().fileName };
   };
   const ofType = (tn) => { // the first reference in a type node whose type does not resolve
     let hit = null;
@@ -104,9 +104,9 @@ export function unresolvedOrigin(checker, node) {
       const s = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(n) ? n.name : n.argumentExpression);
       if (s) return ofSymbol(s, n.getText());
       const holder = checker.getTypeAtLocation(n.expression), decl = (holder.symbol ?? holder.aliasSymbol)?.declarations?.[0];
-      return decl && libraryFile(decl) ? { name: n.getText(), from: null, how: 'member', site: decl.getSourceFile() } : null; // a member a dependency's declaration lacks; one the source's own type lacks is the source's
+      return decl && libraryFile(decl) ? { name: n.getText(), from: null, how: 'member', site: decl.getSourceFile().fileName } : null; // a member a dependency's declaration lacks; one the source's own type lacks is the source's
     }
-    if (ts.isIdentifier(n)) { const s = checker.getSymbolAtLocation(n); return s ? ofSymbol(s, n.text) : { name: n.text, from: null, how: 'global', site: n.getSourceFile() }; }
+    if (ts.isIdentifier(n)) { const s = checker.getSymbolAtLocation(n); return s ? ofSymbol(s, n.text) : { name: n.text, from: null, how: 'global', site: n.getSourceFile().fileName }; }
     return null;
   };
   return isErrorType(checker.getTypeAtLocation(node)) ? ofValue(node) : null;
@@ -115,7 +115,8 @@ export function unresolvedOrigin(checker, node) {
 export function namedValues(sf, f) {
   const starts = sf.getLineStarts(), out = [];
   const lineRange = (line) => [starts[line - 1] ?? sf.end, starts[line] ?? sf.end];
-  const isValue = (n) => ts.isExpression(n) || n.kind === ts.SyntaxKind.ThisKeyword;
+  // a member's name (`relayState` in `sp.setting.relayState`) is no value by itself: the access it ends is
+  const isValue = (n) => (ts.isExpression(n) || n.kind === ts.SyntaxKind.ThisKeyword) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n);
   const nodes = (from, to, keep) => { const hits = []; const w = (n) => { if (n.end < from || n.getStart(sf) > to) return; if (keep(n)) hits.push(n); ts.forEachChild(n, w); }; w(sf); return hits; };
   if (f.col && f.endLine && f.endCol) {
     const s = lineRange(f.line)[0] + f.col - 1, e = lineRange(f.endLine)[0] + f.endCol - 1;
@@ -242,10 +243,11 @@ export function census(root, opts = {}) {
         // import), else in the unit's own file (an origin in a declaration file the program does not check)
         const key = `'${o.from ?? o.name.split('.')[0]}'`;
         const match = (osf) => (osf === sf ? L.diagnostics : diagnosticsOf(L.program, osf)).find((x) => x.file === osf && ts.flattenDiagnosticMessageText(x.messageText, ' ').includes(key));
-        const at = o.site && o.site !== sf ? match(o.site) : null;
+        const originSf = o.site && o.site !== sf.fileName ? L.program.getSourceFile(o.site) : null;
+        const at = originSf ? match(originSf) : null;
         const d = at ?? match(sf);
         if (!d) return o.how === 'member' ? 'member' : 'unresolved';
-        const c = env.classify(at ? path.resolve(o.site.fileName) : file, `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+        const c = env.classify(at ? path.resolve(o.site) : file, `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
         return c.kind + (c.generated ? ' (generated)' : '');
       };
       for (const o of origins.values()) o.kind = kindOf(o);
