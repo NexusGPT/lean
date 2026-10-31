@@ -18,8 +18,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { spawnCollect } from './capped.mjs';
-export { spawnCollect, killTree, dafnyWallCapMs, DAFNY_DEFAULT_TIME_LIMIT_S, wallCapMs } from './capped.mjs'; // the wall cap, shared with check.mjs
+import { spawnCollect } from '../exec/capped.mjs';
+export { spawnCollect, killTree, dafnyWallCapMs, DAFNY_DEFAULT_TIME_LIMIT_S, wallCapMs } from '../exec/capped.mjs'; // the wall cap, shared with check.mjs
 
 // outDir: where the children's output files go while they run
 // weightsFile: the measured weights; traceFile: a line `<pid> <job key>` per child started (what measure-weights reads)

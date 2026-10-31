@@ -43,7 +43,7 @@ its default cap passes through unchanged. The test fails without the cap (the ch
 fails when the cap kills only the parent: the sleeping child survives it.
 
 2026-10-31 (lane check-wall-cap): the checker's own Dafny call is under the same cap. spawnCollect, killTree and the cap
-rule now live in tests/capped.mjs, which pool.mjs re-exports and check.mjs imports. check.mjs's `dafny verify` keeps its
+rule now live in exec/capped.mjs, which pool.mjs re-exports and check.mjs imports. check.mjs's `dafny verify` keeps its
 own budget, (--dafny-seconds + 60) for each translated unit, or --dafny-wall-seconds. On the cap it kills Dafny's pid tree
 (the spawnSync `timeout` it replaces left z3 running), lane A reads ASK:timeout with `wallCap`, and the verdict's reason is
 `not proved: wall cap <N> s exceeded`. run.mjs's `node check.mjs` children carry a cap of 3 x (--unit-seconds +

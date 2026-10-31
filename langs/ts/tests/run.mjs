@@ -53,7 +53,7 @@ const NORMALISE = [[tmp, '<tmp>'], [path.join(here, 'pairs'), '<pairs>'], [root,
 // the same, through the step cache: `files` what the command reads, `outs` what it writes (restored on a hit)
 const crun = (cmd, args, { files = [], outs = [], env = null } = {}) => cachedRun(run, cmd, args, { root, files, outs, env, normalise: NORMALISE });
 // a `node check.mjs` child under its wall cap: three times the bounds its arguments state plus 60 s (check.mjs
-// checkWallCapMs); on the cap it is killed with every process under it (tests/capped.mjs) and the run log names it
+// checkWallCapMs); on the cap it is killed with every process under it (exec/capped.mjs) and the run log names it
 const checkMjs = path.join(here, '../check.mjs');
 const capRun = (args) => async (cmd, a, env) => { const r = await spawnCollect(cmd, a, { cwd: root, maxBuffer: 1 << 26, env: env ? { ...process.env, ...env } : process.env, dir: tmp, wallCapMs: checkWallCapMs(args) }); if (r.error?.code === 'ETIMEDOUT') console.error(`check.mjs ${args.join(' ')}: ${r.stderr.trim().split('\n').pop()}`); return r; };
 const runCheck = (args, env) => capRun(args)('node', [checkMjs, ...args], env);

@@ -3,7 +3,7 @@
 // child are both gone within 5 s of the cap, and the result reads as spawnSync's own timeout (status null, SIGKILL,
 // ETIMEDOUT, the last stderr line `wall cap 2 s exceeded`). A fake `dafny` that ends under its default cap passes
 // through unchanged. The cap's default is three times the call's --verification-time-limit plus 60 s.
-// The checker's own Dafny call takes the same cap (tests/capped.mjs, shared): check.mjs run with a fake `dafny` first on
+// The checker's own Dafny call takes the same cap (exec/capped.mjs, shared): check.mjs run with a fake `dafny` first on
 // PATH whose `verify` starts a child sleeping 600 s, and --dafny-wall-seconds 2: the fake and its child are both gone
 // within 5 s of the cap, and the check's JSON is a verdict whose reason and lane A name the cap, never a crash. Run
 // through the step cache (a cache of this test alone), the capped check is not stored: the next run tries it again.

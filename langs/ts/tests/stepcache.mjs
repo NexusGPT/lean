@@ -49,7 +49,7 @@ export function producerKind(cmd, args) {
 }
 let dafnyVersion = null;
 export const dafnyVersionString = () => dafnyVersion ??= (spawnSync('dafny', ['--version'], { encoding: 'utf8', timeout: dafnyWallCapMs([]), killSignal: 'SIGKILL' }).stdout ?? '').trim() || 'dafny version unknown';
-// `wall cap <N> s exceeded`: a child or a check's own Dafny killed at its wall cap (tests/capped.mjs), tried again next run
+// `wall cap <N> s exceeded`: a child or a check's own Dafny killed at its wall cap (exec/capped.mjs), tried again next run
 const UNSTABLE = /timed out|out of resource|spin-bound|__timeout__|harness timeout|ASK:harness|"harness":|killed \(|wall cap [\d.]+ s exceeded|ENOSPC|EAGAIN/i;
 // the files a command reads, a Dafny file's includes added after it, transitively (a path relative to the including
 // file's folder, as Dafny and theorem.py resolve it): the text a .dfy means is its own and its includes' (a translation's

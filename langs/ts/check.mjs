@@ -19,7 +19,7 @@
 // lane B verdict is then ASK spin-bound). Lane A runs after it either way.
 //
 // --dafny-wall-seconds bounds lane A's Dafny call (by default (--dafny-seconds + 60) for each translated unit): past it
-// Dafny and every process under it (its solvers) are killed (tests/capped.mjs spawnCollect, the suite's own wall cap),
+// Dafny and every process under it (its solvers) are killed (exec/capped.mjs spawnCollect, the suite's own wall cap),
 // and lane A is ASK:timeout with the reason `not proved: wall cap <N> s exceeded`.
 //
 // Order: lane B (bounded execution) first; a WITNESS ends the question. Then lane A (proof): lint, translate both
@@ -54,7 +54,7 @@ import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
 import { z3Binary, dafnySolverArgs } from './solve/z3.mjs';
-import { spawnCollect, wallCapMs } from './tests/capped.mjs';
+import { spawnCollect, wallCapMs } from './exec/capped.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -192,7 +192,7 @@ export async function check(opts) {
     return finish('ASK', cert, { reason: `interface: ${withheldLine.replace(/^interface differs: /, '').slice(0, 600)}` });
   }
   if (witnessed) return witnessOut();
-  // Dafny under its wall cap (tests/capped.mjs): on the cap Dafny and its solvers are killed, none left running
+  // Dafny under its wall cap (exec/capped.mjs): on the cap Dafny and its solvers are killed, none left running
   const v = await timed('dafny', async () => { const r = await spawnCollect('dafny', ['verify', '--verification-time-limit', String(dafnySeconds), ...dafnySolverArgs(), path.join(tmp, 'theorem.dfy')], { maxBuffer: 1 << 26, dir: tmp, wallCapMs: (dafnyWallSeconds ?? (dafnySeconds + 60) * Math.max(1, names.length)) * 1000 }); return { status: r.status, out: (r.stdout || '') + (r.stderr || ''), timedOut: r.error?.code === 'ETIMEDOUT', capLine: r.error?.code === 'ETIMEDOUT' ? r.stderr.trim().split('\n').pop() : null }; });
   const text = v.out;
   const m = text.match(/finished with (\d+) verified, (\d+) error/);
