@@ -1,0 +1,6 @@
+{
+ "scope": ["is_code", "tidy", "year", "month"],
+ "equal": {"is_code": true, "tidy": false, "year": true, "month": false},
+ "why": "a regular expression literal in a call is a bodiless function of the literal's text and its operands (heap-stage5.md section 6), and the named captures of a match of a non-global literal bound to a const are one more function of the pattern and the string: isCode tests the same literal on a renamed string and compares with true (proved); tidy replaces the same global pattern by another replacement (unproved, WITNESS); year reads the same named capture through the optional chain with a default, as the match is absent or not (proved); month reads another named capture of the same match (unproved, WITNESS).",
+ "b": {"isCode": "PASS-bounded", "tidy": "WITNESS", "year": "PASS-bounded", "month": "WITNESS"}
+}
