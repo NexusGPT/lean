@@ -29,7 +29,7 @@ export function second(s: string): string {
 }
 
 export function first(s: string): string {
-  const m = /(\d+)-(\d+)/.exec(s);
+  const m = s.match(/(\d+)-(\d+)/);
   if (m === null) return "";
   return m[1];
 }

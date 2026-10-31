@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation, sharedMutation } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag, matchGroups, matchGroupRead } from '../common.mjs';
+import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag, matchGroups, matchGroupRead, matchCapture, matchGroupsDestructure, heldRegexLiteral } from '../common.mjs';
 import { ts, loadProgram, classFieldsDefine, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
@@ -1734,7 +1734,18 @@ function translateOnce(file, fnName, opts = {}) {
     const operand = (ts.isBinaryExpression(p) && [K.QuestionQuestionToken, K.BarBarToken].includes(p.operatorToken.kind) && p.right === op) || (ts.isConditionalExpression(p) && (p.whenTrue === op || p.whenFalse === op));
     return operand ? fits(checker.getTypeAtLocation(p)) : null;
   };
-  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n) ?? emptyLiteralT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const c = maybeCapture(n); if (c) return c; } { const e = emptyCollectionT(n) ?? emptyLiteralT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  // a capture of a match whose group may not take part (common.mjs matchCapture, matchGroupRead): undefined when the group
+  // does not take part, whatever TypeScript says, so its type is the string or undefined
+  const maybeCaptureT = new Map();
+  function maybeCapture(n) {
+    if (!ts.isElementAccessExpression(n) && !ts.isPropertyAccessExpression(n)) return null;
+    if (maybeCaptureT.has(n)) return maybeCaptureT.get(n);
+    const c = matchCapture(n, checker) ?? matchGroupRead(n, checker);
+    const t = c && c.always === false ? checker.getUnionType([checker.getStringType(), checker.getUndefinedType()]) : null;
+    maybeCaptureT.set(n, t);
+    return t;
+  }
   // a name declared at a type parameter (`const y: T`, `x: T`) is held at it, while the checker may type its read at the
   // parameter's constraint (`T extends "a" | "b"` read where a literal union is expected): the read is the held value,
   // so its type is the parameter, and a conversion to the constraint is written where one is expected (convertD's cast)
@@ -2415,6 +2426,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   function convertToD(code, from, td, node) {
     const fd = dtype(from, node);
     if (node && fd !== td) { const why = typeAssertion(checker, node); if (why) fail(node, `type-assertion: ${why}`); } // a value whose type nothing checked, converted where its reading does not carry it: the lint's test on the same node
+    if (node && optionalD(fd) && !optionalD(td) && td !== 'Any') { let c = node; while (ts.isParenthesizedExpression(c)) c = c.expression; if (maybeCapture(c)) fail(node, 'a capture of a group that may not take part (undefined when it does not, whatever TypeScript says) is read where a string is expected; read it as present or absent (`?? d`, a test)'); } // common.mjs matchCapture, matchGroupRead
     if (isNullish(from)) {
       if (optionalD(td)) return missingD(td, from.flags & TF.Null ? 'Null' : 'Undef');
       if (td === 'Any') return `${external(from.flags & TF.Null ? 'Any_null' : 'Any_undefined', [], anyType())}()`;
@@ -2721,6 +2733,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   }
   function ident(n) {
     if (n.text === 'undefined') return absentValue(typeOf(n));
+    { let u = n; while (ts.isParenthesizedExpression(u.parent)) u = u.parent; const lit = !(ts.isPropertyAccessExpression(u.parent) && u.parent.name.text === 'lastIndex') && n.getSourceFile() === sf ? heldRegexLiteral(n, checker) : null; if (lit) return expr(lit); } // a pattern held in a const nothing changes, run by a call that ignores lastIndex: its literal (common.mjs heldRegexLiteral)
     const o = readOrigin(n);
     const state = moduleState(checker, n, sf);
     if (state) {
@@ -3905,6 +3918,17 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   function destructure(pattern, sourceCode, srcType = null, hookRow = null) {
     const out = [];
     if (ts.isIdentifier(pattern)) return [`var ${dn(pattern.text)} := ${sourceCode};`];
+    { const gd = ts.isObjectBindingPattern(pattern) && ts.isVariableDeclaration(pattern.parent) && pattern.parent.initializer ? matchGroupsDestructure(pattern.parent.initializer, checker) : null; // `const { k } = m.groups`: each name the group read (common.mjs)
+      if (gd) {
+        if (gd.refuse !== null) fail(pattern, `\`${gd.refuse}\` of the destructured groups may be undefined (its group does not take part in every match)`);
+        const g = gd.groups, re = expr(g.regex), str = outerParens(expr(g.arg));
+        for (const x of gd.elements) {
+          if (x.always) { out.push(`var ${dn(x.el.name.text)} := ${external('regex_group', ['Ext_RegExp', 'string', 'string'], 'string')}(${re}, ${str}, ${strEsc(x.key)});`); continue; }
+          const c = `gc${tempCount++}_`, target = typeOf(x.el.name); usesOption = true;
+          out.push(`var ${dn(x.el.name.text)} := (var ${c} := ${external('regex_capture_may', ['Ext_RegExp', 'string', 'int'], 'Option<string>')}(${re}, ${str}, ${x.index}); if ${c}.Some? then ${convert(`${c}.value`, checker.getStringType(), target, x.el)} else ${outerParens(expr(x.el.initializer, target))});`); // the default when the group did not take part
+        }
+        return out;
+      } }
     if (ts.isObjectBindingPattern(pattern) && hookRow && !hookRow.result['*']) { // the table's record: each field as the datatype carries it
       for (const el of pattern.elements) { if (el.dotDotDotToken || !ts.isIdentifier(el.name)) fail(el, 'a hook result is taken apart field by field'); const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text; if (!Object.hasOwn(hookRow.result, prop)) fail(el, `${prop} is not a field the hook table declares for ${hookRow.hook}`); out.push(`var ${dn(el.name.text)} := ${sourceCode}.${prop};`); }
       return out;
@@ -3984,18 +4008,22 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const recvT = typeOf(gr.recv), mayBeNull = isOptional(recvT) || isNullish(recvT);
     const D = dtype(typeOf(n), n), optD = optionalD(D);
     let value;
-    if (gr.key !== undefined) value = `${external('regex_group', ['Ext_RegExp', 'string', 'string'], 'string')}(${re}, ${str}, ${strEsc(gr.key)})`;
+    const read = gr.key !== undefined || gr.index !== undefined;
+    if (read && gr.always === false) value = `${external('regex_capture_may', ['Ext_RegExp', 'string', 'int'], 'Option<string>')}(${re}, ${str}, ${gr.index})`; // present or absent: the group may not take part
+    else if (gr.key !== undefined) value = `${external('regex_group', ['Ext_RegExp', 'string', 'string'], 'string')}(${re}, ${str}, ${strEsc(gr.key)})`;
+    else if (gr.index !== undefined) value = `${external('regex_capture', ['Ext_RegExp', 'string', 'int'], 'string')}(${re}, ${str}, ${gr.index})`;
     else {
       const G = dtype(baseOf(typeOf(n)), n);
       if (!gr.named) { if (!optD) fail(n, '`.groups` of a pattern that names no group is undefined'); usesOption = true; return 'None'; }
       value = `${external('regex_groups', ['Ext_RegExp', 'string'], G)}(${re}, ${str})`;
     }
-    if (!optD) { if (mayBeNull) fail(n, 'a named capture of a match that may be null, read without `?.`'); return value; }
-    if (D !== `Option<${gr.key !== undefined ? 'string' : dtype(baseOf(typeOf(n)), n)}>`) fail(n, `a named capture read as ${D}`);
+    if (!optD) { if (mayBeNull) fail(n, 'a capture of a match that may be null, read without `?.`'); if (read && gr.always === false) fail(n, 'a capture that may not take part read as a string'); return value; }
+    if (D !== `Option<${read ? 'string' : dtype(baseOf(typeOf(n)), n)}>`) fail(n, `a capture read as ${D}`);
     usesOption = true;
-    if (!mayBeNull) return `Some(${value})`;
+    const some = read && gr.always === false ? value : `Some(${value})`;
+    if (!mayBeNull) return some;
     const r = `mg${tempCount++}_`;
-    return `(var ${r} := ${expr(gr.recv)}; if ${r}.Some? then Some(${value}) else None)`;
+    return `(var ${r} := ${expr(gr.recv)}; if ${r}.Some? then ${some} else None)`;
   }
   function propAccess(n, keepOption = false) {
     { const b = worldBase(n); if (worldAfter?.get(b) === 'read' && !n.__worldNow) { // a field read after a call that may change the object: of the object as the world holds it now
@@ -4274,6 +4302,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   }
   function elemAccess(n) {
     const q = argumentsParam(n); if (q) return dn(q.name.text); // `arguments[k]`: the k-th parameter itself
+    { const gr = matchGroupRead(n, checker) ?? matchCapture(n, checker); if (gr?.regex) return matchGroupsRead(n, gr); if (gr?.refuse) fail(n, gr.refuse); } // `m.groups["k"]`, `m[i]`: a capture of a match (common.mjs)
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
     if (libWorldRead(n)) return globalRead(n);
     const recvT = typeOf(n.expression);
