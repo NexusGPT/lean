@@ -169,6 +169,36 @@ Census (resolved, 39 roots), strict graph 572 -> 572, own syntax 1471 -> 1471:
 {"files":23359,"units":53918,"core":572,"heapOwnFit":1471,"mirrorMismatch":1329,"planErrorCount":0,"seconds":427}
 ```
 
+### 8b, read again at the places the first pair leaves (2026-10-31)
+
+Both corrections were already in the translator (`heap.mjs` `checkExpr`: the `===`/`!==` refusal when both operands
+are Options of different absences, and the order check; `expr`: the string order through `StrLt`). Nothing in the
+translator changed. This reading checks that each correction is one mechanism, keyed on the operands' shapes, not on
+the form of `heap5_absences`.
+- The absence refusal compares the two operands' shapes (`shapeOf(typeOf(..))`, the shape whose key carries the
+  absence, `On_` or `Ou_`), so it applies to every operand form: a field read (`x.n === x.u`), `!==`, a parameter.
+  The other `===` comparisons the core reads never meet two absences (the core does not read `switch`). An array's items and a Map's or
+  Set's keys are never Options (`shapeOf`), so `includes` and `indexOf` never compare across absences. A presence
+  test against the literal `null` or `undefined` under `===` reads the Option's own absence: `a === undefined` for
+  `a: number | null` is `false`.
+- The string order reads both operands' `StringLike` type flags, which a string enum's member type carries: an enum
+  member is its string at run time, so `StrLt` is exact. A union of string literals (`'a' | 'b'`), a type parameter
+  constrained to `string` and a branded string (an intersection) carry no `StringLike` flag and stay out. That
+  refusal is conservative, never a guess. A number order of anything but two `NumberLike` types without absence also
+  stays out (`undefined < 1` is `false` through NaN, which no Option order reads).
+Stays refused, and why: `==`/`!=` between two values (only against the `null` or `undefined` literal: `null ==
+undefined` is `true`, a loose comparison of values converts them); `===` across the two absences (the ordinary
+lane's `Nullish` reads it exactly); an order of a string-literal union (exact through `StrLt` too, but the flag
+test does not see it, so it stays out until a reading of literal unions' base type is written).
+Pair `stage4_corrections`: `fieldCross` (a field that may be null against an optional field, the candidate `true`
+when both are absent: unproved, WITNESS), `notCross` (the same through `!==`: unproved, WITNESS), `byName` (`y.name >
+x.name` for `x.name < y.name`: proved), `tierOrder` (`b > a` for `a < b` over a string enum: proved). With the
+absence refusal removed, `fieldCross` and `notCross` are false proofs. With the string order removed, `byName` and
+`tierOrder` are a Dafny type error and nothing is proved. The pair keeps both corrections in place.
+Found on the way, outside these constructs: the ordinary lane's `m.get(k) ?? d` (`translate.mjs`, `get`'s
+`foundValue`) writes an unqualified `Some`. When the file also uses `Nullish`, whose constructor is also `Some`, the
+theorem has a resolution error, and nothing in the file is proved (never a false proof).
+
 ## 9. Module scope
 
 Reading: a name declared outside the unit, read as a value. A module-level `const` of a primitive shape whose

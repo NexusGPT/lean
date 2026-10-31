@@ -1,0 +1,22 @@
+{
+ "scope": [
+  "field_cross",
+  "not_cross",
+  "by_name",
+  "tier_order"
+ ],
+ "equal": {
+  "field_cross": false,
+  "not_cross": false,
+  "by_name": true,
+  "tier_order": true
+ },
+ "why": "The two corrections of the stage 4 core (design/heap-stage5.md 8b) at the places the first pair (heap5_absences) leaves unread. fieldCross: x.n === x.u, a field that may be null against an optional field, and the candidate answers true when both are absent: equal only if null and undefined were one value (one Option's None), different at (null, undefined) where === is false (unproved, WITNESS). notCross: the same through !==, the candidate false when both are absent (unproved, WITNESS). byName: y.name > x.name for x.name < y.name over two record fields (proved: both read StrLt, the order of code units). tierOrder: b > a for a < b over a string enum (proved: a member is its string at run time, ordered by StrLt).",
+ "b": {
+  "fieldCross": "WITNESS",
+  "notCross": "WITNESS",
+  "byName": "PASS-bounded",
+  "tierOrder": "PASS-bounded"
+ },
+ "heap": true
+}
