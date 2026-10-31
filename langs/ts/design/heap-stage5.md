@@ -222,6 +222,33 @@ write through a record (`not encoded: a write outside the unit's locals`), so it
 Found on the way, outside this construct: any caller of a callee that writes through an input, read by the value
 reading, is withheld by the identity guard (`identity shape unreadable`), with or without a conditional.
 
+### 3b. 2026-10-31: the short-circuit right operand is a conditional's operand (lane short-circuit-carried)
+
+What 3a left: `on && change(xs)`, `on || change(xs)`, `k ?? change(xs)` were refused by the lint's
+`conditional-effect`, because the value reading bound the new argument inside the right operand's branch only. Two
+places had it worse, unrefused: the truth test of a condition (`if (on && change(xs) > 0)`) and a logical assignment
+(`ok ||= change(xs) > 0`) hoisted the right operand's lines before the test, so the call ran whatever the left held; in
+a logical assignment a world transition did the same (`ok ||= await f()` ran `f`).
+Reading (`translate.mjs` `rightParts`, `shortCircuit`): ECMA-262 13.13 and 13.15.2, the right operand of `&&`, `||`,
+`??`, `&&=`, `||=`, `??=` is evaluated only when the left does not decide, so it is the operand of the conditional
+the operator is: `l && r` is `l ? r : l`, `l || r` is `l ? l : r`, `l ?? r` is `l is absent ? r : l`. Every site that
+translates a logic right operand (the value path, the three `??` paths, the truth test, the JSX child, the logical
+assignments) translates it once as 3a's operand (its hoisted lines apart, the names a same-file call in it rebinds);
+when it rebinds a name (or, in a logical assignment, makes a transition) the operator is 3a's `carried` with the left's
+value in the other arm: `var (t, c) := if l then (var (r, m) := bump(c, by); var c := m; (r > 1, c)) else (l, c);`.
+With no name rebound the emitted text is the one before, byte for byte. The heap core reads `??` as it read `&&` and
+`||`: the right operand's lines (a transition, an allocation, a mark) inside its branch,
+`var (hw_, q) := if o.Some? then (hw_, o.value) else (lines; (hw_, r));`, so its right operand need not be pure.
+Soundness: one evaluation of the left, then the right only in the arm where JavaScript evaluates it; the other arm
+returns every rebound name unchanged and the left's value (converted to the result's type, as before).
+The lint's argument-update condition of `conditional-effect` is gone (it is read); the rule stays the translator's
+refusal of a world effect in a logic right operand of a unit with no world channel. The escape fixture
+`mixed_logic_mutation.ts` (`return on && change(xs)`) is retired: it lints clean and translates to the carried form.
+Pair `conditional_expressions` (red at the base: the parent does not translate): heap core `noted` (`&&` in a return),
+`named` (`??` in a return); value reading `gated` (`&&`), `spare` (`||`), `fallback` (`??`), `guard` (`&&` as an
+if's condition), `lazy` (`||=`), `anchor` (`found?.id ?? attach(xs, ..)`: a find-or-attach on the unit's list), proved;
+`slipped`, `orphan` planted (lane B WITNESS).
+
 ## 5. String methods
 
 Reading: the string methods read exactly through the ordinary lane's helpers (`translate.mjs` `helper`, design
