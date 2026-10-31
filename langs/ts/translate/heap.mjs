@@ -34,6 +34,7 @@ import { makeReach } from '../reach.mjs'; // the code a unit reaches, one readin
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
 import { sealedMember } from '../common.mjs'; // `this.m()` is the class's own m only when no subclass can hold another: one test with the value reading
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
+import { rawTag, templateRaws, templateHoles } from '../common.mjs'; // String.raw: the template of its raw parts (design/heap-stage5.md section 1)
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
 // design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
 // form per shape by substituting <K> (the shape key) and <E> (its element type)
@@ -522,6 +523,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isNumericLiteral(e) || ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return;
       if (ts.isConditionalExpression(e)) { if (!shapeOf(typeOf(e))) return no(`conditional type: ${shapeWhy(typeOf(e))}`); checkCond(e.condition); checkExpr(e.whenTrue); return checkExpr(e.whenFalse); } // c ? a : b: only the selected operand is evaluated
       if (ts.isTemplateExpression(e)) { for (const sp of e.templateSpans) { const sh = shapeOf(typeOf(sp.expression)); if (!sh || isRefShape(sh)) return no('template hole of a reference (it reads the object through toString)'); checkExpr(sp.expression); } return; } // a string concatenation, each hole by ToString
+      if (ts.isTaggedTemplateExpression(e) && rawTag(checker, e, sf)) { for (const h of templateHoles(e.template)) { const sh = shapeOf(typeOf(h)); if (!sh || isRefShape(sh)) return no('template hole of a reference (it reads the object through toString)'); checkExpr(h); } return; } // String.raw: the concatenation of its raw parts, each hole by ToString
       if (e.kind === K.ThisKeyword) return u.cls && !u.isStatic ? undefined : no('this');
       if ((ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e) || ts.isCallExpression(e)) && e.questionDotToken) return no('optional chaining');
       if (ts.isPropertyAccessExpression(e) && lambdaDepth && fieldOf(shapeOf(typeOf(e.expression)) ?? {}, e.name.text)?.shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') return no('a narrowed optional read inside a callback');
@@ -1017,6 +1019,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isNumericLiteral(e)) return num(e.text);
       if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return strEsc(e.text);
       if (ts.isTemplateExpression(e)) { const parts = e.head.text ? [strEsc(e.head.text)] : []; for (const sp of e.templateSpans) { parts.push(toStr(sp.expression)); if (sp.literal.text) parts.push(strEsc(sp.literal.text)); } return `(${parts.join(' + ')})`; } // an empty literal part is left out: "" + s is s, which the prover reads only through extensionality
+      if (ts.isTaggedTemplateExpression(e) && rawTag(checker, e, sf)) { const raws = templateRaws(e.template), holes = templateHoles(e.template); const parts = raws[0] ? [strEsc(raws[0])] : []; holes.forEach((h, i) => { parts.push(toStr(h)); if (raws[i + 1]) parts.push(strEsc(raws[i + 1])); }); return parts.length ? `(${parts.join(' + ')})` : '""'; } // String.raw: the template of its raw parts
       if (e.kind === K.TrueKeyword) return 'true';
       if (e.kind === K.FalseKeyword) return 'false';
       if (ts.isConditionalExpression(e)) { // the condition, then the selected operand only: an operand's allocations and marks stay inside its branch

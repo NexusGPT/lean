@@ -2161,6 +2161,22 @@ export function erasedReferenceSlot(checker, n) {
     : { rule, message: `${what}; this comparison compares references, and the value reading would equate two objects with the same fields; compare fields` };
 }
 
+// A tagged template `tag`a${x}b`` is the call `tag(strings, x)` (design/heap-stage5.md section 1, 2026-10-31): strings is
+// the site's frozen array of the cooked parts with its `raw` array of the raw parts. The cooked parts are a function of
+// the raw ones (an invalid escape cooks to undefined), so the raw parts, each line end read as LF as JavaScript reads
+// it, name the strings object whole. Null when the parser kept no raw text.
+export function templateRaws(tpl) {
+  const parts = ts.isNoSubstitutionTemplateLiteral(tpl) ? [tpl] : [tpl.head, ...tpl.templateSpans.map((sp) => sp.literal)];
+  if (parts.some((p) => typeof p.rawText !== 'string')) return null;
+  return parts.map((p) => p.rawText.replace(/\r\n?/g, '\n'));
+}
+export const templateHoles = (tpl) => (ts.isNoSubstitutionTemplateLiteral(tpl) ? [] : tpl.templateSpans.map((sp) => sp.expression));
+// `String.raw` of the platform as the tag: the raw parts joined with ToString of each hole, the template of its raw parts
+export function rawTag(checker, n, sf) {
+  const t = n.tag;
+  return !n.typeArguments && ts.isPropertyAccessExpression(t) && !t.questionDotToken && t.name.text === 'raw' && ts.isIdentifier(t.expression) && t.expression.text === 'String' && originOf(checker, t.expression, sf, null).kind === 'global' && templateRaws(n.template) !== null;
+}
+
 // A read after a call that may change what it reads (design/alias-result.md, 2026-10-30). The ordinary lane reads
 // an object as a value: `p.x`, `ext_Any_x_Any(g)`, `ext_Ext_C_x_Ext_C(self)`, a copy, a library read, the unit's
 // result take the object as it was when the unit received it, while a call that runs outside code (isEffectCall, a
@@ -2183,17 +2199,17 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   const points = [], handed = [];
   const namespace = (x) => { if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.declarations?.[0]; return !!d && (d.getSourceFile() !== sf || ts.isImportSpecifier(d) || ts.isNamespaceImport(d) || ts.isImportClause(d)); }; // a lib global or an imported binding as receiver holds no object of this unit's unless it was handed one, which is counted there
   const libraryReceiver = (x, call) => { if ((call.arguments ?? []).some((a) => ts.isFunctionLike(a) || ts.isIdentifier(a))) return false; const t = h.typeOf(x); if (!t || isAny(t)) return false; const ps = t.flags & TF.Union ? t.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [t]; return ps.length > 0 && ps.every((y) => !!(y.flags & TF.StringLike) || isArrayLike(checker, y) || ['Map', 'Set', 'ReadonlyMap', 'ReadonlySet'].includes(y.symbol?.name ?? '')); }; // a library op on an array, a Map, a Set or a string runs no outside code on its receiver (its row is the reading)
-  const answer = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isAwaitExpression(x)) x = x.expression; return ts.isCallExpression(x) || ts.isNewExpression(x); }; // the answer of a call reaches what the outside was handed, already counted
+  const answer = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isNonNullExpression(x) || ts.isAwaitExpression(x)) x = x.expression; return ts.isCallExpression(x) || ts.isNewExpression(x) || ts.isTaggedTemplateExpression(x); }; // the answer of a call reaches what the outside was handed, already counted
   const fnOf = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) if (ts.isFunctionLike(p)) return p; return null; }; // a call in a nested function runs when that function runs
   const madeClosure = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) if (ts.isFunctionLike(p)) { const q = p.parent; if (!(q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && (q.arguments ?? []).includes(p)) || h.quiet?.(q) || effect(q)) return true; } return false; }; // a function value the unit makes and keeps, or hands to a call that runs outside code or to a hook, is its code and its cells (SEMANTICS.md, function values): its body is no read of the unit; a callback of a library op is read inline and stays
   const inOpaque = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) { if (ts.isFunctionLike(p)) return false; if (ts.isStatement(p) && h.opaque?.(p)) return true; } return false; }; // a statement the decider reads as one uninterpreted transition holds no read of its own
   const effect = (n) => { try { return h.effect(n); } catch { return true; } };
   const walk = (n) => {
-    if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
+    if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
       points.push(n);
-      if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
-        for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a) && (h.freshAlone(a) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts reaches only itself
-        const f = n.expression;
+      if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n)) { // a tagged template is the call of its tag on its holes
+        for (const a of ts.isTaggedTemplateExpression(n) ? templateHoles(n.template) : n.arguments ?? []) { if (!ts.isSpreadElement(a) && (h.freshAlone(a) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts reaches only itself
+        const f = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression;
         if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression });
       } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression), node: n.expression });
     }

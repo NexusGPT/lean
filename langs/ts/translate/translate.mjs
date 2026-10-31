@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { normaliseApplyCalls, applyCall, faithfulOp } from '../common.mjs';
+import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag } from '../common.mjs';
 import { ts, loadProgram, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
@@ -402,9 +402,10 @@ function translateOnce(file, fnName, opts = {}) {
     }
     if (ts.isAwaitExpression(n) || (ts.isForOfStatement(n) && n.awaitModifier)) return true;
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
-    if (!ts.isCallExpression(n)) return false;
-    if (exactReactHook(checker, n)) return false;
-    const f = n.expression;
+    if (ts.isTaggedTemplateExpression(n) && rawTag(checker, n, sf)) return false; // String.raw: its raw parts and ToString of its holes
+    if (!ts.isCallExpression(n) && !ts.isTaggedTemplateExpression(n)) return false;
+    if (ts.isCallExpression(n) && exactReactHook(checker, n)) return false;
+    const f = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression; // a tagged template is the call of its tag (common.mjs templateRaws)
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
       if (o.kind === 'unit') return effectfulUnits.has(f.text);
@@ -430,11 +431,11 @@ function translateOnce(file, fnName, opts = {}) {
       if (recv.kind === K.ThisKeyword && (currentUnit?.cls || literalOf(currentUnit))) { const callee = ownUnit(currentUnit, f.name.text); if (callee && !thisRequest(currentUnit, f.name.text)) return effectfulUnits.has(callee.name); return true; } // a this call a subclass may override is a request of the world
       if (moduleState(checker, recv, sf) && MUTATORS.has(f.name.text)) return true;
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
-      if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
+      if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && ts.isCallExpression(n) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
       { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor && (classRef(recv) || madeDispatch(recv, sfc, f.name.text))) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag on a receiver this file made (design/conformance-readings.md); any other receiver, or an inherited method, is a transition
       const t = baseOf(typeOf(recv));
-      if (f.name.text === 'toString' && !n.arguments.length && primitiveText(typeOf(recv))) return false; // ToString of a primitive (design/library-rows.md)
+      if (f.name.text === 'toString' && ts.isCallExpression(n) && !n.arguments.length && primitiveText(typeOf(recv))) return false; // ToString of a primitive (design/library-rows.md)
       if (LOCALE_READS.has(f.name.text) && (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike))) return true; // the host's locale data decides the text: a world read (design/library-rows.md)
       if (isArrayLike(checker, t) || (t.flags & TF.StringLike) || isSetT(t) || isMapT(t) || (t.flags & (TF.NumberLike | TF.BooleanLike))) return false;
       return true; // opaque, record method, imported object, any
@@ -2374,7 +2375,9 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     return update && ts.isPostfixUnaryExpression(n) ? old : value;
   }
+  const templateStrings = new Map(); // a tagged template's literal node -> the code of its strings object, its tag's first argument
   function expr(n, expected) {
+    if (templateStrings.has(n)) return templateStrings.get(n);
     { const er = erasedReferenceSlot(checker, n); if (er) fail(n, `${er.rule}: ${er.message}`); } // a reference whose type an assertion erased, where it is compared by identity: one test with the lint
     const start = !valueOperands && containsValueStep(n);
     if (start) valueOperands = new Map();
@@ -2547,14 +2550,28 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
         try { return lambda(n, n.parameters.length); } catch (e) { if (!(e instanceof Unsupported)) throw e; return reactHandler(n) ?? opaqueFn(n); }
       }
       case K.TaggedTemplateExpression: {
-        // tag`a${x}b`: an uninterpreted function of the literal parts and the holes, keyed by the tag
-        const tpl = n.template;
-        const strs = ts.isNoSubstitutionTemplateLiteral(tpl) ? [tpl.text] : [tpl.head.text, ...tpl.templateSpans.map((sp) => sp.literal.text)];
-        const holes = ts.isNoSubstitutionTemplateLiteral(tpl) ? [] : tpl.templateSpans.map((sp) => sp.expression);
-        const rd = isAny(typeOf(n)) ? anyType() : dtype(typeOf(n), n);
-        const reach = reachOf.reachesFile(n.tag) ? `_${hash(reachOf.keyText(n.tag))}` : ''; // a tag of this file is named by the code it reaches (design/reach-keys.md)
-        const id = external(`tag_${mangle(n.tag.getText(sf))}${reach}_${holes.length}`, ['seq<string>', ...holes.map(() => anyType())], rd);
-        return `${id}(${[`[${strs.map(strEsc).join(', ')}]`, ...holes.map((h) => expr(h, anyTarget()))].join(', ')})`;
+        // tag`a${x}b` is the call tag(strings, x) (common.mjs templateRaws): strings is the site's strings object, a
+        // bodiless function of its raw parts; String.raw is the template of its raw parts, each hole by ToString
+        const raws = templateRaws(n.template), holes = templateHoles(n.template);
+        if (!raws) fail(n, 'a tagged template whose raw parts the parser did not keep');
+        if (rawTag(checker, n, sf)) { const parts = [strEsc(raws[0])]; holes.forEach((h, i) => { parts.push(stringOf(h)); if (raws[i + 1]) parts.push(strEsc(raws[i + 1])); }); return `(${parts.join(' + ')})`; }
+        const lits = ts.isNoSubstitutionTemplateLiteral(n.template) ? [n.template] : [n.template.head, ...n.template.templateSpans.map((sp) => sp.literal)];
+        if (lits.some((l) => (l.templateFlags ?? 0) & ts.TokenFlags.ContainsInvalidEscape)) fail(n, 'a tagged template with an invalid escape (its cooked part is undefined, which a string sequence does not hold)');
+        const strings = `${external('template_strings', ['seq<string>'], 'seq<string>')}([${raws.map(strEsc).join(', ')}])`;
+        const tag = n.tag, o = ts.isIdentifier(tag) ? originOf(checker, tag, sf, currentUnit?.node ?? null) : null;
+        if (o?.kind === 'unit' && fns.has(tag.text)) { templateStrings.set(n.template, strings); return unitCall(tag, fns.get(tag.text), n, [n.template, ...holes], checker.getResolvedSignature(n), 0); } // a tag of this file: the call of its unit, its writes and its world as any call's
+        const eff = isEffectCall(n);
+        const recv = ts.isPropertyAccessExpression(tag) && !tag.questionDotToken ? tag.expression : null;
+        const named = recv && ts.isIdentifier(recv) && ['import', 'global'].includes(originOf(checker, recv, sf, currentUnit?.node ?? null).kind); // a namespace, an imported object or a lib global: its name keys the tag
+        if (!ts.isIdentifier(tag) && !recv) fail(n, 'a tagged template whose tag is not a name or a member');
+        if (!eff && o?.kind !== 'global' && holes.some((h) => !primT(typeOf(h)))) fail(n, 'a tagged template whose tag may write an object it is handed, read without the world');
+        if (!eff && recv && !named) fail(n, 'a tagged template whose tag is a method that may write its receiver, read without the world');
+        const tsa = checker.resolveName?.('TemplateStringsArray', n, ts.SymbolFlags.Type, false);
+        if (!tsa) fail(n, 'a tagged template without the TemplateStringsArray type');
+        const arg = { __tupleElem: true, type: checker.getDeclaredTypeOfSymbol(tsa), code: strings, node: n.template };
+        const reach = reachOf.reachesFile(tag) ? `_${hash(reachOf.keyText(tag))}` : ''; // a tag of this file is named by the code it reaches (design/reach-keys.md)
+        const name = `tag_${mangle(tag.getText(sf))}${reach}_${holes.length}`;
+        return recv && !named ? externalCall(name, n, [arg, ...holes], expr(recv, anyTarget()), anyType(), eff) : externalCall(name, n, [arg, ...holes], null, null, eff);
       }
       case K.RegularExpressionLiteral: { addPrelude('Ext_RegExp', 'type Ext_RegExp'); return `${external(`regex_${hash(n.text)}`, [], 'Ext_RegExp')}()`; }
       case K.TypeOfExpression: {

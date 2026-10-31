@@ -15,6 +15,7 @@ import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { primitiveBrand, readAfterCall } from '../common.mjs';
 import { originOf } from '../common.mjs';
+import { rawTag } from '../common.mjs'; // String.raw reads the raw parts only (design/heap-stage5.md section 1)
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment, strictValue } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord } from '../common.mjs';
@@ -1323,8 +1324,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       case K.JsxExpression: return e.expression ? expr(e.expression) : undefined;
       case K.NoSubstitutionTemplateLiteral: return;
       case K.TemplateExpression: return e.templateSpans.forEach((sp) => expr(sp.expression));
-      case K.TaggedTemplateExpression: { // an uninterpreted function of its parts, keyed by the tag
+      case K.TaggedTemplateExpression: { // the call of its tag on the site's strings object (its raw parts) and the holes
         if (ts.isPropertyAccessExpression(e.tag)) expr(e.tag.expression); else if (!ts.isIdentifier(e.tag)) v(e, 'template', 'the tag must be a name');
+        { const lits = ts.isNoSubstitutionTemplateLiteral(e.template) ? [e.template] : [e.template.head, ...e.template.templateSpans.map((sp) => sp.literal)]; if (!rawTag(checker, e, sf) && lits.some((l) => (l.templateFlags ?? 0) & ts.TokenFlags.ContainsInvalidEscape)) v(e, 'template', 'an invalid escape under a tag: its cooked part is undefined, which the reading of the strings does not hold; escape the backslash or use String.raw'); }
         if (ts.isTemplateExpression(e.template)) e.template.templateSpans.forEach((sp) => expr(sp.expression));
         return;
       }

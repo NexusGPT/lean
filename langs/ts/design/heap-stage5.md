@@ -66,6 +66,44 @@ Census (resolved, 39 roots), strict graph 155 -> 283, own syntax 388 -> 632; `cu
 {"files":23359,"units":53918,"core":283,"heapOwnFit":632,"mirrorMismatch":490,"planErrorCount":0,"seconds":492}
 ```
 
+### 1b. Tagged templates (2026-10-31, lane core-template-literals)
+
+Defect: the ordinary lane read `` tag`a${x}b` `` as one pure function of the cooked parts and the holes, keyed by
+the tag's text. Three readings broke on it, each a proof of a changed behaviour: the strings object a tag receives
+carries `raw` beside the cooked parts (`` String.raw`idA${s}` `` and `` String.raw`idA${s}` `` cook alike and
+return different strings); an imported tag was read without the world, while the plain call of the same import is a
+transition (the tag runs outside code); and a tag of this file that writes a hole (`it.qty++`) was read as writing
+nothing, so a unit calling it once read as the one calling it twice.
+
+Reading: a tagged template is the call `tag(strings, ...holes)` (ES 13.3.11), one mechanism with the plain call.
+`strings` is the site's frozen strings object; its cooked parts are a function of its raw parts (an invalid escape
+cooks to `undefined`), so the raw parts name it whole: `template_strings(raws)`, a bodiless function of the raw
+parts, each line end read as LF (`common.mjs` `templateRaws`). Then the tag's own reading decides the call:
+- a tag of this file (a function or a module arrow) is the call of its unit (`unitCall`): its writes bind back to the
+  names it was handed, its world threads when it threads one, and the mutation analysis (`lower.mjs`) sees the
+  hole as an argument;
+- any other tag goes through the outside call (`externalCall`): `isEffectCall` reads the tag as the callee (an import,
+  a parameter, a method of an object: a transition; a lib global's pure function: none), the holes are its arguments
+  (`handedArg` for a fresh object), a method tag's receiver goes first at Any; `readAfterCall` (`common.mjs`, one
+  decision with the lint) counts the tag as a call, its holes and receiver as handed;
+- `String.raw` of the platform is exact: the concatenation of its raw parts with ToString of each hole, read as a
+  template is in both lanes (the heap core admits it with primitive holes, section 1's `toStr`).
+
+Soundness: `template_strings` is uninterpreted, so the tag's body reads `strings[i]` as an unknown string that is
+the same on both sides only for the same raw parts, which is what JavaScript hands it; nothing about the cooked text
+is assumed. A tag read without the world writes nothing it is handed: a pure-read tag with an object hole that is
+not a lib global, or a pure-read method tag whose receiver is an object of the unit, is refused.
+Out (refused, with the reason named): a tag other than `String.raw` over an invalid escape (its cooked part is
+`undefined`, which a string sequence does not hold; the lint names it under `template`); a tag that is not a name or a
+member; String.raw in the heap core with a reference hole (its ToString runs user code, as section 1). Choice where
+section 1 is silent: the site's identity (the same object at every evaluation of one site) is not modelled; a tag
+that reads it is outside code, a transition, so two evaluations are two transitions.
+Pair `template_literals`: `line` (concatenations with `String(qty)`: proved), `status` (the nested conditional lifted:
+proved), `shade` (WITNESS), `path` (String.raw against the concatenation: proved), `ident` (`A` against `A` under
+String.raw: WITNESS, proved at the base), `tagged` (untouched under a tag of this file: proved), `escaped` (the same
+change under a tag that reads the raw parts: WITNESS, proved at the base), `twice` (a tag writing its hole called once
+against twice: WITNESS, proved at the base). Census: `lane/core-template-literals-result.md`.
+
 ## 2. Empty literals typed by their place, expression bodies
 
 Reading: an array literal takes the array shape of the place it is written to (a field, a local's declared type, a
