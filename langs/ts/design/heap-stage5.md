@@ -1218,6 +1218,11 @@ it would install is unknown, and the table's rows are its model. A unit `C.m` th
 the getter unit `C.get_m`, is that getter, driven by reading the property (`propertyRead`; a setter is reached only by
 a write). The programs on one constructed instance (`exec/programs.mjs`) build a class that declares no constructor
 as `new C()` does, with no arguments, as `runClassRaces` already did. Before, they stopped with `no constructor unit`.
+That route showed a gap of its own in pair `inherited_method`: the candidate's base changes the initializer `count = 0`
+to `count = 1`. `programs.mjs` decided "the constructor changed" by the text of `C.constructor` alone, which neither
+side declares, so `Item.tag` was WITNESS on the instance's `count`, which `tag` never touches. The test is now the
+instances as built: when the two sides' own fields differ before any command, the programs do not run, and the
+constructor is the one that differs.
 Check: `tests/lane-b-routes.mjs` runs every PASS-bounded lane-B row of every pair again, through the routes the
 source gives it: a call; a method on an instance its constructor built; a static member through the class; a getter by
 reading the property. It uses its own loader (TypeScript's emit with its helper untouched; outside imports are lane
