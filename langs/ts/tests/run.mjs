@@ -723,6 +723,8 @@ async function adviceLabels(add) {
     ['census-example-message',scriptRow('runtime', 'census-example-message', 'each refusal example carries its finding\'s message', [path.join(here, 'census_example_message.mjs')], lastLine)],
     // a unit refused only on a value whose type does not resolve is environment-blocked, named by the symbol and its import; one refused on resolved types keeps its reading (census-environment lane, 2026-10-31)
     ['census-environment', scriptRow('runtime', 'census-environment', 'a refusal judged on an unresolved import is environment, one on resolved types keeps its reading', [path.join(here, 'census_environment.mjs')], lastLine)],
+    // a const second name of a parameter's instance of a class of this file is carried by the value reading: a write through either rebinds the other; a pair it cannot carry stays refused (conformance-causeof-spill lane, 2026-10-31)
+    ['carried-alias', scriptRow('runtime', 'carried-alias', 'a write through a carried second name of a parameter rebinds the other name, in a loop too; handed, rebound or closed over, it is refused', [path.join(here, 'carried-alias.mjs')], lastLine)],
     ['refusal-path-space', scriptRow('runtime', 'refusal-path-space', 'a translator refusal in a path with a space keeps its rule', [path.join(here, 'refusal-path-space.mjs')], lastLine)],
     ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)

@@ -30,7 +30,7 @@ import { inlinePromiseStatementKind } from '../lower.mjs';
 // Exit 0: file written. Exit 1: outside the subset, or not covered by the translator.
 import { faithfulNumbers } from './faithful.mjs';
 import fs from 'node:fs';
-import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation, sharedMutation } from '../lower.mjs';
+import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation, sharedMutation, carriedAliases } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag, matchGroups, matchGroupRead } from '../common.mjs';
@@ -3026,7 +3026,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (resolveCall(s.expression)) return end(s.expression);
       const line = capture(() => {
         const nv = newValue(s.expression);
-        return nv ? `var ${dn(nv[0])} := ${nv[1]};` : '';
+        return nv ? `var ${dn(nv[0])} := ${nv[1]};${partnerSync(nv[0])}` : '';
       });
       return after(line);
     }
@@ -5167,6 +5167,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       const d = sym?.valueDeclaration;
       if (!d || (insideNode(d, node) && !hoisted?.has(d)) || insideProc(d, node)) return;
       names.push({ name: id.text, sym, node: id });
+      { const c = partnerOf(id.text), ps = c && carriedOf(currentUnit).symbols.get(c), pd = ps?.valueDeclaration; if (pd && !names.some((m) => m.name === c) && !(insideNode(pd, node) && !hoisted?.has(pd)) && !insideProc(pd, node)) names.push({ name: c, sym: ps, node: pd.name }); } // its carried partner is rebound beside it
     };
     const walk = (x) => {
       if (isAssign(x) && ts.isIdentifier(x.left)) note(x.left);
@@ -5612,7 +5613,13 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     }
     return fail(e, 'statement expression is not translated');
   }
-  function assignText(e) { const nv = newValue(e); if (!nv) fail(e, 'a bare await statement has no effect in the core'); const [n, v] = nv; return `${dn(n)} := ${v};`; }
+  // a carried second name of a parameter (lower.mjs carriedAliases: `const h = b` of an instance of a class of this file):
+  // one object under two names, so a write statement through either rebinds the other to the written value
+  const partnersByUnit = new Map();
+  const carriedOf = (u) => { if (!u) return null; if (!partnersByUnit.has(u)) partnersByUnit.set(u, carriedAliases(checker, u)); return partnersByUnit.get(u); };
+  const partnerOf = (name) => (callbackBody ? null : carriedOf(currentUnit)?.partner.get(name) ?? null);
+  const partnerSync = (name, d) => { const p = partnerOf(name); return p ? `\nvar ${dn(p)}${d ? `: ${d}` : ''} := ${dn(name)};` : ''; };
+  function assignText(e) { const nv = newValue(e); if (!nv) fail(e, 'a bare await statement has no effect in the core'); const [n, v] = nv; if (partnerOf(n)) fail(e, `alias-mutation: \`${n}\` and \`${partnerOf(n)}\` name one object; this reading carries a write through either in --core only`); return `${dn(n)} := ${v};`; }
   function forParts(s) {
     const decl = s.initializer.declarations[0];
     const i = decl.name.text;
@@ -5936,7 +5943,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         const sym = checker.getSymbolAtLocation(target); const LT = letTypeOf(sym);
         const td = LT ?? dtype(symType(sym, s), s);
         const fd = LT && e.right ? dtype(typeOf(e.right), e) : td;
-        return `var ${dn(n)}: ${td} := ${convertD(value, fd, td)};\n${next()}`;
+        return `var ${dn(n)}: ${td} := ${convertD(value, fd, td)};${partnerSync(n, td)}\n${next()}`;
       }, ctx);
       default: return tr([s], next, u);
     }
@@ -6029,7 +6036,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
           const sym = checker.getSymbolAtLocation(target);
           const LT = letTypeOf(sym);
           if (LT) { const rt0 = e.right ? typeOf(e.right) : null; const vd = rt0 ? (isAny(rt0) ? anyType() : dtype(rt0, s)) : LT; return `var ${dn(n)}: ${LT} := ${convertD(v, vd, LT)};`; }
-          return `var ${dn(n)}: ${dtype(symType(sym, s), s)} := ${v};`;
+          return `var ${dn(n)}: ${dtype(symType(sym, s), s)} := ${v};${partnerSync(n, dtype(symType(sym, s), s))}`;
         });
         if ((tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s))) return guard(line.trim() ? line : '');
         return line.trim() ? `${line}\n${more0()}` : more0();

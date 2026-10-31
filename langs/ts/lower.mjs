@@ -441,7 +441,8 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
     const rec = { admissionRisk: new Set(), valueOutputs: emission ? new Set() : null, rebound: [] };
     records.set(u.name, rec);
     const rebounds = new Set();
-    const own = (r) => ts.isIdentifier(r) ? r.text : r.kind === ts.SyntaxKind.ThisKeyword && mutationThisParam(u) ? 'this' : null;
+    const carried = emission && u.body ? carriedAliases(checker, u).partner : new Map(); // a write through a carried second name of a parameter writes the parameter
+    const own = (r) => ts.isIdentifier(r) ? (carried.has(r.text) && !names.has(r.text) ? carried.get(r.text) : r.text) : r.kind === ts.SyntaxKind.ThisKeyword && mutationThisParam(u) ? 'this' : null;
     const hit = (target, admission, output, through = true) => {
       const r = mutationRoot(target);
       if (through && r === target) return;
@@ -465,7 +466,7 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
       const target = mutationAssignment(n) ? n.left : mutationUpdate(n) ? n.operand : ts.isDeleteExpression(n) ? n.expression : null;
       if (target) {
         hit(target, admission, output);
-        if (output && !ts.isDeleteExpression(n)) { const ew = elementWritePath(checker, target); if (ew && names.has(ew.root.text)) rec.valueOutputs.add(ew.root.text); }
+        if (output && !ts.isDeleteExpression(n)) { const ew = elementWritePath(checker, target); const er = ew && own(ew.root); if (er && names.has(er)) rec.valueOutputs.add(er); }
         if (admission && !ts.isDeleteExpression(n)) {
           let t = target; while (ts.isParenthesizedExpression(t)) t = t.expression;
           const d = ts.isIdentifier(t) ? checker.getSymbolAtLocation(t)?.valueDeclaration : null;
@@ -492,7 +493,7 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
           const f = e.expression;
           if (MUTATION_METHODS.has(f.name.text)) hit(f.expression, false, true, false);
           if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign' && e.arguments.length >= 2) {
-            const r = mutationRoot(e.arguments[0]); if (ts.isIdentifier(r) && names.has(r.text)) rec.valueOutputs.add(r.text);
+            const r = mutationRoot(e.arguments[0]); const o = ts.isIdentifier(r) ? own(r) : null; if (o && names.has(o)) rec.valueOutputs.add(o);
           }
         }
       }
@@ -569,6 +570,62 @@ export function firstElementMutation(checker, u, context) {
 // same-file call whose result is so held (it may return its argument). It counts when it precedes the write in the
 // text, or shares a loop with it that does not declare the name anew. A bucket local writes its map (common.mjs
 // bucketMaps), which the value reading models. A copy (`[...a]`, `a.slice()`, `{ ...a }`) holds no reference: no holder.
+// A second name the value reading carries (design/conformance-readings.md section 6): `const h = b`, b a parameter of
+// the unit holding an instance of a class of this file, is the form the lint admits as that parameter's own cell
+// (lint.mjs heldAlias; design/heap-stage5.md 18). Both names hold one object; the value reading holds one value under
+// both, and after each write statement through either name it rebinds the other to the written value (translate.mjs
+// partnerSync), so a read through either sees every write, as the heap core reads the one cell. It carries the pair
+// only where every write through either name is such a statement: each name declared once in the unit (the Dafny
+// names are the TypeScript ones), neither rebound (`b = c` would part them), neither handed to a call or to `new` (a
+// callee's change returns through the name it was handed alone), neither read inside a nested function (a closure
+// reads the value as it was). Otherwise the pair is a holder like any other and sharedMutation refuses the write.
+// Returns { partner: name text -> its partner's name text, both ways; symbols: name text -> its symbol; holders: the
+// carried declarations }.
+export function carriedAliases(checker, u) {
+  const out = { partner: new Map(), symbols: new Map(), holders: new Set() };
+  if (!u.body || !ts.isBlock(u.body)) return out;
+  const K = ts.SyntaxKind;
+  const sf = u.node.getSourceFile();
+  const unparen = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const declared = new Map(); // a name's text -> how many declarations in the unit bind it
+  const count = (n) => { if (!n) return; if (ts.isIdentifier(n)) declared.set(n.text, (declared.get(n.text) ?? 0) + 1); else if (ts.isObjectBindingPattern(n) || ts.isArrayBindingPattern(n)) for (const el of n.elements) if (!ts.isOmittedExpression(el)) count(el.name); };
+  const decls = (n) => { if (ts.isVariableDeclaration(n) || ts.isParameter(n) || ts.isBindingElement(n)) count(n.name); else if ((ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n) || ts.isFunctionExpression(n) || ts.isClassExpression(n)) && n.name) count(n.name); ts.forEachChild(n, decls); };
+  decls(u.fn);
+  const fileInstance = (t) => !!t && !(t.flags & ts.TypeFlags.Union) && !!(t.flags & ts.TypeFlags.Object) && !t.getCallSignatures().length && !!t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) && !!d.name && d.getSourceFile() === sf);
+  const pairs = [];
+  const find = (n) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const) && ts.isIdentifier(unparen(n.initializer))) {
+      const src = checker.getSymbolAtLocation(unparen(n.initializer)), d = src?.valueDeclaration;
+      if (d && ts.isParameter(d) && d.parent === u.fn && ts.isIdentifier(d.name) && fileInstance(checker.getTypeAtLocation(n.name)) && checker.getTypeAtLocation(n.name) === checker.getTypeAtLocation(d.name)) pairs.push({ decl: n, alias: checker.getSymbolAtLocation(n.name), src });
+    }
+    if (!ts.isFunctionLike(n)) ts.forEachChild(n, find);
+  };
+  ts.forEachChild(u.body, find);
+  const writeStatement = (n) => { let x = n; while (ts.isParenthesizedExpression(x.parent)) x = x.parent; return ts.isExpressionStatement(x.parent); };
+  for (const p of pairs) {
+    const syms = new Set([p.alias, p.src]);
+    if (p.alias.name === p.src.name || declared.get(p.alias.name) !== 1 || declared.get(p.src.name) !== 1) continue;
+    let ok = true;
+    const use = (n, nested) => {
+      if (!ok) return;
+      if (ts.isIdentifier(n) && n !== p.decl.name && !(n.parent && ts.isParameter(n.parent) && n.parent.name === n) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && syms.has(checker.getSymbolAtLocation(n))) {
+        let x = n; while (ts.isParenthesizedExpression(x.parent) || ts.isNonNullExpression(x.parent)) x = x.parent;
+        const q = x.parent;
+        if (nested) ok = false; // a closure's read of the value as it was
+        else if (q && ts.isBinaryExpression(q) && q.left === x && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) ok = false; // the name rebound
+        else if (q && (ts.isPrefixUnaryExpression(q) || ts.isPostfixUnaryExpression(q)) && (q.operator === K.PlusPlusToken || q.operator === K.MinusMinusToken)) ok = false;
+        else if (q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && q.arguments?.includes(x)) ok = false; // handed to a call
+        else if (q && (ts.isSpreadElement(q) || ts.isShorthandPropertyAssignment(q))) ok = false;
+      }
+      const m = elementMutation(checker, n, { sf, current: u.node });
+      if (m && ts.isIdentifier(m.root) && syms.has(checker.getSymbolAtLocation(m.root)) && (nested || !writeStatement(n))) ok = false; // a write the reading does not rebind the partner after
+      ts.forEachChild(n, (c) => use(c, nested || ts.isFunctionLike(c)));
+    };
+    use(u.body, false);
+    if (ok) { out.partner.set(p.alias.name, p.src.name); out.partner.set(p.src.name, p.alias.name); out.symbols.set(p.alias.name, p.alias); out.symbols.set(p.src.name, p.src); out.holders.add(p.decl); }
+  }
+  return out;
+}
 const HOLDING_ROWS = new Set(['push', 'unshift', 'splice', 'set', 'add', 'fill']);
 const COPYING_CONSTRUCTORS = new Set(['Set', 'Map', 'WeakSet', 'WeakMap', 'Array']);
 export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), current = u.node, units = null, buckets = null } = {}) {
@@ -619,6 +676,7 @@ export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), curren
     ts.forEachChild(n, walk);
   };
   walk(u.body);
+  { const carried = carriedAliases(checker, u).holders; for (let i = holders.length - 1; i >= 0; i--) if (carried.has(holders[i].node)) holders.splice(i, 1); } // a second name the value reading carries (carriedAliases)
   if (!holders.length) return null;
   const bucket = (s) => !!buckets && !!s?.valueDeclaration && buckets.locals.has(s.valueDeclaration);
   const before = (h, m, s) => {
