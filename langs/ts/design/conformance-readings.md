@@ -71,7 +71,9 @@ of the declared fields alone, so the rest was dropped and a clone against the fi
 | translate.mjs:1377 `copyOf` | the one copy reading | `Copy_T(x)` for a record source `copySource` calls 'copy' |
 | translate.mjs:1425 `arrayCopyOf` | the array twin | `Copy_<seq<A>>(x)` for an array source whose reading is its own text |
 | translate.mjs:2335 | `[...x]`, x an array | `arrayCopyOf` |
-| translate.mjs:4285 | `x.concat()` without arguments | `arrayCopyOf` |
+| translate.mjs:4285 | `x.concat()` without arguments | `arrayCopyOf` (the receiver through `seqOf`: a fixed tuple's projections) |
+| translate.mjs `seqOf`, tuple literal | `[...t]`, `t.concat()`, t a fixed tuple | `[t.0, t.1]`, `(t.0, t.1)`: a new text (2026-10-31) |
+| lower.mjs `sharedMutation` | a write through a name another name holds | refused in the value reading (2026-10-31) |
 | translate.mjs:2943 | `{ ...x, k: v }`, spread first | `copyOf(x).(k := v)` |
 | translate.mjs:2908 | members, then a spread | `spread_merge_<R>_<layout>(values)`: each source whole, rest included |
 | translate.mjs:2926 | two spreads, or a spread after members | `lit_spread_<R>_<layout>(values)`: each source whole |
@@ -125,6 +127,51 @@ against `const b = [...a]`, though the copy is another object (`===` false, a pu
   in-place mutation today).
 - Lane B compares a returned array of primitives by value, so it does not separate `return a` from `return [...a]`
   (PASS-bounded); `b === a` it witnesses.
+
+### 2026-10-31: the copy's other side, a write through a name another name holds; a fixed tuple's copy
+
+Pairs `array_copies_identity` (the copy forms against their source, a copy pushed after the copy, in the value reading
+and the heap core) and `array_copies_alias` (check.mjs per unit, the write on one input in a million so lane B bounds
+it and only lane A could tell).
+
+- **The defect.** A copy is the reading of `const b = [...a]`; its contrast, `const b = a`, is a second name for one
+  object. The lint refused a write through the second name (alias-mutation, `b.push(1)`), not one through the first:
+  `const b = a; a.push(1); return b.length` read as `b := a; a := a + [1]; |b|`, 1 where Node returns 2 (23.1.3.23
+  writes the one object both names reach). On the base check.mjs said PASS-proved against `return 1` for that unit, its
+  synchronous twin (outside the heap core: no reference crosses its boundary) and `const o = { xs: a }; a.push(1);
+  return o.xs.length`: false proofs.
+- **The reading.** `lower.mjs sharedMutation`, asked by the value reading (`emitUnit`, beside `firstElementMutation`):
+  a write in place (an assignment or update through a path, delete, Object.assign, an in-place row of the library
+  table) through a local or a parameter is refused (`alias-mutation`, reading `mutation`) when another holder of the
+  same object precedes it: the object bound to a name (an initializer, `=`), put in an array or object literal's slot,
+  handed to an in-place collection row (push, unshift, splice, set, add, fill) or to `new` (an instance may keep its
+  argument: `keptByInstance`; the standard collections `new Set(a)`, `new Map(m)`, `new Array(…)` copy their iterable,
+  24.1.1.1, 24.2.1.1, and hold its elements, never a: `setCopied`), or to a same-file call
+  whose result is so held (it may return its argument). The holder's own side too: a write through the holder that
+  runs through the slot holding the object (the slot's path: a property's name, `*` for an element, anywhere for `new`
+  or a same-file callee), below it or a changing call on it (`o.xs.push(1)` for `o = { xs: a }`); a write beside the
+  slot (`identity.userId = …` after `identity.user = user`) or one that rebinds the slot (`rows[i] = p`) changes no
+  held object. A holder counts when it precedes the write in the text or
+  shares a loop with it that does not declare the name anew (an earlier turn's holder), unless a statement on the
+  write's path between them rebinds the written name (`flat = []`: from there it names another object; a rebinding to a
+  held object is a holder of its own). A plain `x = v` is no write in place. Only the value reading asks: the
+  heap core reads every holder on the one object (`heap_canonical`, the sync units of the pair).
+- **What stays admitted.** A copy holds no reference: `const b = [...a]; a.push(1)` is proved (`copiedFirst`). A write
+  before the second name exists (`writtenThenHeld`), a write beside the held slot (`writtenBesideSlot`), a name rebound before the write (`reboundFirst`; `let flat =
+  merged; if (g) { flat = []; flat.push(h) }`, lint_misfires), a row built then stored in its own loop turn (the name declared
+  inside the loop), a bucket local's push (common.mjs bucketMaps writes its map), a pattern (`const [x] = a` reads
+  elements, holds no reference to a).
+- **What stays refused or unread.** A reference handed to an outside call is a request with the value: the outside
+  holding it and seeing a later write is not modelled (a finding, not changed here). A closure capturing the name is the
+  lint's (mutable cells).
+- **A fixed tuple's copy.** `[...t]` and `t.concat()` on a tuple read as a Dafny tuple took the tuple's own text where a
+  sequence was asked (`t.concat()`: a type mismatch that failed the whole theorem file; `[...t]` into a tuple: refused as
+  an untranslated SpreadElement). `seqOf` now reads a fixed tuple (every element required, no rest) whose elements share
+  one Dafny type as the sequence of its projections `[t.0, t.1]`, and a tuple literal spreads a fixed tuple into its
+  projections `(t.0, t.1)`: a new text, so the identity guard decides (`spread_tuple_back_a`, `concat_tuple_back_a`
+  withheld). A tuple of differing element types, or one with an optional or rest element, stays refused.
+- `===` on a readonly array or a tuple is refused by the lint (reference-equality); those identity units are not
+  read.
 
 ## 4. `this.m()`: the class's own m only on a receiver no subclass can hold
 
@@ -189,7 +236,8 @@ the base: the section is read as it says.
   getter or setter reached through `this.p` keeps the class's own accessor unit: both are the same question (another
   object may hold the member) and are not changed here.
 - A record copy's identity against its source goes to the guard (section 2); an array copy now does too (section 3).
-- The census is lint-only and the lint is not changed: the readings refuse nothing new.
+- The census is lint-only and the lint is not changed: the readings refuse nothing new. Since 2026-10-31 (section 3) the value reading refuses a write
+  through a name another name holds; the census counts it in its phase 4 (the translator per unit), not in the lint.
 
 ## 5. A bigint is a bigint to Node: the bridge keeps the model's BigInt (2026-10-31, lane conformance-disagree)
 

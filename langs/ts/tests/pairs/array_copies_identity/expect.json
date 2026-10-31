@@ -1,0 +1,52 @@
+{
+  "scope": [
+    "copy_pushed_a",
+    "copy_pushed_s",
+    "copy_pushed_back_a",
+    "spread_id_a",
+    "spread_id_s",
+    "spread_ro_back_a",
+    "spread_tuple_back_a",
+    "concat_tuple_back_a",
+    "spread_back_a",
+    "concat_id_a",
+    "concat_id_s",
+    "concat_empty_id_a",
+    "concat_back_a",
+    "copies_both_a"
+  ],
+  "equal": {
+    "copy_pushed_a": true,
+    "copy_pushed_s": true,
+    "copy_pushed_back_a": true,
+    "spread_id_a": false,
+    "spread_id_s": false,
+    "spread_ro_back_a": false,
+    "spread_tuple_back_a": false,
+    "concat_tuple_back_a": false,
+    "spread_back_a": false,
+    "concat_id_a": false,
+    "concat_id_s": false,
+    "concat_empty_id_a": false,
+    "concat_back_a": false,
+    "copies_both_a": true
+  },
+  "why": "conformance-readings.md section 3. sourcePushed: the source pushed after the copy; through an alias b sees the push (2), through a copy it does not (1): must not prove, witnessed. copyPushed: the copy pushed, the source returned: the source is unchanged on both sides, proved; copyPushedBack: one fresh copy pushed on each side (spread, concat): proved. spreadId/concatId/concatEmptyId: `b === a` true through the alias, false through the copy: must not prove, witnessed. spreadBack/concatBack, a readonly or tuple source included: the copy against its source, another identity: must not prove (lane B compares a returned array of primitives by value: PASS-bounded). copiesBoth: a spread copy against a concat copy, each compared with its source: one copy on each side, the same text, proved.",
+  "heap": true,
+  "b": {
+    "copyPushedA": "PASS-bounded",
+    "copyPushedS": "PASS-bounded",
+    "copyPushedBackA": "PASS-bounded",
+    "spreadIdA": "WITNESS",
+    "spreadIdS": "WITNESS",
+    "spreadRoBackA": "PASS-bounded",
+    "spreadTupleBackA": "PASS-bounded",
+    "concatTupleBackA": "PASS-bounded",
+    "spreadBackA": "PASS-bounded",
+    "concatIdA": "WITNESS",
+    "concatIdS": "WITNESS",
+    "concatEmptyIdA": "WITNESS",
+    "concatBackA": "PASS-bounded",
+    "copiesBothA": "PASS-bounded"
+  }
+}

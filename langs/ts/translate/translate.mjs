@@ -30,7 +30,7 @@ import { inlinePromiseStatementKind } from '../lower.mjs';
 // Exit 0: file written. Exit 1: outside the subset, or not covered by the translator.
 import { faithfulNumbers } from './faithful.mjs';
 import fs from 'node:fs';
-import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation } from '../lower.mjs';
+import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation, sharedMutation } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag, matchGroups, matchGroupRead } from '../common.mjs';
@@ -2877,7 +2877,8 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         const ctx = expected ?? checker.getContextualType(n) ?? typeOf(n);
         if ((checker.isTupleType(typeOf(n)) || checker.isTupleType(ctx)) && !dtype(checker.isTupleType(ctx) ? ctx : typeOf(n), n).startsWith('seq<')) {
           const targs = checker.isTupleType(ctx) ? checker.getTypeArguments(ctx) : [];
-          return `(${n.elements.map((e, i) => expr(e, targs[i])).join(', ')})`;
+          const parts = n.elements.flatMap((e) => ts.isSpreadElement(e) ? tupleParts(e.expression) : [e]); // `[...t, x]`: a fixed tuple's elements spread in order (13.2.4.1), a new tuple: its text is never t's
+          return `(${parts.map((e, i) => typeof e === 'string' ? e : expr(e, targs[i])).join(', ')})`;
         }
         const base = baseOf(ctx);
         const et = checker.isArrayType(base) ? checker.getTypeArguments(base)[0] : checker.isTupleType(base) ? checker.getTypeArguments(base)[0] : undefined;
@@ -4947,7 +4948,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         case 'includes': return `(${expr(n.arguments[0], elemType(recv))} in ${R})`;
         case 'indexOf': return `${helper('IndexOf', [A()])}(${R}, ${expr(n.arguments[0], elemType(recv))})`;
         case 'slice': return `${helper('Slice', [A()])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '0'}, ${n.arguments[1] ? expr(n.arguments[1]) : `|${R}|`})`;
-        case 'concat': return n.arguments.length ? `(${[R, ...n.arguments.map(seqOf)].join(' + ')})` : arrayCopyOf(recv, R, n); // `x.concat()`: a new array (23.1.3.1 ArraySpeciesCreate) holding x's elements
+        case 'concat': { const S = seqOf(recv); return n.arguments.length ? `(${[S, ...n.arguments.map(seqOf)].join(' + ')})` : arrayCopyOf(recv, S, n); } // `x.concat()`: a new array (23.1.3.1 ArraySpeciesCreate) holding x's elements
         case 'join':
           return A() === 'string' && n.arguments.length <= 1 && (!n.arguments[0] || typeOf(n.arguments[0]).flags & TF.StringLike)
             ? `${helper('Join', ['string'])}(${R}, ${n.arguments[0] ? expr(n.arguments[0]) : '","'})`
@@ -6894,6 +6895,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     { const why = callbackUntypedJsUnit(sf, u, checker); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
+    { const sh = sharedMutation(checker, u, { sf, current: u.node, units: fns, buckets: bucketMaps(u.fn, checker) }); if (sh) fail(sh.node, `alias-mutation: \`${sh.name}\` is changed in place while ${sh.side === 'source' ? (sh.other ? `\`${sh.other}\`` : 'another slot') + ' holds the same object' : `it holds \`${sh.other}\`'s object`} (line ${lineOf(sf, sh.holder.getStart(sf))}); this reading reads an object as a value, so the change would not show through the other name, and the heap core does not read this unit: copy before the change (\`[...a]\`, \`{ ...o }\`) or change one name only`); } // design/conformance-readings.md section 3: a write through a name another name holds is a write the value reading would lose
     tempCount = 0; // a unit's temporaries are numbered from its own start: an edit elsewhere in the file leaves its text unchanged, so the theorem's identity shortcut still reads it
     faultMode = false;
     loopCount = 0; labelIds.clear();
