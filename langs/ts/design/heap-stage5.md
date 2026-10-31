@@ -282,6 +282,52 @@ Census (resolved, 39 roots), strict graph 735 -> 790, own syntax 1853 -> 1994; `
 {"files":23359,"units":53918,"core":790,"heapOwnFit":1994,"mirrorMismatch":1852,"planErrorCount":0,"seconds":330}
 ```
 
+### 14b. Number and JSON forms (2026-10-31, lane core-pure-globals)
+
+Measured first: at the v0.1.2 candidate every Math form above was read (the other Math functions, `sqrt`, `pow`, `log`,
+reach the core as the faithful reading's `Math.__lean_*` externals), and the core stopped a unit at every Number and JSON
+call: `Number(n)` as `call outside the file`, `Number.isInteger(n)` as `call .isInteger`, `JSON.stringify(s)` as `call
+.stringify`. Such a unit fell to the ordinary lane, which withholds the lemma of a unit that writes through an input
+another input of the same shape may alias; the core reads that aliasing exactly, so the unit stayed unproved.
+Reading (`globalCall` in `translate/heap.mjs`, one recognizer, one emitter): `Number(x)` of a number is `x`, of a boolean
+`if b then 1 else 0` (ToNumber, 7.1.4); `Number.isInteger`, `isFinite`, `isNaN` and `isSafeInteger` of a number are the
+ordinary lane's bodiless `ext_call_args_Number_<m>_<T>`, so both lanes read one predicate with one symbol;
+`JSON.stringify(x)` of one primitive (a string, a number, a boolean, a literal union of one of them) is a bodiless
+`ext_JSON_stringify_prim_<T>(x)`, a function of the value alone.
+Soundness: ToNumber of a number is the number, on every double. The predicates answer nothing the lemma could use, so the
+core never takes a number for an integer or finite: in an int file `Number.isInteger(n)` against `true` stays unproved,
+where reading the file's domain would have proved it falsely. SerializeJSONProperty (25.5.2.2) looks up `toJSON` only on
+an object or a bigint, and a string, number or boolean never throws, so the call runs no user code and its text is
+decided by the primitive; a number's text (`"null"` for NaN) is left uninterpreted, so two numbers give one text only
+when they are one number. None of these is a doubles bearing site (`translate/smt-fp.mjs`): each is either exact on
+every double or uninterpreted, so the int or real lemma of a unit that is not number-bearing stays faithful.
+Out, kept: `Number` of a string or of an optional value, `parseInt`, `parseFloat` (NaN: the ordinary lane makes such a
+unit opaque by its text, `number_special`), `JSON.parse` (any), `JSON.stringify` of a reference, of an optional value
+(`undefined` is no string) or with a replacer or an indentation, `Number.isX` of a value that is not a number, and
+`Math.random`. Where the section was silent the choice is these bodiless readings, never an answer read from the file's
+number domain.
+Pair `pure_globals` (one unit per form): `widest`, `lowest`, `trend`, `ceiling`, `chopped`, `halves` (each
+rewritten: proved by the doubles reading), `gap` (`|-(h - l)|`: proved), `nearest` (`floor(x + 0.5)` for `round`:
+WITNESS), `caption`, `root`, `asCount` (Number of a number dropped: proved), `isWhole`, `quote` (the call named before
+the field write: proved), `finite` (another field: unproved, lane B WITNESS), `encodeCount` (proved), `stamp` (two
+writes through `a` from `b`, which may be `a`, in the other order: withheld before, proved in the core after), `parsed`
+(`+s` for `Number(s)`: equal in JavaScript and unproved, out). Found on the way, outside this construct: the doubles
+reading answers unknown within 60 s on `Math.abs(h - l)` against `Math.abs(l - h)`, equal on every double.
+Census, base `b5c074508` against `2fc3bb0ff`. `census.mjs` (the lint's admission; nexus as `--include apps/backend/src/`,
+the full root did not finish in two hours): n8n 2,680 of 9,610 entered, langchainjs 2,766 of 6,709, nexus backend
+12,656 of 23,328, the same before and after, no reading gaining or losing a unit (`census.mjs --diff`): the reading
+changes what lane A proves, not what the lint admits. The heap core itself (`makeHeap` planned over every unit with the
+translator's `helper` and `external` hooks, modules resolved; `design/heap-reach-census.mjs` passes no `external`):
+```text
+n8n:          core 82 -> 83;  entered 1 (call .isInteger); moved 2 (call .isInteger -> statement ThrowStatement)
+langchainjs:  core 30 -> 30;  moved 1 (call .isNaN -> called by a unit outside the core)
+nexus backend: core 271 -> 273; entered 2 (call .isFinite, call .isInteger); moved 6 (call .stringify -> element access
+              of a non-array 2, -> called by a unit outside the core 1; call .isInteger -> called by a unit outside the
+              core 1, -> statement ThrowStatement 1; call .isFinite -> division in an int file 1)
+```
+No unit left the core. The `call .stringify` first stops that remain after (n8n 1, langchainjs 1, nexus backend 5, from
+1, 1, 8: each `JSON.stringify` of an array, a record or with an indentation) are the section's Out.
+
 ## 15. Outside calls
 
 Reading: a call of an imported function is a transition of the whole heap world, a bodiless
