@@ -593,12 +593,15 @@ async function proofHunt(add) {
 // test and the step run at once (the step reads the rule, never its test); the step's own workers take WIDE slots -----
 async function modelConformance(add) {
   const selectTest = runner('conformance/select').run('node', [path.join(here, '../conformance/select.test.mjs')]);
+  const causeTest = runner('conformance/cause').run('node', [path.join(here, '../conformance/cause.test.mjs')]);
   let sel; try { sel = conformanceSelection({ root, pairsDir: path.join(here, 'pairs'), knownFile: path.join(here, '../conformance/known-findings.json') }); } catch (e) { sel = { error: e.message }; }
   console.log(`conformance: ${sel.error ?? sel.why}`);
   const modelJob = sel.error || (sel.pairs && !sel.pairs.length) ? null : pool.job(`conformance/model ${sel.pairs ? sel.pairs.join(',') : 'every pair'}`);
   const step = !modelJob ? null : modelJob.slots(WIDE, (n) => spawnCollect('node', [path.join(here, '../conformance/run.mjs'), '--jobs', String(n), '--work', path.join(tmp, 'conformance'), '--json', path.join(tmp, 'model-conformance.json')], { cwd: root, env: withEnv({ LEAN_PAIRS: sel.pairs ? sel.pairs.join(',') : '' }), maxBuffer: 1 << 26, dir: tmp, onSpawn: modelJob.onSpawn }));
   const t = await selectTest;
   add('conformance', 'select', 'the running rule: a changed pair runs, an unchanged one is skipped (conformance/select.test.mjs)', t.status === 0, (t.stdout ?? '').trim().split('\n').pop() || (t.stderr ?? '').trim().slice(-200));
+  const c = await causeTest;
+  add('conformance', 'cause', "a disagreement's cause on the bridge's own difference: two exact bigints are a value difference, past 2^53 is a binary64 number (conformance/cause.test.mjs)", c.status === 0, (c.stdout ?? '').trim().split('\n').pop() || (c.stderr ?? '').trim().slice(-200));
   if (sel.error) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", false, sel.error);
   else if (sel.pairs && !sel.pairs.length) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", true, `not run: ${sel.why}`);
   else {
