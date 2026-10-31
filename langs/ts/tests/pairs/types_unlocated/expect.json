@@ -1,0 +1,36 @@
+{
+ "scope": [
+  "holder_constructor",
+  "holder_leaf",
+  "holder_leaf_changed",
+  "untyped_let",
+  "leaf_or",
+  "callee_parameter",
+  "callee_changed",
+  "captured",
+  "captured_keys_find___0",
+  "shared_record"
+ ],
+ "equal": {
+  "holder_constructor": true,
+  "holder_leaf": true,
+  "holder_leaf_changed": false,
+  "untyped_let": true,
+  "leaf_or": true,
+  "callee_parameter": true,
+  "callee_changed": false,
+  "captured": false,
+  "captured_keys_find___0": true,
+  "shared_record": true
+ },
+ "why": "The 18 `type nesting too deep` sites the inventory's walk did not locate (design/types-inventory.md, form 7) were each a finite type ten levels deep (form 1), reached by a route the walk did not take from the raised line: a field read through `this`, a `let` with no type or initializer typed by its assignment, an argument read at its callee's parameter type, a callback reading the parameter of the function around it, and a record met near the top whose deep path the walk's once-per-walk record set hid. Before the depth bound was replaced by the descent guard (design/types-depth.md) each unit here was refused under `types`; each is now read at any depth. Holder's constructor and leafOr are the same text on both sides (proved). Holder.leaf binds the fifth level to a local first (proved); Holder.leafChanged reads the sibling `other` (not proved; lane B witnesses a value whose two leaves differ). untypedLet reads the leaf directly instead of through the untyped let (proved; before this lane the let was declared at the Option of its first assigned type while its reads took the checker's any, a Dafny resolution error that cost every unit of the file its proof). calleeParameter returns the fallback leafOr(undefined, f) returns (proved through leafOr's summary). calleeChanged returns the fallback where leafOr(a, f) returns a's leaf (not proved; lane B witnesses a defined a). captured's callback swaps the two sides of its equality test: the callback is proved; the function around it is not, as for the same unit over a one-level record (a commuted test inside a find callback is not carried to the caller's lemma, a limit outside the type reading), and lane B passes it. sharedRecord inlines its local near (proved).",
+ "b": {
+  "Holder.leaf": "PASS-bounded",
+  "Holder.leafChanged": "WITNESS",
+  "untypedLet": "PASS-bounded",
+  "calleeParameter": "PASS-bounded",
+  "calleeChanged": "WITNESS",
+  "captured": "PASS-bounded",
+  "sharedRecord": "PASS-bounded"
+ }
+}

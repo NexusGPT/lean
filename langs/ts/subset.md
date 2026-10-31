@@ -137,7 +137,7 @@ Each of these becomes a bodiless Dafny function of its arguments, the same on bo
 | `as T`, `<T>x` | a compatible assertion or opaque conversion | identity when Dafny types agree, else `ext_cast_A_B(x)`; tests of assertion-derived values remain uninterpreted |
 | Undecided type tests | assertion-derived values, unknown catch values, public structural class instances, optional or undeclared record keys | uninterpreted membership/tag functions of their values; an undeclared key is not known absent |
 | Tagged templates | ``sql`select ${id}` `` | `ext_tag_sql_1(["select ", ""], id)` |
-| `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first); an untyped `let x;` is `None` of the Option of its first assigned type, every narrowed read takes `.value` |
+| `let x: T;` without a value | `let out: string;` | `ext_uninit_T()`, never observed (TypeScript checks the assignment comes first); an untyped `let x;` is `None` of the Option of its first assigned type, every narrowed read takes `.value`; its reads take that held type too, never the checker's `any` ([types-inventory](design/types-inventory.md), form 7) |
 
 ## What is a fault
 
