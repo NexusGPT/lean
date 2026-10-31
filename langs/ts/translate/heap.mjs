@@ -79,6 +79,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (parts.length !== 1) return null;
     t = parts[0];
     if ((t.flags & TF.TypeParameter) && t.isThisType) { t = checker.getBaseConstraintOfType(t); if (!t) return null; } // `this` in an instance method: the class's instance type
+    if (t.flags & TF.TypeParameter) { const b = boundShape(t, depth); return b; } // a type parameter bounded by a record (an intersection of records): the record of the bound's fields
     if (t.flags & TF.NumberLike) return { kind: 'prim', d: NUM };
     if (t.flags & TF.StringLike) return { kind: 'prim', d: 'string' };
     if (t.flags & TF.BooleanLike) return { kind: 'prim', d: 'bool' };
@@ -116,6 +117,40 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     }
     return null;
   }
+  // a type parameter `T extends A & B` whose bound is a record (an intersection of records, read above): a value of T is an
+  // object of a subtype of the bound, and shapes are views (an object may hold more keys than its type names), so the
+  // value is a reference to the record of the bound's fields, as a parameter typed by the bound is. Any other bound (none,
+  // a primitive, an array, a union, a dictionary) has no shape here: what a subtype holds there is not read
+  function boundShape(t, depth) {
+    const c = checker.getBaseConstraintOfType(t); if (!c || c === t || (c.flags & (TF.Any | TF.Unknown | TF.TypeParameter))) return null;
+    const s = shapeOf(c, depth); return s && s.kind === 'rec' && !s.tuple ? s : null;
+  }
+  // `const [a, , b] = e` where e is a tuple (of one shape, its length fixed, or of mixed shapes, a record of positions):
+  // the array's iterator yields its elements in order, so each name is the element at its position, read in order; a
+  // hole skips a position. Out: a rest, a default (it reads undefined past the end), a nested pattern, `let` (a name
+  // rebound later), a pattern longer than the tuple, a non-tuple source, and a tuple of one shape in a real file (an
+  // element index there is an integer of the int reading only)
+  const tupleBinding = (d) => {
+    if (!ts.isArrayBindingPattern(d.name)) return null;
+    if (!d.initializer || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const)) return { why: 'tuple destructuring form (a const with an initializer)' };
+    const s = shapeOf(typeOf(d.initializer)); if (!s || !(s.tuple || (s.kind === 'arr' && s.fixed))) return { why: 'destructuring of a non-tuple' };
+    if (s.kind === 'arr' && isReal) return { why: 'destructuring of a tuple of one shape in a real file' };
+    const arity = s.tuple ?? s.fixed; if (d.name.elements.length > arity) return { why: 'destructuring past the end of a tuple' };
+    const els = [];
+    for (const [i, el] of d.name.elements.entries()) {
+      if (ts.isOmittedExpression(el)) continue;
+      if (el.dotDotDotToken || el.initializer || el.propertyName || !ts.isIdentifier(el.name)) return { why: 'tuple destructuring element form (a rest, a default or a nested pattern)' };
+      els.push({ name: el.name, i });
+    }
+    return { s, els };
+  };
+  // a call of a generic same-file unit: an argument for a parameter typed by a type parameter must hold the bound's own
+  // shape, since the callee reads its cell through the bound's constructor (a wider record is another constructor)
+  const genericArgWhy = (e) => {
+    const name = ts.isCallExpression(e) && ts.isIdentifier(e.expression) ? e.expression.text : null; const cu = name && fns.get(name); if (!cu || !unitTypeParameters(checker, cu).length) return null;
+    for (const [i, p] of cu.params.entries()) { const ps = shapeOf(typeOf(p.name)); const a = e.arguments[i]; if (!ps || !a || !isRefShape(ps)) continue; const as = shapeOf(typeOf(a)); if (!as || keyOf(as) !== keyOf(ps)) return 'an argument of another shape for a generic unit (its cell would be read through the bound\'s constructor)'; }
+    return null;
+  };
   // a discriminated union of records `A | B`: every alternative a record, and one field every alternative declares as
   // literals, the alternatives' literal sets pairwise disjoint (`kind: 'circle'` against `kind: 'square'`). The value is
   // a reference whose cell is one of the alternatives' constructors holding one of its discriminant values; a read of
@@ -488,7 +523,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (u.isCtor) { const w = classWhy(u.cls); if (w) no(`class: ${w}`); else if (!instanceShape(u.cls, 0)) no('class: a field without a shape'); else { const cw = ctorWhy(u.cls); if (cw) no(`constructor: ${cw}`); } } else if (u.accessor) no('accessor'); else if (u.cls && u.isStatic) no('static method');
     else if (u.cls) { const w = classWhy(u.cls); if (w) no(`class: ${w}`); else if (!instanceShape(u.cls, 0)) no('class: a field without a shape'); } // an instance method: `this` is a reference to the record of the class's fields
     if (u.fn.asteriskToken || u.isAsync) no('generator or async');
-    if (unitTypeParameters(checker, u).length) no('generic');
+    if (unitTypeParameters(checker, u).some((g) => !boundShape(checker.getTypeAtLocation(g), 0))) no('generic'); // a type parameter bounded by a record is read as the bound; any other stays out
     if (recursive.has(u.name)) no('recursive');
     if (!ok) return false;
     const names = new Set(); let lambdaDepth = 0; let usesIndex = false; const loopCalls = new Set(); let callsOut = false;
@@ -594,7 +629,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (!spread && s.fields.some((f) => !given.has(f.name) && !(f.shape.kind === 'opt' && f.shape.absent === 'u'))) return no('object literal misses a field'); // an optional field may be missing
         return;
       }
-      if (calleeOf(e, u)) { for (const a of e.arguments) checkExpr(a); return; }
+      if (calleeOf(e, u)) { const gw = genericArgWhy(e); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); return; }
       if (outsideCall(e)) { if (lambdaDepth) return no('a call outside the file inside a callback'); callsOut = true; if (outsideCall(e).recv) checkExpr(outsideCall(e).recv); for (const a of e.arguments) checkExpr(a); return; } // a world transition
       if (globalCall(e)) { const g = globalCall(e); if (g === 'Object.keys' && lambdaDepth) return no('allocation inside a callback'); const fd = (g === 'Math.floor' || g === 'Math.trunc') ? floorDiv(e) : null; if (fd) { if (lambdaDepth) return no('division inside a callback'); usesIndex = true; checkExpr(fd.left); return checkExpr(fd.right); } for (const a of e.arguments) checkExpr(a); return; } // a pure global
       if (reCall(e)) { const rc = reCall(e); if (rc.m === 'split' && lambdaDepth) return no('allocation inside a callback'); if (isReal && rc.m === 'search') return no('search in a real file'); checkExpr(rc.s); if (rc.r) checkExpr(rc.r); return; } // a regular expression literal: uninterpreted
@@ -657,7 +692,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (loop) { let ext = false; const w = (n) => { if (outsideCall(n)) ext = true; ts.forEachChild(n, w); }; w(s); if (ext) return no('a call outside the file in a loop body (it could grow the array)'); }
         if (loop && ts.isExpressionStatement(s)) { const e = unparen(s.expression); if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (['push', 'unshift'].includes(e.expression.name.text) || (e.expression.name.text === 'splice' && e.arguments.length > 2)) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') return no('loop body grows an array'); const c = calleeOf(e, u); if (c) loop.calls.add(c); }
         if (ts.isVariableStatement(s)) {
-          for (const d of s.declarationList.declarations) { if (!ts.isIdentifier(d.name) || !d.initializer) return no('binding form'); if (d.name.text === HW || names.has(d.name.text)) return no('name reused'); if (/_$/.test(d.name.text)) return no('name ending in an underscore (the generated names do)'); if (!shapeOf(typeOf(d.name))) return no(`local type: ${shapeWhy(typeOf(d.name))}`); names.add(d.name.text); checkExpr(d.initializer); }
+          for (const d of s.declarationList.declarations) {
+            const tb = tupleBinding(d); if (tb?.why) return no(tb.why);
+            if (tb) { checkExpr(d.initializer); for (const el of tb.els) { if (el.name.text === HW || names.has(el.name.text)) return no('name reused'); if (/_$/.test(el.name.text)) return no('name ending in an underscore (the generated names do)'); if (!shapeOf(typeOf(el.name))) return no(`local type: ${shapeWhy(typeOf(el.name))}`); names.add(el.name.text); } if (tb.s.kind === 'arr') usesIndex = true; continue; } // each element read in order; a tuple of one shape marks a read past its end
+            if (!ts.isIdentifier(d.name) || !d.initializer) return no('binding form'); if (d.name.text === HW || names.has(d.name.text)) return no('name reused'); if (/_$/.test(d.name.text)) return no('name ending in an underscore (the generated names do)'); if (!shapeOf(typeOf(d.name))) return no(`local type: ${shapeWhy(typeOf(d.name))}`); names.add(d.name.text); checkExpr(d.initializer); }
           continue;
         }
         if (ts.isReturnStatement(s)) { if (!s.expression !== proc) return no(proc ? 'a value returned from a procedure' : 'bare return'); if (i !== list.length - 1) return no('statement after return'); return s.expression ? checkExpr(s.expression) : undefined; }
@@ -691,7 +729,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           }
           if (isAssignCall(e) && assignLiterals(e)) { const al = assignLiterals(e); if (al.why) return no(al.why); checkExpr(e.arguments[0]); for (const x of al.writes) checkExpr(x.value); continue; } // literal sources: field writes on the target's node
           if (isAssignCall(e)) return no('assign of a source whose keys are not known exactly (a record value may carry keys its type does not name, and Object.assign copies them)'); // the table's same-shape row read only the declared fields: a false proof against field-by-field writes
-          if (calleeOf(e, u)) { for (const a of e.arguments) checkExpr(a); continue; }
+          if (calleeOf(e, u)) { const gw = genericArgWhy(e); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); continue; }
           if (outsideCall(e)) { checkExpr(e); continue; } // a transition as a statement: its world kept, its result dropped
           return no(ts.isCallExpression(e) ? (ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file') : `expression statement ${K[e.kind]}`);
         }
@@ -823,8 +861,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   function prelude() {
     if (!core.size) return [];
     const keys = [...shapes.keys()].sort();
-    const fld = (name) => `${dn(name)}_f`; // a record field's destructor: suffixed, so a field named items, heap or next never meets the array constructor's items
-    const ctor = (k) => { const s = shapes.get(k); if (s.kind === 'dict') return `${k}(keys_${k}: seq<string>, m_${k}: map<string, ${valD(s.v)}>, proto_${k}: bool)`; return s.kind === 'arr' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'set' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'map' ? `${k}(keys_${k}: seq<${valD(s.k)}>, m_${k}: map<${valD(s.k)}, ${valD(s.v)}>)` : s.kind === 'date' ? `${k}(tv_${k}: ${NUM})` : `${k}(${s.fields.map((f) => `${fld(f.name)}: ${fieldD(f.shape)}`).join(', ')})`; };
+    // a record field's destructor: suffixed, so a field named items, heap or next never meets the array constructor's items;
+    // a field name two records of the file hold at two Dafny types (the positions `_0`, `_1` of two tuples of mixed shapes,
+    // `id: number` beside `id: string`) is one destructor per constructor, since Dafny gives a destructor one type
+    const fieldTypes = new Map(); for (const k of keys) { const s = shapes.get(k); if (s.kind === 'rec') for (const f of s.fields) { if (!fieldTypes.has(f.name)) fieldTypes.set(f.name, new Set()); fieldTypes.get(f.name).add(fieldD(f.shape)); } }
+    const fld = (name, k = null) => (k && fieldTypes.get(name)?.size > 1 ? `${dn(name)}_${k}_f` : `${dn(name)}_f`);
+    const ctor = (k) => { const s = shapes.get(k); if (s.kind === 'dict') return `${k}(keys_${k}: seq<string>, m_${k}: map<string, ${valD(s.v)}>, proto_${k}: bool)`; return s.kind === 'arr' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'set' ? `${k}(items_${k}: seq<${valD(s.elem)}>)` : s.kind === 'map' ? `${k}(keys_${k}: seq<${valD(s.k)}>, m_${k}: map<${valD(s.k)}, ${valD(s.v)}>)` : s.kind === 'date' ? `${k}(tv_${k}: ${NUM})` : `${k}(${s.fields.map((f) => `${fld(f.name, k)}: ${fieldD(f.shape)}`).join(', ')})`; };
     const out = [];
     out.push('type Ref = nat');
     out.push(`datatype Obj = ${keys.length ? keys.map(ctor).join(' | ') + ' | ' : ''}Dead`);
@@ -866,7 +908,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (strUsed.has('re_search')) out.push(`function ReSearch(re: string, s: string): ${NUM}`); // the index of the first match, or -1
     for (const d of ['int', 'real']) if (strUsed.has(`numstr_${d}`)) out.push(`function NumStr_${d}(n: ${d}): string`); // Number::toString: a function of the number alone, bodiless
     if (keys.some((k) => shapes.get(k).kind === 'dict')) out.push(`const ObjectProtoNames: set<string> := {${OBJECT_PROTO.map((x) => JSON.stringify(x)).join(', ')}}`); // Object.getOwnPropertyNames(Object.prototype)
-    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'date' || (s.kind === 'dict' && s.v.kind === 'prim')) { /* primitive contents */ } else if (s.kind === 'dict') { conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else if (s.kind === 'set') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); if (s.k.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Keys ==> Is${keyOf(s.k)}(hw, x))`); } else for (const f of s.fields) if (isRefShape(f.shape)) conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name)})`); return conds.length ? conds.join(' && ') : 'true'; };
+    const cellOk = (k) => { const s = shapes.get(k); const conds = []; if (s.kind === 'arr') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'date' || (s.kind === 'dict' && s.v.kind === 'prim')) { /* primitive contents */ } else if (s.kind === 'dict') { conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); } else if (s.kind === 'set') { if (s.elem.kind !== 'prim') conds.push(`(forall i :: 0 <= i < |o.items_${k}| ==> Is${keyOf(s.elem)}(hw, o.items_${k}[i]))`); } else if (s.kind === 'map') { if (s.v.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Values ==> Is${keyOf(s.v)}(hw, x))`); if (s.k.kind !== 'prim') conds.push(`(forall x :: x in o.m_${k}.Keys ==> Is${keyOf(s.k)}(hw, x))`); } else for (const f of s.fields) if (isRefShape(f.shape)) conds.push(`Is${keyOf(f.shape)}(hw, o.${fld(f.name, k)})`); return conds.length ? conds.join(' && ') : 'true'; };
     out.push(`predicate WFCell(hw: HWorld, o: Obj) { match o ${keys.map((k) => `case ${k}(${(shapes.get(k).kind === 'rec' ? shapes.get(k).fields.map(() => '_') : shapes.get(k).kind === 'map' ? ['_', '_'] : shapes.get(k).kind === 'dict' ? ['_', '_', '_'] : ['_']).join(', ')}) => ${cellOk(k)}`).join(' ')} case Dead => false }`);
     out.push('predicate WF(hw: HWorld) { !hw.oob && (forall r :: r in hw.heap ==> r < hw.next) && (forall r :: r in hw.heap ==> WFCell(hw, hw.heap[r])) }');
     if (!isReal && keys.some((k) => shapes.get(k).kind === 'arr')) out.push(LIBRARY.helpers.Clamp); // the index clamp of slice and splice
@@ -918,8 +960,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         out.push(instantiate(LIB_ROW['Object.assign'].dafny, k, ''));
         for (const f of s.fields) {
           const F = dn(f.name), T = fieldD(f.shape);
-          out.push(`function Get_${k}_${F}(hw: HWorld, r: Ref): ${T} { if Is${k}(hw, r) then hw.heap[r].${fld(f.name)} else ${fieldDflt(f.shape)} }`);
-          out.push(`function Set_${k}_${F}(hw: HWorld, r: Ref, v: ${T}): HWorld { if Is${k}(hw, r) then hw.(heap := hw.heap[r := hw.heap[r].(${fld(f.name)} := v)]) else hw }`);
+          out.push(`function Get_${k}_${F}(hw: HWorld, r: Ref): ${T} { if Is${k}(hw, r) then hw.heap[r].${fld(f.name, k)} else ${fieldDflt(f.shape)} }`);
+          out.push(`function Set_${k}_${F}(hw: HWorld, r: Ref, v: ${T}): HWorld { if Is${k}(hw, r) then hw.(heap := hw.heap[r := hw.heap[r].(${fld(f.name, k)} := v)]) else hw }`);
         }
       }
     }
@@ -985,7 +1027,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // name of the same record, or a call, may have cleared it since the test)
     const locShape = (x) => shapeOf(typeOf(x));
     const inUnit = (id) => { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration ?? sym?.declarations?.[0]; return !!d && d.getSourceFile() === sf && d.pos >= u.fn.pos && d.end <= u.fn.end; }; // a name of the unit (a parameter, a local), else one from outside it
-    const declShape = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; return d && (ts.isParameter(d) || ts.isVariableDeclaration(d)) && ts.isIdentifier(d.name) ? shapeOf(typeOf(d.name)) : null; };
+    const declShape = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; return d && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isBindingElement(d)) && ts.isIdentifier(d.name) ? shapeOf(typeOf(d.name)) : null; };
     const absentCode = (x, to) => `Option<${to.inner.d}>.None`;
     function exprAs(x, to) { // x as a value of shape `to`
       if (to && to.kind === 'opt') { if (isAbsent(x)) return absentCode(x, to); const from = locShape(x); const c = expr(x); return from?.kind === 'opt' ? c : `Option.Some(${c})`; }
@@ -1241,7 +1283,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           out.push(`${pre ? pre + '\n' : ''}if ${c} then\n${indent(t)}\nelse\n${indent(el)}`);
           return out.filter(Boolean).join('\n');
         }
-        if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { if (keyedLocal(d.name, u.fn)) { const [ks, kr, ki] = element(unparen(d.initializer)); lines.push(`var ${keyName(d)} := ${ki};`); lines.push(`var ${presName(d)} := DictIn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${ownName(d)} := DictOwn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${dn(d.name.text)} := DictGet_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); continue; } const v = exprAs(d.initializer, shapeOf(typeOf(d.name))); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; } // a node read through a key: its presence beside it (keyedLocal)
+        if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { const tb = tupleBinding(d); if (tb) { const r = bind(exprAs(d.initializer, tb.s), 't'); for (const el of tb.els) { if (tb.s.tuple) lines.push(`var ${dn(el.name.text)} := Get_${tb.s.key}_${dn(`_${el.i}`)}(${HW}, ${r});`); else { lines.push(`var ${HW} := Oob_${tb.s.key}(${HW}, ${r}, ${el.i});`); lines.push(`var ${dn(el.name.text)} := Idx_${tb.s.key}(${HW}, ${r}, ${el.i});`); } } continue; } if (keyedLocal(d.name, u.fn)) { const [ks, kr, ki] = element(unparen(d.initializer)); lines.push(`var ${keyName(d)} := ${ki};`); lines.push(`var ${presName(d)} := DictIn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${ownName(d)} := DictOwn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${dn(d.name.text)} := DictGet_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); continue; } const v = exprAs(d.initializer, shapeOf(typeOf(d.name))); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; } // a node read through a key: its presence beside it (keyedLocal)
         if (ts.isReturnStatement(s)) { const v = s.expression ? exprAs(s.expression, rt) : '()'; const pre = flush(); out.push(`${pre ? pre + '\n' : ''}(${HW}, ${v})`); return out.filter(Boolean).join('\n'); }
         if (ts.isIfStatement(s)) {
           const c = cond(s.expression); const pre = flush();
@@ -1300,7 +1342,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const assigned = new Set(), read = new Map(); let usesThis = false;
       const w = (n) => {
         if (n.kind === K.ThisKeyword) usesThis = true;
-        if (ts.isIdentifier(n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && ts.isPropertyAssignment(n.parent) && n.parent.name === n)) { const d = declaredIn(n); if (d && d.pos >= u.fn.pos && d.end <= u.fn.end && !inner(d) && (ts.isVariableDeclaration(d) || ts.isParameter(d))) read.set(n.text, d); }
+        if (ts.isIdentifier(n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && ts.isPropertyAssignment(n.parent) && n.parent.name === n)) { const d = declaredIn(n); if (d && d.pos >= u.fn.pos && d.end <= u.fn.end && !inner(d) && (ts.isVariableDeclaration(d) || ts.isParameter(d) || ts.isBindingElement(d))) read.set(n.text, d); }
         if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(unparen(n.left))) assigned.add(unparen(n.left).text);
         if ((ts.isPostfixUnaryExpression(n) || ts.isPrefixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && ts.isIdentifier(unparen(n.operand))) assigned.add(unparen(n.operand).text); // an update is an assignment: the local is carried
         ts.forEachChild(n, w);
