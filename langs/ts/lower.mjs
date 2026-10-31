@@ -570,8 +570,10 @@ export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), curren
   const symOf = (id) => { const s = checker.getSymbolAtLocation(id); return s && s.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(s) : s; };
   const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression?.(x)) x = x.expression; return x; };
   const objectish = (id) => { const t = checker.getTypeAtLocation(id); const parts = t.flags & ts.TypeFlags.Union ? t.types : [t]; return parts.some((x) => !!(x.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive | ts.TypeFlags.TypeParameter))); };
-  const holders = []; // { src, slot, deep, node }: src's object is held at slot (a name; null when outside a name), deep when held below it
-  const climb = (top, src, deep) => {
+  // the steps from a root to a place: a property's name, '*' for an element or a computed key
+  const pathOf = (x) => { const out = []; for (;;) { if (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression?.(x)) { x = x.expression; continue; } if (ts.isPropertyAccessExpression(x)) { out.unshift(x.name.text); x = x.expression; continue; } if (ts.isElementAccessExpression(x)) { out.unshift(ts.isStringLiteral(x.argumentExpression) ? x.argumentExpression.text : '*'); x = x.expression; continue; } return out; } };
+  const holders = []; // { src, slot, path, node }: src's object is held at slot (a name; null when outside a name), at path below it (null: anywhere below)
+  const climb = (top, src, inner) => {
     for (;;) {
       const p = top.parent;
       if (!p) return;
@@ -579,14 +581,15 @@ export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), curren
       if (ts.isConditionalExpression(p) && p.condition !== top) { top = p; continue; }
       if (ts.isBinaryExpression(p) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(p.operatorToken.kind)) { top = p; continue; }
       if (ts.isBinaryExpression(p) && p.operatorToken.kind === K.CommaToken && p.right === top) { top = p; continue; }
-      if (ts.isArrayLiteralExpression(p) || (ts.isPropertyAssignment(p) && p.initializer === top) || ts.isShorthandPropertyAssignment(p)) { top = ts.isArrayLiteralExpression(p) ? p : p.parent; deep = true; continue; }
-      if (ts.isVariableDeclaration(p) && p.initializer === top) { if (ts.isIdentifier(p.name)) holders.push({ src, slot: symOf(p.name), deep, node: p }); return; } // a pattern reads the source's elements and keys, it holds no reference to it
-      if (ts.isBinaryExpression(p) && p.operatorToken.kind === K.EqualsToken && p.right === top) { const r = rootOf(p.left); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, deep: deep || r !== unparen(p.left), node: p }); return; }
-      if (ts.isNewExpression(p) && p.arguments?.includes(top)) { top = p; deep = true; continue; }
+      if (ts.isArrayLiteralExpression(p)) { top = p; inner = inner && ['*', ...inner]; continue; }
+      if ((ts.isPropertyAssignment(p) && p.initializer === top) || ts.isShorthandPropertyAssignment(p)) { top = p.parent; inner = inner && [ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : '*', ...inner]; continue; }
+      if (ts.isVariableDeclaration(p) && p.initializer === top) { if (ts.isIdentifier(p.name)) holders.push({ src, slot: symOf(p.name), path: inner, node: p }); return; } // a pattern reads the source's elements and keys, it holds no reference to it
+      if (ts.isBinaryExpression(p) && p.operatorToken.kind === K.EqualsToken && p.right === top) { const r = rootOf(p.left); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, path: inner && [...pathOf(p.left), ...inner], node: p }); return; }
+      if (ts.isNewExpression(p) && p.arguments?.includes(top)) { top = p; inner = null; continue; } // an instance may keep its argument anywhere
       if (ts.isCallExpression(p) && p.arguments.includes(top)) {
         const f = unparen(p.expression);
-        if (ts.isPropertyAccessExpression(f) && HOLDING_ROWS.has(f.name.text)) { const r = rootOf(f.expression); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, deep: true, node: p }); return; }
-        if (ts.isIdentifier(f) && units?.get(f.text)?.body) { top = p; continue; } // a same-file callee may return its argument
+        if (ts.isPropertyAccessExpression(f) && HOLDING_ROWS.has(f.name.text)) { const r = rootOf(f.expression); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, path: inner && [...pathOf(f.expression), '*', ...inner], node: p }); return; }
+        if (ts.isIdentifier(f) && units?.get(f.text)?.body) { top = p; inner = null; continue; } // a same-file callee may return its argument, or keep it below its result
       }
       return;
     }
@@ -598,10 +601,10 @@ export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), curren
     if (ts.isIdentifier(n) && n.parent && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n)) {
       const s = ts.isShorthandPropertyAssignment(n.parent) ? checker.getShorthandAssignmentValueSymbol(n.parent) : symOf(n);
       const d = s?.valueDeclaration;
-      if (d && (ts.isVariableDeclaration(d) || ts.isParameter(d)) && d.pos >= u.fn.pos && d.end <= u.fn.end && objectish(n)) climb(n, s, false);
+      if (d && (ts.isVariableDeclaration(d) || ts.isParameter(d)) && d.pos >= u.fn.pos && d.end <= u.fn.end && objectish(n)) climb(n, s, []);
     }
     const m = elementMutation(checker, n, { sf, current });
-    if (m && ts.isIdentifier(m.root) && (unparen(m.target) !== m.root || ts.isCallExpression(n) || ts.isDeleteExpression(n))) mutations.push({ node: n, sym: symOf(m.root), through: unparen(m.target) !== m.root }); // a write in place: a plain `x = v` rebinds the name, it changes no object
+    if (m && ts.isIdentifier(m.root)) { const path = pathOf(m.target), call = ts.isCallExpression(n) || ts.isDeleteExpression(n); if (path.length || call) mutations.push({ node: n, sym: symOf(m.root), path, call }); } // a write in place: a plain `x = v` rebinds the name, it changes no object
     ts.forEachChild(n, walk);
   };
   walk(u.body);
@@ -628,13 +631,17 @@ export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), curren
     }
     return false;
   };
+  // a write through the holder reaches the held object when its place runs through the slot: below it, or a call that
+  // changes the slot's object itself (`o.xs.push(1)` for `o = { xs: a }`); `rows[i] = p` rebinds the slot, it changes no object
+  const step = (x, y) => x === '*' || y === '*' || x === y;
+  const reaches = (path, m) => path === null ? true : path.every((x, i) => i < m.path.length && step(x, m.path[i])) && (m.path.length > path.length || m.call);
   for (const m of mutations) {
     if (!m.sym || bucket(m.sym)) continue;
     for (const h of holders) {
       if ((h.src === m.sym || h.slot === m.sym) && rebound(h, m)) continue;
       if (h.src === h.slot || bucket(h.src)) continue;
       if (h.src === m.sym && before(h, m, h.src)) return { node: m.node, name: m.sym.name, holder: h.node, other: h.slot?.name ?? null, side: 'source' };
-      if (h.slot === m.sym && (!h.deep || m.through) && before(h, m, h.src)) return { node: m.node, name: m.sym.name, holder: h.node, other: h.src.name, side: 'holder' };
+      if (h.slot === m.sym && reaches(h.path, m) && before(h, m, h.src)) return { node: m.node, name: m.sym.name, holder: h.node, other: h.src.name, side: 'holder' };
     }
   }
   return null;

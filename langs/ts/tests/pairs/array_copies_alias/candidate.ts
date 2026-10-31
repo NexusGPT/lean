@@ -9,3 +9,5 @@ export async function heldEarlierTurn(xs: number[]): Promise<number> { return 0;
 export async function copiedFirst(x: number): Promise<number> { return 1; }
 export async function writtenThenHeld(x: number): Promise<number> { const a = [x]; const n = x * 7 % 1000003 === 5 ? 2 : 1; return n; }
 export async function reboundFirst(x: number): Promise<number> { return 1; }
+export async function writtenBesideSlot(x: number): Promise<number> { return 1; }
+export async function writtenThroughSlot(x: number): Promise<number> { return 1; }

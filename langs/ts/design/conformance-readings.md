@@ -145,14 +145,17 @@ it and only lane A could tell).
   table) through a local or a parameter is refused (`alias-mutation`, reading `mutation`) when another holder of the
   same object precedes it: the object bound to a name (an initializer, `=`), put in an array or object literal's slot,
   handed to an in-place collection row (push, unshift, splice, set, add, fill) or to `new`, or to a same-file call
-  whose result is so held (it may return its argument). The holder's own side too: a write through the holder's name
-  (bound whole) or through a path below it (held in a slot). A holder counts when it precedes the write in the text or
+  whose result is so held (it may return its argument). The holder's own side too: a write through the holder that
+  runs through the slot holding the object (the slot's path: a property's name, `*` for an element, anywhere for `new`
+  or a same-file callee), below it or a changing call on it (`o.xs.push(1)` for `o = { xs: a }`); a write beside the
+  slot (`identity.userId = …` after `identity.user = user`) or one that rebinds the slot (`rows[i] = p`) changes no
+  held object. A holder counts when it precedes the write in the text or
   shares a loop with it that does not declare the name anew (an earlier turn's holder), unless a statement on the
   write's path between them rebinds the written name (`flat = []`: from there it names another object; a rebinding to a
   held object is a holder of its own). A plain `x = v` is no write in place. Only the value reading asks: the
   heap core reads every holder on the one object (`heap_canonical`, the sync units of the pair).
 - **What stays admitted.** A copy holds no reference: `const b = [...a]; a.push(1)` is proved (`copiedFirst`). A write
-  before the second name exists (`writtenThenHeld`), a name rebound before the write (`reboundFirst`; `let flat =
+  before the second name exists (`writtenThenHeld`), a write beside the held slot (`writtenBesideSlot`), a name rebound before the write (`reboundFirst`; `let flat =
   merged; if (g) { flat = []; flat.push(h) }`, lint_misfires), a row built then stored in its own loop turn (the name declared
   inside the loop), a bucket local's push (common.mjs bucketMaps writes its map), a pattern (`const [x] = a` reads
   elements, holds no reference to a).
