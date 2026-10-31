@@ -205,7 +205,8 @@ export function census(root, opts = {}) {
       // unit every stopping finding of which is such is environment-blocked by the first; one with a finding judged on
       // resolved types is stopped by that finding, its reading
       origins = new Map(); const stopsOf = new Map();
-      for (const f of findings) if (f.unit && !f.env && !envBlocked.has(f.unit)) { const o = environmentOf(L.checker, sf, f); if (o) origins.set(f, o); if (!stopsOf.has(f.unit)) stopsOf.set(f.unit, []); stopsOf.get(f.unit).push(f); }
+      const originOf = (f) => { try { return environmentOf(L.checker, sf, f); } catch (e) { log(`! ${path.relative(root, file)}:${f.line}: the origin of the finding's values was not read (${String(e.message).slice(0, 120)}); the finding keeps its reading`); return null; } };
+      for (const f of findings) if (f.unit && !f.env && !envBlocked.has(f.unit)) { const o = originOf(f); if (o) origins.set(f, o); if (!stopsOf.has(f.unit)) stopsOf.set(f.unit, []); stopsOf.get(f.unit).push(f); }
       typeEnv = new Map([...stopsOf].filter(([, fs_]) => fs_.every((f) => origins.has(f))).map(([unit, fs_]) => [unit, fs_[0]]));
       const kindOf = (o) => {
         if (install.status === 'install-failed') return 'install-failed';
