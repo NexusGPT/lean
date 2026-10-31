@@ -440,6 +440,51 @@ Pair `heap5_rest` (`.tsx`): `Card` (the title named first, the same tree over th
 the lemma was withheld), `Badge` (a changed member forwarded: the shapes differ, withheld, WITNESS), `Plain`
 (untouched). Lint: unchanged.
 
+### 2026-10-31: every depth of a pattern, rest parameters, a part with no term (lane core-identity-destructured)
+
+The reading above held a top-level object pattern of identifier fields only: a nested pattern
+(`{ inner: { tag } }`), a rest inside one, and a rest parameter (`...all`) had no term, or the wrong one, and the
+lemma was withheld as an unreadable shape. `identitySkeleton` (`heap.mjs`) now reads a parameter's pattern as one
+recursion, `bindPattern(pattern, source)`, the source the input path of the pattern's value (`arg<i>` at the top):
+- a field bound at any depth of an object pattern is the input path to it: `arg0.inner.tag` (a key that is no
+  identifier name is written `arg0["a.b"]`, so it never meets the path of a nested field);
+- a record rest is a fresh node whose members are its source's less the keys named beside it,
+  `#n{...@arg0.inner\["note"]}` (the excluded keys sorted, a `#` in a key escaped, so canonical numbering never
+  reaches into a key); a computed key beside it leaves the rest no term (the excluded set is not known);
+- an array pattern's rest is a fresh array of its source's elements from its place, `#n[...@arg0.list>1]`;
+- a rest parameter is a fresh array of the arguments from its place, `#n[...@args>i]`: JavaScript makes a new array
+  per call (ECMA-262 FunctionDeclarationInstantiation, CreateArrayFromList), so no caller holds it. It was the input
+  path `@all`, sound but read as a node the caller holds, so a copy `[...all]` differed from it;
+- a spread of a fresh node the skeleton built (an object or array literal, a rest), of the same kind (a record into a
+  record or JSX props, an array into an array), is its parts: spreading copies the members (CopyDataProperties; an
+  array's iteration), so `[...all]` and `all` are one shape, `#0[...@args>0]`, and `[all, all]` (one node twice)
+  still differs from `[all, [...all]]` (two nodes).
+No term, as before or newly: a binding with a default and every binding under one (its value may be the default's
+node), every binding of a parameter that has a default (`({ a }: P = D)`), an element of an array pattern (an
+element read has no path here, as an element of an input array), a binding the unit writes again. A binding with no
+term still holds an input node: every name a parameter's pattern binds counts as rooted at the input for the writes
+(`paramsOrThis`), so a write through one with no readable path makes the shape unreadable (before, a destructured
+binding the unit wrote through was neither bound nor a parameter, and its write went unrecorded).
+A soundness defect of the guard met on the way: an object literal's part with no term was written as the text `null`
+(`{ a: first, b: first }` with `first` an array pattern's element read `#0{a:null,b:null}`, determinate, and equal to
+the candidate's `{ a: first, b: structuredClone(first) }`, so the lemma was let through while lane B witnesses the
+sharing). A part with no term now makes the literal's term null, as the array, JSX and `new` parts already did.
+That fix alone would have withheld a lemma held soundly before (`type_assertions` `fieldHeld`, `{ v: x as number }`
+with `x: any`: the part had no term because the path stopped at the assertion): an `as`, a `<T>` assertion and a
+`satisfies` are erased at run time, so `path` reads through them to the operand's node, as it read through `!`
+(`#0{v:@x}` on both sides: proved again). Every other unit of the pair list the fix moves (`comma_operator`
+`aliasTag`, `readme_ledger` `applyAll`, `void_promise` `handout`, `type_assertions` `fieldBumped`, `stack_text`
+`returnsStack`) already expected no proof.
+`layer1Risk` is unchanged: its `bindNames` already counted every binding of a pattern at its depth.
+Stays out: an identifier parameter with a default keeps the input path `@p` (the interface check requires the two
+defaults to be the same text; reported, not read here); an element of an array pattern; a record rest beside a
+computed key; a rest the unit writes through (no term, so its copies are withheld).
+Pair `identity_destructured`: `innerTag`, `innerRest`, `renamed` (nested fields and a nested rest: proved),
+`copied`, `lead` (a rest parameter copied again: proved), `twice` (one rest node twice against two: withheld,
+WITNESS), `fallback` (a default: withheld, lane B equal), `paired` (a part with no term: withheld, WITNESS; it was
+proved), `stamp` (a write through a nested binding the unit also names: withheld, WITNESS; it was proved). Six rows
+fail at lead-b5c07450, all pass here. Lint: unchanged. Census: `lane/core-identity-destructured-result.md`.
+
 ## 21b. Three readings shared with the ordinary lane
 
 Found by checking the suite's other pairs against the widened core, decided by the lead: the core never loses a proof

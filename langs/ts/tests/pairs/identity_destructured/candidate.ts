@@ -42,3 +42,8 @@ export function fallback({ tag = { label: "none" } }: { tag?: Tag }) {
 export function paired([first]: Tag[]) {
   return { a: first, b: structuredClone(first) };
 }
+
+export function stamp({ inner: { tag } }: Q) {
+  tag.label = "y";
+  return 1;
+}

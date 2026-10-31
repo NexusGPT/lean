@@ -37,3 +37,8 @@ export function fallback({ tag = { label: "none" } }: { tag?: Tag }) {
 export function paired([first]: Tag[]) {
   return { a: first, b: first };
 }
+
+export function stamp({ inner: { tag } }: Q) {
+  tag.label = "x";
+  return 1;
+}

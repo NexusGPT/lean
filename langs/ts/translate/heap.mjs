@@ -1511,17 +1511,41 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // value-tree equality proved by layer 1 is a graph equality under SEMANTICS item 2. This measures determinacy; the
   // cross-side comparison is the theorem's, not yet written.
   function identitySkeleton(u) {
-    const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) ? p.name.text : null)).filter(Boolean));
+    const params = new Set(u.params.map((p) => (ts.isIdentifier(p.name) && !p.dotDotDotToken ? p.name.text : null)).filter(Boolean)); // a rest parameter is no input path: a fresh array (below)
     const bound = new Map(); // local -> its skeleton term, when its initializer has one
+    const members = new Map(); // a fresh node's term -> its parts: spreading it copies them (ECMA-262 CopyDataProperties, and an array's iteration)
     let freshId = 0;
-    const destructured = []; // [name, term] of a destructured parameter's bindings: a field is the path `arg<i>.f`, a rest a fresh node of the input's members
-    u.params.forEach((p, i) => { if (!ts.isObjectBindingPattern(p.name)) return; for (const el of p.name.elements) { if (!ts.isIdentifier(el.name)) continue; const key = el.propertyName ? (ts.isIdentifier(el.propertyName) || ts.isStringLiteral(el.propertyName) ? el.propertyName.text : null) : el.name.text; if (el.dotDotDotToken) destructured.push([el.name.text, `#${freshId++}{...@arg${i}}`]); else if (key !== null && !el.initializer) destructured.push([el.name.text, `arg${i}.${key}`]); } });
+    // a parameter's bindings (design/heap-stage5.md 0b): a field bound at any depth of an object pattern is the input
+    // path to it (`arg0.inner.tag`); a record rest a fresh node of its source's members less the keys named beside it;
+    // an array pattern's rest a fresh array of its source's elements from its place; a rest parameter a fresh array of
+    // the arguments from its place (FunctionDeclarationInstantiation: CreateArrayFromList, a new array per call). No
+    // term: a binding with a default or under one (its source may be the default's value), under a parameter's default,
+    // an element of an array pattern (an element read has no path here), under a computed key
+    const destructured = [];
+    const patternNames = new Set(); // every name a parameter binds: a write through one is a write through the input, read or not
+    const keyOf = (el) => { const k = el.propertyName ?? el.name; return ts.isIdentifier(k) || ts.isStringLiteral(k) || ts.isNumericLiteral(k) ? k.text : null; };
+    const step = (src, key) => (/^[A-Za-z_$][\w$]*$/.test(key) ? `${src}.${key}` : `${src}[${JSON.stringify(key)}]`);
+    const freshNode = (open, parts, close) => { const tm = `#${freshId++}${open}${parts}${close}`; members.set(tm, parts); return tm; };
+    const bindPattern = (pat, src) => { // src: the input path of the pattern's source, null when it has none
+      const names = (n) => { if (ts.isIdentifier(n)) patternNames.add(n.text); else for (const el of n.elements) if (!ts.isOmittedExpression(el)) names(el.name); };
+      names(pat);
+      if (ts.isObjectBindingPattern(pat)) {
+        const named = pat.elements.filter((el) => !el.dotDotDotToken).map(keyOf);
+        for (const el of pat.elements) {
+          if (el.dotDotDotToken) { if (ts.isIdentifier(el.name) && src !== null && named.every((k) => k !== null)) destructured.push([el.name.text, freshNode('{', `...@${src}\\${JSON.stringify([...named].sort()).replace(/#/g, '\\u0023')}`, '}')]); continue; }
+          const key = keyOf(el); const at = src === null || key === null || el.initializer ? null : step(src, key);
+          if (ts.isIdentifier(el.name)) { if (at !== null) destructured.push([el.name.text, at]); } else bindPattern(el.name, at);
+        }
+      } else pat.elements.forEach((el, k) => { if (ts.isOmittedExpression(el)) return; if (el.dotDotDotToken && ts.isIdentifier(el.name)) { if (src !== null) destructured.push([el.name.text, freshNode('[', `...@${src}>${k}`, ']')]); } else if (!ts.isIdentifier(el.name)) bindPattern(el.name, null); });
+    };
+    u.params.forEach((p, i) => { if (ts.isIdentifier(p.name) && p.dotDotDotToken) { patternNames.add(p.name.text); destructured.push([p.name.text, freshNode('[', `...@args>${i}`, ']')]); } else if (!ts.isIdentifier(p.name)) bindPattern(p.name, p.initializer ? null : `arg${i}`); });
+    const spreadPart = (src, open) => (typeof src === 'string' && members.has(src) && /^#\d+/.exec(src)[0].length === src.indexOf(open) ? members.get(src) : null); // a spread of a fresh node of the same kind (a record into a record, an array into an array): its parts
     const path = (e) => { // an input path as a string, or null
       e = unparen(e);
       if (e.kind === K.ThisKeyword) return 'this';
       if (ts.isIdentifier(e)) return params.has(e.text) ? e.text : bound.has(e.text) ? bound.get(e.text) : null;
       if (ts.isPropertyAccessExpression(e)) { const b = path(e.expression); return typeof b === 'string' ? `${b}.${e.name.text}` : null; }
-      if (ts.isNonNullExpression(e)) return path(e.expression);
+      if (ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isTypeAssertionExpression(e) || ts.isSatisfiesExpression(e)) return path(e.expression); // erased at run time: the operand's node
       return null;
     };
     const term = (e) => { // the skeleton of a reference-typed expression; a non-reference expression is a leaf
@@ -1531,24 +1555,24 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isObjectLiteralExpression(e)) {
         const parts = [];
         for (const p of e.properties) {
-          if (ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name)) parts.push(`${p.name.getText(sf)}:${term(p.initializer)}`);
-          else if (ts.isShorthandPropertyAssignment(p)) parts.push(`${p.name.text}:${term(p.name)}`);
-          else if (ts.isSpreadAssignment(p)) { const src = path(p.expression); const s = shapeOf(typeOf(p.expression)); if (!spreadFreshOrPath(p.expression, s)) return null; parts.push(src === null ? '...fresh' : `...${typeof src === 'string' ? '@' + src : src}`); }
+          if (ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name)) { const tm = term(p.initializer); if (tm === null) return null; parts.push(`${p.name.getText(sf)}:${tm}`); } // a part with no term: the node's identity is not visible
+          else if (ts.isShorthandPropertyAssignment(p)) { const tm = term(p.name); if (tm === null) return null; parts.push(`${p.name.text}:${tm}`); }
+          else if (ts.isSpreadAssignment(p)) { const src = path(p.expression); const s = shapeOf(typeOf(p.expression)); if (!spreadFreshOrPath(p.expression, s)) return null; const own = spreadPart(src, '{'); if (own !== null) { if (own) parts.push(own); } else parts.push(src === null ? '...fresh' : `...${typeof src === 'string' ? '@' + src : src}`); }
           else return null;
         }
-        return `#${freshId++}{${parts.join(',')}}`;
+        return freshNode('{', parts.join(','), '}');
       }
       if (ts.isArrayLiteralExpression(e)) {
         const parts = [];
-        for (const x of e.elements) { if (ts.isSpreadElement(x)) { if (!spreadFreshOrPath(x.expression, null)) return null; const src = path(x.expression); parts.push(src === null ? '...fresh' : `...${typeof src === 'string' ? '@' + src : src}`); } else { const tm = term(x); if (tm === null) return null; parts.push(tm); } }
-        return `#${freshId++}[${parts.join(',')}]`;
+        for (const x of e.elements) { if (ts.isSpreadElement(x)) { if (!spreadFreshOrPath(x.expression, null)) return null; const src = path(x.expression); const own = spreadPart(src, '['); if (own !== null) { if (own) parts.push(own); } else parts.push(src === null ? '...fresh' : `...${typeof src === 'string' ? '@' + src : src}`); } else { const tm = term(x); if (tm === null) return null; parts.push(tm); } }
+        return freshNode('[', parts.join(','), ']');
       }
       if (ts.isConditionalExpression(e)) { const a = term(e.whenTrue), b = term(e.whenFalse); return a === null || b === null ? null : `(?${a}:${b})`; }
       if (ts.isJsxElement(e) || ts.isJsxSelfClosingElement(e) || ts.isJsxFragment(e)) { // an element is a fresh node: its attributes and children are its parts
         const open = ts.isJsxElement(e) ? e.openingElement : ts.isJsxFragment(e) ? null : e;
         const parts = [];
         if (open) for (const a of open.attributes.properties) {
-          if (ts.isJsxSpreadAttribute(a)) { const tm = term(a.expression); if (tm === null) return null; parts.push(`...${tm}`); }
+          if (ts.isJsxSpreadAttribute(a)) { const tm = term(a.expression); if (tm === null) return null; const own = spreadPart(tm, '{'); if (own !== null) { if (own) parts.push(own); } else parts.push(`...${tm}`); }
           else if (ts.isJsxAttribute(a)) { const init = a.initializer; if (!init) { parts.push(`${a.name.getText(sf)}:.`); continue; } if (ts.isJsxExpression(init)) { if (!init.expression) continue; const tm = term(init.expression); if (tm === null) return null; parts.push(`${a.name.getText(sf)}:${tm}`); } else parts.push(`${a.name.getText(sf)}:.`); }
         }
         const kids = ts.isJsxSelfClosingElement(e) ? [] : e.children;
@@ -1581,7 +1605,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const sites = [], writes = []; let nestedWrite = false; // nestedWrite: a write through an input whose target path could not be read
     const elementOf = new Set(); // names bound to the elements of a loop over an input: a write through one has no readable path
     let inFn = 0; // inside a nested function of the unit
-    const paramsOrThis = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && params.has(r.text)) || r.kind === K.ThisKeyword || (ts.isIdentifier(r) && (bound.has(r.text) || elementOf.has(r.text))); };
+    const paramsOrThis = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && params.has(r.text)) || r.kind === K.ThisKeyword || (ts.isIdentifier(r) && (bound.has(r.text) || elementOf.has(r.text) || patternNames.has(r.text))); }; // a parameter's binding with no term still holds an input node: a write through it has no readable path
     // a local written after its binding (a mutator, an assignment through it, a let rebound) has no fixed skeleton
     const written = new Set();
     const scan = (n) => {
