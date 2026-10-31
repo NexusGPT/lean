@@ -544,9 +544,12 @@ export function sandbox(env, root) {
     // member's descriptor, which is defined on the target), so a method of an instance made by `new`, a static method
     // and a getter run what the decorator installed. A fake decorator (an outside package's, not the package's own code)
     // is run for its reads and calls, but its result never replaces: what it would install is unknown, and the declared
-    // code stays the code under test (the decorator table's rows apply in decoratedModule)
+    // code stays the code under test (the decorator table's rows apply in decoratedModule). Under env.declaredCode (the
+    // model conformance step, design/model-conformance.md: a model is translated from the declared text, and a member a
+    // decorator of the package returns is read as its declared text, design/heap-stage5.md 20b) no result replaces either,
+    // so Node runs the code the model was translated from
     js = js.replace(/var __decorate = \(this && this\.__decorate\) \|\| function \(decorators, target, key, desc\) \{[\s\S]*?\n\};/,
-      'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { var own = !d.__isFake, v; try { v = c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; v = undefined; } if (own && v && !v.__isFake) r = v; } } return c > 3 && r && Object.defineProperty(target, key, r), r; };');
+      'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { var own = ' + (env.declaredCode ? 'false' : '!d.__isFake') + ', v; try { v = c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; v = undefined; } if (own && v && !v.__isFake) r = v; } } return c > 3 && r && Object.defineProperty(target, key, r), r; };');
     const mod = { exports: {} };
     cache.set(abs, mod);
     loadedFiles.add(abs);

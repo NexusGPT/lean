@@ -135,6 +135,22 @@ operations, so those units reach a part with no body and no longer execute again
 `about` says why, and the retired entries stay in the file's git history at e2c729a0; 77 remain (69 signed zero, 5 value,
 2 past 2^53, 1 aliased), every one seen in this run.
 
+## 2026-10-31: Node runs the declared code a decorator of the package wraps (lane fix-admission-reds)
+
+Found by the admission run at lead-vm b4afa690: `decorators_metadata/Dial.seed` (`@Count() static seed() { return 1 }`)
+disagreed on every input, Node 2 against the model's 1. Since heap-stage5.md 20c lane B's loader applies a decorator of
+the package's own code as TypeScript's `__decorate` does, so `Dial.seed` ran `Count`'s counting descriptor. The model
+reads the declared text: a member a decorator of the package returns is its own text, and a call of it elsewhere is a
+request of the world (20b). Node and the model ran two different functions. That is not a translator defect, and not
+a difference the model is allowed (no axiom covers it).
+Reading: the conformance side (`node-side.mjs nodeRun`) sets `env.declaredCode`. Under it the loader (`exec/run.mjs`)
+runs every decorator for its reads and calls, and no result replaces the class or the member, which was lane B's rule
+before 20c. So Node runs the code the model was translated from, as `planOf` already does for the emit mode. Lane B's
+own runs keep 20c's routes (the flag is off there): `made` and `seeds` stay WITNESS. A decorator of the table
+(`decorators.json`) is applied in `decoratedModule` under both settings, because the model reads its row too.
+Check: `LEAN_PAIRS=decorators_metadata node conformance/run.mjs` before the change: `1 executable: 0 agree, 1 disagree
+... 1 NEW FINDING(S)`. After: `1 executable: 1 agree, 0 disagree ... NO NEW FINDING`.
+
 ## Measurement
 
 See the lane reports under W: `harness/lanes/model-conformance.md` (the step) and `harness/lanes/oracle-cost.md` (its
