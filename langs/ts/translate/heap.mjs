@@ -311,7 +311,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   };
   const CB1 = new Set(['map', 'filter', 'some', 'every', 'find', 'findIndex']); // the array methods of one pure callback the core reads
   // a callback's body as bindings and a result: `(x) => e`, or `(x) => { const a = e1; …; return e; }`, each binding a
-  // `const` of one name with an initializer, written in place in the Dafny lambda (`var a := e1; e`); any other block
+  // `const` of one name with an initializer, written in place in the Dafny lambda as its value (cbCode); any other block
   // (a `let`, a branch, a second return) has no reading here
   const cbParts = (cb) => {
     if (!ts.isBlock(cb.body)) return { binds: [], ret: cb.body };
@@ -1067,6 +1067,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // narrowed soundly: nothing else writes it), a narrowed field read marks the world when it finds no value (another
     // name of the same record, or a call, may have cleared it since the test)
     const locShape = (x) => shapeOf(typeOf(x));
+    const inPlace = new Map(); // a callback binding's declaration -> its value's code, while its callback is written (cbCode)
     const inUnit = (id) => { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration ?? sym?.declarations?.[0]; return ownDecl(u, d); }; // a name of the unit (a parameter, a local), else one from outside it
     const declShape = (id) => { const d = checker.getSymbolAtLocation(id)?.valueDeclaration; return d && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isBindingElement(d)) && ts.isIdentifier(d.name) ? shapeOf(typeOf(d.name)) : null; };
     const absentCode = (x, to) => `Option<${to.inner.d}>.None`;
@@ -1104,7 +1105,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (isAbsent(e)) return absentCode(e, shapeOf(checker.getContextualType(e)));
       if (ts.isIdentifier(e) && !inUnit(e)) { const ov = outsideValue(e); if (ov.kind === 'const') return `(${expr(ov.init)})`; impUsed.set(ov.key, ov.sh.d); return `${ov.key}()`; } // a module constant by its initializer, an import by its key
       if (ts.isIdentifier(e) && keyedLocal(e, u.fn)) { keyMarkUsed = true; lines.push(`var ${HW} := KeyMark(${HW}, ${ownName(keyedLocal(e, u.fn))});`); return dn(e.text); } // a use other than a test or a field's plain write: modelled only when the key was owned
-      if (ts.isIdentifier(e)) { const ds = declShape(e), ls = locShape(e); if (ds?.kind === 'opt' && ls && ls.kind !== 'opt') return `OptOr(${dn(e.text)}, ${dflt(ls)})`; return dn(e.text); }
+      if (ts.isIdentifier(e)) { const v = inPlace.get(checker.getSymbolAtLocation(e)?.valueDeclaration) ?? dn(e.text); const ds = declShape(e), ls = locShape(e); if (ds?.kind === 'opt' && ls && ls.kind !== 'opt') return `OptOr(${v}, ${dflt(ls)})`; return v; }
       if (e.kind === K.ThisKeyword) return dn('this');
       if (ts.isNumericLiteral(e)) return num(e.text);
       if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e)) return strEsc(e.text);
@@ -1302,8 +1303,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (m === 'splice') { const a = expr(e.arguments[0]), d = expr(e.arguments[1]); const ins = e.arguments.slice(2).map((x) => `[${expr(x)}]`); lines.push(`var (${HW}, ${out}) := Splice_${s.key}(${HW}, ${r}, ${a}, ${d}, ${ins.length ? ins.join(' + ') : `[]`});`); return out; }
       throw new Error(`heap: no table row for .${m}`);
     }
-    // a callback's body inside its lambda: each binding written in place, in order, as a Dafny let, then the result
-    const cbCode = (cb, sh = null) => { const { binds, ret } = cbParts(cb); const bs = binds.map((d) => `var ${dn(d.name.text)} := ${exprAs(d.initializer, shapeOf(typeOf(d.name)))};`); const v = sh ? exprAs(ret, sh) : expr(ret); return bs.length ? `(${bs.join(' ')} ${v})` : v; };
+    // a callback's body inside its lambda: each binding written in place, in order, as its value (each use of its name
+    // is its initializer, as a module constant's is in expr), then the result. Nothing writes inside a callback, so
+    // the value is the same; and a callback is a function value the two sides compare by its text (Dafny has no
+    // extensionality for functions), so naming a part of the result, or writing a binding's value in place, leaves
+    // the function the same text and the unit around it provable (heap-stage5.md 11, read again at the merge)
+    const cbCode = (cb, sh = null) => { const { binds, ret } = cbParts(cb); for (const d of binds) inPlace.set(d, `(${exprAs(d.initializer, shapeOf(typeOf(d.name)))})`); const v = sh ? exprAs(ret, sh) : expr(ret); for (const d of binds) inPlace.delete(d); return v; };
     // an element's receiver and index, each evaluated once and bound
     const bind = (code, p) => { if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(code) || /^-?\d+(\.\d+)?$/.test(code)) return code; if (inLam) return `(${code})`; const x = fresh(p); lines.push(`var ${x} := ${code};`); return x; }; // a name or a literal is its own value; anything else is bound once (inside a callback, where nothing writes, it is written in place)
     // a numeric operator on two evaluated operands: * exact, % and / total with a zero divisor marking the world, the
