@@ -42,3 +42,33 @@ comes through.
 `lane_a`) beside `exec/run.mjs`: a second product, which stopped matching this one once the doubles lane landed. It can
 read `certificate.timing` of one `bin/lean check` per unit instead (lane B its `B`, lane A the sum of the lane A keys
 present); its baseline is then re-cut, since lane A no longer means the old pipeline.
+
+## 2026-10-31: the render row, `lanes.B.bound.render`
+
+**The record.** Lane B's bound carries a render row beside `bound.states`, for the pixel-diff lane of DA
+(`docs/architecture/pixel-diff-lane.md`, "The contract with lean's render row"). It is built in `exec/run.mjs`
+`runPairOnce` where the bound is built, and reaches `certificate.lanes.B.bound` through `check.mjs` (and `pr.mjs`'s
+basic certificate) unchanged. Five fields:
+
+| field | type | source |
+|---|---|---|
+| `component` | boolean | some state of `bound.states` holds a `tree` with an element in it (`isJsxValue`): the parent returned an element on that input |
+| `clock.epoch` | integer, ms | `CLOCK_EPOCH` of `exec/record.mjs`: the one constant the sandbox's `Date` and `Date.now` count from and the witness record names as `clockEpoch` |
+| `sequences[]` | list of `{input, labels}` | every command path of `runSequences` (both the click machine and the schedule explorer) whose every step was equal on both sides, with the input it was mounted on; the mount alone (no label) is the state itself and is not listed. A WITNESS's own sequence is its witness's |
+| `targets[]` | list of `{label, path, key, id, testid, role, name}` | per handler label, the element that holds it: from every state's tree (each `on[A-Z]` prop observed as `$handler`) and from every tree the parent's sequence paths reached (every command label of `treeHandlers`, so a handler shown only after a click has its target). `path` is the label before its last `:`; `key`, `id`, `role` are those props, `testid` is `data-testid`, `name` is `aria-label`; each a string or number, else null. A label whose element changes its props between states has one row per distinct target |
+| `leanHead` | string | `opts.recordHead`, the head every witness record and the unit record name (`leanHeadForRecords`) |
+
+**Why it cannot change a verdict.** Nothing reads `bound.render`: it is written beside the observations, after them,
+from values lane B already held (the states, the trees the sequence paths reached, the labels they fired); no
+comparison, budget or rung reads it. The epoch moved into one constant read by the sandbox and the record, the same
+value as before.
+
+**Not in it.** The finite lane (`exec/finite.mjs`) walks click orders from prop assignments, not from drawn inputs; an
+assignment has no index in `bound.states`, so its paths are not listed and a component it decides has `sequences`
+empty (its mount targets are listed). A bound built outside `runPairOnce` (a NEW unit, a REFUSE render-impure, a
+spin-bound kill) has no render row.
+
+**Checks.** The pair `render_row_fields` (one row per field per unit, read from `check.mjs`'s certificate): `Panel`
+renders on every input, its clean sequences walk the button's click and the reset span's hover that only a click shows,
+with both targets; `total` never renders (`component` false, no sequence, no target); `Toggle` is a WITNESS after one
+click. The epoch row compares with `witnessRecord(...).clockEpoch`, the head row with the unit record's `leanHead`.

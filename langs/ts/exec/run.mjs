@@ -22,7 +22,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork, spawnSync, execFile } from 'node:child_process';
-import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
+import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, CLOCK_EPOCH, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
 import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles , enterWorld } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
@@ -447,7 +447,7 @@ export function sandbox(env, root) {
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null) };
   const react = reactRuntime(env);
-  const epoch = 1700000000000;
+  const epoch = CLOCK_EPOCH;
   const dateNow = (...args) => epoch + env.clock('Date.now', args);
   const FakeDate = new Proxy(Date, {
     construct(t, args, newTarget) { return Reflect.construct(t, args.length ? args : [epoch + env.clock('Date', [], 'new')], newTarget); },
@@ -853,12 +853,19 @@ async function settleEffects(env, ms) {
   await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r));
 }
 const eraseHandlers = (v) => (Array.isArray(v) ? v.map(eraseHandlers) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? { $el: v.$el, props: Object.fromEntries(Object.entries(v.props).map(([k, x]) => [k, typeof x === 'function' ? 'fn' : eraseHandlers(x)])), children: v.children.map(eraseHandlers), ...(Object.hasOwn(v, 'rendered') ? { rendered: eraseHandlers(v.rendered) } : {}) } : v);
-const treeFunctions = (v, pick, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeFunctions(c, pick, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (pick(k, x)) out.push({ label: `${at.join('/')}:${k}`, fn: x }); v.children.forEach((c, i) => treeFunctions(c, pick, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); if (Object.hasOwn(v, 'rendered')) treeFunctions(v.rendered, pick, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}>`], out); return out; }; // a deep child's output: its handlers are the page's too
+const treeFunctions = (v, pick, at = [], out = []) => { if (Array.isArray(v)) { v.forEach((c, i) => treeFunctions(c, pick, [...at, `[${i}]`], out)); return out; } if (!v || typeof v !== 'object' || v.__isFake || !Object.hasOwn(v, '$el')) return out; for (const [k, x] of Object.entries(v.props)) if (pick(k, x)) out.push({ label: `${at.join('/')}:${k}`, fn: x, props: v.props }); v.children.forEach((c, i) => treeFunctions(c, pick, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}[${i}]`], out)); if (Object.hasOwn(v, 'rendered')) treeFunctions(v.rendered, pick, [...at, `${typeof v.$el === 'string' ? v.$el : 'C'}>`], out); return out; }; // a deep child's output: its handlers are the page's too
 // the commands of the re-render machine: every `on[A-Z]` handler of the tree first, in tree order, then every other
 // function the tree holds (a `select`, a render prop handed to a child), which the world may call as well: an escaped
 // function is observed by what it does when called, and what a held function does after a re-render is reached only by
 // calling it, letting React re-render, and calling the new one (design/callbacks.md)
 const treeHandlers = (v) => [...treeFunctions(v, (k, x) => /^on[A-Z]/.test(k) && typeof x === 'function'), ...treeFunctions(v, (k, x) => !/^on[A-Z]/.test(k) && typeof x === 'function' && !x.__isFake)];
+// the render row's targets (bound.render.targets, design/certificate-timing.md, 2026-10-31): per handler label, the props that make its
+// element addressable on a page (key, id, data-testid, role, aria-label as the name), each a string or number else null;
+// read from a raw tree (every command label of treeHandlers) or an observed one (an `on[A-Z]` prop observed as $handler)
+const addressable = (x) => (typeof x === 'string' || typeof x === 'number' ? x : null);
+const targetOf = ({ label, props }) => ({ label, path: label.slice(0, label.lastIndexOf(':')), key: addressable(props.key), id: addressable(props.id), testid: addressable(props['data-testid']), role: addressable(props.role), name: addressable(props['aria-label']) });
+const treeTargets = (v, observed = false) => (observed ? treeFunctions(v, (k, x) => /^on[A-Z]/.test(k) && !!x && typeof x === 'object' && Object.hasOwn(x, '$handler')) : treeHandlers(v)).map(targetOf);
+const addTargets = (into, targets) => { const seen = new Set(into.map((t) => JSON.stringify(t))); for (const t of targets) { const k = JSON.stringify(t); if (!seen.has(k)) { seen.add(k); into.push(t); } } }; // a label whose element changes its props between states gives one row per distinct target
 async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, depth, breadth, schedules = false, handlers = null }) { // schedules: the clock is a command (moonshot 9): a tick fires what is due at the next instant, ties in every order, and a handler may arrive before a timer fires
   const mount = async (name) => { // a fresh mount: the same seed gives the same fakes and the same inputs as the pair's run of this input
     const env = new Environment(seed * 7919 + inputIndex); env.shapes = spec;
@@ -882,12 +889,13 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     const settle = async () => { let t = await commit(s); if (!schedules && s.env.timers.queue.length) { await runTimers(s.env, ms); t = await commit(s); } return t; }; // a commit, its effects, the re-renders they cause, and (outside the schedule explorer) the timers they armed
     const tick = async (perm) => { const q = s.env.timers.queue.filter((e) => e.fired === 0); if (!q.length) return null; const next = Math.min(...q.map((e) => e.due)); await runTimers(s.env, ms, 50, { until: next, perm }); return commit(s); }; // the clock advances to the next due instant; the timers due there fire in the chosen order
     let tree;
-    try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: 'mount', threw: render(e), trace: traceWithSites(s.env.trace) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
+    const seen = (t) => { if (name === 'parent') addTargets(targets, treeTargets(t)); }; // every tree the parent's path reaches: its handlers' targets
+    try { tree = await settle(); seen(tree); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: 'mount', threw: render(e), trace: traceWithSites(s.env.trace) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws at the mount: the path ends on that observation, compared like any other
     for (const label of labels) {
       const from = s.env.trace.length;
       if (label.startsWith('tick@')) { // a clock step: the instant it reaches and what fired are the observation
         const perm = Number(label.slice(5)) || 0; const before = s.env.timers.now;
-        try { const t2 = await tick(perm); if (t2 !== null) tree = t2; } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; }
+        try { const t2 = await tick(perm); if (t2 !== null) { tree = t2; seen(tree); } } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; }
         obs.push(await withHeldDrives(s.env, tree, ms, { command: label, clock: [before, s.env.timers.now], tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }));
         continue;
       }
@@ -896,7 +904,7 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
       const event = s.env.fake(`react:event:${label}`), slotsBefore = (s.env.hookSlots ?? []).slice(); let threw = false;
       try { const r = guardedCall(s.env, () => h.fn(event), ms); if (r && typeof r.then === 'function') await awaitUnit(s.env, r, ms); } catch (e) { if (harness(e)) throw e; threw = true; s.env.record('handler-throw', label, [render(e)]); }
       if (handlers) interpretFire(handlers.stats, handlers.models[name], { fn: h.fn, label, args: [event], env: s.env, slotsBefore, props: s.inputs[0], threw }); // a readable descriptor applied to the slots before the handler must give the slots the handler left
-      try { tree = await settle(); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
+      try { tree = await settle(); seen(tree); } catch (e) { if (harness(e)) throw e; obs.push(withSite({ command: label, threw: render(e), trace: traceWithSites(s.env.trace.slice(from)) }, s.env.siteState?.completed)); return { obs, s }; } // a render that throws after a click (a state the one-render check never reached): an observation, never a crash
       obs.push(await withHeldDrives(s.env, tree, ms, { command: label, tree: eraseHandlers(tree), trace: traceWithSites(s.env.trace.slice(from)), pending: render(s.env.pending.map(({ id, ...rest }) => rest)) }));
     }
     const pendingTimers = s.env.timers.queue.filter((e) => e.fired === 0); const ties = pendingTimers.length ? pendingTimers.filter((e) => e.due === Math.min(...pendingTimers.map((x) => x.due))).length : 0; // read before the unmount clears them: the clock steps the next level may take
@@ -908,6 +916,7 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
     const drives = await driveWindow(s.env, ms); if (drives.length) obs.push({ command: 'drive', drives });
     return { obs, s, handlers: treeHandlers(tree).map((x) => x.label), ticks, timers: pendingTimers.length };
   };
+  const targets = [], walked = []; // the render row: the targets of every tree the parent reached, every path walked with no difference (bound.render)
   let paths = 0; let frontier = [[]]; const done = new Set(); let maxTimers = 0; let undriven = null;
   for (let level = 0; level <= depth; level++) {
     const next = [];
@@ -920,13 +929,14 @@ async function runSequences({ files, roots, spec, unit, seed, inputIndex, ms, de
         const a = JSON.stringify(P.obs[k] ?? null), b = JSON.stringify(C.obs[k] ?? null);
         if (a !== b && undecidedDrives(P.obs[k] ?? null, C.obs[k] ?? null)) { undriven ??= { sequence: labels, reasons: undecidedDrives(P.obs[k], C.obs[k]) }; continue; } // a drive that could not run: undecided, never a difference
         if (a === b && !undriven) { const u = undrivenOf(P.obs[k]) ?? undrivenOf(C.obs[k]); if (u) undriven = { sequence: labels, reasons: [u] }; }
-        if (a !== b) return { timers: maxTimers, witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null, ...witnessPatch(P.obs[k] ?? null, C.obs[k] ?? null) } }; // the step's tree difference as a patch
+        if (a !== b) return { timers: maxTimers, walked, targets, witness: { input: inputIndex, sequence: [...labels, ...(labels.length > k ? [] : [])].slice(0, k + 1).concat(k >= labels.length ? ['unmount'] : []), step: k, parent: P.obs[k] ?? null, candidate: C.obs[k] ?? null, ...witnessPatch(P.obs[k] ?? null, C.obs[k] ?? null) } }; // the step's tree difference as a patch
       }
+      if (labels.length) walked.push(labels); // the mount alone is the state itself (bound.states)
       if (level < depth) for (const label of [...(P.handlers ?? []).slice(0, breadth), ...(P.ticks ?? [])]) next.push([...labels, label]);
     }
     frontier = next;
   }
-  return { paths, timers: maxTimers, ...(undriven ? { undriven } : {}) };
+  return { paths, timers: maxTimers, walked, targets, ...(undriven ? { undriven } : {}) };
 }
 
 export const traceWithSites = (records) => records.map((r) => withSite(render(r), r.site));
@@ -1293,7 +1303,13 @@ async function runPairOnce(opts) {
       else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     } else { const u = undrivenOf(oP) ?? undrivenOf(oC); if (u) (diffs.undriven ??= []).push({ input: i, reasons: [u] }); } // equal, with a callback lean could not drive: the gap is carried
   }
-  const bound = { n, seed, ms, reached, states, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
+  // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
+  // the element it targets; the sequences and their targets are added where the sequences run
+  const renderRow = { component: states.some((x) => Object.hasOwn(x, 'tree') && isJsxValue(x.tree)), clock: { epoch: CLOCK_EPOCH }, sequences: [], targets: [], leanHead: opts.recordHead ?? 'unknown' };
+  for (const x of states) if (Object.hasOwn(x, 'tree')) addTargets(renderRow.targets, treeTargets(x.tree, true));
+  const walkedInto = (i, r) => { if (!r) return; for (const labels of r.walked ?? []) if (!renderRow.sequences.some((x) => x.input === i && JSON.stringify(x.labels) === JSON.stringify(labels))) renderRow.sequences.push({ input: i, labels }); addTargets(renderRow.targets, r.targets ?? []); };
+  const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
@@ -1358,8 +1374,9 @@ async function runPairOnce(opts) {
     for (let i = 0; i < Math.min(sequenceInputs, n); i++) {
       step('sequences', i);
       const r = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, depth: sequenceDepth, breadth: sequenceBreadth, handlers: handlerRun }));
+      walkedInto(i, r);
       if (r.ask === undefined && !r.witness) { // the schedule explorer (moonshot 9): the same machine with the clock as a command, when the mount armed at most three timers
-      const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth, handlers: handlerRun })); schedulesRun.set(r, r2);
+      const r2 = await recording(records, () => runSequences({ files: { parent, candidate }, roots, spec, unit, seed, inputIndex: i, ms, schedules: true, depth: Math.max(sequenceDepth, 2), breadth: sequenceBreadth, handlers: handlerRun })); schedulesRun.set(r, r2); walkedInto(i, r2);
         if (r2.witness) return { verdict: 'WITNESS', unit, witnesses: [{ ...r2.witness, schedule: true }], bound: { ...bound, schedules: { timers: r2.timers, paths: r2.paths, orders: 'every order Node allows of the timers due at one instant (two timeouts or intervals keep their arm order), up to three' } }, spec: { params: spec.params, returns: spec.returns, literals: spec.literals, strings: spec.strings } };
         if (r2.ask) bound.schedulesAsk = r2.ask; else bound.schedules = { timers: r2.timers ?? 0, paths: r2.paths, orders: 'every order Node allows of the timers due at one instant (two timeouts or intervals keep their arm order), up to three' };
       }
