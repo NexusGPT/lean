@@ -1704,7 +1704,37 @@ function translateOnce(file, fnName, opts = {}) {
     const cargs = checker.getTypeArguments(ct);
     return cargs.length === args.length && !cargs.some((a) => a.flags & (TF.Any | TF.Unknown)) ? ct : null;
   };
-  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  // an empty array or object literal (heap-stage5.md section 2): `[]` has no element type of its own (never[]) and `{}`
+  // no key (the type {}), so its type is the one its place gives it (the contextual type: a declaration, a parameter,
+  // the return type, a field, or the left operand of `??` and `||`), less null and undefined, when that is one array
+  // type of a known element, or one record or dictionary every key of which may be missing. An operand of `??`, `||`
+  // or `?:` whose contextual type is none of those (`Object.keys(d ?? {})`: the parameter's `{}`) is in the place of
+  // the expression it is an operand of, whose type the checker gives (the union of its operands, never[] and {}
+  // absorbed), read by the same rule. An empty array holds no element, so any element type describes it; an empty
+  // object holds no key, so it is every type that requires none.
+  // Out: a place of a union of such types, of any or unknown, of a record with a required key (`{}` does not hold it)
+  const emptyLiteralT = (n) => {
+    const arr = ts.isArrayLiteralExpression(n); if (arr ? n.elements.length : !(ts.isObjectLiteralExpression(n) && !n.properties.length)) return null;
+    const own = checker.getTypeAtLocation(n);
+    if (arr ? !(checker.isArrayType(own) && (checker.getTypeArguments(own)[0]?.flags & TF.Never)) : (own.flags & TF.Object) === 0 || checker.getPropertiesOfType(own).length || checker.getIndexInfosOfType(own).length) return null;
+    const known = (t) => !!t && !(t.flags & (TF.Any | TF.Unknown | TF.Never));
+    const fits = (pt) => {
+      if (!pt) return null; const ct = checker.getNonNullableType(pt);
+      if (ct.flags & (TF.Union | TF.Any | TF.Unknown | TF.TypeParameter) || !(ct.flags & TF.Object)) return null;
+      if (arr) return checker.isArrayType(ct) && known(checker.getTypeArguments(ct)[0]) ? ct : null;
+      if (checker.isArrayType(ct) || checker.isTupleType(ct) || ct.getCallSignatures().length || ct.getConstructSignatures().length) return null;
+      const props = checker.getPropertiesOfType(ct), idx = checker.getIndexInfosOfType(ct);
+      if (!props.length && !idx.length) return null;
+      return props.every((p) => p.flags & ts.SymbolFlags.Optional) && idx.every((i) => known(i.type)) ? ct : null;
+    };
+    let ct = null; try { ct = checker.getContextualType(n); } catch { return null; }
+    { const t = fits(ct); if (t) return t; }
+    let op = n; while (ts.isParenthesizedExpression(op.parent)) op = op.parent;
+    const p = op.parent;
+    const operand = (ts.isBinaryExpression(p) && [K.QuestionQuestionToken, K.BarBarToken].includes(p.operatorToken.kind) && p.right === op) || (ts.isConditionalExpression(p) && (p.whenTrue === op || p.whenFalse === op));
+    return operand ? fits(checker.getTypeAtLocation(p)) : null;
+  };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n) ?? emptyLiteralT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
   // a name declared at a type parameter (`const y: T`, `x: T`) is held at it, while the checker may type its read at the
   // parameter's constraint (`T extends "a" | "b"` read where a literal union is expected): the read is the held value,
   // so its type is the parameter, and a conversion to the constraint is written where one is expected (convertD's cast)
@@ -1851,6 +1881,10 @@ function translateOnce(file, fnName, opts = {}) {
     return { kind: 'unknown', why: `\`${e.getText(sf).slice(0, 40)}\`, an object this reading cannot name` };
   }
   const primT = (t) => !!t && (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.Undefined | TF.Null | TF.Void | TF.ESSymbolLike)) || !!primitiveBrand(x));
+  // what a new object holds where it is made: an empty `{}` holds no key there, so its own type ({}) is read, as before
+  // typeOf gave it its place (heap-stage5.md 2b); an empty `[]` keeps its place's element type, which bounds every
+  // element it can be given (its own never[] says nothing)
+  const madeT = (site) => (ts.isObjectLiteralExpression(site) && !site.properties.length ? checker.getTypeAtLocation(site) : typeOf(site));
   const partsPrim = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => primT(x) || (isArrayLike(checker, x) ? primT(checker.getTypeArguments(x)[0] ?? checker.getIndexTypeOfType(x, ts.IndexKind.Number)) : (isMapT(x) || isSetT(x)) ? checker.getTypeArguments(x).every(primT) : checker.getPropertiesOfType(x).every((s) => { const pt = checker.getTypeOfSymbolAtLocation(s, sf); return primT(pt) || isCallable(pt); }) && [checker.getIndexTypeOfType(x, ts.IndexKind.String)].every((it) => !it || primT(it))));
   // a new object whose every object part is itself a literal written inside it, down to primitive or function leaves
   // (`{ sha, SKILLS: {}, SKILL_LIST: [] }`): no name of the unit holds an inner object and no inner object is another's,
@@ -1869,7 +1903,7 @@ function translateOnce(file, fnName, opts = {}) {
     const id = identityOf(a);
     if (id.kind === 'existing') return code;
     if (id.kind === 'unknown') fail(a, `copied-argument: this call may write or keep the object it is handed, and its argument is ${id.why}; bind it to a name of one kind (a parameter, or a new literal or copy) first`);
-    if (!partsPrim(typeOf(id.site)) && !freshTree(id.site)) fail(a, 'copied-argument: a new object holding objects is handed to a call that may write or keep it; this reading does not hold the identities inside it: hand its primitive fields, or the objects themselves');
+    if (!partsPrim(madeT(id.site)) && !freshTree(id.site)) fail(a, 'copied-argument: a new object holding objects is handed to a call that may write or keep it; this reading does not hold the identities inside it: hand its primitive fields, or the objects themselves');
     const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
     for (let p = id.site.parent; p && p !== body; p = p.parent) {
       if (ts.isFunctionLike(p)) break;
@@ -6898,7 +6932,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(typeOf(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
         body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
         if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
       }

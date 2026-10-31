@@ -267,7 +267,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // shape), when that type is a record holding every key the literal writes
   // an array literal likewise: `[]` has no element type of its own (never[]), so it takes the array shape of its place
   const arrShape = (e) => { const c = shapeOf(checker.getContextualType(e)); return c && (c.kind === 'arr' || c.tuple) ? c : shapeOf(typeOf(e)); }; // a tuple's literal takes the tuple's shape
-  const litShape = (e) => { const c = shapeOf(checker.getContextualType(e)); if (c && c.kind === 'rec' && e.properties.every((p) => !p.name || !ts.isIdentifier(p.name) || fieldOf(c, p.name.text))) return c; return shapeOf(typeOf(e)); };
+  // an empty `{}` whose place is a dictionary (the translator's typeOf gives it that place) stays out: the core reads
+  // Object.keys of a dictionary cell uninterpreted (DictKeysJs), where the ordinary lane reads its order exactly
+  const litShape = (e) => { const c = shapeOf(checker.getContextualType(e)); if (c && c.kind === 'rec' && e.properties.every((p) => !p.name || !ts.isIdentifier(p.name) || fieldOf(c, p.name.text))) return c; const s = shapeOf(typeOf(e)); return !e.properties.length && s?.kind === 'dict' ? null : s; };
 
   // ----- the core, by syntax -----
   const MUTATORS = new Set(['push', 'unshift', 'pop', 'shift', 'reverse', 'splice', 'sort']); // in-place array operations of the table, as statements
