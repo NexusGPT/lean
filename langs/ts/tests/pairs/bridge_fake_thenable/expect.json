@@ -1,0 +1,11 @@
+{
+ "scope": ["greeting", "theme", "status"],
+ "equal": { "greeting": true, "theme": true, "status": false },
+ "laneBOnly": true,
+ "why": "lean's fake for an unset global (design/bridge-fake.md, owner 2026-10-31): window.api is a preload bridge the host sets and the sandbox does not. Greeting awaits a bridge call and renders its answer; Theme renders when the callback it handed the bridge is called; both mount, and the render row counts the bridge calls the fake answered and the callbacks it fired. Status's candidate renders a constant where the parent renders the answer: a difference only a mounted tree shows, a WITNESS",
+ "b": { "Greeting": "PASS-bounded", "Theme": "PASS-bounded", "Status": "WITNESS" },
+ "render": {
+  "Greeting": { "component": true, "sequences": [], "targets": [], "bridge": { "calls": 1, "callbacks": 0 } },
+  "Theme": { "component": true, "sequences": [], "targets": [], "bridge": { "calls": 1, "callbacks": 1 } }
+ }
+}
