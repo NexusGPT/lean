@@ -1,0 +1,12 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "a constructor's write to module state outlives the call, as a write through an argument does: Entry stores another size into the module record (WITNESS), Ticket no longer advances the module counter it reads (WITNESS, though the first instance is the same on both sides), Label writes the record and its field in the other order (untouched record, the same state: PASS-bounded); enrol is the same record write in a free function (WITNESS). Every unit writes a module record, which the lint refuses (index-assign into a binding the function does not own), so lane A refuses them by design and the pair checks lane B alone.",
+ "b": {
+  "Entry.constructor": "WITNESS",
+  "Ticket.constructor": "WITNESS",
+  "Label.constructor": "PASS-bounded",
+  "enrol": "WITNESS"
+ }
+}

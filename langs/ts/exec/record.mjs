@@ -121,7 +121,7 @@ export function captureActive(env, active) { const c = captures.get(env); if (c)
 // witness record names it, and the render row carries it (bound.render.clock.epoch)
 export const CLOCK_EPOCH = 1700000000000;
 export function witnessRecord({ seed, leanHead, input, sides, invocation = { kind: 'call' } }) {
-  const record = { schema: 'witness-record/v2', version: 2, seed, leanHead, input, invocation, clockEpoch: CLOCK_EPOCH, compiler: { target: 'ES2020', esModuleInterop: true, experimentalDecorators: true, useDefineForClassFields: false, jsx: 'react-jsx' },
+  const record = { schema: 'witness-record/v2', version: 2, seed, leanHead, input, invocation, clockEpoch: CLOCK_EPOCH, compiler: { target: 'ES2020', esModuleInterop: true, experimentalDecorators: true, useDefineForClassFields: !!Object.values(sides)[0]?.env?.classFieldsDefine, jsx: 'react-jsx' }, // the unit file's emit mode (common.mjs classFieldsDefine)
     sides: Object.fromEntries(Object.entries(sides).map(([name, side]) => {
       const c = captures.get(side.env);
       const events = c?.events ?? [];

@@ -87,6 +87,24 @@ export function loadProgram(file, opts = {}) {
   return { program, sf, checker, diagnostics, abs, projectFile: configFile };
 }
 
+// the class-field emit mode of a file (design/heap-stage5.md 21, 2026-10-31): whether a declared field is defined on
+// the instance before the constructor's body runs (`useDefineForClassFields`: an optional field nobody stores is a key
+// holding undefined) or only once something stores it (the key is missing). TypeScript's own rule over the options the
+// file compiles with: its project's (an explicit useDefineForClassFields, else a target of ES2022 or later), or lean's
+// single-file options for a file read without its project. Lane A reads it from the program it translates
+// (classFieldsDefine(program.getCompilerOptions())), lane B from the same discovery (fileClassFieldsDefine)
+export const classFieldsDefine = (options) => !!ts.getUseDefineForClassFields(options);
+const fieldModes = new Map();
+export function fileClassFieldsDefine(file, project = true) {
+  const abs = path.resolve(file);
+  let configFile = null;
+  if (typeof project === 'string') configFile = path.resolve(project);
+  else if (project) configFile = ts.findConfigFile(path.dirname(abs), ts.sys.fileExists, 'tsconfig.json') ?? null;
+  const key = configFile ?? '';
+  if (!fieldModes.has(key)) { const parsed = configFile && fs.existsSync(configFile) ? parseProjectConfig(configFile) : null; fieldModes.set(key, classFieldsDefine(parsed ? parsed.options : COMPILER_OPTIONS)); } // loadProgram keeps the project's target and useDefineForClassFields as they are, so the two lanes read one mode
+  return fieldModes.get(key);
+}
+
 /**
  * loadMany(files) — one program per tsconfig for a whole set of files (a census). Returns a Map abs -> {program, sf,
  * checker, diagnostics, abs, projectFile}; a file whose project cannot read it maps to {error}.

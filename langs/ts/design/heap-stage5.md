@@ -1106,6 +1106,54 @@ count through a local: proved), `Shape.constructor`, `Square.constructor` and `p
 proved), `Triangle.constructor` (WITNESS), `kept` (an unshared Tally: proved), `handed` and `relayed` (WITNESS; at
 the previous commit lane A proved both). Lint: unchanged.
 
+### 2026-10-31: a constructor's write to module state, and the class-field emit mode (lane fix-constructor-module-write)
+
+Two defects lane core-constructors reported (its result, defects 2 and 3).
+
+(1) Lane B did not observe a write to module state. One call's observation was the outcome, the graph reachable from the
+arguments, the receiver and the result, the trace and pending work (SEMANTICS.md, observation). A binding of the unit's
+own file was in none of them, so `registry[name] = size` against `registry[name] = size + 1` in a constructor, and `issued
++= 1` against nothing, gave PASS-bounded. A constructor unit also never runs twice in one sandbox (the class programs and
+the environment programs skip it), and a free function that writes and never reads (`enrol`) had the same gap.
+Reading: the observation holds the module's own state, as the change the call made to it. The loader's shim
+(`exec/run.mjs unitShim`) exports a getter of every binding a top-level variable statement declares (destructured ones
+too, an ambient one never). `observeWindow` reads it before and after the call. For each binding the observation keeps,
+in a field `module`, the record members whose rendering the call changed (added, changed, or `$deleted`), or the
+binding's new value (`$now`) when it is no record. A function is a leaf by its identity, numbered once for both
+snapshots, so a closure replaced by another is a change, and rendering it never numbers it as an escape. An accessor is
+never run. Past 4000 objects a binding is one budget token, the same on both sides. The rule is keyed on syntax (a
+top-level variable statement) and on the value's shape. It names no unit and holds for every unit, a constructor among
+them.
+Soundness: a module binding outlives the call exactly as an argument's object does, so a call that leaves another value
+there is observably another call: a later call or another unit of the module reads it. The change, not the whole state,
+is the observation. Lane A's world starts in any state, the same on both sides (design/module-forms.md: no initial-state
+axiom). An initializer the call never touches is a difference of the module, not of the call, and comparing whole states
+would witness every unit of a file whose module initializer changed.
+Where silent, the choice: only the unit's own file is read. Another module's state stays outside: an imported object
+the unit mutates is observed only through what reaches the arguments or the result. A static field is a class's, not a
+binding's, and stays out too.
+Pair `constructor_module_write` (lane B only: the lint refuses an index write into a binding the unit does not own):
+`Entry.constructor` (another size stored into the module record: WITNESS), `Ticket.constructor` (the counter it reads is
+no longer advanced; the first instance is the same: WITNESS), `Label.constructor` (the record and the field written in
+the other order: PASS-bounded), `enrol` (the free-function form: WITNESS). At e1f257ddd the three WITNESS rows were
+PASS-bounded. Lint: unchanged.
+
+(2) The class-field emit mode, decided: it is the file's own, by TypeScript's rule. With `useDefineForClassFields`
+(explicit, else on for a target of ES2022 or later), every declared field is defined on the instance before the
+constructor's body runs. An optional field nobody stores is then the key holding undefined, and the key order is the
+declaration order. Without it, a field has no key until something stores it. Both lanes read
+`common.mjs classFieldsDefine`, which is TypeScript's own `getUseDefineForClassFields` over the options the file compiles
+with: its project's, else lean's single-file options (ES2020: off, the reading both lanes had before). Lane A takes it
+from the program it translates. Under define, a new instance's optional field starts as `PUndef`, and a `declare` field,
+emitted in no mode, stays `PMissing`. Lane B compiles each file with the same mode (`fileClassFieldsDefine`, from the
+run's `--project`), and the witness record names it. Every pair runs `--no-project`, so their mode is unchanged. The pair
+runner now reads a pair with the tsconfig its `expect.json` names (`project`).
+Pair `class_fields_define` (a tsconfig at ES2022): `made` (a new Note against one whose tag is then set to undefined:
+proved on the canonical heap, PASS-bounded), `blank` (tag set to the empty string: unproved, WITNESS), `Note.constructor`
+(untouched). At 373aad5ff (both lanes at ES2020's emit) `made` was unproved and a WITNESS. Not read here: key order (the
+heap core's records hold no key order) and a subclass field that redefines an inherited one (`extends` stays outside the
+heap core).
+
 ## 0b. The identity guard reads destructured and rest parameters
 
 Found by lane lint-2, a measurement defect of step 0's kind: `identitySkeleton` and `layer1Risk` collected identifier

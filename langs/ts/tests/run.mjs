@@ -105,8 +105,12 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     }
     return;
   }
+  // `project` in expect.json: the pair is read with the tsconfig it names (beside the pair's files), in both lanes, so a
+  // pair can state a project's options (the class-field emit mode, common.mjs classFieldsDefine); else each file alone
+  const projectArgs = exp.project ? ['--project', path.join(d, exp.project)] : ['--no-project'];
+  const projectFiles = exp.project ? [path.join(d, exp.project)] : [];
   if (!exp.laneBOnly) { // a pair whose units lane A refuses by design (closures over mutable cells) checks lane B alone
-  const tr = (which, extra) => crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra], { files: [pairFile(d, which)], outs: [path.join(tmpd, `${which}.dfy`), path.join(tmpd, `${which}.pre.dfy`)] });
+  const tr = (which, extra) => crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(tmpd, `${which}.dfy`), '--prelude', path.join(tmpd, `${which}.pre.dfy`), ...projectArgs, ...(exp.heap !== false ? ['--heap'] : []), ...extra], { files: [pairFile(d, which), ...projectFiles], outs: [path.join(tmpd, `${which}.dfy`), path.join(tmpd, `${which}.pre.dfy`)] });
   // the heap core agreed on the units both sides hold (check.mjs agreeCore): a unit in the core on one side only would change its signature; a unit one side holds alone (a callee inlined away) takes its own side's core
   agreeCore({ files: { parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate') }, dfyOf: (which) => path.join(tmpd, `${which}.dfy`), heap: exp.heap !== false, tr: (which, eff, units) => tr(which, [...(eff ? ['--effectful', eff] : []), ...(units !== undefined ? ['--heap-units', units || '-'] : [])]) });
   const adapters = typeof exp.adapters === 'string' ? JSON.parse(fs.readFileSync(path.join(d, exp.adapters), 'utf8')).adapters : exp.adapters; // a changed signature proves through the adapter the pair's scope file declares, the comment door included (check.mjs reads it from the candidate)
@@ -137,7 +141,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // the real lemma alone proves it no longer; `witness` in expect.json: the solver's counterexample, replayed in Node
   const unitByLemma = (() => { try { return new Map([...unitsOfFile(loadForUnits(pairFile(d, 'candidate'), { project: false }).sf).keys()].map((u) => [dafnyName(u), u])); } catch { return new Map(); } })();
   const doublesOf = new Map();
-  const doubles = async (f) => { if (!doublesOf.has(f)) { const u = unitByLemma.get(f); doublesOf.set(f, u ? await solveUnit({ parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate'), unit: u, project: false, keep: tmpd }) : { bearing: null }); } return doublesOf.get(f); };
+  const doubles = async (f) => { if (!doublesOf.has(f)) { const u = unitByLemma.get(f); doublesOf.set(f, u ? await solveUnit({ parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate'), unit: u, project: exp.project ? path.join(d, exp.project) : false, keep: tmpd }) : { bearing: null }); } return doublesOf.get(f); };
   for (const [f, want] of Object.entries(exp.equal)) {
     const sp = spans[`Equal_${f}`];
     const viaRests = provedLemma(`Equal_${f}`, spanClean, rests);
@@ -165,7 +169,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
-    const r = crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--out', path.join(tmpd, `b_${artifactName(unit)}.json`)], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate')], outs: [path.join(tmpd, `b_${artifactName(unit)}.json`)] });
+    const r = crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--out', path.join(tmpd, `b_${artifactName(unit)}.json`)], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [path.join(tmpd, `b_${artifactName(unit)}.json`)] });
     let got = 'no result';
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
