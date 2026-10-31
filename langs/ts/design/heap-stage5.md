@@ -102,6 +102,13 @@ of the core (`litShape`), as on the base. The core reads `Object.keys` of a dict
 `DictKeysJs`, where the ordinary lane reads the order exactly (`DictIns`), so admitting the empty dictionary cell
 turned pair `dict_order`'s `indexFirst` (proved) into unproved. Giving `DictKeysJs` the `DictIns` fold as its body
 would admit it; that reading is outside this step and is left to the dictionary lane.
+The two checks that ask what a new object holds where it is made (`copied-argument` in `handedArg`, and the fresh
+argument `read-after-call` lets pass, `freshAlone`) read `madeT`: an empty `{}` by its own type `{}`, as before. With
+the place's type, a `{}` handed straight to an outside callee whose parameter is a dictionary of objects (`get(url,
+{}, headers)`) read as an object that may hold objects, and the n8n census moved 8 units from entered to
+`copied-argument` or `read-after-call`. An empty `[]` keeps its place's element type there: it bounds every element
+the array can be given, where its own `never[]` said nothing (the base refused it as holding objects), so an empty
+array of primitives handed to a call now passes and an empty array of objects is refused as before.
 Soundness: an array place is taken only when it is one array type whose element is known (not any, unknown or
 never): the empty array holds no element, so that type describes it. An object place is taken only when it is one
 record every key of which may be missing (each `?`), or a dictionary of a known value type: `{}` owns no key, so it

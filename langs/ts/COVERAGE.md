@@ -51,6 +51,7 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | object literal, field read, spread `{...a, f: v}` | 23,412 literals, 4,151 spreads | exact (a datatype per shape) | same | done |
+| empty literal `[]`, `{}` | | exact at its place's type (translate.mjs `emptyLiteralT`): a declaration, parameter, return type or field; the right operand of `??` and `||` by the left one; an operand of `??`, `\|\|`, `?:` by its expression's type; a record place only when every key is optional ([design](design/heap-stage5.md#2b-the-type-of-an-empty-literal-is-its-places-in-both-lanes-2026-10-31)); the heap core keeps `{}` at a dictionary place out (its `Object.keys` order is uninterpreted) | the same with the heap's dictionary key order exact | done (lane) |
 | field assignment on a local the function built | 3,914 | exact (a datatype update) | same | done |
 | field, slot or contents assignment on a parameter | 815 + 523 | exact: the parameter is an output of the function (references layer 1) | same, plus the heap layer for objects shared between parameters | done (layer 1) |
 | mutation through a local alias of a parameter | 4,620 locals bound to another name | refused (`alias-mutation`) | one Ref shared by both names; reads project from the world heap, writes update its single cell; initial objects remain observation anchors ([design](design/heap-layer.md)) | gap (layer 2; design and toy only) |
