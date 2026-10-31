@@ -1533,11 +1533,12 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const p0 = decl.parameters[0];
     return { decl, args: p0 && ts.isIdentifier(p0.name) && p0.name.text === 'this' ? args : args.slice(1) };
   }
-  // branch results carry the world and value, but not a callee's parameter updates
+  // a short-circuit operand's result carries the world and value, but not a callee's parameter updates; a conditional's
+  // operand carries them too (translate.mjs carried: each arm returns every name an operand rebinds)
   function conditionalEffect(e) {
     let branch = false;
     for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
-      if ((ts.isConditionalExpression(p) && child !== p.condition) || (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && child === p.right)) branch = true;
+      if (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && child === p.right) branch = true;
     }
     if (!branch) return;
     const mutations = (decl, seen = new Set()) => {
