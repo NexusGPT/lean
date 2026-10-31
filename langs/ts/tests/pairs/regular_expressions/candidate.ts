@@ -53,3 +53,11 @@ export function either(s: string): string {
   const m = s.match(/(?<a>x+)|(?<b>y+)/);
   return m?.groups?.b ?? "";
 }
+
+// a string tested with `!` before the match is not written: its captures are the pattern's on it
+export function tested(s: string): string {
+  const t = s.trim();
+  if (!t) return "";
+  const m = t.match(/(?<y>\d{4})/);
+  return m?.groups?.y ?? "";
+}
