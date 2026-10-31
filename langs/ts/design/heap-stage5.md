@@ -425,6 +425,37 @@ Census (resolved, 39 roots), strict graph 920 -> 935, own syntax 2272 -> 2330; `
 {"files":23359,"units":53918,"core":935,"heapOwnFit":2330,"mirrorMismatch":2188,"planErrorCount":0,"seconds":279}
 ```
 
+### 2026-10-31: the exact instance must be unshared (lane core-constructors)
+
+Found by the pair `constructors`, a soundness defect of the method-call reading above. `new C(..)` fixes the instance's
+prototype, not its own properties: code that holds the instance may install an own `m` (`(o as any).m = f`,
+`Object.defineProperty`), and an outside callee (step 15) or a transition (step 18) does it unseen, since a cell holds
+the fields and never the methods. `const t = new Tally(n); patch(t); return t.bumped();` was read as `Tally.bumped`
+after the call of `patch`: lane A proved it equal to writing the count in place, and lane B, running an outside `patch`
+that installs `bumped`, witnessed 99 against the count.
+Reading: `c.m(..)` on a const `c` bound to `new C(..)` is the core call `C.m` only while `c` is unshared: every use of
+`c` in its scope is a field read or write (`c.f`, f a field of the instance), a bare `return c` (nothing runs with the
+instance before the unit ends), or the receiver of `c.m2(..)` whose method keeps `this` the same way (`this.f`,
+`this.m3(..)` of such a method, an arrow inside it reading the same `this`; recursion through the methods closes on the
+ones already met). Any other use shares it: an argument (an outside callee, a same-file function, a constructor), a
+store into a cell or a collection, an alias, a computed key, an accessor, an optional chain, `this` handed by one of the
+methods. A shared instance's method call is step 18's transition (keyed by the class, the method and the file's method
+code), so lane A no longer proves what the installed method may change.
+Where the section was silent, the choice keeps soundness: the test reads every use in the scope, not only the uses
+before the call (a loop may run a later use first), and an accessor or a computed key counts as sharing (its code is
+not read here). A use after a `return c` cannot run before the caller holds the instance, so `return c` is no sharing.
+Stays as before: `super`, a `return` in a constructor, a constructor that reads or hands `this`, a decorated class, a
+class that extends or is extended (the ordinary lane reads those: pair `constructors` `Square.constructor`, proved
+there, `Triangle.constructor`, WITNESS). Not changed here, the same assumption elsewhere: `this.m()` in a method
+(steps 18 and 20, `sealedMember`) still reads the class's text after `this` was handed to an outside callee; it is a
+finding for the lane that holds those steps.
+Pair `constructors` (a sibling `outside.ts` installs `bumped`): `Meter.constructor` and `metered` (an initializer the
+body stores over: proved), `Gauge.constructor` (a changed initializer: WITNESS), `Span.constructor` (parameter
+properties, untouched), `span` (WITNESS), `Cell.constructor` and `sized` (private and public parameter properties, the
+count through a local: proved), `Shape.constructor`, `Square.constructor` and `perimeter` (super with the same value:
+proved), `Triangle.constructor` (WITNESS), `kept` (an unshared Tally: proved), `handed` and `relayed` (WITNESS; at
+the previous commit lane A proved both). Lint: unchanged.
+
 ## 0b. The identity guard reads destructured and rest parameters
 
 Found by lane lint-2, a measurement defect of step 0's kind: `identitySkeleton` and `layer1Risk` collected identifier
