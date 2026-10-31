@@ -38,6 +38,7 @@ import { decoratorTable } from '../decorators.mjs';
 import { stylesLayer, projectConfig } from './styles.mjs';
 import { contextRow } from '../hooks.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
+import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -1179,9 +1180,22 @@ export function absentOutsideReads() {
   const exists = fs.existsSync;
   fs.existsSync = (p) => { try { return exists(p); } catch (e) { if (e && e.code === 'ERR_ACCESS_DENIED') return false; throw e; } };
 }
-export function workerFlags(opts) {
-  const flags = ['--permission', ...workerReads(opts).map((p) => `--allow-fs-read=${p}`), ...netFlags(netMode())];
-  if (process.env.LEAN_LIBRARY_CASES) { const d = path.resolve(process.env.LEAN_LIBRARY_CASES); fs.mkdirSync(d, { recursive: true }); flags.push(`--allow-fs-write=${d}`, `--allow-fs-read=${d}`); }
+// the sandbox of one run under the project's list (sandbox-list.mjs, design/sandbox-allow-list.md): today's reads and
+// writes less what the list refuses, plus what it allows; a program only when the list allows one (the permission model's
+// switch is all or nothing, so the names are held in the child by guardSpawn). The default list leaves the flags as they were
+export function workerSandbox(opts) {
+  const loaded = opts.sandboxList ?? currentSandboxList();
+  const cases = process.env.LEAN_LIBRARY_CASES ? path.resolve(process.env.LEAN_LIBRARY_CASES) : null;
+  if (cases) fs.mkdirSync(cases, { recursive: true });
+  const applied = applyList(loaded, workerReads(opts), cases ? [cases] : []);
+  const flags = ['--permission', ...applied.reads.map((p) => `--allow-fs-read=${p}`), ...netFlags(netMode())];
+  if (cases) flags.push(`--allow-fs-read=${cases}`);
+  flags.push(...applied.writes.map((p) => `--allow-fs-write=${p}`));
+  if (applied.spawn?.allow.length) flags.push('--allow-child-process');
+  return { flags, spawn: applied.spawn, entry: loaded.source.kind === 'commit' ? (spawned = []) => ({ list: loaded.source, process_list: loaded.list.process_list, refused: [...applied.refused, ...spawned] }) : null };
+}
+export const workerFlags = (opts) => workerFlagsFrom(workerSandbox(opts).flags);
+export function workerFlagsFrom(flags) {
   // the worker's heap: its share of the machine when the process that runs units in parallel states one
   // (LEAN_WORKER_HEAP_MB: the suite gives each of its JOBS workers an equal part of 60 percent of memory), else a quarter
   // of the machine, never below V8's default. A spinning call allocates for its whole wall allowance (a chunking loop
@@ -1220,8 +1234,9 @@ export async function runPair(opts) {
   const { unitSeconds, inProcess, ...rest } = opts;
   return new Promise((resolve) => {
     let last = null, done = false;
-    const child = fork(workerFile, [], { execArgv: workerFlags(opts), env: workerEnv(), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
-    const end = (res) => { if (done) return; done = true; clearTimeout(timer); cpuWatch.stop(); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); resolve(res); };
+    const box = workerSandbox(opts);
+    const child = fork(workerFile, [], { execArgv: workerFlagsFrom(box.flags), env: workerEnv(), stdio: ['ignore', 'inherit', 'inherit', 'ipc'], serialization: 'json' });
+    const end = (res) => { if (done) return; done = true; clearTimeout(timer); cpuWatch.stop(); if (!res.record) res.record = incompleteUnitRecord(opts, res.reason ?? 'worker returned no capture'); if (box.entry) res.sandboxList = box.entry(res.sandboxSpawned); delete res.sandboxSpawned; resolve(res); };
     const started = Date.now();
     let cpuSeen = 0, timedOut = 0, contention = 1;
     const allowance = () => seconds * contention + timedOut * callMs / 1000; // the bound for an idle core, stretched by the unit's measured CPU slowdown, plus the budget of every call that hit its own
@@ -1241,7 +1256,7 @@ export async function runPair(opts) {
     });
     child.on('error', (e) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker failed to start: ${String(e && e.message).slice(0, 200)}` }));
     child.on('exit', (code, signal) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker exited (${signal ?? `code ${code}`}) before a verdict; pending: ${crumbOf(last)}` }));
-    child.send({ opts: rest });
+    child.send({ opts: { ...rest, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) } });
   });
 }
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
@@ -1253,6 +1268,8 @@ async function runPairInFlight(opts) {
   rateSamples.length = 0; sampleContention(); tellCrumb(); // this unit's CPU slowdown against the suite's idle-core baseline, re-sampled at every input: the process that holds the bound stretches it
   if (netMode() === 'deny') denyNetwork({ side: () => crumb.side }); // the network-denied mode (net-deny.mjs): once per process, before the unit's code loads
   const deniedFrom = deniedAttempts().length; // this unit's refused attempts are the ones made from here on
+  if (opts.sandboxSpawn) guardSpawn(opts.sandboxSpawn); // the programs the project's list allows (sandbox-list.mjs), once per process, before the unit's code loads
+  const spawnFrom = spawnRefusals().length;
   const owner = enclosingUnitName(opts.candidate, opts.unit);
   if (owner) return { ...await runPairInFlight({ ...opts, unit: owner }), unit: opts.unit, 'covered-by': owner };
   const unitRecord = { schema: 'witness-record/v2', version: 2, invocation: { kind: 'unit' }, unit: opts.unit, seed: opts.seed ?? 1, leanHead: opts.recordHead ?? 'unknown', drawDomain: { parameters: [], status: 'not recorded', reason: 'input plan not reached' }, draws: [], reach: { status: 'not recorded', reason: 'sandbox statement markers retain only current/completed sites; no per-line visit accumulator or diff bitmap' } };
@@ -1261,6 +1278,7 @@ async function runPairInFlight(opts) {
   try { res = annotateWitness(await runPairOnce({ ...opts, unitRecord }), opts.parent, opts.candidate, opts.unit); }
   finally { finishUnitRecord(unitRecord); }
   if (networkDenied()) unitRecord.sandbox = res.sandbox ?? sandboxEntry(deniedFrom); // the mode, what holds it, and every connection or lookup it refused, with the side that made it; a unit run in another process (new-unit.mjs) brings that process's entry
+  if (opts.sandboxSpawn) res.sandboxSpawned = spawnRefusals().slice(spawnFrom); // the programs this unit's code tried and the list refused; the parent adds them to the list's rows
   res.record = unitRecord; // one home: lane B's result; check.mjs and pr.mjs pass it to the certificate
   for (const w of res.witnesses ?? []) if (!w.record) w.record = { schema: 'witness-record/v2', version: 2, seed: unitRecord.seed, leanHead: unitRecord.leanHead, invocation: { kind: 'unrecorded' }, unrecorded: [{ site: 'runPairInFlight: non-single-call witness', reason: 'program/sequence initialization and command arguments not captured at this output boundary' }] };
   const ud = res?.bound?.undriven; if (ud && ['PASS-bounded', 'PASS-decided'].includes(res.verdict)) { res.verdict = 'ASK'; res.kind = 'callback-undriven'; res.reason = `callback-undriven: on ${ud.inputs} input(s) a function the unit handed out could not be driven (${ud.first.reasons.join('; ')}, first at input ${ud.first.input}); an undriven callback is undecided, never a difference`; } // no rung found a WITNESS: the gap is the verdict's (design/callbacks.md)

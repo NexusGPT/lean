@@ -34,6 +34,7 @@ import { certifyCorrespondence } from './rungs.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { formatOp } from './patch.mjs';
 import { runPair, setUnitSeconds, UNIT_SECONDS } from './exec/run.mjs';
+import { loadSandboxList, useSandboxList } from './exec/sandbox-list.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
 import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
 
@@ -350,6 +351,7 @@ export function refusalRecords(rows, { repo = null } = {}) {
       const line = r.coverage.startsWith('refused:') ? advice.find((a) => a.rule === r.coverage.slice(8))?.line : null;
       records.push({ check: r.coverage, ...base, location: line ? { start: line, end: line } : unitLocation, kind: 'coverage', ...(advice.length ? { advice } : {}), reason: String(r.reason ?? r.coverage) });
     }
+    for (const x of r.certificate?.sandbox?.refused ?? []) records.push({ check: 'sandbox', ...base, location: unitLocation, kind: 'refuse', reason: x.row }); // a name the project's list refused (exec/sandbox-list.mjs)
     if (r.verdict === 'WITNESS') {
       const w = r.witness ?? {};
       const where = w.where ?? {};
@@ -458,6 +460,7 @@ async function prWorker(opts) {
   const { repo, base, head = 'WORKTREE', n = 100, seed = 1, deep = false, dafnySeconds = 30, project = true, scope = new Set(), adapters = null } = opts;
   const timeBudget = budgetValue(opts.timeBudget === undefined ? null : opts.timeBudget, '--time-budget');
   const unitBudget = budgetValue(opts.unitBudget === undefined ? null : opts.unitBudget, '--unit-budget', true);
+  useSandboxList(loadSandboxList(repo, base)); // lane B's sandbox is the list of the parent commit, never the working tree's (exec/sandbox-list.mjs)
   setUnitSeconds(opts.unitSeconds ?? (timeBudget ? Math.min(timeBudget, UNIT_SECONDS) : UNIT_SECONDS)); // the per-unit bound (exec/run.mjs runPair): lane B of one unit ends there as ASK spin-bound; the run budget is checked before each unit, so a run ends within its budget plus one unit's bound and lane A
   const started = performance.now();
   const rows = [], temps = [];
