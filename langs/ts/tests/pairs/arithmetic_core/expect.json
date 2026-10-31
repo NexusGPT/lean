@@ -14,7 +14,8 @@
   "clearlow",
   "stamp",
   "store",
-  "setwitness"
+  "setwitness",
+  "lenparity"
  ],
  "equal": {
   "orflag": true,
@@ -28,12 +29,13 @@
   "parity": "witness",
   "orwitness": "witness",
   "setflag": true,
-  "clearlow": false,
+  "clearlow": true,
   "stamp": true,
   "store": true,
-  "setwitness": false
+  "setwitness": false,
+  "lenparity": true
  },
- "why": "section 13 over doubles the model does not hold (a field): a bitwise operator reads its operands through ToInt32 (ToUint32 for >>>, the low five bits of a shift count) and the ordinary lane's bv32 helpers, so its result is an exact 32-bit integer whatever its operands hold. orflag swaps the operands of | (proved); toint writes ToInt32 as ~~ instead of | 0 (proved); nibble masks then shifts against shifts then masks (proved); twice reads the masked value, an exact integer, as m + m instead of m * 2 (proved: * is exact); uint truncates to an int32 before >>> 0 (proved: ToUint32 of ToInt32 is ToUint32); shift masks its count to five bits, as the operator does (proved); bump writes ++ as += 1 (proved); ratio names the divisor first (proved: the same uninterpreted division on both sides). parity reads & 1 against % 2 on a field: they differ on a negative or a fraction (WITNESS, unproved); orwitness sets another bit (WITNESS). The writes, which the binary64 decision does not encode, stand on the heap lemma alone: setflag writes the field with the operands of | swapped (proved); clearlow clears the low bit by & ~1 against a shift right and left (proved); stamp writes ToInt32 of the field as ~~ against | 0 and ++ as += 1, the two writes in the other order (proved); store writes the masked value doubled, m * 2 against m + m (proved); setwitness sets another bit (WITNESS, unproved).",
+ "why": "section 13 over doubles the model does not hold (a field): a bitwise operator reads its operands through ToInt32 (ToUint32 for >>>, the low five bits of a shift count) and the ordinary lane's bv32 helpers, so its result is an exact 32-bit integer whatever its operands hold. orflag swaps the operands of | (proved); toint writes ToInt32 as ~~ instead of | 0 (proved); nibble masks then shifts against shifts then masks (proved); twice reads the masked value, an exact integer, as m + m instead of m * 2 (proved: * is exact); uint truncates to an int32 before >>> 0 (proved: ToUint32 of ToInt32 is ToUint32); shift masks its count to five bits, as the operator does (proved); bump writes ++ as += 1 (proved); ratio names the divisor first (proved: the same uninterpreted division on both sides). parity reads & 1 against % 2 on a field: they differ on a negative or a fraction (WITNESS, unproved); orwitness sets another bit (WITNESS). The writes, which the binary64 decision does not encode, stand on the heap lemma alone: setflag writes the field with the operands of | swapped (proved); clearlow clears the low bit by & ~1 against a shift right and left (proved: the conversions between an integer and its 32 bits are hidden from the query, the round trip a lemma, design/bitwise-lemmas.md); stamp writes ToInt32 of the field as ~~ against | 0 and ++ as += 1, the two writes in the other order (proved); store writes the masked value doubled, m * 2 against m + m (proved); setwitness sets another bit (WITNESS, unproved). lenparity reads the low bit of a length, xs.length & 1 against xs.length % 2 (proved: the prelude lemma relating the low bits of a bounded natural to its remainder).",
  "b": {
   "orflag": "PASS-bounded",
   "toint": "PASS-bounded",
@@ -49,7 +51,8 @@
   "clearlow": "PASS-bounded",
   "stamp": "PASS-bounded",
   "store": "PASS-bounded",
-  "setwitness": "WITNESS"
+  "setwitness": "WITNESS",
+  "lenparity": "PASS-bounded"
  },
  "heap": true
 }
