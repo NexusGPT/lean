@@ -1,0 +1,6 @@
+{
+ "scope": ["note", "noteThenCount", "route", "routeOff", "doubled", "doubledOff", "plain"],
+ "equal": {"note": true, "noteThenCount": true, "route": true, "routeOff": "witness", "doubled": true, "doubledOff": "witness", "plain": true},
+ "why": "a conditional expression reads its condition, then the selected operand only; a same-file call that changes its argument inside an operand changes it only when that operand is selected, and the arm taken carries the changed names out (design/heap-stage5.md section 3): note returns the call from one operand where the candidate returns it from an if (proved); noteThenCount reads the changed tally after the conditional (proved); route is a nested ternary with the call in two operands against two ifs (proved); routeOff records at a non-positive k where the parent records nothing (unproved, WITNESS); doubled passes the ternary as an argument (proved); doubledOff records on both paths where the parent records only when the flag is off (unproved, WITNESS); plain is untouched.",
+ "b": {"note": "PASS-bounded", "noteThenCount": "PASS-bounded", "route": "PASS-bounded", "routeOff": "WITNESS", "doubled": "PASS-bounded", "doubledOff": "WITNESS", "plain": "PASS-bounded"}
+}
