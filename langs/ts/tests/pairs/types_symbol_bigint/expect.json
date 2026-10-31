@@ -1,0 +1,33 @@
+{
+ "scope": [
+  "settle",
+  "mark",
+  "key_label",
+  "tag_name",
+  "fee",
+  "half",
+  "amount",
+  "amount_or"
+ ],
+ "equal": {
+  "settle": true,
+  "mark": false,
+  "key_label": true,
+  "tag_name": true,
+  "fee": true,
+  "half": false,
+  "amount": true,
+  "amount_or": false
+ },
+ "why": "Forms 5 and 6 of design/types-inventory.md: a union with a symbol member (string | unique symbol, string | number | symbol) and a union with a bigint member (number | bigint | `${number}`) are read opaque (Any), as a lone symbol is; on base the translator refused the whole file at the first such union. settle, keyLabel and amount bind the value to a local first (proved: the same value); mark appends '!' on the string arm (not proved; lane B witnesses on a drawn string); amountOr returns 0n where the parent returned 0 (not proved: the two literals are two values of the opaque type, never one injection; lane B witnesses). Tagged is keyed by a unique symbol: the candidate declares two symbols before TAG, so the checker numbers TAG otherwise, and the field is named by its key's declared name, one datatype on both sides; tagName binds the name to a local first (proved). fee commutes bigint arithmetic (proved over int); half divides each operand where the parent divided their sum (not proved: 1n, 1n gives 1n against 0n; lane B witnesses)",
+ "b": {
+  "settle": "PASS-bounded",
+  "mark": "WITNESS",
+  "keyLabel": "PASS-bounded",
+  "tagName": "PASS-bounded",
+  "fee": "PASS-bounded",
+  "half": "WITNESS",
+  "amount": "PASS-bounded",
+  "amountOr": "WITNESS"
+ }
+}
