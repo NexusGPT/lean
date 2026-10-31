@@ -1293,7 +1293,7 @@ function translateOnce(file, fnName, opts = {}) {
   }
   function sumType(parts, n) {
     if (parts.filter((t) => t.flags & TF.BooleanLike).length > 1) parts = [...parts.filter((t) => !(t.flags & TF.BooleanLike)), checker.getBooleanType()];
-    const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike) ? runtimeTag(t) : null;
+    const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.ESSymbolLike) ? runtimeTag(t) : null; // a symbol arm is one `typeof` result of its own (ECMA-262 13.5.3), its value opaque (dtype): every operation on it uninterpreted
     const records = parts.every(isRecordish) && parts.every((t) => checker.getPropertiesOfType(t).length && !checker.getPropertiesOfType(t).some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n))));
     const cats = parts.map(category);
     if (!(records && parts.every((t, i) => parts.slice(i + 1).every((u) => disjointTags(t, u, n)))) && !(cats.every(Boolean) && new Set(cats).size === cats.length)) return null;
