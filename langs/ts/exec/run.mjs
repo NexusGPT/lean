@@ -29,7 +29,7 @@ import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength, walkLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
-import { Graph } from './graph.mjs';
+import { Graph, isNode } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
 import { witnessPatch, statementMarks } from '../patch.mjs';
 import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
@@ -130,7 +130,13 @@ function unitShim(src, abs) {
     else if (ts.isClassDeclaration(st) && st.name) names.push(st.name.text);
     else if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer) || (st.declarationList.flags & ts.NodeFlags.Const && literalMemberUnits(st).some((u) => u.binding === d.name.text)))) names.push(d.name.text); // a module const object literal holds literal units (design/exported-units.md)
   }
-  return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n`;
+  // the module's own state: every binding a top-level variable statement declares (a destructured one too), read at the
+  // moment the getter runs, so the observation sees what a call left in them (moduleState); an ambient declaration emits no binding
+  const cells = [];
+  const bound = (n) => { if (ts.isIdentifier(n)) cells.push(n.text); else for (const e of n.elements) if (!ts.isOmittedExpression(e)) bound(e.name); };
+  for (const st of sf.statements) if (ts.isVariableStatement(st) && !(ts.getCombinedModifierFlags(st) & ts.ModifierFlags.Ambient)) for (const d of st.declarationList.declarations) bound(d.name);
+  const state = `\n;try { Object.defineProperty(module.exports, '__lean_state', { enumerable: false, value: () => { const o = Object.create(null); ${cells.map((n) => `try { o[${JSON.stringify(n)}] = ${n}; } catch (e) {}`).join(' ')} return o; } }); } catch (e) {}\n`;
+  return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n` + state;
 }
 
 // a non-relative import the project's own `paths` map to a source file of this tree: common.mjs aliasTarget (lane paths-alias)
@@ -735,8 +741,60 @@ export async function observe(side, spec, args, ms) {
   try { return await observeWindow(side, spec, args, ms); }
   finally { if (side.env?.escapes?.window) closeEscapes(side.env); } // a run that stopped before its drives closes its window
 }
+// the module's own state (SEMANTICS.md observation item 2): a binding of the unit's file keeps what a call wrote into it
+// after the call, as an argument does, so the call's write to it is observed. One binding is read as render reads a value,
+// except that a function is a leaf by its identity (rendering it would number it as an escape the unit handed out) and an
+// accessor is never run; the walk stops at render's depth and at MODULE_OBJECTS objects in all (then the binding is one
+// token, alike on both sides). The observation is the change: per binding, the members whose rendering the call changed
+// (a member added, changed or deleted), or the whole binding when it is no record; an initializer the call never
+// touches is no observation of the call, as the proof lane's world starts in any state, the same on both sides
+const MODULE_OBJECTS = 4000;
+function moduleState(side) {
+  const cells = side.state ? side.state() : null; if (!cells) return null;
+  const fns = (side.stateFns ??= new Map()); let budget = MODULE_OBJECTS; // one numbering for both snapshots: a function replaced by another is a change
+  const leaf = (v) => { if (typeof v !== 'function') return null; if (!fns.has(v)) fns.set(v, fns.size); return { $function: fns.get(v) }; };
+  const read = (v, depth, seen) => {
+    const f = leaf(v); if (f) return f;
+    if (!isNode(v)) return render(v);
+    if (depth > 6) return { $deep: true };
+    if (seen.has(v)) return { $cycle: true };
+    if (--budget < 0) throw new BudgetError('module state');
+    seen.add(v);
+    try {
+      if (Array.isArray(v)) return v.map((x) => read(x, depth + 1, seen));
+      if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [read(k, depth + 1, seen), read(x, depth + 1, seen)]) };
+      if (v instanceof Set) return { $set: [...v].map((x) => read(x, depth + 1, seen)) };
+      return members(v, (x) => read(x, depth + 1, seen));
+    } finally { seen.delete(v); }
+  };
+  const members = (v, each) => { const out = {}; for (const k of Object.keys(v).sort()) { const d = Object.getOwnPropertyDescriptor(v, k); out[k] = d && !('value' in d) ? { $accessor: true } : each(d ? d.value : undefined); } return out; };
+  const out = {};
+  for (const name of Object.keys(cells)) {
+    budget = MODULE_OBJECTS; const v = cells[name];
+    try {
+      const plain = isNode(v) && !Array.isArray(v) && !(v instanceof Map) && !(v instanceof Set);
+      out[name] = plain ? { members: Object.fromEntries(Object.entries(members(v, (x) => read(x, 1, new Set([v])))).map(([k, x]) => [k, JSON.stringify(x)])) } : { whole: JSON.stringify(read(v, 0, new Set())) };
+    } catch (e) { if (!(e instanceof BudgetError)) throw e; out[name] = { whole: '{"$budget":true}' }; }
+  }
+  return out;
+}
+function moduleChange(before, after) {
+  if (!before || !after) return null;
+  const change = {};
+  for (const name of Object.keys(after)) {
+    const a = before[name], b = after[name]; if (!a) continue;
+    if (a.members && b.members) {
+      const d = {};
+      for (const k of new Set([...Object.keys(a.members), ...Object.keys(b.members)])) if (a.members[k] !== b.members[k]) d[k] = Object.hasOwn(b.members, k) ? JSON.parse(b.members[k]) : { $deleted: true };
+      if (Object.keys(d).length) change[name] = d;
+    } else if (JSON.stringify(a) !== JSON.stringify(b)) change[name] = b.whole !== undefined ? { $now: JSON.parse(b.whole) } : { $now: Object.fromEntries(Object.entries(b.members).map(([k, x]) => [k, JSON.parse(x)])) };
+  }
+  return Object.keys(change).length ? change : null;
+}
 async function observeWindow(side, spec, args, ms) {
   const { env, unit } = side;
+  let stateBefore;
+  try { stateBefore = moduleState(side); } catch (e) { return { harness: `module state: ${String(e && e.message).slice(0, 120)}` }; }
   // the heap layer, stage 1: the object graph reachable from the arguments is named before the call (graph.mjs)
   let graph;
   try { graph = new Graph().before(args); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
@@ -801,6 +859,8 @@ async function observeWindow(side, spec, args, ms) {
   let heap;
   try { heap = graph.after(args, own, outcomeValue, hasOutcome); } catch (e) { if (e instanceof BudgetError) return { harness: `budget: ${e.message}` }; throw e; }
   const result = { outcome, heap, receiver, trace: env.trace.slice(), pending: env.pending.map(({ id, ...rest }, i) => withSite(rest, env.pending[i].site)) }; // a timer id is an arm counter, not an observation
+  let moduleAfter; try { moduleAfter = moduleState(side); } catch (e) { return { harness: `module state: ${String(e && e.message).slice(0, 120)}` }; }
+  const written = moduleChange(stateBefore, moduleAfter); if (written) result.module = written; // what the call left in the module's own bindings
   const drives = await driveWindow(env, ms); if (drives.length) result.drives = drives; // every function the observation shows, driven (design/callbacks.md)
   return Object.defineProperty(result, 'site', { value: outcomeSite });
 }
@@ -1250,7 +1310,7 @@ async function runPairOnce(opts) {
       captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
-      sides[name] = { env, unit: u, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
+      sides[name] = { env, unit: u, state: exportsObj.__lean_state, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
     return sides;
   };
@@ -1482,7 +1542,7 @@ function firstDifference(a, b) {
   return where;
 }
 function differenceField(a, b) {
-  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives']) {
+  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module']) {
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
       if (k === 'trace') { let i = 0; while (i < Math.max(a.trace.length, b.trace.length) && JSON.stringify(a.trace[i]) === JSON.stringify(b.trace[i])) i++; return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
