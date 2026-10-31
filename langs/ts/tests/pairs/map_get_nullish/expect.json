@@ -1,0 +1,22 @@
+{
+ "scope": [
+  "or_zero",
+  "first_or",
+  "bump_or",
+  "plain"
+ ],
+ "equal": {
+  "or_zero": true,
+  "first_or": true,
+  "bump_or": false,
+  "plain": true
+ },
+ "why": "An Option's constructor written in one side's text resolves the same in the theorem, whatever the other side declares (design/heap-stage5.md 8b, read 2026-10-31). The theorem holds the union of the two preludes, so when the parent alone reads a value with both absences (Nullish, whose constructor is also Some), the candidate's Option written as an unqualified Some(...) was ambiguous: a resolution error, nothing in the file proved. orZero: a Map.get bound to a local typed number | null | undefined, then ?? 0, against m.get(k) ?? 0 (proved). firstOr: the same through Array.find (proved). bumpOr: the default 0 against 1, then + 1 (unproved, WITNESS on a missing key). plain: untouched, m.get(k) ?? 0 on both sides (proved).",
+ "b": {
+  "orZero": "PASS-bounded",
+  "firstOr": "PASS-bounded",
+  "bumpOr": "WITNESS",
+  "plain": "PASS-bounded"
+ },
+ "heap": true
+}
