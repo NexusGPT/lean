@@ -1,0 +1,33 @@
+{
+ "scope": [
+  "query_where",
+  "query_take",
+  "query_text",
+  "query_longer",
+  "query_sameLimit",
+  "named_both",
+  "named_capped",
+  "built"
+ ],
+ "equal": {
+  "query_where": true,
+  "query_take": true,
+  "query_text": true,
+  "query_longer": true,
+  "query_sameLimit": false,
+  "named_both": false,
+  "named_capped": true,
+  "built": true
+ },
+ "why": "Form 4 of the types inventory: the polymorphic `this` type of a class is read as its constraint, the class's instance type. Query.where and Query.take are fluent methods whose result type is `this`; where binds its argument to a local first (proved), take is unchanged (proved). text reads the chain back, unchanged (proved). longer takes `other: this` and commutes its comparison (proved); sameLimit takes `other: this` and compares the limit with the other's part count instead of its limit (witnessed). Named extends Query and calls the chain it inherits on this: both swaps the order of the two parts (witnessed), capped binds the first link of the chain to a local first (proved). built calls the chain on a Named value from a free function, binding the first link to a local first (proved).",
+ "b": {
+  "Query.where": "PASS-bounded",
+  "Query.take": "PASS-bounded",
+  "Query.text": "PASS-bounded",
+  "Query.longer": "PASS-bounded",
+  "Query.sameLimit": "WITNESS",
+  "Named.both": "WITNESS",
+  "Named.capped": "PASS-bounded",
+  "built": "PASS-bounded"
+ }
+}
