@@ -267,3 +267,35 @@ seen again (none vanished). The 7 new are units of five pairs added that night, 
 
 At the head: the row exits 0, every remaining disagreement a known finding with its class (see
 `lane/conformance-disagree-result.md`).
+
+## 6. A bigint difference is a value difference; a second name of a parameter's instance is carried (2026-10-31, lane conformance-causeof-spill)
+
+**The cause of a bigint difference.** Since section 5 the bridge compares the model's `BigInt` exactly with lane B's
+`{$bigint: digits}`, yet `causeOf` still filed every difference mentioning `$bigint` as "an integer past 2^53: the
+model is exact, Node rounds to binary64". Two exact integers that differ lost no precision on either side. The cause
+(now `conformance/cause.mjs`) reads `model Xn against {"$bigint":"Y"}` as "a bigint value difference: the model Xn,
+Node Yn", both values in the label; "past 2^53" counts the digits of a binary64 number only, never a rendered
+bigint's. `conformance/cause.test.mjs` runs the bridge's own difference text through it: 3 of 6 at the base, 6 of 6
+here (row conformance/cause).
+
+**class_handles/spill: carried, not refused.** At the base (lead-09032a59) the pair failed outright: section 3's
+`sharedMutation` refused `const h = b; h.total = 1` in the value reading, and a translator refusal is a whole-file stop
+for the pair, while the lint admits that very form (`lint.mjs heldAlias`: a const name for an instance of a class of
+this file names the parameter's own cell, heap-stage5.md 18). Refusing was not a fix: the pair's parent file would not
+translate at all, so the refusal sat at the wrong layer. Carrying the write was the fix, because the form allows an
+exact reading: two names of one object hold one value, and where every write through either name is a statement, the
+value reading rebinds the other name after each one (`translate.mjs partnerSync`; a loop carries both names). The
+parameter leaves as a changed one (`mutationAnalysis`), `sharedMutation` no longer counts that holder, and the identity
+guard sees no copy write. `lower.mjs carriedAliases` decides it once for all four places: b a parameter, h's type b's
+and an instance of a class of this file, each name declared once in the unit (the Dafny names are the TypeScript ones),
+neither rebound, handed to a call or `new`, spread, or read inside a nested function. Any other use keeps the pair a
+holder, and section 3's refusal stands (`tests/carried-alias.mjs`: handed, rebound, closed over).
+
+The model now returns 1 as Node does (spill 8 agree, 0 disagree), so the known finding leaves `known-findings.json`
+as seen agreeing, its reason in the file's `about`. Lane A still does not prove spill (the candidate returns the field
+read before the write; `spill: false`, lane B WITNESS, unchanged). Of the 595 pair files translated at base and head,
+only class_handles' two differ.
+
+Not carried: an array or a plain record bound to a second name (`const b = a`, section 3's array_copies_alias). The
+same rebinding would be exact there too, but it would move pair rows this lane does not own (sourcePushed from lane A
+ASK to a proof or a counterexample); those stay refused.
