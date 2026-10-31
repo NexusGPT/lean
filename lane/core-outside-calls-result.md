@@ -112,3 +112,4 @@ Expected: no unit moves. The reading changes what an admitted unit is translated
 | root | census units | entered before / after | stop reasons changed | reach core before / after | own fit before / after | reach units changed |
 | --- | ---: | ---: | --- | ---: | ---: | ---: |
 | n8n | 9,610 | 2,680 / 2,680 | none (78 reasons) | 82 / 82 | 375 / 375 | 0 |
+| langchainjs | 6,709 | 2,766 / 2,766 | none (78 reasons) | 30 / 30 | 115 / 115 | 0 |
