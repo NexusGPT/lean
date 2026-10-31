@@ -113,3 +113,38 @@ Expected: no unit moves. The reading changes what an admitted unit is translated
 | --- | ---: | ---: | --- | ---: | ---: | ---: |
 | n8n | 9,610 | 2,680 / 2,680 | none (78 reasons) | 82 / 82 | 375 / 375 | 0 |
 | langchainjs | 6,709 | 2,766 / 2,766 | none (78 reasons) | 30 / 30 | 115 / 115 | 0 |
+| nexus (partial) | 4,277 on both sides | records identical | none on the overlap | 86 / 86 | 169 / 169 | 0 of 3,806 |
+
+n8n and langchainjs are complete on both sides; their census records were also compared file by file (every file's
+lowering and findings): 7,812 and 2,972 files, none differs. nexus did not finish on either side (below): the census
+row is the 2,400 files (4,277 units) both journals hold, compared record by record, none differs; the reach row is the
+3,806 units both reach runs read, unit by unit, none changed. Comparison scripts: `work/compare.py <root>` (census
+totals, `refusalRules`, reach units) and `work/records.py <root>` (journal records), outside the repository.
+
+Units this construct stopped, moved to entered or to another stop: none on any root read, as expected (the reading is
+in the emission; admission is untouched). Its measure is the pair: two false proofs at the base, closed.
+
+## Defects met
+
+1. Two false proofs in the heap core (above; fixed in 744d00554).
+2. nexus runs end early with exit 0 and no failure line: `census.mjs` on nexus wrote `"complete": false` after 4
+   chunks (4,800 files, before side) and 2 chunks (2,400 files, after side); `heap-reach-census.mjs --resolve` stopped
+   at 10,080 of 25,466 files with no summary line and exit 0. The census's stop has no message in its log (last line
+   a progress line); not this lane's construct, reported, not fixed. The types-inventory census noted a partial
+   nexus too.
+3. Process: my first nexus "before" heap-reach run was started while I edited heap.mjs, so its side was uncertain; it
+   was stopped by its pid and every before side rerun from a plain copy of the base. Early pair runs overlapped that
+   first census run (against the brief's rule); the regression and the measured censuses never overlapped. One
+   background job (both nexus sides in sequence) reached its 2-hour limit during the nexus after-side reach run; the
+   overlap above is what the runs that ended hold.
+
+## What is left
+
+- A complete nexus census, before and after, once the silent early stop (defect 2) is understood.
+- The doubles reading does not encode an outside call (number-bearing units with one rest on their real lemma).
+- The full suite at the merge (the lead's).
+
+## Commits
+
+d6e7fba42 (pair, red at the base), 744d00554 (the reading), cce51ffdc (design note 15b, coverage rows), f058611b0,
+2f9c689ab and the last commit (this file).
