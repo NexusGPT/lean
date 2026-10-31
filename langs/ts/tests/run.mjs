@@ -251,6 +251,26 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const ok = !!L && (want.verdict === undefined || got.verdict === want.verdict) && (want.tree === undefined || T.verdict === want.tree) && T.depth === (want.deep ?? 0) && (want.rendered === undefined || names(T.rendered) === JSON.stringify([...want.rendered].sort())) && (want.handles === undefined || names(T.handles) === JSON.stringify([...want.handles].sort())) && (want.contexts ?? []).every((c) => (T.contexts ?? []).some((x) => x.frame === c.frame && x.from === c.from)) && (want.styles === undefined || S.verdict === want.styles) && (want.unsupported ?? []).every((c) => (S.unsupported ?? []).some((x) => x.class === c)) && (T.assumptions ?? []).length > 0 && (S.assumptions ?? []).length > 0 && /pixels/.test(L.notObserved ?? '');
     add('pair', name, `layers ${want.unit}${want.deep ? ' deep ' + want.deep : ''}: tree ${want.tree ?? '-'}, styles ${want.styles ?? '-'}`, ok, L ? `${got.verdict} | tree ${T.verdict} depth ${T.depth}, rendered ${names(T.rendered)}, handles ${names(T.handles)}, contexts ${(T.contexts ?? []).map((x) => `${x.frame}:${x.from}`).join(' ') || 'none'} | styles ${S.verdict}${(S.unsupported ?? []).length ? ', unsupported ' + S.unsupported.map((x) => x.class).join(' ') : ''}` : `no layers (${got.verdict ?? 'no result'})`);
   }
+  // the render row of the certificate (lanes.B.bound.render, design/render-row.md): the five fields the pixel-diff lane
+  // reads beside the states, one row per field, each failing when the field is missing or wrong. The clock epoch and the
+  // head are the witness record's own (exec/record.mjs witnessRecord, the unit record lane B writes)
+  for (const [unit, want] of Object.entries(exp.render ?? {})) {
+    const out = path.join(tmpd, `render_${artifactName(unit)}.json`);
+    run('node', [path.join(here, '../check.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', '--no-project', '--dafny-seconds', '30', '--out', out]);
+    let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
+    const B = got.certificate?.lanes?.B ?? {}, R = B.bound?.render ?? null, J = (x) => JSON.stringify(x);
+    const { witnessRecord } = await import('../exec/record.mjs'); const epoch = witnessRecord({ seed: 1, leanHead: 'h', input: 0, sides: {} }).clockEpoch;
+    add('pair', name, `render ${unit} component ${want.component}`, typeof R?.component === 'boolean' && R.component === want.component, R ? `component ${J(R.component)}` : `no render row (${got.verdict ?? 'no result'})`);
+    add('pair', name, `render ${unit} clock.epoch ${epoch}`, Number.isInteger(R?.clock?.epoch) && R.clock.epoch === epoch, R ? `clock ${J(R.clock ?? null)}` : 'no render row');
+    add('pair', name, `render ${unit} leanHead`, typeof R?.leanHead === 'string' && /^[0-9a-f]{40}$/.test(R.leanHead) && R.leanHead === B.record?.leanHead, R ? `leanHead ${J(R.leanHead ?? null)}, record ${J(B.record?.leanHead ?? null)}` : 'no render row');
+    // sequences: every one named walked, with an input of the states, and every walked one a list of labels; a WITNESS's own sequence rides in its witness
+    const seqs = Array.isArray(R?.sequences) ? R.sequences : null, inputs = new Set((B.bound?.states ?? []).map((s) => s.input));
+    const seqOk = !!seqs && seqs.every((s) => Number.isInteger(s.input) && inputs.has(s.input) && Array.isArray(s.labels) && s.labels.length > 0) && (want.sequences ?? []).every((w) => seqs.some((s) => J(s.labels) === J(w))) && (want.sequences?.length !== 0 || seqs.length === 0) && (want.witnessSequence === undefined || (got.verdict === 'WITNESS' && J(got.certificate?.lanes?.B?.witnesses?.[0]?.where?.command) === J(want.witnessSequence[want.witnessSequence.length - 1])));
+    add('pair', name, `render ${unit} sequences${want.sequences ? ' ' + (want.sequences.map((s) => s.join(' > ')).join(', ') || 'none') : ''}${want.witnessSequence ? ' witness ' + want.witnessSequence.join(' > ') : ''}`, seqOk, seqs ? `${seqs.length} sequence(s): ${seqs.slice(0, 6).map((s) => `${s.input}:${s.labels.join('>')}`).join(', ')}; ${got.verdict ?? 'no result'}` : 'no sequences');
+    const tg = Array.isArray(R?.targets) ? R.targets : null, FIELDS = ['label', 'path', 'key', 'id', 'testid', 'role', 'name'];
+    const tgOk = !!tg && tg.every((t) => J(Object.keys(t)) === J(FIELDS)) && want.targets.every((w) => tg.some((t) => J(t) === J(w))) && (want.targets.length !== 0 || tg.length === 0);
+    add('pair', name, `render ${unit} targets ${want.targets.map((t) => t.label).join(', ') || 'none'}`, tgOk, tg ? tg.map((t) => J(t)).join(' ').slice(0, 300) || 'no targets' : 'no targets');
+  }
   // the callee a WITNESS came through (exec/callees.mjs): a unit whose own text is equal on both sides names the changed same-file callees on its call path, with where.cause 'callee'; an empty list: the witness names none and keeps its own cause
   for (const [unit, want] of Object.entries(exp.through ?? {})) {
     let got = null; try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')); } catch { /* keep */ }
