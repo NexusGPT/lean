@@ -1702,8 +1702,10 @@ const COPY_NOT_BUILT = 'a value of a record type may carry keys its type does no
 // is never looked up on the chain), m is TypeScript-private (a subclass redeclaring it fails to compile, TS2415), or the
 // file declares C or m final with the TSDoc tag @sealed (or @final): a fact TypeScript does not check, so it is an
 // assumption the certificate names ('sealed receiver'). A same-file class below C redeclaring m defeats every one of
-// these. Returns { why } when the call is C's own m, null when a subclass may override it.
+// these. Returns { why } when the call is C's own m, null when a subclass may override it. A member a decorator may
+// replace (decoratorMayReplace) is never sealed: the property the chain finds is the decorator's result, not C's text.
 export function sealedMember(checker, sf, cls, name) {
+  if (decoratorMayReplace(checker, cls, name)) return null;
   const own = cls.members.find((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword));
   const below = (c) => { for (let cur = c, seen = new Set(); cur && !seen.has(cur); ) { seen.add(cur); const ext = cur.heritageClauses?.find((h) => h.token === ts.SyntaxKind.ExtendsKeyword)?.types[0]?.expression; if (!ext) return false; const d = checker.getSymbolAtLocation(ext)?.valueDeclaration; if (d === cls) return true; cur = d && ts.isClassDeclaration(d) ? d : null; } return false; };
   let redeclared = false;
@@ -1716,6 +1718,26 @@ export function sealedMember(checker, sf, cls, name) {
   if (tagged(cls)) return { why: `${cls.name?.text} is declared @sealed`, assumed: true };
   if (tagged(own)) return { why: `${name} is declared @sealed`, assumed: true };
   return null;
+}
+// Decorators read as metadata (design/heap-stage5.md step 20): a decorator runs once, when its class is defined, and its
+// result may replace what it decorates (TypeScript's legacy __decorate and the ECMAScript decorators alike): a class
+// decorator's result is the class the binding holds, a method or accessor decorator's result the member's descriptor
+// (an accessor pair is one property, so a decorator on either half replaces both). So the member `name` (static or not)
+// of an instance or of the class cls is not its declared text when cls or a class it extends is decorated, or when a
+// member of that name on that chain carries a decorator. A parameter decorator's result is discarded, and a field's
+// decorator keeps the heap core out of its class (heap.mjs classWhy): neither makes a call of `name` another function.
+export function decoratorMayReplace(checker, cls, name, isStatic = false) {
+  const K = ts.SyntaxKind;
+  const decorated = (n) => !!n?.modifiers?.some((m) => m.kind === K.Decorator);
+  const own = (m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !!m.modifiers?.some((x) => x.kind === K.StaticKeyword) === isStatic && (ts.isMethodDeclaration(m) || ts.isGetAccessorDeclaration(m) || ts.isSetAccessorDeclaration(m) || ts.isPropertyDeclaration(m));
+  for (let c = cls, seen = new Set(); c && !seen.has(c); ) {
+    seen.add(c);
+    if (decorated(c) || c.members.some((m) => own(m) && decorated(m))) return true;
+    const ext = c.heritageClauses?.find((h) => h.token === K.ExtendsKeyword)?.types[0]?.expression;
+    const d = ext && checker.getSymbolAtLocation(ext)?.valueDeclaration;
+    c = d && ts.isClassLike(d) ? d : null;
+  }
+  return false;
 }
 export function copySource(checker, src, site = null) {
   const TF = ts.TypeFlags; let x = src; while (ts.isParenthesizedExpression(x)) x = x.expression;
