@@ -3,6 +3,9 @@
 //   node census.mjs <repo-root> [--out census.json] [--report census.md] [--readings-report readings.md] [--depth N] [--limit N] [--include <prefix>] [--js]
 //   node census.mjs --diff <before.json> <after.json>     gains and losses per reading between two runs
 //   [--install-under <dir>] [--npm-cache <dir>] [--clean-after]
+// The walk runs in a child under a supervisor (walk-supervisor.mjs): an end without the journal's `complete` record writes
+// `partial: true`, `filesNotWalked` and `notWalked` into the --out JSON, names the files not walked on stderr and exits
+// non-zero (design/2026-10-31-census-partial.md).
 // With --install-under, a root inside that folder first gets its own pinned dependency graph (census-env.mjs
 // ensureInstalled: the lockfile's package manager, frozen, --ignore-scripts, once per lockfile content); a root outside
 // it is read as it stands. A unit an `unresolved-module` finding reaches is environment-blocked (census-env.mjs names the
@@ -12,7 +15,10 @@
 // declarations; --js also walks .js/.jsx/.mjs/.cjs, counted apart under `languages`), lints each file inside its project, and reports: units, units inside the subset, the rule counts
 // with three examples each, per package and in total. Read-only: nothing is written into the repository.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { walkerJournal, superviseWalk, assertSupervised, walkEnd, exitAfter } from './walk-supervisor.mjs';
 import { lowerFile, startLoweringProfile, measureLowering, loweringProfile, loweringProfileTable } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
 import { loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
 import { classifier, ensureInstalled, cleanInstall, GENERATED } from './census-env.mjs';
@@ -48,6 +54,17 @@ function packageOf(root, file) {
   return rel[0];
 }
 
+// The files a census reads, in walk order: the supervisor plans its walk from this list and census() walks it.
+export function censusFiles(root, { limit = 0, include = null, js = false } = {}) {
+  const list = [];
+  for (const file of walk(root, js ? ANY_EXT : TS_EXT)) {
+    if (include && !path.relative(root, file).startsWith(include)) continue;
+    if (limit && list.length >= limit) break;
+    list.push(file);
+  }
+  return list;
+}
+
 export function census(root, opts = {}) {
   const { limit = 0, include = null, depth = 2, log = () => {}, js = false, installUnder = null, npmCache = null } = opts;
   if (!Number.isSafeInteger(depth) || depth < 0) throw new Error('depth must be a nonnegative integer');
@@ -67,12 +84,7 @@ export function census(root, opts = {}) {
   let files = 0, units = 0, entered = 0, failedFiles = 0, nested = 0, nestedEntered = 0, environmentBlocked = 0, languageRefused = 0, oversizedClosures = 0;
   const strata = { written: { files: 0, units: 0, entered: 0 }, generated: { files: 0, units: 0, entered: 0 }, minified: { files: 0, units: 0, entered: 0 } }; // machine-written code counted beside written code (stratumOf) // nested: units inside another unit's body (callbacks), covered by it
   const t0 = Date.now();
-  const list = [];
-  for (const file of walk(root, js ? ANY_EXT : TS_EXT)) {
-    if (include && !path.relative(root, file).startsWith(include)) continue;
-    if (limit && list.length >= limit) break;
-    list.push(file);
-  }
+  const list = censusFiles(root, { limit, include, js });
   // one program per tsconfig (in chunks), every file of the project as a root: the type checker is built once per
   // chunk, not per file, and a chunk is dropped once its files are linted
   // (lowering-cache) the chunks are read one at a time and released: a chunk's Map is cleared once its files are lowered,
@@ -84,6 +96,7 @@ export function census(root, opts = {}) {
   const chunkStart = records.length;
   heap('chunk loaded');
   for (const abs of loaded.keys()) {
+    opts.alive?.(); // a supervised walk stops once its supervisor is gone (walk-supervisor.mjs)
     const file = abs;
     const closure = loaded.get(abs)?.closure; // an indivisible import closure over the source budget: read whole, reported
     if (closure) oversizedClosures++;
@@ -253,29 +266,50 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   }
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const root = path.resolve(a[0]);
-  const out = opt('--out', null), journal = out ? out + '.records.jsonl' : null;
+  const out = opt('--out', null);
   // the summary is written whole or not at all; a run that dies leaves `complete: false` and its journal of finished chunks
   const writeSummary = (value) => {
     const next = `${out}.${process.pid}.${process.hrtime.bigint()}.next`;
     try { fs.writeFileSync(next, JSON.stringify(value, null, 1), { flag: 'wx' }); fs.renameSync(next, out); }
     finally { if (fs.existsSync(next)) fs.unlinkSync(next); }
   };
-  if (out) {
-    const pending = { kind: 'census', complete: false, root, recordsFile: journal };
-    fs.writeFileSync(journal, JSON.stringify(pending) + '\n');
-    writeSummary(pending);
+  const walkOpts = { limit: Number(opt('--limit', 0)), include: opt('--include', null), js: a.includes('--js') };
+  const journal = walkerJournal(a);
+  if (journal === null) {
+    // the supervisor (walk-supervisor.mjs): the walk runs in a child; an end without its `complete` record is partial,
+    // reported in the summary (`partial: true`, `filesNotWalked`, `notWalked`), on stderr, and by a non-zero exit
+    const recordsFile = out ? out + '.records.jsonl' : path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'census-walk-')), 'records.jsonl');
+    const planned = censusFiles(root, walkOpts).map((f) => path.relative(root, f));
+    const pending = { kind: 'census', complete: false, root, recordsFile, files: planned.length };
+    fs.writeFileSync(recordsFile, JSON.stringify(pending) + '\n');
+    // until the walk's last record the run is partial with every file not walked: a supervisor killed too leaves this
+    if (out) writeSummary({ ...pending, partial: true, filesNotWalked: planned.length, notWalked: planned });
+    const end = await superviseWalk({ script: fileURLToPath(import.meta.url), args: a, journal: recordsFile, planned });
+    if (!end.complete) {
+      const chunks = end.lines.filter((l) => l.kind === 'chunk'), last = chunks.at(-1);
+      const partial = { ...pending, partial: true, filesNotWalked: end.notWalked.length, notWalked: end.notWalked,
+        walked: { files: end.walked, chunks: chunks.length, units: last?.units ?? 0, entered: last?.entered ?? 0 }, walker: { pid: end.pid, exit: end.code, signal: end.signal } };
+      if (out) writeSummary(partial);
+      fs.appendFileSync(recordsFile, JSON.stringify({ kind: 'partial', complete: false, filesNotWalked: end.notWalked.length, walker: partial.walker }) + '\n');
+      const shown = out ? end.notWalked.slice(0, 50) : end.notWalked;
+      console.error(`census incomplete: the walk ${walkEnd(end)}; ${end.notWalked.length} of ${planned.length} files not walked${out ? ` (partial: true in ${out})` : ''}:`);
+      for (const f of shown) console.error(`  ${f}`);
+      if (shown.length < end.notWalked.length) console.error(`  ... and ${end.notWalked.length - shown.length} more, every one under notWalked in ${out}`);
+    }
+    if (!out) fs.rmSync(path.dirname(recordsFile), { recursive: true, force: true });
+    exitAfter(end);
+    await new Promise(() => {}); // exitAfter ends the process
   }
+  console.error(`walker pid ${process.pid}`);
   if (a.includes('--profile')) startLoweringProfile();
-  const res = census(root, { limit: Number(opt('--limit', 0)), include: opt('--include', null), depth: Number(opt('--depth', 2)), js: a.includes('--js'), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m),
-    onChunk: journal ? (chunk) => fs.appendFileSync(journal, JSON.stringify(chunk) + '\n') : null });
+  const res = census(root, { ...walkOpts, depth: Number(opt('--depth', 2)), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m),
+    alive: assertSupervised, onChunk: (chunk) => fs.appendFileSync(journal, JSON.stringify(chunk) + '\n') });
   if (a.includes('--profile')) { res.profile = loweringProfile(); console.error(loweringProfileTable(res.profile)); }
   // --clean-after: the disk budget keeps one installed root at a time; the root's node_modules go once it is read
   if (a.includes('--clean-after')) { const removed = cleanInstall(root, opt('--install-under', null)); res.environment.cleaned = removed.length; }
   const report = opt('--report', null);
-  if (out) {
-    writeSummary(res);
-    fs.appendFileSync(journal, JSON.stringify({ kind: 'complete', complete: true, files: res.files, units: res.units, entered: res.entered, oversizedClosures: res.oversizedClosures }) + '\n');
-  }
+  if (out) writeSummary(res);
+  fs.appendFileSync(journal, JSON.stringify({ kind: 'complete', complete: true, files: res.files, units: res.units, entered: res.entered, oversizedClosures: res.oversizedClosures }) + '\n');
   if (report) fs.writeFileSync(report, censusReport(res));
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
