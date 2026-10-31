@@ -37,6 +37,7 @@ import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
 import { stylesLayer, projectConfig } from './styles.mjs';
 import { contextRow } from '../hooks.mjs';
+import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 
@@ -288,7 +289,8 @@ function reactRuntime(env) {
       const slots = (env.hookSlots ??= []);
       if (!(i in slots)) { slots[i] = typeof initial === 'function' ? initial() : initial; env.record('hook', key, [render(slots[i])]); }
       const value = slots[i];
-      const setter = (next) => { const v = typeof next === 'function' ? next(slots[i]) : next; if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; // no trace record: the slots after the handler are the observation (observeJsx), so the order of setter calls inside one handler, React's batching, is not
+      const setter = (next) => { const v = typeof next === 'function' && !next.__isFake ? next(slots[i]) : next; // a fake is the value the world answered, never an updater: calling it would ask the world what the app never asked
+      if (!Object.is(v, slots[i])) env.stateDirty = true; slots[i] = v; }; // no trace record: the slots after the handler are the observation (observeJsx), so the order of setter calls inside one handler, React's batching, is not
       ownFunction(setter, env); // a setter handed on is this side's function: its handle is numbered and it is driven like the unit's own (design/callbacks.md)
       (env.setterIndex ??= new WeakMap()).set(setter, i); // the slot a setter writes: the loader's __lean_s mark turns it into position -> slot on the current frame
       return [value, setter];
@@ -367,8 +369,9 @@ export function verdictGuard(out, shape = (r) => r) {
 // guards, then method guards): a guard that answers false throws ForbiddenException before the body. A pipe row
 // registers its pipes on the parameter, and the call passes the argument through each. A metadata row writes a cell of
 // the sandbox's metadata store (keyed by the target object, then the key), which the sandbox's Reflect.getMetadata and
-// Nest's Reflector read. Every other decorator keeps the rule of the loader below: run for its reads, its result never
-// replaces the class or the member.
+// Nest's Reflector read. Every other decorator keeps the rule of the loader below: one of the package's own code is
+// applied as TypeScript's __decorate applies it; a fake one is run for its reads, its result never replaces the class or
+// the member.
 class ForbiddenException extends Error { constructor() { super('Forbidden resource'); this.name = 'ForbiddenException'; } }
 const decoStore = (env) => (env.decorations ??= { guards: new Map(), pipes: new Map(), cells: new Map(), written: [] });
 const seededUnit = (env, tag) => crypto.createHash('sha256').update(`${env.seed}:${tag}`).digest().readUInt32BE(0) / 4294967296; // the same on both sides for the same question, never drawn from the shared stream
@@ -507,7 +510,7 @@ export function sandbox(env, root) {
     parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
   };
-  g.globalThis = g; g.global = g; g.window = g;
+  { const named = bridgeGlobal(env, g); g.globalThis = named; g.global = named; g.window = named; } // the global object by name: a member the host app sets and the sandbox does not (a preload bridge) is the bridge fake (exec/bridge.mjs, design/bridge-fake.md)
   // the loader's marks (leanMarks): a handler attribute's function value and a useState pair, each with its source position
   g.__lean_h = (pos, fn, file) => { if (typeof fn === 'function') (env.handlerPos ??= new WeakMap()).set(fn, { pos, file }); return fn; };
   g.__lean_s = (pos, pair, file) => { const i = Array.isArray(pair) && typeof pair[1] === 'function' ? env.setterIndex?.get(pair[1]) : undefined; if (i !== undefined) { const holder = env.hookFrame ?? env; (holder.statePos ??= new Map()).set(`${file}:${pos}`, i); } return pair; };
@@ -528,7 +531,8 @@ export function sandbox(env, root) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
     const wasLoading = env.loading, wasCrumb = crumb.loading; env.loading = true; crumb.loading = abs;
-    try { return loadInner(abs); } finally { env.loading = wasLoading; crumb.loading = wasCrumb; if (!wasLoading) resetEscapes(env); } // the module has loaded: the unit's functions are numbered from here (fake.mjs resetEscapes)
+    // the unit's module is the first one loaded: a unique symbol is drawn as the constant it exports (gen.mjs)
+    try { const out = loadInner(abs); if (!wasLoading && env.exports === undefined) env.exports = out; return out; } finally { env.loading = wasLoading; crumb.loading = wasCrumb; if (!wasLoading) resetEscapes(env); } // the module has loaded: the unit's functions are numbered from here (fake.mjs resetEscapes)
   }
   function loadInner(abs) {
     const src = fs.readFileSync(abs, 'utf8');
@@ -538,10 +542,16 @@ export function sandbox(env, root) {
     if (env.classFieldsDefine === undefined) env.classFieldsDefine = compiled.define; // the unit's file loads first: its emit mode is the record's
     env.siteState.files[abs] = compiled.sites;
     let js = compiled.js;
-    // a decorator is run (so its reads and calls are recorded) but its result never replaces the class or the member:
-    // the decorated code stays the code under test, whatever the fake decorator returned
+    // a decorator is applied as TypeScript's emitted __decorate applies it (last first; a result replaces the class or the
+    // member's descriptor, which is defined on the target), so a method of an instance made by `new`, a static method
+    // and a getter run what the decorator installed. A fake decorator (an outside package's, not the package's own code)
+    // is run for its reads and calls, but its result never replaces: what it would install is unknown, and the declared
+    // code stays the code under test (the decorator table's rows apply in decoratedModule). Under env.declaredCode (the
+    // model conformance step, design/model-conformance.md: a model is translated from the declared text, and a member a
+    // decorator of the package returns is read as its declared text, design/heap-stage5.md 20b) no result replaces either,
+    // so Node runs the code the model was translated from
     js = js.replace(/var __decorate = \(this && this\.__decorate\) \|\| function \(decorators, target, key, desc\) \{[\s\S]*?\n\};/,
-      'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { try { c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; } } } return r; };');
+      'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { var own = ' + (env.declaredCode ? 'false' : '!d.__isFake') + ', v; try { v = c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; v = undefined; } if (own && v && !v.__isFake) r = v; } } return c > 3 && r && Object.defineProperty(target, key, r), r; };');
     const mod = { exports: {} };
     cache.set(abs, mod);
     loadedFiles.add(abs);
@@ -840,20 +850,23 @@ async function observeWindow(side, spec, args, ms) {
   try {
     const slotsBefore = (env.hookSlots ?? []).slice(), framesBefore = cloneFrames(env.childFrames), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
     const call = () => { const r = guardedCall(env, () => unit.call(args), ms); returnedPromise = promiseName(r); return r; }; // a promise the world made and the unit returned as it is: its name joins the outcome
-    let v = await commitRender(env, call, ms);
+    // each render's own pending continuations settle before its requests are read: work a render started (a promise
+    // chain in a hook) is that render's, never the next render's, so the two traces compare like with like
+    const settleRender = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); };
+    const outerHanded = env.handedMark(); // the world's writes to the objects the first render hands it, journaled (fake.mjs writeHanded)
+    let v, handed1;
+    try { v = await commitRender(env, call, ms); if (isJsxValue(v) && env.react) await settleRender(); } finally { handed1 = env.handedTake(outerHanded); outerHanded?.push(...handed1); }
     outcomeSite = env.siteState?.completed ?? null;
     if (isJsxValue(v) && env.react) { // a rendered unit renders twice from the same slots (Strict Mode's rule, run by lean alone): a differing tree or request trace is an impure render, REFUSE with both renders
-      // each render's own pending continuations settle before its requests are read: work a render started (a promise
-      // chain in a hook) is that render's, never the next render's, so the two traces compare like with like
-      const settleRender = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); };
-      await settleRender();
       const traceAfter = env.trace.length, pendingAfter = env.pending.length, effectsAfter = (env.reactEffects ?? []).length, slotsAfter = (env.hookSlots ?? []).slice();
       const callsAfter = new Map(env.calls), demandAfter = env.demand;
       const framesAfter = env.childFrames; env.hookSlots = slotsBefore.slice(); env.childFrames = cloneFrames(framesBefore); env.calls = new Map(callsBefore); env.demand = demandBefore; // a deep child's frames start the second render as they started the first
       const first = { tree: render(v), trace: env.trace.slice(traceBefore, traceAfter) };
       const paused = pauseEscapes(env); // the second render's functions are new objects the observation never shows: numbered, not driven
       let second;
-      try { const v2 = await commitRender(env, call, ms); await settleRender(); second = { tree: render(v2), trace: env.trace.slice(traceAfter) }; } finally { resumeEscapes(env, paused); }
+      env.handedUndo(handed1); // the props as the first render was handed them: the world's write is the world's, and the second render's world (its calls counted from the same index) writes it again
+      const outer2 = env.handedMark();
+      try { const v2 = await commitRender(env, call, ms); await settleRender(); second = { tree: render(v2), trace: env.trace.slice(traceAfter) }; } finally { resumeEscapes(env, paused); env.handedUndo(env.handedTake(outer2)); env.handedRedo(handed1); } // what the world wrote in the one render the observation keeps, the first
       env.trace.length = traceAfter; env.pending.length = pendingAfter; if (env.reactEffects) env.reactEffects.length = effectsAfter; env.hookSlots = slotsAfter; env.childFrames = framesAfter; env.calls = callsAfter; env.demand = demandAfter; // the second render leaves nothing behind
       if (JSON.stringify(canonHandles(first)) !== JSON.stringify(canonHandles(second))) return { impure: { first, second } }; // each render makes its own closures: a function is compared by its place (handles renamed by first sight in each render), what it does is driven
     }
@@ -862,7 +875,8 @@ async function observeWindow(side, spec, args, ms) {
       try { const cleanup = await awaitUnit(env, Promise.resolve(callUnit(env, effect)), ms); if (typeof cleanup === 'function') env.pending.push({ op: 'react:cleanup', handler: render(cleanup) }); if (es) { es.ran = true; es.lastDeps = es.deps; es.cleanup = typeof cleanup === 'function' ? cleanup : null; } }
       catch (e) { if (e instanceof BudgetError || e?.message === '__timeout__') throw e; env.record('effect-throw', 'react', [render(e)]); if (es) { es.ran = true; es.lastDeps = es.deps; } }
     }
-    if (isJsxValue(v) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
+    if (env.reactEffects?.length) { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)); } // the mount's effects settle as settleEffects settles a later round: a continuation they started (an answered call's then) runs before the state is read
+    if ((isJsxValue(v) || env.reactEffects?.length) && env.react && env.stateDirty) v = await commitEffects(env, call, ms, await commitRender(env, call, ms)); // an effect set the state: React re-renders and settles again
     outcomeValue = await withTimeout(observeJsx(v, env), ms); hasOutcome = true;
     if (env.timers.queue.length) await runTimers(env, ms, 50, env.timerPerm ? { perm: env.timerPerm } : {}); // every timer the call armed, once, in due order; what they ask of the environment lands in the trace; on a timer-order input (gen.mjs, repr.mjs) the ties at one instant in another legal order
     if (isJsxValue(outcomeValue)) side.sawJsx = true; // the unit rendered: the certificate names the front-end layer of this observation
@@ -1209,8 +1223,8 @@ export function workerFlagsFrom(flags) {
 }
 const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefined ? ` (input ${c.input})` : ''}${c.side ? `, the ${c.side} side running` : ''}${c.loading ? `, loading ${c.loading}` : ''}` : 'start');
 // a unit whose parent does not hold it runs as today (new-unit.mjs starts its own bounded process); every other unit runs
-// in the child under the bound
-const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && (unit === MODULE_UNIT || topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit));
+// in the child under the bound, the module unit always (an added file's evaluation runs candidate-only there: runModuleUnit)
+const parentHolds = (parent, unit) => unit === MODULE_UNIT || (!!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit));
 let recordHeadCache = null;
 // lean's own head, as pr.mjs leanVersion reads it: the commit of the checkout that TRACKS this file; a copy of lean placed
 // inside some other repository (a harness's temp folder under its own checkout) must not name that repository's head
@@ -1222,7 +1236,20 @@ const leanHeadForRecords = () => {
   if (!head || head.status !== 0) console.error(`witness record head unavailable (${head ? `exit ${head.status}: ${head.stderr ?? head.error?.message}` : 'this copy of lean has no git history of its own'})`);
   return recordHeadCache = head && head.status === 0 ? head.stdout.trim() : 'unknown';
 };
+// a member named by its property, `C.m`, where neither side holds a unit of that name and a side holds the getter unit
+// `C.get_m` (common.mjs names an accessor unit by its kind): the source reaches `C.m` by reading the property, so the
+// unit run is the getter, driven by that read (pickUnit). A setter is reached by a write only: never by the property's name
+function propertyRead(parent, candidate, unit) {
+  const at = unit.lastIndexOf('.');
+  if (at <= 0 || unit === MODULE_UNIT) return null;
+  const units = [parent, candidate].map((f) => (f && fs.existsSync(f) ? topLevelFunctions(ts.createSourceFile(f, fs.readFileSync(f, 'utf8'), ts.ScriptTarget.Latest, true)) : new Map()));
+  if (units.some((u) => u.has(unit))) return null;
+  const getter = `${unit.slice(0, at)}.get_${unit.slice(at + 1)}`;
+  return units.some((u) => u.has(getter)) ? getter : null;
+}
 export async function runPair(opts) {
+  const read = opts.unit ? propertyRead(opts.parent, opts.candidate, opts.unit) : null;
+  if (read) return { ...await runPair({ ...opts, unit: read }), unit: opts.unit, 'read-as': read };
   if (!opts.recordHead) opts = { ...opts, recordHead: leanHeadForRecords() }; // the lean head every record names, read once per process
   if (opts.inProcess || !parentHolds(opts.parent, opts.unit)) return runPairInProcess(opts);
   // the unit's CPU bound covers its real work; a call that hits its own --ms bound is paid for by that bound, so the
@@ -1402,7 +1429,8 @@ function moduleDifference(sides, oP, oC) {
 const comparable = (o, other) => ({ ...o, bindings: Object.fromEntries(Object.entries(o.bindings).filter(([k]) => Object.hasOwn(other.bindings, k))) });
 async function runModuleUnit(opts) {
   const { parent, candidate, n = 200, seed = 1, ms = 2000 } = opts, unit = MODULE_UNIT;
-  if (!parent || !fs.existsSync(parent) || !candidate || !fs.existsSync(candidate)) return { verdict: 'ASK', unit, reason: `module unit: the ${!parent || !fs.existsSync(parent) ? 'parent' : 'candidate'} file is absent; the module unit compares two evaluations` };
+  if (!candidate || !fs.existsSync(candidate)) return { verdict: 'ASK', unit, reason: 'module unit: the candidate file is absent; a file the head deleted has its module unit as a removed row' };
+  if (!parent || !fs.existsSync(parent)) return newModuleUnit(opts);
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots));
   const sides = { parent: moduleSideOf(parent), candidate: moduleSideOf(candidate) };
@@ -1424,6 +1452,29 @@ async function runModuleUnit(opts) {
   return { verdict: 'PASS-bounded', unit, bound };
 }
 
+// the module unit of a file the parent does not have (an added file): its evaluation alone, as a function the parent does
+// not hold is run alone (new-unit.mjs): n evaluations, each seeded as the compared ones are; NEW records what they did
+// (the outcome, the shape of the requests and of the armed work, per input) and makes no equality claim. A harness stop
+// (a timeout, the budget) is ASK.
+async function newModuleUnit(opts) {
+  const { candidate, n = 200, seed = 1, ms = 2000 } = opts, unit = MODULE_UNIT;
+  const root = findRoot(candidate);
+  setRoots(sideLocations(candidate, candidate, { parent: root, candidate: root }));
+  const side = moduleSideOf(candidate);
+  const bound = { n, seed, ms, observation: 'the module\'s evaluation alone: its outcome, the requests in init order, the work it armed (never fired)', inputs: 'input i seeds the environment (the clock, random); while a module loads the world answers with handles', statements: { candidate: side.statements.length } };
+  const base = { candidateOnly: true, unit, file: candidate };
+  let faults = 0; const faultExamples = [], shapes = new Map();
+  for (let i = 0; i < n; i++) {
+    step('module', i);
+    const o = await observeModule(side, i, seed, ms, root);
+    if (o.harness) return { ...base, verdict: 'ASK', loaded: i > 0, inputs: i, faults, reason: `input ${i}: candidate ${o.harness}`, bound };
+    if (Object.hasOwn(o.outcome, 'threw')) { faults++; if (faultExamples.length < 3) faultExamples.push({ input: i, error: o.outcome.threw, where: { kind: 'module statement', candidate: lastEntered(side, o) ? siteLines(lastEntered(side, o).site) : null } }); }
+    const shape = { outcome: Object.hasOwn(o.outcome, 'threw') ? 'threw' : 'evaluated', trace: o.trace.map(({ op, path }) => ({ op, path })), pending: o.pending.map((x) => x.op) };
+    const key = JSON.stringify(shape); const entry = shapes.get(key) ?? { ...shape, inputs: 0 }; entry.inputs++; shapes.set(key, entry);
+  }
+  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [], faults, faultExamples, traceShape: [...shapes.values()], bound };
+}
+
 async function runPairOnce(opts) {
   if (opts.unit === MODULE_UNIT) return runModuleUnit(opts);
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
@@ -1441,6 +1492,7 @@ async function runPairOnce(opts) {
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
+  const bridgeSeen = { calls: new Set(), callbacks: new Set() }; // the bridge calls the fake for an unset global answered on the parent's mounts, and the callbacks it fired, by path (exec/bridge.mjs)
   const states = []; // every state lane B reached: the input as drawn and, for a rendered unit, the tree it rendered (bound.states)
   let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
@@ -1502,6 +1554,7 @@ async function runPairOnce(opts) {
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
     states.push({ input: i, args: sides.parent.drawn, ...(sides.parent.sawJsx && oP.outcome && Object.hasOwn(oP.outcome, 'returned') ? { tree: oP.outcome.returned } : {}) }); // the state reached on input i, as both sides started it
+    { const b = bridgeCounts(sides.parent.env); b.calls.forEach((x) => bridgeSeen.calls.add(x)); b.callbacks.forEach((x) => bridgeSeen.callbacks.add(x)); }
     const stopped = atGuard(oP, sides.parent) && atGuard(oC, sides.candidate);
     if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
@@ -1517,7 +1570,7 @@ async function runPairOnce(opts) {
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run
-  const renderRow = { component: states.some((x) => Object.hasOwn(x, 'tree') && isJsxValue(x.tree)), clock: { epoch: CLOCK_EPOCH }, sequences: [], targets: [], leanHead: opts.recordHead ?? 'unknown' };
+  const renderRow = { component: states.some((x) => Object.hasOwn(x, 'tree') && isJsxValue(x.tree)), clock: { epoch: CLOCK_EPOCH }, sequences: [], targets: [], leanHead: opts.recordHead ?? 'unknown', bridge: { calls: bridgeSeen.calls.size, callbacks: bridgeSeen.callbacks.size } };
   for (const x of states) if (Object.hasOwn(x, 'tree')) addTargets(renderRow.targets, treeTargets(x.tree, true));
   const walkedInto = (i, r) => { if (!r) return; for (const labels of r.walked ?? []) if (!renderRow.sequences.some((x) => x.input === i && JSON.stringify(x.labels) === JSON.stringify(labels))) renderRow.sequences.push({ input: i, labels }); addTargets(renderRow.targets, r.targets ?? []); };
   const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };

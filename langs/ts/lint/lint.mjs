@@ -17,8 +17,8 @@ import { primitiveBrand, readAfterCall } from '../common.mjs';
 import { originOf } from '../common.mjs';
 import { rawTag } from '../common.mjs'; // String.raw reads the raw parts only (design/heap-stage5.md section 1)
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment, strictValue } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, matchGroups, matchGroupsTested, matchGroupRead, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
-import { elementWritePath, plainDataRecord } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, matchGroups, matchGroupsTested, matchGroupRead, matchGroupsDestructure, matchCapture, matchArrayType, matchItemKind, absenceRead, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { elementWritePath, plainDataRecord, voidReturn } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
@@ -265,6 +265,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   let thisParam = null; // the current free function's declared `this` parameter: its receiver operand, written and read like any parameter
   const RECEIVER_WRITE = 'a write through the declared `this` of a free function rebuilds a nonoptional data record; a class, array, dictionary or optional receiver (or a container on the path) has no such value: take the value as a parameter and return the new one';
   let forEachDepth = 0; // inside a forEach callback read as a loop body: a `return` ends one step
+  const indexedForEach = []; // the forEach statements with an index read as their loop: advice only (opts.advisory), the converter's counted for
   let switchDepth = 0;
   let loopDepth = 0;
   const promiseCallbacks = new Set(); // inline promise bodies have their own fault channel
@@ -655,6 +656,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       case K.ReturnStatement:
         if (forEachDepth > 0) { if (s.expression) expr(s.expression); return; } // one step of a forEach ends
         if (!s.expression) { if (!returnsVoid()) v(s, 'bare-return', 'return needs a value'); return; }
+        if (voidReturn(s) && !callbackStack.length && returnsVoid()) return exprStmt(s.expression); // `return void e;` is `void e;` then a bare return (common.mjs voidReturn)
         return expr(s.expression);
       case K.ForOfStatement: {
         // for-await obtains each next value through the world, then runs one consumer step
@@ -760,6 +762,10 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   function bindingNames(name, outNames) {
     if (ts.isIdentifier(name)) { outNames.push(name); return; }
     if (ts.isObjectBindingPattern(name) && localMethodLiteral(tOf(name))) v(name, 'object-method-mutation', 'read named fields on the literal object; copying accessors or detached methods needs a receiver');
+    if (ts.isArrayBindingPattern(name) && matchArrayType(checker, tOf(name))) { // `const [, a] = m`: item i of the match, a string only when its group takes part in every match (common.mjs matchItemKind)
+      const src = ts.isVariableDeclaration(name.parent) ? name.parent.initializer : null;
+      name.elements.forEach((el, i) => { if (ts.isOmittedExpression(el)) return; const kind = src ? matchItemKind(src, el.dotDotDotToken ? null : i, checker) : null; if (kind !== 'string') v(el, 'unsupported-member', memberRow('match-captures').message(kind === 'may' ? `a destructured item of this match may be undefined (its group does not take part in every match), and its name would hold it under a string type; read it as \`m[${i}]\` on a const match of a regular expression literal, present or absent` : 'the pattern of this match is not known here (not a regular expression literal or `new RegExp` of written strings, nor a const of this file holding one), so whether a destructured item may be undefined is not known')); });
+    }
     for (const el of name.elements) {
       if (ts.isOmittedExpression(el)) continue;
       if (el.dotDotDotToken) { if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el) && !paramRecordRest(name, el)) { v(el, 'record-rest', 'record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record without defaults; copy named fields explicitly'); continue; } if (!ts.isArrayBindingPattern(name) && !recordRestShape(name, el)) aliasLocals.add(el); bindingNames(el.name, outNames); continue; } // `[a, ...rest]`: the tail of the sequence
@@ -949,7 +955,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (!decision?.admissionRefused) return null;
     const w = decision.target, r = decision.root, d = decision.sourceDecl, call = decision.sourceCall;
     if (call.expression.name.text === 'reduce' && d.parent.parameters[0] === d) return v(w, 'alias-mutation', `\`${r.text}\` is the accumulator \`reduce\` hands its callback: it holds the array's first element when the call passes no initial value, a value the unit was handed, or what a step returned; a write through it is read only when the call passes an initial value it builds itself out of primitives (\`{}\`, \`[]\`, \`new Map()\`), every step returns the accumulator, and the write is one step deep (\`acc[k] = v\`) (escape reduce_accumulator_element)`);
-    return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
+    return v(w, 'alias-mutation', `\`${r.text}\` is the element \`${call.expression.name.text}\` hands its callback; a field written through it (\`=\`, \`+=\`, \`-=\`, \`*=\`, \`++\`, \`--\`) is read only in a \`forEach\` statement of one parameter (and an index) over plain data records; write the element through its array in an index loop, \`for (let i = 0; i < xs.length; i++) xs[i].f = v\` (escape element_write_loop_callback)`);
   }
   function exprStmt(e) {
     if (ts.isYieldExpression(e)) return expr(e);
@@ -1522,55 +1528,11 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     }
   }
 
-  // `h.call(o, a)` / `h.apply(o, [a])` on a same-file function: its declaration and the argument nodes in parameter order
-  // (the receiver first when it declares `this`, else dropped), so a receiver or argument it changes is followed
-  function receiverCall(n) {
-    const f = n.expression;
-    if (!ts.isPropertyAccessExpression(f) || !ts.isIdentifier(f.expression) || (f.name.text !== 'call' && f.name.text !== 'apply')) return null;
-    const vd = checker.getSymbolAtLocation(f.expression)?.valueDeclaration;
-    const decl = vd && ts.isFunctionDeclaration(vd) ? vd : vd && ts.isVariableDeclaration(vd) && vd.initializer && (ts.isFunctionExpression(vd.initializer) || ts.isArrowFunction(vd.initializer)) ? vd.initializer : null;
-    if (!decl || decl.getSourceFile() !== sf) return null;
-    let arr = n.arguments[1]; while (arr && ts.isParenthesizedExpression(arr)) arr = arr.expression;
-    const args = f.name.text === 'call' ? [...n.arguments] : [n.arguments[0], ...(arr && ts.isArrayLiteralExpression(arr) ? arr.elements : [])];
-    const p0 = decl.parameters[0];
-    return { decl, args: p0 && ts.isIdentifier(p0.name) && p0.name.text === 'this' ? args : args.slice(1) };
-  }
-  // a short-circuit operand's result carries the world and value, but not a callee's parameter updates; a conditional's
-  // operand carries them too (translate.mjs carried: each arm returns every name an operand rebinds)
-  function conditionalEffect(e) {
-    let branch = false;
-    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
-      if (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && child === p.right) branch = true;
-    }
-    if (!branch) return;
-    const mutations = (decl, seen = new Set()) => {
-      if (!decl?.body || decl.getSourceFile() !== sf || seen.has(decl)) return new Set();
-      seen = new Set(seen).add(decl);
-      const params = decl.parameters.map((p) => ts.isIdentifier(p.name) ? p.name.text : null), changed = new Set();
-      const hit = (n) => { let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isNonNullExpression(root) || ts.isParenthesizedExpression(root)) root = root.expression; if (ts.isIdentifier(root) && params.includes(root.text)) changed.add(params.indexOf(root.text)); if (root.kind === K.ThisKeyword && params[0] === 'this') changed.add(0); }; // a write through a declared `this` changes the receiver operand
-      const walk = (n) => {
-        if (ts.isFunctionLike(n)) return;
-        if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && !ts.isIdentifier(n.left)) hit(n.left);
-        if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && !ts.isIdentifier(n.operand)) hit(n.operand);
-        if (ts.isDeleteExpression(n)) hit(n.expression);
-        if (ts.isCallExpression(n)) {
-          if (ts.isPropertyAccessExpression(n.expression) && MUT_NAMES.has(n.expression.name.text)) hit(n.expression.expression);
-          const via = receiverCall(n);
-          for (const i of mutations(via ? via.decl : checker.getResolvedSignature(n)?.declaration, seen)) { const a = via ? via.args[i] : n.arguments[i]; if (a) hit(a); }
-        }
-        ts.forEachChild(n, walk);
-      };
-      walk(decl.body); return changed;
-    };
-    const via = receiverCall(e);
-    if (mutations(via ? via.decl : checker.getResolvedSignature(e)?.declaration).size) v(e, 'conditional-effect', 'move a call that changes its arguments into an explicit if branch so the updated values leave the branch');
-  }
   // an optional call `f?.(x)` is `if f is absent then absent else f(x)`: the arguments and the call run only when the
   // callee is present. The callee is a local function value, a function field of a record path rooted at a local (each
   // link a plain record, the last one optional under `?.`), or a function field of `this` in a class; the expression
   // around it holds no assignment, update or comma, whose value reading evaluates every operand before any branch
   function call(e) {
-    conditionalEffect(e);
     const generatorDecl = checker.getResolvedSignature(e)?.declaration;
     const producer = [...units.values()].find((u) => u.fn === generatorDecl && u.fn.asteriskToken);
     if (producer) { const shape = generators.shape(producer); if (shape.rule) v(e, shape.rule, shape.message); }
@@ -1674,17 +1636,20 @@ export function admissionFindings(file, ranges = null, opts = {}) {
           const cb = e.arguments[0]; const r0 = e.expression.expression; const rt0 = tOf(r0);
           const iterable = isArrayExpr(r0) || nonNull(rt0).every((t) => isSetT(t) || isMapT(t)) || nonNull(rt0).some(isAny);
           if (e.arguments.length === 1 && ts.isArrowFunction(cb) && (cb.modifiers?.some((m) => m.kind === K.AsyncKeyword) || isPromiseT(checker.getSignatureFromDeclaration(cb).getReturnType()))) return v(e, 'foreach', 'forEach does not wait for an async callback: the function returns before the steps finish; write `for (const x of xs)` and await inside');
-          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && cb.parameters.length === 1 && ts.isIdentifier(cb.parameters[0].name) && iterable) {
+          // the second parameter, over an array, is the index (ECMA-262 23.1.3.15: the position, 0 below the length read
+          // once): a plain name, read as the loop's position; a Set or Map passes another value there, never read here
+          const indexed = ts.isArrowFunction(cb) && cb.parameters.length === 2 && isArrayExpr(r0) && ts.isIdentifier(cb.parameters[1].name) && !cb.parameters[1].initializer && !cb.parameters[1].dotDotDotToken && !cb.parameters[1].questionToken;
+          if (e.arguments.length === 1 && ts.isArrowFunction(cb) && (cb.parameters.length === 1 || indexed) && ts.isIdentifier(cb.parameters[0].name) && iterable) {
             let use = e; while (use.parent && ts.isParenthesizedExpression(use.parent)) use = use.parent;
             const outer = use.parent;
             if (!(outer && (ts.isExpressionStatement(outer) || (ts.isArrowFunction(outer) && outer.body === use && outer.parent && ts.isCallExpression(outer.parent) && ts.isPropertyAccessExpression(outer.parent.expression) && outer.parent.expression.name.text === 'forEach')))) return v(e, 'foreach', 'forEach is read as a statement; put it in a block before returning a value');
-            expr(recv); checkCallbackControl(cb);
+            expr(recv); checkCallbackControl(cb); if (indexed) indexedForEach.push(e);
             checkType(tOf(cb.parameters[0].name), cb.parameters[0]);
             loopDepth++; forEachDepth++;
             try { if (ts.isBlock(cb.body)) stmts(cb.body.statements); else exprStmt(cb.body); } finally { loopDepth--; forEachDepth--; }
             return;
           }
-          return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter');
+          return v(e, 'foreach', 'forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the loop, or pass an arrow with one parameter (and an index, over an array)');
         }
         if (name === 'sort' || name === 'reverse') {
           // in place on a value nobody else holds (a literal, a spread copy, a call result): the result is a new sequence
@@ -1697,6 +1662,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
         if (Object.hasOwn(cbNames, name)) {
           if (!e.arguments.length) return v(e, 'unsupported-call', `${name} needs a callback`);
           callback(e.arguments[0], cbNames[name]);
+          // reduce without an initial value (ECMA-262 23.1.3.24): the first element is the accumulator, the fold runs over the
+          // rest, and an empty array throws a TypeError; read for an inline pure arrow only (no loop of effects to fault in)
+          if (name === 'reduce' && e.arguments.length === 1 && ts.isArrowFunction(e.arguments[0]) && !callbackNeedsLoop(e.arguments[0])) return;
           if (name === 'reduce') { if (e.arguments.length !== 2) return v(e, 'unsupported-call', 'reduce needs a callback and an initial value'); expr(e.arguments[1]); }
           return;
         }
@@ -2064,7 +2032,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
     if (execMatchMember(e, checker)) return; // `m.index` / `m.input` of a match of a non-global regular expression literal (common.mjs)
-    if (matchGroupRead(e, checker) || matchGroupsTested(e, checker) || (matchGroups(e, checker) && matchGroupRead(e.parent, checker)?.recv && e.parent.expression === e)) return; // `m.groups.k` of a group in every match, `m.groups` as a presence or as that read's receiver (common.mjs)
+    { const gr = matchGroupRead(e, checker); if (gr) return gr.always || absenceRead(e, checker) ? undefined : v(e, 'unsupported-member', memberRow('match-groups').message(null, gr.key)); } // `m.groups.k`: a group that may not take part read as present or absent (common.mjs)
+    if (matchGroupsTested(e, checker) || (matchGroups(e, checker) && matchGroupRead(e.parent, checker)?.recv && e.parent.expression === e)) return; // `m.groups` as a presence or as a group read's receiver (common.mjs)
+    { const gd = matchGroupsDestructure(e, checker); if (gd) return gd.refuse === null ? undefined : v(e, 'unsupported-member', memberRow('match-groups').message(gd.refuse)); } // `const { k } = m.groups`: each name a group read (common.mjs)
     for (const t of parts) {
       if (t.flags & TF.Never) continue; // stage 5 rank 17: a read on never is unreachable; any reading is sound
       if (t.flags & TF.IndexedAccess) continue; // an indexed this type (`this["options"]`): an opaque value, read through an uninterpreted accessor (the translator types it Any)
@@ -2113,6 +2083,8 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       return v(e, 'arguments', '`arguments` is the actual argument vector, not the declared one; name the parameter, or declare a rest parameter', restParamsSite(e.expression));
     }
     expr(e.expression); expr(e.argumentExpression);
+    { const mc = matchCapture(e, checker); if (mc?.refuse) return v(e, 'unsupported-member', memberRow('match-captures').message(mc.refuse)); if (mc?.always === false && !absenceRead(e, checker)) return v(e, 'unsupported-member', memberRow('match-captures').message(`item ${mc.index} of this match is undefined when its group does not take part, and it is read here as a string; read it as present or absent (\`m[${mc.index}] ?? d\`, a test)`)); } // an item of a match that may be undefined (common.mjs)
+    { const gr = matchGroupRead(e, checker); if (gr && !gr.always && !absenceRead(e, checker)) return v(e, 'unsupported-member', memberRow('match-groups').message(null, gr.key)); } // `m.groups["k"]`
     const rt = tOf(e.expression), at = tOf(e.argumentExpression);
     const parts = nonNull(rt);
     if (parts.every(isStr) && isNum(at)) return; // s[i] is a char
@@ -2435,6 +2407,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       ts.forEachChild(node, walkAdvice);
     };
     walkAdvice(sf);
+    // an indexed forEach is read as its loop (heap-stage5.md 11d); the counted for the converter writes (convert/foreach.mjs)
+    // names the index as the loop does, a migration a person may take, never a refusal
+    for (const c of indexedForEach) note(c, 'foreach', 'forEach with an index is read as the loop over the positions; a counted for states the index and the element');
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);

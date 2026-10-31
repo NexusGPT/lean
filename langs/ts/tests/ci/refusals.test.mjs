@@ -1,5 +1,5 @@
-// the refusals file pr.mjs writes: one record per refused or failed row of the pr-intake fixture (six rows), plus one
-// per WITNESS row; none for a skipped row. One pr.mjs process at a time.
+// the refusals file pr.mjs writes: one record per refused or failed row of the pr-intake fixture (seven rows), plus one
+// per WITNESS row; none for a skipped row nor for a NEW one (an added file's module unit). One pr.mjs process at a time.
 //
 //   node --test langs/ts/tests/ci/
 import test from 'node:test';
@@ -36,7 +36,8 @@ test('pr.mjs writes <identity>.refusals.json for the pr-intake fixture, in --run
     const run = spawnSync(process.execPath, [pr, ...args, '--runs-dir', runs, '--json', json], { encoding: 'utf8' });
     assert.equal(run.status, 0, run.stderr);
     const report = JSON.parse(fs.readFileSync(json, 'utf8'));
-    assert.equal(report.rows.length, 6);
+    assert.equal(report.rows.length, 7);
+    assert.equal(report.rows.find((r) => r.file === 'added.ts')?.verdict, 'NEW'); // no equality claim, so no refusal record
     const file = path.join(runs, `${report.identity}.refusals.json`);
     assert.deepEqual(fs.readdirSync(runs), [path.basename(file)]);
     const written = JSON.parse(fs.readFileSync(file, 'utf8'));

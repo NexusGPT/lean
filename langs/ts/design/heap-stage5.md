@@ -222,6 +222,33 @@ write through a record (`not encoded: a write outside the unit's locals`), so it
 Found on the way, outside this construct: any caller of a callee that writes through an input, read by the value
 reading, is withheld by the identity guard (`identity shape unreadable`), with or without a conditional.
 
+### 3b. 2026-10-31: the short-circuit right operand is a conditional's operand (lane short-circuit-carried)
+
+What 3a left: `on && change(xs)`, `on || change(xs)`, `k ?? change(xs)` were refused by the lint's
+`conditional-effect`, because the value reading bound the new argument inside the right operand's branch only. Two
+places had it worse, unrefused: the truth test of a condition (`if (on && change(xs) > 0)`) and a logical assignment
+(`ok ||= change(xs) > 0`) hoisted the right operand's lines before the test, so the call ran whatever the left held; in
+a logical assignment a world transition did the same (`ok ||= await f()` ran `f`).
+Reading (`translate.mjs` `rightParts`, `shortCircuit`): ECMA-262 13.13 and 13.15.2, the right operand of `&&`, `||`,
+`??`, `&&=`, `||=`, `??=` is evaluated only when the left does not decide, so it is the operand of the conditional
+the operator is: `l && r` is `l ? r : l`, `l || r` is `l ? l : r`, `l ?? r` is `l is absent ? r : l`. Every site that
+translates a logic right operand (the value path, the three `??` paths, the truth test, the JSX child, the logical
+assignments) translates it once as 3a's operand (its hoisted lines apart, the names a same-file call in it rebinds);
+when it rebinds a name (or, in a logical assignment, makes a transition) the operator is 3a's `carried` with the left's
+value in the other arm: `var (t, c) := if l then (var (r, m) := bump(c, by); var c := m; (r > 1, c)) else (l, c);`.
+With no name rebound the emitted text is the one before, byte for byte. The heap core reads `??` as it read `&&` and
+`||`: the right operand's lines (a transition, an allocation, a mark) inside its branch,
+`var (hw_, q) := if o.Some? then (hw_, o.value) else (lines; (hw_, r));`, so its right operand need not be pure.
+Soundness: one evaluation of the left, then the right only in the arm where JavaScript evaluates it; the other arm
+returns every rebound name unchanged and the left's value (converted to the result's type, as before).
+The lint's argument-update condition of `conditional-effect` is gone (it is read); the rule stays the translator's
+refusal of a world effect in a logic right operand of a unit with no world channel. The escape fixture
+`mixed_logic_mutation.ts` (`return on && change(xs)`) is retired: it lints clean and translates to the carried form.
+Pair `conditional_expressions` (red at the base: the parent does not translate): heap core `noted` (`&&` in a return),
+`named` (`??` in a return); value reading `gated` (`&&`), `spare` (`||`), `fallback` (`??`), `guard` (`&&` as an
+if's condition), `lazy` (`||=`), `anchor` (`found?.id ?? attach(xs, ..)`: a find-or-attach on the unit's list), proved;
+`slipped`, `orphan` planted (lane B WITNESS).
+
 ## 5. String methods
 
 Reading: the string methods read exactly through the ordinary lane's helpers (`translate.mjs` `helper`, design
@@ -341,6 +368,67 @@ writes, a match through `?.match`, a string rooted at `this`); nexus, read under
 nexus file with a match's `.groups`; the whole-root run was stopped by the machine's memory), 2 units:
 `assumedRoleArnToRoleArn` entered (213 -> 214), `resolveRoleArn` moved to `copied-argument`.
 
+#### 6b, read again (2026-10-31, lane regex-groups-forms): a capture that may not take part, and the forms left out
+
+The false proof the note found is closed. Item i of a match is undefined when group i did not take part, or when the
+pattern has fewer groups (RegExpBuiltinExec 22.2.7.2, steps 22-34). TypeScript types it `string` anyway, and the match,
+read as `seq<string>`, made it a string. One rule now covers the numbered and the named captures (`common.mjs`):
+- `matchItemKind(r, i)` decides whether item i of the match r is a string. It reads the pattern of every call that may
+  make r: r itself, a name whose declaration and every assignment in the file is such a call (an exec loop on a `let`),
+  or the variable of a for-of over `matchAll`. That pattern's `regexCaptures` decides. Item 0 is the matched text of any
+  match, and a match of a g pattern by `String.prototype.match` lists matched texts, each a string.
+- `matchCapture`: `m[i]` with i a literal, on a const match `matchOfName` reads, is `regex_capture(re, s, i)` (a string)
+  when the group takes part in every match. Otherwise it is `regex_capture_may(re, s, i)`, present or absent.
+  `m.groups.k` of a group that may not take part is the same function at the group's number, so `m.groups.b` and
+  `m[2]` of `(?<a>x)|(?<b>y)` are one value. Elsewhere an item that is a string keeps the list's reading. An item that
+  may be undefined is refused (row `match-captures`): a non-literal index, a match not bound to a const or of a string
+  the unit writes. So is an item of a match whose pattern is not known (a pattern parameter, `new RegExp` of a computed string, an exported
+  const).
+- A value that may be undefined is read only as present or absent (`absenceRead`). That means the left of `??` or
+  `||`, a test, an equality with null or undefined, or a place whose expected type holds undefined. Anywhere it would be
+  a string (`return m[2]` from a function returning string, `const x = m[2]`), the lint refuses it, and the translator
+  refuses its conversion (`convertToD`) as a backstop.
+- `const [, a, b] = m`: each destructured item must be a string by `matchItemKind`, otherwise it is refused (the array
+  pattern's default applies past the end, not to undefined).
+
+The forms:
+- `m.groups["k"]` is `m.groups.k`.
+- `const { k, j: n, i = d } = m.groups` (m narrowed to a match) binds each name as that read. A group that may not take
+  part is bound only with a default, which it takes when absent. Without one it is refused, since the name would hold
+  undefined under a string type.
+- A pattern held in a name is read as its literal (`regexLiteralOf`, `heldRegexLiteral`) when the name is a const of
+  this file bound to a literal without g and y, not exported (nor a top-level const of a script), and every other
+  mention of it is the receiver of `.exec(x)`, `.test(x)` or `.lastIndex`, or the pattern argument of a string's
+  match, matchAll, replace, replaceAll, search or split. Nothing can then change its source or flags (only a call
+  handed the object, `compile` (Annex B) or a store could), and without g and y those calls ignore lastIndex. The
+  translator writes the literal for the name at those calls (a `.lastIndex` read stays the object's).
+- A group that may not take part stays Option everywhere, as above.
+
+Still refused, with reason: a group read as a string where it may not take part; `m.groups` held or passed; an item of
+a match whose pattern is not known; a non-literal index whose item may be undefined. Also refused: a held pattern that
+is exported, passed, or run by any other call, and a held g or y pattern in a group read (lastIndex). Left (not this
+note's construct): the whole match array used as a value (`m.slice(1)`, `m.join`, a for-of over m, a spread) still
+reads its items as strings when a group may not take part.
+Found, not fixed: `re.exec(s)` of a literal is a world transition (`ext_call_args_Ext_RegExp_exec_World`), and Dafny
+does not prove two functions equal when each begins `var (wld, t0_) := ...`. Bodies equal up to the order of an
+if's arms fail, while the same bodies with a plain let verify. So the pair's numbered unit `first` matches with
+`s.match`. (`month`, an exec, is a WITNESS unit.)
+Pair `regular_expressions` adds `second` (`m[2] ?? d` of `(a)|(b)`, another default: proved at the base, the false
+proof; now not proved, lane B WITNESS on "a"), `first` (`m[1]` of a group in every match: proved), `day` (destructured
+groups: proved), `keyed` (`m.groups["y"]`: proved), `held` (a module const pattern: proved), and `either` (a group of one
+alternative, another default: WITNESS). The escape fixture `library_members_match_groups` now holds a group of one
+alternative read as a string (still refused); its earlier form, returned as `string | undefined`, is read.
+Also read again: `matchOfName`'s write test counted every prefix unary as a write, so `if (!t) return` before `t.match(re)`
+refused the match. Only `++` and `--` write (pair unit `tested`).
+Census (`census.mjs`, n8n copy, base 09032a59 against this head; nexus: not run, memory): entered 2,752 -> 2,752,
+language-refused 4,634 -> 4,634. Entered: `extractDomain` (a pattern held in a const). Lost: `executeRegexExtractValue`
+(`packages/core/src/ExtractValue.ts`), which returns item 1 of a caller's `RegExp` as a string: undefined when the
+group does not take part, so this is the false-proof class this note closes. Moved, still out: `useJsonFieldCompletions`
+(its destructured groups read; it stops at a `type-assertion`); `splitName` (stops first at `const [_, fullName] =
+match` of `(.+)?`, a group that may not take part). The other `.groups` units of the first reading stay out by named
+forms: a pattern held in a parameter default (`getDomainBase`, `getDomainPath`), a `let` pattern (`splitExpression`),
+a string rooted at `this` (`runCodeEachItem`).
+
 ## 8. Void results
 
 Reading: a unit whose result is `void` is a procedure: it returns the unit value, `(HWorld, ())`. Its body may fall
@@ -382,6 +470,30 @@ Pair `void_results`: `add` (untouched), `bump` (inferred void), `cap` (fall-thro
 `onlyEmpty` (return in an else), `addOne` (expression body against a block), `addFree` (a returned call against the call
 and a bare return), `topUp` (a returned call against the opposite test returning first: red before, withheld; proved
 after), `refill` (WITNESS, another argument), `Counter.tick` (WITNESS). Lint: unchanged.
+
+### 8, the other bare returns and a return inside a loop (2026-10-31, lane void-return-forms)
+
+Reading: a procedure's `return undefined;` and `return void e;` are its bare return. `undefined` (the global, not a
+name the file binds: `isAbsent`) is the value a bare return yields; ECMA-262 evaluates the operand of `void`, then
+yields undefined, so `return void e;` is `e;` then `return;`. One test, `common.mjs voidReturn`, names the statement
+for the three readers: the lint admits it where a bare return is admitted (the unit's own return, not a callback's) and
+checks `e` as a statement; the value translator reads the two statements in its place (`voidSplit`); the heap core reads
+a procedure's statement lists with both forms replaced by the bare return, `e` a statement first (`bareForms`).
+A procedure's `return` inside a loop ends the procedure at that iteration. Stage 4's helper had no exit; it now
+returns a flag last: true at the return, with the world and the carried locals as they are there, false when the loop
+ends. After the call the flag selects the exit of the list around the loop (the procedure's `(hw_, ())` at its level,
+the enclosing helper's exit in a loop body, so a return in an inner loop ends both) or the statements after the loop.
+A helper whose body never rebinds the world keeps its `ensures r_.0 == hw_`.
+Soundness: the procedure's value is `undefined` on every path, as before, and the heap is the one at the return: the
+iterations after it and the statements after the loop do not run, which the flag's else branch states.
+Stays out, and why: a `return` inside a `forEach` callback ends that step, not the procedure (`return inside a forEach
+callback`); a return inside a loop of a unit with a value (its helper would carry the value; no reading names it);
+`return void 0` and any `void` of an expression that is not a statement form (the lint's statements: assignments,
+updates, calls, await); `return void e` inside a callback; `undefined` when the file binds that name.
+Pair `void_results`, four units added: `resetUndef` (`return undefined` against a bare return), `pushVoid` (`return
+void c.items.push(name)` against the push and a bare return), `firstOver` (a return inside the loop, the write after
+the loop skipped: proved), `overAt` (the exit writes the bound, not the price: WITNESS). Red before: the lint refused
+the candidate's `void` operand, so no theorem was generated (1 check, FAILED); after: 29 checks, ALL PASS.
 
 ## 8b. Two corrections of the stage 4 core
 
@@ -513,6 +625,24 @@ the value lane's cell: proved), `counted` (value lane) and `named` (heap core) r
 (unproved, WITNESS; `counted` was a false proof before), `limited` and `next` (the same import: proved), `relayed` and
 `step` (the same declaration through a re-export, heap core: proved; unproved before). Lint: unchanged.
 
+### 9c. A member of a namespace import (2026-10-31, lane ledger-added-files)
+
+Defect: the heap core read an imported name only as an identifier, so a unit reading `ns.X` (`import * as ns`, or
+`import ns = require(..)`) or calling `ns.f(..)` was kept out of the core ("receiver type") and fell to the value lane,
+which names the member by the namespace's module and the member's text (`ns_Imp_<module>_X`): `ns.X` against `import
+{ X }`, or against `lib.X` through a module that re-exports X, was never proved.
+Reading: a namespace member is the binding it denotes (`common.mjs importMemberIdentity`): the module that declares X
+and its name there, read through every re-export, the identity `importIdentity` gives `import { X }` of the same module
+(ECMA-262 GetModuleNamespace: a namespace's property X is the binding ResolveExport(X) gives, the one a named import of X
+links to). The heap core keys it as a named import of X (`Imp_X_<identity>` for a primitive read, `Call_X_<identity>..`
+for a call), so `ns.X`, `import { X }` and `lib.X` are one constant, one transition; `ns.X` and `ns.Y` are two. A bare
+specifier, or a relative one that does not resolve, keeps its text and X; a type-only namespace, an optional or
+computed member, a member the module does not export: no key, unread as before. The value lane is unchanged (its name
+for `ns.X` is still the namespace's module and X: sound, another symbol at worst).
+Pair `module_scope`: `spaced` (`ns.LIMIT` both sides: proved), `tagged` (`ns.FIRST`, then `ns.SECOND`: unproved,
+WITNESS), `routed` (`ns.LIMIT`, then `lib.LIMIT` through the re-export), `joined` (`LIMIT` by name, then `ns.LIMIT`),
+`grown` (`ns.grow(..)`, then `lib.grow(..)`): proved; the last three unproved before.
+
 ## 11. Array callbacks and the other array methods
 
 Reading: beside `map` and `filter`, a pure one-parameter callback with an expression body is read for `some` and
@@ -629,6 +759,56 @@ theorem, not this reading.
 Pair: `map_block` 11/11 (red at the base, `Equal_labels_inner`); the regression list is in
 `lane/fix-map-block-regression-result.md`.
 
+### 11d. forEach with an index, reduce without an initial value, a let assigned once (2026-10-31)
+
+Three forms 11b left out, read now:
+- **`xs.forEach((x, i) => body)` as a statement over an array** is the loop of 11 with the index bound at each step to
+  the position (ECMA-262 23.1.3.15: the callback receives the element and its index, 0 below the length read once). The
+  reading is three readers' together, as 11b said it must be: the lint admits a second parameter that is a plain name
+  when the receiver is an array (`lint.mjs`; a `Set` or `Map` passes another value there, so it stays refused, and so
+  does a receiver of type any); the element write it carries is admitted as for one parameter (`lower.mjs`
+  `heapShapeEligible`); the ordinary lane reads it as its for-of loop, which already bound a second parameter to the
+  counter (`translate.mjs` `forEachShape`, `coreLoop`); the heap core carries the index on the loop node
+  (`forEachLoop`) and binds it in the loop helper to the counter (`var i := k_`, `k_ as real` in a real file). An index
+  assigned in the body is refused (the lint's `param-assign`; the core's `loop index assigned`).
+- **`xs.reduce((a, x) => e)` without an initial value** (23.1.3.24): the first item is the accumulator and the fold
+  visits the rest, `if |it| == 0 then d else Fold(it[1..], f, it[0])`; on an empty array JavaScript throws a TypeError,
+  which no value of the reading holds, so the world is marked there (`EmptyMark`, as a zero divisor marks it, section
+  13) and the unit carries `// INRANGE`: its lemma shows neither side reaches the empty case. A unit that does not guard
+  the length is therefore unproved, and lane B shows the throw as a WITNESS; a unit that guards it is proved. The
+  accumulator is a primitive of the element's type (TypeScript's overload without an initial value). The lint admits an
+  inline arrow that computes (a callback of effects is a loop with no fault channel here); inside a callback the core
+  refuses it (the mark has nowhere to go); the ordinary lane refuses it with its reason (a value reading has no channel
+  for the TypeError), so a unit outside the heap core is refused there, as the lint refused it before.
+- **A block body with `let`**: a `let` of one name with an initializer that nothing in the callback assigns again is
+  the `const` of 11b and 11c, written in place (`cbParts`): its one assignment is its initializer, so every read is that
+  value, and the lambda's text is the same as with the value written in place (11c). A `let` assigned again stays out,
+  with its own reason (`cbFormWhy`: `callback form: a let assigned again in the callback`), and so does a `var`
+  (hoisted).
+
+Found on the way, in the construct: the loop helper of a body that writes fields stated nothing about the mark, so a
+unit with `// INRANGE` and any loop of field writes after the mark (the guarded `reduce` above, then a `forEach` writing
+the lines) needed an induction over the helper to show the mark stays clear, which no lemma has. A helper whose every
+rebinding of the world is a field write (`Set_`, which never marks) or a call of a helper that already keeps the mark now
+ensures `r_.oob == hw_.oob`, proved by its own recursion, as a helper that never rebinds the world already ensured it
+returns that world. The rule is the helper text's, keyed on no name.
+Soundness: the index is the position the method passes, and the loop of 11 visits the positions in order from 0; the
+first item and the fold over the rest are 23.1.3.24's steps 9 and 10 for a non-empty array, and the empty array is the
+mark, never a default read as the answer; a `let` read where nothing assigns it is a constant.
+Still out, and why: `reduce` with an index (`(a, x, i) => e`: three parameters, the fold helper takes two); `find` of
+references (an absent reference has no shape); `map` or `filter` inside a callback (an allocation in a lambda); a block
+body with a branch or a second `return`, a `let` assigned again; `forEach` over a `Set` or a `Map` with a second
+parameter; `reduce` without an initial value whose callback has effects, or inside another callback.
+Pair `array_callbacks_rest`, four units more (red at the base, the lint's `foreach` and `unsupported-call` and the core's
+`callback form`): `numberLines` (an indexed `forEach` writing each line's position, the lines named first: proved),
+`total` (`reduce` without an initial value against an initial 0: equal on every non-empty array, a TypeError against 0
+on the empty one, WITNESS), `totalGuarded` (the length guarded first, the prices named: proved), `weighLet` (a `let` in a
+`map` callback against the expression: proved); 23 checks. Lint: the admissions above, and an advisory `foreach` note at
+each indexed `forEach` it reads (the converter's counted for, `convert/foreach.mjs`, planned at that note; never a
+refusal). Census (base `09032a594` against this reading, one root at a time): n8n 9,610 units, 2,752 entered before and
+after, 0 gains and 0 losses; langchainjs 6,709 units, 2,831 -> 2,834 entered (three units holding an indexed `forEach`),
+0 losses. nexus: not run, memory. Regression: `lane/array-callbacks-rest-2-result.md`.
+
 ## 12. Discriminated unions of records
 
 Reading: a union of records `A | B` where every alternative declares one field as literals and the alternatives'
@@ -689,6 +869,22 @@ switch whose clauses end in `break`, two cases sharing a body, against an if: th
 leaves a number update of a union member unplaced, as `heap5_unions`' `grow`), `speed` (`in`: not proved, WITNESS).
 Red on the base (5 of 15 checks fail), all pass after. Lint: unchanged. Census: the lane's result file
 (`lane/core-discriminated-unions-result.md`).
+
+### 12b. An alternative's hypothesis states its discriminant (2026-10-31)
+
+A reference typed as one alternative (`c: Circle`, `Circle = { kind: 'c'; r: number }`) had the hypothesis
+`IsR_<Circle>(hw_, c)` and nothing about `kind`: the hypothesis states a field's literals only for a union of two or
+more (`literals`), and one literal read as its plain primitive. Shapes are views, so the constructor alone does not
+say which alternative the cell holds, and `size(c)` for `size(s: Shape)` could take the `Square` branch:
+`circ` (`return size(c)` against `return c.r`) was not proved. Reading: one literal (`'c'`, a non-negative integer
+`3`) is its primitive holding that value, as a union of literals is (`shapeOf`, `literals` of one type); the key is the
+primitive's, so no constructor changes. The hypothesis then states what the type says, one rule wherever a reference
+parameter's field (or a primitive parameter, or a captured `const`) has a literal type:
+`IsR_<Circle>(hw_, c) && Get_<Circle>_kind(hw_, c) == "c"`.
+Soundness: the hypothesis holds on entry, where TypeScript's type gives the value; it says nothing about the world after
+a write, and nothing in the core writes a discriminant of an alternative (section 12). Pair `wider_record_argument`:
+`circ` not proved at base, proved now (9 checks). Across every pair's heap translation only hypotheses change:
+`type_tests` `structural` (`kind == "public"`), `callback_units` (`offset == 2`), both ALL PASS.
 
 ## 13. Arithmetic
 
@@ -867,6 +1063,30 @@ Pair `outside_calls`: `used_once`, `used_twice` (two fields of a returned refere
 (WITNESS), `read_first` (WITNESS), `guarded` (WITNESS) unproved. Census before and after: lane result
 `lane/core-outside-calls-result.md`.
 
+### 15c. The objects a fake is handed, and the purity check's two renders (2026-10-31, lane fix-render-impure-handed)
+
+Lane B's side of "the transition may write every object": since 59c02366e a fake's call writes the primitive fields of
+each plain object it is handed, on a seeded draw (`exec/fake.mjs` writeHanded). The purity check
+(`exec/run.mjs` observeWindow) renders a component twice from one state and refuses it when the two trees or traces
+differ. Its invariant: the two renders see the same props and the same world answers. It restored the hook slots,
+the child frames, the call counters and the demand, but not the objects the world wrote. A render that hands a prop
+object to the world (`runtime.cardRuntime(card)` in R8's BoardRow) saw `{title: "a"}` in the first render and the
+world's write `{title: "a~~"}` in the second. Lean's own write was reported as the component's impure render. The
+parent was refused (REFUSE render-impure, side parent), and with it every mutant of the component: R8 went from 42
+to 38 of 71, the four BoardRow mutants.
+Reading: the world's writes to handed objects are journaled while the first render runs (`handedMark`, `handedTake`).
+Before the second render they are undone, so it starts from the state the first started from. Its world, counted from
+the same call index, makes the same writes again. After the second render its own writes are undone and the first
+render's are replayed, because the observation keeps one render, the first. A field is undone only while it still holds
+the world's value. A field the unit wrote after the world (`card.title = card.title + "!"`) is the unit's write and stays,
+so a component that writes its own props in render is still refused. writeHanded is unchanged everywhere: the pooled
+record views it was added for (`alias_after_call`, `blocker_opaque_receiver`) read as before.
+Pair `render_handed_card`: `Cards` (unchanged, hands each card) PASS-bounded, `Row` (the effect's dependency dropped)
+WITNESS, `Marked` (writes its prop after the world's call) REFUSE on both sides. `Cards` and `Row` read REFUSE at
+v0.1.3. Runtime row `render-handed` (`tests/render-handed.mjs`): the journal's undo and replay, and BoardRow
+(`tests/fixtures/render-handed-boardrow`, the census copy) against itself PASS-bounded and its four mutants
+(drop-dep, key-index, flip-conditional, change-text) WITNESS.
+
 ## 16. Map and Set with record keys or items, the copy forms
 
 Reading: a Map's keys and a Set's items may be references (`Set<Tag>`, `Map<Tag, number>`): the table's rows already
@@ -912,6 +1132,45 @@ of the source: WITNESS). Left: korat's odometer varies a record's first slot slo
 Map field placed first in a record of three slots reaches its first key past input 30 (`check.mjs`, 200 inputs, finds
 it); the pair asks the identity questions of Map and Set arguments. The census lints and never runs lane B, so it is
 unchanged (the numbers in `lane/core-map-set-copy-forms-result.md`).
+
+### 16c. Every slot within the suite's inputs; nullable items, record values (2026-10-31, lane korat-order-nullable)
+
+Found: two of 16b's leftovers. The odometer varied the first slot slowest (the arguments, then the first shape's first
+field), so a slot early in that order took its second value only after every later slot had run through its choices:
+in `map_set_copy`, the `byTag` Map of `Board { byTag, seen, tags }` held no record in any of the suite's 30 inputs
+(`tests/korat-slots.mjs` on the base: 3 slots never drawn, all that one), and on a deeper spec the 20,000 assignments
+ran out before a nullable argument was ever non-null (`exec/korat.test.mjs`, the deep chain: no slot drawn). And a
+`Set<Tag | null>`, a `Map<Tag | null, V>` and a Map whose values are records were left to the seeded generator, whose
+records are fresh: no item or value was ever an object an argument holds.
+Reading:
+- The order: after the all-default assignment, a breadth-first prefix. The pool objects the arguments reach are found
+  breadth-first (the arguments' slots, then the slots of each object reached, by the number of links; a default link
+  first, so the assignment that reaches an object is the smallest the search meets). Each slot, one per argument and
+  one per field of a shape (not per pool object), takes its first choice that holds a pool object, on the shallowest
+  object of its shape, with the assignment that reaches that object. Then each slot whose item, key or value admits
+  null takes its first choice holding the absent value. Then the odometer as before, skipping what the prefix built.
+- The bound: with a argument slots, S fields that are slots over the record shapes reachable from the arguments, and N
+  of them nullable sides, every slot holds a pool object (and every nullable side the absent value) within the first
+  1 + a + S + N inputs. An assignment whose heap an earlier input already drew is no input, and that earlier heap drew
+  the slot (isomorphism keeps the field names). So within the suite's 30: shapes up to depth d and width w (each shape w
+  slot fields, each to a shape of its own) when a + w(w^d - 1)/(w - 1) + N <= 29, d at most korat's DEPTH 4 (a field
+  past it is a primitive draw, no slot): a chain (w = 1) to depth 4 with up to 25 arguments; w = 2 to depth 3 (14
+  fields) with up to 15 arguments; w = 3 or 4 to depth 2 (12 or 20 fields). Shapes shared structurally (a recursive
+  `next`) count once. Past the bound the prefix still goes shallowest first, so what the 30 inputs miss is the deepest.
+- A nullable item, key or value is one more letter of the slot's alphabet, placed second (`[0, absent, 1]`), so a Set's
+  first three choices are `[]`, `[o0]`, `[absent]`. The absent value is `null` where the union names null, `undefined`
+  otherwise.
+- A Map whose values are records: the values range over the sequences of pool objects of the entries' length (repeats
+  allowed: two keys may hold one object), with keys pooled too when they are records. Primitive keys are drawn by a
+  generator seeded by the slot, distinct (a key drawn twice is drawn again, at most eight times).
+Soundness: the order and the alphabet change which inputs lane B tries first, never what a verdict concludes.
+Stays to the generator: an optional or nullable Set or Map field (unchanged from 16b).
+Pair `korat_nullable_values` (lane B alone: the heap core leaves a Set of optional items and a Map's reference values
+out): `isSeenOrNone`, `isOwnValue`, `distinctValues` (WITNESS; PASS-bounded on the base), `knowsTag` (the `byTag` case:
+WITNESS; PASS-bounded on the base), `holdsNone`, `valueCount` (equal, PASS-bounded). Unit test `exec/korat.test.mjs`
+(four cases, all red on the base). Counter `tests/korat-slots.mjs` (the slots the suite's first 30 enumerated inputs
+never draw) and sweep `tests/laneb-sweep.mjs` (lane B on every pair unit, per tree): the numbers in
+`lane/korat-order-nullable-result.md`.
 
 ## 17. Tuples and intersections
 
@@ -1063,7 +1322,8 @@ caller leaves the core, and its callee with it (one calling convention per calle
 checks): `who` passes a `Person` to `greet(p: Named)`; lane A proved it equal to `return ""` at base, now not proved
 (WITNESS). `circ` passes a `Circle` to `size(s: Shape)` and stays in the core with `size`. It is not proved, at base as
 now, because its hypothesis `IsR_<Circle>(hw_, c)` does not state the alternative's discriminant value, so `size` may
-take the other branch. That is an incompleteness of the hypothesis, left as it is.
+take the other branch. That is an incompleteness of the hypothesis, left as it is. (Read since, section 12b: the
+hypothesis states `kind == "c"`, and `circ` is proved.)
 
 **The step cache keys a Dafny input with every file it includes** (`tests/stepcache.mjs` `withIncludes`). The theorem
 step reads `parent.dfy` and `candidate.dfy`, and theorem.py merges the `.pre.dfy` each includes. The key held only the
@@ -1199,11 +1459,37 @@ Out (unchanged, reported): the reading that relies on a `body: unchanged` row do
 `// DECORATORS` line (a contradicted row already turns the reading back to replacing, so no proof rests on it, but
 the certificate does not name the row's version); `new C()` of a decorated class in the value reading allocates inline (step 21 refuses it in
 the heap core only); a decorated static accessor and `this.m()` inside a static method keep their readings; lane B
-returns PASS-bounded on `made` and `seeds` although the two sides return 5 and 4 when run (the harness does not run
-the decorated member of an instance made by `new`, or of the class itself).
+returned PASS-bounded on `made` and `seeds` although the two sides return 5 and 4 when run (closed by 20c).
 Pair `decorators_metadata` (41 checks): `Registry.size`, `Registry.twice` (proved: a listed marker), `Ledger.add` (proved), `Ledger.charge` (unproved, PASS-bounded), `Ledger.net`,
 `Meter.raise`, `Meter.pump` (WITNESS), `Meter.peak`, `Row.grow` (proved), `Row.label`, `Row.rename`, `Note.shown`,
 `Dial.ticks`, `Dial.curs` (unproved, WITNESS), `made`, `seeds` (unproved), the four untouched Dial members (proved).
+
+### 20c. Lane B runs what a decorator installed (2026-10-31, lane decorators-lane-b)
+
+Found by 20b's pair: lane B returned PASS-bounded on `made` and `seeds` although the two sides return 5 and 4 when
+run, and asked on the getter unit `Dial.cur`. Lane B's loader replaced TypeScript's `__decorate` with one that ran
+each decorator and discarded its result, so `Count`'s descriptor never reached the prototype or the class: the
+instance made by `new` in `made`, and `Dial.seed` in `seeds`, ran the declared text on both sides. `Dial.cur` names
+the getter by its property, and the inventory names the unit `Dial.get_cur`, so lane B found no unit of that name.
+Reading (`exec/run.mjs`, contract in SEMANTICS.md "Lane B"): a decorator of the package's own code is applied as
+TypeScript's helper applies it (last first; a truthy result replaces the class or the descriptor, which is defined on
+the target). A decorator lane B fakes (an import leaving the package) is still run for its reads and calls only: what
+it would install is unknown, and the table's rows are its model. A unit `C.m` that no side holds, where a side holds
+the getter unit `C.get_m`, is that getter, driven by reading the property (`propertyRead`; a setter is reached only by
+a write). The programs on one constructed instance (`exec/programs.mjs`) build a class that declares no constructor
+as `new C()` does, with no arguments, as `runClassRaces` already did. Before, they stopped with `no constructor unit`.
+That route showed a gap of its own in pair `inherited_method`: the candidate's base changes the initializer `count = 0`
+to `count = 1`. `programs.mjs` decided "the constructor changed" by the text of `C.constructor` alone, which neither
+side declares, so `Item.tag` was WITNESS on the instance's `count`, which `tag` never touches. The test is now the
+instances as built: when the two sides' own fields differ before any command, the programs do not run, and the
+constructor is the one that differs.
+Check: `tests/lane-b-routes.mjs` runs every PASS-bounded lane-B row of every pair again, through the routes the
+source gives it: a call; a method on an instance its constructor built; a static member through the class; a getter by
+reading the property. It uses its own loader (TypeScript's emit with its helper untouched; outside imports are lane
+B's fake modules) on lane B's inputs. At lean-09032a59 it prints `made` and `seeds` (5 against 4); after this note,
+0 rows (the lane's result file).
+Pair `decorators_metadata` (41 checks): `made`, `seeds` WITNESS; `Dial.cur` PASS-bounded (the same counting getter on
+both sides).
 
 ## 21. Constructors
 
@@ -1309,6 +1595,23 @@ proved on the canonical heap, PASS-bounded), `blank` (tag set to the empty strin
 (untouched). At 373aad5ff (both lanes at ES2020's emit) `made` was unproved and a WITNESS. Not read here: key order (the
 heap core's records hold no key order) and a subclass field that redefines an inherited one (`extends` stays outside the
 heap core).
+
+### 2026-10-31: a parameter property with a default (lane parameter-property-default)
+
+`constructor(public x = 0)` is the parameter with its default (a call that leaves it out, or passes undefined, binds the
+default, evaluated at the call) followed by the field store `this.x = x`, TypeScript's emit in both class-field modes.
+The field holds the parameter's type either way, so the class's record is the one it would have without the default.
+`classWhy` refused the form (`parameter property form`), so the class was no record of the heap core: its methods, and
+every unit holding one of its instances, left the core. It now admits it; an optional parameter property (`public x?:
+T`) and a pattern stay refused. The constructor unit itself still takes no defaulted parameter in the core (`parameter
+form`, as every unit), so it, and a unit that constructs the class, is read in the ordinary lane, whose default reading
+(an `Option` parameter, then the stores) already held it. Lint: unchanged (it admitted the form already).
+Pair `constructors`: `Knob.constructor` (`public turn = 0, readonly label = "knob"`, a body storing through a local:
+proved), `knob`, `knobbed` (the argument left out: proved), `Knob.twice` (the turn doubled in place against through a
+local: proved; at 9b5d13c98, the base reading, unproved: the class was out of the core and the ordinary lane did not
+prove it), `Dial.constructor` and `dialed` (the default 1 became 2: withheld by the
+interface check, WITNESS). A default whose text changes but whose value does not (`0` against `1 - 1`) stays withheld:
+the interface check compares the defaults' text (section 0b's note).
 
 ## 0b. The identity guard reads destructured and rest parameters
 

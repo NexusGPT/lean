@@ -122,9 +122,9 @@ export const READINGS = [
   {
     id: 'regex', construct: 'a regular expression literal: an opaque constant named by its text; the match members of a non-global literal as functions of the pattern and the string',
     kinds: ['RegularExpressionLiteral'],
-    translate: rx('^`\\.groups` of a pattern that names no group is undefined$', '^a named capture of a match that may be null, read without `\\?\\.`$', '^a named capture read as '),
-    assumptions: { runtime: 'regex_<hash of the literal> of type Ext_RegExp; exec and match of a non-global literal read index and input as regex_index(pattern, string) and the string, groups.k of a group named once that takes part in every match as regex_group(pattern, string, k), groups as a presence test as whether the pattern names a group', aliasing: 'a literal is a new object, never shared', exceptions: 'a literal never throws', termination: 'terminates' },
-    refusal: 'this regular expression form has no reading (a named capture outside design/heap-stage5.md 6b is refused by library row match-groups, rule unsupported-member)',
+    translate: rx('^`\\.groups` of a pattern that names no group is undefined$', '^a capture of a match that may be null, read without `\\?\\.`$', '^a capture that may not take part read as a string$', '^a capture read as ', '^a capture of a group that may not take part ', '^`[^`]*` of the destructured groups may be undefined '),
+    assumptions: { runtime: 'regex_<hash of the literal> of type Ext_RegExp; exec and match of a non-global literal read index and input as regex_index(pattern, string) and the string, groups.k (or groups["k"], or a name of const { k } = m.groups) of a group named once that takes part in every match as regex_group(pattern, string, k), m[i] of a group in every match as regex_capture(pattern, string, i), a group or item that may not take part as regex_capture_may(pattern, string, i) (present or absent), groups as a presence test as whether the pattern names a group; a const of the file bound to a non-global literal and only run by calls that ignore lastIndex is that literal', aliasing: 'a literal is a new object, never shared', exceptions: 'a literal never throws', termination: 'terminates' },
+    refusal: 'this regular expression form has no reading',
     design: ['design/library-rows.md', 'design/heap-stage5.md'],
     versions: [{ version: 1, status: 'current' }],
   },
@@ -140,20 +140,11 @@ export const READINGS = [
   },
   {
     id: 'logic-values', construct: 'booleans, conditionals, &&, || and ??: JavaScript truthiness by the static type, the deciding operand evaluated once',
-    decisionExceptions: [{
-      id: 'conditional-state-channels',
-      sites: [{ who: 'lint', rule: 'conditional-effect' }, { who: 'translate', rule: 'conditional-effect' }],
-      conditions: {
-        argumentUpdatesInBranch: 'a same-file callee changes its argument under a short-circuit branch; a short-circuit result does not carry parameter updates (a conditional\'s arm carries them, design/heap-stage5.md section 3)',
-        worldEffectInPureBranch: 'a logical right operand has a world effect while the emitting unit has no world channel',
-      },
-      reason: 'These are different state channels: admission protects callee argument updates, while emission requires the world channel of the enclosing unit. Neither condition implies the other.',
-    }],
     kinds: ['TrueKeyword', 'FalseKeyword', 'ConditionalExpression'],
     uses: (n, ts) => ts.isBinaryExpression(n) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(n.operatorToken.kind),
-    lint: ['conditional-effect'],
-    assumptions: { runtime: 'truthiness per static type (a number is nonzero, a string nonempty, an Option Some and truthy); a branch with world transitions returns its world and value only when taken; a conditional\'s arm also returns every name a same-file call in it rebinds (the arguments it changes)', aliasing: 'values', exceptions: 'a branch\'s throw is the exception reading\'s', termination: 'terminates when the operands do' },
-    refusal: 'a same-file call that changes its arguments inside a short-circuit operand has no reading here',
+    lint: ['conditional-effect'], // the translator's refusal of a world effect in a unit with no world channel (its rule prefix); the lint no longer refuses a short-circuit operand
+    assumptions: { runtime: 'truthiness per static type (a number is nonzero, a string nonempty, an Option Some and truthy); a branch with world transitions returns its world and value only when taken; a conditional\'s arm, and the right operand of &&, ||, ?? and of their assignments, also returns every name a same-file call in it rebinds (the arguments it changes)', aliasing: 'values', exceptions: 'a branch\'s throw is the exception reading\'s', termination: 'terminates when the operands do' },
+    refusal: 'a logical right operand with a world effect in a unit that has no world channel has no reading here',
     design: ['design/mixed-logic-values.md', 'SEMANTICS.md'],
     versions: [{ version: 1, status: 'current' }],
   },
@@ -349,7 +340,7 @@ export const READINGS = [
     lintText: [
       ['unsupported-call', /(takes no argument|takes one (comparator|callback|pattern|value \(a start index stays out\))|needs a callback( and an initial value)?|takes plain arguments)$|^(Set|Map)\.(forEach|clear) is|^new [^ (]+\(\.\.\.\) reads an array|^\.[^ ]+\(\) (in an optional chain|as a value changes|reads the host's locale|on .* reads Object\.prototype)|^method \.[^ ]+\(\) on .* is outside the subset; narrow the union|^sort as a statement|^splice as a (value|statement)|^(lastIndexOf|toString|substr|matchAll|search|fill) /],
     ],
-    translate: rx('^array method \\..*\\(\\) is not translated$', '^Set\\..*\\(\\) is not translated as an expression$', '^Map\\..*\\(\\) is not translated as an expression$', '^\\..*\\(\\) as a value needs a local array or a fresh one$', '^\\..*\\(\\) is not translated here$', '^\\..*\\(\\) on a tuple writes it in place; .*$'),
+    translate: rx('^array method \\..*\\(\\) is not translated$', '^Set\\..*\\(\\) is not translated as an expression$', '^Map\\..*\\(\\) is not translated as an expression$', '^\\..*\\(\\) as a value needs a local array or a fresh one$', '^\\..*\\(\\) is not translated here$', '^\\..*\\(\\) on a tuple writes it in place; .*$', '^.* throws a [A-Za-z]*Error on .*, which this reading of a value has no channel for; .*$'),
     assumptions: { runtime: 'each row of the library table is a prelude helper (Filter, Map, Fold, Slice, StrFind, ...) or a world transition (a locale read, Math.random); lane B checks every row\'s result fact on every run', aliasing: 'a row says whether its result is fresh, the receiver or an element', exceptions: 'a row that may throw on correct inputs (JSON.parse, URL, BigInt) is a faulting call', termination: 'the helpers decrease their sequence' },
     refusal: 'this library call has no row',
     design: ['design/library-rows.md', 'design/ordered-collections.md'],
@@ -407,7 +398,7 @@ export const READINGS = [
           {
             "who": "lint",
             "rule": "alias-mutation",
-            "message": "`${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `++`, `--`) is read only in a `forEach` statement of one parameter over plain data records; write the element through its array in an index loop, `for (let i = 0; i < xs.length; i++) xs[i].f = v` (escape element_write_loop_callback)"
+            "message": "`${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `++`, `--`) is read only in a `forEach` statement of one parameter (and an index) over plain data records; write the element through its array in an index loop, `for (let i = 0; i < xs.length; i++) xs[i].f = v` (escape element_write_loop_callback)"
           },
           {
             "who": "translate",

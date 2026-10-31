@@ -528,6 +528,8 @@ export function loopElementBinding(checker, id, isLoopCallback = () => false) {
 }
 // A shared write classification carries BOTH conditions: a source shape eligible for the heap, and actual planner
 // selection. null selection is the admission phase. false selection means the value emitter must refuse a lost write.
+// the second parameter of an array forEach callback: the index (ECMA-262 23.1.3.15), a plain name the loop binds to its position
+const plainIndex = (p) => !!p && ts.isIdentifier(p.name) && !p.initializer && !p.dotDotDotToken && !p.questionToken && p.parent.parameters.length === 2;
 export function elementMutation(checker, e, { isLoopCallback = () => false, heapSelected = null, sf = e.getSourceFile(), current = null } = {}) {
   let target = mutationAssignment(e) ? e.left : mutationUpdate(e) ? e.operand : ts.isDeleteExpression(e) ? e.expression : null;
   let valueWriteForm = true;
@@ -545,7 +547,7 @@ export function elementMutation(checker, e, { isLoopCallback = () => false, heap
   const sourceCall = sourceParameter ? d.parent.parent : null;
   const ownedWrite = sourceParameter && reduceAccumulator(d, checker, target);
   const fieldWrite = (mutationAssignment(e) && [ts.SyntaxKind.EqualsToken, ts.SyntaxKind.PlusEqualsToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken].includes(e.operatorToken.kind)) || mutationUpdate(e);
-  const heapShapeEligible = !!(sourceParameter && fieldWrite && sourceCall.expression.name.text === 'forEach' && sourceCall.parent && ts.isExpressionStatement(sourceCall.parent) && d.parent.parameters.length === 1 && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name)));
+  const heapShapeEligible = !!(sourceParameter && fieldWrite && sourceCall.expression.name.text === 'forEach' && sourceCall.parent && ts.isExpressionStatement(sourceCall.parent) && (d.parent.parameters.length === 1 || plainIndex(d.parent.parameters[1])) && d.parent.parameters[0] === d && ts.isIdentifier(d.name) && plainDataRecord(checker, checker.getTypeAtLocation(d.name)));
   const admissionThrough = root !== target || !ts.isBinaryExpression(e) || ts.isCallExpression(e);
   const valueThrough = root !== target || ts.isCallExpression(e);
   return {

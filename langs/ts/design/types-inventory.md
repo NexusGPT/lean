@@ -290,9 +290,10 @@ injection.
 - A symbol-keyed member read by its key (`t[TAG]`) is the lint's `dynamic-key` refusal ("a symbol key is outside the
   open-key reading"), another reading's construct. The pair reads the record's other fields and passes it whole.
 - A `typeof x === "symbol"` arm of an opaque union is read through the uninterpreted `typeof` of Any: it narrows
-  nothing a proof could use. A sum with a symbol arm is the later refinement the section names.
+  nothing a proof could use. A sum with a symbol arm is the later refinement the section names (read below, "A sum
+  with a symbol arm, read").
 - Lane B draws no symbol: a planted difference reached only on a symbol arm is not witnessed by drawing. The pair plants
-  its differences on the string and bigint arms.
+  its differences on the string and bigint arms. (Lane B draws symbols since the section below.)
 
 **The census.** Base `b5c074508`, head `273cc7d3b`, each a `git archive` in its own folder:
 `NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs /root/da/census/repos/<root> --out <json>`, one at a
@@ -310,6 +311,60 @@ holding those findings run one at a time with `nexus_one.sh` (lane folder `censu
 **Seen and left to their readings.** Any `/` makes a file read its numbers as reals (common.mjs `fileUsesReals`), a
 bigint division included, though a bigint is never real. A bigint rendered in JSX (`{n}`) now converts through an
 uninterpreted cast where it was formatted as a number (same text in React; not proved where it was).
+
+#### A sum with a symbol arm, read (2026-10-31, night)
+
+Lane `symbol-sum-arm` writes the refinement form 5 names and the draw lane B lacked. Its rows are in
+`tests/pairs/types_symbol_bigint` (`key_text`, `key_name`, `choice_text`, `amount_set`, `present`).
+
+**Rule 1: the sum.** A union whose members `typeof` tells apart at run time, a symbol among them (`string | symbol`,
+`string | number | symbol`, `string | unique symbol`), is a sum with a symbol arm: `sumType`'s categories hold
+`symbol` beside `string`, `number`, `bigint` and `boolean` (translate.mjs), one constructor per `typeof` result. The
+symbol arm's value is read as a lone symbol is, opaque (Any): every operation on it is an uninterpreted function. A
+`typeof` test on the sum decides by the constructor (ECMA-262 13.5.3: `typeof` of a symbol is `"symbol"`), and a read
+in the narrowed branch is the arm's field, so `typeof k === "symbol" ? "sym" : k` and `if (typeof k === "string")
+return k; return "sym"` are proved equal. A symbol is always truthy (7.1.2), so a sum's truth is `true` on that arm. Two
+symbol members (`typeof A | typeof B`) share one `typeof` result: no sum, the union stays opaque as before.
+
+**Rule 2: the draw.** A symbol type is lane B's spec kind `symbol` (exec/spec.mjs `symbolSpec`):
+- `symbol` holds every symbol: gen.mjs draws `Symbol('lean')` or `Symbol.for` of a drawn string, by the seed.
+- A `unique symbol` holds one value, the constant it was declared by: it is drawn as the side's module exports it
+  (`env.exports`, the exports of the first module the sandbox loads, the unit's own; `exports` may name it under an
+  alias). One the module does not export stays opaque (a fake), as before: no other symbol is a value of its type, and
+  a drawn one would separate `c === CANCEL` from `typeof c === "symbol"`, which the type makes equal.
+- A symbol renders in the outcome as `{$symbol: description}` (fake.mjs `render`): each side draws and makes its own
+  symbols, so identity is never comparable across the sides and the description is what is.
+
+Before it, the symbol arm of `string | symbol` was drawn as a fake object, a value outside the type: `keyText` (the two
+arms tested in either order) was WITNESSed on a value of neither arm, and `keyName`, `choiceText` (a planted difference
+on the symbol arm) stayed PASS-bounded.
+
+**A defect met, fixed at its mechanism.** `truthy` (translate.mjs) read the truth of every type it had no case for as
+`true`. That holds of records, arrays, functions and symbols, not of a value read opaque though its type is no `any`:
+a union no sum reads (Intl's `Amount` holds `0` and `0n`) or a type parameter (`T` may be `0`). Lane A
+proved `value ? "set" : "unset"` equal to `"set"` for both. Such a value now takes the uninterpreted truth `valueTruth`
+gives Any and a type parameter (`truthy_Any`, `truthy_T`), the same on both sides. The rows `amount_set` and `present`
+fail without it (proved where the values differ).
+
+**Why it is sound.** A sum's constructors are the run-time `typeof` results, which no value has two of; the symbol arm
+is opaque, so a proof holds of every interpretation of what a symbol does, the real one included. A truth test's
+uninterpreted predicate holds of every interpretation too.
+
+**What stays refused.** `c === CANCEL` and `a === b` on a sum with a symbol arm are the lint's `mixed-types` (as on
+base, where the union was opaque): equality of a symbol arm against another value is no reading yet. `k.description`
+on a narrowed symbol is `unsupported-member`. A symbol-keyed member read by its key (`t[TAG]`) stays `dynamic-key`.
+
+**The census.** Base `09032a594`, head `627192e18`, each a `git archive` in its own folder:
+`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs /root/da/census/repos/langchainjs --out <json>`, one
+at a time, each unit attributed as in "Forms 5 and 6, read" (its `moves.mjs`).
+
+| Root | Units | Form 5 | Form 6 | Stopped by `types` | Entered | Other units whose stop changed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| langchainjs | 6,709 | 0 → 0 | 0 → 0 | 0 → 0 | 3,567 → 3,567 | 0 |
+
+Form 5 was already 0: since "Forms 5 and 6, read" such a union enters, read opaque. The refinement changes how an
+entered unit is read (a sum where an opaque value was, a truth test uninterpreted where it was `true`), which the census
+does not count: no unit is admitted or lost by it. nexus: not run, memory.
 
 ### 7. Nesting sites the walk did not locate (18 units)
 

@@ -1,0 +1,7 @@
+{
+ "scope": ["row", "cards", "marked"],
+ "equal": { "row": false, "cards": true, "marked": true },
+ "laneBOnly": true,
+ "why": "each component hands a card of its props to the world (runtime.cardRuntime), and the world may write the card it is handed (exec/fake.mjs writeHanded). The purity check renders twice from the same state: the world's write in the first render is undone before the second, whose world writes it again (exec/run.mjs observeWindow), so a pure render reads pure. Cards is unchanged: PASS-bounded. Row's candidate drops the effect's dependency: WITNESS. Marked writes its own prop during render, after the world's write: that write is the component's, never undone, so both sides stay REFUSE render-impure. Before the journal, Cards and Row read REFUSE render-impure on the parent (R8's BoardRow, lean 59c02366e).",
+ "b": { "Row": "WITNESS", "Cards": "PASS-bounded", "Marked": "REFUSE" }
+}

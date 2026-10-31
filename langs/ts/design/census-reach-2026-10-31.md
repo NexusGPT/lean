@@ -164,3 +164,51 @@ error-typed value can still be judged differently, because values the message do
 run the rule moves units only into environment and, for a unit with both kinds of finding, to its first finding on
 resolved types (ts-strict +28 without install). 397 of the 1,631 units carry the kind `unresolved`: the import their
 value's type comes from sits in another file, and the kind is read from the unit's own file's diagnostics.
+
+## The kind read in the origin's file; AppleDouble and binary files skipped (2026-10-31, lane census-unresolved-origin)
+
+The kind of an environment stop on an unresolved type was read from the unit's own file's diagnostics. When the value's
+type comes through another file (a field of a type declared in `types.ts`, whose import of a missing module sits there),
+the unit's file holds no diagnostic for that module, and the stop was labelled `unresolved`. Now `unresolvedOrigin` also
+carries the origin's file (`site`): the file that holds the import whose module does not resolve or lacks the name, or the
+name no declaration holds. `kindOf` reads the checker's diagnostic for the name in that file first, then in the unit's
+own file (an origin in a declaration file the program does not check), and classifies it by the origin's file (its
+tsconfig and its install state). Only the labels move; which units are environment-blocked does not change. Test
+`tests/census_environment.mjs`, fixture `census-environment/origin`: `unbox` in `use.ts` reads `b.h`, whose type `Handle`
+`types.ts` imports from the absent `handle-source`. It is now `environment: absent`, where it was `unresolved` before.
+
+The census copies hold macOS AppleDouble files (`._<name>`, the resource fork a copy from macOS leaves beside each file;
+8,175 of them in n8n). The walk read them as sources (`TS1490: File appears to be binary`, `Cannot find name 'Mac'`). The
+walk (`walk`, shared with reach-gap.mjs) now skips every file whose name starts with `._`. A file TypeScript itself reads
+as binary (TS1490, an invalid UTF-8 sequence) gets a record `skipped: 'binary'`, so the supervisor counts it walked, and it
+is no file, unit or finding of the census. Both are counted under `skipped` (`appledouble`, `binary`), on the summary's
+`skipped: appledouble/binary` line and in the report. The same test's copy holds one of each: both are skipped, and
+neither gives a unit.
+
+A member's name is no value a finding names. A quoted name matched the name of a property access on its line, and when
+that member's type did not resolve, a refusal of a resolved value was counted as the environment's. Example: `body` in
+`delete options.body`, where the refusal names the parameter `body: IDataObject`. `namedValues` now skips the name of a
+property access: the access that name ends is the value, and the access is still read when the message quotes it whole.
+Test: the same file, `origin/src/relay.ts`, where `environmentOf` is read directly on a finding that quotes `state`.
+
+Measured on n8n (`/root/da/census/repos/n8n`, no install, one root; the base census.mjs of 09032a59 against this lane's):
+
+| | before | after |
+| --- | ---: | ---: |
+| files read | 7,812 | 3,906 |
+| skipped: appledouble/binary | (walked) | 3,906 (3,906 AppleDouble, 0 binary) |
+| units | 9,610 | 9,610 |
+| entered | 2,752 | 2,752 |
+| environment-blocked | 603 | 600 |
+| of which on an unresolved type | 242 | 241 |
+| language-refused | 4,634 | 4,637 |
+
+Unresolved-type stops by kind: before, lockfile 190, unresolved 31, builtin 17, absent 2, global-node 1, alias 1. After,
+lockfile 219, builtin 18, absent 2, global-node 1, alias 1, and none `unresolved`. Of the 31, 29 move to `lockfile`
+(`convict`, `samlify`, `typedi`), 1 to `builtin` (`http`), and 1 leaves environment for its own reading (alias-mutation,
+the `body` above). The 3,906 AppleDouble files held no unit. Their removal moves two more units, `environment:
+global-lib` → `ts-strict`, without this lane's rule being involved: the checker offers at most 10 spelling suggestions per
+program, and the AppleDouble files' garbage names used them up. Without those files, `URL` gets TS2552 ("Cannot find
+name 'URL'. Did you mean 'url'?") instead of TS2304, and 2552 is not among the resolution codes (common.mjs
+`RESOLUTION_CODES`). An unresolved name's class thus depends on the order of the walk. This is a finding for the lint,
+not changed here.

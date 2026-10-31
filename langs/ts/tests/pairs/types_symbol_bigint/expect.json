@@ -8,7 +8,12 @@
   "rem",
   "or_else",
   "amount",
-  "amount_or"
+  "amount_or",
+  "key_text",
+  "key_name",
+  "choice_text",
+  "amount_set",
+  "present"
  ],
  "equal": {
   "settle": true,
@@ -19,9 +24,14 @@
   "rem": false,
   "or_else": true,
   "amount": true,
-  "amount_or": false
+  "amount_or": false,
+  "key_text": true,
+  "key_name": false,
+  "choice_text": false,
+  "amount_set": false,
+  "present": false
  },
- "why": "Forms 5 and 6 of design/types-inventory.md: a union with a symbol member (string | unique symbol, string | number | symbol) and a union with a bigint member (Intl's number | bigint | `${number}` | \"Infinity\" | ...) are read opaque (Any), as a lone symbol is; on base the translator refused the whole file at the first such union. settle, keyLabel and amount bind the value to a local first (proved: the same value); mark appends '!' on the string arm (not proved; lane B witnesses on a drawn string); amountOr returns 0n where the parent returned 0: the file reads its numbers as int, and a bigint is read as BigInt, a synonym of int whose conversions are its own, so the two literals are two values of the opaque type, never one injection (not proved; lane B witnesses). Tagged is keyed by a unique symbol: the candidate declares two symbols before TAG, so the checker numbers TAG otherwise, and the field is named by its key's declared name, one datatype on both sides; tagName binds the name to a local first (proved). fee commutes bigint arithmetic (proved); rem takes the remainder of each operand where the parent took the remainder of their sum (not proved: 2n, 2n gives 1n against 4n; lane B witnesses); orElse writes a !== 0n ? a : b for a || b (proved: a captured bigint is falsy at 0n, as a number is at 0)",
+ "why": "Forms 5 and 6 of design/types-inventory.md: a union with a symbol member (string | unique symbol, string | number | symbol) and a union with a bigint member (Intl's number | bigint | `${number}` | \"Infinity\" | ...) are read opaque (Any), as a lone symbol is; on base the translator refused the whole file at the first such union. settle, keyLabel and amount bind the value to a local first (proved: the same value); mark appends '!' on the string arm (not proved; lane B witnesses on a drawn string); amountOr returns 0n where the parent returned 0: the file reads its numbers as int, and a bigint is read as BigInt, a synonym of int whose conversions are its own, so the two literals are two values of the opaque type, never one injection (not proved; lane B witnesses). Tagged is keyed by a unique symbol: the candidate declares two symbols before TAG, so the checker numbers TAG otherwise, and the field is named by its key's declared name, one datatype on both sides; tagName binds the name to a local first (proved). fee commutes bigint arithmetic (proved); rem takes the remainder of each operand where the parent took the remainder of their sum (not proved: 2n, 2n gives 1n against 4n; lane B witnesses); orElse writes a !== 0n ? a : b for a || b (proved: a captured bigint is falsy at 0n, as a number is at 0); keyText, keyName and choiceText read string | symbol and Choice as sums with a symbol arm (typeof separates the arms, ECMA-262 13.5.3; the symbol arm opaque): keyText tests the string arm where the parent tested the symbol arm (proved); keyName and choiceText change the text returned on the symbol arm only (not proved; lane B draws Symbol(\"lean\") or Symbol.for of a drawn string for symbol, and the exported constant for typeof CANCEL, and witnesses); amountSet tests an opaque union (Amount) for truth where the candidate returns its truthy branch: 0 and 0n are falsy members, so the truth of a union read opaque is the uninterpreted truthy_Any of the value (not proved; lane B witnesses on 0); on base it was read true and the two were proved equal; present tests a value of a type parameter for truth the same way (T may be 0, \"\" or false: the uninterpreted truthy_T; not proved; lane B witnesses; on base read true and proved)",
  "b": {
   "settle": "PASS-bounded",
   "mark": "WITNESS",
@@ -31,6 +41,11 @@
   "rem": "WITNESS",
   "orElse": "PASS-bounded",
   "amount": "PASS-bounded",
-  "amountOr": "WITNESS"
+  "amountOr": "WITNESS",
+  "keyText": "PASS-bounded",
+  "keyName": "WITNESS",
+  "choiceText": "WITNESS",
+  "amountSet": "WITNESS",
+  "present": "WITNESS"
  }
 }

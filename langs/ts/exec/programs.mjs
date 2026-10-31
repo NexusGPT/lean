@@ -5,7 +5,7 @@
 // divergence is shrunk by deleting commands while a divergence stays, and the shrunk program is the WITNESS. A clean
 // run is PASS-bounded with the program and command counts in the certificate (bound.programs).
 import { snapshot, witnessRecord } from './record.mjs';
-import { Environment, renderDrawn, makeRng } from './fake.mjs';
+import { Environment, renderDrawn, makeRng, render } from './fake.mjs';
 import { specOf, argsFor } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
 import { loadProgram, topLevelFunctions } from '../common.mjs';
@@ -43,12 +43,19 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, r
       const Cls = (exportsObj.__lean_units ?? {})[className] ?? exportsObj[className];
       if (typeof Cls !== 'function') return { harness: `${name}: class ${className} not exported` };
       let inst = null, constructorArgs;
-      if (ctorSpec) { const args = inputsFor(ctorSpec, seed, 0, env); constructorArgs = snapshot(env, args); try { inst = rt.guardedCall(env, () => Reflect.construct(Cls, argsFor(ctorSpec, args)), ms); } catch (e) { return { harness: `${name}: constructor threw ${String(e && e.message).slice(0, 120)}` }; } }
-      if (!inst) return { harness: `${name}: no constructor unit to build an instance` };
+      // the constructor's arguments are drawn from its unit; a class that declares no constructor is built as `new C()`
+      // builds it, with no arguments (its implicit constructor, as runClassRaces builds it)
+      const args = ctorSpec ? inputsFor(ctorSpec, seed, 0, env) : []; constructorArgs = snapshot(env, args);
+      try { inst = rt.guardedCall(env, () => Reflect.construct(Cls, ctorSpec ? argsFor(ctorSpec, args) : []), ms); } catch (e) { return { harness: `${name}: constructor threw ${String(e && e.message).slice(0, 120)}` }; }
+      if (!inst) return { harness: `${name}: the constructor built no instance` };
       await new Promise((r) => setImmediate(r));
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the constructor did is the program's starting state, not a command
       sides[name] = { env, Cls, inst, args: constructorArgs, commands: [] };
     }
+    // the instances as built, before any command: a construction that differs (a field initializer, an inherited or a
+    // base constructor, which the text test above does not see) makes every program diverge for the constructor's
+    // reason, which its own unit reports
+    if (JSON.stringify(render({ ...sides.parent.inst })) !== JSON.stringify(render({ ...sides.candidate.inst }))) return { built: true };
     const steps = [];
     for (let k = 0; k < program.length; k++) {
       const c = program[k]; const obs = {};
@@ -72,6 +79,7 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, r
     let program = draw(p); ran++; commands += program.length;
     const r = await run(program);
     if (r.harness) return { verdict: 'ASK', reason: `program ${p}: ${r.harness}`, programs: ran, commands, methods: cmds };
+    if (r.built) return { verdict: 'PASS-bounded', programs: 0, commands: 0, methods: [], skipped: 'the two constructions build different instances, so the instances differ before any command; the constructor reports it' };
     if (r.diverged === undefined) continue;
     program = program.slice(0, r.diverged + 1); let last = r; // the divergence and what led to it
     for (let i = program.length - 2; i >= 0; i--) { const trial = program.filter((_, j) => j !== i); const t = await run(trial); if (t.diverged !== undefined) { program = trial; last = t; } } // greedy deletion: a command whose removal keeps a divergence was not needed

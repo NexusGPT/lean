@@ -30,8 +30,10 @@ export function drawCopy(plan, i, seed = 1) {
 }
 
 // one side on input i: the observation lane B makes (outcome, trace, pending), the args as drawn and after the call
+// declaredCode: a decorator of the package's own code is run for its reads, its result never replaces the member: the model
+// is translated from the declared text (a decorated member is its own text, heap-stage5.md 20b), so Node runs that text
 export async function nodeRun(plan, file, i, { seed = 1, ms = 2000 } = {}) {
-  const env = new Environment(seed * 7919 + i); env.shapes = plan.spec;
+  const env = new Environment(seed * 7919 + i); env.shapes = plan.spec; env.declaredCode = true;
   let u;
   try { u = pickUnit(sandbox(env, findRoot(file)).load(file), plan.spec, env); } catch (e) { return { harness: `load: ${String(e && e.message).slice(0, 160)}` }; }
   if (!u) return { harness: 'unit not found' };

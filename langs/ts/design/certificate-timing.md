@@ -48,7 +48,7 @@ present); its baseline is then re-cut, since lane A no longer means the old pipe
 **The record.** Lane B's bound carries a render row beside `bound.states`, for the pixel-diff lane of DA
 (`docs/architecture/pixel-diff-lane.md`, "The contract with lean's render row"). It is built in `exec/run.mjs`
 `runPairOnce` where the bound is built, and reaches `certificate.lanes.B.bound` through `check.mjs` (and `pr.mjs`'s
-basic certificate) unchanged. Five fields:
+basic certificate) unchanged. Five fields (a sixth, `bridge`, since the bridge fake):
 
 | field | type | source |
 |---|---|---|
@@ -57,6 +57,7 @@ basic certificate) unchanged. Five fields:
 | `sequences[]` | list of `{input, labels}` | every command path of `runSequences` (both the click machine and the schedule explorer) whose every step was equal on both sides, with the input it was mounted on; the mount alone (no label) is the state itself and is not listed. A WITNESS's own sequence is its witness's |
 | `targets[]` | list of `{label, path, key, id, testid, role, name}` | per handler label, the element that holds it: from every state's tree (each `on[A-Z]` prop observed as `$handler`) and from every tree the parent's sequence paths reached (every command label of `treeHandlers`, so a handler shown only after a click has its target). `path` is the label before its last `:`; `key`, `id`, `role` are those props, `testid` is `data-testid`, `name` is `aria-label`; each a string or number, else null. A label whose element changes its props between states has one row per distinct target |
 | `leanHead` | string | `opts.recordHead`, the head every witness record and the unit record name (`leanHeadForRecords`) |
+| `bridge` | `{calls, callbacks}` | (added 2026-10-31, lane bridge-fake-thenable) the distinct calls the fake for an unset global answered on the parent's mounts and the distinct callbacks it fired (`exec/bridge.mjs`, design/bridge-fake.md) |
 
 **Why it cannot change a verdict.** Nothing reads `bound.render`: it is written beside the observations, after them,
 from values lane B already held (the states, the trees the sequence paths reached, the labels they fired); no

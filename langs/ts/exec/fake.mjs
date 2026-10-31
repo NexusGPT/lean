@@ -4,7 +4,8 @@
 // value returned by an external call, a field of the receiver. Every operation on it is recorded on the trace
 // (get, call, construct, set) with the path of the value and a rendering of the arguments. Primitive demands
 // (arithmetic, string joining, truth tests) are answered from a seeded generator so both versions see the same
-// numbers and strings for the same demand sequence. A fake is never thenable: `await fake` yields the fake.
+// numbers and strings for the same demand sequence. A fake is never thenable: `await fake` yields the fake. (The
+// bridge fake for an unset global, exec/bridge.mjs, answers a call with a thenable: design/bridge-fake.md.)
 //
 // The trace is the oracle: two versions that ask the environment the same things in the same order, and return
 // structurally equal outcomes, agree. A candidate that asks something new, or reads a field the parent never read,
@@ -42,6 +43,7 @@ export class Environment {
     this.shapes = null;     // the unit's spec (defs, literals, strings, regexes, receiver, imports): typed answers draw from it
     this.world = null;      // a full-world input (enterWorld): its turn and the caller's keys, else null
     this.scheduler = null;  // the race explorer's hold (program.mjs): every promise the world answers waits for its release; null is the default schedule
+    this.handedLog = null;  // while a render is checked for purity, the world's writes to the objects it was handed (handedMark)
   }
   // clock answers advance with the seeded history and are recorded beside port requests
   clock(path, args = [], op = 'call') {
@@ -86,10 +88,19 @@ export class Environment {
         const d = Object.getOwnPropertyDescriptor(o, k);
         if (!d || !Object.hasOwn(d, 'value') || !d.writable) continue;
         const v = d.value, nv = typeof v === 'number' ? (Number.isFinite(v) ? v + 1 : 0) : typeof v === 'string' ? `${v}~` : typeof v === 'boolean' ? !v : undefined;
-        if (nv !== undefined) o[k] = nv; // seen through the object, by every name of it
+        if (nv !== undefined) { o[k] = nv; this.handedLog?.push({ o, k, was: v, now: nv }); } // seen through the object, by every name of it; journaled while a render is checked for purity (handedMark)
       }
     });
   }
+  // The world's writes to handed objects since a mark, as a journal (exec/run.mjs, the purity check): a render that hands
+  // an object to the world sees the world's write, and the check's second render must start from the state the first
+  // started from, its world writing the same again (the calls are counted from the same index), or the world's own write
+  // reads as the component's impure render. Undone in reverse, each field only while it still holds the world's value:
+  // a field the unit wrote after the world is the unit's, never undone, so its own write to what it was handed still shows.
+  handedMark() { const outer = this.handedLog; this.handedLog = []; return outer; } // returns the enclosing journal, handed back to handedTake
+  handedTake(outer) { const log = this.handedLog ?? []; this.handedLog = outer; return log; }
+  handedUndo(log) { for (let i = log.length - 1; i >= 0; i--) { const { o, k, was, now } = log[i]; if (Object.is(o[k], now)) o[k] = was; } }
+  handedRedo(log) { for (const { o, k, was, now } of log) if (Object.is(o[k], was)) o[k] = now; }
   // an object the unit holds as an any value too (exec/korat.mjs): its own fields are the object's, a member it lacks
   // is a fake whose call may write the object (its receiver) and what it is handed
   view(path, obj) {
@@ -371,7 +382,7 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
   if (t === 'boolean') return v;
   if (t === 'string') return withoutRoots(withoutFrames(v));
   if (t === 'bigint') return { $bigint: v.toString() };
-  if (t === 'symbol') return { $symbol: String(v) };
+  if (t === 'symbol') return { $symbol: v.description ?? null }; // a symbol by its description: its identity is no value the other side can hold (each side draws and makes its own)
   if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : escapeHandle(v);
   if (v.__isFake) return { $fake: v.__fakePath };
   if (depth > 6) return { $deep: true };

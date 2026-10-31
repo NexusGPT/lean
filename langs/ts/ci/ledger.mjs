@@ -191,12 +191,13 @@ export function routeChanges(manifest) {
         edit.primary = { kind: 'unit', id: primary.id, file: file.file, unit: primary.name, side, start: primary.start, end: primary.end };
       } else if (untyped) edit.primary = { kind: 'unassigned', reason: 'untyped JavaScript file', context: syntax.reason, side }; // an edit outside every listed unit of an untyped JavaScript file
       else if (file.class !== 'source') edit.primary = { kind: 'artifact', reason: file.class, class: file.class };
-      else if (syntax.reason !== 'type-only' && readings.old && readings.new && evaluated(sf, from, to)) {
+      else if (syntax.reason !== 'type-only' && evaluated(sf, from, to)) {
         // The module unit (common.mjs MODULE_UNIT): an edit outside every listed unit whose every compiled token is code the
         // module's evaluation runs (outside every function's parameters and body and every class's members, not a type)
         // is the module unit's, whatever narrower context names it (an object literal built at load, an exports write):
-        // the two evaluations are compared in init order. One unit per file, the same on both sides; a file with one side
-        // only has no second evaluation to compare with. An edit inside a function no listed unit holds keeps its context.
+        // the two evaluations are compared in init order. One unit per file, the same on both sides; a file present on
+        // one side only gives it that side alone, as a function present on one side is (the head's: NEW, a candidate-only
+        // evaluation; the parent's: removed). An edit inside a function no listed unit holds keeps its context.
         const lines = sf.getLineAndCharacterOfPosition(Math.max(0, sf.text.length - 1)).line + 1; // the line of the last character
         const link = { id: id([file.id, MODULE_UNIT]), file: file.file, unit: MODULE_UNIT, side, start: 1, end: lines };
         edit.links = [link];

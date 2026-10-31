@@ -284,6 +284,8 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const tg = Array.isArray(R?.targets) ? R.targets : null, FIELDS = ['label', 'path', 'key', 'id', 'testid', 'role', 'name'];
     const tgOk = !!tg && tg.every((t) => J(Object.keys(t)) === J(FIELDS)) && want.targets.every((w) => tg.some((t) => J(t) === J(w))) && (want.targets.length !== 0 || tg.length === 0);
     add('pair', name, `render ${unit} targets ${want.targets.map((t) => t.label).join(', ') || 'none'}`, tgOk, tg ? tg.map((t) => J(t)).join(' ').slice(0, 300) || 'no targets' : 'no targets');
+    // the bridge calls the fake for an unset global answered and the callbacks it fired (design/bridge-fake.md): how much of the mount rested on fakes
+    if (want.bridge) add('pair', name, `render ${unit} bridge ${want.bridge.calls} call(s), ${want.bridge.callbacks} callback(s)`, R?.bridge?.calls === want.bridge.calls && R?.bridge?.callbacks === want.bridge.callbacks, R ? `bridge ${J(R.bridge ?? null)}` : 'no render row');
   }
   // the callee a WITNESS came through (exec/callees.mjs): a unit whose own text is equal on both sides names the changed same-file callees on its call path, with where.cause 'callee'; an empty list: the witness names none and keeps its own cause
   for (const [unit, want] of Object.entries(exp.through ?? {})) {
@@ -694,6 +696,8 @@ async function adviceLabels(add) {
   const runtime = [
     // seeded clock values retain their native shapes and ordered observations
     ['clock-read', scriptRow('runtime', 'clock-read', 'seeded recording fakes', [path.join(here, 'clock-read.mjs')], (r) => (r.stdout + r.stderr).trim())],
+    // the purity check's second render starts from the state the first started from: the world's writes to handed objects are journaled, undone and replayed (R8's BoardRow and its four mutants)
+    ['render-handed', scriptRow('runtime', 'render-handed', 'world writes to handed objects in the purity check', [path.join(here, 'render-handed.mjs')], lastLine)],
     ['rest_param-paths', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, 'pairs/rest_param/paths.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'rest_param/paths.test.mjs', 'drawn rest slot spread at every call boundary', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     // a run never ends without a verdict: a drained loop and a budget stop are ASK, exit 2; a wide record, a deep nesting and an `@/` alias get verdicts
     // an element's children read one way (kidsOf) by every reader: a single object or a string child is diffed, printed and
@@ -707,6 +711,8 @@ async function adviceLabels(add) {
     // a child past its wall cap is killed with every process under it and reads as a timeout; every Dafny child carries one (pool.mjs, design/suite.md)
     ['wall-cap', scriptRow('runtime', 'wall-cap', 'a 2 s cap kills a fake Dafny and its sleeping child within 5 s, shaped as a timeout; a run under the cap unchanged', [path.join(here, 'wall-cap.mjs')], lastLine)],
     ['gen-invariants', scriptRow('runtime', 'gen-invariants', 'the input generator keeps its stated invariants over seeds 1 to 20', [path.join(here, '../exec/gen.test.mjs')], lastLine)],
+    // the enumerated small heaps draw every slot within the suite's 30 inputs, the absent value of a nullable item or key, and a Map's record values from the pool (exec/korat.mjs, heap-stage5.md 16c)
+    ['korat-order', scriptRow('runtime', 'korat-order', 'every slot within 30 enumerated heaps; a nullable item or key draws null; a Map\'s record values pooled', [path.join(here, '../exec/korat.test.mjs')], lastLine)],
     ['no-silent-exit', scriptRow('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', [path.join(here, 'no-silent-exit.mjs')], lastLine)],
     // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown
     ['no-silent-exit-importers', scriptRow('runtime', 'no-silent-exit-importers', 'exit 1 outside a unit run; late error recorded inside; pr.mjs lean unknown', [path.join(here, 'no-silent-exit-importers.mjs')], lastLine)],

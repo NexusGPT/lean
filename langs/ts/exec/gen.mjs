@@ -219,6 +219,9 @@ export function generator(seed, defs = {}, literals = [], startEdge = 0, strings
       case 'string': { if (spool.length && rng() < 0.3) return spool[Math.floor(rng() * spool.length)]; return pick(STR_EDGE, () => `v${Math.floor(rng() * 1e6).toString(36)}`); }
       case 'boolean': return rng() < 0.5;
       case 'bigint': return BigInt(Math.floor(rng() * 1000));
+      // a symbol (spec.mjs symbolSpec): a unique symbol is the constant the side's module exports (env.exports, set
+      // before the draw; a fake without it); any other a fresh Symbol('lean') or the registered Symbol.for of a drawn string
+      case 'symbol': { if (spec.unique) { const v = env?.exports?.[spec.unique]; return typeof v === 'symbol' ? v : env ? env.fake(path) : null; } return rng() < 0.5 ? Symbol('lean') : Symbol.for(gen({ kind: 'string' }, depth + 1, env, `${path}.description`)); }
       case 'null': return null;
       case 'undefined': return undefined;
       case 'literal': return spec.values[Math.floor(rng() * spec.values.length)];

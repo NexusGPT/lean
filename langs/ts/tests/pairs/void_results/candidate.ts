@@ -1,7 +1,8 @@
 // heap stage 5, section 8 (void results): a procedure returns the unit value and is compared on the heap it leaves.
 // Each void form of the section, one unit each: a body falling off its end (declared and inferred void), a branch
 // falling through to the rest, a bare return (nested, in an else), an expression body (a same-file call), and a
-// return of a same-file procedure's call (the expression-body reading in a return); a method of a class
+// return of a same-file procedure's call (the expression-body reading in a return); a method of a class; the bare
+// return's other forms (return undefined, return void e) and a return inside a loop (it ends the procedure there)
 export interface Cart { total: number; count: number; items: string[] }
 
 export function add(c: Cart, name: string, price: number): void {
@@ -73,5 +74,36 @@ export class Counter {
       return;
     }
     this.n += 1;
+  }
+}
+
+export function resetUndef(c: Cart): void {
+  if (c.count === 0) return undefined;
+  c.total = 0;
+}
+
+export function pushVoid(c: Cart, name: string): void {
+  if (c.count > 3) return void c.items.push(name);
+  c.count += 1;
+}
+
+export function firstOver(c: Cart, prices: number[], n: number): void {
+  for (const p of prices) {
+    if (p > n) {
+      c.total = p;
+      return;
+    }
+    c.count += 1;
+  }
+  c.total = 0;
+}
+
+export function overAt(c: Cart, prices: number[], n: number): void {
+  for (const p of prices) {
+    if (p > n) {
+      c.total = n;
+      return;
+    }
+    c.count += 1;
   }
 }

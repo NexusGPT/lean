@@ -107,3 +107,33 @@ export function relayed(n: string): number {
   t.count += 1;
   return t.count;
 }
+
+export class Knob {
+  spins = 1;
+  constructor(public turn = 0, readonly label = "knob") {
+    const z = turn;
+    this.spins = z;
+  }
+  twice(): number {
+    const t = this.turn + this.turn;
+    this.turn = t;
+    return t;
+  }
+}
+
+export class Dial {
+  constructor(public step = 2) {}
+}
+
+export function knob(n: number): number {
+  const k = new Knob(n);
+  return 1 + k.turn;
+}
+
+export function knobbed(): number {
+  return new Knob().turn;
+}
+
+export function dialed(): number {
+  return new Dial().step;
+}

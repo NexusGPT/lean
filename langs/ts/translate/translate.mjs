@@ -33,7 +33,7 @@ import fs from 'node:fs';
 import { mutationAnalysis, parameterMutationConflicts, loopElementBinding, firstElementMutation, sharedMutation, carriedAliases } from '../lower.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag, matchGroups, matchGroupRead } from '../common.mjs';
+import { normaliseApplyCalls, applyCall, faithfulOp, templateRaws, templateHoles, rawTag, matchGroups, matchGroupRead, matchCapture, matchGroupsDestructure, heldRegexLiteral } from '../common.mjs';
 import { ts, loadProgram, classFieldsDefine, lineOf, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, fileUsesReals, methodLiteralOf, receiverRecordPath, thisParamPath, untypedThisParam, untypedJsUnit, countedFor, syncLoopCallback, localProcedure, bucketMaps, execMatchMember } from '../common.mjs';
 import { moduleState, moduleLoader, outsideRoot, worldRead } from '../module-forms.mjs';
 import { libraryHook, hookDatatype, fieldKind, valueHook } from '../hooks.mjs';
@@ -46,7 +46,7 @@ import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the lint
 import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
-import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
+import { syncLoopCall, voidReturn } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { optionalCallShape } from '../lower.mjs';
 import { admitUnits, measureLowering } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
@@ -455,6 +455,8 @@ function translateOnce(file, fnName, opts = {}) {
   // before the loop, the step is the body's last statement and what `continue` runs; the loop takes the while reading
   // (a derived bound, a @decreases hint, else an opaque block holding the whole statement)
   const generalFor = (s) => ts.isForStatement(s) && !emptyFor(s) && !countedFor(s);
+  // `return void e;` where a bare return is admitted (the lint's reading, common.mjs voidReturn): `void e;` then `return;`
+  const voidSplit = (s) => { if (!s.__void) { const st = ts.setTextRange(ts.factory.createExpressionStatement(s.expression), s); st.parent = s.parent; const r = ts.setTextRange(ts.factory.createReturnStatement(), s); r.parent = s.parent; s.__void = [st, r]; } return s.__void; };
   const forStep = (s) => { if (!s.__step) { const st = ts.setTextRange(ts.factory.createExpressionStatement(s.incrementor), s.incrementor); st.parent = s; s.__step = st; } return s.__step; };
   const forInit = (s) => { if (!s.initializer) return []; if (!s.__init) { const st = ts.isVariableDeclarationList(s.initializer) ? ts.factory.createVariableStatement(undefined, s.initializer) : ts.factory.createExpressionStatement(s.initializer); ts.setTextRange(st, s.initializer); st.parent = s; s.__init = st; } return [s.__init]; };
   // stage 5 rank 21: a local procedure (common.mjs localProcedure) is spliced at each call statement; its declaration emits nothing
@@ -544,9 +546,12 @@ function translateOnce(file, fnName, opts = {}) {
     let e = st.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'forEach' || e.arguments.length !== 1) return null;
     const cb = e.arguments[0];
-    if (!ts.isArrowFunction(cb) || cb.parameters.length !== 1 || !ts.isIdentifier(cb.parameters[0].name) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null; // an async callback is not awaited by forEach: not a loop
+    if (!ts.isArrowFunction(cb) || cb.parameters.length < 1 || cb.parameters.length > 2 || !ts.isIdentifier(cb.parameters[0].name) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null; // an async callback is not awaited by forEach: not a loop
     let recvT; try { recvT = baseOf(typeOf(e.expression.expression)); } catch { return null; }
     if (!(isArrayLike(checker, recvT) || isSetT(recvT) || isMapT(recvT) || isAny(recvT))) return null;
+    // a second parameter over an array is the index (ECMA-262 23.1.3.15: the position), bound to the loop's counter (coreLoop);
+    // a Set or a Map passes another value there, and a receiver of type any may be either: no loop
+    if (cb.parameters.length === 2) { const ix = cb.parameters[1]; if (!isArrayLike(checker, recvT) || isAny(recvT) || !ts.isIdentifier(ix.name) || ix.initializer || ix.dotDotDotToken || ix.questionToken) return null; }
     return { call: e, cb };
   };
   // an inline array callback is a loop body; its return supplies the method's result
@@ -857,11 +862,12 @@ function translateOnce(file, fnName, opts = {}) {
     const l = `na${tempCount++}_`, left = expr(n.left, anyTarget());
     const N = external('is_null_Any', ['Any'], 'bool'), U = external('is_undefined_Any', ['Any'], 'bool');
     const test = `(${N}(${l}) || ${U}(${l}))`, chosen = convert(l, anyTarget(), t, n);
-    if (containsEffect(n.right)) {
-      const right = branchWithWorld(() => expr(n.right, t), td);
-      return hoist(`(var ${l} := ${left}; if ${test} then ${right} else (${WORLD}, ${chosen}))`, td);
-    }
-    return `(var ${l} := ${left}; if ${test} then ${valueOperands ? valueBranch(() => expr(n.right, t)) : expr(n.right, t)} else ${chosen})`;
+    const world = containsEffect(n.right), pr = rightParts(() => expr(n.right, t), !world && !!valueOperands);
+    if (pr.names.size) { pending.push(`var ${l} := ${left};`); return shortCircuit(n, test, true, chosen, pr, world); }
+    if (world) return hoist(`(var ${l} := ${left}; if ${test} then ${worldArm(pr)} else (${WORLD}, ${chosen}))`, td);
+    if (valueOperands) return `(var ${l} := ${left}; if ${test} then ${valueArm(pr)} else ${chosen})`;
+    pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+    return `(var ${l} := ${left}; if ${test} then ${pr.text} else ${chosen})`;
   }
   function branchWithWorld(f, d) {
     const { lines, text } = captureParts(f);
@@ -889,6 +895,22 @@ function translateOnce(file, fnName, opts = {}) {
     const tv = valueOperands ? valueName() : `t${tempCount++}_`;
     pending.push(`var (${[...(world ? [WORLD] : []), tv, ...names].join(', ')}) := if ${cond} then ${arm(pa)} else ${arm(pb)};`);
     return tv;
+  }
+  // the right operand of `&&`, `||`, `??`, translated once as a conditional's operand is (operandParts); `own` gives it
+  // its own copy of the value operands, as valueBranch does
+  function rightParts(f, own) {
+    const saved = valueOperands;
+    if (own) valueOperands = saved ? new Map(saved) : null;
+    try { return operandParts(f); } finally { valueOperands = saved; }
+  }
+  const worldArm = (p) => { const body = `(${WORLD}, ${outerParens(p.text)})`; return p.lines.length ? `(\n${indentBlock(`${p.lines.join('\n')}\n${body}`)}\n)` : body; }; // branchWithWorld's text
+  const valueArm = (p) => wrapLet(p.lines.length ? `${p.lines.join('\n')}\n${p.text}` : p.text); // valueBranch's text
+  // `l && r`, `l || r`, `l ?? r` whose right operand rebinds names: the conditional it is (ECMA-262 13.13, the right
+  // operand evaluated only when the left does not decide), read by carried. `cond` holds when the right operand runs
+  // (`rightOnTrue`) or when it does not; the other arm is the left's value, every rebound name unchanged.
+  function shortCircuit(n, cond, rightOnTrue, left, pr, world) {
+    const pl = { lines: [], text: left, names: new Map() };
+    return rightOnTrue ? carried(n, cond, pr, pl, world) : carried(n, cond, pl, pr, world);
   }
 
   // (effectful units are computed after the subset gate, below)
@@ -1293,7 +1315,7 @@ function translateOnce(file, fnName, opts = {}) {
   }
   function sumType(parts, n) {
     if (parts.filter((t) => t.flags & TF.BooleanLike).length > 1) parts = [...parts.filter((t) => !(t.flags & TF.BooleanLike)), checker.getBooleanType()];
-    const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike) ? runtimeTag(t) : null;
+    const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.ESSymbolLike) ? runtimeTag(t) : null; // a symbol arm is one `typeof` result of its own (ECMA-262 13.5.3), its value opaque (dtype): every operation on it uninterpreted
     const records = parts.every(isRecordish) && parts.every((t) => checker.getPropertiesOfType(t).length && !checker.getPropertiesOfType(t).some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n))));
     const cats = parts.map(category);
     if (!(records && parts.every((t, i) => parts.slice(i + 1).every((u) => disjointTags(t, u, n)))) && !(cats.every(Boolean) && new Set(cats).size === cats.length)) return null;
@@ -1738,7 +1760,18 @@ function translateOnce(file, fnName, opts = {}) {
     const operand = (ts.isBinaryExpression(p) && [K.QuestionQuestionToken, K.BarBarToken].includes(p.operatorToken.kind) && p.right === op) || (ts.isConditionalExpression(p) && (p.whenTrue === op || p.whenFalse === op));
     return operand ? fits(checker.getTypeAtLocation(p)) : null;
   };
-  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n) ?? emptyLiteralT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const c = maybeCapture(n); if (c) return c; } { const e = emptyCollectionT(n) ?? emptyLiteralT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  // a capture of a match whose group may not take part (common.mjs matchCapture, matchGroupRead): undefined when the group
+  // does not take part, whatever TypeScript says, so its type is the string or undefined
+  const maybeCaptureT = new Map();
+  function maybeCapture(n) {
+    if (!ts.isElementAccessExpression(n) && !ts.isPropertyAccessExpression(n)) return null;
+    if (maybeCaptureT.has(n)) return maybeCaptureT.get(n);
+    const c = matchCapture(n, checker) ?? matchGroupRead(n, checker);
+    const t = c && c.always === false ? checker.getUnionType([checker.getStringType(), checker.getUndefinedType()]) : null;
+    maybeCaptureT.set(n, t);
+    return t;
+  }
   // a name declared at a type parameter (`const y: T`, `x: T`) is held at it, while the checker may type its read at the
   // parameter's constraint (`T extends "a" | "b"` read where a literal union is expected): the read is the held value,
   // so its type is the parameter, and a conversion to the constraint is written where one is expected (convertD's cast)
@@ -2419,6 +2452,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   function convertToD(code, from, td, node) {
     const fd = dtype(from, node);
     if (node && fd !== td) { const why = typeAssertion(checker, node); if (why) fail(node, `type-assertion: ${why}`); } // a value whose type nothing checked, converted where its reading does not carry it: the lint's test on the same node
+    if (node && optionalD(fd) && !optionalD(td) && td !== 'Any') { let c = node; while (ts.isParenthesizedExpression(c)) c = c.expression; if (maybeCapture(c)) fail(node, 'a capture of a group that may not take part (undefined when it does not, whatever TypeScript says) is read where a string is expected; read it as present or absent (`?? d`, a test)'); } // common.mjs matchCapture, matchGroupRead
     if (isNullish(from)) {
       if (optionalD(td)) return missingD(td, from.flags & TF.Null ? 'Null' : 'Undef');
       if (td === 'Any') return `${external(from.flags & TF.Null ? 'Any_null' : 'Any_undefined', [], anyType())}()`;
@@ -2475,7 +2509,10 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     while (ts.isParenthesizedExpression(n)) n = n.expression;
     if (containsValueStep(n) || (containsEffect(n) && !isAny(typeOf(n)))) return valueTruth(expr(n), dtype(typeOf(n), n));
     if (ts.isBinaryExpression(n) && (n.operatorToken.kind === K.AmpersandAmpersandToken || n.operatorToken.kind === K.BarBarToken)) {
-      return `(${truthy(n.left)} ${n.operatorToken.kind === K.AmpersandAmpersandToken ? '&&' : '||'} ${truthy(n.right)})`;
+      const and = n.operatorToken.kind === K.AmpersandAmpersandToken, l = truthy(n.left), pr = rightParts(() => truthy(n.right), false);
+      if (pr.names.size) return shortCircuit(n, outerParens(l), and, and ? 'false' : 'true', pr, false);
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return `(${l} ${and ? '&&' : '||'} ${pr.text})`;
     }
     if (ts.isPrefixUnaryExpression(n) && n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
     const t = typeOf(n);
@@ -2511,6 +2548,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     if (t.flags & TF.StringLike) return `(|${expr(n)}| > 0)`;
     if (t.flags & (TF.NumberLike | TF.BigIntLike)) return `(${expr(n)} != ${real ? '0.0' : '0'})`;
     if (isNullish(t)) return 'false';
+    // a value read opaque though its type is no `any` (a union no sum reads, holding 0, 0n or ""; a type parameter) has
+    // the opaque truth valueTruth gives it, uninterpreted: no static truth holds of every one of its values
+    { const d = dtype(t, n); if (d === 'Any' || unitTParams().includes(d)) return valueTruth(expr(n), d); }
     return 'true';
   }
 
@@ -2725,6 +2765,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   }
   function ident(n) {
     if (n.text === 'undefined') return absentValue(typeOf(n));
+    { let u = n; while (ts.isParenthesizedExpression(u.parent)) u = u.parent; const lit = !(ts.isPropertyAccessExpression(u.parent) && u.parent.name.text === 'lastIndex') && n.getSourceFile() === sf ? heldRegexLiteral(n, checker) : null; if (lit) return expr(lit); } // a pattern held in a const nothing changes, run by a call that ignores lastIndex: its literal (common.mjs heldRegexLiteral)
     const o = readOrigin(n);
     const state = moduleState(checker, n, sf);
     if (state) {
@@ -3286,9 +3327,12 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
       const t = typeOf(n); const td = isAny(t) ? anyType() : dtype(t, n); const inner = isAny(baseOf(lt)) ? anyType() : dtype(baseOf(lt), n); const rtp = typeOf(n.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, n);
-      if (valueOperands) return `(if ${l}.Some? then ${convertD(`${l}.value`, inner, td)} else ${valueBranch(() => expr(n.right, t))})`;
-      if (td !== inner || td !== rd) return `(if ${l}.Some? then ${convertD(`${l}.value`, inner, td)} else ${convert(outerParens(expr(n.right)), typeOf(n.right), t, n)})`; // `x ?? "none"` with x: number | undefined: both sides lifted to the result type
-      return `(if ${l}.Some? then ${l}.value else ${outerParens(expr(n.right, baseOf(lt)))})`;
+      const some = valueOperands || td !== inner || td !== rd ? convertD(`${l}.value`, inner, td) : `${l}.value`;
+      if (valueOperands) { const pr = rightParts(() => expr(n.right, t), true); return pr.names.size ? shortCircuit(n, `${l}.Some?`, false, some, pr, false) : `(if ${l}.Some? then ${some} else ${valueArm(pr)})`; }
+      const pr = rightParts(() => td !== inner || td !== rd ? convert(outerParens(expr(n.right)), typeOf(n.right), t, n) : outerParens(expr(n.right, baseOf(lt))), false); // `x ?? "none"` with x: number | undefined: both sides lifted to the result type
+      if (pr.names.size) return shortCircuit(n, `${l}.Some?`, false, some, pr, false);
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return `(if ${l}.Some? then ${some} else ${pr.text})`;
     }
     if (op === K.QuestionQuestionToken) {
       const lt = typeOf(n.left), t = typeOf(n);
@@ -3297,18 +3341,20 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (!isOptional(lt)) return expr(n.left, t);
       if (valueOperands) {
         const left = expr(n.left), chosen = dtype(lt, n) === dtype(t, n) ? left : convert(`${left}.value`, baseOf(lt), t, n);
-        if (!containsEffect(n.right)) return `(if ${left}.Some? then ${chosen} else ${valueBranch(() => expr(n.right, t))})`;
-        const right = branchWithWorld(() => expr(n.right, t), dtype(t, n)), value = valueName();
+        const world = containsEffect(n.right), pr = rightParts(() => expr(n.right, t), !world);
+        if (pr.names.size) return shortCircuit(n, `${left}.Some?`, false, chosen, pr, world);
+        if (!world) return `(if ${left}.Some? then ${chosen} else ${valueArm(pr)})`;
+        const right = worldArm(pr), value = valueName();
         pending.push(`var (${WORLD}, ${value}) := if ${left}.Some? then (${WORLD}, ${chosen}) else ${right};`);
         return value;
       }
       const l = `nc${tempCount++}_`, left = expr(n.left);
       const chosen = convert(`${l}.value`, baseOf(lt), t, n);
-      if (containsEffect(n.right)) {
-        const right = branchWithWorld(() => expr(n.right, t), dtype(t, n));
-        return hoist(`(var ${l} := ${left}; if ${l}.Some? then (${WORLD}, ${chosen}) else ${right})`, dtype(t, n));
-      }
-      return `(var ${l} := ${left}; if ${l}.Some? then ${chosen} else ${expr(n.right, t)})`;
+      const world = containsEffect(n.right), pr = rightParts(() => expr(n.right, t), false);
+      if (pr.names.size) { pending.push(`var ${l} := ${left};`); return shortCircuit(n, `${l}.Some?`, false, chosen, pr, world); }
+      if (world) return hoist(`(var ${l} := ${left}; if ${l}.Some? then (${WORLD}, ${chosen}) else ${worldArm(pr)})`, dtype(t, n));
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return `(var ${l} := ${left}; if ${l}.Some? then ${chosen} else ${pr.text})`;
     }
     if (op === K.AmpersandAmpersandToken || op === K.BarBarToken) {
       const t = typeOf(n);
@@ -3329,10 +3375,14 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (containsEffect(n.right)) {
         if (!unitEffectful()) fail(n, 'conditional-effect: move the effect into an explicit if statement');
         pending.push(`var ${saved}: ${ld} := ${first};`);
-        const right = branchWithWorld(() => expr(n.right, t), td);
+        const pr = rightParts(() => expr(n.right, t), false);
+        if (pr.names.size) return shortCircuit(n, cond, and, left, pr, true);
+        const right = worldArm(pr);
         return hoist(and ? `(if ${cond} then ${right} else (${WORLD}, ${left}))` : `(if ${cond} then (${WORLD}, ${left}) else ${right})`, td);
       }
-      return `(var ${saved}: ${ld} := ${first}; ${choose(valueBranch(() => expr(n.right, t)))})`;
+      const pr = rightParts(() => expr(n.right, t), true);
+      if (pr.names.size) { pending.push(`var ${saved}: ${ld} := ${first};`); return shortCircuit(n, cond, and, left, pr, false); }
+      return `(var ${saved}: ${ld} := ${first}; ${choose(valueArm(pr))})`;
     }
     if (op === K.InstanceOfKeyword) {
       const decl = checker.getSymbolAtLocation(n.right)?.valueDeclaration;
@@ -3680,8 +3730,12 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     jsxType();
     if (isJsxLit(e)) return jsxNode(e);
-    if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.AmpersandAmpersandToken) return `(if ${outerParens(truthy(e.left))} then ${jsxChild(e.right)} else JsxNothing)`;
-    if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.BarBarToken) return `(if ${outerParens(truthy(e.left))} then ${jsxChild(e.left)} else ${jsxChild(e.right)})`;
+    if (ts.isBinaryExpression(e) && [K.AmpersandAmpersandToken, K.BarBarToken].includes(e.operatorToken.kind)) { // the right child is read only when the left does not decide
+      const and = e.operatorToken.kind === K.AmpersandAmpersandToken, c = outerParens(truthy(e.left)), l = and ? 'JsxNothing' : jsxChild(e.left), pr = rightParts(() => jsxChild(e.right), false);
+      if (pr.names.size) return shortCircuit(e, c, and, l, pr, false);
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return and ? `(if ${c} then ${pr.text} else ${l})` : `(if ${c} then ${l} else ${pr.text})`;
+    }
     if (ts.isConditionalExpression(e)) return `(if ${outerParens(truthy(e.condition))} then ${jsxChild(e.whenTrue)} else ${jsxChild(e.whenFalse)})`;
     if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || ts.isTemplateExpression(e)) return `JsxText(${expr(e)})`;
     if (e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined') || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return 'JsxNothing';
@@ -3909,6 +3963,17 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   function destructure(pattern, sourceCode, srcType = null, hookRow = null) {
     const out = [];
     if (ts.isIdentifier(pattern)) return [`var ${dn(pattern.text)} := ${sourceCode};`];
+    { const gd = ts.isObjectBindingPattern(pattern) && ts.isVariableDeclaration(pattern.parent) && pattern.parent.initializer ? matchGroupsDestructure(pattern.parent.initializer, checker) : null; // `const { k } = m.groups`: each name the group read (common.mjs)
+      if (gd) {
+        if (gd.refuse !== null) fail(pattern, `\`${gd.refuse}\` of the destructured groups may be undefined (its group does not take part in every match)`);
+        const g = gd.groups, re = expr(g.regex), str = outerParens(expr(g.arg));
+        for (const x of gd.elements) {
+          if (x.always) { out.push(`var ${dn(x.el.name.text)} := ${external('regex_group', ['Ext_RegExp', 'string', 'string'], 'string')}(${re}, ${str}, ${strEsc(x.key)});`); continue; }
+          const c = `gc${tempCount++}_`, target = typeOf(x.el.name); usesOption = true;
+          out.push(`var ${dn(x.el.name.text)} := (var ${c} := ${external('regex_capture_may', ['Ext_RegExp', 'string', 'int'], 'Option<string>')}(${re}, ${str}, ${x.index}); if ${c}.Some? then ${convert(`${c}.value`, checker.getStringType(), target, x.el)} else ${outerParens(expr(x.el.initializer, target))});`); // the default when the group did not take part
+        }
+        return out;
+      } }
     if (ts.isObjectBindingPattern(pattern) && hookRow && !hookRow.result['*']) { // the table's record: each field as the datatype carries it
       for (const el of pattern.elements) { if (el.dotDotDotToken || !ts.isIdentifier(el.name)) fail(el, 'a hook result is taken apart field by field'); const prop = el.propertyName ? el.propertyName.getText(sf) : el.name.text; if (!Object.hasOwn(hookRow.result, prop)) fail(el, `${prop} is not a field the hook table declares for ${hookRow.hook}`); out.push(`var ${dn(el.name.text)} := ${sourceCode}.${prop};`); }
       return out;
@@ -3988,18 +4053,22 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const recvT = typeOf(gr.recv), mayBeNull = isOptional(recvT) || isNullish(recvT);
     const D = dtype(typeOf(n), n), optD = optionalD(D);
     let value;
-    if (gr.key !== undefined) value = `${external('regex_group', ['Ext_RegExp', 'string', 'string'], 'string')}(${re}, ${str}, ${strEsc(gr.key)})`;
+    const read = gr.key !== undefined || gr.index !== undefined;
+    if (read && gr.always === false) value = `${external('regex_capture_may', ['Ext_RegExp', 'string', 'int'], 'Option<string>')}(${re}, ${str}, ${gr.index})`; // present or absent: the group may not take part
+    else if (gr.key !== undefined) value = `${external('regex_group', ['Ext_RegExp', 'string', 'string'], 'string')}(${re}, ${str}, ${strEsc(gr.key)})`;
+    else if (gr.index !== undefined) value = `${external('regex_capture', ['Ext_RegExp', 'string', 'int'], 'string')}(${re}, ${str}, ${gr.index})`;
     else {
       const G = dtype(baseOf(typeOf(n)), n);
       if (!gr.named) { if (!optD) fail(n, '`.groups` of a pattern that names no group is undefined'); usesOption = true; return 'None'; }
       value = `${external('regex_groups', ['Ext_RegExp', 'string'], G)}(${re}, ${str})`;
     }
-    if (!optD) { if (mayBeNull) fail(n, 'a named capture of a match that may be null, read without `?.`'); return value; }
-    if (D !== `Option<${gr.key !== undefined ? 'string' : dtype(baseOf(typeOf(n)), n)}>`) fail(n, `a named capture read as ${D}`);
+    if (!optD) { if (mayBeNull) fail(n, 'a capture of a match that may be null, read without `?.`'); if (read && gr.always === false) fail(n, 'a capture that may not take part read as a string'); return value; }
+    if (D !== `Option<${read ? 'string' : dtype(baseOf(typeOf(n)), n)}>`) fail(n, `a capture read as ${D}`);
     usesOption = true;
-    if (!mayBeNull) return `Some(${value})`;
+    const some = read && gr.always === false ? value : `Some(${value})`;
+    if (!mayBeNull) return some;
     const r = `mg${tempCount++}_`;
-    return `(var ${r} := ${expr(gr.recv)}; if ${r}.Some? then Some(${value}) else None)`;
+    return `(var ${r} := ${expr(gr.recv)}; if ${r}.Some? then ${some} else None)`;
   }
   function propAccess(n, keepOption = false) {
     { const b = worldBase(n); if (worldAfter?.get(b) === 'read' && !n.__worldNow) { // a field read after a call that may change the object: of the object as the world holds it now
@@ -4278,6 +4347,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   }
   function elemAccess(n) {
     const q = argumentsParam(n); if (q) return dn(q.name.text); // `arguments[k]`: the k-th parameter itself
+    { const gr = matchGroupRead(n, checker) ?? matchCapture(n, checker); if (gr?.regex) return matchGroupsRead(n, gr); if (gr?.refuse) fail(n, gr.refuse); } // `m.groups["k"]`, `m[i]`: a capture of a match (common.mjs)
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
     if (libWorldRead(n)) return globalRead(n);
     const recvT = typeOf(n.expression);
@@ -4944,7 +5014,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         case 'filter': return `${helper('Filter', [A()])}(${R}, ${lambda1(cb, 1)})`;
         case 'map': return `${helper('Map', [A(), dtype(typeOf(n), n).replace(/^seq<(.*)>$/, '$1')])}(${R}, ${lambda1(cb, 1)})`;
         case 'flatMap': { const inner = dtype(typeOf(n), n); return `${helper('Flat', [inner.replace(/^seq<(.*)>$/, '$1')])}(${helper('Map', [A(), inner])}(${R}, ${lambda1(cb, 1)}))`; }
-        case 'reduce': { const U = dtype(typeOf(cb.parameters[0].name), cb); return `${helper('Fold', [A(), U])}(${R}, ${lambda(cb, 2, [typeOf(cb.parameters[0].name), et()])}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`; }
+        case 'reduce': { if (n.arguments.length !== 2) fail(n, 'reduce without an initial value throws a TypeError on an empty array, which this reading of a value has no channel for; the heap core reads it (a mark the lemma shows never set)'); const U = dtype(typeOf(cb.parameters[0].name), cb); return `${helper('Fold', [A(), U])}(${R}, ${lambda(cb, 2, [typeOf(cb.parameters[0].name), et()])}, ${expr(n.arguments[1], typeOf(cb.parameters[0].name))})`; }
         case 'some': return `(exists ii_ :: 0 <= ii_ < |${R}| && ${lambda1(cb, 1)}(${R}[ii_]))`;
         case 'every': return `(forall ii_ :: 0 <= ii_ < |${R}| ==> ${lambda1(cb, 1)}(${R}[ii_]))`;
         case 'find': return foundValue(`${helper('Find', [A()])}(${R}, ${lambda1(cb, 1)})`, et(), typeOf(n), n);
@@ -5289,7 +5359,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       }
       case K.ExpressionStatement: return emit(assignText(s.expression));
       case K.ThrowStatement: return fail(s, 'throw is translated in --core mode only');
-      case K.ReturnStatement: return emit(`return ${outerParens(s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s))};`);
+      case K.ReturnStatement: if (voidReturn(s)) return stmts(voidSplit(s), ind, u, out); return emit(`return ${outerParens(s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s))};`);
       case K.IfStatement: {
         emit(`if ${outerParens(truthy(s.expression))} {`);
         stmts(flatten(s.thenStatement), ind + 1, u, out);
@@ -5559,9 +5629,18 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (op === K.QuestionQuestionEqualsToken || op === K.BarBarEqualsToken || op === K.AmpersandAmpersandEqualsToken) {
         // `x ??= v` keeps x when present; `x ||= v` keeps x when truthy; `x &&= v` takes v when x is truthy
         const lt = typeOf(e.left); const td = isAny(lt) ? anyType() : dtype(lt, e); const rtp = typeOf(e.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, e);
-        const cur = ident(e.left); const val = convert(outerParens(expr(e.right)), rtp, lt, e);
-        if (op === K.QuestionQuestionEqualsToken) { if (!isOptional(lt)) return [e.left.text, cur]; return [e.left.text, `(if ${name}.Some? then ${name} else ${val})`]; }
+        // (ECMA-262 13.15.2) the right operand runs only when the target does not decide: one that rebinds a name or makes a
+        // transition is the short-circuit's conditional (shortCircuit), its lines in its branch
+        const cur = ident(e.left), world = containsEffect(e.right), pr = rightParts(() => convert(outerParens(expr(e.right)), rtp, lt, e), false), val = pr.text;
+        const carry = pr.names.size || (world && pr.lines.length);
+        if (op === K.QuestionQuestionEqualsToken) {
+          if (!isOptional(lt)) return [e.left.text, cur]; // never absent: the right operand never runs
+          if (carry) return [e.left.text, shortCircuit(e, `${name}.Some?`, false, name, pr, world)];
+          pending.push(...pr.lines); return [e.left.text, `(if ${name}.Some? then ${name} else ${val})`];
+        }
         const t = truthy(e.left);
+        if (carry) return [e.left.text, shortCircuit(e, outerParens(t), op === K.AmpersandAmpersandEqualsToken, name, pr, world)];
+        pending.push(...pr.lines); // no name rebound, no transition: the lines stay where they were hoisted
         return [e.left.text, op === K.BarBarEqualsToken ? `(if ${outerParens(t)} then ${name} else ${val})` : `(if ${outerParens(t)} then ${val} else ${name})`];
       }
       if (heldCompound(e)) return [e.left.text, heldCompound(e)(name, e.right)];
@@ -5888,6 +5967,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const next = () => faultTr(rest, fin, u, ctx);
     if (s.__scope) return `${scopeText(s)}\n${next()}`;
     { const inl = inlineCall(s); if (inl) return faultTr([...inl, ...rest], fin, u, ctx); if (procDecl(s)) return next(); } // stage 5 rank 21
+    if (voidReturn(s)) return faultTr([...voidSplit(s), ...rest], fin, u, ctx);
     if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
       let propagates = false, inCallback = false;
       const throwing = (n) => ts.isThrowStatement(n) || ((ts.isCallExpression(n) || ts.isNewExpression(n)) && exceptionUnits.has(unitNameOfCall(n)));
@@ -5985,6 +6065,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const [s, ...rest] = list;
     if (s.__scope) return `${scopeText(s)}\n${tr(rest, fin, u)}`; // a block's own declarations end with it (scopedList)
     { const inl = inlineCall(s); if (inl) return tr([...inl, ...rest], fin, u); if (procDecl(s)) return tr(rest, fin, u); } // stage 5 rank 21
+    if (voidReturn(s)) return tr([...voidSplit(s), ...rest], fin, u);
     { const g = absenceGuard(s, u, () => tr(list, fin, u)); if (g) return g; } // a payload read: the option tested before the statement
     const more0 = (r = rest) => tr(r, fin, u);
     // after a statement of an exact try body that may fault: the catch path, else what follows

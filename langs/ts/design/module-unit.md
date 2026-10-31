@@ -14,8 +14,8 @@ declaration can take). Its call is the module's evaluation; it is compared betwe
   function's parameters or body, or of a class's members, runs only when the function is called or the class built,
   so it is not. One unit per file, one identity on both sides (`id([file, MODULE_UNIT])`), lines 1 to the last line.
   The order before it is unchanged: parse failure, a diagnostic in the edit, inert, a listed unit, untyped JavaScript,
-  the artifact class. A file present on one side only keeps the named unassigned route: one evaluation has nothing
-  to be compared with. An edit inside a function no listed unit holds keeps its named context: the evaluation may
+  the artifact class. A file present on one side only gives its module unit that side alone (below, 2026-10-31,
+  lane ledger-added-files). An edit inside a function no listed unit holds keeps its named context: the evaluation may
   never call that function, so the module unit would pass it unread.
 - **Listing** (`pr.mjs changedFiles`): a routed module unit joins the file's units for the worker; its cache key's text
   is the file outside its functions (`fileContext`), with the imports and tsconfig as for every unit; it has no caller.
@@ -42,11 +42,11 @@ is those functions' (their own units, checked when edited). A PASS is bounded: n
 Pairs: `module_unit` (the registration's option changes: WITNESS, the witness names `register('alpha', ...)` on both
 sides; red before: ASK from `runNew`), `module_unit_same` (the init reshaped through bindings of the candidate's own:
 PASS-bounded; red before: ASK). `ci/ledger.test.mjs`: a module-level edit is the module unit's, one per file, a
-function's own edit stays its function's, an added file's statement stays unassigned (red before: `a module-level
+function's own edit stays its function's, an added file's statement stayed unassigned until the section below (red before: `a module-level
 statement is the module unit's`). The pr-intake fixture follows the route: its template line is the module unit's
 (a `(module)` row), its module constant edit adds a checked `(module)` row beside the four invalidated function rows.
 
-Still out: a file present on one side only (the module unit of an added file would be NEW); an edit inside an unlisted
+Still out: an edit inside an unlisted
 function or a class member (class field, instance initializer); timers and escaped functions the evaluation arms are
 recorded, never fired or driven; untyped JavaScript keeps its route.
 
@@ -59,3 +59,20 @@ The census copies limit it anyway: n8n's has no `.git` (no commits to diff), lan
 time: `node lane/read-module-unit-ledger-scripts/ledger-census.mjs --lean <checkout> --repo <root> --out <json>`,
 the base lean (`git archive lead-30569d74 langs/ts`) against this branch; the count to read is `reasons["module-level
 statement"]` and `moduleUnit`.
+
+## A file present on one side only (2026-10-31, lane ledger-added-files)
+
+Defect: the route above asked for both sides' trees, so the top-level statements of an added file (and of a deleted
+one) ended `unassigned: module-level statement`, an intake ASK no lane read, while a function present on one side is
+a row of its own (NEW when the head adds it, removed when the head drops it).
+Reading: the module unit is a unit like a function, so a file present on one side gives it the row a function present
+on one side gets. `ci/ledger.mjs` routes the edit on the side that has the file (one unit, `id([file, MODULE_UNIT])`,
+the side's lines). `pr.mjs`: a deleted file's module unit is a removed row beside its removed functions (the parent's
+lines, no lane, no verdict); an added file's is checked, and lane B (`exec/run.mjs newModuleUnit`, in the bounded worker
+as every module unit) evaluates it alone n times, each seeded as the compared ones are: NEW, recording per input the
+outcome (evaluated, or what it threw and the statement entered last), the shape of the requests and of the armed work;
+no equality claim (`check.mjs` returns lane B's NEW, as for a function the parent does not hold). A harness stop is ASK.
+Unchanged: a function of an added file keeps its row (ASK, `new file: no parent to compare with`), not run by lane B.
+Tests: `ci/ledger.test.mjs` (an added file's statements are its module unit's, side `new`; a deleted file's, side
+`old`, its function still its own; no unassigned row in either; red before at the first), the pr-intake fixture (an
+added `added.ts`, two top-level lines: one `(module)` row, NEW, both edits on it; 8 rows; 5 units spent).
