@@ -1,0 +1,48 @@
+{
+ "scope": [
+  "half",
+  "used_once",
+  "used_twice",
+  "written_back",
+  "called_twice",
+  "passed_on",
+  "passed_local",
+  "passed_swapped",
+  "passed_ref",
+  "read_first",
+  "read_first_named",
+  "guarded",
+  "guarded_if"
+ ],
+ "equal": {
+  "half": true,
+  "used_once": true,
+  "used_twice": true,
+  "written_back": false,
+  "called_twice": false,
+  "passed_on": true,
+  "passed_local": true,
+  "passed_swapped": false,
+  "passed_ref": false,
+  "read_first": false,
+  "read_first_named": true,
+  "guarded": false,
+  "guarded_if": true
+ },
+ "why": "heap-stage5 section 15: a call of an imported function is a transition of the whole heap world; the identity certificate is the same transitions in the same order. usedOnce names the result before using it once (proved); usedTwice reads two fields of the returned reference, named or inline, in the world the call returned (proved); writtenBack writes the result into a field of the argument and returns the field instead of the result (unproved: the transition may write every object and leaves no frame, so the argument's cell after it is unknown, as an accessor the callee installs would make it; lane B's real module keeps the field, PASS-bounded); calledTwice calls twice for once (unproved: the environment may answer the second call otherwise; the real module answers both alike, PASS-bounded); passedOn and passedLocal pass the result on to another transition and to a function of this file (proved); passedSwapped passes it on in the other argument of a transition that is not symmetric (unproved, WITNESS); passedRef reads the quantity of a returned reference before the save instead of after (unproved, WITNESS: the save writes it). The operands are evaluated in order, then the transition: readFirst passes the quantity read before bump in the parent and after it in the candidate (unproved, WITNESS); readFirstNamed names the quantity before the call, the same order (proved). The right operand of && runs only when the left is true: guarded calls bump whatever c holds in the candidate (unproved, WITNESS); guardedIf returns early instead, the same transitions (proved).",
+ "b": {
+  "usedOnce": "PASS-bounded",
+  "usedTwice": "PASS-bounded",
+  "writtenBack": "PASS-bounded",
+  "calledTwice": "PASS-bounded",
+  "passedOn": "PASS-bounded",
+  "passedLocal": "PASS-bounded",
+  "passedSwapped": "WITNESS",
+  "passedRef": "WITNESS",
+  "readFirst": "WITNESS",
+  "readFirstNamed": "PASS-bounded",
+  "guarded": "WITNESS",
+  "guardedIf": "PASS-bounded"
+ },
+ "heap": true
+}
