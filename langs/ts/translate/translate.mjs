@@ -1689,7 +1689,21 @@ function translateOnce(file, fnName, opts = {}) {
   const anyTarget = () => checker.getAnyType();
   // a parameter held under a second reading of its callee (withHeldParams) is Any to its declaration as to its reads: the
   // storage type and the read type come from one decision (assertionHeld), so no read converts between them
-  const symType = (sym, n) => { const vd = sym?.valueDeclaration, held = vd && (ts.isVariableDeclaration(vd) || ts.isParameter(vd)) && ts.isIdentifier(vd.name) ? assertionHeld(checker, vd.name) : null; if (held) return held; return checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n); }; // a local holding a value whose type nothing checked has its real type, as typeOf reads it
+  // an untyped `let x;` of the unit is held at its first assigned type, absent until then: the Option its declaration
+  // writes (firstAssignedType). The checker types the symbol any, so without this a read of it would take the stored
+  // value for an opaque one (design/types-inventory.md, form 7)
+  const untypedLetHeldT = new Map(); // symbol -> { unit, t }
+  const untypedLetHeld = (sym) => {
+    const vd = sym?.valueDeclaration;
+    if (!vd || !currentUnit?.body || !ts.isVariableDeclaration(vd) || vd.type || vd.initializer || !ts.isIdentifier(vd.name) || !ts.isVariableStatement(vd.parent?.parent)) return null;
+    if (vd.getSourceFile() !== currentUnit.body.getSourceFile() || vd.pos < currentUnit.body.pos || vd.end > currentUnit.body.end) return null;
+    const had = untypedLetHeldT.get(sym); if (had && had.unit === currentUnit) return had.t;
+    const at = firstAssignedType(vd.name);
+    const t = at && !isAny(at) ? checker.getUnionType([at, checker.getUndefinedType()]) : null;
+    untypedLetHeldT.set(sym, { unit: currentUnit, t });
+    return t;
+  };
+  const symType = (sym, n) => { const vd = sym?.valueDeclaration, held = vd && (ts.isVariableDeclaration(vd) || ts.isParameter(vd)) && ts.isIdentifier(vd.name) ? assertionHeld(checker, vd.name) : null; if (held) return held; { const lt = untypedLetHeld(sym); if (lt) return lt; } return checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n); }; // a local holding a value whose type nothing checked has its real type, as typeOf reads it
 
   // ----- externals -----
   const unitTParams = () => (currentUnit ? unitTypeParameters(checker, currentUnit) : []).map((g) => dn(g.name.text));
