@@ -1384,7 +1384,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       helpers.push([`function ${name}(${params.join(', ')}): ${still ? `(r_: ${ret})` : ret}`, ...(still ? [`  ensures ${carried.length ? 'r_.0' : 'r_'} == ${HW}`] : []), `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < ${lenI(A)}) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
       lines.push(...saved);
       const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', lenI(arr), ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
-      lines.push(carried.length ? `var (${HW}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${HW} := ${call};`);
+      // a helper that returns the world it was given leaves this one's world as it is (its ensures), so a loop around it
+      // reads its body as one that never rebinds the world too: only the carried locals are taken from the result
+      const into = still ? fresh('w') : HW;
+      lines.push(carried.length ? `var (${into}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${into} := ${call};`);
     }
     if (u.isCtor) { const sh = instanceShape(u.cls, 0); const me = dn('this'); lines.push(`var (${HW}, ${me}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => fieldDflt(f.shape)).join(', ')});`); for (const p of paramProps(u.cls)) lines.push(`var ${HW} := Set_${sh.key}_${dn(p.name.text)}(${HW}, ${me}, ${dn(p.name.text)});`); for (const m of fieldInits(u.cls)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${me}, ${exprField(m.initializer, f.shape)});`); } } // the instance first, then the parameter properties and the initializers
     const body = u.isCtor ? (() => { const pre = flush(); const b = stmts([...u.body.statements], () => `(${HW}, ${dn('this')})`); return pre ? `${pre}\n${b}` : b; })() : ts.isBlock(u.body) ? stmts([...u.body.statements], proc ? () => `(${HW}, ())` : null) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`

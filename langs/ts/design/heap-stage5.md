@@ -341,6 +341,8 @@ Pair `arithmetic_core` (a real file): the proved units are `orflag`, `toint`, `n
 `bump`, `ratio`, `setflag`, `stamp` and `store`. Witnessed: `parity` and `orwitness` (binary64), `setwitness` (lane B).
 `heap5_arith` `bump` is proved again.
 
+**Merged with 21b (2026-10-31).** Two lanes read the same rule the same night. The lead keeps one mechanism, 21b's: the operator stays in the text and only a non-exact operand is wrapped, as `Math.__lean_int32(x)`; the symbol `__lean_toint32` and the rewrite of the operator into a bv32 helper described above were replaced at the merge, so `bitwiseOf` reads `x | 0`, `~~x` and the other ToInt32 forms as one term on both sides. The pair `arithmetic_core` is kept and must stay green under the kept mechanism.
+
 ## 14. Pure globals
 
 Reading: a global of the platform (never a name the file declares), each a function of its arguments: `Math.max` and
@@ -717,3 +719,42 @@ nested write dropped: WITNESS), `later` (a read through the key moved across a w
 `named` (proved), `retitle` (two writes through an unwritten key swapped: not proved, and lane B witnesses the
 TypeError thrown by the other statement). The real instances (`state.chats[id]` in reducers) test `if (!chat)`, a
 truthiness of a reference, which the core does not read.
+
+### 2026-10-31: the three readings on values only the core reads (lane core-shared-readings)
+
+The three readings above were built and proved on values the ordinary lane also reads (a parameter number, one loop).
+Two of them stopped short of the units only the core decides, where the doubles reading is unknown (an array or a
+record parameter) and the faithful reading (rule C, `translate/faithful.mjs`) is the core's number model.
+(1) The bitwise reading never met a number the faithful reading does not hold. The rewrite turned the whole operator
+into an uninterpreted `Math.__lean_bitor(t, 0)` (`__lean_bitnot`, `__lean_shl` ...), so `t | 0` and `~~t` were two
+unrelated terms whenever `t` was a parameter's field, an element or a sum over an array. The rewrite now follows
+ECMA-262 6.1.6.1: every operand of a bitwise operator is read through ToInt32 (ToUint32 for a shift count and the left
+of `>>>`, both ToInt32 modulo 2^32, which the helpers take), so only the operand the model does not hold becomes
+`Math.__lean_int32(x)` (one uninterpreted int32, declared in `lean-number.d.ts`), the operator stays and is read by
+`bitwiseOf` over exact operands. The result of a bitwise operator is exact (int32, or uint32 for `>>>`) whatever its
+operands, since ToInt32 never yields a -0, a NaN or a value out of range. A compound bitwise assignment is written the
+same way (`t = (Math.__lean_int32(t) | 4)`). `bitwiseOf` reads the forms that are ToInt32 by the standard as one term:
+`x | 0`, `0 | x`, `x ^ 0`, `0 ^ x`, `~~x`, and `<<` or `>>` by a literal count whose low five bits are 0.
+(2) The world a pure loop keeps was decided on the body's text (no `var hw_` in it), and a loop's own call rebound the
+world, so a loop around a pure loop was never pure itself. A loop whose helper carries `ensures r_.0 == hw_` now binds
+its returned world to a fresh name and leaves the caller's world as it is (only the carried locals are taken), so the
+loop around it reads a body that never rebinds the world and carries the ensures too, at any depth.
+(3) The for-of loop in a real file holds as built: a for-of over a record's field reads `ItemAt_` and `|Items_|` (pair
+row `field`).
+Soundness. (1) A proof over an uninterpreted `__lean_int32` holds for every function, ToInt32 among them, and the
+operator after it is the exact helper the standard defines over int32 operands; the int32 interval of a bitwise result
+is the standard's, not the model's. (2) The fresh name holds a world the helper's ensures, proved by its own recursion,
+makes equal to the caller's; dropping it loses nothing. Stays refused: a bitwise operator on a value that may not be a
+number (a union with another type, a bigint: the rewrite reads number-typed operands only); a loop whose body marks or
+writes the world (a division, an index, a field write) keeps the world it returns.
+Pair `shared_readings` (red at lead-b5c07450 in `bits`, `low`, `grid`): `bits` (`~~t` for `t | 0`, t a sum: proved),
+`low` (`t | 0` for `t << 32`: proved), `flip` (`t | 1`: WITNESS), `grid` (the length read before two nested pure loops,
+then a division: proved), `halve` (`/ 4` for `/ 2` after them: WITNESS), `field` (for-of over `b.items` in a real file:
+proved). `heap5_arith` `bump` (`4 | c.flags` for `c.flags | 4`, `+= 1` for `++`) is proved now: equal in JavaScript,
+its lane B row PASS-bounded, its expectation raised from false (the faithful commit had made the operator opaque).
+Census (`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs <root> --out <json>`, base lead-b5c07450
+against 6886149dd, `census.mjs --diff`): n8n 9,610 units, entered 2,680 -> 2,680; langchainjs 6,709 units, entered
+2,766 -> 2,766; nexus in the 17 directories holding a bitwise operator outside tests (`--include <dir>/`), 1,225 units,
+entered 595 -> 595. No reading gains or loses a unit on any root: both readings change what the core proves of a unit
+it already enters (the faithful rewrite's terms, a loop helper's world), never what it refuses. The reach is measured by
+the pairs, not by the census.
