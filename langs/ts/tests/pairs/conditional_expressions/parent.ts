@@ -18,7 +18,7 @@ export function note(t: Tally, s: string, on: boolean): number {
 }
 
 // a ternary in a return, the changed argument read after it
-export function noteThenCount(t: Tally, s: string, on: boolean): number {
+export function tally(t: Tally, s: string, on: boolean): number {
   const n = on ? record(t, s) : 0;
   return n + t.seen.length;
 }
@@ -29,7 +29,7 @@ export function route(t: Tally, s: string, k: number): number {
 }
 
 // a nested ternary with a planted difference
-export function routeOff(t: Tally, s: string, k: number): number {
+export function stray(t: Tally, s: string, k: number): number {
   const n = k > 10 ? record(t, s + "!") : k > 0 ? record(t, s) : 0;
   return n + t.total;
 }
@@ -40,7 +40,7 @@ export function doubled(t: Tally, s: string, on: boolean): number {
 }
 
 // a ternary as an argument, the call in the other operand: the planted difference
-export function doubledOff(t: Tally, s: string, on: boolean): number {
+export function skewed(t: Tally, s: string, on: boolean): number {
   return wrap(on ? t.total : record(t, s)) + t.total;
 }
 
