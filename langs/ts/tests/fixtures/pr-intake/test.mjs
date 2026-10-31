@@ -262,7 +262,10 @@ export function testRunIdentity() {
     git('add', 'chain.ts');
     git('commit', '-qm', 'Read the changed module constant');
     const outside = run('outside');
-    assert.ok(unitRows(outside.report).length === 4 && unitRows(outside.report).every((r) => r.coverage === 'checked'), 'text outside functions must invalidate the file');
+    // the module constant's own edit is the module unit's (common.mjs MODULE_UNIT): a fifth row, checked; the four function rows are invalidated
+    const functionRows = unitRows(outside.report).filter((r) => r.unit !== '(module)');
+    assert.ok(functionRows.length === 4 && functionRows.every((r) => r.coverage === 'checked'), 'text outside functions must invalidate the file');
+    assert.ok(unitRows(outside.report).filter((r) => r.unit === '(module)').map((r) => r.coverage).join() === 'checked', 'the module-level edit is checked as the module unit');
     console.log('Identity dependency guards: direct import, resolved config and module constant each invalidate all 4 rows');
     return 'run identity and cache pass';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
@@ -283,9 +286,11 @@ export function testCommentOnly() {
     assert.equal(preview.status, 0, preview.stderr);
     const rows = Object.assign(JSON.parse(fs.readFileSync(previewJson, 'utf8')), { values: null }); // a bare array's `values` is Array.prototype.values
     const at = (lines) => rows.find((r) => r.file === 'notes.ts' && JSON.stringify(r.lines) === JSON.stringify(lines));
-    // the two tree cases: the template line (old 4, new 5) is code; the block comment's inside line (old 8, new 9) is comment
-    assert.deepEqual([[at([4, 5])?.coverage, !!at([4, 5])?.inert], [at([8, 9])?.coverage, !!at([8, 9])?.inert]],
-      [['unassigned:module-level statement', false], ['unassigned:comment', true]], 'a `//` line of a template literal is code; a line inside /* */ is comment');
+    // the two tree cases: the template line (old 4, new 5) is code, the module's evaluation runs it, so it is the module
+    // unit's (common.mjs MODULE_UNIT: a row of its own, the whole file's lines); the block comment's inside line (old 8, new 9) is comment
+    const moduleRow = rows.find((r) => r.file === 'notes.ts' && r.unit === '(module)');
+    assert.deepEqual([[moduleRow?.coverage, !!moduleRow?.inert, moduleRow?.editIds?.length], [at([8, 9])?.coverage, !!at([8, 9])?.inert]],
+      [['skipped:preview', false, 2], ['unassigned:comment', true]], 'a `//` line of a template literal is code (the module unit\'s, both sides); a line inside /* */ is comment');
     const inert = rows.filter((r) => r.inert);
     // five groups change no token: the added top comment, the block comment's inside line (both sides), the comment above
     // the class (both sides), the blank line, the comment between the two methods
@@ -293,26 +298,26 @@ export function testCommentOnly() {
       'every edit that changes no token outside comments and blank lines is inert');
     assert.ok(inert.every((r) => r.decision === 'unassigned' && r.verdict === null), 'an inert row is unassigned and carries no verdict');
     assert.deepEqual(rows.filter((r) => !r.inert).map((r) => [r.coverage, r.verdict]).sort(),
-      [['artifact:config', 'ASK'], ['skipped:preview', null], ['unassigned:directive comment', 'ASK'], ['unassigned:module-level statement', 'ASK']],
-      'the config file, the reference directive and the template line stay undecided (ASK) in the data');
+      [['artifact:config', 'ASK'], ['skipped:preview', null], ['skipped:preview', null], ['unassigned:directive comment', 'ASK']],
+      'the config file and the reference directive stay undecided (ASK) in the data; the function and the module unit are previewed');
     const md = markdown(rows, 'base', 'head');
     const table = md.split('## Change ledger')[0];
-    assert.deepEqual(table.split('\n').filter((l) => /^\| (notes\.ts|app\.config\.json) \|/.test(l)).map((l) => l.split('|')[2].trim()), ['`bump` (12-14)'], 'the verdict table holds the one changed function');
-    assert.match(md, /1 changed function\(s\): \*\*0 in scope · 0 WITNESS · 0 PASS-proved · 0 PASS-decided · 0 PASS-bounded · 0 ASK · 0 REFUSE · 0 NEW\*\*/);
+    assert.deepEqual(table.split('\n').filter((l) => /^\| (notes\.ts|app\.config\.json) \|/.test(l)).map((l) => l.split('|')[2].trim()).sort(), ['`(module)` (1-29)', '`bump` (12-14)'], 'the verdict table holds the changed function and the module unit');
+    assert.match(md, /2 changed function\(s\): \*\*0 in scope · 0 WITNESS · 0 PASS-proved · 0 PASS-decided · 0 PASS-bounded · 0 ASK · 0 REFUSE · 0 NEW\*\*/);
     const intake = intakeMarkdown(rows).split('\n');
     assert.equal(intake.filter((l) => /\| unassigned:(comment|whitespace) \| unassigned \|/.test(l)).length, 5, 'the intake table lists the five inert groups as unassigned');
-    assert.equal(intake.filter((l) => /\| (artifact:config \| artifact|unassigned:directive comment \| unassigned|unassigned:module-level statement \| unassigned) \|/.test(l)).length, 3, 'and the three undecided intake rows');
+    assert.equal(intake.filter((l) => /\| (artifact:config \| artifact|unassigned:directive comment \| unassigned|unassigned:module-level statement \| unassigned) \|/.test(l)).length, 2, 'and the two undecided intake rows');
     // the plain run prints the intake table before the verdicts, as the comment does; no lane runs at a zero unit budget
     const plain = spawnSync(process.execPath, [pr, ...args, '--unit-budget', '0'], { encoding: 'utf8' });
     assert.equal(plain.status, 0, plain.stderr);
     assert.ok(plain.stdout.indexOf('## Intake') >= 0 && plain.stdout.indexOf('## Intake') < plain.stdout.indexOf('## Verdicts'), 'the run prints intake, then verdicts');
-    assert.match(plain.stdout, /1 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/);
+    assert.match(plain.stdout, /2 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/);
     assert.equal(plain.stdout.split('## Verdicts')[1].split('## Change ledger')[0].split('\n').filter((l) => /artifact:|unassigned:/.test(l)).length, 0, 'no intake row in the run\'s verdict table');
     const comment = spawnSync(process.execPath, [path.resolve(here, '../../../ci/comment.mjs'), ...args, '--unit-budget', '0', '--block', 'ask'], { encoding: 'utf8' });
-    assert.match(comment.stdout, /1 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/, 'the comment renders the same counts');
+    assert.match(comment.stdout, /2 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/, 'the comment renders the same counts');
     // a blocking level still reads the data: an undecided intake row blocks, an inert one never does
     const blocked = [...comment.stderr.matchAll(/::error file=([^,]+),line=(\d+)::lean ASK/g)].map((m) => m[1] + ':' + m[2]).sort();
-    assert.deepEqual(blocked, ['app.config.json:1', 'notes.ts:1', 'notes.ts:4'], 'the directive, the template line and the config file block under --block ask; no inert row does');
-    return 'only the changed function is a verdict row; 5 inert groups and 3 undecided intake rows stay in intake; template line is code, block comment line is comment; run and comment agree; blocking reads the data';
+    assert.deepEqual(blocked, ['app.config.json:1', 'notes.ts:1'], 'the directive and the config file block under --block ask; no inert row does, nor a unit the budget skipped');
+    return 'only the changed function and the module unit are verdict rows; 5 inert groups and 2 undecided intake rows stay in intake; template line is code (the module unit\'s), block comment line is comment; run and comment agree; blocking reads the data';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }

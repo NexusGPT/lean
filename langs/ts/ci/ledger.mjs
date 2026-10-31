@@ -197,7 +197,7 @@ export function routeChanges(manifest) {
         // is the module unit's, whatever narrower context names it (an object literal built at load, an exports write):
         // the two evaluations are compared in init order. One unit per file, the same on both sides; a file with one side
         // only has no second evaluation to compare with. An edit inside a function no listed unit holds keeps its context.
-        const lines = sf.getLineAndCharacterOfPosition(sf.text.length).line + 1;
+        const lines = sf.getLineAndCharacterOfPosition(Math.max(0, sf.text.length - 1)).line + 1; // the line of the last character
         const link = { id: id([file.id, MODULE_UNIT]), file: file.file, unit: MODULE_UNIT, side, start: 1, end: lines };
         edit.links = [link];
         edit.primary = { kind: 'unit', id: link.id, file: file.file, unit: MODULE_UNIT, side, start: 1, end: lines };

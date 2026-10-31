@@ -104,10 +104,11 @@ try {
   assert.equal(new Set(initEdits.filter(e => e.primary.unit === '(module)').map(e => e.primary.id)).size, 1, 'one module unit per file, on both sides');
   assert.equal(ledgerRowsOf(init).filter(r => r.file === 'init.ts').length, 0, 'no unassigned row is left for the module statements');
   assert.equal(reconcileEdits(init).complete, true);
-  write('fresh.ts', "register('only', 1);\n");
+  write('fresh.ts', "register('only', 1);\n"); git('add', 'fresh.ts'); // tracked: an untracked file is outside the diff
   const fresh = routeChanges(buildChangeManifest({ repo: tmp, base: initBase, head: 'WORKTREE' }));
-  assert(fresh.edits.filter(e => e.file === 'fresh.ts').every(e => e.primary.kind === 'unassigned' && e.primary.reason === 'module-level statement'), 'an added file has no parent evaluation to compare: its statements stay named and unassigned');
-  fs.rmSync(path.join(tmp, 'fresh.ts'));
+  const freshEdits = fresh.edits.filter(e => e.file === 'fresh.ts');
+  assert(freshEdits.length >= 1 && freshEdits.every(e => e.primary.kind === 'unassigned' && e.primary.reason === 'module-level statement'), 'an added file has no parent evaluation to compare: its statements stay named and unassigned');
+  git('rm', '-qf', 'fresh.ts');
   write('configuration.ts', 'export function configure(x: number) { return x + 1; }\n');
   git('add', '-A'); git('commit', '-qm', 'classified source base'); const classifiedBase = git('rev-parse', 'HEAD');
   write('configuration.ts', 'export function configure(x: number) { return x + 2; }\n');

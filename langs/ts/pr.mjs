@@ -287,7 +287,7 @@ function changedFiles(opts, temps, ledger) {
       const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
       entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile).filter(u => routed.has(u.name));
       // the module unit (common.mjs MODULE_UNIT): the file's top-level statements, the whole file's lines; the ledger routes to it
-      if (routed.has(MODULE_UNIT)) entry.units.push({ name: MODULE_UNIT, start: 1, end: reading.sf.getLineAndCharacterOfPosition(reading.sf.text.length).line + 1, findings: [] });
+      if (routed.has(MODULE_UNIT)) entry.units.push({ name: MODULE_UNIT, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
     } catch (e) {
       entry.error = String(e.message).slice(0, 300);
       try { entry.units = changedUnits({ sf: ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true) }, ranges, entry.headFile); } catch (f) { entry.error = String(f.message).slice(0, 300); }
