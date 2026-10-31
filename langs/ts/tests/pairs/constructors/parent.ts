@@ -102,3 +102,31 @@ export function relayed(n: string): number {
   t.shared();
   return t.bumped();
 }
+
+export class Knob {
+  spins = 1;
+  constructor(public turn = 0, readonly label = "knob") {
+    this.spins = turn;
+  }
+  twice(): number {
+    this.turn += this.turn;
+    return this.turn;
+  }
+}
+
+export class Dial {
+  constructor(public step = 1) {}
+}
+
+export function knob(n: number): number {
+  const k = new Knob(n);
+  return k.turn + 1;
+}
+
+export function knobbed(): number {
+  return new Knob().turn;
+}
+
+export function dialed(): number {
+  return new Dial().step;
+}

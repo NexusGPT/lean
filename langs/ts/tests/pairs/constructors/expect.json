@@ -16,7 +16,13 @@
   "tally_shared",
   "kept",
   "handed",
-  "relayed"
+  "relayed",
+  "knob_constructor",
+  "knob_twice",
+  "dial_constructor",
+  "knob",
+  "knobbed",
+  "dialed"
  ],
  "equal": {
   "meter_constructor": true,
@@ -35,9 +41,15 @@
   "tally_shared": true,
   "kept": true,
   "handed": false,
-  "relayed": false
+  "relayed": false,
+  "knob_constructor": true,
+  "knob_twice": true,
+  "dial_constructor": false,
+  "knob": true,
+  "knobbed": true,
+  "dialed": false
  },
- "why": "a constructor allocates the instance with each field's default, stores its parameter properties and field initializers in declaration order, then runs its body: Meter's reading initializer changes but the body stores over it (proved, and metered with it); Gauge's level initializer changes and nothing stores over it (WITNESS); Span (parameter properties only) is untouched, span hands its arguments swapped (WITNESS); Cell stores its count through a local after its parameter properties (proved, and sized with it); Square calls super with the same value written differently (proved, and perimeter with it); Triangle calls super with another value (WITNESS); Shape is untouched; kept calls bumped on a Tally it built and used only through its fields, where the candidate writes the count itself (proved: an exact, unshared instance runs Tally's own text); handed gives the Tally to an outside function before the call, and relayed to Tally's own shared, which hands this to it: the outside function installs an own bumped on the instance (WITNESS, unproved: once the instance is shared, its method may be another function)",
+ "why": "a constructor allocates the instance with each field's default, stores its parameter properties and field initializers in declaration order, then runs its body: Meter's reading initializer changes but the body stores over it (proved, and metered with it); Gauge's level initializer changes and nothing stores over it (WITNESS); Span (parameter properties only) is untouched, span hands its arguments swapped (WITNESS); Cell stores its count through a local after its parameter properties (proved, and sized with it); Square calls super with the same value written differently (proved, and perimeter with it); Triangle calls super with another value (WITNESS); Shape is untouched; kept calls bumped on a Tally it built and used only through its fields, where the candidate writes the count itself (proved: an exact, unshared instance runs Tally's own text); handed gives the Tally to an outside function before the call, and relayed to Tally's own shared, which hands this to it: the outside function installs an own bumped on the instance (WITNESS, unproved: once the instance is shared, its method may be another function); Knob declares parameter properties with defaults (`public turn = 0`), and a body storing the turn through a local in the candidate: the parameter with its default, then the field store (`this.turn = turn`), then the body (proved, and knob, knobbed, which leaves the argument out, and Knob.twice, which doubles the turn in place against through a local: the class is a record of the heap core again); Dial changes its default from 1 to 2 (WITNESS, and dialed, which takes the default)",
  "b": {
   "Meter.constructor": "PASS-bounded",
   "Gauge.constructor": "WITNESS",
@@ -50,7 +62,12 @@
   "perimeter": "PASS-bounded",
   "kept": "PASS-bounded",
   "handed": "WITNESS",
-  "relayed": "WITNESS"
+  "relayed": "WITNESS",
+  "Knob.constructor": "PASS-bounded",
+  "Dial.constructor": "WITNESS",
+  "knob": "PASS-bounded",
+  "knobbed": "PASS-bounded",
+  "dialed": "WITNESS"
  },
  "heap": true
 }
