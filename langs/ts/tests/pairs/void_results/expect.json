@@ -1,0 +1,7 @@
+{
+ "scope": ["add", "bump", "cap", "guard", "only_empty", "add_one", "add_free", "refill", "top_up", "counter_tick"],
+ "equal": {"add": true, "bump": true, "cap": true, "guard": true, "only_empty": true, "add_one": true, "add_free": true, "refill": false, "top_up": true, "counter_tick": false},
+ "why": "heap stage 5 section 8: a procedure (a void result) returns the unit value and is compared on the heap it leaves. add is untouched (falls off its end); bump (an inferred void) writes c.count + 1 for += 1 (proved); cap carries the rest after an if into both branches (proved); guard's nested bare return is the conjoined test returning first (proved); onlyEmpty's else return is the opposite test returning early (proved); addOne's expression body, a same-file call, is a block calling it (proved); addFree and topUp return their callee's call, read as the call then a bare return (the expression-body reading in a return): addFree against the call and a bare return, topUp against the opposite test writing and returning first (proved, both sides in the core); refill returns a call with another price (unproved, WITNESS on an empty cart); Counter.tick moves its bound to >= (unproved, WITNESS at n = 5).",
+ "b": {"add": "PASS-bounded", "bump": "PASS-bounded", "cap": "PASS-bounded", "guard": "PASS-bounded", "onlyEmpty": "PASS-bounded", "addOne": "PASS-bounded", "addFree": "PASS-bounded", "refill": "WITNESS", "topUp": "PASS-bounded", "Counter.tick": "WITNESS"},
+ "heap": true
+}
