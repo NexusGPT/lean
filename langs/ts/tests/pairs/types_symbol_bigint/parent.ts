@@ -34,12 +34,12 @@ export function fee(a: bigint, b: bigint): bigint {
   return a + b * 2n;
 }
 
-export function half(a: bigint, b: bigint): bigint {
-  return (a + b) / 2n;
+export function rem(a: bigint, b: bigint): bigint {
+  return (a + b) % 3n;
 }
 
-// a number-format argument
-export type Amount = number | bigint | `${number}`;
+// a number-format argument (Intl.NumberFormat.format)
+export type Amount = number | bigint | `${number}` | "Infinity" | "-Infinity" | "+Infinity";
 
 export function amount(value: Amount, digits: number): Amount {
   return value;

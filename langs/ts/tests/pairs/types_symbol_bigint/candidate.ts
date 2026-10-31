@@ -38,12 +38,12 @@ export function fee(a: bigint, b: bigint): bigint {
   return 2n * b + a;
 }
 
-export function half(a: bigint, b: bigint): bigint {
-  return a / 2n + b / 2n;
+export function rem(a: bigint, b: bigint): bigint {
+  return a % 3n + b % 3n;
 }
 
-// a number-format argument
-export type Amount = number | bigint | `${number}`;
+// a number-format argument (Intl.NumberFormat.format)
+export type Amount = number | bigint | `${number}` | "Infinity" | "-Infinity" | "+Infinity";
 
 export function amount(value: Amount, digits: number): Amount {
   const v = value;
