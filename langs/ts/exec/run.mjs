@@ -526,7 +526,8 @@ export function sandbox(env, root) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
     const wasLoading = env.loading, wasCrumb = crumb.loading; env.loading = true; crumb.loading = abs;
-    try { return loadInner(abs); } finally { env.loading = wasLoading; crumb.loading = wasCrumb; if (!wasLoading) resetEscapes(env); } // the module has loaded: the unit's functions are numbered from here (fake.mjs resetEscapes)
+    // the unit's module is the first one loaded: a unique symbol is drawn as the constant it exports (gen.mjs)
+    try { const out = loadInner(abs); if (!wasLoading && env.exports === undefined) env.exports = out; return out; } finally { env.loading = wasLoading; crumb.loading = wasCrumb; if (!wasLoading) resetEscapes(env); } // the module has loaded: the unit's functions are numbered from here (fake.mjs resetEscapes)
   }
   function loadInner(abs) {
     const src = fs.readFileSync(abs, 'utf8');

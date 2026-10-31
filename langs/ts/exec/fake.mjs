@@ -371,7 +371,7 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
   if (t === 'boolean') return v;
   if (t === 'string') return withoutRoots(withoutFrames(v));
   if (t === 'bigint') return { $bigint: v.toString() };
-  if (t === 'symbol') return { $symbol: String(v) };
+  if (t === 'symbol') return { $symbol: v.description ?? null }; // a symbol by its description: its identity is no value the other side can hold (each side draws and makes its own)
   if (t === 'function') return v.__isFake ? { $fake: v.__fakePath } : escapeHandle(v);
   if (v.__isFake) return { $fake: v.__fakePath };
   if (depth > 6) return { $deep: true };
