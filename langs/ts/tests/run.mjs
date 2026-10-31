@@ -707,6 +707,8 @@ async function adviceLabels(add) {
     // a child past its wall cap is killed with every process under it and reads as a timeout; every Dafny child carries one (pool.mjs, design/suite.md)
     ['wall-cap', scriptRow('runtime', 'wall-cap', 'a 2 s cap kills a fake Dafny and its sleeping child within 5 s, shaped as a timeout; a run under the cap unchanged', [path.join(here, 'wall-cap.mjs')], lastLine)],
     ['gen-invariants', scriptRow('runtime', 'gen-invariants', 'the input generator keeps its stated invariants over seeds 1 to 20', [path.join(here, '../exec/gen.test.mjs')], lastLine)],
+    // the enumerated small heaps draw every slot within the suite's 30 inputs, the absent value of a nullable item or key, and a Map's record values from the pool (exec/korat.mjs, heap-stage5.md 16c)
+    ['korat-order', scriptRow('runtime', 'korat-order', 'every slot within 30 enumerated heaps; a nullable item or key draws null; a Map\'s record values pooled', [path.join(here, '../exec/korat.test.mjs')], lastLine)],
     ['no-silent-exit', scriptRow('runtime', 'no-silent-exit', 'ASK on a drained loop or a budget stop; verdicts on wide, nested and aliased inputs', [path.join(here, 'no-silent-exit.mjs')], lastLine)],
     // an importer's error outside a unit run exits 1; pr.mjs without git history names lean unknown
     ['no-silent-exit-importers', scriptRow('runtime', 'no-silent-exit-importers', 'exit 1 outside a unit run; late error recorded inside; pr.mjs lean unknown', [path.join(here, 'no-silent-exit-importers.mjs')], lastLine)],

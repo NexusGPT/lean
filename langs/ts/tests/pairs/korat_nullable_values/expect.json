@@ -1,0 +1,14 @@
+{
+ "why": "lane B's enumerated heaps draw a Set's nullable items from the pool and the absent value, and a Map's record values from the pool as a record field's (exec/korat.mjs, design/heap-stage5.md 16c); before, both were left to the seeded generator, whose records are fresh. isSeenOrNone asks a Set of nullable records for a new record with the argument's name (another item under SameValueZero): WITNESS once the Set holds the argument itself. holdsNone names has(null) before returning it: equal, PASS-bounded. isOwnValue asks whether a Map keyed and valued by records maps the argument to itself, the candidate says never: WITNESS when a key is its own value. distinctValues counts the distinct value objects, the candidate the entries: WITNESS when two keys hold one record. valueCount names the size before returning it: equal, PASS-bounded. The heap core leaves a Set of optional items and a Map's reference values out (section 16), so the pair checks lane B alone. knowsTag asks the Map field placed first in a record of three slots for a new record with the argument's name: WITNESS once that Map holds the argument; the odometer, varying the first slot slowest, reached a non-empty Map there past the suite's 30 inputs, the breadth-first prefix within them.",
+ "laneBOnly": true,
+ "scope": [],
+ "equal": {},
+ "b": {
+  "isSeenOrNone": "WITNESS",
+  "holdsNone": "PASS-bounded",
+  "isOwnValue": "WITNESS",
+  "distinctValues": "WITNESS",
+  "valueCount": "PASS-bounded",
+  "knowsTag": "WITNESS"
+ }
+}
