@@ -2,7 +2,7 @@
 // seeded draws), input i drawn on a fresh environment seeded as lane B seeds it, the side's file loaded in lane B's
 // sandbox with its fakes, and the unit observed by lane B's observe. Nothing here reads a value its own way: the
 // outcome is lane B's rendering. A third copy of input i, drawn the same way and never run, is what the model reads.
-import { inputPlan, sandbox, pickUnit, observe, findRoot, sideLocations } from '../exec/run.mjs';
+import { inputPlan, sandbox, pickUnit, observe, findRoot, sideLocations, setFieldsProject } from '../exec/run.mjs';
 import { Environment, renderDrawn, render, setRoots } from '../exec/fake.mjs';
 import { expandRefs } from './bridge.mjs';
 
@@ -13,8 +13,12 @@ let late = [];
 process.on('unhandledRejection', (e) => { late.push(String(e && e.message || e).slice(0, 200)); });
 process.on('uncaughtException', (e) => { late.push(String(e && e.message || e).slice(0, 200)); });
 
-export function planOf(parent, candidate, unit, seed = 1) {
-  const plan = inputPlan(parent, candidate, unit, { project: false, seed, values: null });
+// project: the pair's tsconfig (expect.json `project`) or false, as the suite's lane B step reads it (tests/run.mjs): the
+// input plan and the emit mode every file loads with (a declared field defined before the constructor, or not), so
+// Node runs the file the model was translated from
+export function planOf(parent, candidate, unit, seed = 1, project = false) {
+  setFieldsProject(project);
+  const plan = inputPlan(parent, candidate, unit, { project, seed, values: null });
   setRoots(sideLocations(parent, candidate, { parent: findRoot(parent), candidate: findRoot(candidate) }));
   return plan;
 }
