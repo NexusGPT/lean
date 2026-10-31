@@ -4,7 +4,8 @@
 // value returned by an external call, a field of the receiver. Every operation on it is recorded on the trace
 // (get, call, construct, set) with the path of the value and a rendering of the arguments. Primitive demands
 // (arithmetic, string joining, truth tests) are answered from a seeded generator so both versions see the same
-// numbers and strings for the same demand sequence. A fake is never thenable: `await fake` yields the fake.
+// numbers and strings for the same demand sequence. A fake is never thenable: `await fake` yields the fake. (The
+// bridge fake for an unset global, exec/bridge.mjs, answers a call with a thenable: design/bridge-fake.md.)
 //
 // The trace is the oracle: two versions that ask the environment the same things in the same order, and return
 // structurally equal outcomes, agree. A candidate that asks something new, or reads a field the parent never read,

@@ -284,6 +284,8 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const tg = Array.isArray(R?.targets) ? R.targets : null, FIELDS = ['label', 'path', 'key', 'id', 'testid', 'role', 'name'];
     const tgOk = !!tg && tg.every((t) => J(Object.keys(t)) === J(FIELDS)) && want.targets.every((w) => tg.some((t) => J(t) === J(w))) && (want.targets.length !== 0 || tg.length === 0);
     add('pair', name, `render ${unit} targets ${want.targets.map((t) => t.label).join(', ') || 'none'}`, tgOk, tg ? tg.map((t) => J(t)).join(' ').slice(0, 300) || 'no targets' : 'no targets');
+    // the bridge calls the fake for an unset global answered and the callbacks it fired (design/bridge-fake.md): how much of the mount rested on fakes
+    if (want.bridge) add('pair', name, `render ${unit} bridge ${want.bridge.calls} call(s), ${want.bridge.callbacks} callback(s)`, R?.bridge?.calls === want.bridge.calls && R?.bridge?.callbacks === want.bridge.callbacks, R ? `bridge ${J(R.bridge ?? null)}` : 'no render row');
   }
   // the callee a WITNESS came through (exec/callees.mjs): a unit whose own text is equal on both sides names the changed same-file callees on its call path, with where.cause 'callee'; an empty list: the witness names none and keeps its own cause
   for (const [unit, want] of Object.entries(exp.through ?? {})) {
