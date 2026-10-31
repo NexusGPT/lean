@@ -200,7 +200,7 @@ function gen(m, t0, key, tick) {
     if (t.k === 'tuple') return D.Tuple.of(...t.items.map((x) => g(x, depth + 1)));
     if (t.k !== 'name') return opaqueValue(key);
     switch (t.name) {
-      case 'int': { const xs = [-1, 0, 1, 2, ...POOL.ints]; return new B(xs[rnd(xs.length)]); } case 'nat': { const xs = [0, 1, 2, ...POOL.ints.filter((x) => x >= 0)]; return new B(xs[rnd(xs.length)]); }
+      case 'int': case 'BigInt': { const xs = [-1, 0, 1, 2, ...POOL.ints]; return new B(xs[rnd(xs.length)]); } case 'nat': { const xs = [0, 1, 2, ...POOL.ints.filter((x) => x >= 0)]; return new B(xs[rnd(xs.length)]); }
       case 'real': return new D.BigRational(new B(rnd(7) - 3), new B(rnd(3) + 1));
       case 'bool': return rnd(2) === 1; case 'string': { const xs = ['', `o${rnd(5)}`, ...POOL.strings]; return D.Seq.UnicodeFromString(xs[rnd(xs.length)]); }
       case 'seq': return depth > 2 || rnd(2) ? D.Seq.of() : D.Seq.of(g(t.args[0], depth + 1));

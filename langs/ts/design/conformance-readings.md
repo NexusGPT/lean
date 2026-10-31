@@ -160,3 +160,32 @@ them differ.
   object may hold the member) and are not changed here.
 - A record copy's identity against its source goes to the guard (section 2); an array copy now does too (section 3).
 - The census is lint-only and the lint is not changed: the readings refuse nothing new.
+
+## 5. A bigint is a bigint to Node: the bridge keeps the model's BigInt (2026-10-31, lane conformance-disagree)
+
+The full conformance row at lead-30569d74 (all 278 pairs, `--jobs 8`): 1604 units, 595 executable, 510 agree, 85
+disagree, 7 of them new; red where v0.1.2 was green. 78 of the 85 are entries of `known-findings.json` and were all
+seen again (none vanished). The 7 new are units of five pairs added that night, each by its own merge:
+
+- `types_symbol_bigint` `fee`, `orElse` (merge 7bad5d153, lane types-form5-6-primitives), 60 of 60 runs: a defect of
+  the bridge, not of the model. The translator reads TypeScript's bigint as `type BigInt = int` (translate.mjs), a
+  synonym kept apart from a number read as int. The bridge resolved every synonym, so the model's `BigInt` result
+  reached the `int` comparison, which admits only a JavaScript number; lane B renders a bigint `{$bigint: digits}`,
+  never a number, so `1842n` against the model's 1842 read as a difference (and `causeOf`, seeing `$bigint`, named it
+  "past 2^53"). The bridge (`bridge.mjs isBigInt`) now stops resolving at that synonym: into the model it admits only a
+  bigint (a number is outside the domain: a number is no bigint), out of it the model's integer compares exactly with
+  the rendered digits. The product check draws a BigInt as an int (pair.mjs `gen`). The only other pair whose model
+  declares BigInt, `library_rows`, keeps every unit's status. Red before, green after: `LEAN_PAIRS=types_symbol_bigint
+  node conformance/run.mjs` exits 1 at the base (2 NEW), 0 at the fix (both units 60 agree).
+- `conditional_expressions` `note`, `plain` (merge 30569d746), `constructors` `metered` (8d4c27a9c),
+  `tuples_intersections` `entry` (9c3a9341a): the known class "signed-zero: model collapses -0". Each passes a drawn -0
+  on untouched (`t.total` on a ternary arm, a field of an argument the unit does not write, `new Meter(n).reading`,
+  `[p.name, p.age]`), and the int model has one zero. Entries added per unit, with the input that shows it.
+- `class_handles` `spill` (7100db7d9), parent only: the unit leaves the heap core (a handle's method in a loop) and the
+  value reading reads `const h = b; h.total = 1` as a write to a copy, so the model returns the drawn `b.total` where
+  Node returns 1. The translator says so itself: `// GUARD spill_parent: exposed "write through another name of an
+  input"`, and the guard withholds the lemma (expect `spill: false`, lane B WITNESS). The executable model is the value
+  reading, which holds no aliasing; the entry is the same kind as the array identity class. Known per unit.
+
+At the head: the row exits 0, every remaining disagreement a known finding with its class (see
+`lane/conformance-disagree-result.md`).
