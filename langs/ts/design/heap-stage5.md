@@ -472,6 +472,13 @@ Pair `arithmetic_core` (a real file): the proved units are `orflag`, `toint`, `n
 
 **Merged with 21b (2026-10-31).** Two lanes read the same rule the same night. The lead keeps one mechanism, 21b's: the operator stays in the text and only a non-exact operand is wrapped, as `Math.__lean_int32(x)`; the symbol `__lean_toint32` and the rewrite of the operator into a bv32 helper described above were replaced at the merge, so `bitwiseOf` reads `x | 0`, `~~x` and the other ToInt32 forms as one term on both sides. The pair `arithmetic_core` is kept and must stay green under the kept mechanism.
 
+**13, 2026-10-31 (lane fix-clearlow-lemma): `clearlow` and the parity of a length, proved.** The chain is now one inline
+bv32 term with one conversion at its top, the round trip between an integer and its bits is a proved postcondition of
+the conversions, and `x & (2^k - 1)` reads through the prelude lemma that the low bits of an integer are its remainder by
+2^k (`design/bitwise-lemmas.md`, with the Z3 4.12 limits each shape avoids). Pair `arithmetic_core`: `clearlow` proved,
+the new unit `lenparity` (`xs.length & 1` against `xs.length % 2`) proved, and the real lemmas of `nibble`, `uint` and
+`shift` proved as well.
+
 ## 14. Pure globals
 
 Reading: a global of the platform (never a name the file declares), each a function of its arguments: `Math.max` and
