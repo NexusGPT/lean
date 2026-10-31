@@ -1,0 +1,23 @@
+{
+ "scope": [
+  "greet",
+  "who",
+  "hi",
+  "size",
+  "circ"
+ ],
+ "equal": {
+  "greet": true,
+  "who": false,
+  "hi": true,
+  "size": true,
+  "circ": false
+ },
+ "why": "A same-file callee reads a reference parameter's cell through the constructors of the parameter's shape, so a call is in the heap core only when every cell its argument may hold is one of them (heap.mjs argShapeWhy; design/heap-stage5.md 17c). who passes a Person to greet(p: Named): the Person cell is another constructor, and the core read the name there as the prelude's default \"\", proving who equal to `return \"\"` (it was proved before the rule). Now the call keeps who out of the core, and greet and hi with it (one calling convention per callee): the value reading does not prove who (WITNESS); hi and greet are proved there. circ passes a Circle to size(s: Shape), a union whose alternatives' constructors include Circle's: the rule keeps circ and size in the core (HEAP: circ,size, as at base). circ is not proved there, at base as now: its hypothesis IsR_<Circle>(hw_, c) does not state the alternative's discriminant value (`kind == \"c\"`), so size may read the other branch (reported in lane/fix-destructured-aliases-result.md, not this reading).",
+ "b": {
+  "who": "WITNESS",
+  "hi": "PASS-bounded",
+  "circ": "PASS-bounded"
+ },
+ "heap": true
+}

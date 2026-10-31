@@ -145,11 +145,18 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     }
     return { s, els };
   };
-  // a call of a generic same-file unit: an argument for a parameter typed by a type parameter must hold the bound's own
-  // shape, since the callee reads its cell through the bound's constructor (a wider record is another constructor)
-  const genericArgWhy = (e) => {
-    const name = ts.isCallExpression(e) && ts.isIdentifier(e.expression) ? e.expression.text : null; const cu = name && fns.get(name); if (!cu || !unitTypeParameters(checker, cu).length) return null;
-    for (const [i, p] of cu.params.entries()) { const ps = shapeOf(typeOf(p.name)); const a = e.arguments[i]; if (!ps || !a || !isRefShape(ps)) continue; const as = shapeOf(typeOf(a)); if (!as || keyOf(as) !== keyOf(ps)) return 'an argument of another shape for a generic unit (its cell would be read through the bound\'s constructor)'; }
+  // a call of a same-file unit (a function, a method, a constructor): the callee reads a reference parameter's cell
+  // through the constructors of the parameter's shape, so every cell the argument may hold must be one of them. A wider
+  // record (a `Person` for a `Named`, a subclass for its base, a type parameter's argument for its bound) is another
+  // constructor, and the reads there would be the prelude's defaults. A union reads each alternative's constructor; a
+  // handle's cell is never read through one (its method calls are world transitions)
+  const cellsOf = (s) => (s.kind === 'union' ? s.alts.map((a) => a.shape.key) : [s.key]);
+  const argShapeWhy = (cu, args) => {
+    for (const [i, p] of cu.params.entries()) {
+      const ps = shapeOf(typeOf(p.name)); const a = args[i]; if (!ps || !a || !isRefShape(ps) || ps.kind === 'handle') continue;
+      const as = shapeOf(typeOf(a)); const reads = new Set(cellsOf(ps));
+      if (!as || !isRefShape(as) || !cellsOf(as).every((k) => reads.has(k))) return `an argument of another shape than its parameter (${p.name.getText(cu.fn.getSourceFile())}: its cell would be read through the parameter's constructor)`;
+    }
     return null;
   };
   // a discriminated union of records `A | B`: every alternative a record, and one field every alternative declares as
@@ -611,7 +618,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (s.kind === 'rec' && fieldOf(s, e.name.text).shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') usesIndex = true; // a narrowed read: its lemma shows the value is there
         return checkExpr(e.expression);
       }
-      if (newClass(e)) { const cd = newClass(e); if (lambdaDepth) return no('allocation inside a callback'); const cw = ctorWhy(cd); if (cw) return no(`constructor: ${cw}`); if (ctorOf(cd) && !ctorUnitOf(cd)) return no('constructor unit'); if (!ctorUnitOf(cd)) for (const m of fieldInits(cd)) checkExpr(m.initializer); for (const a of e.arguments ?? []) checkExpr(a); return; } // a construction
+      if (newClass(e)) { const cd = newClass(e); if (lambdaDepth) return no('allocation inside a callback'); const cw = ctorWhy(cd); if (cw) return no(`constructor: ${cw}`); if (ctorOf(cd) && !ctorUnitOf(cd)) return no('constructor unit'); if (ctorUnitOf(cd)) { const aw = argShapeWhy(fns.get(ctorUnitOf(cd)), e.arguments ?? []); if (aw) return no(aw); } if (!ctorUnitOf(cd)) for (const m of fieldInits(cd)) checkExpr(m.initializer); for (const a of e.arguments ?? []) checkExpr(a); return; } // a construction
       if (copyForm(e)) { if (lambdaDepth) return no('allocation inside a callback'); return checkExpr(copyForm(e).src); } // a fresh cell with the source's contents
       if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && !e.questionDotToken && e.expression.name.text === 'get' && e.arguments.length === 1 && shapeOf(typeOf(e.expression.expression))?.kind === 'map') { const s = shapeOf(typeOf(e.expression.expression)); if (s.v.kind !== 'prim' || shapeOf(typeOf(e))?.kind !== 'opt') return no('get of a reference value (an absent reference is not read)'); checkExpr(e.expression.expression); return checkExpr(e.arguments[0]); } // a value or absent
       if (ts.isNewExpression(e) && ts.isIdentifier(e.expression) && (e.expression.text === 'Map' || e.expression.text === 'Set') && !(e.arguments ?? []).length) { if (!shapeOf(typeOf(e))) return no(`new ${e.expression.text} type: ${shapeWhy(typeOf(e))}`); return; } // an empty cell
@@ -670,7 +677,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (!spread && s.fields.some((f) => !given.has(f.name) && !(f.shape.kind === 'opt' && f.shape.absent === 'u'))) return no('object literal misses a field'); // an optional field may be missing
         return;
       }
-      if (calleeOf(e, u)) { const gw = genericArgWhy(e); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); return; }
+      if (calleeOf(e, u)) { const gw = argShapeWhy(fns.get(calleeOf(e, u)), e.arguments); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); return; }
       if (outsideCall(e)) { if (lambdaDepth) return no('a call outside the file inside a callback'); callsOut = true; if (outsideCall(e).recv) checkExpr(outsideCall(e).recv); for (const a of e.arguments) checkExpr(a); return; } // a world transition
       if (globalCall(e)) { const g = globalCall(e); if (g === 'Object.keys' && lambdaDepth) return no('allocation inside a callback'); const fd = (g === 'Math.floor' || g === 'Math.trunc') ? floorDiv(e) : null; if (fd) { if (lambdaDepth) return no('division inside a callback'); usesIndex = true; checkExpr(fd.left); return checkExpr(fd.right); } for (const a of e.arguments) checkExpr(a); return; } // a pure global
       if (reCall(e)) { const rc = reCall(e); if (rc.m === 'split' && lambdaDepth) return no('allocation inside a callback'); if (isReal && rc.m === 'search') return no('search in a real file'); checkExpr(rc.s); if (rc.r) checkExpr(rc.r); return; } // a regular expression literal: uninterpreted
@@ -770,7 +777,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           }
           if (isAssignCall(e) && assignLiterals(e)) { const al = assignLiterals(e); if (al.why) return no(al.why); checkExpr(e.arguments[0]); for (const x of al.writes) checkExpr(x.value); continue; } // literal sources: field writes on the target's node
           if (isAssignCall(e)) return no('assign of a source whose keys are not known exactly (a record value may carry keys its type does not name, and Object.assign copies them)'); // the table's same-shape row read only the declared fields: a false proof against field-by-field writes
-          if (calleeOf(e, u)) { const gw = genericArgWhy(e); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); continue; }
+          if (calleeOf(e, u)) { const gw = argShapeWhy(fns.get(calleeOf(e, u)), e.arguments); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); continue; }
           if (outsideCall(e)) { checkExpr(e); continue; } // a transition as a statement: its world kept, its result dropped
           return no(ts.isCallExpression(e) ? (ts.isPropertyAccessExpression(e.expression) ? `call .${e.expression.name.text}` : 'call outside the file') : `expression statement ${K[e.kind]}`);
         }
@@ -1489,6 +1496,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     for (const u of units) {
       const pos = new Map(); u.params.forEach((q, i) => { if (ts.isIdentifier(q.name)) pos.set(q.name.text, i); });
       const alias = new Map(); // local -> the parameter position its value is a path of
+      u.params.forEach((q, i) => { if (!ts.isIdentifier(q.name)) for (const { name } of boundNames(q.name)) alias.set(name.text, i); }); // a destructured parameter's names are paths of its argument
       const at = (x) => { const r = rootOf(x); if (!ts.isIdentifier(r)) return null; return pos.has(r.text) ? pos.get(r.text) : alias.has(r.text) ? alias.get(r.text) : null; };
       const mark = (x) => { const i = at(x); if (i !== null && unparen(x) !== rootOf(x)) out.get(u.name).add(i); };
       const calls = [];
@@ -1496,7 +1504,6 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (ts.isVariableDeclaration(n) && n.initializer && at(n.initializer) !== null) for (const { name } of boundNames(n.name)) alias.set(name.text, at(n.initializer));
         for (const { name } of elementNames(n, (x) => at(x) !== null)) alias.set(name.text, at(ts.isForOfStatement(n) ? n.expression : n.expression.expression));
         if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) mark(n.left);
-      u.params.forEach((q, i) => { if (!ts.isIdentifier(q.name)) for (const { name } of boundNames(q.name)) alias.set(name.text, i); }); // a destructured parameter's names are paths of its argument
         if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) mark(n.operand);
         if (ts.isDeleteExpression(n)) mark(n.expression);
         if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text)) { const i = at(n.expression.expression); if (i !== null) out.get(u.name).add(i); }
