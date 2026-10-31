@@ -164,8 +164,9 @@ not give, `m.groups` held in a name, passed or destructured (`const { k } = m.gr
 strings), `m.groups["k"]`, `m!.groups`, a pattern held in a name, a global or sticky pattern. A unit of the heap core
 that matches stays out of the heap core (`match` and `exec`, above) and is read by the value reading.
 Found, not fixed (outside this note's construct): the numbered captures carry the same undefined, `m[1]` of
-`/(a)|(b)/` on `"b"`; the match reads as `seq<string>`, so `m[1] ?? "z"` translates as `m[1]` and lane A can prove a
-change lane B witnesses (both lanes on the pair `a.ts`/`b.ts` of the lane result).
+`/(a)|(b)/` on `"b"`; the match reads as `seq<string>`, so `return m[1] ?? "z"` and `return m[1]` translate to the
+same Dafny body while JavaScript returns `"z"` and undefined: a proof lane B contradicts (lane B finds the WITNESS on
+input `"b"`). The same parse (`regexCaptures`) decides it for `m[i]`, i a literal.
 Pair `regular_expressions`: `isCode` (the same literal on a renamed string compared with true: proved), `tidy` (another
 replacement: WITNESS), `year` (`!m || !m.groups` then `m.groups.y`, against `m?.groups?.y ?? ""`: proved), `month`
 (another named capture of the same match: WITNESS). Lint: the escape fixture `library_members_match_groups` now holds
