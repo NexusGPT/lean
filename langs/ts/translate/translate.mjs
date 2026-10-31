@@ -2507,6 +2507,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     if (t.flags & TF.StringLike) return `(|${expr(n)}| > 0)`;
     if (t.flags & (TF.NumberLike | TF.BigIntLike)) return `(${expr(n)} != ${real ? '0.0' : '0'})`;
     if (isNullish(t)) return 'false';
+    // a value read opaque though its type is no `any` (a union no sum reads, holding 0, 0n or ""; a type parameter) has
+    // the opaque truth valueTruth gives it, uninterpreted: no static truth holds of every one of its values
+    { const d = dtype(t, n); if (d === 'Any' || unitTParams().includes(d)) return valueTruth(expr(n), d); }
     return 'true';
   }
 
