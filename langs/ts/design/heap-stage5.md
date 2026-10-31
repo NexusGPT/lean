@@ -625,6 +625,24 @@ the value lane's cell: proved), `counted` (value lane) and `named` (heap core) r
 (unproved, WITNESS; `counted` was a false proof before), `limited` and `next` (the same import: proved), `relayed` and
 `step` (the same declaration through a re-export, heap core: proved; unproved before). Lint: unchanged.
 
+### 9c. A member of a namespace import (2026-10-31, lane ledger-added-files)
+
+Defect: the heap core read an imported name only as an identifier, so a unit reading `ns.X` (`import * as ns`, or
+`import ns = require(..)`) or calling `ns.f(..)` was kept out of the core ("receiver type") and fell to the value lane,
+which names the member by the namespace's module and the member's text (`ns_Imp_<module>_X`): `ns.X` against `import
+{ X }`, or against `lib.X` through a module that re-exports X, was never proved.
+Reading: a namespace member is the binding it denotes (`common.mjs importMemberIdentity`): the module that declares X
+and its name there, read through every re-export, the identity `importIdentity` gives `import { X }` of the same module
+(ECMA-262 GetModuleNamespace: a namespace's property X is the binding ResolveExport(X) gives, the one a named import of X
+links to). The heap core keys it as a named import of X (`Imp_X_<identity>` for a primitive read, `Call_X_<identity>..`
+for a call), so `ns.X`, `import { X }` and `lib.X` are one constant, one transition; `ns.X` and `ns.Y` are two. A bare
+specifier, or a relative one that does not resolve, keeps its text and X; a type-only namespace, an optional or
+computed member, a member the module does not export: no key, unread as before. The value lane is unchanged (its name
+for `ns.X` is still the namespace's module and X: sound, another symbol at worst).
+Pair `module_scope`: `spaced` (`ns.LIMIT` both sides: proved), `tagged` (`ns.FIRST`, then `ns.SECOND`: unproved,
+WITNESS), `routed` (`ns.LIMIT`, then `lib.LIMIT` through the re-export), `joined` (`LIMIT` by name, then `ns.LIMIT`),
+`grown` (`ns.grow(..)`, then `lib.grow(..)`): proved; the last three unproved before.
+
 ## 11. Array callbacks and the other array methods
 
 Reading: beside `map` and `filter`, a pure one-parameter callback with an expression body is read for `some` and

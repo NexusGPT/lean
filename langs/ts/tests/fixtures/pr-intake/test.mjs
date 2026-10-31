@@ -20,17 +20,22 @@ export function testIntake() {
     assert.equal(run.status, 0, run.stderr);
     const report = JSON.parse(fs.readFileSync(json, 'utf8'));
     const rows = report.rows;
-    assert.deepEqual(report.stop, { reason: 'none', reached: 4, total: 4 }); // plain.js is a unit row now (refused untyped-js), its lane B run spent
+    assert.deepEqual(report.stop, { reason: 'none', reached: 5, total: 5 }); // plain.js is a unit row now (refused untyped-js), its lane B run spent; added.ts's module unit is run too
     const want = {
       // non-unit edits come from the change ledger: artifact rows by kind or class, unassigned rows by named reason
       '.env': 'artifact:secret-path', 'image.bin': 'artifact:binary', 'inside.ts': 'checked',
       'loader.ts': 'failed:loader', 'plain.js': 'refused:untyped-js', 'refused.ts': 'refused:alias-mutation',
-      'gone.ts': 'removed',
+      'gone.ts': 'removed', 'added.ts': 'checked',
     };
     console.log('JSON rows: ' + JSON.stringify(rows.map(({ file, unit, coverage }) => ({ file, unit, coverage }))));
-    assert.equal(rows.length, 7, 'every changed fixture unit has a row, including .env and the deleted gone.ts');
+    assert.equal(rows.length, 8, 'every changed fixture unit has a row, including .env, the deleted gone.ts and the added added.ts');
     assert.deepEqual(Object.fromEntries(rows.map((r) => [r.file, r.coverage])), want);
-    assert.equal(new Set(rows.map((r) => r.coverage)).size, 7);
+    assert.equal(new Set(rows.map((r) => r.coverage)).size, 7); // added.ts and inside.ts are both checked
+    // a file the parent does not have: its top-level statements are its module unit's (common.mjs MODULE_UNIT), never an
+    // unassigned row; lane B evaluates it alone, as a function the parent does not hold is run: NEW, no equality claim
+    const added = rows.find((r) => r.file === 'added.ts');
+    assert.deepEqual([added.unit, added.lines, added.verdict, added.laneB, added.coverage], ['(module)', [1, 2], 'NEW', 'NEW', 'checked']);
+    assert.ok(added.editIds.length === 2 && !rows.some((r) => r.file === 'added.ts' && r.decision === 'unassigned'), 'both added lines are the module unit\'s');
     // a unit of a deleted file is a row of its own: the parent's name and lines, no lane, no verdict, no unit spent
     const gone = rows.find((r) => r.file === 'gone.ts');
     assert.deepEqual([gone.unit, gone.lines, gone.decision, gone.verdict, gone.reason], ['gone', [1, 1], 'removed', null, 'present at the parent, absent at the head']);
@@ -48,14 +53,14 @@ export function testIntake() {
     // a ledger row is decided at intake (ASK with its reason); a unit row waits for its lanes
     assert.ok(intake.every((r) => r.coverage && r.decision && r.reason && r.verdict === (['artifact', 'unassigned'].includes(r.decision) ? 'ASK' : null)));
     // the two units a full run would check end the preview as a terminal row, `skipped:preview` (never a non-terminal `pending`)
-    assert.equal(intake.filter((r) => r.coverage === 'skipped:preview').length, 2);
+    assert.equal(intake.filter((r) => r.coverage === 'skipped:preview').length, 3);
     // the removed unit names the deletion edits of the change ledger that route to it
     const { editIds: goneEdits, ...goneRow } = intake.find((r) => r.file === 'gone.ts');
     assert.ok(Array.isArray(goneEdits) && goneEdits.length > 0, 'the removed unit carries its edit identities');
     assert.deepEqual(goneRow, { file: 'gone.ts', unit: 'gone', lines: [1, 1], coverage: 'removed', decision: 'removed', verdict: null, reason: 'present at the parent, absent at the head', advice: [] });
     assert.equal(fs.readFileSync(audit, 'utf8'), '', 'no lane process, sandbox, or secret read');
     assert.ok(!preview.stdout.includes('## Verdicts') && preview.stdout.includes('| coverage | decision | reason |'));
-    console.log('Preview: 7 matching rows; 2 skipped:preview; 0 lane processes; 0 sandbox executions; 0 secret reads');
+    console.log('Preview: 8 matching rows; 3 skipped:preview; 0 lane processes; 0 sandbox executions; 0 secret reads');
     for (const file of ['.env', 'nested/.env.local', 'a.pem', 'a.key', 'id_rsa.pub', 'a.p12', 'a.pfx', 'a.jks']) assert.ok(secretPath(file), file);
     assert.ok(!secretPath('environment.ts'));
     const changes = Object.freeze([Object.freeze({ file: 'a.ts', units: Object.freeze([Object.freeze({ name: 'a', start: 1, end: 1, findings: Object.freeze([]) })]) })]);
@@ -87,7 +92,7 @@ export function testIntake() {
       assert.ok(skipped.every((r) => r.reason === `stop at unit ${partial.stop.reached + 1} of ${partial.stop.total}`));
       assert.match(result.stdout, new RegExp(`stopped: ${reason} after ${partial.stop.reached} of ${partial.stop.total} units`));
       assert.deepEqual(partial.order.map((g) => g.group), ['changed', 'callers', 'heap']);
-      assert.deepEqual(partial.order[0].units.map((u) => u.unit), ['inside', 'loader', 'plain', 'refused']);
+      assert.deepEqual(partial.order[0].units.map((u) => u.unit), ['(module)', 'inside', 'loader', 'plain', 'refused']);
       assert.deepEqual(partial.order[2].units, []);
       console.log(label + ' budget JSON: ' + JSON.stringify({ stop: partial.stop, skipped: skipped.map(({ file, unit, coverage, reason }) => ({ file, unit, coverage, reason })) }));
     }
@@ -96,7 +101,7 @@ export function testIntake() {
     for (const [block, code] of [['ask', 1], ['witness', 1], ['none', 0]]) {
       const result = spawnSync(process.execPath, [comment, ...args, '--unit-budget', '0', '--max-functions', '1', '--block', block, '--json', stoppedJSON], { encoding: 'utf8' });
       assert.equal(result.status, code, result.stderr);
-      assert.match(result.stdout, /<sub>.*stopped: unit-budget after 0 of 4 units/);
+      assert.match(result.stdout, /<sub>.*stopped: unit-budget after 0 of 5 units/);
       if (block !== 'none') assert.match(result.stderr, /::error::lean stopped: unit-budget/);
       console.log('comment --block ' + block + ': EXIT ' + result.status);
     }
@@ -156,7 +161,7 @@ export function testIntake() {
       assert.notEqual(unitKey(keyParts), unitKey({ ...keyParts, flags: { ...keyParts.flags, [key]: 'changed' } }), key);
     }
     testRunIdentity();
-    return '7 rows; 7 coverage values; preview has no lane process; refusal keeps WITNESS; budgets and comment stops pass';
+    return '8 rows; 7 coverage values; an added file\'s module unit is NEW; preview has no lane process; refusal keeps WITNESS; budgets and comment stops pass';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

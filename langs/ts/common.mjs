@@ -700,13 +700,40 @@ export function importIdentity(checker, id) {
   const unresolved = `${spec}\u0000${imported}`;
   if (!spec.startsWith('.')) return unresolved;
   let target = null; try { target = checker.getAliasedSymbol(sym); } catch { return unresolved; }
-  const decl = target?.declarations?.[0]; if (!decl) return unresolved;
-  const file = ts.isSourceFile(decl) ? decl : decl.getSourceFile(); if (!file) return unresolved;
+  return declaredIdentity(target, id, imported === '*') ?? unresolved;
+}
+// the declaring module of a resolved symbol, named from the file `at` reads it in, and its name there (`*`: the module)
+function declaredIdentity(target, at, whole) {
+  const decl = target?.declarations?.[0]; if (!decl) return null;
+  const file = ts.isSourceFile(decl) ? decl : decl.getSourceFile(); if (!file) return null;
   const strip = (p) => p.replace(/\\/g, '/').replace(/\.d\.[cm]?ts$|\.[cm]?[jt]sx?$/, '');
-  const at = file.fileName.replace(/\\/g, '/'), nm = at.lastIndexOf('/node_modules/');
-  const where = nm >= 0 ? `pkg:${strip(at.slice(nm + '/node_modules/'.length))}` : strip(path.posix.relative(path.posix.dirname(id.getSourceFile().fileName.replace(/\\/g, '/')), at));
-  const name = ts.isSourceFile(decl) || imported === '*' ? '*' : target.name; // a namespace or `import x = require(..)` is the module itself
+  const to = file.fileName.replace(/\\/g, '/'), nm = to.lastIndexOf('/node_modules/');
+  const where = nm >= 0 ? `pkg:${strip(to.slice(nm + '/node_modules/'.length))}` : strip(path.posix.relative(path.posix.dirname(at.getSourceFile().fileName.replace(/\\/g, '/')), to));
+  const name = ts.isSourceFile(decl) || whole ? '*' : target.name; // a namespace or `import x = require(..)` is the module itself
   return `${where}\u0000${name}`;
+}
+
+// The binding a member of a namespace import denotes (`ns.X` for `import * as ns`, or `import ns = require(..)`;
+// 2026-10-31, lane ledger-added-files): the module that declares X and its name there, read through every re-export,
+// exactly as importIdentity names `import { X }` from the same module (ECMA-262 GetModuleNamespace: a namespace
+// object's property X is the binding ResolveExport(X) gives, the one a named import of X links to). So `ns.X`, `lib.X`
+// through a module re-exporting it, and `import { X }` are one binding; `ns.X` and `ns.Y` are two. A bare specifier, or
+// a relative one that does not resolve, keeps its text and X. Null for anything else: a name not bound by a namespace
+// import, a computed or optional member, a member the module does not export.
+export function importMemberIdentity(checker, access) {
+  if (!ts.isPropertyAccessExpression(access) || access.questionDotToken || !ts.isIdentifier(access.expression) || !ts.isIdentifier(access.name)) return null;
+  let sym = null; try { sym = checker.getSymbolAtLocation(access.expression); } catch { return null; }
+  const d0 = sym?.declarations?.[0];
+  if (!d0 || !(ts.isNamespaceImport(d0) || ts.isImportEqualsDeclaration(d0))) return null;
+  if (importIdentity(checker, access.expression) === null) return null; // `import x = A.B` names no module
+  let imp = d0; while (imp && !ts.isImportDeclaration(imp) && !ts.isImportEqualsDeclaration(imp)) imp = imp.parent;
+  const spec = (ts.isImportDeclaration(imp) ? imp.moduleSpecifier : imp.moduleReference.expression).text;
+  let member = null; try { member = checker.getSymbolAtLocation(access.name); } catch { member = null; }
+  if (!member) return null; // the module exports no such name
+  const unresolved = `${spec}\u0000${access.name.text}`;
+  if (!spec.startsWith('.')) return unresolved;
+  let target = member; try { if (member.flags & ts.SymbolFlags.Alias) target = checker.getAliasedSymbol(member); } catch { return unresolved; }
+  return declaredIdentity(target, access, false) ?? unresolved;
 }
 
 /** The value of an infinity spelling: +1 for the global `Infinity` and `Number.POSITIVE_INFINITY`, -1 for
