@@ -1,0 +1,33 @@
+{
+ "scope": [
+  "deep_leaf",
+  "deep_changed",
+  "shape_of",
+  "shape_changed",
+  "has_child",
+  "has_grandchild",
+  "second",
+  "second_changed"
+ ],
+ "equal": {
+  "deep_leaf": true,
+  "deep_changed": false,
+  "shape_of": true,
+  "shape_changed": false,
+  "has_child": true,
+  "has_grandchild": false,
+  "second": true,
+  "second_changed": false
+ },
+ "why": "A type is read as it is whatever its depth, and a type that recurs on its own descent is read by the datatype name a record reserved, else opaque (design/types-depth.md). deepLeaf: the parameter is ten records deep (L0 to L8, then Line, then string | null); the candidate reads the same leaf through a local naming the fifth level: proved (at the base the depth bound refuses the type: no lemma). deepChanged: the candidate reads the leaf's sibling `other`: not proved; lane B witnesses a value whose two leaves differ. shapeOf: n8n's JsonValue, a union of primitives, a dictionary and an array of itself, is opaque before any descent (the base reads it so too); the candidate inverts the array test: proved. shapeChanged: the candidate calls an element nested when it is any object, an array of a JSON object among them: not proved; lane B witnesses [{}]. hasChild: Tree is a dictionary of itself, whose descent meets itself with no record between: opaque (at the base the depth bound refuses it); the candidate names the test first: proved. hasGrandchild: the candidate drops the test of a child's own keys: not proved; lane B witnesses a Tree with one empty child. second: Stream<string> is a callable returning a tuple holding itself: opaque, and a call of it is a call of an opaque value (at the base refused); the parent names the first step, the candidate reads the rest from the call (every call is through a name: a computed callee is another rule): proved. secondChanged: the candidate reads the third head: not proved; lane B witnesses a stream whose heads differ.",
+ "b": {
+  "deepLeaf": "PASS-bounded",
+  "deepChanged": "WITNESS",
+  "shapeOf": "PASS-bounded",
+  "shapeChanged": "WITNESS",
+  "hasChild": "PASS-bounded",
+  "hasGrandchild": "WITNESS",
+  "second": "PASS-bounded",
+  "secondChanged": "WITNESS"
+ }
+}

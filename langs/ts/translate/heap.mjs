@@ -28,6 +28,7 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { originOf } from '../common.mjs';
+import { unitTypeParameters } from '../common.mjs'; // a unit's own type parameters and the enclosing ones it reads
 import { builtRecord } from '../common.mjs'; // the record-node build takes a spread of a record the unit built (open-datatype)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
@@ -487,7 +488,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (u.isCtor) { const w = classWhy(u.cls); if (w) no(`class: ${w}`); else if (!instanceShape(u.cls, 0)) no('class: a field without a shape'); else { const cw = ctorWhy(u.cls); if (cw) no(`constructor: ${cw}`); } } else if (u.accessor) no('accessor'); else if (u.cls && u.isStatic) no('static method');
     else if (u.cls) { const w = classWhy(u.cls); if (w) no(`class: ${w}`); else if (!instanceShape(u.cls, 0)) no('class: a field without a shape'); } // an instance method: `this` is a reference to the record of the class's fields
     if (u.fn.asteriskToken || u.isAsync) no('generator or async');
-    if (u.generics?.length) no('generic');
+    if (unitTypeParameters(checker, u).length) no('generic');
     if (recursive.has(u.name)) no('recursive');
     if (!ok) return false;
     const names = new Set(); let lambdaDepth = 0; let usesIndex = false; const loopCalls = new Set(); let callsOut = false;

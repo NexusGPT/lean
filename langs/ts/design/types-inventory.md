@@ -119,6 +119,8 @@ parameters (`unitTParams`). A method of `C<T>` is parametric in `T` exactly as `
 for the call. It is sound for the reason a generic function's reading is: a proof over an arbitrary `T` holds at each
 instance. The theorem generator has to quantify the pair's `T` the same way it does for a generic unit.
 
+Read on 2026-10-30: [Form 2, read](#form-2-read-2026-10-30).
+
 ### 3. A recursive type through a generic or a callable (269 units)
 
 A type recurs on its own descent where the mapper keeps no name: a generic instantiation (each level a new
@@ -196,6 +198,16 @@ refusal came from a local inside it. n8n 7, nexus 9, pipedream 1, pyka 1: n8n `p
 are presumably forms 1 or 3. That is not shown. If the nesting message named its outermost type, the next census
 would say.
 
+## Forms 1 and 3 read (2026-10-30, lane A7a)
+
+The depth bound is gone: `dtype` keeps the descent path, reads a finite type at any depth, reads a type met again by
+the name a record reserved, and reads opaque a type that recurs with no record on its loop (and each type on that
+loop) or a generic instance grown from its own. The reading, its soundness and its pair: [types-depth.md](types-depth.md).
+One correction to the split above: the n8n site named under form 3 (`WaitingWebhooks.ts:114`) is a finite chain
+ten levels deep (IRunExecutionData > ... > ITaskSubRunMetadata > string), not a recursion of `JsonValue`: the walk
+descends union members that `dtype` never reaches (`JsonValue` is opaque at its union before any descent). Other
+form 3 counts may hold such sites too.
+
 ## Order for the readings (step 2)
 
 By units, and by how many roots each reading reaches:
@@ -211,3 +223,98 @@ The figure the plan quotes (7.8 percent) came from an earlier census. On this he
 language-refused units over the 40 roots, and it is the top rule on no root. "The three roots where it is the top rule"
 no longer exist, so step 2's census check is best stated per form: the units of each form fall to zero on the roots
 that hold them (n8n, nexus, langchainjs above all).
+
+## Form 2, read (2026-10-30)
+
+Lane A7b (branch `lane/A7b-types-enclosing-params`) writes the reading form 2 needs. Its pair is
+`tests/pairs/types_enclosing_params`.
+
+**The rule.** A unit's type parameters are those of the declarations around it that the unit reads, outermost first,
+followed by its own (common.mjs `unitTypeParameters`).
+- The declarations around a unit are every enclosing function, method, arrow and function expression, and the
+  enclosing class unless the unit sits in a static member, which cannot name them (`enclosingTypeParameters`). Type
+  parameters are lexical, so a callback inside a callback inside `f<T>` sees `T`, and so does a function expression.
+  The earlier `lexicalGenerics` saw one level, and only from an arrow.
+- A unit reads a parameter when one of these mentions that very declaration: the checker's type of one of its nodes,
+  or the type a name's symbol declares. A parameter is matched by its declaration (its file and position), never by its
+  name, so a method's own `T` is not its class's `T`. `super` is not walked, as `this` is not: what a unit reads of its
+  receiver is the names it reads on it. The second covers a field read through `this`: the checker types `this.kind` of `abstract readonly
+  kind: TKind` at TKind's constraint where it is read, while the translator reads the field's declared type through
+  its accessor.
+- A constructor also reads the instance field initialisers it runs (`items: T[] = []`).
+- The walk goes through union and intersection members, a reference's type arguments, an anonymous object's members,
+  and a signature's parameters and result.
+
+Each such parameter becomes one Dafny type parameter `T(==)` of the unit's function, exactly as a generic function's
+own are. The theorem generator copies the lemma's type parameters from the function's signature, so
+`Equal_<unit><T(==)>` quantifies the pair's `T`.
+
+**Why it is sound.** A method of `C<T>` is parametric in `T` as `f<T>` is: every call fixes `T` once, through its
+receiver or its arguments. A proof over an arbitrary `T` (only equality is known of it) therefore holds at each
+instance. A constraint (`T extends Row`) is read as today's generic reading reads it: a member of `T` is one
+uninterpreted field read through the constraint (translate.mjs, stage 5 rank 17), the same on both sides.
+
+**Why only the ones it reads.** A method of a generic class that never meets `T` keeps its reading unchanged. It stays
+in the heap core, and it does not become a "generic" unit that the heap core (heap.mjs), the generator reading
+(generators.mjs) or a named callback would refuse. Those three now ask `unitTypeParameters` whether a unit is generic.
+
+**What else had to change for a parameter to stay declared and determined.** Each of these is a gap of the generic
+reading that the new units exercise. Some generic functions already hit them on base.
+- *A helper over a type parameter.* A prelude helper built over it (`Slice_T`, `Map_T_bool` in `f<T>`) takes the
+  clause an external takes (`tclause`), on each function and lemma it declares.
+- *A record instantiated at a type parameter.* `Holder<D>` in `Holder.constructor` is a datatype generic in the
+  parameters its fields name (`datatype Holder_3t29<D(==)>`), and every reference passes them (`Holder_3t29<D>`). The
+  name already carried the instantiation's arguments, so `Holder<number>` stays its own datatype.
+- *A name held at a type parameter, read at its constraint.* The checker types the read of `y` (declared `T`, with `T
+  extends "a" | "b"`) at the constraint where a literal union is expected. The translator now reads it at `T`, the type
+  the Dafny variable holds (`typeOf`, `heldAtTypeParameter`, also for a field read through `this`), and the existing
+  cast converts it to the constraint where one is expected. On base, `const y = x; return y` wrote `var y: T := x; y`
+  for a `string` result. That is a Dafny resolution error, which cost every unit of the file its proof.
+- *A type parameter no argument names* (one read only in the body or the result, as `TKind` above). Dafny cannot infer
+  it at a call, so it is named. theorem.py's lemma calls of the unit's functions pass the lemma's own parameters
+  (`pass_type_args`). An external whose result alone names a parameter is called with the unit's parameters
+  (`ext_kind<TKind>(self)`).
+
+**A call signature's own type parameter.** A generic function held as a value (`type Parse = <O>(text: string,
+options?: O) => string`, a library's `createAgent` read by `typeof`, a literal's generic method) has a type parameter
+that is neither the unit's nor around it. No Dafny arrow is polymorphic, and every call of the value is instantiated
+where it is written. So the parameter is read opaque (`Any`), its values uninterpreted as every opaque value is. A
+class's, interface's or alias's type parameter stays refused, and so does the polymorphic `this`.
+
+**A refusal it adds.** A unit that reads both an inner type parameter and an outer one of the same name (`class
+Box<T> { item: T; m<T>(a: T) { ... this.item ... } }`) would read two types as one Dafny `T`. It is refused under
+`types` with the message `type parameter T hides another of the same name` (readings.mjs). A unit that reads only
+its own `T` is read as usual (the pair's `shelf_alike`).
+
+**What it does not cover.** The polymorphic `this` type (form 4) is a type parameter the checker names after the
+class. It is not a declaration's type parameter, so it is still refused with the form-2 message, and the inventory
+script counts it under form 4. A commuted test inside a loop is not proved from the bodies alone, with or without a
+type parameter. The pair's `shelf_count` row records it.
+
+**Where the change sits.** In `dtype` it is only the TypeParameter branch, plus the parameter collection
+(`unitTParams`). Outside `dtype`: `helper` and `external` (the type-parameter clause), `recordType`'s naming and
+reference, and `typeOf`. Lane A7a's depth and recursion branches of `dtype` are untouched. Merging with A7a, the place
+to look is `recordType`: both lanes may edit it, this lane only its last lines (the datatype's type parameters).
+
+**The census.**
+Base is lean master 5f96f554 (`git archive` into its own folder); head is this lane's e90440d9. Every census:
+`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs /root/da/census/repos/<root> --out <json>`, run from
+each tree. Form 2 is counted by `node langs/ts/design/types-inventory.mjs <json>...`. A full nexus census did not
+finish in two hours on the inventory's run, so nexus is censused in the 26 directories that hold every form-2 finding
+of that run (`--include <dir>/`, one run per directory, 8,475 units). Those are not whole-root totals for nexus.
+
+| Root | Units | Form 2 | Stopped by `types` | Language-refused | Readings that lose a unit |
+| --- | ---: | ---: | ---: | ---: | --- |
+| langchainjs | 6,709 | 152 → 0 | 270 → 124 | 3,232 → 3,127 | none |
+| n8n | 9,610 | 27 → 0 | 434 → 407 | 5,247 → 5,229 | none |
+| nexus (26 directories) | 8,475 | 110 → 0 | 422 → 314 | 2,885 → 2,791 | none |
+
+Where the form-2 units went (the unit's refusal at head, its first finding's rule):
+- langchainjs (152): 105 admitted. 6 stop on the polymorphic `this` of a class (form 4: `RunnableRetry` 2,
+  `DictPromptTemplate`, `RunnableEach`, `RunnableLambda`, `RunnablePick`). The others stop on `copied-argument` 20,
+  `read-after-call` 16, `reference-key` 2 and `names` 3 (a function named as a value: `JSON.parse` 2, `createAgent`).
+- n8n (27): 18 admitted; `read-after-call` 5, `copied-argument` 4.
+- nexus (110): 94 admitted; `copied-argument` 10, `read-after-call` 3, a union with a symbol member (form 5) 2, `names` 1.
+
+On base, the 6 langchainjs units under form 4 were counted under form 2: they also read their class's type parameter,
+which stopped them first.

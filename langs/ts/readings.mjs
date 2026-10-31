@@ -193,7 +193,7 @@ export const READINGS = [
     always: true,
     kinds: ['InterfaceDeclaration', 'TypeAliasDeclaration'], // a type declared inside a unit: erased at run time, read through the checker (design/local-declarations.md)
     lint: ['unsupported-type', 'ts-strict', 'unresolved-module', 'untyped-js'],
-    translate: rx('^type nesting too deep$', '^type parameter .* is not one of this function\'s$', '^array-like type .* has no element type$', '^reference-key: ', '^builtin-type: ', '^type .* is not translatable$', '^union type .* is not translatable$', '^a field named .* is the open record\'s own slot$', '^untyped-js: '),
+    translate: rx('^type nesting too deep$', '^type parameter .* is not one of this function\'s$', '^type parameter .* hides another of the same name$', '^array-like type .* has no element type$', '^reference-key: ', '^builtin-type: ', '^type .* is not translatable$', '^union type .* is not translatable$', '^a field named .* is the open record\'s own slot$', '^untyped-js: '),
     assumptions: { runtime: 'a record type is a datatype of its declared fields plus an opaque rest (and an index dictionary when it declares an index signature); a union with a runtime discriminator is a sum, any other union opaque; a type with methods is an opaque type with accessor externals', aliasing: 'the value reading copies records: a record is a value; identity is the heap core\'s', exceptions: 'none', termination: 'none (a type)' },
     refusal: 'this type has no Dafny reading',
     design: ['design/open-datatype.md', 'design/branch-types.md', 'design/ordered-collections.md'],

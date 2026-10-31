@@ -1,0 +1,47 @@
+{
+ "scope": [
+  "shelf_all",
+  "shelf_rest",
+  "shelf_both",
+  "shelf_count",
+  "shelf_alike",
+  "shelf_pick",
+  "holder_constructor",
+  "marks",
+  "marks_rows_map___0",
+  "grid",
+  "grid_rows_map___0",
+  "grid_rows_map___0_cols_map___0",
+  "note_label",
+  "reader_constructor",
+  "bin_constructor"
+ ],
+ "equal": {
+  "shelf_all": true,
+  "shelf_rest": false,
+  "shelf_both": false,
+  "shelf_count": false,
+  "shelf_alike": true,
+  "shelf_pick": true,
+  "holder_constructor": true,
+  "marks": true,
+  "marks_rows_map___0": true,
+  "grid": false,
+  "grid_rows_map___0": false,
+  "grid_rows_map___0_cols_map___0": false,
+  "note_label": true,
+  "reader_constructor": true,
+  "bin_constructor": true
+ },
+ "why": "Every unit reads a type parameter of the declaration around it: Shelf's methods read the class's T, count is also generic in its own U, Holder's constructor stores the class's D, the callbacks read the generic function's T (grid's inner callback through the outer one). all renames its loop variable (proved: the same values for every T); pick tests ys.length === 0 where the parent tested ys.length > 0 and swaps the branches (proved for every T and U); count writes y === z for z === y inside its loop: the same values, but lane A reads a loop from the bodies alone and proves no commuted test inside one (the same loop over string[], with no type parameter, is not proved either), so the row is not proved and lane B passes it; rest drops one more element and both swaps its two elements (not proved; lane B witnesses them on drawn arrays); Holder's constructor binds d to a local first (proved); marks writes x === r for r === x (proved); grid's inner callback tests !== where the parent tested === (not proved, nor the callback and the function around it); Note.label reads this.kind, declared `abstract readonly kind: TKind`, which the checker types at TKind's constraint where it is read while the field's declared type names TKind, and binds it to a local first (proved); Reader's constructor stores a generic function value whose own O is fixed at each call, not by the class (read opaque), through a local first (proved); Bin's constructor runs the initialiser items: T[] = [] before its body, which binds n to a local first (proved); Shelf.alike declares its own T, which hides the class's T, and reads only its own: a parameter is matched by its declaration, so the unit takes one T and is not refused as hiding (proved: b === a for a === b)",
+ "b": {
+  "Shelf.all": "PASS-bounded",
+  "Shelf.rest": "WITNESS",
+  "Shelf.both": "WITNESS",
+  "Shelf.count": "PASS-bounded",
+  "Shelf.pick": "PASS-bounded",
+  "Holder.constructor": "PASS-bounded",
+  "marks": "PASS-bounded",
+  "grid": "WITNESS"
+ }
+}

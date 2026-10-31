@@ -315,7 +315,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(rows.values ? { values: rows.values } : {}), rows, order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), ...(rows.valuesNearest?.length ? { valuesNearest: rows.valuesNearest } : {}), rows, order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
 }
 
 export function stopNote(stop) {
@@ -421,7 +421,7 @@ export async function prReport(opts) {
   try { metadata = JSON.parse(fs.readFileSync(path.join(dir, 'worker-report.json'), 'utf8')); }
   catch (e) { if (e.code !== 'ENOENT') console.error('Worker metadata unreadable: ' + e.name); }
   const rows = Object.assign(terminal.rows, { identity: metadata.identity ?? ledger.id, leanVersion: metadata.leanVersion ?? leanVersion(),
-    values: metadata.values, order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
+    values: metadata.values, valuesNearest: metadata.valuesNearest, order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
     ledger, reconciliation: terminal.reconciliation, terminalFile: path.join(dir, 'terminal.json'), runDir: dir });
   rows.refusalsFile = writeRefusals(rows, dir, { repo: path.resolve(opts.repo) });
   atomicJSON(path.join(dir, 'report.json'), reportJSON(rows));
@@ -477,6 +477,16 @@ async function prWorker(opts) {
     else if (head === 'WORKTREE') valuesFile = fs.existsSync(path.join(opts.filesRoot ?? repo, VALUES_FILE)) ? path.join(opts.filesRoot ?? repo, VALUES_FILE) : undefined;
     else { let text = null; try { text = git(repo, ['show', `${head}:${VALUES_FILE.split(path.sep).join('/')}`]); } catch { text = null; } if (text !== null) { const t = path.join(opts.filesRoot ?? repo, `.lean_values_${process.pid}.json`); fs.writeFileSync(t, text); temps.push(t); valuesFile = t; } }
     if (valuesFile) { const v = readValues(valuesFile); rows.values = { file: VALUES_FILE, from: head, sha256: v.sha256 }; }
+    // without a root file each unit's lane B reads the nearest file above it: the report names each one a certificate drew
+    const nearest = new Map();
+    const valuesRead = (v) => {
+      if (listedValues(rows)) return rows.values;
+      if (!path.isAbsolute(String(v.file))) return v; // a reused certificate already names it by its checkout path
+      const rel = path.relative(opts.filesRoot ?? repo, v.file);
+      const read = { file: rel.startsWith('..') ? v.file : rel.split(path.sep).join('/'), from: head, sha256: v.sha256 };
+      nearest.set(read.file, read); rows.valuesNearest = [...nearest.values()].sort((a, b) => a.file.localeCompare(b.file));
+      return read;
+    };
     const valuesHash = (file) => { const f = valuesFile !== undefined ? valuesFile : findValues(file); return f ? readValues(f).sha256 : null; }; // the cache key's: the file this unit's lane B reads
     for (const entry of files) {
       const rel = entry.file;
@@ -525,7 +535,7 @@ async function prWorker(opts) {
       let key = null, cacheFile = null;
       const save = (row) => {
         if (row.certificate) row.certificate = { ...row.certificate, verdict: row.verdict };
-        if (row.certificate?.values && rows.values) row.certificate.values = { ...row.certificate.values, file: rows.values.file, from: rows.values.from }; // the project's file by its name in the checkout, never the temporary copy of a head ref
+        if (row.certificate?.values) { const read = valuesRead(row.certificate.values); row.certificate.values = { ...row.certificate.values, file: read.file, from: read.from }; } // the project's file by its name in the checkout, never the temporary copy of a head ref
         if (!caller) row.editIds = rows[index].editIds;
         commitArtifact(opts._runDir, attempt, row);
         if (caller) rows.push(row); else rows[index] = row;
@@ -653,11 +663,50 @@ function displayOp(op) {
   catch (e) { return `patch display unavailable (${e.name}); raw operation retained in JSON`; }
 }
 
-export function markdown(rows, base, head) {
+// The project's values file a run read ({ file, from, sha256 }), or null. The rows are an array, so a bare `rows.values`
+// is Array.prototype.values when no file was listed: only an own object property counts.
+export function listedValues(rows) {
+  return rows && Object.hasOwn(rows, 'values') && rows.values && typeof rows.values === 'object' ? rows.values : null;
+}
+// The report's Values line, decided by which values files the run read: the root file, else each nearer file a unit's
+// lane B drew (findValues), each by its path, ref and hash; none listed when it read none.
+export function valuesLine(values, nearest = []) {
+  const named = (v) => `${v.file} at ${v.from}, sha256 ${v.sha256}`;
+  if (values) return `Values: ${named(values)}; lane B draws its listed values first, and each certificate names the file by this hash`;
+  if (Array.isArray(nearest) && nearest.length) return `Values: ${nearest.map(named).join('; ')}; each unit's lane B draws the nearest file above it first, and each certificate names its file by its hash`;
+  return 'Values: none listed (lane B draws from the types)';
+}
+// The record fields that describe the whole row set: the change ledger, the task reconciliation and the run's files.
+// A part of the rows cannot carry them (they would list what the part left out); they stay in the job's report.json.
+export const WHOLE_SET_FIELDS = Object.freeze(['ledger', 'reconciliation', 'terminalFile', 'runDir', 'refusalsFile']);
+// A part of the report rows (filtered, capped) with the report record: the rows' own non-index properties, copied
+// whole but for WHOLE_SET_FIELDS, so a field the report gains later rides through every re-wrap by default.
+export function withRecord(rows, part) {
+  return Object.assign(part, Object.fromEntries(Object.entries(rows).filter(([k]) => !/^(0|[1-9]\d*)$/.test(k) && !WHOLE_SET_FIELDS.includes(k))));
+}
+
+// Only a function unit enters the verdict table and its counts. Every other row is an intake row of the change ledger,
+// routed there by what the edit is (an artifact by kind or class, an unassigned edit by its named reason, the empty
+// diff): it stays in the intake table. A non-inert intake row keeps its ASK in the data, so a blocking level still
+// sees it; an inert one (comments and blank lines only) carries no verdict at all.
+export const intakeRow = (r) => r.decision === 'artifact' || r.decision === 'unassigned' || (!r.decision && /^(?:artifact|unassigned):/.test(r.coverage ?? ''));
+// The run's metadata (identity, values, stop, ledger...) rides on the array and is kept.
+export function verdictRows(rows) {
+  return withRecord(rows, rows.filter((r) => !intakeRow(r)));
+}
+
+// the whole report as a run prints it: the title, the intake table (every row, the inert ones included), then the verdicts
+export function reportMarkdown(rows, base, head) {
+  const md = markdown(rows, base, head), cut = md.indexOf('\n');
+  return [md.slice(0, cut), '', intakeMarkdown(rows), '', '## Verdicts', md.slice(cut + 1)].join('\n');
+}
+
+export function markdown(allRows, base, head) {
   if (process.env.LEAN_LEDGER_TEST_FAULT === 'report-crash') throw new Error('injected report writer crash');
+  const rows = verdictRows(allRows); // an intake row is listed by intakeMarkdown, never counted or tabled here
   const count = (v) => rows.filter((r) => !r['covered-by'] && r.verdict === v).length; // a nested row inherits its enclosing unit's verdict: counted once, on that unit's row
   const covered = rows.filter((r) => r['covered-by'] && r.decision !== 'removed').length;
-  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), ...(rows.values ? ['', `Values: ${rows.values.file} at ${rows.values.from}, sha256 ${rows.values.sha256}; lane B draws its listed values first, and each certificate names the file by this hash`] : []), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), '', valuesLine(listedValues(rows), rows.valuesNearest), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
@@ -683,8 +732,9 @@ export function markdown(rows, base, head) {
     for (const r of asks) { lines.push(`### ${r.file} · ${unitCell(r.unit)}`, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
   }
   lines.push('', 'A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.');
-  if (rows.ledger) lines.push('', ledgerMarkdown(rows.ledger));
-  if (rows.reconciliation) lines.push('', `Task reconciliation: expected ${rows.reconciliation.expected.length}; terminal ${rows.reconciliation.terminal.length}; missing ${rows.reconciliation.missing.length}; unexpected ${rows.reconciliation.unexpected.length}; identities ${rows.reconciliation.complete ? 'complete' : 'INCOMPLETE'}.`, `Durable ledger: ${rows.terminalFile}`);
+  // the change ledger and the task reconciliation describe the whole row set (WHOLE_SET_FIELDS): read from allRows
+  if (allRows.ledger) lines.push('', ledgerMarkdown(allRows.ledger));
+  if (allRows.reconciliation) lines.push('', `Task reconciliation: expected ${allRows.reconciliation.expected.length}; terminal ${allRows.reconciliation.terminal.length}; missing ${allRows.reconciliation.missing.length}; unexpected ${allRows.reconciliation.unexpected.length}; identities ${allRows.reconciliation.complete ? 'complete' : 'INCOMPLETE'}.`, `Durable ledger: ${allRows.terminalFile}`);
   return lines.join('\n');
 }
 
@@ -699,7 +749,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const scope = new Set(parseUnitList(opt('--scope', '') || ''));
   const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   if (opt('--json')) atomicJSON(opt('--json'), a.includes('--preview') ? rows : reportJSON(rows));
-  const md = a.includes('--preview') ? intakeMarkdown(rows) : markdown(rows, base, head);
+  const md = a.includes('--preview') ? intakeMarkdown(rows) : reportMarkdown(rows, base, head);
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);
 }
 

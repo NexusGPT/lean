@@ -12,6 +12,7 @@ import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { main, MARKER, MAX_BODY, commentBody, inPaths, blockingRows, prNumber } from './comment.mjs';
 import { pairsRepo } from './pairs-repo.mjs';
+import { intakeRow } from '../pr.mjs';
 import { intakeRepo } from '../tests/fixtures/pr-intake/build.mjs';
 
 let passed = 0; const failed = [];
@@ -88,12 +89,17 @@ try {
   delete silent.stop;
   const scratch = path.join(tmp, 'silent.json');
   fs.writeFileSync(scratch, JSON.stringify(silent));
-  const red = await run([...args, '--block', 'ask'], {}, async () => {
+  const unstopped = async () => {
     const saved = JSON.parse(fs.readFileSync(scratch, 'utf8'));
     return Object.assign(saved.rows, { order: saved.order, stop: saved.stop });
-  });
+  };
+  // the stop alone: under witness no row of the report blocks (its intake rows are ASK), so only the stop can
+  const red = await run([...args, '--block', 'witness'], {}, unstopped);
   ok(red.code === 0, 'dropping the stop makes the gate silent');
-  const redLog = 'Scratch report: stop field removed\ncomment.mjs --block ask\nEXIT ' + red.code + '\n';
+  const redLog = 'Scratch report: stop field removed\ncomment.mjs --block witness\nEXIT ' + red.code + '\n';
+  // the function cap counts function rows only: an intake row past it still reaches the gate
+  const intakeAsk = silent.rows.some((r) => r.verdict === 'ASK' && intakeRow(r));
+  ok(!intakeAsk || (await run([...args, '--block', 'ask'], {}, unstopped)).code === 1, 'an intake ASK blocks under ask with the cap at 1');
   if (process.argv.includes('--budget-only')) {
     fs.mkdirSync('/tmp/claude-501', { recursive: true });
     fs.writeFileSync('/tmp/claude-501/budgets-red.log', redLog);
@@ -126,6 +132,27 @@ try {
   ok(blockingRows(rowsOf('WITNESS', 'ASK', 'IN-SCOPE', 'PASS-bounded'), 'witness').length === 1, 'block witness');
   ok(blockingRows(rowsOf('WITNESS', 'ASK', 'IN-SCOPE', 'REFUSE'), 'ask').length === 2, 'block ask');
   ok((() => { try { blockingRows([], 'all'); return false; } catch { return true; } })(), 'block level unknown');
+  // the gate reads every row of the report; the function cap shapes the table only. Each case puts the one row that
+  // matters past the cap (three function rows, cap 2) and checks the exit code against the same report uncapped.
+  const fnRow = (unit, verdict, extra = {}) => ({ file: 'past.ts', unit, lines: [3, 3], verdict, coverage: 'checked', reason: '', advice: [], ...extra });
+  const pastCap = [
+    ['witness', 'WITNESS', {}, 1], ['ask', 'WITNESS', {}, 1], ['ask', 'ASK', {}, 1], ['witness', 'ASK', {}, 0],
+    ['ask', 'REFUSE', {}, 0], ['ask', 'WITNESS', { 'covered-by': { file: 'past.ts', unit: 'f1' } }, 0], ['none', 'WITNESS', {}, 0],
+  ];
+  for (const [block, verdict, extra, want] of pastCap) {
+    const third = fnRow('f3', verdict, extra);
+    const report = async () => [fnRow('f1', 'PASS-proved'), fnRow('f2', 'PASS-decided'), third];
+    const capped = await run(['--repo', tmp, '--base', 'base', '--head', 'head', '--max-functions', '2', '--block', block], {}, report);
+    const whole = await run(['--repo', tmp, '--base', 'base', '--head', 'head', '--block', block], {}, report);
+    const name = `--block ${block}, a ${verdict}${extra['covered-by'] ? ' nested' : ''} row past the cap`;
+    ok(capped.code === want && whole.code === want, `${name}: exit ${capped.code} capped, ${whole.code} uncapped, want ${want}`);
+    ok(!capped.out.includes('`f3`') && capped.out.includes('cap was reached'), `${name}: the table stops at the cap`);
+    ok(want === 0 || capped.err.includes(`::error file=past.ts,line=3::lean ${verdict} on f3`), `${name}: the annotation names the row past the cap`);
+  }
+  // the cap never reaches the report: the work is bounded by the budgets, whose stop blocks
+  let reportOpts = null;
+  await run(['--repo', tmp, '--base', 'base', '--head', 'head', '--max-functions', '2'], {}, async (o) => { reportOpts = o; return []; });
+  ok(reportOpts && !Object.hasOwn(reportOpts, 'maxUnits'), 'the function cap is not passed to the report');
   const long = commentBody(Array.from({ length: 3000 }, (_, i) => `| f${i}.ts | \`g\` | **ASK** | | | ${'x'.repeat(30)} |`).join('\n'));
   ok(long.length <= MAX_BODY && long.startsWith(MARKER) && long.includes('longer than one comment holds'), 'long body cut under the limit');
   const ev = path.join(tmp, 'event.json'); fs.writeFileSync(ev, JSON.stringify({ pull_request: { number: 17 } }));

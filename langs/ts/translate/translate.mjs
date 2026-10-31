@@ -65,6 +65,7 @@ const TF = ts.TypeFlags;
 class Unsupported extends Error {}
 
 import { dn } from '../common.mjs';
+import { unitTypeParameters } from '../common.mjs'; // a unit's type parameters: its own and the enclosing declarations' it reads (types-inventory.md, form 2)
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: the lint and this translator read one path // a unit's, a local's and a field's Dafny identifier: one rule, shared with check.mjs and the suite
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
 import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
@@ -866,6 +867,7 @@ function translateOnce(file, fnName, opts = {}) {
   const prelude = new Map(); // name -> text
   const recordByShape = new Map(); // 'a: int, b: string' -> datatype name
   const recordAlias = new Map(); // a name folded into another datatype with the same fields
+  const recordTParams = new Map(); // a record datatype generic in a unit's type parameters (its fields name them) -> those parameters, in order
   const addPrelude = (name, text) => {
     if (name === 'World') {
       usesOption = true;
@@ -1123,7 +1125,8 @@ function translateOnce(file, fnName, opts = {}) {
 
   const baseOf = (t) => { const p = nonNull(t); if (p.length === 1) return p[0]; if (p.every((x) => x.flags & TF.BooleanLiteral)) return checker.getBooleanType ? checker.getBooleanType() : p[0]; return t; };
   const isCallable = (t) => checker.getSignaturesOfType(t, ts.SignatureKind.Call).length > 0;
-  const isAny = (t) => !!(t.flags & (TF.Any | TF.Unknown));
+  const recursOpaque = new Set(); // the types read opaque because they recur on their own descent (dtype, design/types-depth.md)
+  const isAny = (t) => !!(t.flags & (TF.Any | TF.Unknown)) || recursOpaque.has(t); // a type read opaque is read as any is: each read an uninterpreted function of the value
   const isRecordish = (t) => !!(t.flags & (TF.Object | TF.Intersection)) && !isArrayLike(checker, t) && !isSetT(t) && !isMapT(t) && !isPromiseT(t);
   const fixedTuple = (t) => checker.isTupleType(t) && !t.target?.hasRestElement && t.target?.minLength === t.target?.fixedLength && checker.getTypeArguments(t).length > 0; // a tuple with a fixed number of required elements
   const stringIndex = (t) => (t.flags & TF.Object ? checker.getIndexInfoOfType(t, ts.IndexKind.String) : null);
@@ -1135,9 +1138,40 @@ function translateOnce(file, fnName, opts = {}) {
   const isElementSym = (sym) => { if (!sym) return false; const nm = sym.name; if (!['ReactElement', 'Element', 'ReactPortal', 'JSXElementConstructor'].includes(nm)) return false; if (sym.parent && sym.parent.name === 'JSX') return true; const f = sym.declarations?.[0]?.getSourceFile().fileName ?? ''; return /react|jsx/i.test(f); };
   const isNodeT = (t) => ((t.flags & TF.Union) ? t.types : [t]).some((p) => isElementSym(p.symbol) || (p.aliasSymbol && ['ReactNode', 'ReactElement', 'JSX.Element'].includes(p.aliasSymbol.name)));
 
-  function dtype(t, n, depth = 0) {
-    if (depth > 8) fail(n, 'type nesting too deep');
+  // the descent path (design/types-depth.md): one frame per type dtype is inside, outermost first. A type is read as it
+  // is at any depth; the one descent that would not end is a type met again on its own path. A record reserves its
+  // datatype's name before its fields (`reserves`), so meeting it again reads that name; any other type met again with
+  // no reserving record between its two meetings recurs, and so does every type on that loop: each is opaque (Any), in
+  // every place it is read. An instance of a generic met inside one of its own instances, an argument of the inner
+  // grown from an argument of the outer (`Nest<T>` holding `Nest<T[]>`), names a new type at every level: the outer is
+  // opaque. `recursOpaque` keeps the decision, so one TypeScript type is one Dafny type in the whole file.
+  class Recurs extends Error { constructor(frame, loop) { super('a type recurs on its own descent'); this.frame = frame; this.loop = loop; } }
+  const descent = [];
+  const genericOf = (t) => (t.aliasSymbol && t.aliasTypeArguments?.length ? t.aliasSymbol : (t.flags & TF.Object) && (t.objectFlags & ts.ObjectFlags.Reference) && t.target && t.target !== t ? t.target : null);
+  const genericArgs = (t) => (t.aliasSymbol && t.aliasTypeArguments?.length ? t.aliasTypeArguments : checker.getTypeArguments(t) ?? []);
+  // b is a proper part of a: an argument of a's generic, a member of its union or intersection, at any depth
+  const holds = (a, b, seen = new Set()) => {
+    if (seen.has(a)) return false; seen.add(a);
+    const parts = [...(genericOf(a) ? genericArgs(a) : []), ...(a.flags & (TF.Union | TF.Intersection) ? a.types : [])];
+    return parts.some((p) => p === b || holds(p, b, seen));
+  };
+  const grownFrom = (t) => { const g = genericOf(t); if (!g) return null; const mine = genericArgs(t); return descent.find((fr) => fr.t !== t && genericOf(fr.t) === g && mine.some((a) => genericArgs(fr.t).some((b) => a !== b && holds(a, b)))) ?? null; };
+  function dtype(t, n) {
     { const id = n && ts.isIdentifier(n) ? n : n && ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) ? n.name : null; const hb = id && hookBinding(id); if (hb && !hb.field) return hookDatatype(hb.row, NUM).name; } // a name bound to a hook result: the table's datatype, whatever the checker says
+    if (recursOpaque.has(t)) return anyType();
+    const at = descent.findLastIndex((fr) => fr.t === t);
+    if (at >= 0 && !descent.slice(at).some((fr) => fr.reserves)) throw new Recurs(descent[at], true);
+    const grown = grownFrom(t); if (grown) throw new Recurs(grown, false);
+    const frame = { t, reserves: false };
+    descent.push(frame);
+    try { return dtypeOf(t, n); } catch (e) {
+      if (!(e instanceof Recurs)) throw e;
+      if (e.frame === frame || (e.loop && !frame.reserves)) recursOpaque.add(t); // the type that recurs, and each type on its loop
+      if (e.frame === frame) return anyType();
+      throw e;
+    } finally { descent.pop(); }
+  }
+  function dtypeOf(t, n) {
     const f = t.flags;
     if (f & (TF.Any | TF.Unknown)) return anyType();
     if (isNodeT(t)) return jsxType();
@@ -1148,18 +1182,30 @@ function translateOnce(file, fnName, opts = {}) {
     if (f & TF.EnumLike) return (t.flags & TF.NumberLike) ? 'int' : 'string';
     if (f & (TF.Undefined | TF.Null)) return absentType();
     if (f & TF.Void) return 'Unit';
-    if (f & TF.TypeParameter) { const nm = t.symbol?.name ?? checker.typeToString(t); if (!currentUnit || !(currentUnit.generics ?? []).some((g) => g.name.text === nm)) fail(n, `type parameter ${nm} is not one of this function's`); return dn(nm); }
+    if (f & TF.TypeParameter) { // the unit's own type parameters and those of the declarations around it that it reads (unitTypeParameters): one Dafny type parameter each; two of one name (an inner T hiding an outer T) would read two types as one
+      const nm = t.symbol?.name ?? checker.typeToString(t), tps = currentUnit ? unitTypeParameters(checker, currentUnit) : [];
+      // a call signature's own type parameter met in a value's type (a generic function held as a value, `<O>(x: O) =>
+      // R`, from this file or a library) neither is the unit's nor encloses it: each call fixes it where the call is
+      // written, and the checker reads that call instantiated; the value itself has no Dafny type (no polymorphic
+      // arrows), so the parameter is read opaque, its values uninterpreted as every opaque value is
+      const decl = t.symbol?.declarations?.[0];
+      const around = (d) => !!currentUnit && d.getSourceFile().fileName === sf.fileName && d.pos <= currentUnit.fn.pos && currentUnit.fn.end <= d.end; // by position: a reparsed file keeps them
+      if (!t.isThisType && decl && ts.isTypeParameterDeclaration(decl) && ts.isFunctionLike(decl.parent) && !around(decl.parent)) return anyType();
+      if (!tps.some((g) => g.name.text === nm)) fail(n, `type parameter ${nm} is not one of this function's`);
+      if (tps.filter((g) => g.name.text === nm).length > 1) fail(n, `type parameter ${nm} hides another of the same name`);
+      return dn(nm);
+    }
     if (f & TF.Union) {
       const parts = nonNull(t);
       if (parts.length !== t.types.length) {
         usesOption = true;
         if (!parts.length) return bothAbsent(t) ? nullishType('Unit') : 'Option<Unit>';
-        const inner = parts.every((x) => x.flags & TF.BooleanLiteral) ? 'bool' : parts.length === 1 ? dtype(parts[0], n, depth + 1) : unionType(parts, n, depth);
+        const inner = parts.every((x) => x.flags & TF.BooleanLiteral) ? 'bool' : parts.length === 1 ? dtype(parts[0], n) : unionType(parts, n);
         return bothAbsent(t) ? nullishType(inner) : `Option<${inner}>`;
       }
-      return unionType(parts, n, depth);
+      return unionType(parts, n);
     }
-    if (f & TF.Intersection) return recordType(t, n, depth);
+    if (f & TF.Intersection) return recordType(t, n);
     if (f & TF.Object) {
       if (isSetT(t) || isMapT(t)) {
         // A spelling is not a library type: local classes can be named Set or Map, with no type arguments at all.
@@ -1169,27 +1215,27 @@ function translateOnce(file, fnName, opts = {}) {
           fail(n, `builtin-type: ${t.symbol.name} needs a standard-library declaration and ${arity} type argument(s) for its collection reading`);
       }
       if (checker.isTupleType(t)) {
-        const ds = checker.getTypeArguments(t).map((a) => dtype(a, n, depth + 1));
+        const ds = checker.getTypeArguments(t).map((a) => dtype(a, n));
         const lit = checker.getTypeArguments(t).every((a) => a.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral));
         const rest = !!t.target?.hasRestElement;
         const ro = !!t.target?.readonly;
         if (ds.length && (lit || rest || (ro && ds.length >= 2 && !/^(int|real|bool|string|char)$/.test(ds[0]))) && ds.every((d) => d === ds[0])) return `seq<${ds[0]}>`; // a literal list (`as const`), a readonly table or an open tuple [T, ...T[]]: a sequence
         return `(${ds.join(', ')})`;
       }
-      if (isArrayLike(checker, t)) { const et = checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); if (!et) fail(n, `array-like type ${checker.typeToString(t)} has no element type`); return `seq<${dtype(et, n, depth + 1)}>`; } // arrays, tuples and interfaces that extend an array (a match result)
+      if (isArrayLike(checker, t)) { const et = checker.getTypeArguments(t)[0] ?? checker.getIndexTypeOfType(t, ts.IndexKind.Number); if (!et) fail(n, `array-like type ${checker.typeToString(t)} has no element type`); return `seq<${dtype(et, n)}>`; } // arrays, tuples and interfaces that extend an array (a match result)
       if ((isSetT(t) || isMapT(t)) && checker.getTypeArguments(t)[0] && !keyByValue(checker.getTypeArguments(t)[0])) fail(n, `reference-key: a ${isMapT(t) ? 'Map keyed' : 'Set'} by ${checker.typeToString(checker.getTypeArguments(t)[0])} compares by reference (SameValueZero); the value reading would equate two objects with the same fields (the heap core reads it by identity)`);
-      if (isSetT(t)) return osetT(dtype(checker.getTypeArguments(t)[0], n, depth + 1));
-      if (isMapT(t)) { const [k, vv] = checker.getTypeArguments(t); return omapT(dtype(k, n, depth + 1), dtype(vv, n, depth + 1)); }
-      if (isPromiseT(t)) { const inner = dtype(checker.getTypeArguments(t)[0], n, depth + 1); if (!isHandleT(t)) return inner; addPrelude('PromiseHandle', 'type PromiseHandle(==)<T>'); return `PromiseHandle<${inner}>`; } // a held promise of a value with no identity is a handle
+      if (isSetT(t)) return osetT(dtype(checker.getTypeArguments(t)[0], n));
+      if (isMapT(t)) { const [k, vv] = checker.getTypeArguments(t); return omapT(dtype(k, n), dtype(vv, n)); }
+      if (isPromiseT(t)) { const inner = dtype(checker.getTypeArguments(t)[0], n); if (!isHandleT(t)) return inner; addPrelude('PromiseHandle', 'type PromiseHandle(==)<T>'); return `PromiseHandle<${inner}>`; } // a held promise of a value with no identity is a handle
       if (isCallable(t)) {
         const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call)[0];
-        const ps = sg.getParameters().map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, n), n, depth + 1));
+        const ps = sg.getParameters().map((p) => dtype(checker.getTypeOfSymbolAtLocation(p, n), n));
         let rt = sg.getReturnType(); if (isPromiseT(rt)) rt = checker.getTypeArguments(rt)[0];
-        return `(${ps.join(', ')}) -> ${dtype(rt, n, depth + 1)}`;
+        return `(${ps.join(', ')}) -> ${dtype(rt, n)}`;
       }
       const ix = stringIndex(t);
-      if (ix && !checker.getPropertiesOfType(t).length) return dictT(dtype(ix.type, n, depth + 1)); // a dictionary: keys in creation order beside the entries
-      return recordType(t, n, depth);
+      if (ix && !checker.getPropertiesOfType(t).length) return dictT(dtype(ix.type, n)); // a dictionary: keys in creation order beside the entries
+      return recordType(t, n);
     }
     // a type with no value reading of its own: an indexed access on a type parameter, a conditional or mapped form, a
     // symbol, `object`, `never`: opaque, every operation on it an uninterpreted function
@@ -1211,7 +1257,7 @@ function translateOnce(file, fnName, opts = {}) {
       return x !== null && y !== null && x !== y;
     });
   }
-  function sumType(parts, n, depth) {
+  function sumType(parts, n) {
     if (parts.filter((t) => t.flags & TF.BooleanLike).length > 1) parts = [...parts.filter((t) => !(t.flags & TF.BooleanLike)), checker.getBooleanType()];
     const category = (t) => arrayBrand(t) ? 'array' : t.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike) ? runtimeTag(t) : null;
     const records = parts.every(isRecordish) && parts.every((t) => checker.getPropertiesOfType(t).length && !checker.getPropertiesOfType(t).some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n))));
@@ -1226,12 +1272,13 @@ function translateOnce(file, fnName, opts = {}) {
     const optionBefore = usesOption, nullishBefore = usesNullish;
     const restore = () => { [prelude, sums, recordAlias, recordByShape].forEach((m, i) => { m.clear(); for (const [k, v] of saved[i]) m.set(k, v); }); usesOption = optionBefore; usesNullish = nullishBefore; };
     try {
-      const members = ordered.map((t, i) => ({ t, ctor: `${name}_${i}`, field: `item${i}`, d: dtype(t, n, depth + 1) }));
+      const members = ordered.map((t, i) => ({ t, ctor: `${name}_${i}`, field: `item${i}`, d: dtype(t, n) }));
       if (opaqueSums.has(name)) { restore(); return null; }
       sums.set(name, members);
       addPrelude(name, `datatype ${name} = ${members.map((m) => `${m.ctor}(${m.field}: ${m.d})`).join(' | ')}`);
       return name;
     } catch (e) {
+      if (e instanceof Recurs) { restore(); throw e; } // a loop through the sum: the frame of the type that recurs decides
       if (!(e instanceof Unsupported)) throw e;
       restore(); opaqueSums.add(name); return null;
     }
@@ -1450,12 +1497,12 @@ function translateOnce(file, fnName, opts = {}) {
     if (ancestry(target, t)) return null;
     return disjointTags(t, target, n) ? 'false' : null;
   }
-  function unionType(parts, n, depth) {
+  function unionType(parts, n) {
     if (parts.every((x) => x.flags & (TF.StringLiteral | TF.StringLike))) return 'string';
     if (parts.every((x) => x.flags & (TF.NumberLiteral | TF.NumberLike))) return NUM;
     if (parts.every((x) => x.flags & TF.BooleanLike)) return 'bool';
     if (parts.some(isAny)) return anyType();
-    const sum = sumType(parts, n, depth); if (sum) return sum;
+    const sum = sumType(parts, n); if (sum) return sum;
     // overlapping unions and unions without a runtime discriminator stay opaque. Every read on it is an
     // uninterpreted accessor, every construction an uninterpreted injection; the proof asks the same calls on both sides
     if (parts.every((x) => isRecordish(x) || isArrayLike(checker, x) || isSetT(x) || isMapT(x) || isPromiseT(x) || !!(x.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.EnumLike | TF.Null | TF.Undefined | TF.Void | TF.TypeParameter | TF.IndexedAccess | TF.Conditional | TF.Index | TF.NonPrimitive | TF.Never)))) return anyType();
@@ -1486,7 +1533,7 @@ function translateOnce(file, fnName, opts = {}) {
   const openSlots = (d) => { const text = d ? prelude.get(`datatype ${recordAlias.get(d) ?? d}`) ?? '' : ''; return [OPEN_INDEX, OPEN_REST].filter((x) => text.includes(`${x}: `)); }; // the open slots a record datatype declares
   const moreType = () => { addPrelude('More', 'datatype More = MoreBuilt | MoreFrom(src: int)'); return 'More'; }; // the source is a name only compared, an int so that a differential run compiles it
   const typeNameOf = (t) => t.aliasSymbol?.name ??(t.symbol && t.symbol.name !== '__type' && t.symbol.name !== '__object' ? t.symbol.name : null);
-  function recordType(t, n, depth) {
+  function recordType(t, n) {
     const props = checker.getPropertiesOfType(t);
     const hasMethods = props.some((p) => isCallable(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n)));
     let name = typeNameOf(t);
@@ -1500,7 +1547,7 @@ function translateOnce(file, fnName, opts = {}) {
     }
     const heldLit = heldRecord(checker, t); // a literal holding a held value: each held field at its real type (Any for an opaque one), so no field converts it to the declared type
     const fields = props.map((p) => { const real = heldLit ? heldField(checker, p) : null; return { name: p.name, type: real ?? checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? n), optional: !!(p.flags & ts.SymbolFlags.Optional), held: !!real }; }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-    if (heldLit) name = `Held_${hash(fields.map((f) => `${f.name}:${f.held ? '!' + dtype(f.type, n, depth + 1) : checker.typeToString(f.type)}`).join(','))}`; // named by its real field types: never one datatype with a literal of the same declared fields
+    if (heldLit) name = `Held_${hash(fields.map((f) => `${f.name}:${f.held ? '!' + dtype(f.type, n) : checker.typeToString(f.type)}`).join(','))}`; // named by its real field types: never one datatype with a literal of the same declared fields
     if (t.symbol?.declarations?.some((d) => ts.isBindingElement(d) && d.dotDotDotToken)) name = `Rest_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     if (literalRecord(t)) name = `Literal_${hash(fields.map((f) => f.name + ':' + checker.typeToString(f.type)).join(','))}`;
     // a record's name carries its field types as well as their names (as Literal_ and Rest_ do): two records with the
@@ -1510,32 +1557,41 @@ function translateOnce(file, fnName, opts = {}) {
     if (name && typeArgs.length) name = `${name}_${hash(typeArgs.map((x) => checker.typeToString(x)).join(','))}`;
     if (!name) name = `Rec_${hash(fields.map((f) => `${f.name}:${checker.typeToString(f.type)}`).join(','))}`;
     name = dn(mangle(name));
-    if (recordAlias.has(name)) return recordAlias.get(name);
+    // a record whose fields mention a unit's type parameter (`Holder<D>` in a unit generic in D) is a datatype generic
+    // in it: the datatype declares the parameters its fields name, and every reference to it passes them
+    const applied = (nm) => recordTParams.has(nm) ? `${nm}<${recordTParams.get(nm).join(', ')}>` : nm;
+    if (recordAlias.has(name)) return applied(recordAlias.get(name));
     const key = `datatype ${name}`;
     if (!prelude.has(key)) {
       prelude.set(key, ''); // reserve for nested use
-      const fs_ = fields.map((f) => {
-        let d = dtype(f.type, n, depth + 1);
-        if (literalRecord(t)?.properties.some((p) => ts.isGetAccessorDeclaration(p) && p.name.text === f.name)) d = `() -> ${d}`;
-        if (f.optional && !optionalD(d)) { usesOption = true; d = `Option<${d}>`; }
-        return `${dn(f.name)}: ${d}`;
-      });
-      // a record value may carry what its type does not name (open-datatype.md): an index signature beside the fields
-      // holds the undeclared keys of the index type as a dictionary, and every record ends with its rest, the keys its
-      // type does not name; a literal builds the empty dictionary and MoreBuilt (constructor defaults), a value from the
-      // outside holds them as it came, so a copy of the declared fields by hand never equals the value it copies
-      if (fields.some((f) => dn(f.name) === OPEN_REST || dn(f.name) === OPEN_INDEX)) fail(n, `a field named ${OPEN_REST} or ${OPEN_INDEX} is the open record's own slot`);
-      const ix = checker.getIndexInfoOfType(t, ts.IndexKind.String);
-      const open = [...(ix ? [`${OPEN_INDEX}: ${dictT(dtype(ix.type, n, depth + 1))} := OMap([], map[])`] : []), `${OPEN_REST}: ${moreType()} := MoreBuilt`];
+      descent[descent.length - 1].reserves = true; // a descent meeting this record again reads its name (design/types-depth.md)
+      let fs_, ix, open;
+      try {
+        fs_ = fields.map((f) => {
+          let d = dtype(f.type, n);
+          if (literalRecord(t)?.properties.some((p) => ts.isGetAccessorDeclaration(p) && p.name.text === f.name)) d = `() -> ${d}`;
+          if (f.optional && !optionalD(d)) { usesOption = true; d = `Option<${d}>`; }
+          return `${dn(f.name)}: ${d}`;
+        });
+        // a record value may carry what its type does not name (open-datatype.md): an index signature beside the fields
+        // holds the undeclared keys of the index type as a dictionary, and every record ends with its rest, the keys its
+        // type does not name; a literal builds the empty dictionary and MoreBuilt (constructor defaults), a value from the
+        // outside holds them as it came, so a copy of the declared fields by hand never equals the value it copies
+        if (fields.some((f) => dn(f.name) === OPEN_REST || dn(f.name) === OPEN_INDEX)) fail(n, `a field named ${OPEN_REST} or ${OPEN_INDEX} is the open record's own slot`);
+        ix = checker.getIndexInfoOfType(t, ts.IndexKind.String);
+        open = [...(ix ? [`${OPEN_INDEX}: ${dictT(dtype(ix.type, n))} := OMap([], map[])`] : []), `${OPEN_REST}: ${moreType()} := MoreBuilt`];
+      } catch (e) { if (e instanceof Recurs && prelude.get(key) === '') prelude.delete(key); throw e; } // a growing instance above it unwinds: the reservation goes with the reading
       // two types with the same fields are one datatype: a structural literal is an Account when Account has its fields
       const shape = fs_.join(', ');
       const canonKey = ix ? `${shape} | ${open[0]}` : shape;
       const canon = recordByShape.get(canonKey);
-      if (canon && canon !== name && prelude.get(key) === '') { prelude.delete(key); recordAlias.set(name, canon); return canon; }
+      if (canon && canon !== name && prelude.get(key) === '') { prelude.delete(key); recordAlias.set(name, canon); return applied(canon); }
       recordByShape.set(canonKey, name);
-      prelude.set(key, `datatype ${name} = ${name}(${[shape, ...open].filter(Boolean).join(', ')})`);
+      const tps = unitTParams().filter((p) => [shape, ...open].some((x) => new RegExp(`\\b${p}\\b`).test(x)));
+      if (tps.length) recordTParams.set(name, tps);
+      prelude.set(key, `datatype ${name}${tps.length ? `<${tps.map((p) => `${p}(==)`).join(', ')}>` : ''} = ${name}(${[shape, ...open].filter(Boolean).join(', ')})`);
     }
-    return name;
+    return applied(name);
   }
   // two explicit operands read with the type the program gives them, not the `any` the checker reports: `arguments[k]`
   // with a literal k below the declared parameters is the k-th parameter; `Object.create(null)` typed as a dictionary
@@ -1612,7 +1668,21 @@ function translateOnce(file, fnName, opts = {}) {
     const cargs = checker.getTypeArguments(ct);
     return cargs.length === args.length && !cargs.some((a) => a.flags & (TF.Any | TF.Unknown)) ? ct : null;
   };
-  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } return t; };
+  const typeOf = (n) => { const held = assertionHeld(checker, n); if (held) return held; { const e = emptyCollectionT(n); if (e) return e; } const u = generators.pureCall(n); if (u) return checker.createArrayType(generators.shape(u).element); const q = argumentsParam(n); if (q) return checker.getTypeAtLocation(q.name); if (isNullCreate(n)) { const ct = checker.getContextualType(n); if (dictionaryT(ct)) return ct; } const t = checker.getTypeAtLocation(n); if (t.flags & TF.Any) { const ht = hookType(n); if (ht) return ht; const r = anyRetype(n); if (r) return r; } { const d = heldAtTypeParameter(n, t); if (d) return d; } return t; };
+  // a name declared at a type parameter (`const y: T`, `x: T`) is held at it, while the checker may type its read at the
+  // parameter's constraint (`T extends "a" | "b"` read where a literal union is expected): the read is the held value,
+  // so its type is the parameter, and a conversion to the constraint is written where one is expected (convertD's cast)
+  // the same for a field read through `this` (`this.kind`, declared `kind: TKind`): the field's own symbol, read on the
+  // class's own instance, declares the parameter (an instantiated receiver's symbol declares the instance's type)
+  const heldAtTypeParameter = (n, t) => {
+    if (t.flags & TF.TypeParameter) return null;
+    const name = ts.isIdentifier(n) ? n : ts.isPropertyAccessExpression(n) && n.expression.kind === ts.SyntaxKind.ThisKeyword ? n.name : null;
+    if (!name) return null;
+    const sym = checker.getSymbolAtLocation(name), vd = sym?.valueDeclaration;
+    if (!vd || !(ts.isVariableDeclaration(vd) || ts.isParameter(vd) || ts.isPropertyDeclaration(vd)) || !(ts.isIdentifier(vd.name) || ts.isPrivateIdentifier(vd.name))) return null;
+    const d = checker.getTypeOfSymbol(sym);
+    return (d.flags & TF.TypeParameter) && !d.isThisType ? d : null;
+  };
   // the sign of zero is read exactly by the doubles reading (design/doubles.md): a number-bearing unit is decided over
   // binary64, so no unit is made opaque for a -0 it may produce (the opaque reading of design/signed-zero.md is lifted)
   if (heapT && heap) heapT.plan(order, heapUnits); // after the type reading it relies on exists
@@ -1622,7 +1692,7 @@ function translateOnce(file, fnName, opts = {}) {
   const symType = (sym, n) => { const vd = sym?.valueDeclaration, held = vd && (ts.isVariableDeclaration(vd) || ts.isParameter(vd)) && ts.isIdentifier(vd.name) ? assertionHeld(checker, vd.name) : null; if (held) return held; return checker.getTypeOfSymbol ? checker.getTypeOfSymbol(sym) : checker.getTypeOfSymbolAtLocation(sym, sym.valueDeclaration ?? n); }; // a local holding a value whose type nothing checked has its real type, as typeOf reads it
 
   // ----- externals -----
-  const unitTParams = () => (currentUnit?.generics ?? []).map((g) => dn(g.name.text));
+  const unitTParams = () => (currentUnit ? unitTypeParameters(checker, currentUnit) : []).map((g) => dn(g.name.text));
   const tclause = (types) => { const ps = unitTParams().filter((p) => types.some((t) => new RegExp(`\\b${p}\\b`).test(t))); return ps.length ? `<${ps.map((p) => `${p}(==)`).join(', ')}>` : ''; };
   function external(name, paramTypes, retType) {
     let id = `ext_${mangle(name)}${paramTypes.length ? '_' + paramTypes.map(mangle).join('_') : ''}`;
@@ -1641,6 +1711,10 @@ function translateOnce(file, fnName, opts = {}) {
       return id;
     }
     addPrelude(id, `function ${id}${tclause([...paramTypes, retType])}(${ps}): ${retType}`); // generic when a type parameter of the unit appears
+    // a type parameter only its result names (`this.kind` of a field `kind: TKind` read on an opaque receiver) is not
+    // inferred from the arguments: the call, written inside the unit that declares it, names the unit's parameters
+    const tc = tclause([...paramTypes, retType]);
+    if (tc && tclause([retType]) && tclause(paramTypes) !== tc) return `${id}${tc.replace(/\(==\)/g, '')}`;
     return id;
   }
   function externalValue(id) {
@@ -2013,6 +2087,10 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       case 'ObjectProtoNames': text = `const ${name}: set<string> := {${OBJECT_PROTO_NAMES.map((x) => JSON.stringify(x)).join(', ')}}`; break; // Object.getOwnPropertyNames(Object.prototype): the names \`in\` finds on every plain object
       default: fail(sf, `no helper ${kind}`);
     }
+    // a helper over a unit's type parameter (`Slice_T` in `f<T>`) is generic in it, as an external is (tclause): each
+    // function and lemma it declares takes the parameter, and every call infers it from its arguments
+    const tc = tclause(types);
+    if (tc) text = text.replace(new RegExp(`(^|\\n)((?:ghost )?(?:function|lemma|predicate)(?: \\{[^}]*\\})* ${name}\\w*)\\(`, 'g'), `$1$2${tc}(`);
     prelude.set(name, text);
     return name;
   }
@@ -3824,7 +3902,7 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     if (worldRead(checker, n, sf, currentUnit?.node)) return globalRead(n);
     if (libWorldRead(n)) return globalRead(n);
     const recvT = typeOf(n.expression);
-    if (checker.isTupleType(recvT) && !dtype(recvT, n).startsWith('seq<')) {
+    if (checker.isTupleType(recvT) && !isAny(recvT) && !dtype(recvT, n).startsWith('seq<')) {
       if (!ts.isNumericLiteral(n.argumentExpression)) fail(n, 'tuple index must be a literal');
       return `${expr(n.expression)}.${n.argumentExpression.text}`;
     }
@@ -4073,15 +4151,15 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     return binds.length ? `(${binds.join(' ')} ${seq})` : seq;
   }
   // a serialization's static absence schema distinguishes the two meanings of Option.None
-  function absenceSchema(t, seen = new Set(), depth = 0) {
-    if (depth > 8 || seen.has(t)) return '';
+  function absenceSchema(t, seen = new Set()) { // `seen`, the types on the path, ends a recursive type's schema
+    if (seen.has(t)) return '';
     seen = new Set(seen).add(t);
     const tag = `${hasAbsence(t, TF.Null) ? 'n' : ''}${hasAbsence(t, TF.Undefined) ? 'u' : ''}`;
     const parts = nonNull(t);
     const fields = parts.flatMap((part) => {
-      if (isArrayLike(checker, part)) return checker.getTypeArguments(part).map((a) => absenceSchema(a, seen, depth + 1)).filter(Boolean).map((x) => `[]${x}`);
+      if (isArrayLike(checker, part)) return checker.getTypeArguments(part).map((a) => absenceSchema(a, seen)).filter(Boolean).map((x) => `[]${x}`);
       if (!isRecordish(part)) return [];
-      return checker.getPropertiesOfType(part).map((p) => { const child = absenceSchema(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? sf), seen, depth + 1); return child ? `${p.name}:${child}` : ''; }).filter(Boolean);
+      return checker.getPropertiesOfType(part).map((p) => { const child = absenceSchema(checker.getTypeOfSymbolAtLocation(p, p.valueDeclaration ?? sf), seen); return child ? `${p.name}:${child}` : ''; }).filter(Boolean);
     });
     return tag + (fields.length ? `{${fields.sort().join(',')}}` : '');
   }
