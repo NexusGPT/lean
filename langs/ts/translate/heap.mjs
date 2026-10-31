@@ -1519,6 +1519,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   }
   // a same-file call that writes through one of its arguments, and that argument
   const calleeWrites = (n) => (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text) ? n.arguments.filter((a, k) => writesThrough().get(n.expression.text)?.has(k)) : []);
+  // a same-file unit whose value reading makes a write on a copy (layer1Risk writesCopy), memoised; a unit met again
+  // while it is read (a call cycle) counts as one, as does a unit the reading cannot follow
+  const copyWriters = new Map();
+  const writesCopyOf = (name) => { if (!copyWriters.has(name)) { copyWriters.set(name, true); const cu = fns.get(name); let w = true; try { w = !cu?.body || !!layer1Risk(cu).writesCopy; } catch { w = true; } copyWriters.set(name, w); } return copyWriters.get(name); };
   function layer1Risk(u) {
     const constLocal = (x) => { const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isVariableDeclaration(d) && !!(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const); }; // a let name the lint admits a write through is fresh at that write (its flow-sensitive alias rule)
     const risks = new Set();
@@ -1562,18 +1566,19 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     for (const p of u.params) { const t = typeOf(p.name); const s = shapeOf(t); if (s) countShapes(s, 0); else if (isRefType(t)) { const key = checker.typeToString(t); positions.set(key, (positions.get(key) ?? 0) + 1); } }
     if (u.cls && !u.isStatic) { const key = `this:${u.className}`; positions.set(key, (positions.get(key) ?? 0) + 1); for (const p of u.params) if (checker.typeToString(typeOf(p.name)) === u.className) positions.set(key, positions.get(key) + 1); }
     const aliasable = [...positions].filter(([, c]) => c >= 2).map(([k]) => k);
-    let writesInput = false, writesNode = false; // writesNode: a write through the node a call returns
+    let writesInput = false, writesCopy = false; // writesCopy: a write the value reading makes on a copy, leaving the input it reaches untouched there (through another name for an input's node, the node a call returns, or such a same-file callee)
     const walk = (n) => {
       if (ts.isVariableDeclaration(n) && n.initializer && inputRooted(n.initializer) && (ts.isIdentifier(unparen(n.initializer)) || ts.isPropertyAccessExpression(unparen(n.initializer)) || ts.isElementAccessExpression(unparen(n.initializer)) || unparen(n.initializer).kind === K.ThisKeyword)) for (const { name, depth: d } of boundNames(n.name)) if (isRefType(typeOf(name))) aliases.set(name.text, effDepth(n.initializer) + d); // an element or a dictionary value of an input is a node below it too (heap shapes); a pattern's names one level down per pattern
       for (const { name, depth: d } of elementNames(n, inputRooted)) aliases.set(name.text, effDepth(ts.isForOfStatement(n) ? n.expression : n.expression.expression) + 1 + d); // an element of an input array: one level below it
       for (const a of calleeWrites(n)) if (inputRooted(a)) { writesInput = true; risks.add('write through an input in a same-file callee'); } // the callee's writes are the caller's
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text) && n.expression.text !== u.name && writesCopyOf(n.expression.text)) writesCopy = true; // a callee's copy write is the caller's: its value reading returns no trace of it either
       if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) {
         const L = unparen(n.left);
         if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) { writesInput = true; if (effDepth(L) >= 2) risks.add('nested write through an input'); else if (n.operatorToken.kind === K.EqualsToken && isRefType(typeOf(n.right)) && !fresh(n.right)) risks.add('input field assigned a reference'); }
       }
       if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) && inputRooted(n.expression.expression)) { writesInput = true; const recv = unparen(n.expression.expression); if (effDepth(recv) >= 1) risks.add('nested write through an input'); }
       if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const L = unparen(n.operand); if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L)) writesInput = true; if ((ts.isPropertyAccessExpression(L) || ts.isElementAccessExpression(L)) && inputRooted(L) && effDepth(L) >= 2) risks.add('nested write through an input'); }
-      { const t = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? unparen(n.left) : (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? unparen(n.operand) : ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) ? n.expression.expression : isAssignCall(n) ? n.arguments[0] ?? null : null; if (t && t !== rootOf(t) && ts.isCallExpression(rootOf(t))) { risks.add('write through the result of a call'); writesNode = true; } if (t && ts.isIdentifier(rootOf(t)) && !params.has(rootOf(t).text) && aliases.get(rootOf(t).text) === 0 && constLocal(rootOf(t)) && (t !== rootOf(t) || ts.isCallExpression(n))) risks.add('write through another name of an input'); } // the node a call returns, written: the value reading writes a copy (heap shapes); a local bound to an input itself (`const h = a`), written: the value reading writes a copy, the input keeps its fields (design/heap-stage5.md 18)
+      { const t = ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment ? unparen(n.left) : (ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken) ? unparen(n.operand) : ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS_ALL.has(n.expression.name.text) ? n.expression.expression : isAssignCall(n) ? n.arguments[0] ?? null : null; if (t && t !== rootOf(t) && ts.isCallExpression(rootOf(t))) { risks.add('write through the result of a call'); writesCopy = true; } if (t && ts.isIdentifier(rootOf(t)) && !params.has(rootOf(t).text) && aliases.has(rootOf(t).text) && (t !== rootOf(t) || ts.isCallExpression(n))) writesCopy = true; if (t && ts.isIdentifier(rootOf(t)) && !params.has(rootOf(t).text) && aliases.get(rootOf(t).text) === 0 && constLocal(rootOf(t)) && (t !== rootOf(t) || ts.isCallExpression(n))) risks.add('write through another name of an input'); } // the node a call returns, written: the value reading writes a copy (heap shapes); a local bound to an input itself (`const h = a`), written: the value reading writes a copy, the input keeps its fields (design/heap-stage5.md 18)
       if (refCompare(n)) risks.add('identity comparison of two references'); // `a === b` on two objects is node identity, which a value tree does not hold (heap shapes)
       if (callsRefCompare(n)) risks.add('identity comparison of two references in a same-file callee'); // the caller's lemma would unfold the callee's value reading of it
       if (isAssignCall(n) && n.arguments[0] && inputRooted(n.arguments[0])) { writesInput = true; if (effDepth(n.arguments[0]) >= 1) risks.add('nested write through an input'); } // Object.assign onto a node below an input writes that node's fields (heap shapes)
@@ -1584,7 +1589,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     let nested = 0;
     if (ts.isBlock(u.body)) walk(u.body); else { walk(u.body); if (!fresh(u.body)) risks.add('result may carry an input or shared reference'); }
     if (writesInput && aliasable.length) risks.add(`write through an input that another input position of the same shape may alias (${aliasable.join(', ')})`);
-    return Object.assign([...risks], { writes: writesInput || writesNode }); // writes: the unit writes a node it did not allocate, which the value reading writes as a copy (its Dafny text may show no trace of it)
+    return Object.assign([...risks], { writesCopy }); // the theorem needs the source of a unit whose value reading may show no trace of a write
   }
   // an array method whose result the library table marks fresh (translate/library.json: map, filter, flatMap, slice,
   // concat, flat, toSorted, toReversed, toSpliced, with), called on an array, whose result's element type holds no
@@ -1764,9 +1769,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     let exposed = [], sk = { determinate: false, sites: [], writes: [] };
     try { exposed = layer1Risk(u); } catch (e) { exposed = [`unreadable: ${String(e.message).slice(0, 80)}`]; }
     if (exposed.length) { try { sk = identitySkeleton(u); } catch (e) { sk = { determinate: false, sites: [], writes: [], error: String(e.message).slice(0, 80) }; } }
-    // writesHeld: the unit writes a node it did not allocate (an unreadable unit counts as writing), which the value
-    // reading writes as a copy: the theorem then needs its source to take Dafny-identical bodies as one function
-    return { exposed, writesHeld: exposed.writes !== false, determinate: !!sk.determinate, sites: sk.sites ?? [], writes: sk.writes ?? [], aliasable: exposed.find((r) => r.startsWith('write through an input that another input position')) ?? null }; // aliasable: no skeleton rescues it, the theorem withholds the lemma
+    // writesCopy: the value reading makes a write on a copy, leaving no trace of it in the Dafny text (an unreadable unit
+    // counts as one): the theorem then needs the unit's source to take Dafny-identical bodies as one function
+    return { exposed, writesCopy: exposed.writesCopy !== false, determinate: !!sk.determinate, sites: sk.sites ?? [], writes: sk.writes ?? [], aliasable: exposed.find((r) => r.startsWith('write through an input that another input position')) ?? null }; // aliasable: no skeleton rescues it, the theorem withholds the lemma
   }
   return { plan, isCore, needsInRange, emit, prelude, shapes, shapeLegend, core: () => core, whyNot: whyNotOf, layer1Risk, identitySkeleton, guard };
 }

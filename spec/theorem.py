@@ -534,7 +534,7 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
     # sites, writes}`. Tree equality implies graph equality only when the unit is not exposed, or when both sides have one
     # readable identity shape and the shapes agree. Otherwise the Equal lemma is withheld: the proof lane says nothing and
     # the bounded run decides (ASK:identity). A candidate identical to the parent by text (Dafny-identical, and for an
-    # exposed unit that writes a node it did not allocate the same source) is the same function and keeps its lemma
+    # exposed unit whose value reading writes a copy the same source) is the same function and keeps its lemma
     # whatever its shape.
     guards = {}
     for label, text, suffix in (('parent', parent_text, '_parent'), ('candidate', cand_text, '_candidate')):
@@ -575,10 +575,11 @@ def generate(parent_text, cand_text, scope, edit, prelude_text=None, prelude_nam
         gp, gc = g['parent'], g['candidate']
         if not gp.get('exposed') and not gc.get('exposed'):
             continue
-        # an exposed unit that writes a node it did not allocate carries its source (`// SOURCE`): the value reading
-        # writes a copy, which may leave no trace in the Dafny text (a write through another name of an input), so
+        # an exposed unit whose value reading writes a copy carries its source (`// SOURCE`): a write through another
+        # name for an input's node, through a call's result or in such a callee leaves no trace in the Dafny text, so
         # Dafny-identical bodies are the same function only when the two sources are the same, as for an in-range
-        # unit. A unit exposed by its result alone shows the result's identity in its terms (a copy is Copy_<T>)
+        # unit. A write through a parameter's own path is the parameter's output, and a result's identity shows in
+        # its terms (a copy is Copy_<T>): those Dafny texts differ where the units do
         if f in aliased and (f in same_source or f not in sources):
             continue
         aliasable = gp.get('aliasable') or gc.get('aliasable')
