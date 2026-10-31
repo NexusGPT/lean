@@ -111,7 +111,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   const allAdapters = { ...commentDoor, ...(adapters ?? {}) };
   fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])), summaries: true, ...(Object.keys(allAdapters).length ? { adapters: allAdapters } : {}) }));
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
-  const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] });
+  const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] }); // the preludes too: theorem.py reads each side's include, and a prelude can change while the main text does not
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
   if (th.status !== 0) return;
   // lane A's time limit stretches with the share of the machine one Dafny process gets: alone it verifies a lemma's parts
