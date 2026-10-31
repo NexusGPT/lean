@@ -29,7 +29,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { originOf } from '../common.mjs';
 import { unitTypeParameters } from '../common.mjs'; // a unit's own type parameters and the enclosing ones it reads
-import { importIdentity } from '../common.mjs'; // an imported name is the binding it denotes: the declaring module and its name there, re-exports read through
+import { importIdentity, importMemberIdentity } from '../common.mjs'; // an imported name is the binding it denotes: the declaring module and its name there, re-exports read through
 import { builtRecord } from '../common.mjs'; // the record-node build takes a spread of a record the unit built (open-datatype)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
@@ -402,6 +402,10 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // `let` or `var` of the module (a cell the world would carry), a constant whose initializer calls or allocates (a
   // changed callee would change it under the same text), an object-valued constant (a shared heap object).
   const importKey = (d0, id) => { const name = ts.isImportSpecifier(d0) ? (d0.propertyName ?? d0.name).text : ts.isImportClause(d0) ? 'default' : null; const ident = name === null ? null : importIdentity(checker, id); return ident === null ? null : `Imp_${name.replace(/[^A-Za-z0-9]/g, '_')}_${hash(ident)}`; }; // keyed by the binding the name denotes, re-exports read through (common.mjs importIdentity)
+  // a member of a namespace import (`ns.X`): the binding it denotes (common.mjs importMemberIdentity), keyed as a named
+  // import of X is, so `ns.X`, `import { X }` and X through a module re-exporting it are one key; a type-only namespace is none
+  const memberKey = (e) => { if (!ts.isPropertyAccessExpression(e) || !ts.isIdentifier(e.expression)) return null; const d0 = checker.getSymbolAtLocation(e.expression)?.declarations?.[0]; if (!d0 || d0.parent?.isTypeOnly || d0.isTypeOnly) return null; const ident = importMemberIdentity(checker, e); return ident === null ? null : `Imp_${e.name.text.replace(/[^A-Za-z0-9]/g, '_')}_${hash(ident)}`; };
+  const outsideMember = (e) => { const key = memberKey(e); if (!key) return null; const sh = shapeOf(typeOf(e)); return sh && sh.kind === 'prim' ? { kind: 'import', key, sh } : null; };
   function outsideValue(id, depth = 0) {
     if (depth > 8) return null;
     const sh = shapeOf(typeOf(id)); if (!sh || sh.kind !== 'prim') return null;
@@ -416,6 +420,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (ts.isNumericLiteral(x) || ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || x.kind === K.TrueKeyword || x.kind === K.FalseKeyword) return true;
     if (ts.isPrefixUnaryExpression(x)) return (x.operator === K.MinusToken && ts.isNumericLiteral(unparen(x.operand)) && Number(unparen(x.operand).text.replace(/_/g, '')) !== 0) || (x.operator === K.ExclamationToken && constExpr(x.operand, depth)); // -0 is not a value the reading holds
     if (ts.isIdentifier(x)) return !!outsideValue(x, depth);
+    if (ts.isPropertyAccessExpression(x)) return !!outsideMember(x);
     if (ts.isTemplateExpression(x)) return x.templateSpans.every((sp) => shapeOf(typeOf(sp.expression))?.kind === 'prim' && constExpr(sp.expression, depth));
     if (ts.isConditionalExpression(x)) return isBoolT(typeOf(x.condition)) && constExpr(x.condition, depth) && constExpr(x.whenTrue, depth) && constExpr(x.whenFalse, depth);
     if (ts.isBinaryExpression(x)) { const k = x.operatorToken.kind; if (!BINOPS.has(k)) return false; if ((k === K.AmpersandAmpersandToken || k === K.BarBarToken) && !(isBoolT(typeOf(x.left)) && isBoolT(typeOf(x.right)))) return false; if (k === K.PlusToken && !((typeOf(x.left).flags & TF.NumberLike) && (typeOf(x.right).flags & TF.NumberLike)) && !((typeOf(x.left).flags & TF.StringLike) && (typeOf(x.right).flags & TF.StringLike))) return false; return constExpr(x.left, depth) && constExpr(x.right, depth); }
@@ -474,17 +479,21 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   const codeKeyMemo = new Map();
   const codeKey = (e) => { let n = e; while (n && !unitNodes.has(n)) n = n.parent; const k = n ?? sf; if (!codeKeyMemo.has(k)) codeKeyMemo.set(k, hash(n ? reachOf(n).code.join('\n\u0000') : sf.text)); return codeKeyMemo.get(k); };
   function outsideCall(e) {
-    if (ts.isCallExpression(e) && !e.questionDotToken && !e.typeArguments && ts.isPropertyAccessExpression(e.expression) && !e.expression.questionDotToken && !e.arguments.some((a) => ts.isSpreadElement(a)) && ((shapeOf(typeOf(e.expression.expression))?.kind === 'handle' && !(ts.isIdentifier(e.expression.expression) && originOf(checker, e.expression.expression, sf, null).kind === 'global')) || (clsOf(e.expression.expression) && fns.has(`${clsOf(e.expression.expression).name.text}.${e.expression.name.text}`) && (e.expression.expression.kind !== K.ThisKeyword || thisReplaceable(clsOf(e.expression.expression), e.expression.name.text))))) { // a method of a handle, or of another instance of a class of this file (a subclass elsewhere may override it): a transition taking the receiver first
+    if (ts.isCallExpression(e) && !memberKey(e.expression) && !e.questionDotToken && !e.typeArguments && ts.isPropertyAccessExpression(e.expression) && !e.expression.questionDotToken && !e.arguments.some((a) => ts.isSpreadElement(a)) && ((shapeOf(typeOf(e.expression.expression))?.kind === 'handle' && !(ts.isIdentifier(e.expression.expression) && originOf(checker, e.expression.expression, sf, null).kind === 'global')) || (clsOf(e.expression.expression) && fns.has(`${clsOf(e.expression.expression).name.text}.${e.expression.name.text}`) && (e.expression.expression.kind !== K.ThisKeyword || thisReplaceable(clsOf(e.expression.expression), e.expression.name.text))))) { // a method of a handle, or of another instance of a class of this file (a subclass elsewhere may override it): a transition taking the receiver first
       const rcv = shapeOf(typeOf(e.expression.expression)); const hs = rcv?.kind === 'handle' ? rcv : { name: `local:${clsOf(e.expression.expression).name.text}` }; const sig = checker.getResolvedSignature(e); if (!sig) return null;
       const rt = sig.getReturnType(); const rs = isVoidT(rt) ? { kind: 'void' } : shapeOf(rt); if (!rs) return null;
       const as = e.arguments.map((a) => (isAbsent(a) ? null : shapeOf(typeOf(a)))); if (as.some((x) => !x)) return null;
       const ds = ['Ref', ...as.map(valD)], rd = valD(rs); const m = e.expression.name.text;
       return { key: `HCall_${m.replace(/[^A-Za-z0-9]/g, '_')}_${hash(hs.name + '.' + m + '/' + ds.join(',') + '>' + rd + '#' + codeKey(e))}`, ds, rd, rs, recv: e.expression.expression };
     }
-    if (!ts.isCallExpression(e) || e.questionDotToken || e.typeArguments || !ts.isIdentifier(e.expression) || e.arguments.some((a) => ts.isSpreadElement(a))) return null;
-    const sym = checker.getSymbolAtLocation(e.expression); const d0 = sym?.declarations?.[0];
-    if (!d0 || !(ts.isImportSpecifier(d0) || ts.isImportClause(d0)) || d0.isTypeOnly || d0.parent?.isTypeOnly) return null;
-    const ik = importKey(d0, e.expression); if (!ik) return null;
+    if (!ts.isCallExpression(e) || e.questionDotToken || e.typeArguments || e.arguments.some((a) => ts.isSpreadElement(a))) return null;
+    let ik = null;
+    if (ts.isIdentifier(e.expression)) {
+      const sym = checker.getSymbolAtLocation(e.expression); const d0 = sym?.declarations?.[0];
+      if (!d0 || !(ts.isImportSpecifier(d0) || ts.isImportClause(d0)) || d0.isTypeOnly || d0.parent?.isTypeOnly) return null;
+      ik = importKey(d0, e.expression);
+    } else ik = memberKey(e.expression); // a function a namespace import names (`ns.f(..)`): the same transition as `f(..)` imported by name
+    if (!ik) return null;
     const sig = checker.getResolvedSignature(e); if (!sig) return null;
     const rt = sig.getReturnType(); const rs = isVoidT(rt) ? { kind: 'void' } : shapeOf(rt); if (!rs) return null;
     const as = e.arguments.map((a) => (isAbsent(a) ? null : shapeOf(typeOf(a)))); if (as.some((x) => !x)) return null;
@@ -665,6 +674,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (e.kind === K.ThisKeyword) return u.cls && !u.isStatic ? undefined : no('this');
       if ((ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e) || ts.isCallExpression(e)) && e.questionDotToken) return no('optional chaining');
       if (ts.isPropertyAccessExpression(e) && lambdaDepth && fieldOf(shapeOf(typeOf(e.expression)) ?? {}, e.name.text)?.shape.kind === 'opt' && shapeOf(typeOf(e))?.kind !== 'opt') return no('a narrowed optional read inside a callback');
+      if (ts.isPropertyAccessExpression(e) && outsideMember(e)) return; // a namespace import's member: an imported constant
       if (ts.isPropertyAccessExpression(e)) {
         const s = shapeOf(typeOf(e.expression)); if (!s) return no(`receiver type: ${shapeWhy(typeOf(e.expression))}`);
         if (s.kind === 'prim' && s.d === 'string' && e.name.text === 'length' && helper) return checkExpr(e.expression); // a string's length: its code units (the BMP envelope)
@@ -1215,6 +1225,7 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
         const q = fresh('q'); const arm = (ls, v) => `(${[...ls, `(${HW}, ${v})`].join(' ')})`;
         lines.push(`var (${HW}, ${q}) := if ${c} then ${arm(la, a)} else ${arm(lb, b)};`); return q;
       }
+      if (ts.isPropertyAccessExpression(e) && outsideMember(e)) { const om = outsideMember(e); impUsed.set(om.key, om.sh.d); return `${om.key}()`; } // a namespace import's member, by the key of the binding it denotes
       if (ts.isPropertyAccessExpression(e)) {
         const s = shapeExpr(e.expression);
         const r = expr(e.expression);
