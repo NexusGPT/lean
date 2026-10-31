@@ -960,6 +960,57 @@ Census (resolved, 39 roots), strict graph 917 -> 920, own syntax 2269 -> 2272; `
 {"files":23359,"units":53918,"core":920,"heapOwnFit":2272,"mirrorMismatch":2130,"planErrorCount":0,"seconds":304}
 ```
 
+### 20b. Every route to what a decorator replaced (2026-10-31, lane core-decorators)
+
+Found by pair `decorators_metadata`: the step's reading held in the heap core's `this.m()` and `c.m()`, but four other
+routes read a member a decorator may replace as its declared text, and one field form escaped the field rule. At
+lean-b5c07450 each was proved while the two sides differ when run (meta.ts `Count` returns a counting descriptor,
+`Column` installs a counting accessor):
+- a decorated optional field (`@Column() text?: string`): `classWhy` counted the optional field before it looked for a
+  decorator, so the class entered the heap core with the field a plain cell (`Note.shown`, two reads for one: proved);
+- in the value reading, a decorated getter read through `this` (`Dial.curs`), a decorated TypeScript-private method
+  (`Dial.ticks`: `sealedMember` sealed it by TS2415), a decorated method of an instance made by `new` (`made`:
+  `madeDispatch`), and a decorated static method (`seeds`: `C.m()` is always the class's own unit) were each read as
+  the declared body, a pure function, so two calls equalled one;
+- a decorated field no method writes was a pure read of the receiver in the value reading (no `mutatedFields` entry).
+
+The census (nexus, the 14,912 files both runs finished) moves 7 units, all of NestJS `@Injectable` classes calling a
+TS-private method through `this`, while the predicate counted every decorator as replacing; with the table's rows read
+(`body: unchanged`) those classes keep their reading and the census is unchanged (the lane's result file).
+
+Reading: one predicate beside the decorator table, `decorators.mjs decoratorMayReplace(checker, cls, name, isStatic)`:
+the member `name` is not its declared text when cls or a class it extends carries a replacing decorator, or a member of
+that name and staticness on that chain (method, getter, setter, field) does. A decorator is replacing unless the table
+(translate/decorators.json) lists it with `body: unchanged` (its vocabulary: no listed decorator replaces it) and its
+fixture does not contradict the row: `@nestjs/common Injectable`, a marker, is metadata, and its class's private
+`this.m()` stays the class's own text (pair: `Registry.twice`, proved); a contradicted row falls back to replacing.
+`thisRequest` asks it before `sealedMember` (so `this.m()` is the world request `<T>_m_held<key>` in the value
+reading; the heap core's `replaceable` is the same predicate, which makes it step 18's transition), `madeDispatch`
+returns false for it (the request on a receiver the file did not make), a
+getter or setter on `this` it covers is the accessor request keyed by the class's code (`heldKey` of the class type,
+as `thisRequest` keys), and a static `C.m()` it covers is `<T>_static_m_held_<hash of the class's reach text>`, a
+transition of the world. In `classWhy` a field's replacing decorator is read before its optional and definite forms, and in
+`mutatedFields` every instance field with a replacing decorator lives in the world (each read and write a get/set
+transition); a field of a `body: unchanged` row (`ApiProperty`, a marker) stays a field.
+Soundness: a decorator's result replaces the class (a class decorator) or the property's descriptor (a method or
+accessor decorator; an accessor pair is one property, so a decorator on either half covers both), and a property
+decorator may define an accessor on the prototype; none of that is in the member's text. The request's name carries
+the class's code, decorators included (reach.mjs keyText, headerOf), so a changed member or decorator is another
+request, and an unchanged one is the same request on both sides (`Dial.tick`, `Dial.read`, the getter, `Dial.seed`,
+each untouched: proved). Where the step is silent, chosen for soundness: a parameter decorator is metadata (its
+result is discarded, ECMA and TypeScript's `__param` alike), so `constructor(@Inject() public tag: string)` keeps
+`tag` a plain cell; a decorator that installs an accessor on a field it does not decorate (a method decorator
+receiving the prototype) stays the step's named assumption, the subclass-elsewhere case.
+Out (unchanged, reported): the reading that relies on a `body: unchanged` row does not yet write the row in the unit's
+`// DECORATORS` line (a contradicted row already turns the reading back to replacing, so no proof rests on it, but
+the certificate does not name the row's version); `new C()` of a decorated class in the value reading allocates inline (step 21 refuses it in
+the heap core only); a decorated static accessor and `this.m()` inside a static method keep their readings; lane B
+returns PASS-bounded on `made` and `seeds` although the two sides return 5 and 4 when run (the harness does not run
+the decorated member of an instance made by `new`, or of the class itself).
+Pair `decorators_metadata` (41 checks): `Registry.size`, `Registry.twice` (proved: a listed marker), `Ledger.add` (proved), `Ledger.charge` (unproved, PASS-bounded), `Ledger.net`,
+`Meter.raise`, `Meter.pump` (WITNESS), `Meter.peak`, `Row.grow` (proved), `Row.label`, `Row.rename`, `Note.shown`,
+`Dial.ticks`, `Dial.curs` (unproved, WITNESS), `made`, `seeds` (unproved), the four untouched Dial members (proved).
+
 ## 21. Constructors
 
 Reading: `new C(..)` of a class of this file (row 1's conditions, and not decorated: a class decorator may return

@@ -62,6 +62,29 @@ export function decoratorRow(checker, dec) {
   return row ? { row, args: call ? [...call.arguments] : [], call } : null;
 }
 
+// Decorators read as metadata (design/heap-stage5.md step 20): a decorator runs once, when its class is defined, and its
+// result may replace what it decorates (TypeScript's legacy __decorate and the ECMAScript decorators alike): a class
+// decorator's result is the class the binding holds, a method or accessor decorator's result the member's descriptor
+// (an accessor pair is one property, so a decorator on either half replaces both). So the member `name` (static or not)
+// of an instance or of the class cls is not its declared text when cls or a class it extends is decorated, or when a
+// member of that name on that chain carries a replacing decorator. A parameter decorator's result is discarded, so it
+// never replaces. A decorator of the table whose row says the body is unchanged (vocabulary: no listed decorator
+// replaces it) is metadata while its fixture does not contradict the row; any other decorator may replace.
+export const replacingDecorator = (checker, dec) => { const r = decoratorRow(checker, dec); return !(r && r.row.body === 'unchanged' && !rowContradicted(r.row.id)); };
+export const replacinglyDecorated = (checker, n) => decoratorsOf(n).some((d) => replacingDecorator(checker, d));
+export function decoratorMayReplace(checker, cls, name, isStatic = false) {
+  const K = ts.SyntaxKind;
+  const decorated = (n) => replacinglyDecorated(checker, n);
+  const own = (m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !!m.modifiers?.some((x) => x.kind === K.StaticKeyword) === isStatic && (ts.isMethodDeclaration(m) || ts.isGetAccessorDeclaration(m) || ts.isSetAccessorDeclaration(m) || ts.isPropertyDeclaration(m));
+  for (let c = cls, seen = new Set(); c && !seen.has(c); ) {
+    seen.add(c);
+    if (decorated(c) || c.members.some((m) => own(m) && decorated(m))) return true;
+    const ext = c.heritageClauses?.find((h) => h.token === K.ExtendsKeyword)?.types[0]?.expression;
+    const d = ext && checker.getSymbolAtLocation(ext)?.valueDeclaration;
+    c = d && ts.isClassLike(d) ? d : null;
+  }
+  return false;
+}
 // ---------- the closure of a node: its text and the text of every same-file top-level declaration it names ----------
 function topStatementOf(d, sf) { let x = d; while (x && x.parent && x.parent !== sf) x = x.parent; return x && x.parent === sf ? x : null; }
 export function closureKey(checker, sf, node, extra = '') {

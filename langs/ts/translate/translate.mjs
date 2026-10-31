@@ -71,7 +71,8 @@ import { elementWritePath } from '../common.mjs'; // a field write through a par
 import { nonNullOnAbsent } from '../common.mjs'; // `x!` on a type that admits absence: one test with the lint
 import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../common.mjs'; // a value that may be absent: an option, its payload read only where a statement test reaches it; one test with the lint (design/opaque-values.md)
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
-import { sealedMember } from '../common.mjs'; // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
+import { sealedMember } from '../common.mjs';
+import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the heap core // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
 import { typeAssertion, assertionHeld, erasedReferenceSlot, readAfterCall, heldRecord, heldField, heldCall, withHeldParams } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint; the read-after-call decision shared with the lint
 const PROMISE_COMBINATORS = new Set(['Promise.resolve', 'Promise.reject', 'Promise.all', 'Promise.allSettled', 'Promise.race', 'Promise.any']), EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect']); // read-after-call: calls that run no outside code while the unit runs, and hooks whose callback runs after the render // a value whose type nothing checked: read with its real type, one test with the lint
 import { callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList, formatUnitList } from '../common.mjs'; // a callback unit's captured inputs and its contextual types; a finding's unit; the one unit-list parser and its inverse
@@ -434,7 +435,7 @@ function translateOnce(file, fnName, opts = {}) {
       if (isWorldField(recv)) return true; // the field lives in the world; a method on it may change it
       if (ts.isIdentifier(recv) && recv.text === 'Object' && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global' && ['keys', 'values', 'entries'].includes(f.name.text) && n.arguments.length === 1 && enumerationRecord(n.arguments[0])) return !recordEnumerationLiteral(n.arguments[0]);
       if (ts.isIdentifier(recv) && PURE_RECEIVERS.has(recv.text) && originOf(checker, recv, sf, currentUnit?.node ?? null).kind === 'global') return !(recv.text !== 'Math' || f.name.text !== 'random'); // Math.random reads the world
-      { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor && (classRef(recv) || madeDispatch(recv, sfc, f.name.text))) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag on a receiver this file made (design/conformance-readings.md); any other receiver, or an inherited method, is a transition
+      { const sfc = classRef(recv) ?? sameFileClassOf(typeOf(recv)); if (sfc) { const callee = fns.get(`${sfc.name.text}.${f.name.text}`); if (callee && !callee.isCtor && ((classRef(recv) && !staticReplaced(sfc, callee)) || madeDispatch(recv, sfc, f.name.text))) return effectfulUnits.has(callee.name); return true; } } // a same-file class: its own unit's flag on a receiver this file made (design/conformance-readings.md); any other receiver, or an inherited method, is a transition
       const t = baseOf(typeOf(recv));
       if (f.name.text === 'toString' && !n.arguments.length && primitiveText(typeOf(recv))) return false; // ToString of a primitive (design/library-rows.md)
       if (LOCALE_READS.has(f.name.text) && (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike))) return true; // the host's locale data decides the text: a world read (design/library-rows.md)
@@ -787,6 +788,9 @@ function translateOnce(file, fnName, opts = {}) {
       ts.forEachChild(n, walk);
     };
     for (const m of cls.members) if (!ts.isConstructorDeclaration(m)) walk(m);
+    // a decorated field lives in the world whether or not a method writes it: its decorator may install an accessor on the
+    // prototype (step 20), so each read and write runs code the field's text does not show
+    for (const m of cls.members) if (ts.isPropertyDeclaration(m) && ts.isIdentifier(m.name) && !m.modifiers?.some((x) => x.kind === K.StaticKeyword) && replacinglyDecorated(checker, m)) out.add(m.name.text);
     return out;
   }
   const isWorldField = (n) => !!(ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword && currentUnit?.cls && !accessorOf(n, 'get') && !accessorOf(n, 'set') && !fns.has(`${currentUnit.className}.${n.name.text}`) && (mutatedFields(currentUnit.cls).has(n.name.text) || currentUnit.isCtor)); // in a constructor every field of this is written through the world: that is what the constructor does
@@ -926,6 +930,7 @@ function translateOnce(file, fnName, opts = {}) {
   const thisRequest = (u, name) => {
     const callee = ownUnit(u, name);
     if (!callee || !u?.cls || callee.isStatic || u.isStatic || callee.accessor) return false;
+    if (decoratorMayReplace(checker, u.cls, name)) return true; // the property the chain finds is a decorator's result, not the class's text (step 20)
     const s = sealedMember(checker, sf, u.cls, name);
     if (s) { if (s.assumed) assumeLines.add(`// ASSUME ${fname(u.name)}: sealed receiver ${u.className}.${name} (${s.why})`); return false; }
     return true;
@@ -1498,9 +1503,11 @@ function translateOnce(file, fnName, opts = {}) {
   }
   // a method call `r.m(args)` runs the class's own unit only when every value r can hold was made by `new` of a class
   // whose lookup of m finds that class's member: the nearest class on its chain declaring an instance member named m
+  const staticReplaced = (cls, callee) => !!callee.isStatic && !callee.accessor && decoratorMayReplace(checker, cls, callee.fn.name?.text ?? '', true); // `C.m()` of a static m a decorator may replace
   function madeDispatch(recv, cls, name) {
     const made = madeBy(recv);
     if (!made) return false;
+    if (made.some((c) => decoratorMayReplace(checker, c, name))) return false; // an instance made here holds what a decorator returned (decorators.mjs decoratorMayReplace): a request, as on any receiver
     return made.every((c) => { const ch = chainOf(c); const owner = ch.classes.find((k) => k.members.some((m) => m.name && !ts.isComputedPropertyName(m.name) && m.name.text === name && !m.modifiers?.some((x) => x.kind === K.StaticKeyword))); return owner === cls; });
   }
   // the name of a request on a held receiver carries the code a made instance of its type would run: the reach of every
@@ -4281,14 +4288,14 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
   // a get or set through an instance accessor on a receiver this file did not make by `new`: [[Get]] and [[Set]] run what
   // that object holds (10.1.8.1, 10.1.9.2), so the access is a request of the world with the value written, as a method
   // call on it is (design/conformance-readings.md); named by the code a made instance would run
-  const heldAccess = (u, n) => !u.isStatic && n.expression.kind !== K.ThisKeyword && n.expression.kind !== K.SuperKeyword && !madeDispatch(n.expression, u.cls, n.name.text);
+  const heldAccess = (u, n) => !u.isStatic && (n.expression.kind === K.ThisKeyword ? decoratorMayReplace(checker, u.cls, n.name.text) : n.expression.kind !== K.SuperKeyword && !madeDispatch(n.expression, u.cls, n.name.text)); // `this.x` of an accessor a decorator may replace is a request too (step 20)
   function accessorCall(u, n, args) {
     if (failedUnits.has(u.name)) fail(n, `callee ${u.name} was not translated`);
     if (heldAccess(u, n)) {
       if (!unitEffectful()) fail(n, 'internal: an accessor of a receiver not made here, in a pure unit');
       const T = classTypeD(u.cls), d = u.accessor === 'set' ? 'Unit' : dtype(retType(u), n);
       addPrelude('World', 'type World');
-      const f = external(`${mangle(T)}_${u.accessor}_${n.name.text}_held${heldKey(typeOf(n.expression))}`, ['World', T, ...(u.accessor === 'set' ? [dtype(typeOf(u.params[0].name), n)] : [])], `(World, ${d})`);
+      const f = external(`${mangle(T)}_${u.accessor}_${n.name.text}_held${heldKey(n.expression.kind === K.ThisKeyword ? checker.getTypeAtLocation(u.cls.name) : typeOf(n.expression))}`, ['World', T, ...(u.accessor === 'set' ? [dtype(typeOf(u.params[0].name), n)] : [])], `(World, ${d})`);
       return hoist(`${f}(${[WORLD, outerParens(expr(n.expression)), ...args].join(', ')})`, d);
     }
     const recv = u.isStatic ? [] : [n.expression.kind === K.ThisKeyword ? SELF : expr(n.expression)];
@@ -4561,6 +4568,12 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       // a method of a same-file class: on the class itself (static) or on a receiver typed by it; the file's own unit
       const asClass = classRef(recv); const sfc = asClass ?? (isOptional(typeOf(recv)) ? null : sameFileClassOf(typeOf(recv)));
       const callee = sfc ? fns.get(`${sfc.name.text}.${name}`) : null;
+      if (callee && asClass && callee.isStatic && staticReplaced(sfc, callee)) {
+        // a static method a decorator may replace (step 20, decorators.mjs decoratorMayReplace): the class's property is the
+        // decorator's result, so the call is a request of the world named by the class's code, decorators included
+        const T = classTypeD(sfc);
+        return externalCall(`${awaited ? 'await_' : ''}${mangle(T)}_static_${name}_held_${hash(reachOf.keyText(sfc))}`, n, [...n.arguments], null, null, true);
+      }
       if (callee && !callee.isCtor && !asClass && !callee.isStatic && !madeDispatch(recv, sfc, name)) {
         // a receiver this file did not make by `new`: it may be any object of the class's shape, and the call runs what
         // that object holds (10.1.8.1), a request of the world with the argument values whether or not its result is

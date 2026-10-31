@@ -33,7 +33,8 @@ import { importIdentity } from '../common.mjs'; // an imported name is the bindi
 import { builtRecord } from '../common.mjs'; // the record-node build takes a spread of a record the unit built (open-datatype)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
-import { sealedMember } from '../common.mjs'; // `this.m()` is the class's own m only when no subclass can hold another: one test with the value reading
+import { sealedMember } from '../common.mjs';
+import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the value reading // `this.m()` is the class's own m only when no subclass can hold another: one test with the value reading
 import { elementWritePath } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
 // design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
@@ -201,7 +202,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // the ordinary lane already assumes away for fields.
   const clsOf = (x) => { let t = nonNull(typeOf(x))[0]; if (t && (t.flags & TF.TypeParameter) && t.isThisType) t = checker.getBaseConstraintOfType(t); return classDeclOf(t); }; // the class of this file an expression's value is an instance of (`this` too)
   const hasDecorator = (n) => !!n?.modifiers?.some((m) => m.kind === K.Decorator);
-  const replaceable = (cd, name) => hasDecorator(cd) || cd.members.some((m) => (ts.isMethodDeclaration(m) && ts.isIdentifier(m.name) && m.name.text === name && hasDecorator(m)));
+  const replaceable = (cd, name) => decoratorMayReplace(checker, cd, name); // one test with the value reading (decorators.mjs): the class, or the member of that name, carries a replacing decorator
   const thisReplaceable = (cd, name) => replaceable(cd, name) || !sealedMember(checker, sf, cd, name); // `this.m()`: the receiver may be an instance of a subclass another file declares, holding another m (common.mjs sealedMember); a receiver made by `new C` here keeps replaceable
   function classWhy(cd) {
     if (cd.heritageClauses?.some((h) => h.token === K.ExtendsKeyword)) return 'extends a class';
@@ -215,9 +216,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (ts.isPropertyDeclaration(m)) {
         if (m.modifiers?.some((x) => x.kind === K.StaticKeyword)) continue;
         if (!ts.isIdentifier(m.name)) return 'field name form';
+        if (replacinglyDecorated(checker, m) || m.modifiers?.some((x) => x.kind === K.DeclareKeyword)) return `field ${m.name.text}: decorated or declared`; // before the optional and definite forms: a decorator on any field may install an accessor there (a table row whose body is unchanged is metadata)
         if (m.exclamationToken) return `field ${m.name.text}: definite`;
         if (m.questionToken) { n++; continue; } // starts missing
-        if (m.modifiers?.some((x) => x.kind === K.Decorator || x.kind === K.DeclareKeyword)) return `field ${m.name.text}: decorated or declared`;
         if (!m.initializer && !assigned.has(m.name.text)) return `field ${m.name.text}: not initialized`;
         n++;
       } else if (ts.isIndexSignatureDeclaration(m)) return 'index signature';
