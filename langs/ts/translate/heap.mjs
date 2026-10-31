@@ -507,6 +507,9 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // and C is not decorated), so its method is C's own text: the core call `C.m` with `c` the receiver
   const freshCall = (e) => { if (!ts.isCallExpression(e) || e.questionDotToken || e.typeArguments || !ts.isPropertyAccessExpression(e.expression) || e.expression.questionDotToken || !ts.isIdentifier(e.expression.expression)) return null; const d = checker.getSymbolAtLocation(e.expression.expression)?.valueDeclaration; if (!d || !ts.isVariableDeclaration(d) || !(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) || !d.initializer) return null; const cd = newClass(unparen(d.initializer)); if (!cd) return null; const name = `${cd.name.text}.${e.expression.name.text}`; const m = fns.get(name); return m && !m.accessor && !m.isCtor && !m.isStatic && !replaceable(cd, e.expression.name.text) ? name : null; };
   const calleeOf = (e, owner) => (sameFileCall(e) ? e.expression.text : freshCall(e) ?? thisCall(e, owner)); // the same-file unit a call runs, or null
+  // a call of a same-file procedure (a void result, its every return bare): its value is undefined, the unit value. A
+  // procedure's expression body and the operand of its `return` may be one: the call, then a bare return (section 8)
+  const procCall = (e, owner) => { const c = calleeOf(e, owner); const m = c && fns.get(c); return !!m && !m.isCtor && isVoidT(checker.getSignatureFromDeclaration(m.fn)?.getReturnType()); };
   const block = (s) => (ts.isBlock(s) ? [...s.statements] : [s]);
   const endsWithReturn = (list) => {
     const s = list[list.length - 1]; if (!s) return false;
@@ -540,7 +543,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const rt = checker.getSignatureFromDeclaration(u.fn)?.getReturnType();
     const proc = isVoidT(rt) || !!u.isCtor; // a procedure: it returns undefined, read as the unit value; its body may fall off its end (a constructor's too, then it returns the instance)
     if (!proc && (!rt || !shapeOf(rt))) no(`return type: ${shapeWhy(rt)}`);
-    if (proc && !ts.isBlock(u.body) && !calleeOf(unparen(u.body), u)) no('expression body of a procedure (only a same-file call)');
+    if (proc && !ts.isBlock(u.body) && !procCall(unparen(u.body), u)) no('expression body of a procedure (only a call of a same-file procedure)');
     if (!ok) return false;
     // a record value where a dictionary is read (an initializer, an argument, a return, a field of a literal: the
     // contextual type says so): its key order is the order its fields were created in, which a record cell does not
@@ -698,7 +701,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
             if (!ts.isIdentifier(d.name) || !d.initializer) return no('binding form'); if (d.name.text === HW || names.has(d.name.text)) return no('name reused'); if (/_$/.test(d.name.text)) return no('name ending in an underscore (the generated names do)'); if (!shapeOf(typeOf(d.name))) return no(`local type: ${shapeWhy(typeOf(d.name))}`); names.add(d.name.text); checkExpr(d.initializer); }
           continue;
         }
-        if (ts.isReturnStatement(s)) { if (!s.expression !== proc) return no(proc ? 'a value returned from a procedure' : 'bare return'); if (i !== list.length - 1) return no('statement after return'); return s.expression ? checkExpr(s.expression) : undefined; }
+        if (ts.isReturnStatement(s)) { if (!s.expression !== proc && !(proc && !u.isCtor && procCall(unparen(s.expression), u))) return no(proc ? 'a value returned from a procedure' : 'bare return'); if (i !== list.length - 1) return no('statement after return'); return s.expression ? checkExpr(s.expression) : undefined; }
         if (proc && ts.isIfStatement(s)) { checkCond(s.expression); checkStmts(block(s.thenStatement)); if (s.elseStatement) checkStmts(block(s.elseStatement)); continue; } // a branch of a procedure may fall through to the rest
         if (ts.isIfStatement(s)) {
           checkCond(s.expression);

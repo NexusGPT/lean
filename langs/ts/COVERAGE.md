@@ -120,6 +120,7 @@ reading no value model can give; the lint says what to write instead).
 | concept | units | reading today | faithful reading | status |
 |---|---|---|---|---|
 | `if`, `switch` with `return`/`break` per case, `?:`, early return | 21,957, 1,076, 13,560 | exact | same | done |
+| a procedure (a `void` result) in the heap core: falling off its end, a branch falling through, a bare `return`, an expression body or a `return` of a same-file procedure's call | | exact: `(HWorld, ())`, compared on the heap it leaves ([design](design/heap-stage5.md) section 8, 2026-10-31); a `return` of any other value, `return undefined`, a `return` in a loop stay out of the core (the value lane reads them) | the same; `return undefined`/`return void e` as a bare return | partial (lane) |
 | `switch` with fall-through | | exact for scalar discriminants: lazy first-match search, default in source position, ordered clause suffixes; reference/unknown discriminants opaque | exact: the clause list with the fall-through as a chain | partial (lane) |
 | `for..of`, counted `for`, `while` with a bound | 4,595, 1,397, 477 | exact (a recursive helper) | same | done |
 | `while` without a bound, labelled statements | 477 (some), 10 | exact for a stable integer counter/constant or length bound, including guarded `while (true)` and `for (;;)`; other bounds opaque; loop labels thread named break/continue/return completions through nested helpers; block labels refused (`label`) | a label is a named exit of the helper | partial (lane) |
