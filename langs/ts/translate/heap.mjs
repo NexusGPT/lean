@@ -533,7 +533,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // an expression with no call, allocation or element access: it reads the heap and nothing else, so reading it eagerly is exact
   const pureExpr = (x) => { x = unparen(x); if (ts.isIdentifier(x) || ts.isNumericLiteral(x) || ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x) || [K.TrueKeyword, K.FalseKeyword, K.ThisKeyword].includes(x.kind)) return true; if (ts.isPropertyAccessExpression(x)) return pureExpr(x.expression); if (ts.isBinaryExpression(x)) return pureExpr(x.left) && pureExpr(x.right); if (ts.isPrefixUnaryExpression(x)) return pureExpr(x.operand); return false; };
   const isVoidT = (t) => !!t && !!(t.flags & TF.Void); // a declared or inferred `void` result
-  const isNumT = (t) => !!(t.flags & TF.NumberLike) && !(t.flags & (TF.Undefined | TF.Null));
+  const isNumT = (t) => (t.flags & TF.Union ? t.types.length > 0 && t.types.every((x) => x.flags & TF.NumberLike) : !!(t.flags & TF.NumberLike) && !(t.flags & (TF.Undefined | TF.Null))); // a union of number literals (`0 | 1 | 2`, a numeric discriminant) is a number
   // a string at run time: its flag, or a type whose shape is the primitive string (a union of string literals, a branded
   // string); a type parameter bounded by string has no shape and stays out
   const isStrT = (t) => !!(t.flags & TF.StringLike) || (() => { const sh = shapeOf(t); return !!sh && sh.kind === 'prim' && sh.d === 'string'; })();
@@ -577,8 +577,40 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     const s = list[list.length - 1]; if (!s) return false;
     if (ts.isReturnStatement(s)) return true;
     if (ts.isIfStatement(s) && s.elseStatement) return endsWithReturn(block(s.thenStatement)) && endsWithReturn(block(s.elseStatement));
+    if (ts.isSwitchStatement(s)) { const sw = switchForm(s); return !sw.why && !sw.after; }
     return false;
   };
+  // a switch (design/heap-stage5.md section 12, 2026-10-31): the discriminant is evaluated once and each case expression
+  // in source order, compared by ===; the first match selects its clause, an empty clause runs the next non-empty one,
+  // and default (wherever it stands) runs only after every case failed. Each clause ends its path: a return, or a final
+  // `break` (or the last clause's end) that leads to the statements after the switch; any other fall-through, and a
+  // break anywhere else, keep the unit out. With no default, a literal union every case covers has no unmatched path
+  // (TypeScript's exhaustiveness, the value lane's reading): the last case is the else. `cases`: [{ test, body, falls }];
+  // `fallback`: the path when no case matches (null: the statements after the switch); `after`: whether any path
+  // reaches the statements after the switch.
+  function switchForm(s) {
+    const cl = [...s.caseBlock.clauses];
+    let jump = false; const w = (n) => { if (ts.isBreakStatement(n) || ts.isContinueStatement(n) || ts.isLabeledStatement(n)) jump = true; if (!jump && !ts.isFunctionLike(n)) ts.forEachChild(n, w); };
+    const group = (i) => {
+      let j = i; while (j < cl.length && !cl[j].statements.length) j++;
+      if (j === cl.length) return { body: [], falls: true, at: j };
+      let body = [...cl[j].statements]; let falls = false;
+      const last = body[body.length - 1];
+      if (ts.isBreakStatement(last) && !last.label) { body = body.slice(0, -1); falls = true; } else if (!endsWithReturn(body)) { if (j !== cl.length - 1) return { why: 'a switch clause falls through to the next' }; falls = true; }
+      body.forEach(w); if (jump) return { why: 'a jump inside a switch clause' };
+      return { body, falls, at: j };
+    };
+    const cases = [];
+    for (let i = 0; i < cl.length; i++) if (ts.isCaseClause(cl[i])) { const g = group(i); if (g.why) return g; cases.push({ test: cl[i].expression, ...g }); }
+    const d = cl.findIndex((c) => ts.isDefaultClause(c));
+    let fallback = null;
+    if (d >= 0) { fallback = group(d); if (fallback.why) return fallback; }
+    else if (cases.length) {
+      const t = typeOf(s.expression), parts = t.flags & TF.Union ? t.types : [t], lits = cases.map((c) => typeOf(c.test));
+      if (parts.every((p) => (p.flags & (TF.StringLiteral | TF.NumberLiteral | TF.BooleanLiteral)) && lits.some((q) => p.flags === q.flags && (p.value ?? p.intrinsicName) === (q.value ?? q.intrinsicName)))) fallback = cases.pop();
+    }
+    return { cases, fallback, after: !fallback || fallback.falls || cases.some((c) => c.falls) };
+  }
   const whyNot = new Map(); // unit name -> the reasons it is out of the core (the first reason met on each path)
   function coreUnit(u) {
     const reasons = new Set();
@@ -771,6 +803,18 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
           continue;
         }
         if (ts.isReturnStatement(s)) { if (!s.expression !== proc && !(proc && !u.isCtor && procCall(unparen(s.expression), u))) return no(proc ? 'a value returned from a procedure' : 'bare return'); if (i !== list.length - 1) return no('statement after return'); return s.expression ? checkExpr(s.expression) : undefined; }
+        if (ts.isSwitchStatement(s)) { // a switch over a primitive with constant cases (switchForm)
+          if (loop) return no('switch inside a loop body');
+          const sw = switchForm(s); if (sw.why) return no(sw.why);
+          const ds = shapeOf(typeOf(s.expression)); if (!ds || ds.kind !== 'prim') return no('switch over a value that is not a primitive');
+          if (!pureExpr(s.expression)) return no('switch over an expression that calls or allocates');
+          checkExpr(s.expression);
+          for (const c of [...sw.cases, ...(sw.fallback?.test ? [sw.fallback] : [])]) { const cs = shapeOf(typeOf(c.test)); if (!cs || cs.kind !== 'prim' || cs.d !== ds.d || !constExpr(c.test, 0)) return no('switch case that is not a constant of the discriminant\'s primitive'); checkExpr(c.test); }
+          const seen = new Set(); // clauses sharing a body (an empty clause runs the next) check it once
+          for (const g of [...sw.cases, ...(sw.fallback ? [sw.fallback] : [])]) { if (seen.has(g.at)) continue; seen.add(g.at); checkStmts(g.body); if (!ok) return; if (!g.falls && !proc && !endsWithReturn(g.body)) return no('switch clause without return'); }
+          if (!sw.after && i !== list.length - 1) return no('statement after switch');
+          continue;
+        }
         if (proc && ts.isIfStatement(s)) { checkCond(s.expression); checkStmts(block(s.thenStatement)); if (s.elseStatement) checkStmts(block(s.elseStatement)); continue; } // a branch of a procedure may fall through to the rest
         if (ts.isIfStatement(s)) {
           checkCond(s.expression);
@@ -1417,6 +1461,14 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
         }
         if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { const tb = tupleBinding(d); if (tb) { const r = bind(exprAs(d.initializer, tb.s), 't'); for (const el of tb.els) { if (tb.s.tuple) lines.push(`var ${dn(el.name.text)} := Get_${tb.s.key}_${dn(`_${el.i}`)}(${HW}, ${r});`); else { lines.push(`var ${HW} := Oob_${tb.s.key}(${HW}, ${r}, ${el.i});`); lines.push(`var ${dn(el.name.text)} := Idx_${tb.s.key}(${HW}, ${r}, ${el.i});`); } } continue; } if (keyedLocal(d.name, u.fn)) { const [ks, kr, ki] = element(unparen(d.initializer)); lines.push(`var ${keyName(d)} := ${ki};`); lines.push(`var ${presName(d)} := DictIn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${ownName(d)} := DictOwn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${dn(d.name.text)} := DictGet_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); continue; } const v = exprAs(d.initializer, shapeOf(typeOf(d.name))); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; } // a node read through a key: its presence beside it (keyedLocal)
         if (ts.isReturnStatement(s)) { const v = s.expression ? exprAs(s.expression, rt) : '()'; const pre = flush(); out.push(`${pre ? pre + '\n' : ''}(${HW}, ${v})`); return out.filter(Boolean).join('\n'); }
+        if (ts.isSwitchStatement(s)) { // the discriminant once, then each case in source order; a clause that falls runs the rest after it (switchForm)
+          const sw = switchForm(s); const v = bind(expr(s.expression), 'w'); const tests = sw.cases.map((c) => expr(c.test)); const pre = flush(); const rest = list.slice(i + 1);
+          const path = (g) => stmts(g.falls ? [...g.body, ...rest] : g.body, k);
+          let tail = sw.fallback ? path(sw.fallback) : stmts(rest, k);
+          for (let j = sw.cases.length - 1; j >= 0; j--) tail = `if ${v} == ${tests[j]} then\n${indent(path(sw.cases[j]))}\nelse\n${indent(tail)}`;
+          out.push(`${pre ? pre + '\n' : ''}${tail}`);
+          return out.filter(Boolean).join('\n');
+        }
         if (ts.isIfStatement(s)) {
           const c = cond(s.expression); const pre = flush();
           const t = stmts(block(s.thenStatement));
