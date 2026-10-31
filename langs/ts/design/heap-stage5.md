@@ -513,6 +513,32 @@ n8n core 82 -> 82, own syntax 375 -> 427; langchainjs core 30 -> 32 (a unit test
 callback), own syntax 115 -> 139; no unit left the core. The mirror (`makeMirror`) does not follow the core's
 readings since stage 4, so its mismatch count grows with every reading; it is no check of this core.
 
+### 11c. Read again at the merge, 2026-10-31: a binding written in place is its value, not a let
+
+The suite at the merge of 11b (`lead-30569d74`) had one pair red: `map_block`, `Equal_labels_inner proved` not
+proved; the bisect named 11b's reading commit (`6e6c7918f`, green at `01b7d314f`). `labelsInner`'s candidate names a
+part of the callback's result (`(x) => { const t = x.tag; return t.label; }` for `(x) => x.tag.label`). Before 11b the
+block body was `callback form`, so the unit stayed out of the core and the value lane proved it: its `Map_Item_string`
+states the result item by item, and the theorem compares the tuple's sequence first. With 11b the unit entered the core,
+which writes the map as `Map_..(hw_, items, f)`, a fresh cell holding `seq(|xs|, i => f(xs[i]))` inside the heap. The
+two sides' `f` were `(x: Ref) => (var t := Get_tag(hw_, x); Get_label_(hw_, t))` and
+`(x: Ref) => Get_label_(hw_, Get_tag(hw_, x))`: Dafny has no extensionality for function values, and inside the
+heap's map no hint reaches the sequence, so the unit was equal and not proved. 11b's measured note above already says
+it: the core compares a callback handed to `map` by its text.
+
+The mechanism: a binding of a callback's block body is now written in place as its value, each use of its name the
+binding's initializer (`cbCode`, the map `inPlace` read where `expr` writes a name), as a module constant is written
+by its initializer (section 9). The let and the value are the same: nothing in a callback writes, so the
+initializer's value is the same wherever it is read, and a binding read twice is the same value twice. What changes is
+the text: naming a part of a callback's result, or writing a binding's value in place, now leaves the lambda's text
+the same on both sides, which is how the core compares function values; the rule is the syntax's, keyed on no name.
+11b's readings stand: the block body, the index, the captures; `doubled` (`array_callbacks_rest`) is now the same text
+on both sides, still proved. A callback whose two sides compute the same value by different expressions (another
+operator order, another test) is still not proved in the core: that needs a pointwise lemma of the map helpers in the
+theorem, not this reading.
+Pair: `map_block` 11/11 (red at the base, `Equal_labels_inner`); the regression list is in
+`lane/fix-map-block-regression-result.md`.
+
 ## 12. Discriminated unions of records
 
 Reading: a union of records `A | B` where every alternative declares one field as literals and the alternatives'
