@@ -171,7 +171,12 @@ Pair `regular_expressions`: `isCode` (the same literal on a renamed string compa
 replacement: WITNESS), `year` (`!m || !m.groups` then `m.groups.y`, against `m?.groups?.y ?? ""`: proved), `month`
 (another named capture of the same match: WITNESS). Lint: the escape fixture `library_members_match_groups` now holds
 a group in one alternative (still refused); its earlier form, `m?.groups?.host` of `/@(?<host>[a-z.]+)/`, is read.
-Census: CENSUS_PLACEHOLDER
+Census (`census.mjs` on the copies under `/root/da/census/repos/`, base b5c07450 against this reading; units whose
+first stop was `.groups` before): langchainjs 2 units, both entered (entered 2,766 -> 2,768); n8n 11 units, none moved
+(two stop first by another rule; the rest by forms left out: a pattern held in a name, destructuring, a string the unit
+writes, a match through `?.match`, a string rooted at `this`); nexus, read under `--include apps/vibe-agent` (the only
+nexus file with a match's `.groups`; the whole-root run was stopped by the machine's memory), 2 units:
+`assumedRoleArnToRoleArn` entered (213 -> 214), `resolveRoleArn` moved to `copied-argument`.
 
 ## 8. Void results
 
