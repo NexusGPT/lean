@@ -38,7 +38,7 @@ import { fileURLToPath } from 'node:url';
 import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt } from './exec/run.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
-import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, enclosingUnitName } from './common.mjs';
+import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, enclosingUnitName, MODULE_UNIT } from './common.mjs';
 import { lintFile } from './lint/lint.mjs';
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
@@ -105,6 +105,13 @@ export async function check(opts) {
   const bounded = b.verdict === 'PASS-decided' ? 'PASS-decided' : 'PASS-bounded'; // the rung lane B reached: decided (a finite component over every click order) outranks bounded
   const rung = () => (adapter ? 'ASK' : (b.verdict === 'PASS-bounded' || b.verdict === 'PASS-decided') ? bounded : 'ASK'); // what lane B alone supports; under an adapter it compared raw inputs, so nothing
   const unreached = (extra) => ((b.unreached || b.kind === 'spin-bound' || b.kind === 'callback-undriven') && !adapter ? { ...extra, reason: extra.reason ? `${b.reason}; ${extra.reason}` : b.reason } : extra); // lane B's ASK when no drawn input got past a guard: its reason (the count and the first throw) is the verdict's, whatever lane A could not prove; lane B killed at its bound (spin-bound): the bound and the side running are the verdict's reason too; a callback lane B could not drive (callback-undriven, design/callbacks.md): the gap is the verdict's reason unless lane A proves the unit
+  // the module unit (common.mjs MODULE_UNIT): lane A translates functions, so the module's evaluation is read by lane B
+  // alone, and its verdict is lane B's rung (a WITNESS, PASS-bounded at best, else ASK with lane B's reason)
+  if (unit === MODULE_UNIT) {
+    cert.lanes.A = { verdict: 'ASK', stage: 'module-unit', detail: 'lane A translates functions; the module unit (the top-level statements in init order) is read by lane B alone' };
+    if (witnessed) return witnessOut();
+    return finish(rung(), cert, rung() === 'ASK' ? { reason: b.reason ?? 'module unit: lane B gave no verdict' } : {});
+  }
   // Certified decisions precede translation; bounded evidence remains separate. A witness,
   // an adapter or a contradicted runtime model cannot be hidden by this shortcut.
   const correspondence = !adapter && !witnessed && !b.bound?.library?.defects?.length && !b.bound?.frontEnd?.handlers?.defects?.length

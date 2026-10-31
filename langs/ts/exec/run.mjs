@@ -23,7 +23,7 @@ import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fork, spawnSync, execFile } from 'node:child_process';
 import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, CLOCK_EPOCH, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
-import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName } from '../common.mjs';
+import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName, MODULE_UNIT, moduleStatements } from '../common.mjs';
 import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles , enterWorld } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength, walkLength } from './gen.mjs';
@@ -105,9 +105,28 @@ function compileWithSites(src, tsName, abs) {
     };
     return tree => ts.visitNode(tree, visit);
   };
+  // The module unit (common.mjs MODULE_UNIT): each statement the module's evaluation runs is entered by a mark,
+  // `state.enter && state.enter(file, index, bindings)`, a no-op unless the module unit is observed (runModuleUnit). The
+  // marks come first, so `index` is the statement's place in the file's own statements. `bindings` is a hoisted function
+  // of the file's scope that reads every module binding the module's own code holds, each by a getter of its own (one in
+  // its temporal dead zone throws, and is read as uninitialized).
+  let bindingsName = '__lean_module_bindings';
+  while (src.includes(bindingsName)) bindingsName += '_';
+  const moduleSts = moduleStatements(sf), moduleAt = new Map(moduleSts.map((m) => [m.index, m]));
+  const moduleMarks = context => {
+    const f = context.factory;
+    return tree => {
+      if (!ts.isSourceFile(tree)) return tree;
+      const enter = (i) => f.createExpressionStatement(f.createLogicalAnd(f.createPropertyAccessExpression(f.createIdentifier(stateName), 'enter'),
+        f.createCallExpression(f.createPropertyAccessExpression(f.createIdentifier(stateName), 'enter'), undefined, [f.createStringLiteral(abs), f.createNumericLiteral(i), f.createIdentifier(bindingsName)])));
+      return f.updateSourceFile(tree, tree.statements.flatMap((st, i) => (moduleAt.has(i) ? [enter(i), st] : [st])));
+    };
+  };
+  const bound = [...new Set(moduleSts.flatMap((m) => m.declares))];
+  const bindingsShim = `\nfunction ${bindingsName}() { return { ${bound.map((n) => `${JSON.stringify(n)}: function () { return ${n}; }`).join(', ')} }; }\n`;
   const emit = (before) => ts.transpileModule(src, { compilerOptions: COMPILE, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
-  const marked = emit([callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
+  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -116,7 +135,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) };
+  const compiled = { src, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) + bindingsShim };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -1103,7 +1122,7 @@ export function workerFlags(opts) {
 const crumbOf = (c) => (c ? `${c.phase}${c.input !== null && c.input !== undefined ? ` (input ${c.input})` : ''}${c.side ? `, the ${c.side} side running` : ''}${c.loading ? `, loading ${c.loading}` : ''}` : 'start');
 // a unit whose parent does not hold it runs as today (new-unit.mjs starts its own bounded process); every other unit runs
 // in the child under the bound
-const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit);
+const parentHolds = (parent, unit) => !!parent && fs.existsSync(parent) && (unit === MODULE_UNIT || topLevelFunctions(ts.createSourceFile(parent, fs.readFileSync(parent, 'utf8'), ts.ScriptTarget.Latest, true)).has(unit));
 let recordHeadCache = null;
 // lean's own head, as pr.mjs leanVersion reads it: the commit of the checkout that TRACKS this file; a copy of lean placed
 // inside some other repository (a harness's temp folder under its own checkout) must not name that repository's head
@@ -1214,7 +1233,106 @@ export function inputPlan(parent, candidate, unit, { project = true, seed = 1, v
   spec.walkFrom = heaps.builders.length; // the generated inputs walk the compared boundaries from the first one after the enumerated heaps
   return { spec, heaps, draw: (i, env) => { const inputs = i < heaps.builders.length ? heaps.builders[i](env) : aliasInputs(inputsFor(spec, seed, i, env), spec, seed, i); enterWorld(env, spec, i, inputs); return inputs; } }; // a full-world input after the draw (fake.mjs enterWorld)
 }
+// ----- the module unit (common.mjs MODULE_UNIT, design/module-unit.md) -----
+// Its call is the module's evaluation, as the loader runs it for every unit (the world answers with handles while a module
+// loads); input i is the environment's seed (the clock, random), the same on both sides. The observation: the outcome (the
+// module loaded, or what it threw), the requests in init order, the work it armed (recorded, never fired), its exports by
+// key and its own bindings by name (common.mjs moduleStatements `declares`). A binding only one side declares is no
+// observation (only the units read it, each checked as its own unit); a function value is its handle, never its text.
+// The witness names the statement on each side: the statement whose mark (compileWithSites) was the last entered before
+// the first differing request, armed work or thrown value; for a binding or an export key, the last top-level statement
+// that writes it.
+const moduleSideOf = (file) => {
+  const sf = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+  const statements = moduleStatements(sf).map((m) => {
+    const start = m.node.getStart(sf), site = { file: path.resolve(file), start: sf.getLineAndCharacterOfPosition(start).line + 1, end: sf.getLineAndCharacterOfPosition(m.node.end - 1).line + 1 };
+    return { ...m, site: Object.defineProperty(site, 'text', { value: sf.text.slice(start, m.node.end).slice(0, 200) }) };
+  });
+  return { file: path.resolve(file), statements };
+};
+async function observeModule(side, i, seed, ms, root) {
+  const env = new Environment(seed * 7919 + i);
+  const box = sandbox(env, root);
+  const marks = []; let bindings = null;
+  env.siteState.enter = (f, index, b) => { if (f !== side.file) return; marks.push({ index, trace: env.trace.length, pending: env.pending.length }); if (b) bindings = b; };
+  let outcome, exportsObj = null;
+  lateErrors.length = 0;
+  try { exportsObj = guardedCall(env, () => box.load(side.file), ms); outcome = { returned: 'evaluated' }; }
+  catch (e) {
+    if (e instanceof CallTimeout || e?.message === '__timeout__') { callTimedOut(); return { harness: 'timeout' }; }
+    if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
+    if (harnessStop(e)) return { harness: String(e && e.message).slice(0, 200) };
+    if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' };
+    outcome = { threw: render(e) };
+  }
+  await new Promise((r) => setImmediate(r));
+  await new Promise((r) => setImmediate(r)); // a load-time continuation settles (or fails) now, inside this side
+  for (const m of lateErrors.splice(0)) env.record('late-error', 'process', [m.slice(0, 200)]);
+  const trace = env.trace.slice(), pending = env.pending.map(({ id, ...rest }) => rest); // a timer id is an arm counter, not an observation
+  const read = (get) => { try { return render(get()); } catch { return { $uninitialized: true }; } };
+  const getters = bindings ? bindings() : {};
+  const values = Object.fromEntries(Object.keys(getters).sort().map((k) => [k, read(getters[k])]));
+  const exported = exportsObj && (typeof exportsObj === 'object' || typeof exportsObj === 'function') ? Object.fromEntries(Object.keys(exportsObj).filter((k) => !k.startsWith('__lean')).sort().map((k) => [k, read(() => exportsObj[k])])) : null;
+  env.trace.length = trace.length; // a getter of an export (a re-export reads the other module) is the harness's read, never the module's request
+  return Object.defineProperty({ outcome, trace, pending, bindings: values, exports: exported }, 'marks', { value: marks });
+}
+// the statement of a side for the k-th record of a list the marks count (trace, pending): the last statement entered before it
+const markedStatement = (side, obs, list, k) => { let at = null; for (const m of obs.marks ?? []) if (m[list] <= k) at = m.index; else break; return side.statements.find((s) => s.index === at) ?? null; };
+const lastEntered = (side, obs) => { const m = (obs.marks ?? []).at(-1); return m ? side.statements.find((s) => s.index === m.index) ?? null : null; };
+const lastWriter = (side, test) => side.statements.filter(test).at(-1) ?? null;
+function moduleDifference(sides, oP, oC) {
+  const lines = (p, c) => ({ kind: 'module statement', parent: p ? siteLines(p.site) : null, candidate: c ? siteLines(c.site) : null });
+  const J = JSON.stringify;
+  if (J(oP.outcome) !== J(oC.outcome)) return { field: 'outcome', lines: lines(lastEntered(sides.parent, oP), lastEntered(sides.candidate, oC)) };
+  for (const list of ['trace', 'pending']) {
+    const a = oP[list], b = oC[list];
+    if (J(a) === J(b)) continue;
+    let k = 0; while (k < Math.max(a.length, b.length) && J(a[k]) === J(b[k])) k++;
+    return { field: list, index: k, parent: a[k] ?? null, candidate: b[k] ?? null, lines: lines(markedStatement(sides.parent, oP, list, k), markedStatement(sides.candidate, oC, list, k)) };
+  }
+  const order = (side, key) => { const s = lastWriter(side, key); return s ? s.index : Infinity; };
+  const shared = Object.keys(oP.bindings).filter((n) => Object.hasOwn(oC.bindings, n) && J(oP.bindings[n]) !== J(oC.bindings[n]));
+  if (shared.length) {
+    const name = shared.sort((x, y) => order(sides.parent, (s) => s.writes.includes(x)) - order(sides.parent, (s) => s.writes.includes(y)))[0];
+    const writer = (side) => lastWriter(side, (s) => s.writes.includes(name));
+    return { field: 'bindings', binding: name, parent: oP.bindings[name], candidate: oC.bindings[name], lines: lines(writer(sides.parent), writer(sides.candidate)) };
+  }
+  if (J(oP.exports) !== J(oC.exports)) {
+    const keys = [...new Set([...Object.keys(oP.exports ?? {}), ...Object.keys(oC.exports ?? {})])].filter((k) => J(oP.exports?.[k]) !== J(oC.exports?.[k]));
+    const writes = (k) => (s) => s.exportKeys.includes(k) || s.exportKeys.includes('*');
+    const key = keys.sort((x, y) => order(sides.parent, writes(x)) - order(sides.parent, writes(y)))[0];
+    return { field: 'exports', key, parent: oP.exports?.[key] ?? { $absent: true }, candidate: oC.exports?.[key] ?? { $absent: true }, lines: lines(lastWriter(sides.parent, writes(key)), lastWriter(sides.candidate, writes(key))) };
+  }
+  return null;
+}
+// the observation both sides are compared on: a binding counts when both sides declare it
+const comparable = (o, other) => ({ ...o, bindings: Object.fromEntries(Object.entries(o.bindings).filter(([k]) => Object.hasOwn(other.bindings, k))) });
+async function runModuleUnit(opts) {
+  const { parent, candidate, n = 200, seed = 1, ms = 2000 } = opts, unit = MODULE_UNIT;
+  if (!parent || !fs.existsSync(parent) || !candidate || !fs.existsSync(candidate)) return { verdict: 'ASK', unit, reason: `module unit: the ${!parent || !fs.existsSync(parent) ? 'parent' : 'candidate'} file is absent; the module unit compares two evaluations` };
+  const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
+  setRoots(sideLocations(parent, candidate, roots));
+  const sides = { parent: moduleSideOf(parent), candidate: moduleSideOf(candidate) };
+  const bound = { n, seed, ms, observation: 'the module\'s evaluation: its outcome, the requests in init order, the work it armed (never fired), its exports by key, the bindings both sides declare', inputs: 'input i seeds the environment (the clock, random); while a module loads the world answers with handles', statements: { parent: sides.parent.statements.length, candidate: sides.candidate.statements.length } };
+  const diffs = [], skipped = [];
+  for (let i = 0; i < n; i++) {
+    step('module', i);
+    const oP = await observeModule(sides.parent, i, seed, ms, roots.parent), oC = await observeModule(sides.candidate, i, seed, ms, roots.candidate);
+    if (oP.harness === 'timeout' && oC.harness === 'timeout') { skipped.push(i); continue; }
+    if (oP.harness || oC.harness) return { verdict: 'ASK', unit, reason: `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`, bound };
+    const cP = comparable(oP, oC), cC = comparable(oC, oP);
+    if (JSON.stringify(cP) === JSON.stringify(cC)) continue;
+    diffs.push({ input: i, args: [], parent: cP, candidate: cC, where: moduleDifference(sides, oP, oC) });
+    if (diffs.length >= 3) break;
+  }
+  if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound };
+  if (skipped.length) bound.skipped = { inputs: skipped.length, reason: 'both sides timed out on that input' };
+  if (skipped.length >= n) return { verdict: 'ASK', unit, reason: `every input timed out (${skipped.length} of ${n})`, bound };
+  return { verdict: 'PASS-bounded', unit, bound };
+}
+
 async function runPairOnce(opts) {
+  if (opts.unit === MODULE_UNIT) return runModuleUnit(opts);
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
   deepMode.depth = deepDepth(deep); deepLog.rendered.clear(); deepLog.handles.clear(); deepLog.contexts.clear();
   const styles = stylesLayer({ parent: projectConfig(parent), candidate: projectConfig(candidate) }); let treeDone = false; // the styles layer reads every input both sides rendered, past the tree layer's witnesses too; each side's classes under its own project's Tailwind configuration (the nearest tailwind.config.* or CSS entry, exec/styles.mjs projectConfig)

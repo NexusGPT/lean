@@ -479,6 +479,68 @@ export function topLevelFunctions(sf) {
 }
 
 /**
+ * The module unit: a file's top-level statements, in init order, read as one unit named MODULE_UNIT (a name no
+ * declaration can take). Its call is the module's evaluation: the requests it makes, the work it arms, its exports and
+ * the values of its own bindings (exec/run.mjs runModuleUnit). It is not in topLevelFunctions: a function is the unit
+ * of its own body, and the module unit owns what no listed unit holds (ci/ledger.mjs routeChanges). design/module-unit.md.
+ */
+export const MODULE_UNIT = '(module)';
+const typeOnlyStatement = (st) => ts.isInterfaceDeclaration(st) || ts.isTypeAliasDeclaration(st)
+  || !!st.modifiers?.some((m) => m.kind === ts.SyntaxKind.DeclareKeyword)
+  || (ts.isImportDeclaration(st) && !!st.importClause?.isTypeOnly) || (ts.isExportDeclaration(st) && st.isTypeOnly);
+const exportedStatement = (st) => !!st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+const bindingNames = (name, out = []) => {
+  if (ts.isIdentifier(name)) out.push(name.text);
+  else for (const e of name.elements ?? []) if (!ts.isOmittedExpression(e)) bindingNames(e.name, out);
+  return out;
+};
+const unwrapLeft = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e))) e = e.expression; return e; };
+// the export key an assignment target writes: `exports.k`, `module.exports.k` (k), `module.exports` (every key, '*')
+const exportTarget = (left) => {
+  const l = unwrapLeft(left);
+  const isModuleExports = (x) => ts.isPropertyAccessExpression(x) && ts.isIdentifier(x.expression) && x.expression.text === 'module' && x.name.text === 'exports';
+  if (isModuleExports(l)) return '*';
+  if (ts.isPropertyAccessExpression(l) && ((ts.isIdentifier(l.expression) && l.expression.text === 'exports') || isModuleExports(l.expression))) return l.name.text;
+  return null;
+};
+/**
+ * The statements the module's evaluation runs, in init order: every top-level statement but a type-only one (an
+ * interface, a type alias, a `declare`, an `import type` or `export type`). Each with `index` (its place in
+ * sf.statements), the module bindings it declares that the module's own code holds (`declares`: a variable or enum it
+ * does not export; an exported one is the exports' key, a function or class declaration is its own unit), and what its
+ * top-level code writes (`writes`: bindings assigned outside every function, and `exportKeys`: the export keys it writes).
+ */
+export function moduleStatements(sf) {
+  const out = [];
+  sf.statements.forEach((st, index) => {
+    if (typeOnlyStatement(st)) return;
+    const declares = [], writes = new Set(), exportKeys = new Set();
+    if (ts.isVariableStatement(st)) {
+      const names = st.declarationList.declarations.flatMap((d) => bindingNames(d.name));
+      if (exportedStatement(st)) names.forEach((n) => exportKeys.add(n)); else declares.push(...names);
+    } else if (ts.isEnumDeclaration(st)) { if (exportedStatement(st)) exportKeys.add(st.name.text); else declares.push(st.name.text); }
+    else if ((ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st)) && exportedStatement(st)) exportKeys.add(st.modifiers.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword) ? 'default' : st.name?.text ?? 'default');
+    else if (ts.isExportAssignment(st)) exportKeys.add(st.isExportEquals ? '*' : 'default');
+    else if (ts.isExportDeclaration(st)) { if (st.exportClause && ts.isNamedExports(st.exportClause)) for (const e of st.exportClause.elements) exportKeys.add(e.name.text); else exportKeys.add('*'); }
+    // the writes the statement's own top-level code makes: a function inside it runs only when called, so it writes nothing here
+    const walk = (n) => {
+      if (ts.isFunctionLike(n) || ts.isClassLike(n)) return;
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment) {
+        const l = unwrapLeft(n.left);
+        if (ts.isIdentifier(l)) writes.add(l.text);
+        const k = exportTarget(n.left); if (k) exportKeys.add(k);
+      }
+      if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === ts.SyntaxKind.PlusPlusToken || n.operator === ts.SyntaxKind.MinusMinusToken)) { const l = unwrapLeft(n.operand); if (ts.isIdentifier(l)) writes.add(l.text); }
+      ts.forEachChild(n, walk);
+    };
+    if (!ts.isFunctionDeclaration(st) && !ts.isClassDeclaration(st)) ts.forEachChild(st, walk);
+    for (const n of declares) writes.add(n);
+    out.push({ node: st, index, declares, writes: [...writes], exportKeys: [...exportKeys] });
+  });
+  return out;
+}
+
+/**
  * The object literals a module statement exports or binds to a module-level const, with the binding that names each:
  * `export const X = {...}` and `const X = {...}` (X), `export default {...}` (default), `module.exports = {...}`
  * (exports), `exports.x = {...}` and `module.exports.x = {...}` (x). Parentheses, `as` and `satisfies` are looked through.

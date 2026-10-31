@@ -89,8 +89,25 @@ try {
   write('mixed.ts', 'export function f() { return 2; } module.exports.x = 2;\n');
   const mixed = routeChanges(buildChangeManifest({ repo: tmp, base: mixedBase, head: 'WORKTREE' }));
   assert(mixed.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === 'f'));
-  assert(mixed.edits.some(e => e.primary.reason === 'exported property assignment'), 'a same-line unit must not swallow a module-level edit');
+  assert(mixed.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === '(module)' && e.context?.reason === 'exported property assignment'), 'a same-line unit must not swallow a module-level edit: the exports write is the module unit\'s');
   assert.equal(reconcileEdits(mixed).complete, true);
+  // A top-level statement outside every listed unit is the module unit's (common.mjs MODULE_UNIT): one unit per file, its
+  // statements in init order, routed and run like any unit; a function's own edit stays its function's.
+  const { ledgerRows: ledgerRowsOf } = await import('./ledger.mjs');
+  write('init.ts', "import { register } from 'host';\nexport function g(x: number) { return x + 1; }\nregister('a', 1);\nregister('b', 1);\n");
+  git('add', '-A'); git('commit', '-qm', 'init base'); const initBase = git('rev-parse', 'HEAD');
+  write('init.ts', "import { register } from 'host';\nexport function g(x: number) { return x + 2; }\nregister('a', 2);\nregister('b', 1);\nregister('c', 1);\n");
+  const init = routeChanges(buildChangeManifest({ repo: tmp, base: initBase, head: 'WORKTREE' }));
+  const initEdits = init.edits.filter(e => e.file === 'init.ts');
+  assert(initEdits.filter(e => e[e.side].start === 2).every(e => e.primary.kind === 'unit' && e.primary.unit === 'g'), 'a function\'s own edit stays its function\'s');
+  assert(initEdits.filter(e => e[e.side].start > 2).length >= 3 && initEdits.filter(e => e[e.side].start > 2).every(e => e.primary.kind === 'unit' && e.primary.unit === '(module)' && e.links.length === 1 && e.links[0].unit === '(module)'), 'a module-level statement is the module unit\'s');
+  assert.equal(new Set(initEdits.filter(e => e.primary.unit === '(module)').map(e => e.primary.id)).size, 1, 'one module unit per file, on both sides');
+  assert.equal(ledgerRowsOf(init).filter(r => r.file === 'init.ts').length, 0, 'no unassigned row is left for the module statements');
+  assert.equal(reconcileEdits(init).complete, true);
+  write('fresh.ts', "register('only', 1);\n");
+  const fresh = routeChanges(buildChangeManifest({ repo: tmp, base: initBase, head: 'WORKTREE' }));
+  assert(fresh.edits.filter(e => e.file === 'fresh.ts').every(e => e.primary.kind === 'unassigned' && e.primary.reason === 'module-level statement'), 'an added file has no parent evaluation to compare: its statements stay named and unassigned');
+  fs.rmSync(path.join(tmp, 'fresh.ts'));
   write('configuration.ts', 'export function configure(x: number) { return x + 1; }\n');
   git('add', '-A'); git('commit', '-qm', 'classified source base'); const classifiedBase = git('rev-parse', 'HEAD');
   write('configuration.ts', 'export function configure(x: number) { return x + 2; }\n');

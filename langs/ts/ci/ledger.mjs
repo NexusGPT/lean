@@ -1,6 +1,6 @@
 // The version-control frame exists before parsing or unit admission. No source text is persisted.
 import fs from 'node:fs';
-import { ts, topLevelFunctions } from '../common.mjs';
+import { ts, topLevelFunctions, MODULE_UNIT } from '../common.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -191,7 +191,17 @@ export function routeChanges(manifest) {
         edit.primary = { kind: 'unit', id: primary.id, file: file.file, unit: primary.name, side, start: primary.start, end: primary.end };
       } else if (untyped) edit.primary = { kind: 'unassigned', reason: 'untyped JavaScript file', context: syntax.reason, side }; // an edit outside every listed unit of an untyped JavaScript file
       else if (file.class !== 'source') edit.primary = { kind: 'artifact', reason: file.class, class: file.class };
-      else edit.primary = { kind: 'unassigned', reason: syntax.reason, parent: syntax.parent, side };
+      else if (syntax.reason !== 'type-only' && readings.old && readings.new && evaluated(sf, from, to)) {
+        // The module unit (common.mjs MODULE_UNIT): an edit outside every listed unit whose every compiled token is code the
+        // module's evaluation runs (outside every function's parameters and body and every class's members, not a type)
+        // is the module unit's, whatever narrower context names it (an object literal built at load, an exports write):
+        // the two evaluations are compared in init order. One unit per file, the same on both sides; a file with one side
+        // only has no second evaluation to compare with. An edit inside a function no listed unit holds keeps its context.
+        const lines = sf.getLineAndCharacterOfPosition(sf.text.length).line + 1;
+        const link = { id: id([file.id, MODULE_UNIT]), file: file.file, unit: MODULE_UNIT, side, start: 1, end: lines };
+        edit.links = [link];
+        edit.primary = { kind: 'unit', id: link.id, file: file.file, unit: MODULE_UNIT, side, start: 1, end: lines };
+      } else edit.primary = { kind: 'unassigned', reason: syntax.reason, parent: syntax.parent, side };
     }
   }
   manifest.reconciliation = reconcileEdits(manifest);
@@ -209,13 +219,17 @@ function treeReading(sf) {
   if (r) return r;
   const tokens = [], directives = [];
   const js = /\.[cm]?jsx?$/i.test(sf.fileName);
-  const stack = [sf]; // an explicit stack: a 10,000-term expression must not exhaust the call stack
+  // each token carries whether the module's evaluation leaves it to a later call: a token of a function's parameters or
+  // body, or of a class's members, runs only when the function is called or the class constructed
+  const stack = [[sf, false]]; // an explicit stack: a 10,000-term expression must not exhaust the call stack
+  const within = (c, list) => !!list && c.pos >= list.pos && c.end <= list.end;
   while (stack.length) {
-    const n = stack.pop();
+    const [n, deferred] = stack.pop();
     if (n.kind >= ts.SyntaxKind.FirstJSDocNode && n.kind <= ts.SyntaxKind.LastJSDocNode) { if (js) directives.push([n.pos, n.end]); continue; }
     const children = n.getChildren(sf);
-    if (!children.length) { const start = n.kind === ts.SyntaxKind.JsxText ? n.pos : n.getStart(sf); if (n.end > start) tokens.push([start, n.end]); continue; } // JSX text is text the page shows, its blank space included
-    for (const c of children) stack.push(c);
+    if (!children.length) { const start = n.kind === ts.SyntaxKind.JsxText ? n.pos : n.getStart(sf); if (n.end > start) tokens.push([start, n.end, deferred]); continue; } // JSX text is text the page shows, its blank space included
+    const fn = ts.isFunctionLike(n) && n.body ? n : null, cls = ts.isClassLike(n) ? n : null;
+    for (const c of children) stack.push([c, deferred || (fn && (c === fn.body || within(c, fn.parameters))) || (cls && within(c, cls.members))]);
   }
   for (const v of sf.pragmas?.values() ?? []) for (const p of [v].flat()) if (p?.range) directives.push([p.range.pos, p.range.end]);
   for (const d of sf.commentDirectives ?? []) directives.push([d.range.pos, d.range.end]);
@@ -225,6 +239,15 @@ function treeReading(sf) {
   r = { tokens, directives };
   readings.set(sf, r);
   return r;
+}
+// whether every compiled token in [start, end) is code the module's evaluation runs (and there is one)
+function evaluated(sf, start, end) {
+  const { tokens } = treeReading(sf);
+  let lo = 0, hi = tokens.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (tokens[mid][1] <= start) lo = mid + 1; else hi = mid; }
+  let any = false;
+  for (let i = lo; i < tokens.length && tokens[i][0] < end; i++) { if (tokens[i][2]) return false; any = true; }
+  return any;
 }
 const meets = (ranges, start, end) => ranges.some(([a, b]) => a < end && start < b);
 // whether a token meets [start, end): the first token ending after `start` (tokens never overlap, so ends rise with starts)

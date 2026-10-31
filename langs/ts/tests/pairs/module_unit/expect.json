@@ -1,0 +1,7 @@
+{
+ "laneBOnly": true,
+ "why": "The module unit: a file's top-level statements, in init order, are one unit, `(module)` (common.mjs MODULE_UNIT), compared between parent and head like any unit. Lane B's observation is the evaluation of the module: its outcome, the environment requests it makes in init order, the work it arms, the module's exports and the values of its own bindings. The candidate registers the plugin with another option: the request differs, WITNESS, and the witness names the statement that made it, on both sides. `next` is untouched.",
+ "b": { "(module)": "WITNESS" },
+ "check": { "(module)": { "verdict": "WITNESS" } },
+ "statement": { "(module)": { "kind": "module statement", "parent": "register('alpha', { retries: RETRIES });", "candidate": "register('alpha', { retries: RETRIES + 1 });" } }
+}
