@@ -565,6 +565,7 @@ export function firstElementMutation(checker, u, context) {
 // text, or shares a loop with it that does not declare the name anew. A bucket local writes its map (common.mjs
 // bucketMaps), which the value reading models. A copy (`[...a]`, `a.slice()`, `{ ...a }`) holds no reference: no holder.
 const HOLDING_ROWS = new Set(['push', 'unshift', 'splice', 'set', 'add', 'fill']);
+const COPYING_CONSTRUCTORS = new Set(['Set', 'Map', 'WeakSet', 'WeakMap', 'Array']);
 export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), current = u.node, units = null, buckets = null } = {}) {
   if (!u.body) return null;
   const symOf = (id) => { const s = checker.getSymbolAtLocation(id); return s && s.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(s) : s; };
@@ -585,7 +586,12 @@ export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), curren
       if ((ts.isPropertyAssignment(p) && p.initializer === top) || ts.isShorthandPropertyAssignment(p)) { top = p.parent; inner = inner && [ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : '*', ...inner]; continue; }
       if (ts.isVariableDeclaration(p) && p.initializer === top) { if (ts.isIdentifier(p.name)) holders.push({ src, slot: symOf(p.name), path: inner, node: p }); return; } // a pattern reads the source's elements and keys, it holds no reference to it
       if (ts.isBinaryExpression(p) && p.operatorToken.kind === K.EqualsToken && p.right === top) { const r = rootOf(p.left); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, path: inner && [...pathOf(p.left), ...inner], node: p }); return; }
-      if (ts.isNewExpression(p) && p.arguments?.includes(top)) { top = p; inner = null; continue; } // an instance may keep its argument anywhere
+      if (ts.isNewExpression(p) && p.arguments?.includes(top)) {
+        // the standard collections copy their iterable (24.1.1.1, 24.2.1.1: a new collection of its elements): `new Set(a)`
+        // holds a's elements, never a; an element put in a literal argument (`new Map([[k, o]])`) stays held below it
+        if (ts.isIdentifier(p.expression) && COPYING_CONSTRUCTORS.has(p.expression.text) && originOf(checker, p.expression, sf, current).kind === 'global') { if (!inner?.length) return; top = p; continue; }
+        top = p; inner = null; continue; // an instance may keep its argument anywhere
+      }
       if (ts.isCallExpression(p) && p.arguments.includes(top)) {
         const f = unparen(p.expression);
         if (ts.isPropertyAccessExpression(f) && HOLDING_ROWS.has(f.name.text)) { const r = rootOf(f.expression); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, path: inner && [...pathOf(f.expression), '*', ...inner], node: p }); return; }

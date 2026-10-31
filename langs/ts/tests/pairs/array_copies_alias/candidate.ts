@@ -11,3 +11,6 @@ export async function writtenThenHeld(x: number): Promise<number> { const a = [x
 export async function reboundFirst(x: number): Promise<number> { return 1; }
 export async function writtenBesideSlot(x: number): Promise<number> { return 1; }
 export async function writtenThroughSlot(x: number): Promise<number> { return 1; }
+export async function setCopied(x: number): Promise<number> { return 1; }
+export class Keeper { constructor(public held: number[]) {} }
+export async function keptByInstance(x: number): Promise<number> { return 1; }

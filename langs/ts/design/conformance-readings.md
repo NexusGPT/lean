@@ -144,7 +144,9 @@ it and only lane A could tell).
   a write in place (an assignment or update through a path, delete, Object.assign, an in-place row of the library
   table) through a local or a parameter is refused (`alias-mutation`, reading `mutation`) when another holder of the
   same object precedes it: the object bound to a name (an initializer, `=`), put in an array or object literal's slot,
-  handed to an in-place collection row (push, unshift, splice, set, add, fill) or to `new`, or to a same-file call
+  handed to an in-place collection row (push, unshift, splice, set, add, fill) or to `new` (an instance may keep its
+  argument: `keptByInstance`; the standard collections `new Set(a)`, `new Map(m)`, `new Array(…)` copy their iterable,
+  24.1.1.1, 24.2.1.1, and hold its elements, never a: `setCopied`), or to a same-file call
   whose result is so held (it may return its argument). The holder's own side too: a write through the holder that
   runs through the slot holding the object (the slot's path: a property's name, `*` for an element, anywhere for `new`
   or a same-file callee), below it or a changing call on it (`o.xs.push(1)` for `o = { xs: a }`); a write beside the
