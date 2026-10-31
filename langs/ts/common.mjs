@@ -789,6 +789,15 @@ export function thisParamPath(checker, target) {
   return accessor(chain[chain.length - 1]) ? null : chain;
 }
 
+// `return void e;`: ECMA-262 evaluates e, then `void` yields undefined, so where a bare return is admitted the statement
+// is `void e;` (e as a statement) then `return;`. The `void e` operand (parentheses read through), or null. The lint,
+// the translator and the heap core read the statement through this one test (design/heap-stage5.md section 8)
+export function voidReturn(s) {
+  if (!ts.isReturnStatement(s) || !s.expression) return null;
+  let e = s.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+  return ts.isVoidExpression(e) ? e : null;
+}
+
 // A field write through a parameter's own element path: `p[i].f = v`, `p[i]!.f = v`, `(p[i] as T).f = v`,
 // `p.a[i].b.f = v`. The written record is reached from the root name through data-field and array-element steps only,
 // at least one an element: each element step indexes an array whose element type is never null or undefined, by a

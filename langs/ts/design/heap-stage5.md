@@ -383,6 +383,30 @@ Pair `void_results`: `add` (untouched), `bump` (inferred void), `cap` (fall-thro
 and a bare return), `topUp` (a returned call against the opposite test returning first: red before, withheld; proved
 after), `refill` (WITNESS, another argument), `Counter.tick` (WITNESS). Lint: unchanged.
 
+### 8, the other bare returns and a return inside a loop (2026-10-31, lane void-return-forms)
+
+Reading: a procedure's `return undefined;` and `return void e;` are its bare return. `undefined` (the global, not a
+name the file binds: `isAbsent`) is the value a bare return yields; ECMA-262 evaluates the operand of `void`, then
+yields undefined, so `return void e;` is `e;` then `return;`. One test, `common.mjs voidReturn`, names the statement
+for the three readers: the lint admits it where a bare return is admitted (the unit's own return, not a callback's) and
+checks `e` as a statement; the value translator reads the two statements in its place (`voidSplit`); the heap core reads
+a procedure's statement lists with both forms replaced by the bare return, `e` a statement first (`bareForms`).
+A procedure's `return` inside a loop ends the procedure at that iteration. Stage 4's helper had no exit; it now
+returns a flag last: true at the return, with the world and the carried locals as they are there, false when the loop
+ends. After the call the flag selects the exit of the list around the loop (the procedure's `(hw_, ())` at its level,
+the enclosing helper's exit in a loop body, so a return in an inner loop ends both) or the statements after the loop.
+A helper whose body never rebinds the world keeps its `ensures r_.0 == hw_`.
+Soundness: the procedure's value is `undefined` on every path, as before, and the heap is the one at the return: the
+iterations after it and the statements after the loop do not run, which the flag's else branch states.
+Stays out, and why: a `return` inside a `forEach` callback ends that step, not the procedure (`return inside a forEach
+callback`); a return inside a loop of a unit with a value (its helper would carry the value; no reading names it);
+`return void 0` and any `void` of an expression that is not a statement form (the lint's statements: assignments,
+updates, calls, await); `return void e` inside a callback; `undefined` when the file binds that name.
+Pair `void_results`, four units added: `resetUndef` (`return undefined` against a bare return), `pushVoid` (`return
+void c.items.push(name)` against the push and a bare return), `firstOver` (a return inside the loop, the write after
+the loop skipped: proved), `overAt` (the exit writes the bound, not the price: WITNESS). Red before: the lint refused
+the candidate's `void` operand, so no theorem was generated (1 check, FAILED); after: 29 checks, ALL PASS.
+
 ## 8b. Two corrections of the stage 4 core
 
 Found by checking every other pair against the widened core. `a === b` between a value that may be `null` and one that

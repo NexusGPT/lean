@@ -18,7 +18,7 @@ import { originOf } from '../common.mjs';
 import { rawTag } from '../common.mjs'; // String.raw reads the raw parts only (design/heap-stage5.md section 1)
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment, strictValue } from '../common.mjs';
 import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, matchGroups, matchGroupsTested, matchGroupRead, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
-import { elementWritePath, plainDataRecord } from '../common.mjs';
+import { elementWritePath, plainDataRecord, voidReturn } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, nonNullOnAbsent, definiteAssignmentRead, forInKeyOrder } from '../common.mjs';
@@ -655,6 +655,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       case K.ReturnStatement:
         if (forEachDepth > 0) { if (s.expression) expr(s.expression); return; } // one step of a forEach ends
         if (!s.expression) { if (!returnsVoid()) v(s, 'bare-return', 'return needs a value'); return; }
+        if (voidReturn(s) && !callbackStack.length && returnsVoid()) return exprStmt(s.expression); // `return void e;` is `void e;` then a bare return (common.mjs voidReturn)
         return expr(s.expression);
       case K.ForOfStatement: {
         // for-await obtains each next value through the world, then runs one consumer step

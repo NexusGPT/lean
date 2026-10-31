@@ -35,7 +35,7 @@ import { makeReach } from '../reach.mjs'; // the code a unit reaches, one readin
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
 import { sealedMember } from '../common.mjs';
 import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the value reading // `this.m()` is the class's own m only when no subclass can hold another: one test with the value reading
-import { elementWritePath } from '../common.mjs';
+import { elementWritePath, voidReturn } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 import { carriedAliases } from '../lower.mjs'; // a second name of a parameter the value reading carries: no copy write (one test with the translator) // a field write through a parameter's element path: one test with the lint
 import { rawTag, templateRaws, templateHoles } from '../common.mjs'; // String.raw: the template of its raw parts (design/heap-stage5.md section 1)
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
@@ -320,7 +320,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       const cb = e.arguments[0];
       if (cb.parameters.length === 1 && ts.isIdentifier(cb.parameters[0].name) && !cb.parameters[0].initializer && !cb.modifiers?.length) {
         const body = ts.isBlock(cb.body) ? cb.body : { kind: K.ExpressionStatement, expression: cb.body, pos: cb.body.pos, end: cb.body.end, parent: cb, flags: 0 };
-        loop = { kind: K.ForOfStatement, awaitModifier: undefined, expression: e.expression.expression, initializer: { kind: K.VariableDeclarationList, flags: ts.NodeFlags.Const, declarations: [{ kind: K.VariableDeclaration, name: cb.parameters[0].name, initializer: undefined }] }, statement: body, pos: s.pos, end: s.end, parent: s.parent, flags: 0 };
+        loop = { kind: K.ForOfStatement, awaitModifier: undefined, expression: e.expression.expression, initializer: { kind: K.VariableDeclarationList, flags: ts.NodeFlags.Const, declarations: [{ kind: K.VariableDeclaration, name: cb.parameters[0].name, initializer: undefined }] }, statement: body, pos: s.pos, end: s.end, parent: s.parent, flags: 0, callback: true };
       }
     }
     forEachMemo.set(s, loop); return loop;
@@ -575,6 +575,19 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   // procedure's expression body and the operand of its `return` may be one: the call, then a bare return (section 8)
   const procCall = (e, owner) => { const c = calleeOf(e, owner); const m = c && fns.get(c); return !!m && !m.isCtor && isVoidT(checker.getSignatureFromDeclaration(m.fn)?.getReturnType()); };
   const block = (s) => (ts.isBlock(s) ? [...s.statements] : [s]);
+  // a procedure's `return undefined;` and `return void e;` are its bare return (section 8, 2026-10-31): `undefined` is the
+  // value a bare return yields, and `void e` evaluates e, then yields undefined (common.mjs voidReturn), so the core reads
+  // the statement list with e as a statement, then `return;`. One node pair per statement, kept (the lists are re-read)
+  const bareMemo = new WeakMap();
+  const bareForms = (list, u) => {
+    if (u.isCtor || !isVoidT(checker.getSignatureFromDeclaration(u.fn)?.getReturnType())) return list;
+    return list.flatMap((s) => {
+      if (!ts.isReturnStatement(s) || !s.expression) return [s];
+      const v = voidReturn(s); if (!v && !(ts.isIdentifier(unparen(s.expression)) && isAbsent(s.expression))) return [s];
+      if (!bareMemo.has(s)) { const at = (n) => { ts.setTextRange(n, s); n.parent = s.parent; return n; }; bareMemo.set(s, [...(v ? [at(ts.factory.createExpressionStatement(v.expression))] : []), at(ts.factory.createReturnStatement())]); }
+      return bareMemo.get(s);
+    });
+  };
   const endsWithReturn = (list) => {
     const s = list[list.length - 1]; if (!s) return false;
     if (ts.isReturnStatement(s)) return true;
@@ -765,10 +778,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     };
     // a loop over an array: `for (const x of a)`, or `for (let i = 0; i < a.length; i++)` over an array name. Its body
     // takes the core's statements and an `if` that does not return; nothing in it grows an array (the helper's measure
-    // is the length at entry), returns, breaks or continues. An element read a[i] of the index loop is in range by the
+    // is the length at entry), breaks or continues. A procedure's return in it ends the procedure at that iteration (the
+    // helper's exit, loopCall), unless it is a forEach callback's (its own step's end, outside this reading). An element read a[i] of the index loop is in range by the
     // guard when nothing in the body can shrink an array: it reads without the out-of-range mark (safeIndex).
     const checkLoop = (s, outer) => {
-      const loop = outer ?? { calls: new Set() };
+      const loop = { calls: outer ? outer.calls : new Set(), callback: !!(outer?.callback || s.callback) };
       if (ts.isForOfStatement(s)) {
         if (s.awaitModifier) return no('for await');
         const dl = s.initializer; if (!ts.isVariableDeclarationList(dl) || dl.declarations.length !== 1 || !ts.isIdentifier(dl.declarations[0].name) || dl.declarations[0].initializer) return no('loop binding form');
@@ -789,11 +803,12 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (!outer) for (const c of loop.calls) loopCalls.add(c);
     };
     const checkStmts = (list, loop = null) => {
+      list = bareForms(list, u);
       for (let i = 0; i < list.length && ok; i++) {
         const s = list[i];
         if (forEachLoop(s)) { checkLoop(forEachLoop(s), loop); continue; }
         if (ts.isForOfStatement(s) || ts.isForStatement(s)) { checkLoop(s, loop); continue; }
-        if (loop && (ts.isReturnStatement(s) || ts.isBreakStatement(s) || ts.isContinueStatement(s))) return no(ts.isReturnStatement(s) ? 'return inside a loop' : 'break or continue');
+        if (loop && (ts.isReturnStatement(s) ? !proc || u.isCtor || loop.callback : ts.isBreakStatement(s) || ts.isContinueStatement(s))) return no(ts.isReturnStatement(s) ? (loop.callback ? 'return inside a forEach callback' : 'return inside a loop of a unit with a value') : 'break or continue');
         if (loop && ts.isIfStatement(s)) { checkCond(s.expression); checkStmts(block(s.thenStatement), loop); if (s.elseStatement) checkStmts(block(s.elseStatement), loop); continue; }
         if (loop) { let ext = false; const w = (n) => { if (outsideCall(n)) ext = true; ts.forEachChild(n, w); }; w(s); if (ext) return no('a call outside the file in a loop body (it could grow the array)'); }
         if (loop && ts.isExpressionStatement(s)) { const e = unparen(s.expression); if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && (['push', 'unshift'].includes(e.expression.name.text) || (e.expression.name.text === 'splice' && e.arguments.length > 2)) && shapeOf(typeOf(e.expression.expression))?.kind === 'arr') return no('loop body grows an array'); const c = calleeOf(e, u); if (c) loop.calls.add(c); }
@@ -1447,26 +1462,32 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
     }
     const flush = () => lines.splice(0).join('\n');
     const indent = (t) => t.split('\n').map((l) => '  ' + l).join('\n');
-    // a statement list. At the unit's level every path ends in a return; in a loop body (k given) nothing returns and
-    // every path ends in k(), the loop's next step, so an `if` carries the rest of the body into both branches
-    function stmts(list, k = null) {
-      const out = [];
+    // a statement list. At the unit's level every path ends in a return; in a loop body (k given) every path ends in k(),
+    // the loop's next step, so an `if` carries the rest of the body into both branches, or in a procedure's return,
+    // ex: the helper's exit (loopCall). After a loop that may exit, its flag decides: the exit of the list around it (the
+    // procedure's own return at its level, the enclosing helper's exit in a loop body), else the rest
+    function stmts(list, k = null, ex = null) {
+      list = bareForms(list, u); const out = [];
       for (let i = 0; i < list.length; i++) {
         const s = list[i];
-        if (forEachLoop(s)) { loopCall(forEachLoop(s)); out.push(flush()); continue; }
-        if (ts.isForOfStatement(s) || ts.isForStatement(s)) { loopCall(s); out.push(flush()); continue; }
+        if (forEachLoop(s) || ts.isForOfStatement(s) || ts.isForStatement(s)) {
+          const flag = loopCall(forEachLoop(s) ?? s); if (!flag) { out.push(flush()); continue; }
+          const pre = flush(); const rest = stmts(list.slice(i + 1), k, ex);
+          out.push(`${pre ? pre + '\n' : ''}if ${flag} then\n${indent(ex ?? `(${HW}, ())`)}\nelse\n${indent(rest)}`);
+          return out.filter(Boolean).join('\n');
+        }
         if (k && ts.isIfStatement(s)) {
           const c = cond(s.expression); const pre = flush(); const rest = list.slice(i + 1);
-          const t = stmts([...block(s.thenStatement), ...rest], k), el = stmts([...(s.elseStatement ? block(s.elseStatement) : []), ...rest], k);
+          const t = stmts([...block(s.thenStatement), ...rest], k, ex), el = stmts([...(s.elseStatement ? block(s.elseStatement) : []), ...rest], k, ex);
           out.push(`${pre ? pre + '\n' : ''}if ${c} then\n${indent(t)}\nelse\n${indent(el)}`);
           return out.filter(Boolean).join('\n');
         }
         if (ts.isVariableStatement(s)) { for (const d of s.declarationList.declarations) { const tb = tupleBinding(d); if (tb) { const r = bind(exprAs(d.initializer, tb.s), 't'); for (const el of tb.els) { if (tb.s.tuple) lines.push(`var ${dn(el.name.text)} := Get_${tb.s.key}_${dn(`_${el.i}`)}(${HW}, ${r});`); else { lines.push(`var ${HW} := Oob_${tb.s.key}(${HW}, ${r}, ${el.i});`); lines.push(`var ${dn(el.name.text)} := Idx_${tb.s.key}(${HW}, ${r}, ${el.i});`); } } continue; } if (keyedLocal(d.name, u.fn)) { const [ks, kr, ki] = element(unparen(d.initializer)); lines.push(`var ${keyName(d)} := ${ki};`); lines.push(`var ${presName(d)} := DictIn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${ownName(d)} := DictOwn_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); lines.push(`var ${dn(d.name.text)} := DictGet_${ks.key}(${HW}, ${kr}, ${keyName(d)});`); continue; } const v = exprAs(d.initializer, shapeOf(typeOf(d.name))); lines.push(`var ${dn(d.name.text)} := ${v};`); } out.push(flush()); continue; } // a node read through a key: its presence beside it (keyedLocal)
-        if (ts.isReturnStatement(s)) { const v = s.expression ? exprAs(s.expression, rt) : '()'; const pre = flush(); out.push(`${pre ? pre + '\n' : ''}(${HW}, ${v})`); return out.filter(Boolean).join('\n'); }
+        if (ts.isReturnStatement(s)) { const v = s.expression ? exprAs(s.expression, rt) : '()'; const pre = flush(); out.push(`${pre ? pre + '\n' : ''}${ex ?? `(${HW}, ${v})`}`); return out.filter(Boolean).join('\n'); }
         if (ts.isSwitchStatement(s)) { // the discriminant once, then each case in source order; a clause that falls runs the rest after it (switchForm)
           const sw = switchForm(s); const v = bind(expr(s.expression), 'w'); const tests = sw.cases.map((c) => expr(c.test)); const pre = flush(); const rest = list.slice(i + 1);
-          const path = (g) => stmts(g.falls ? [...g.body, ...rest] : g.body, k);
-          let tail = sw.fallback ? path(sw.fallback) : stmts(rest, k);
+          const path = (g) => stmts(g.falls ? [...g.body, ...rest] : g.body, k, ex);
+          let tail = sw.fallback ? path(sw.fallback) : stmts(rest, k, ex);
           for (let j = sw.cases.length - 1; j >= 0; j--) tail = `if ${v} == ${tests[j]} then\n${indent(path(sw.cases[j]))}\nelse\n${indent(tail)}`;
           out.push(`${pre ? pre + '\n' : ''}${tail}`);
           return out.filter(Boolean).join('\n');
@@ -1515,7 +1536,9 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
     // a loop over an array is a recursive helper that threads the heap world: its counter, the length at entry (the
     // measure; nothing in the body grows an array, so the guard on the current length decides), the locals the body
     // assigns (returned, in name order), the names it reads; `for (const x of e)` evaluates e once, the index loop
-    // reads its array name. The helper is written beside the unit and named <unit>_loop<n>.
+    // reads its array name. The helper is written beside the unit and named <unit>_loop<n>. A body holding a procedure's
+    // return (not a forEach callback's) returns a flag last: true at the return, the world and the locals as they are
+    // there; false when the loop ends. The flag's name is returned, else null.
     const helpers = []; let loopId = 0;
     const base = suffix && fname(u.name).endsWith(suffix) ? fname(u.name).slice(0, -suffix.length) : fname(u.name);
     function loopCall(s) {
@@ -1541,20 +1564,24 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
       const params = [`${HW}: HWorld`, ...(forOf ? [`a${id}_: Ref`] : []), `${ctr}: int`, `${n}: int`, ...carried.map((c) => `${dn(c.x)}: ${c.d}`), ...(usesThis && u.cls ? [`${dn('this')}: Ref`] : []), ...free.map((f) => `${dn(f.x)}: ${f.d}`)];
       const A = forOf ? `a${id}_` : arr;
       const args = (cv, first) => [HW, ...(forOf ? [first ? arr : A] : []), cv, n, ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ');
-      const ret = carried.length ? `(HWorld, ${carried.map((c) => c.d).join(', ')})` : 'HWorld';
-      const done = carried.length ? `(${HW}, ${carried.map((c) => dn(c.x)).join(', ')})` : HW;
+      let exits = false; if (!s.callback) { const r = (x) => { if (ts.isReturnStatement(x)) exits = true; else if (!ts.isFunctionLike(x)) ts.forEachChild(x, r); }; r(s.statement); }
+      const tup = carried.length || exits;
+      const ret = tup ? `(HWorld, ${[...carried.map((c) => c.d), ...(exits ? ['bool'] : [])].join(', ')})` : 'HWorld';
+      const out = (flag) => (tup ? `(${[HW, ...carried.map((c) => dn(c.x)), ...(exits ? [flag] : [])].join(', ')})` : HW);
+      const done = out('false');
       const saved = lines.splice(0);
       const head = forOf ? `var ${dn(s.initializer.declarations[0].name.text)} := ${isReal ? 'ItemAt' : 'Idx'}_${sh.key}(${HW}, ${A}, ${ctr});` : ''; // in a real file the counter and the length stay integers (|Items_|) and the item is read totally
       const lenI = (r) => (isReal ? `|Items_${sh.key}(${HW}, ${r})|` : `Len_${sh.key}(${HW}, ${r})`);
-      const bodyText = stmts(block(s.statement), () => `${name}(${args(`${ctr} + 1`, false)})`);
+      const bodyText = stmts(block(s.statement), () => `${name}(${args(`${ctr} + 1`, false)})`, exits ? out('true') : null);
       const still = !/var\s+\(?\s*hw_\b/.test([head, bodyText].join('\n')); // a body that never rebinds the world: the helper returns the world it was given (proved by its own recursion), so a mark after the loop reads the world before it
-      helpers.push([`function ${name}(${params.join(', ')}): ${still ? `(r_: ${ret})` : ret}`, ...(still ? [`  ensures ${carried.length ? 'r_.0' : 'r_'} == ${HW}`] : []), `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < ${lenI(A)}) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
+      helpers.push([`function ${name}(${params.join(', ')}): ${still ? `(r_: ${ret})` : ret}`, ...(still ? [`  ensures ${tup ? 'r_.0' : 'r_'} == ${HW}`] : []), `  decreases ${n} - ${ctr}`, '{', `  if !(${ctr} < ${n} && ${ctr} < ${lenI(A)}) then ${done}`, '  else', indent(indent([head, bodyText].filter(Boolean).join('\n'))), '}'].join('\n'));
       lines.push(...saved);
       const call = `${name}(${[HW, ...(forOf ? [arr] : []), '0', lenI(arr), ...carried.map((c) => dn(c.x)), ...(usesThis && u.cls ? [dn('this')] : []), ...free.map((f) => dn(f.x))].join(', ')})`;
       // a helper that returns the world it was given leaves this one's world as it is (its ensures), so a loop around it
       // reads its body as one that never rebinds the world too: only the carried locals are taken from the result
-      const into = still ? fresh('w') : HW;
-      lines.push(carried.length ? `var (${into}, ${carried.map((c) => dn(c.x)).join(', ')}) := ${call};` : `var ${into} := ${call};`);
+      const into = still ? fresh('w') : HW; const flag = exits ? fresh('x') : null;
+      lines.push(tup ? `var (${[into, ...carried.map((c) => dn(c.x)), ...(exits ? [flag] : [])].join(', ')}) := ${call};` : `var ${into} := ${call};`);
+      return flag;
     }
     if (u.isCtor) { const sh = instanceShape(u.cls, 0); const me = dn('this'); lines.push(`var (${HW}, ${me}) := Alloc_${sh.key}(${HW}, ${sh.fields.map((f) => instanceDflt(f)).join(', ')});`); for (const p of paramProps(u.cls)) lines.push(`var ${HW} := Set_${sh.key}_${dn(p.name.text)}(${HW}, ${me}, ${dn(p.name.text)});`); for (const m of fieldInits(u.cls)) { const f = fieldOf(sh, m.name.text); lines.push(`var ${HW} := Set_${sh.key}_${dn(f.name)}(${HW}, ${me}, ${exprField(m.initializer, f.shape)});`); } } // the instance first, then the parameter properties and the initializers
     const body = u.isCtor ? (() => { const pre = flush(); const b = stmts([...u.body.statements], () => `(${HW}, ${dn('this')})`); return pre ? `${pre}\n${b}` : b; })() : ts.isBlock(u.body) ? stmts([...u.body.statements], proc ? () => `(${HW}, ())` : null) : (() => { const v = exprAs(u.body, rt); const pre = flush(); return `${pre ? pre + '\n' : ''}(${HW}, ${v})`; })(); // an expression body: `return body`
