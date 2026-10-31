@@ -104,9 +104,8 @@ diff gives 0 gains and 0 losses on every reading. The top stops are unchanged: n
 call 603, ts-strict 414; langchainjs type-assertion 575, read-after-call 456, prototype 344. No unit stopped, entered,
 or moved to another stop at c99aa3e90. The census counts the lint's findings. Those reach the translator's reading
 only where a call becomes a request, which then makes an argument "kept" or a later read "after a call". That
-happened for the 7 units above while unlisted framework decorators counted as replacing. With the table read, every
-decorator on the three roots that this reading turns into a request is outside the units the census reaches. So the
-change shows in which proofs hold (the pair), not in the census.
+happened for the 7 units above while unlisted framework decorators counted as replacing. With the table read, the
+comparison shows no move on the three roots. The change shows in which proofs hold (the pair), not in the census.
 
 ## Left, and defects met (reported, not fixed: outside this construct)
 - Lane B returns PASS-bounded on `made` and `seeds`, though the sides return 5 and 4 when run. The harness does
