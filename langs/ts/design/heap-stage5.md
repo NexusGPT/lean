@@ -629,6 +629,56 @@ theorem, not this reading.
 Pair: `map_block` 11/11 (red at the base, `Equal_labels_inner`); the regression list is in
 `lane/fix-map-block-regression-result.md`.
 
+### 11d. forEach with an index, reduce without an initial value, a let assigned once (2026-10-31)
+
+Three forms 11b left out, read now:
+- **`xs.forEach((x, i) => body)` as a statement over an array** is the loop of 11 with the index bound at each step to
+  the position (ECMA-262 23.1.3.15: the callback receives the element and its index, 0 below the length read once). The
+  reading is three readers' together, as 11b said it must be: the lint admits a second parameter that is a plain name
+  when the receiver is an array (`lint.mjs`; a `Set` or `Map` passes another value there, so it stays refused, and so
+  does a receiver of type any); the element write it carries is admitted as for one parameter (`lower.mjs`
+  `heapShapeEligible`); the ordinary lane reads it as its for-of loop, which already bound a second parameter to the
+  counter (`translate.mjs` `forEachShape`, `coreLoop`); the heap core carries the index on the loop node
+  (`forEachLoop`) and binds it in the loop helper to the counter (`var i := k_`, `k_ as real` in a real file). An index
+  assigned in the body is refused (the lint's `param-assign`; the core's `loop index assigned`).
+- **`xs.reduce((a, x) => e)` without an initial value** (23.1.3.24): the first item is the accumulator and the fold
+  visits the rest, `if |it| == 0 then d else Fold(it[1..], f, it[0])`; on an empty array JavaScript throws a TypeError,
+  which no value of the reading holds, so the world is marked there (`EmptyMark`, as a zero divisor marks it, section
+  13) and the unit carries `// INRANGE`: its lemma shows neither side reaches the empty case. A unit that does not guard
+  the length is therefore unproved, and lane B shows the throw as a WITNESS; a unit that guards it is proved. The
+  accumulator is a primitive of the element's type (TypeScript's overload without an initial value). The lint admits an
+  inline arrow that computes (a callback of effects is a loop with no fault channel here); inside a callback the core
+  refuses it (the mark has nowhere to go); the ordinary lane refuses it with its reason (a value reading has no channel
+  for the TypeError), so a unit outside the heap core is refused there, as the lint refused it before.
+- **A block body with `let`**: a `let` of one name with an initializer that nothing in the callback assigns again is
+  the `const` of 11b and 11c, written in place (`cbParts`): its one assignment is its initializer, so every read is that
+  value, and the lambda's text is the same as with the value written in place (11c). A `let` assigned again stays out,
+  with its own reason (`cbFormWhy`: `callback form: a let assigned again in the callback`), and so does a `var`
+  (hoisted).
+
+Found on the way, in the construct: the loop helper of a body that writes fields stated nothing about the mark, so a
+unit with `// INRANGE` and any loop of field writes after the mark (the guarded `reduce` above, then a `forEach` writing
+the lines) needed an induction over the helper to show the mark stays clear, which no lemma has. A helper whose every
+rebinding of the world is a field write (`Set_`, which never marks) or a call of a helper that already keeps the mark now
+ensures `r_.oob == hw_.oob`, proved by its own recursion, as a helper that never rebinds the world already ensured it
+returns that world. The rule is the helper text's, keyed on no name.
+Soundness: the index is the position the method passes, and the loop of 11 visits the positions in order from 0; the
+first item and the fold over the rest are 23.1.3.24's steps 9 and 10 for a non-empty array, and the empty array is the
+mark, never a default read as the answer; a `let` read where nothing assigns it is a constant.
+Still out, and why: `reduce` with an index (`(a, x, i) => e`: three parameters, the fold helper takes two); `find` of
+references (an absent reference has no shape); `map` or `filter` inside a callback (an allocation in a lambda); a block
+body with a branch or a second `return`, a `let` assigned again; `forEach` over a `Set` or a `Map` with a second
+parameter; `reduce` without an initial value whose callback has effects, or inside another callback.
+Pair `array_callbacks_rest`, four units more (red at the base, the lint's `foreach` and `unsupported-call` and the core's
+`callback form`): `numberLines` (an indexed `forEach` writing each line's position, the lines named first: proved),
+`total` (`reduce` without an initial value against an initial 0: equal on every non-empty array, a TypeError against 0
+on the empty one, WITNESS), `totalGuarded` (the length guarded first, the prices named: proved), `weighLet` (a `let` in a
+`map` callback against the expression: proved); 23 checks. Lint: the admissions above, and an advisory `foreach` note at
+each indexed `forEach` it reads (the converter's counted for, `convert/foreach.mjs`, planned at that note; never a
+refusal). Census (base `09032a594` against this reading, one root at a time): n8n 9,610 units, 2,752 entered before and
+after, 0 gains and 0 losses; langchainjs 6,709 units, 2,831 -> 2,834 entered (three units holding an indexed `forEach`),
+0 losses. nexus: not run, memory. Regression: `lane/array-callbacks-rest-2-result.md`.
+
 ## 12. Discriminated unions of records
 
 Reading: a union of records `A | B` where every alternative declares one field as literals and the alternatives'

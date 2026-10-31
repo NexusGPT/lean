@@ -60,7 +60,8 @@ element (`rows[i].tags.push(x)`) is unchanged.
   `o.rows[i]`. The heap core reads it (pair unit `zero`: against an empty body, unproved, lane B WITNESS). The value
   reading copied the element and dropped the write, so two Dafny texts could coincide and the theorem aliased them: a
   false proof at dcbc61c. The lint now admits such a write only for a field (`=`, `+=`, `-=`, `*=`, `++`, `--`) in a
-  `forEach` statement of one parameter over a plain data record (`plainDataRecord`, common.mjs). Every other shape is
+  `forEach` statement of one parameter (and, over an array, an index: heap-stage5.md 11d) over a plain data record
+  (`plainDataRecord`, common.mjs). Every other shape is
   refused as `alias-mutation` (escape `element_write_loop_callback`). The translator refuses by that name any unit
   outside the heap core that writes through a loop's element (`loopElementWriteOf`): a dropped write is never silent.
 
