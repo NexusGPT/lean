@@ -70,3 +70,16 @@ export function charge(a: Account, n: number): number {
   bump(a, n);
   return a.total;
 }
+
+export class Box {
+  total = 0;
+}
+
+export function spill(b: Box, l: Ledger, xs: number[]): number {
+  const h = b;
+  h.total = 1;
+  for (const x of xs) {
+    l.record(x);
+  }
+  return b.total;
+}

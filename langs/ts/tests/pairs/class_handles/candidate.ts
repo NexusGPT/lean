@@ -42,7 +42,8 @@ export function alias(a: Account, n: number): number {
 }
 
 export function twice(a: Account, n: number): number {
-  a.total += 2 * n;
+  a.total += n;
+  a.total += n;
   return a.total;
 }
 
@@ -66,4 +67,18 @@ export function charge(a: Account, n: number): number {
   const t = a.total;
   bump(a, n);
   return t;
+}
+
+export class Box {
+  total = 0;
+}
+
+export function spill(b: Box, l: Ledger, xs: number[]): number {
+  const before = b.total;
+  const h = b;
+  h.total = 1;
+  for (const x of xs) {
+    l.record(x);
+  }
+  return before;
 }
