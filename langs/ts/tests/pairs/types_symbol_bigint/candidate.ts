@@ -74,3 +74,13 @@ export function keyName(key: string | symbol): string {
 export function choiceText(choice: Choice): string {
   return typeof choice === "symbol" ? "cancelled" : choice;
 }
+
+// an opaque union's truth: 0, 0n and "" are falsy members
+export function amountSet(value: Amount): string {
+  return "set";
+}
+
+// a type parameter's truth: T may be 0, "" or false
+export function present<T>(x: T): string {
+  return "set";
+}
