@@ -1,0 +1,7 @@
+{
+ "scope": ["bits", "low", "flip", "grid", "halve", "field"],
+ "equal": {"bits": true, "low": true, "flip": false, "grid": true, "halve": false, "field": true},
+ "why": "bits writes ~~t for t | 0 and low t | 0 for t << 32, t a sum the faithful reading does not hold: every bitwise operator reads its operands through ToInt32 (ECMA-262 6.1.6.1), so all three are ToInt32(t) (proved); flip writes t | 1 (unproved, WITNESS at an even t). grid reads the length before two nested loops whose bodies never change the world, so the division's marks read the same world (proved); halve divides by 4 for 2 (unproved, WITNESS). field is a for-of over a record's field in a real file, its length read after the loop (proved).",
+ "b": {"bits": "PASS-bounded", "low": "PASS-bounded", "flip": "WITNESS", "grid": "PASS-bounded", "halve": "WITNESS", "field": "PASS-bounded"},
+ "heap": true
+}
