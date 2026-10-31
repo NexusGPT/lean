@@ -2104,27 +2104,183 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
       case 'TruncDiv': text = `function ${name}(a: int, b: int): int
   requires b != 0
 { var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }`; break;
-      case 'JsRem': text = `function ${name}(a: int, b: int): int
+      // a remainder of two naturals is Dafny's (Euclidean) remainder: the reading of `%` meets the low-bits lemma below
+      case 'JsRem': text = `function ${name}(a: int, b: int): (r: int)
   requires b != 0
+  ensures 0 <= a && 0 < b ==> r == a % b
 { a - b * ${helper('TruncDiv', ['int'])}(a, b) }`; break;
       case 'JsTrunc': text = `function ${name}(a: real): int
 { if a < 0.0 then -(-a).Floor else a.Floor }`; break;
-      case 'JsRealRem': text = `function ${name}(a: real, b: real): real
+      case 'JsRealRem': { const nat = helper('JsRemNat', ['real']); text = `function ${name}(a: real, b: real): (r: real)
   requires b != 0.0
-{ a - b * (${helper('JsTrunc', ['real'])}(a / b) as real) }`; break;
-      case 'JsUint32': text = `function ${name}(a: ${A}): bv32
-{ ((${A === 'real' ? `${helper('JsTrunc', ['real'])}(a)` : 'a'}) % 4294967296) as bv32 }`; break;
-      case 'JsSigned': text = `function ${name}(a: bv32): int
-{ var u := a as int; if u < 2147483648 then u else u - 4294967296 }`; break;
+  ensures 0.0 <= a && a == a.Floor as real && 0.0 < b && b == b.Floor as real ==> r == (a.Floor % b.Floor) as real
+{ if 0.0 <= a && a == a.Floor as real && 0.0 < b && b == b.Floor as real then ${nat}(a.Floor, b.Floor); a - b * (${helper('JsTrunc', ['real'])}(a / b) as real) else a - b * (${helper('JsTrunc', ['real'])}(a / b) as real) }`; break; }
+      case 'JsRemNat': text = `// the remainder of two naturals read as reals (the truncated quotient a real division's floor) is their remainder
+lemma {:isolate_assertions} ${name}(n: int, d: int)
+  requires 0 <= n && 0 < d
+  ensures (n as real) - (d as real) * (${helper('JsTrunc', ['real'])}((n as real) / (d as real)) as real) == (n % d) as real
+{
+  var q := n / d; var r := n % d; assert n == q * d + r && 0 <= r < d;
+  var D := d as real; var R := r as real; var Q := q as real;
+  assert (n as real) == Q * D + R;
+  var x := (n as real) / D;
+  assert x * D == n as real;
+  assert (Q + R / D) * D == Q * D + R;
+  assert x == Q + R / D by { assert x * D == (Q + R / D) * D; }
+  assert 0.0 <= R / D < 1.0;
+  assert x.Floor == q;
+}`; break;
+      // ToUint32 and ToInt32 between an integer and its 32 bits (design/bitwise-lemmas.md): a real is truncated first, so
+      // the real conversion is the integer one of its truncation; each conversion back carries the round trip as a
+      // postcondition (the bits of the integer it gives are the bits it was given), proved once here, so a query never
+      // needs Z3 to reason through int2bv and bv2int (Z3 4.12 stops there)
+      case 'JsUint32': text = A === 'real' ? `function ${name}(a: real): bv32
+{ ${helper('JsUint32', ['int'])}(${helper('JsTrunc', ['real'])}(a)) }` : `function ${name}(a: int): bv32
+{ (a % 4294967296) as bv32 }`; break;
+      case 'JsBitFacts': { const U = helper('JsUint32', ['int']); text = `lemma JsUint32Of(x: int, y: int) requires 0 <= y < 4294967296 && x % 4294967296 == y ensures ${U}(x) == y as bv32 {}
+lemma JsBitsInt(v: bv32) ensures (v as int) as bv32 == v {}
+lemma JsModWrap(u: int) requires 0 <= u < 4294967296 ensures (if u < 2147483648 then u else u - 4294967296) % 4294967296 == u {}`; break; }
+      case 'JsSigned': { helper('JsBitFacts', []); const U = helper('JsUint32', ['int']); text = `function ${name}(a: bv32): (r: int)
+  ensures -2147483648 <= r < 2147483648 && ${U}(r) == a
+{ ${name}_bits(a); var u := a as int; if u < 2147483648 then u else u - 4294967296 }
+lemma ${name}_bits(a: bv32)
+  ensures var u := a as int; var r := if u < 2147483648 then u else u - 4294967296; -2147483648 <= r < 2147483648 && ${U}(r) == a
+{ var u := a as int; assert 0 <= u < 4294967296; var r := if u < 2147483648 then u else u - 4294967296; JsModWrap(u); JsUint32Of(r, u); JsBitsInt(a); }`; break; }
+      case 'JsUnsigned': { helper('JsBitFacts', []); const U = helper('JsUint32', ['int']); text = `function ${name}(a: bv32): (r: int)
+  ensures 0 <= r < 4294967296 && ${U}(r) == a
+{ var u := a as int; assert 0 <= u < 4294967296; JsUint32Of(u, u); JsBitsInt(a); u }`; break; }
       case 'JsInt32': text = `function ${name}(a: ${A}): ${A}
 { ${helper('JsSigned', ['bv32'])}(${helper('JsUint32', [A])}(a))${A === 'real' ? ' as real' : ''} }`; break;
+      // the operator helpers, each over the bits of its operands (bitwiseOf writes a chain inline; these stay for a caller
+      // that names one operator): a shift count is its low five bits taken in bv32, `>>` the arithmetic shift written
+      // without a branch (a branch on the sign over two shifts by a variable count stalls Z3)
       case 'JsBitAnd': case 'JsBitOr': case 'JsBitXor': case 'JsBitNot': case 'JsShl': case 'JsShr': case 'JsUshr': {
-        const uint = helper('JsUint32', [A]), signed = helper('JsSigned', ['bv32']);
+        const uint = helper('JsUint32', [A]);
         const op = { JsBitAnd: '&', JsBitOr: '|', JsBitXor: '^' }[kind];
-        const value = op ? `(u ${op} v)` : kind === 'JsBitNot' ? '(!u)' : kind === 'JsShl' ? '(u << k)' : kind === 'JsUshr' ? '(u >> k)' : '(if u < (2147483648 as bv32) then u >> k else !((!u) >> k))';
-        const result = kind === 'JsUshr' ? `(${value} as int)` : `${signed}(${value})`;
+        const value = op ? `(u ${op} v)` : kind === 'JsBitNot' ? '(!u)' : kind === 'JsShl' ? '(u << k)' : kind === 'JsUshr' ? '(u >> k)' : '((u >> k) | ((0 - (u >> 31)) & !(0xFFFFFFFF >> k)))';
+        const result = `${helper(kind === 'JsUshr' ? 'JsUnsigned' : 'JsSigned', ['bv32'])}(${value})`;
         text = `function ${name}(a: ${A}${kind === 'JsBitNot' ? '' : `, b: ${A}`}): ${A}
-{ var u := ${uint}(a); ${kind === 'JsBitNot' ? '' : op ? `var v := ${uint}(b); ` : `var k := (${uint}(b) as int) % 32; `}${result}${A === 'real' ? ' as real' : ''} }`; break;
+{ var u := ${uint}(a); ${kind === 'JsBitNot' ? '' : op ? `var v := ${uint}(b); ` : `var k := ${uint}(b) & 31; `}${result}${A === 'real' ? ' as real' : ''} }`; break;
+      }
+      // the low bits of an integer and its remainder (design/bitwise-lemmas.md): for every integer a and 0 <= k <= 31,
+      // ToInt32(a) & (2^k - 1) is a % 2^k. JsLowBitsNat proves it for a bounded natural by induction on k, from facts Z3
+      // proves one at a time (the low bit, the half, the remainder of a remainder); the conversions are hidden where they
+      // would stall the query. JsLowBits_<A>_<k> is the lemma at one literal mask, the form bitwiseOf calls
+      case 'JsLowBitsLib': { const U = helper('JsUint32', ['int']), S = helper('JsSigned', ['bv32']); text = `function JsPow2(k: nat): (p: nat) ensures p >= 1 { if k == 0 then 1 else 2 * JsPow2(k - 1) }
+// opaque: Dafny unrolls a recursive function at a literal argument by itself, and k unfoldings of bit terms in one
+// query stall Z3; JsMaskStep is its one unfolding
+opaque function JsMask(k: nat): bv32 { if k == 0 then 0 else (JsMask(k - 1) << 1) | 1 }
+// one unfolding each; at a literal k, one lemma per step
+lemma JsPow2Step(k: nat) ensures JsPow2(k) == if k == 0 then 1 else 2 * JsPow2(k - 1) {}
+${Array.from({ length: 33 }, (_, i) => `lemma JsPow2At_${i}() ensures JsPow2(${i}) == ${2 ** i} { JsPow2Step(${i}); ${i ? `JsPow2At_${i - 1}();` : ''} }`).join('\n')}
+lemma JsMaskStep(k: nat) ensures JsMask(k) == if k == 0 then 0 else (JsMask(k - 1) << 1) | 1 { reveal JsMask(); }
+opaque function JsBits(y: int): bv32 { (y % 4294967296) as bv32 }
+lemma JsBitsOf(y: int) ensures JsBits(y) == ${U}(y) { reveal JsBits(); }
+lemma JsHalfBitsNat(y: int) requires 0 <= y < 4294967296 ensures ((y / 2) as bv32) == (y as bv32) >> 1 {}
+lemma JsLowBitNat(y: int) requires 0 <= y < 4294967296 ensures ((y % 2) as bv32) == (y as bv32) & 1 {}
+lemma JsHalfBits(y: int) requires 0 <= y < 4294967296 ensures JsBits(y / 2) == JsBits(y) >> 1 { reveal JsBits(); assert y % 4294967296 == y && (y / 2) % 4294967296 == y / 2; JsHalfBitsNat(y); }
+lemma JsLowBit(y: int) requires 0 <= y < 4294967296 ensures JsBits(y % 2) == JsBits(y) & 1 { reveal JsBits(); }
+lemma JsMaskJoin(u: bv32, m: bv32, lo: bv32, hi: bv32) requires u & 1 == lo && (u >> 1) & m == hi ensures u & ((m << 1) | 1) == lo | (hi << 1) {}
+lemma JsBitsSplit(v: bv32, lo: bv32, hi: bv32) requires v & 1 == lo && v >> 1 == hi ensures v == lo | (hi << 1) {}
+lemma JsDivModUnique(y: int, d: int, q: int, r: int) requires 0 < d && y == q * d + r && 0 <= r < d ensures y / d == q && y % d == r
+{ var q2 := y / d; var r2 := y % d; assert y == q2 * d + r2 && 0 <= r2 < d; if q2 > q { assert q2 * d >= (q + 1) * d == q * d + d; } else if q2 < q { assert q * d >= (q2 + 1) * d == q2 * d + d; } }
+lemma JsModHalf(y: int, p: int) requires 0 <= y && 1 <= p ensures (y % (2 * p)) % 2 == y % 2 && (y % (2 * p)) / 2 == (y / 2) % p
+{
+  var q := y / (2 * p); var z := y % (2 * p);
+  assert y == q * (2 * p) + z && 0 <= z < 2 * p;
+  var h := z / 2; var b := z % 2; assert z == h * 2 + b && 0 <= b < 2;
+  assert y == (q * p + h) * 2 + b by { assert q * (2 * p) == (q * p) * 2; }
+  JsDivModUnique(y, 2, q * p + h, b);
+  assert 0 <= h < p;
+  JsDivModUnique(y / 2, p, q, h);
+}
+lemma JsModBound(x: int, p: int) requires 0 <= x && 1 <= p ensures 0 <= x % p <= x {}
+// for 0 <= y < 2^32: the low k bits of y are y's remainder by 2^k
+lemma {:isolate_assertions} JsLowBitsNat(y: int, k: nat) requires 0 <= y < 4294967296 ensures JsBits(y) & JsMask(k) == JsBits(y % JsPow2(k))
+  decreases k
+{
+  JsMaskStep(k); JsPow2Step(k);
+  if k == 0 { reveal JsBits(); } else {
+    var m := JsMask(k - 1); var p := JsPow2(k - 1);
+    var h := y / 2; var z := y % (2 * p); var c := h % p;
+    JsModHalf(y, p); JsModBound(h, p); JsModBound(y, 2 * p);
+    JsLowBitsNat(h, k - 1);
+    JsLowBit(y); JsHalfBits(y); JsLowBit(z); JsHalfBits(z);
+    JsMaskJoin(JsBits(y), m, JsBits(y % 2), JsBits(c));
+    JsBitsSplit(JsBits(z), JsBits(y % 2), JsBits(c));
+  }
+}
+// int2bv is one to one below 2^32
+lemma JsBitsInjective(x: int, y: int) requires 0 <= x < 4294967296 && 0 <= y < 4294967296 && x as bv32 == y as bv32 ensures x == y
+  decreases x + y
+{
+  if x + y > 0 {
+    JsLowBitNat(x); JsLowBitNat(y); JsHalfBitsNat(x); JsHalfBitsNat(y);
+    assert (x % 2) as bv32 == (y % 2) as bv32;
+    assert x % 2 == y % 2;
+    JsBitsInjective(x / 2, y / 2);
+  }
+}
+lemma JsPow2Add(i: nat, j: nat) ensures JsPow2(i) * JsPow2(j) == JsPow2(i + j) decreases i { JsPow2Step(i); JsPow2Step(i + j); JsPow2Step(0); if i > 0 { JsPow2Add(i - 1, j); } }
+lemma JsPow2Top() ensures JsPow2(31) == 2147483648 && JsPow2(32) == 4294967296 { JsPow2At_31(); JsPow2At_32(); }
+lemma JsModMod(a: int, p: int, q: int) requires 1 <= p && 1 <= q ensures (a % (p * q)) % p == a % p
+{
+  var t := a / (p * q); var z := a % (p * q); assert a == t * (p * q) + z;
+  var s := z / p; var c := z % p; assert z == s * p + c && 0 <= c < p;
+  assert a == (t * q + s) * p + c by { assert t * (p * q) == (t * q) * p; }
+  JsDivModUnique(a, p, t * q + s, c);
+}
+// the remainder of an integer by 2^k (k <= 31) is its remainder's remainder, below 2^31
+lemma JsLowRem(a: int, k: nat) requires k <= 31 ensures 0 <= a % JsPow2(k) < 2147483648 && (a % 4294967296) % JsPow2(k) == a % JsPow2(k)
+{ JsPow2Top(); JsPow2Add(k, 32 - k); JsModMod(a, JsPow2(k), JsPow2(32 - k)); JsPow2Add(k, 31 - k); }
+lemma JsBitsInj(x: int, y: int) requires ${U}(x) == ${U}(y) ensures x % 4294967296 == y % 4294967296
+{ hide *; var p := x % 4294967296; var q := y % 4294967296; JsUint32Of(x, p); JsUint32Of(y, q); JsBitsInjective(p, q); }
+// ToInt32 of an integer in [0, 2^31) is itself
+lemma JsSignedSmall(c: int) requires 0 <= c < 2147483648 ensures ${S}(${U}(c)) == c
+{
+  hide *;
+  var r := ${S}(${U}(c)); JsBitsInj(r, c);
+  if r < 0 { assert r % 4294967296 == r + 4294967296; }
+}
+lemma JsUint32Mod(a: int) ensures ${U}(a % 4294967296) == ${U}(a) {}
+// for every integer a and 0 <= k <= 31: ToInt32(a) & (2^k - 1) is a's remainder by 2^k
+lemma {:isolate_assertions} JsLowBitsInt(a: int, k: nat) requires k <= 31 ensures ${S}(${U}(a) & JsMask(k)) == a % JsPow2(k)
+{
+  hide *;
+  JsLowRem(a, k); var y := a % 4294967296; var c := a % JsPow2(k);
+  JsUint32Mod(a); JsLowBitsNat(y, k); JsBitsOf(y); JsBitsOf(c); JsSignedSmall(c);
+  assert y % JsPow2(k) == c;
+  assert JsBits(y % JsPow2(k)) == ${U}(c);
+  assert ${U}(a) == JsBits(y);
+  assert ${U}(a) & JsMask(k) == ${U}(c);
+}
+// the same in bits, at a power p given with it (an instance states its literal divisor: Z3 does not relate a remainder
+// by a literal to the remainder by a term equal to it)
+lemma {:isolate_assertions} JsLowBitsBv(a: int, k: nat, p: int) requires k <= 31 && p == JsPow2(k) ensures ${U}(a) & JsMask(k) == ${U}(a % p) && 0 <= a % p < 2147483648
+{
+  hide *;
+  JsLowRem(a, k); var y := a % 4294967296; var c := a % JsPow2(k);
+  JsUint32Mod(a); JsLowBitsNat(y, k); JsBitsOf(y); JsBitsOf(c);
+  assert y % JsPow2(k) == c;
+  assert JsBits(y % JsPow2(k)) == ${U}(c);
+  assert ${U}(a) == JsBits(y);
+}
+lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((u >> 1) & m) << 1) {}`; break; }
+      case 'JsLowBits': { // types: [A, k]: ToInt32(a) & (2^k - 1), its value the remainder a % 2^k as a postcondition
+        // the literal mask meets JsMask(k) in bits only (`u & JsMask(i)` against `u & m`, one step per lemma): Z3 4.12 does
+        // not relate ToInt32 of two bit terms whose equality needs the bits, so ToInt32 meets only terms proved equal
+        const k = Number(B), m = 2 ** k - 1, p = 2 ** k; helper('JsLowBitsLib', []);
+        const U = helper('JsUint32', ['int']), S = helper('JsSigned', ['bv32']), at = `JsLowBitsAt_${k}`;
+        for (let i = 0; i <= k; i++) if (!prelude.has(`JsMaskAnd_${i}`)) addPrelude(`JsMaskAnd_${i}`, `lemma {:isolate_assertions} JsMaskAnd_${i}(u: bv32) ensures u & JsMask(${i}) == u & ${2 ** i - 1}
+{ JsMaskStep(${i}); ${i ? `JsMaskAnd_${i - 1}(u >> 1); JsMaskJoinEq(u, JsMask(${i - 1})); assert (u >> 1) & JsMask(${i - 1}) == (u >> 1) & ${2 ** (i - 1) - 1}; assert (u & 1) | (((u >> 1) & ${2 ** (i - 1) - 1}) << 1) == u & ${2 ** i - 1};` : ''} }`);
+        if (!prelude.has(at)) addPrelude(at, `lemma {:isolate_assertions} ${at}(a: int)
+  ensures ${S}(${U}(a) & ${m}) == a % ${p}
+{ hide *; JsPow2At_${k}(); JsLowBitsBv(a, ${k}, ${p}); JsMaskAnd_${k}(${U}(a)); assert ${U}(a) & ${m} == ${U}(a % ${p}); JsSignedSmall(a % ${p}); }`);
+        text = A === 'real' ? `function ${name}(a: real): (r: real)
+  ensures r == (${helper('JsTrunc', ['real'])}(a) % ${p}) as real
+{ ${at}(${helper('JsTrunc', ['real'])}(a)); (${S}(${helper('JsUint32', ['real'])}(a) & ${m}) as real) }` : `function ${name}(a: int): (r: int)
+  ensures r == a % ${p}
+{ ${at}(a); ${S}(${U}(a) & ${m}) }`; break;
       }
       case 'JsCeil': case 'JsRound': case 'JsSign': {
         const zero = A === 'real' ? '0.0' : '0', one = A === 'real' ? '1.0' : '1';
@@ -2935,21 +3091,67 @@ lemma ${name}_same(s: seq<${A}>, p: ${A} -> bool, q: ${A} -> bool)
     }
     return call(inner, true);
   }
-  // the bitwise reading both lanes share (the heap core receives it): `x | 0`, `0 | x`, `x ^ 0` and `~~x` are ToInt32, a
-  // literal shift count is reduced to its low five bits (a count of 0 there: ToInt32 of the left operand), the rest the
-  // helper of its operator; `ex` writes an operand. Under the faithful reading an operand the model does not hold
-  // arrives as `Math.__lean_int32(x)` (faithful.mjs), so the same forms meet in one term on both sides
+  // the bitwise reading both lanes share (the heap core receives it; design/bitwise-lemmas.md). A chain of bitwise
+  // operators is one bv32 term, written inline, with one conversion back at its top (ToInt32, or ToUint32 for `>>>`):
+  // an operand that is not itself bitwise enters as ToUint32 of its value (`ex` writes it), a literal as its 32 bits, a
+  // shift count as its low five bits, `>>` as the arithmetic shift without a branch. `x | 0`, `0 | x`, `x ^ 0`, `0 ^ x`,
+  // `~~x` and a shift by a literal count of low five bits 0 are the bits of x, so the same forms meet in one term on
+  // both sides. The term is inline because Dafny boxes a bv32 literal passed to a function, and Z3 4.12 then does not see
+  // that two such terms are equal. `x & m` at the top, m a literal 2^k - 1 and x not bitwise, is JsLowBits_<A>_<k>(x):
+  // the same chain, with the lemma that the low bits of an integer are its remainder by 2^k as its postcondition (a
+  // postcondition reaches the unit's callers; a lemma called inside the unit's body does not). Under the faithful reading
+  // an operand the model does not hold arrives as `Math.__lean_int32(x)` (faithful.mjs): its ToUint32 is the same on both
+  // sides
+  let bitsLet = 0;
   function bitwiseOf(n, ex) {
-    if (ts.isPrefixUnaryExpression(n)) { let inner = n.operand; while (ts.isParenthesizedExpression(inner)) inner = inner.expression; if (ts.isPrefixUnaryExpression(inner) && inner.operator === K.TildeToken) return `${helper('JsInt32', [NUM])}(${ex(inner.operand)})`; return `${helper('JsBitNot', [NUM])}(${ex(n.operand)})`; }
-    const op = n.operatorToken.kind;
-    const bit = { [K.AmpersandToken]: 'JsBitAnd', [K.BarToken]: 'JsBitOr', [K.CaretToken]: 'JsBitXor', [K.LessThanLessThanToken]: 'JsShl', [K.GreaterThanGreaterThanToken]: 'JsShr', [K.GreaterThanGreaterThanGreaterThanToken]: 'JsUshr' }[op];
-    const zero = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return ts.isNumericLiteral(e) && Number(e.text) === 0; };
-    const count = finiteLiteral(n.right);
-    if ((op === K.BarToken || op === K.CaretToken) && (zero(n.right) || zero(n.left))) return `${helper('JsInt32', [NUM])}(${ex(zero(n.right) ? n.left : n.right)})`; // `x | 0`, `0 | x`, `x ^ 0`: ToInt32(x) | 0 is ToInt32(x) (the literal operand has no effect)
-    if ((op === K.LessThanLessThanToken || op === K.GreaterThanGreaterThanToken) && count !== null && Number.isFinite(count) && ((count >>> 0) & 31) === 0) return `${helper('JsInt32', [NUM])}(${ex(n.left)})`; // a shift by a literal count of low five bits 0: ToInt32 of the left operand
-    const left = ex(n.left);
-    const right = ['JsShl', 'JsShr', 'JsUshr'].includes(bit) && count !== null && Number.isFinite(count) ? numLit(String((count >>> 0) & 31), n.right) : ex(n.right);
-    return `${helper(bit, [NUM])}(${left}, ${right})`;
+    const BIT = new Set([K.AmpersandToken, K.BarToken, K.CaretToken, K.LessThanLessThanToken, K.GreaterThanGreaterThanToken, K.GreaterThanGreaterThanGreaterThanToken]);
+    const strip = (e) => { while (ts.isParenthesizedExpression(e)) e = e.expression; return e; };
+    const isBit = (e) => (ts.isPrefixUnaryExpression(e) && e.operator === K.TildeToken) || (ts.isBinaryExpression(e) && BIT.has(e.operatorToken.kind));
+    const lit = (v) => ({ code: String(v >>> 0), lit: v >>> 0, conv: null });
+    const simple = (c) => /^[A-Za-z0-9_]+$/.test(c) || c.length <= 160;
+    // the bits of e: { code, lit (its uint32 when constant), conv (the operand's own text when e is not bitwise) }
+    const bits = (e0) => {
+      const e = strip(e0);
+      const c = finiteLiteral(e);
+      if (c !== null && Number.isFinite(c)) return lit(c);
+      if (!isBit(e)) { const t = ex(e); return { code: `${helper('JsUint32', [NUM])}(${t})`, lit: null, conv: t }; }
+      if (ts.isPrefixUnaryExpression(e)) {
+        const inner = strip(e.operand);
+        if (ts.isPrefixUnaryExpression(inner) && inner.operator === K.TildeToken) return bits(inner.operand); // ~~x: ToInt32(x)
+        const u = bits(e.operand); return u.lit !== null ? lit(~u.lit) : { code: `(!${u.code})`, lit: null, conv: null };
+      }
+      const op = e.operatorToken.kind;
+      const zero = (x) => { const v = finiteLiteral(strip(x)); return v !== null && Number.isFinite(v) && (v >>> 0) === 0; };
+      if ((op === K.BarToken || op === K.CaretToken) && (zero(e.right) || zero(e.left))) return bits(zero(e.right) ? e.left : e.right); // x | 0 is ToInt32(x)
+      const count = finiteLiteral(strip(e.right));
+      const k = count !== null && Number.isFinite(count) ? (count >>> 0) & 31 : null;
+      if ((op === K.LessThanLessThanToken || op === K.GreaterThanGreaterThanToken) && k === 0) return bits(e.left); // a shift by 0: ToInt32 of the left
+      const l = bits(e.left);
+      if (op === K.AmpersandToken || op === K.BarToken || op === K.CaretToken) {
+        const r = bits(e.right), o = ts.tokenToString(op);
+        if (l.lit !== null && r.lit !== null) return lit(op === K.AmpersandToken ? l.lit & r.lit : op === K.BarToken ? l.lit | r.lit : l.lit ^ r.lit);
+        return { code: `(${l.code} ${o} ${r.code})`, lit: null, conv: null, and: op === K.AmpersandToken ? [l, r] : null };
+      }
+      const K5 = k !== null ? String(k) : `(${bits(e.right).code} & 31)`;
+      if (op === K.LessThanLessThanToken) return l.lit !== null && k !== null ? lit(l.lit << k) : { code: `(${l.code} << ${K5})`, lit: null, conv: null };
+      if (op === K.GreaterThanGreaterThanGreaterThanToken) return l.lit !== null && k !== null ? lit(l.lit >>> k) : { code: `(${l.code} >> ${K5})`, lit: null, conv: null };
+      if (l.lit !== null && k !== null) return lit(l.lit >> k);
+      const sign = k !== null ? String((~(0xFFFFFFFF >>> k)) >>> 0) : `!(4294967295 >> ${K5})`; // the bits the sign fills
+      const shr = (u) => `((${u} >> ${K5}) | ((0 - (${u} >> 31)) & ${sign}))`;
+      if (simple(l.code)) return { code: shr(l.code), lit: null, conv: null };
+      const v = `bits${bitsLet++}_`; return { code: `(var ${v} := ${l.code}; ${shr(v)})`, lit: null, conv: null };
+    };
+    const top = strip(n);
+    const unsigned = ts.isBinaryExpression(top) && top.operatorToken.kind === K.GreaterThanGreaterThanGreaterThanToken;
+    const b = bits(top);
+    if (b.lit !== null) { const v = numLit(String(unsigned ? b.lit : b.lit | 0), n); return v.startsWith('-') ? `(${v})` : v; } // a constant chain: its value
+    const back = (code) => (real ? `(${helper(unsigned ? 'JsUnsigned' : 'JsSigned', ['bv32'])}(${code}) as real)` : `${helper(unsigned ? 'JsUnsigned' : 'JsSigned', ['bv32'])}(${code})`);
+    if (b.and) { // the low bits of an operand: ToInt32(x) & (2^k - 1) is x % 2^k (JsLowBits)
+      const [l, r] = b.and, [x, m] = l.lit !== null ? [r, l] : [l, r];
+      const kk = m.lit !== null ? Math.log2(m.lit + 1) : NaN;
+      if (x.conv !== null && Number.isInteger(kk) && kk >= 1 && kk <= 31) return `${helper('JsLowBits', [NUM, String(kk)])}(${x.conv})`;
+    }
+    return back(b.code);
   }
   function binary(n) {
     const op = n.operatorToken.kind;

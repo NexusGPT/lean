@@ -935,7 +935,27 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (divUsed) { // a zero divisor: JavaScript answers NaN or an infinity; the world is marked and the value is a default
       out.push(`function ZeroMark_${NUM}(hw: HWorld, d: ${NUM}): HWorld { if d == ${isReal ? '0.0' : '0'} then hw.(oob := true) else hw }`);
       out.push('function NegZeroMark(hw: HWorld, z: bool): HWorld { if z then hw.(oob := true) else hw }'); // a negative zero may escape: not modelled from there
-      out.push(isReal ? 'function RemT_real(a: real, b: real): real { if b == 0.0 then 0.0 else a - b * (TruncR(a / b) as real) }' : 'function RemT_int(a: int, b: int): int { if b == 0 then 0 else a - b * TruncDivI(a, b) }'); // the remainder of a truncated division: the dividend's sign
+      // the remainder of a truncated division: the dividend's sign; of two naturals it is Dafny's remainder (the reading of
+      // `%` meets the low-bits lemma of the bitwise reading there; design/bitwise-lemmas.md)
+      out.push(isReal ? `function RemT_real(a: real, b: real): (r: real)
+  ensures 0.0 <= a && a == a.Floor as real && 0.0 < b && b == b.Floor as real ==> r == (a.Floor % b.Floor) as real
+{ if b == 0.0 then 0.0 else if 0.0 <= a && a == a.Floor as real && 0.0 < b && b == b.Floor as real then RemT_nat(a.Floor, b.Floor); a - b * (TruncR(a / b) as real) else a - b * (TruncR(a / b) as real) }
+lemma {:isolate_assertions} RemT_nat(n: int, d: int)
+  requires 0 <= n && 0 < d
+  ensures (n as real) - (d as real) * (TruncR((n as real) / (d as real)) as real) == (n % d) as real
+{
+  var q := n / d; var r := n % d; assert n == q * d + r && 0 <= r < d;
+  var D := d as real; var R := r as real; var Q := q as real;
+  assert (n as real) == Q * D + R;
+  var x := (n as real) / D;
+  assert x * D == n as real;
+  assert (Q + R / D) * D == Q * D + R;
+  assert x == Q + R / D by { assert x * D == (Q + R / D) * D; }
+  assert 0.0 <= R / D < 1.0;
+  assert x.Floor == q;
+}` : `function RemT_int(a: int, b: int): (r: int)
+  ensures 0 <= a && 0 < b ==> r == a % b
+{ if b == 0 then 0 else a - b * TruncDivI(a, b) }`);
       if (isReal) out.push('function DivT_real(a: real, b: real): real { if b == 0.0 then 0.0 else a / b }');
       else { out.push('function TruncDivI(a: int, b: int): int requires b != 0 { var q := (if a >= 0 then a else -a) / (if b >= 0 then b else -b); if (a >= 0) == (b >= 0) then q else -q }'); out.push('function TruncDivT(a: int, b: int): int { if b == 0 then 0 else TruncDivI(a, b) }'); out.push('function FloorDivT(a: int, b: int): int { if b == 0 then 0 else var q := TruncDivI(a, b); if a - b * q != 0 && (a < 0) != (b < 0) then q - 1 else q }'); } // Math.trunc and Math.floor of an int division
     }
