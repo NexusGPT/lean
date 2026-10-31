@@ -6,7 +6,8 @@ import { createRequire, isBuiltin } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { ts, loadProgramOptions, topLevelFunctions } from '../common.mjs';
-import { sandbox, pickUnit, observe, workerFlags, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
+import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
+import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { Environment, BudgetError } from './fake.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
@@ -200,13 +201,15 @@ export async function runNew(opts) {
   // worker's flags (the permission model, its read trees, the network flag of the mode), its reduced environment, and vm
   // modules, enabled only for this runner. Only a process that already holds both runs the unit itself (that child)
   if (!vm.SourceTextModule || !process.permission) {
-    const child = spawnSync(process.execPath, [...workerFlags(opts), '--experimental-vm-modules', here, JSON.stringify(opts)], { encoding: 'utf8', env: workerEnv(), timeout: Math.max(30000, n * ms + 10000), maxBuffer: 16 * 1024 * 1024 });
+    const box = workerSandbox(opts); // the project's list (sandbox-list.mjs) holds this child as it holds the worker
+    const child = spawnSync(process.execPath, [...workerFlagsFrom(box.flags), '--experimental-vm-modules', here, JSON.stringify({ ...opts, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) })], { encoding: 'utf8', env: workerEnv(), timeout: Math.max(30000, n * ms + 10000), maxBuffer: 16 * 1024 * 1024 });
     if (child.stderr) process.stderr.write(child.stderr);
-    try { return JSON.parse(child.stdout); }
+    try { const r = JSON.parse(child.stdout); if (box.entry) r.sandboxList = box.entry(r.sandboxSpawned); delete r.sandboxSpawned; return r; }
     catch { return { ...base, verdict: 'ASK', reason: child.error?.message ?? `candidate runner exited ${child.status}: ${child.stdout}`, loaded: false, inputs: 0 }; }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, frozen clock', inputs: 'from parameter types with boundary values first' };
   if (netMode() === 'deny') denyNetwork(); // the network-denied mode (net-deny.mjs), under the permission model of this child; the result's sandbox entry says what holds it
+  if (opts.sandboxSpawn) guardSpawn(opts.sandboxSpawn); // the programs the project's list allows, named when refused
   const abs = path.resolve(candidate);
   let options;
   const sources = new Map();
@@ -248,7 +251,7 @@ export async function runNew(opts) {
     const shape = { outcome: Object.hasOwn(observation.outcome, 'threw') ? 'threw' : 'returned', trace: observation.trace.map(({ op, path }) => ({ op, path })), pending: observation.pending.map(x => x.op) };
     const key = JSON.stringify(shape); const entry = shapes.get(key) ?? { ...shape, inputs: 0 }; entry.inputs++; shapes.set(key, entry);
   }
-  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, ...(networkDenied() ? { sandbox: sandboxEntry() } : {}) };
+  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, ...(networkDenied() ? { sandbox: sandboxEntry() } : {}), ...(opts.sandboxSpawn ? { sandboxSpawned: spawnRefusals() } : {}) };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === here) { scrubEnv(); absentOutsideReads(); console.log(JSON.stringify(await runNew(JSON.parse(process.argv[2])))); }

@@ -3,7 +3,12 @@
 //
 //   node check.mjs --parent <file.ts> --candidate <file.ts> --unit <name|Class.method> [--out verdict.json]
 //                  [--n 200] [--seed 1] [--project <tsconfig>|--no-project] [--dafny-seconds 60] [--scope scope.json] [--deep[=k]]
-//                  [--values <values.json>|none] [--unit-seconds 120]
+//                  [--values <values.json>|none] [--unit-seconds 120] [--sandbox-base <ref>]
+//
+// --sandbox-base names the parent commit whose `.gate/sandbox.json` holds lane B's sandbox (exec/sandbox-list.mjs,
+// design/sandbox-allow-list.md), read in the candidate's checkout with git show, never from the working tree; without
+// it, or with no file at that commit, the sandbox is the default. Every name the list refuses is a row of the
+// certificate's `sandbox.refused` (`sandbox: refused <kind> <name> by <rule>`).
 //
 // --values names the project's values file (exec/spec.mjs: per unit and parameter or per type name, values the inputs
 // are known to take); without it lane B reads the nearest `.lean/values.json` above the candidate, `none` reads none.
@@ -35,7 +40,8 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt } from './exec/run.mjs';
+import { runPair, crumb, crumbText, verdictGuard, deepDepth, valuesOpt, treeOf } from './exec/run.mjs';
+import { loadSandboxList, useSandboxList } from './exec/sandbox-list.mjs';
 import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, enclosingUnitName, MODULE_UNIT } from './common.mjs';
@@ -89,6 +95,7 @@ export async function check(opts) {
     }
   }
   crumb.phase = 'lane A'; crumb.input = null;
+  if (b.sandboxList) cert.sandbox = b.sandboxList; // the project's list lane B ran under, and every name it refused (exec/sandbox-list.mjs)
   cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}) })) : null, ...(b.record ? { record: b.record } : {}) }; // record: the witness-record/v2 unit certificate (exec/record.mjs), additive
   try { cert.unitTextEqual = b.unitTextEqual ?? unitTextEqual(parent, candidate, unit); } catch { cert.unitTextEqual = null; } // the unit's own text, comments and whitespace dropped, equal on both sides or not: beside the file hashes, it says whether a difference came through this function's text or through what it calls
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
@@ -339,6 +346,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const files = { parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit') };
   const guard = verdictGuard(opt('--out', null), (r) => harnessAsk(r.reason, files));
+  if (opt('--sandbox-base', null)) useSandboxList(loadSandboxList(treeOf(files.candidate), opt('--sandbox-base')));
   const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined), fpSeconds: Number(opt('--fp-seconds', FP_SECONDS)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
   guard.settle();
   const out = opt('--out', null);
