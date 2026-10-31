@@ -857,11 +857,12 @@ function translateOnce(file, fnName, opts = {}) {
     const l = `na${tempCount++}_`, left = expr(n.left, anyTarget());
     const N = external('is_null_Any', ['Any'], 'bool'), U = external('is_undefined_Any', ['Any'], 'bool');
     const test = `(${N}(${l}) || ${U}(${l}))`, chosen = convert(l, anyTarget(), t, n);
-    if (containsEffect(n.right)) {
-      const right = branchWithWorld(() => expr(n.right, t), td);
-      return hoist(`(var ${l} := ${left}; if ${test} then ${right} else (${WORLD}, ${chosen}))`, td);
-    }
-    return `(var ${l} := ${left}; if ${test} then ${valueOperands ? valueBranch(() => expr(n.right, t)) : expr(n.right, t)} else ${chosen})`;
+    const world = containsEffect(n.right), pr = rightParts(() => expr(n.right, t), !world && !!valueOperands);
+    if (pr.names.size) { pending.push(`var ${l} := ${left};`); return shortCircuit(n, test, true, chosen, pr, world); }
+    if (world) return hoist(`(var ${l} := ${left}; if ${test} then ${worldArm(pr)} else (${WORLD}, ${chosen}))`, td);
+    if (valueOperands) return `(var ${l} := ${left}; if ${test} then ${valueArm(pr)} else ${chosen})`;
+    pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+    return `(var ${l} := ${left}; if ${test} then ${pr.text} else ${chosen})`;
   }
   function branchWithWorld(f, d) {
     const { lines, text } = captureParts(f);
@@ -889,6 +890,22 @@ function translateOnce(file, fnName, opts = {}) {
     const tv = valueOperands ? valueName() : `t${tempCount++}_`;
     pending.push(`var (${[...(world ? [WORLD] : []), tv, ...names].join(', ')}) := if ${cond} then ${arm(pa)} else ${arm(pb)};`);
     return tv;
+  }
+  // the right operand of `&&`, `||`, `??`, translated once as a conditional's operand is (operandParts); `own` gives it
+  // its own copy of the value operands, as valueBranch does
+  function rightParts(f, own) {
+    const saved = valueOperands;
+    if (own) valueOperands = saved ? new Map(saved) : null;
+    try { return operandParts(f); } finally { valueOperands = saved; }
+  }
+  const worldArm = (p) => { const body = `(${WORLD}, ${outerParens(p.text)})`; return p.lines.length ? `(\n${indentBlock(`${p.lines.join('\n')}\n${body}`)}\n)` : body; }; // branchWithWorld's text
+  const valueArm = (p) => wrapLet(p.lines.length ? `${p.lines.join('\n')}\n${p.text}` : p.text); // valueBranch's text
+  // `l && r`, `l || r`, `l ?? r` whose right operand rebinds names: the conditional it is (ECMA-262 13.13, the right
+  // operand evaluated only when the left does not decide), read by carried. `cond` holds when the right operand runs
+  // (`rightOnTrue`) or when it does not; the other arm is the left's value, every rebound name unchanged.
+  function shortCircuit(n, cond, rightOnTrue, left, pr, world) {
+    const pl = { lines: [], text: left, names: new Map() };
+    return rightOnTrue ? carried(n, cond, pr, pl, world) : carried(n, cond, pl, pr, world);
   }
 
   // (effectful units are computed after the subset gate, below)
@@ -2471,7 +2488,10 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     while (ts.isParenthesizedExpression(n)) n = n.expression;
     if (containsValueStep(n) || (containsEffect(n) && !isAny(typeOf(n)))) return valueTruth(expr(n), dtype(typeOf(n), n));
     if (ts.isBinaryExpression(n) && (n.operatorToken.kind === K.AmpersandAmpersandToken || n.operatorToken.kind === K.BarBarToken)) {
-      return `(${truthy(n.left)} ${n.operatorToken.kind === K.AmpersandAmpersandToken ? '&&' : '||'} ${truthy(n.right)})`;
+      const and = n.operatorToken.kind === K.AmpersandAmpersandToken, l = truthy(n.left), pr = rightParts(() => truthy(n.right), false);
+      if (pr.names.size) return shortCircuit(n, outerParens(l), and, and ? 'false' : 'true', pr, false);
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return `(${l} ${and ? '&&' : '||'} ${pr.text})`;
     }
     if (ts.isPrefixUnaryExpression(n) && n.operator === K.ExclamationToken) return `!(${outerParens(truthy(n.operand))})`;
     const t = typeOf(n);
@@ -3282,9 +3302,12 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (!isOptional(lt)) return expr(n.left);
       const l = rawOperand(n.left);
       const t = typeOf(n); const td = isAny(t) ? anyType() : dtype(t, n); const inner = isAny(baseOf(lt)) ? anyType() : dtype(baseOf(lt), n); const rtp = typeOf(n.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, n);
-      if (valueOperands) return `(if ${l}.Some? then ${convertD(`${l}.value`, inner, td)} else ${valueBranch(() => expr(n.right, t))})`;
-      if (td !== inner || td !== rd) return `(if ${l}.Some? then ${convertD(`${l}.value`, inner, td)} else ${convert(outerParens(expr(n.right)), typeOf(n.right), t, n)})`; // `x ?? "none"` with x: number | undefined: both sides lifted to the result type
-      return `(if ${l}.Some? then ${l}.value else ${outerParens(expr(n.right, baseOf(lt)))})`;
+      const some = valueOperands || td !== inner || td !== rd ? convertD(`${l}.value`, inner, td) : `${l}.value`;
+      if (valueOperands) { const pr = rightParts(() => expr(n.right, t), true); return pr.names.size ? shortCircuit(n, `${l}.Some?`, false, some, pr, false) : `(if ${l}.Some? then ${some} else ${valueArm(pr)})`; }
+      const pr = rightParts(() => td !== inner || td !== rd ? convert(outerParens(expr(n.right)), typeOf(n.right), t, n) : outerParens(expr(n.right, baseOf(lt))), false); // `x ?? "none"` with x: number | undefined: both sides lifted to the result type
+      if (pr.names.size) return shortCircuit(n, `${l}.Some?`, false, some, pr, false);
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return `(if ${l}.Some? then ${some} else ${pr.text})`;
     }
     if (op === K.QuestionQuestionToken) {
       const lt = typeOf(n.left), t = typeOf(n);
@@ -3293,18 +3316,20 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (!isOptional(lt)) return expr(n.left, t);
       if (valueOperands) {
         const left = expr(n.left), chosen = dtype(lt, n) === dtype(t, n) ? left : convert(`${left}.value`, baseOf(lt), t, n);
-        if (!containsEffect(n.right)) return `(if ${left}.Some? then ${chosen} else ${valueBranch(() => expr(n.right, t))})`;
-        const right = branchWithWorld(() => expr(n.right, t), dtype(t, n)), value = valueName();
+        const world = containsEffect(n.right), pr = rightParts(() => expr(n.right, t), !world);
+        if (pr.names.size) return shortCircuit(n, `${left}.Some?`, false, chosen, pr, world);
+        if (!world) return `(if ${left}.Some? then ${chosen} else ${valueArm(pr)})`;
+        const right = worldArm(pr), value = valueName();
         pending.push(`var (${WORLD}, ${value}) := if ${left}.Some? then (${WORLD}, ${chosen}) else ${right};`);
         return value;
       }
       const l = `nc${tempCount++}_`, left = expr(n.left);
       const chosen = convert(`${l}.value`, baseOf(lt), t, n);
-      if (containsEffect(n.right)) {
-        const right = branchWithWorld(() => expr(n.right, t), dtype(t, n));
-        return hoist(`(var ${l} := ${left}; if ${l}.Some? then (${WORLD}, ${chosen}) else ${right})`, dtype(t, n));
-      }
-      return `(var ${l} := ${left}; if ${l}.Some? then ${chosen} else ${expr(n.right, t)})`;
+      const world = containsEffect(n.right), pr = rightParts(() => expr(n.right, t), false);
+      if (pr.names.size) { pending.push(`var ${l} := ${left};`); return shortCircuit(n, `${l}.Some?`, false, chosen, pr, world); }
+      if (world) return hoist(`(var ${l} := ${left}; if ${l}.Some? then (${WORLD}, ${chosen}) else ${worldArm(pr)})`, dtype(t, n));
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return `(var ${l} := ${left}; if ${l}.Some? then ${chosen} else ${pr.text})`;
     }
     if (op === K.AmpersandAmpersandToken || op === K.BarBarToken) {
       const t = typeOf(n);
@@ -3325,10 +3350,14 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (containsEffect(n.right)) {
         if (!unitEffectful()) fail(n, 'conditional-effect: move the effect into an explicit if statement');
         pending.push(`var ${saved}: ${ld} := ${first};`);
-        const right = branchWithWorld(() => expr(n.right, t), td);
+        const pr = rightParts(() => expr(n.right, t), false);
+        if (pr.names.size) return shortCircuit(n, cond, and, left, pr, true);
+        const right = worldArm(pr);
         return hoist(and ? `(if ${cond} then ${right} else (${WORLD}, ${left}))` : `(if ${cond} then (${WORLD}, ${left}) else ${right})`, td);
       }
-      return `(var ${saved}: ${ld} := ${first}; ${choose(valueBranch(() => expr(n.right, t)))})`;
+      const pr = rightParts(() => expr(n.right, t), true);
+      if (pr.names.size) { pending.push(`var ${saved}: ${ld} := ${first};`); return shortCircuit(n, cond, and, left, pr, false); }
+      return `(var ${saved}: ${ld} := ${first}; ${choose(valueArm(pr))})`;
     }
     if (op === K.InstanceOfKeyword) {
       const decl = checker.getSymbolAtLocation(n.right)?.valueDeclaration;
@@ -3676,8 +3705,12 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     jsxType();
     if (isJsxLit(e)) return jsxNode(e);
-    if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.AmpersandAmpersandToken) return `(if ${outerParens(truthy(e.left))} then ${jsxChild(e.right)} else JsxNothing)`;
-    if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.BarBarToken) return `(if ${outerParens(truthy(e.left))} then ${jsxChild(e.left)} else ${jsxChild(e.right)})`;
+    if (ts.isBinaryExpression(e) && [K.AmpersandAmpersandToken, K.BarBarToken].includes(e.operatorToken.kind)) { // the right child is read only when the left does not decide
+      const and = e.operatorToken.kind === K.AmpersandAmpersandToken, c = outerParens(truthy(e.left)), l = and ? 'JsxNothing' : jsxChild(e.left), pr = rightParts(() => jsxChild(e.right), false);
+      if (pr.names.size) return shortCircuit(e, c, and, l, pr, false);
+      pending.push(...pr.lines); // no name rebound: the lines stay where they were hoisted
+      return and ? `(if ${c} then ${pr.text} else ${l})` : `(if ${c} then ${l} else ${pr.text})`;
+    }
     if (ts.isConditionalExpression(e)) return `(if ${outerParens(truthy(e.condition))} then ${jsxChild(e.whenTrue)} else ${jsxChild(e.whenFalse)})`;
     if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e) || ts.isTemplateExpression(e)) return `JsxText(${expr(e)})`;
     if (e.kind === K.NullKeyword || (ts.isIdentifier(e) && e.text === 'undefined') || e.kind === K.TrueKeyword || e.kind === K.FalseKeyword) return 'JsxNothing';
@@ -5554,9 +5587,18 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       if (op === K.QuestionQuestionEqualsToken || op === K.BarBarEqualsToken || op === K.AmpersandAmpersandEqualsToken) {
         // `x ??= v` keeps x when present; `x ||= v` keeps x when truthy; `x &&= v` takes v when x is truthy
         const lt = typeOf(e.left); const td = isAny(lt) ? anyType() : dtype(lt, e); const rtp = typeOf(e.right); const rd = isAny(rtp) ? anyType() : dtype(rtp, e);
-        const cur = ident(e.left); const val = convert(outerParens(expr(e.right)), rtp, lt, e);
-        if (op === K.QuestionQuestionEqualsToken) { if (!isOptional(lt)) return [e.left.text, cur]; return [e.left.text, `(if ${name}.Some? then ${name} else ${val})`]; }
+        // (ECMA-262 13.15.2) the right operand runs only when the target does not decide: one that rebinds a name or makes a
+        // transition is the short-circuit's conditional (shortCircuit), its lines in its branch
+        const cur = ident(e.left), world = containsEffect(e.right), pr = rightParts(() => convert(outerParens(expr(e.right)), rtp, lt, e), false), val = pr.text;
+        const carry = pr.names.size || (world && pr.lines.length);
+        if (op === K.QuestionQuestionEqualsToken) {
+          if (!isOptional(lt)) return [e.left.text, cur]; // never absent: the right operand never runs
+          if (carry) return [e.left.text, shortCircuit(e, `${name}.Some?`, false, name, pr, world)];
+          pending.push(...pr.lines); return [e.left.text, `(if ${name}.Some? then ${name} else ${val})`];
+        }
         const t = truthy(e.left);
+        if (carry) return [e.left.text, shortCircuit(e, outerParens(t), op === K.AmpersandAmpersandEqualsToken, name, pr, world)];
+        pending.push(...pr.lines); // no name rebound, no transition: the lines stay where they were hoisted
         return [e.left.text, op === K.BarBarEqualsToken ? `(if ${outerParens(t)} then ${name} else ${val})` : `(if ${outerParens(t)} then ${val} else ${name})`];
       }
       if (heldCompound(e)) return [e.left.text, heldCompound(e)(name, e.right)];

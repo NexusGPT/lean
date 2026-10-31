@@ -118,16 +118,38 @@ function attach(xs: Slot[], kind: string, owner: string): string {
   return id;
 }
 
-// the found slot's id, or one attached when none is found: the list is changed only when nothing is found
-export function childOf(xs: Slot[], kind: string, owner: string): number {
+// the found slot's id, or one attached when none is found: the unit's list is changed only when nothing is found
+export function anchor(kind: string, owner: string): number {
+  const xs: Slot[] = [{ id: owner, kind: "start", owner: owner }];
   const found = xs.find((n) => n.kind === kind && n.owner === owner);
   const id = found?.id ?? attach(xs, kind, owner);
   return id.length + xs.length;
 }
 
 // the same with a planted difference: the candidate attaches whatever is found
-export function orphan(xs: Slot[], kind: string, owner: string): number {
+export function orphan(kind: string, owner: string): number {
+  const xs: Slot[] = [{ id: owner, kind: "start", owner: owner }];
   const found = xs.find((n) => n.kind === kind && n.owner === owner);
   const id = found?.id ?? attach(xs, kind, owner);
   return id.length + xs.length;
+}
+
+// && as an if's condition: the counter changed only when the flag holds
+export function guard(on: boolean, by: number): number {
+  const c: Count = { hits: 0 };
+  if (on && bump(c, by) > 1) return 10 + c.hits;
+  return c.hits;
+}
+
+// ||=: the right operand runs only when the target is falsy (a logical assignment short-circuits too)
+export function lazy(on: boolean, by: number): number {
+  const c: Count = { hits: 0 };
+  let ok = on;
+  ok ||= bump(c, by) > 1;
+  return (ok ? 10 : 0) + c.hits;
+}
+
+// ?? in a return: the record changed only when the count is absent
+export function named(t: Tally, s: string, k: number | undefined): number {
+  return k ?? record(t, s);
 }
