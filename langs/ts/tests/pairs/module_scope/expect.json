@@ -1,0 +1,7 @@
+{
+ "scope": ["capped", "bounded", "tally", "peek", "counted", "limited", "named", "next", "relayed", "step"],
+ "equal": {"capped": true, "bounded": "witness", "tally": true, "peek": true, "counted": false, "limited": true, "named": false, "next": true, "relayed": true, "step": true},
+ "why": "design/heap-stage5.md section 9: capped writes the literal for the module constant MAX (proved: a constant is read by its initializer); bounded admits the maximum itself (WITNESS at an id of 10); tally and peek read and write the module-level let seen, which the heap core leaves to the value lane's world cell (untouched, and the sum commuted: proved); counted (value lane, a module let) and named (heap core) read NAME, imported as FIRST in the parent and as SECOND in the candidate: another binding under the same local name, never proved (WITNESS); limited reads the same imported constant (proved); next calls the same imported unit (proved); relayed and step call grow and label through lib.ts, which re-exports them from limits.ts: one declaration, one binding, so the same transition (proved).",
+ "b": {"capped": "PASS-bounded", "bounded": "WITNESS", "tally": "PASS-bounded", "peek": "PASS-bounded", "counted": "WITNESS", "limited": "PASS-bounded", "named": "WITNESS", "next": "PASS-bounded", "relayed": "PASS-bounded", "step": "PASS-bounded"},
+ "heap": true
+}
