@@ -1,0 +1,20 @@
+{
+ "scope": [
+  "note_constructor",
+  "made",
+  "blank"
+ ],
+ "equal": {
+  "note_constructor": true,
+  "made": true,
+  "blank": false
+ },
+ "project": "tsconfig.json",
+ "why": "the class-field emit mode is the project's (common.mjs classFieldsDefine, TypeScript's own rule): this project targets ES2022, so every declared field is defined before the constructor's body runs and Note's optional tag, which nothing stores, is the key holding undefined. made: a new Note against one whose tag is then set to undefined (proved, PASS-bounded: the key holds undefined in both); blank: against one whose tag is set to the empty string (unproved, WITNESS); Note's constructor is untouched. Read at ES2020's emit (no useDefineForClassFields) the parent's tag key would be missing and made would differ.",
+ "b": {
+  "Note.constructor": "PASS-bounded",
+  "made": "PASS-bounded",
+  "blank": "WITNESS"
+ },
+ "heap": true
+}

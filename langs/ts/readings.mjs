@@ -106,23 +106,26 @@ export const READINGS = [
     versions: [{ version: 1, status: 'current' }],
   },
   {
-    id: 'tagged-template', construct: 'a tagged template: an uninterpreted function of the literal parts and the holes, named by the tag and the code it reaches',
+    id: 'tagged-template', construct: 'a tagged template: the call tag(strings, ...holes), strings a bodiless function of the raw parts; a tag of the file through its unit, any other through the outside call, String.raw exact',
     kinds: ['TaggedTemplateExpression'],
     lint: ['template'],
-    assumptions: { runtime: 'one external tag_<tag>_<reach>_<holes> over the literal strings and the holes as Any', aliasing: 'the holes are passed as values', exceptions: 'a throwing tag is not modelled: the tag is an outside function whose result is uninterpreted', termination: 'the call is assumed to return' },
-    refusal: 'a tag that is not a name has no reading',
-    design: ['design/reach-keys.md'],
+    translate: rx('^a tagged template whose raw parts the parser did not keep$', '^a tagged template with an invalid escape ', '^a tagged template whose tag is not a name or a member$', '^a tagged template whose tag may write an object it is handed, read without the world$', '^a tagged template whose tag is a method that may write its receiver, read without the world$', '^a tagged template without the TemplateStringsArray type$'),
+    assumptions: { runtime: 'template_strings(raws) of the raw parts (each line end LF) is the strings argument; a tag of this file is unitCall, any other an outside call tag_<tag>_<reach>_<holes> (a transition when isEffectCall reads the tag as one), a method tag\'s receiver first at Any; String.raw the concatenation of its raw parts with ToString of each hole', aliasing: 'the holes are the call\'s arguments (handedArg for a fresh object); a tag read without the world writes nothing it is handed, so one with an object hole or an object receiver of the unit is refused', exceptions: 'a throwing tag is read as the plain call of it is (one mechanism with the call reading)', termination: 'a same-file tag terminates as its unit; an outside tag is assumed to return' },
+    refusal: 'a tag that is not a name or a member, an invalid escape under a tag other than String.raw, or a tag read without the world that may write a hole or its receiver, has no reading (design/heap-stage5.md 1b)',
+    design: ['design/reach-keys.md', 'design/heap-stage5.md'],
     versions: [
       { version: 0, status: 'withdrawn', reason: 'a tagged template keyed by its tag\'s text: a changed tag function of the same name kept the same external (research brief 20 section 2)' },
-      { version: 1, status: 'current' },
+      { version: 1, status: 'withdrawn', reason: 'a tagged template as one pure function of the cooked parts and the holes: String.raw over parts that cook alike, an imported tag read without the world, a same-file tag writing its hole read as writing nothing, each proved a changed behaviour equal (design/heap-stage5.md 1b)' },
+      { version: 2, status: 'current' },
     ],
   },
   {
     id: 'regex', construct: 'a regular expression literal: an opaque constant named by its text; the match members of a non-global literal as functions of the pattern and the string',
     kinds: ['RegularExpressionLiteral'],
-    assumptions: { runtime: 'regex_<hash of the literal> of type Ext_RegExp; exec and match of a non-global literal read index and input as regex_index(pattern, string) and the string', aliasing: 'a literal is a new object, never shared', exceptions: 'a literal never throws', termination: 'terminates' },
-    refusal: 'this regular expression form has no reading',
-    design: ['design/library-rows.md'],
+    translate: rx('^`\\.groups` of a pattern that names no group is undefined$', '^a named capture of a match that may be null, read without `\\?\\.`$', '^a named capture read as '),
+    assumptions: { runtime: 'regex_<hash of the literal> of type Ext_RegExp; exec and match of a non-global literal read index and input as regex_index(pattern, string) and the string, groups.k of a group named once that takes part in every match as regex_group(pattern, string, k), groups as a presence test as whether the pattern names a group', aliasing: 'a literal is a new object, never shared', exceptions: 'a literal never throws', termination: 'terminates' },
+    refusal: 'this regular expression form has no reading (a named capture outside design/heap-stage5.md 6b is refused by library row match-groups, rule unsupported-member)',
+    design: ['design/library-rows.md', 'design/heap-stage5.md'],
     versions: [{ version: 1, status: 'current' }],
   },
   {
@@ -141,7 +144,7 @@ export const READINGS = [
       id: 'conditional-state-channels',
       sites: [{ who: 'lint', rule: 'conditional-effect' }, { who: 'translate', rule: 'conditional-effect' }],
       conditions: {
-        argumentUpdatesInBranch: 'a same-file callee changes its argument under a conditional or short-circuit branch; branch results do not carry parameter updates',
+        argumentUpdatesInBranch: 'a same-file callee changes its argument under a short-circuit branch; a short-circuit result does not carry parameter updates (a conditional\'s arm carries them, design/heap-stage5.md section 3)',
         worldEffectInPureBranch: 'a logical right operand has a world effect while the emitting unit has no world channel',
       },
       reason: 'These are different state channels: admission protects callee argument updates, while emission requires the world channel of the enclosing unit. Neither condition implies the other.',
@@ -149,8 +152,8 @@ export const READINGS = [
     kinds: ['TrueKeyword', 'FalseKeyword', 'ConditionalExpression'],
     uses: (n, ts) => ts.isBinaryExpression(n) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(n.operatorToken.kind),
     lint: ['conditional-effect'],
-    assumptions: { runtime: 'truthiness per static type (a number is nonzero, a string nonempty, an Option Some and truthy); a branch with world transitions returns its world and value only when taken', aliasing: 'values', exceptions: 'a branch\'s throw is the exception reading\'s', termination: 'terminates when the operands do' },
-    refusal: 'a same-file call that changes its arguments inside a conditional branch has no reading here',
+    assumptions: { runtime: 'truthiness per static type (a number is nonzero, a string nonempty, an Option Some and truthy); a branch with world transitions returns its world and value only when taken; a conditional\'s arm also returns every name a same-file call in it rebinds (the arguments it changes)', aliasing: 'values', exceptions: 'a branch\'s throw is the exception reading\'s', termination: 'terminates when the operands do' },
+    refusal: 'a same-file call that changes its arguments inside a short-circuit operand has no reading here',
     design: ['design/mixed-logic-values.md', 'SEMANTICS.md'],
     versions: [{ version: 1, status: 'current' }],
   },
@@ -261,7 +264,7 @@ export const READINGS = [
     id: 'arrays', construct: 'array literals and spreads: a sequence; a spread the sequence of its source\'s elements (an array, a Set, a Map, their iterators, a fixed tuple)',
     kinds: ['SpreadElement', 'ArrayLiteralExpression'],
     lint: ['spread'],
-    translate: rx('^spread arguments need an ordinary array$', '^a spread among other arguments is not translated$'),
+    translate: rx('^spread arguments need an ordinary array$', '^a spread among other arguments is not translated$', '^a tuple of .* read as a sequence needs one element type$'),
     assumptions: { runtime: 'an array literal is the concatenation of its segments; a spread argument to an outside call is one sequence (call_seq_)', aliasing: 'elements are copied as values', exceptions: 'none', termination: 'terminates' },
     refusal: 'this spread has no sequence reading',
     design: ['design/tuple-spread.md', 'design/spread-outside-callees.md'],
@@ -346,7 +349,7 @@ export const READINGS = [
     lintText: [
       ['unsupported-call', /(takes no argument|takes one (comparator|callback|pattern|value \(a start index stays out\))|needs a callback( and an initial value)?|takes plain arguments)$|^(Set|Map)\.(forEach|clear) is|^new [^ (]+\(\.\.\.\) reads an array|^\.[^ ]+\(\) (in an optional chain|as a value changes|reads the host's locale|on .* reads Object\.prototype)|^method \.[^ ]+\(\) on .* is outside the subset; narrow the union|^sort as a statement|^splice as a (value|statement)|^(lastIndexOf|toString|substr|matchAll|search|fill) /],
     ],
-    translate: rx('^array method \\..*\\(\\) is not translated$', '^Set\\..*\\(\\) is not translated as an expression$', '^Map\\..*\\(\\) is not translated as an expression$', '^\\..*\\(\\) as a value needs a local array or a fresh one$', '^\\..*\\(\\) is not translated here$'),
+    translate: rx('^array method \\..*\\(\\) is not translated$', '^Set\\..*\\(\\) is not translated as an expression$', '^Map\\..*\\(\\) is not translated as an expression$', '^\\..*\\(\\) as a value needs a local array or a fresh one$', '^\\..*\\(\\) is not translated here$', '^\\..*\\(\\) on a tuple writes it in place; .*$'),
     assumptions: { runtime: 'each row of the library table is a prelude helper (Filter, Map, Fold, Slice, StrFind, ...) or a world transition (a locale read, Math.random); lane B checks every row\'s result fact on every run', aliasing: 'a row says whether its result is fresh, the receiver or an element', exceptions: 'a row that may throw on correct inputs (JSON.parse, URL, BigInt) is a faulting call', termination: 'the helpers decrease their sequence' },
     refusal: 'this library call has no row',
     design: ['design/library-rows.md', 'design/ordered-collections.md'],
@@ -665,7 +668,9 @@ export function readingOfFinding(rule, msg = '') {
 }
 // the reading a translator refusal is: its rule prefix (`rule: text`, the lint's rule the translator names) through the
 // lint's table, else the first reading whose pattern matches; the message is the text after `file:line: `
-export const translatorText = (message) => String(message).replace(/^[^\s:]+\.(?:[cm]?[jt]sx?):\d+: /, '');
+// the translator's `<file>:<line>: ` prefix; the path may hold spaces or a drive colon (`page 2.tsx`, `C:\a b\x.ts`), so it is
+// the text before the first `.<ext>:<line>: ` that holds no `: ` (a rule's text starts with one), never a run of non-space characters (design/census-reach-2026-10-31.md)
+export const translatorText = (message) => String(message).replace(/^(?:(?!: )[^\n])*?\.(?:[cm]?[jt]sx?):\d+: /, '');
 export function readingOfRefusal(message) {
   const text = translatorText(message);
   const m = /^([a-z][a-z0-9-]*): ([\s\S]*)$/.exec(text);

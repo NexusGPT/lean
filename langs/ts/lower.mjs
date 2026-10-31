@@ -425,7 +425,7 @@ export const inlinePromiseStatementKind = (node) => INLINE_PROMISE_STATEMENTS.ge
 // lowering ABI. One traversal and one fixed point carry both named conditions. Their scopes are deliberately not
 // conflated: doing so would either weaken the gate or add/remove outputs from emitted functions.
 export const MUTATION_DECISIONS = readingById('mutation').decisions;
-for (const decision of ['mutationAnalysis', 'parameterMutationConflicts', 'loopElementBinding', 'elementMutation', 'firstElementMutation']) LOWER_DECISIONS.add(decision);
+for (const decision of ['mutationAnalysis', 'parameterMutationConflicts', 'loopElementBinding', 'elementMutation', 'firstElementMutation', 'sharedMutation']) LOWER_DECISIONS.add(decision);
 const MUTATION_METHODS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
 const mutationRoot = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; return x; };
 const mutationAssignment = (n) => ts.isBinaryExpression(n) && n.operatorToken.kind >= ts.SyntaxKind.FirstAssignment && n.operatorToken.kind <= ts.SyntaxKind.LastAssignment;
@@ -441,7 +441,8 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
     const rec = { admissionRisk: new Set(), valueOutputs: emission ? new Set() : null, rebound: [] };
     records.set(u.name, rec);
     const rebounds = new Set();
-    const own = (r) => ts.isIdentifier(r) ? r.text : r.kind === ts.SyntaxKind.ThisKeyword && mutationThisParam(u) ? 'this' : null;
+    const carried = emission && u.body ? carriedAliases(checker, u).partner : new Map(); // a write through a carried second name of a parameter writes the parameter
+    const own = (r) => ts.isIdentifier(r) ? (carried.has(r.text) && !names.has(r.text) ? carried.get(r.text) : r.text) : r.kind === ts.SyntaxKind.ThisKeyword && mutationThisParam(u) ? 'this' : null;
     const hit = (target, admission, output, through = true) => {
       const r = mutationRoot(target);
       if (through && r === target) return;
@@ -465,7 +466,7 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
       const target = mutationAssignment(n) ? n.left : mutationUpdate(n) ? n.operand : ts.isDeleteExpression(n) ? n.expression : null;
       if (target) {
         hit(target, admission, output);
-        if (output && !ts.isDeleteExpression(n)) { const ew = elementWritePath(checker, target); if (ew && names.has(ew.root.text)) rec.valueOutputs.add(ew.root.text); }
+        if (output && !ts.isDeleteExpression(n)) { const ew = elementWritePath(checker, target); const er = ew && own(ew.root); if (er && names.has(er)) rec.valueOutputs.add(er); }
         if (admission && !ts.isDeleteExpression(n)) {
           let t = target; while (ts.isParenthesizedExpression(t)) t = t.expression;
           const d = ts.isIdentifier(t) ? checker.getSymbolAtLocation(t)?.valueDeclaration : null;
@@ -481,13 +482,18 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
         if (admission && ts.isIdentifier(f) && units.get(f.text)?.body) edge(units.get(f.text), n.arguments, 'admissionRisk', true);
         if (output) { const via = emission.receiverCallArgs(n); if ((ts.isIdentifier(f) && units.has(f.text)) || via) edge(via ? via.callee : units.get(f.text), via ? via.args : n.arguments, 'valueOutputs', false); }
       }
+      if (ts.isTaggedTemplateExpression(n) && ts.isIdentifier(n.tag) && units.has(n.tag.text)) { // the call of its tag: the strings object first, then the holes
+        const args = [n.template, ...(ts.isNoSubstitutionTemplateLiteral(n.template) ? [] : n.template.templateSpans.map((sp) => sp.expression))];
+        if (admission && units.get(n.tag.text)?.body) edge(units.get(n.tag.text), args, 'admissionRisk', true);
+        if (output) edge(units.get(n.tag.text), args, 'valueOutputs', false);
+      }
       if (output && ts.isExpressionStatement(n)) {
         let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
         if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
           const f = e.expression;
           if (MUTATION_METHODS.has(f.name.text)) hit(f.expression, false, true, false);
           if (ts.isIdentifier(f.expression) && f.expression.text === 'Object' && f.name.text === 'assign' && e.arguments.length >= 2) {
-            const r = mutationRoot(e.arguments[0]); if (ts.isIdentifier(r) && names.has(r.text)) rec.valueOutputs.add(r.text);
+            const r = mutationRoot(e.arguments[0]); const o = ts.isIdentifier(r) ? own(r) : null; if (o && names.has(o)) rec.valueOutputs.add(o);
           }
         }
       }
@@ -554,6 +560,160 @@ export function firstElementMutation(checker, u, context) {
   const walk = n => { if (hit) return; const decision = elementMutation(checker, n, context); if (decision?.valueRefused) { hit = decision; return; } ts.forEachChild(n, walk); };
   if (u.body) walk(u.body);
   return hit;
+}
+// The value reading reads an object as a value: a write in place through a name rebinds that name alone, so it is
+// faithful only while no other name or slot holds the same object (design/conformance-readings.md section 3). The
+// lint refuses a write through the second name (alias-mutation); this is the first name's side: `const b = a;
+// a.push(1)` (b sees the push, ECMA-262 23.1.3.23 writes the one object both name), `o = { xs: a }`, `rows.push(a)`,
+// then a write through a or through the holder's path. A holder: a's object bound to a name (`=`, an initializer), put
+// in a literal's slot, handed to an in-place collection row (push, unshift, splice, set, add, fill), to `new`, or to a
+// same-file call whose result is so held (it may return its argument). It counts when it precedes the write in the
+// text, or shares a loop with it that does not declare the name anew. A bucket local writes its map (common.mjs
+// bucketMaps), which the value reading models. A copy (`[...a]`, `a.slice()`, `{ ...a }`) holds no reference: no holder.
+// A second name the value reading carries (design/conformance-readings.md section 6): `const h = b`, b a parameter of
+// the unit holding an instance of a class of this file, is the form the lint admits as that parameter's own cell
+// (lint.mjs heldAlias; design/heap-stage5.md 18). Both names hold one object; the value reading holds one value under
+// both, and after each write statement through either name it rebinds the other to the written value (translate.mjs
+// partnerSync), so a read through either sees every write, as the heap core reads the one cell. It carries the pair
+// only where every write through either name is such a statement: each name declared once in the unit (the Dafny
+// names are the TypeScript ones), neither rebound (`b = c` would part them), neither handed to a call or to `new` (a
+// callee's change returns through the name it was handed alone), neither read inside a nested function (a closure
+// reads the value as it was). Otherwise the pair is a holder like any other and sharedMutation refuses the write.
+// Returns { partner: name text -> its partner's name text, both ways; symbols: name text -> its symbol; holders: the
+// carried declarations }.
+export function carriedAliases(checker, u) {
+  const out = { partner: new Map(), symbols: new Map(), holders: new Set() };
+  if (!u.body || !ts.isBlock(u.body)) return out;
+  const K = ts.SyntaxKind;
+  const sf = u.node.getSourceFile();
+  const unparen = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const declared = new Map(); // a name's text -> how many declarations in the unit bind it
+  const count = (n) => { if (!n) return; if (ts.isIdentifier(n)) declared.set(n.text, (declared.get(n.text) ?? 0) + 1); else if (ts.isObjectBindingPattern(n) || ts.isArrayBindingPattern(n)) for (const el of n.elements) if (!ts.isOmittedExpression(el)) count(el.name); };
+  const decls = (n) => { if (ts.isVariableDeclaration(n) || ts.isParameter(n) || ts.isBindingElement(n)) count(n.name); else if ((ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n) || ts.isFunctionExpression(n) || ts.isClassExpression(n)) && n.name) count(n.name); ts.forEachChild(n, decls); };
+  decls(u.fn);
+  const fileInstance = (t) => !!t && !(t.flags & ts.TypeFlags.Union) && !!(t.flags & ts.TypeFlags.Object) && !t.getCallSignatures().length && !!t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) && !!d.name && d.getSourceFile() === sf);
+  const pairs = [];
+  const find = (n) => {
+    if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const) && ts.isIdentifier(unparen(n.initializer))) {
+      const src = checker.getSymbolAtLocation(unparen(n.initializer)), d = src?.valueDeclaration;
+      if (d && ts.isParameter(d) && d.parent === u.fn && ts.isIdentifier(d.name) && fileInstance(checker.getTypeAtLocation(n.name)) && checker.getTypeAtLocation(n.name) === checker.getTypeAtLocation(d.name)) pairs.push({ decl: n, alias: checker.getSymbolAtLocation(n.name), src });
+    }
+    if (!ts.isFunctionLike(n)) ts.forEachChild(n, find);
+  };
+  ts.forEachChild(u.body, find);
+  const writeStatement = (n) => { let x = n; while (ts.isParenthesizedExpression(x.parent)) x = x.parent; return ts.isExpressionStatement(x.parent); };
+  for (const p of pairs) {
+    const syms = new Set([p.alias, p.src]);
+    if (p.alias.name === p.src.name || declared.get(p.alias.name) !== 1 || declared.get(p.src.name) !== 1) continue;
+    let ok = true;
+    const use = (n, nested) => {
+      if (!ok) return;
+      if (ts.isIdentifier(n) && n !== p.decl.name && !(n.parent && ts.isParameter(n.parent) && n.parent.name === n) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && syms.has(checker.getSymbolAtLocation(n))) {
+        let x = n; while (ts.isParenthesizedExpression(x.parent) || ts.isNonNullExpression(x.parent)) x = x.parent;
+        const q = x.parent;
+        if (nested) ok = false; // a closure's read of the value as it was
+        else if (q && ts.isBinaryExpression(q) && q.left === x && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) ok = false; // the name rebound
+        else if (q && (ts.isPrefixUnaryExpression(q) || ts.isPostfixUnaryExpression(q)) && (q.operator === K.PlusPlusToken || q.operator === K.MinusMinusToken)) ok = false;
+        else if (q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && q.arguments?.includes(x)) ok = false; // handed to a call
+        else if (q && (ts.isSpreadElement(q) || ts.isShorthandPropertyAssignment(q))) ok = false;
+      }
+      const m = elementMutation(checker, n, { sf, current: u.node });
+      if (m && ts.isIdentifier(m.root) && syms.has(checker.getSymbolAtLocation(m.root)) && (nested || !writeStatement(n))) ok = false; // a write the reading does not rebind the partner after
+      ts.forEachChild(n, (c) => use(c, nested || ts.isFunctionLike(c)));
+    };
+    use(u.body, false);
+    if (ok) { out.partner.set(p.alias.name, p.src.name); out.partner.set(p.src.name, p.alias.name); out.symbols.set(p.alias.name, p.alias); out.symbols.set(p.src.name, p.src); out.holders.add(p.decl); }
+  }
+  return out;
+}
+const HOLDING_ROWS = new Set(['push', 'unshift', 'splice', 'set', 'add', 'fill']);
+const COPYING_CONSTRUCTORS = new Set(['Set', 'Map', 'WeakSet', 'WeakMap', 'Array']);
+export function sharedMutation(checker, u, { sf = u.node.getSourceFile(), current = u.node, units = null, buckets = null } = {}) {
+  if (!u.body) return null;
+  const symOf = (id) => { const s = checker.getSymbolAtLocation(id); return s && s.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(s) : s; };
+  const rootOf = (x) => { while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression?.(x)) x = x.expression; return x; };
+  const objectish = (id) => { const t = checker.getTypeAtLocation(id); const parts = t.flags & ts.TypeFlags.Union ? t.types : [t]; return parts.some((x) => !!(x.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive | ts.TypeFlags.TypeParameter))); };
+  // the steps from a root to a place: a property's name, '*' for an element or a computed key
+  const pathOf = (x) => { const out = []; for (;;) { if (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression?.(x)) { x = x.expression; continue; } if (ts.isPropertyAccessExpression(x)) { out.unshift(x.name.text); x = x.expression; continue; } if (ts.isElementAccessExpression(x)) { out.unshift(ts.isStringLiteral(x.argumentExpression) ? x.argumentExpression.text : '*'); x = x.expression; continue; } return out; } };
+  const holders = []; // { src, slot, path, node }: src's object is held at slot (a name; null when outside a name), at path below it (null: anywhere below)
+  const climb = (top, src, inner) => {
+    for (;;) {
+      const p = top.parent;
+      if (!p) return;
+      if (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isAsExpression(p) || ts.isTypeAssertionExpression(p) || ts.isSatisfiesExpression?.(p) || ts.isAwaitExpression(p)) { top = p; continue; }
+      if (ts.isConditionalExpression(p) && p.condition !== top) { top = p; continue; }
+      if (ts.isBinaryExpression(p) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(p.operatorToken.kind)) { top = p; continue; }
+      if (ts.isBinaryExpression(p) && p.operatorToken.kind === K.CommaToken && p.right === top) { top = p; continue; }
+      if (ts.isArrayLiteralExpression(p)) { top = p; inner = inner && ['*', ...inner]; continue; }
+      if ((ts.isPropertyAssignment(p) && p.initializer === top) || ts.isShorthandPropertyAssignment(p)) { top = p.parent; inner = inner && [ts.isIdentifier(p.name) || ts.isStringLiteral(p.name) ? p.name.text : '*', ...inner]; continue; }
+      if (ts.isVariableDeclaration(p) && p.initializer === top) { if (ts.isIdentifier(p.name)) holders.push({ src, slot: symOf(p.name), path: inner, node: p }); return; } // a pattern reads the source's elements and keys, it holds no reference to it
+      if (ts.isBinaryExpression(p) && p.operatorToken.kind === K.EqualsToken && p.right === top) { const r = rootOf(p.left); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, path: inner && [...pathOf(p.left), ...inner], node: p }); return; }
+      if (ts.isNewExpression(p) && p.arguments?.includes(top)) {
+        // the standard collections copy their iterable (24.1.1.1, 24.2.1.1: a new collection of its elements): `new Set(a)`
+        // holds a's elements, never a; an element put in a literal argument (`new Map([[k, o]])`) stays held below it
+        if (ts.isIdentifier(p.expression) && COPYING_CONSTRUCTORS.has(p.expression.text) && originOf(checker, p.expression, sf, current).kind === 'global') { if (!inner?.length) return; top = p; continue; }
+        top = p; inner = null; continue; // an instance may keep its argument anywhere
+      }
+      if (ts.isCallExpression(p) && p.arguments.includes(top)) {
+        const f = unparen(p.expression);
+        if (ts.isPropertyAccessExpression(f) && HOLDING_ROWS.has(f.name.text)) { const r = rootOf(f.expression); holders.push({ src, slot: ts.isIdentifier(r) ? symOf(r) : null, path: inner && [...pathOf(f.expression), '*', ...inner], node: p }); return; }
+        if (ts.isIdentifier(f) && units?.get(f.text)?.body) { top = p; inner = null; continue; } // a same-file callee may return its argument, or keep it below its result
+      }
+      return;
+    }
+  };
+  const unparen = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expression; return x; };
+  const K = ts.SyntaxKind;
+  const mutations = [];
+  const walk = (n) => {
+    if (ts.isIdentifier(n) && n.parent && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n)) {
+      const s = ts.isShorthandPropertyAssignment(n.parent) ? checker.getShorthandAssignmentValueSymbol(n.parent) : symOf(n);
+      const d = s?.valueDeclaration;
+      if (d && (ts.isVariableDeclaration(d) || ts.isParameter(d)) && d.pos >= u.fn.pos && d.end <= u.fn.end && objectish(n)) climb(n, s, []);
+    }
+    const m = elementMutation(checker, n, { sf, current });
+    if (m && ts.isIdentifier(m.root)) { const path = pathOf(m.target), call = ts.isCallExpression(n) || ts.isDeleteExpression(n); if (path.length || call) mutations.push({ node: n, sym: symOf(m.root), path, call }); } // a write in place: a plain `x = v` rebinds the name, it changes no object
+    ts.forEachChild(n, walk);
+  };
+  walk(u.body);
+  { const carried = carriedAliases(checker, u).holders; for (let i = holders.length - 1; i >= 0; i--) if (carried.has(holders[i].node)) holders.splice(i, 1); } // a second name the value reading carries (carriedAliases)
+  if (!holders.length) return null;
+  const bucket = (s) => !!buckets && !!s?.valueDeclaration && buckets.locals.has(s.valueDeclaration);
+  const before = (h, m, s) => {
+    if (h.node.end <= m.node.pos) return true;
+    const decl = s?.valueDeclaration;
+    for (let p = m.node.parent; p && p !== u.fn; p = p.parent) if (ts.isIterationStatement(p, false) && p.pos <= h.node.pos && h.node.end <= p.end && !(decl && p.pos <= decl.pos && decl.end <= p.end)) return true; // one loop holds both: an earlier turn's holder
+    return false;
+  };
+  // a statement on the write's path that rebinds the written name (`flat = []`) after the holder: the name holds another
+  // object from there on (a rebinding to a held object is a holder of its own, recorded above)
+  const rebound = (h, m) => {
+    const prior = h.node.pos > m.node.pos; // an earlier turn's holder: a rebinding in the loop before the write cuts it
+    for (let child = m.node, p = m.node.parent; p && p !== u.fn; child = p, p = p.parent) {
+      if (!(ts.isBlock(p) || ts.isCaseClause(p) || ts.isDefaultClause(p))) continue;
+      for (const st of p.statements) {
+        if (st === child || st.pos >= child.pos) break;
+        if (!(prior || st.pos >= h.node.end)) continue;
+        const e = ts.isExpressionStatement(st) ? unparen(st.expression) : null;
+        if (e && ts.isBinaryExpression(e) && e.operatorToken.kind === K.EqualsToken && ts.isIdentifier(unparen(e.left)) && symOf(unparen(e.left)) === m.sym) return true;
+      }
+    }
+    return false;
+  };
+  // a write through the holder reaches the held object when its place runs through the slot: below it, or a call that
+  // changes the slot's object itself (`o.xs.push(1)` for `o = { xs: a }`); `rows[i] = p` rebinds the slot, it changes no object
+  const step = (x, y) => x === '*' || y === '*' || x === y;
+  const reaches = (path, m) => path === null ? true : path.every((x, i) => i < m.path.length && step(x, m.path[i])) && (m.path.length > path.length || m.call);
+  for (const m of mutations) {
+    if (!m.sym || bucket(m.sym)) continue;
+    for (const h of holders) {
+      if ((h.src === m.sym || h.slot === m.sym) && rebound(h, m)) continue;
+      if (h.src === h.slot || bucket(h.src)) continue;
+      if (h.src === m.sym && before(h, m, h.src)) return { node: m.node, name: m.sym.name, holder: h.node, other: h.slot?.name ?? null, side: 'source' };
+      if (h.slot === m.sym && reaches(h.path, m) && before(h, m, h.src)) return { node: m.node, name: m.sym.name, holder: h.node, other: h.src.name, side: 'holder' };
+    }
+  }
+  return null;
 }
 
 // ---------- the lowering ----------
@@ -700,6 +860,12 @@ function cacheWrite(file, key, json) {
   finally { try { fs.unlinkSync(next); } catch (e) { if (e.code !== 'ENOENT') console.error(`lowering cache cleanup ${e.code}: ${next}`); } }
 }
 // the record of every unit the ranges reach; opts as the lint takes them (project, loaded, advisory, anyType)
+// The gate's first finding in a translator refusal, `outside the subset:\n  <file>:<line>:<col> <rule> <msg>`, or null. The
+// path is the text before the first `:<line>:<col> ` that holds no `: ` (it may hold spaces, `page 2.tsx`), never a run of non-space characters.
+export function gateFinding(message) {
+  const g = /^outside the subset:\n\s+(?:(?!: )[^\n])*?:(\d+):\d+\s+(\S+)\s+(.*)$/m.exec(String(message));
+  return g ? { line: Number(g[1]), rule: g[2], msg: g[3] } : null;
+}
 export function lowerFile(file, ranges = null, opts = {}) {
   const abs = path.resolve(file);
   const given = opts.loaded ?? measureLowering('load file', () => loadProgram(file, { project: opts.project ?? true }));
@@ -741,8 +907,8 @@ export function lowerFile(file, ranges = null, opts = {}) {
       catch (e) {
         const message = String(e?.message ?? e);
         if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }
-        const gate = /^outside the subset:\n\s+\S+?:(\d+):\d+\s+(\S+)\s+(.*)$/m.exec(message); // the gate over the unit and its callees: its first finding
-        if (gate) { const [, line, rule, msg] = gate; refuse(u, readingOfFinding(rule, msg) ?? (rule === 'withdrawn' || rule === 'no-reading' ? rule : 'uncatalogued'), rule, msg, Number(line), 'gate'); continue; }
+        const gate = gateFinding(message); // the gate over the unit and its callees: its first finding
+        if (gate) { const { line, rule, msg } = gate; refuse(u, readingOfFinding(rule, msg) ?? (rule === 'withdrawn' || rule === 'no-reading' ? rule : 'uncatalogued'), rule, msg, line, 'gate'); continue; }
         const text = translatorText(message.split('\n')[0]), id = readingOfRefusal(text) ?? 'uncatalogued';
         const m = /^([a-z][a-z0-9-]*): /.exec(text), line = Number(/:(\d+): /.exec(message)?.[1] ?? u.lines[0]);
         refuse(u, id, m && m[1] !== 'internal' ? m[1] : id, text, line, 'translate', translatorSite(e.stack));

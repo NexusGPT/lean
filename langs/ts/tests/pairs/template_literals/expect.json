@@ -1,0 +1,7 @@
+{
+ "scope": ["caps", "mark", "line", "status", "shade", "path", "ident", "tagged", "escaped", "twice"],
+ "equal": {"caps": true, "mark": true, "line": true, "status": true, "shade": false, "path": true, "ident": false, "tagged": true, "escaped": false, "twice": false},
+ "why": "caps and mark, the two tags, are untouched (proved). A template literal is the concatenation of its parts, each hole by ToString (design/heap-stage5.md section 1): line writes the template as concatenations with String(qty) (proved); status lifts the nested conditional out of the template (proved); shade swaps the conditional's two strings (WITNESS). A tagged template is the call of its tag on the site's strings object, a function of its raw parts, and the holes: path is String.raw, the template of its raw parts, against the concatenation of the same string (proved); ident writes \\u0041 as A under String.raw (the raw parts differ: WITNESS, never proved on the cooked parts); tagged is untouched under a tag of this file (proved); escaped writes \\u0041 as A under a tag that reads the raw parts (WITNESS); twice calls a tag that writes its hole once instead of twice (WITNESS: the tag is no pure function of its parts).",
+ "b": {"line": "PASS-bounded", "status": "PASS-bounded", "shade": "WITNESS", "path": "PASS-bounded", "ident": "WITNESS", "tagged": "PASS-bounded", "escaped": "WITNESS", "twice": "WITNESS"},
+ "heap": true
+}

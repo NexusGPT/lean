@@ -15,8 +15,9 @@ import path from 'node:path';
 import { normaliseApplyCalls, applyCall } from '../common.mjs';
 import { primitiveBrand, readAfterCall } from '../common.mjs';
 import { originOf } from '../common.mjs';
+import { rawTag } from '../common.mjs'; // String.raw reads the raw parts only (design/heap-stage5.md section 1)
 import { ts, loadProgram, lineOf, colOf, overlaps, hintsOf, topLevelFunctions, isArrayLike, unitOf, originOf as sourceOriginOf, RESOLUTION_CODES, classMethodUnits, methodLiteralOf, receiverRecordPath, literalMemberUnits, moduleLiterals, untypedJsUnit, callbackUntypedJsUnit, findingUnit, callbackEnvironment, strictValue } from '../common.mjs';
-import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
+import { fileUsesReals, countedFor, syncLoopCallback, syncLoopCall, localProcedure, bucketMaps, execMatchMember, matchGroups, matchGroupsTested, matchGroupRead, prototypeMaker, literalProtoMember, thisParamPath, protoKeyWrite, inPrototypeReach } from '../common.mjs';
 import { elementWritePath, plainDataRecord } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the translator
@@ -371,6 +372,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     return { label: ok ? 'proved' : 'migration' };
   };
   const tOf = (n) => checker.getTypeAtLocation(n);
+  const asInstance = (t) => ((t.flags & TF.TypeParameter) && t.isThisType ? checker.getBaseConstraintOfType(t) ?? t : t); // the polymorphic `this` of a class read as its constraint, the instance type (design/types-inventory.md, form 4)
   const localMethodLiteral = (t) => { const obj = methodLiteralOf(checker, t); return obj?.getSourceFile() === sf ? obj : null; };
   const methodLiteralPath = (n) => { for (;;) { if (localMethodLiteral(tOf(n))) return true; if (!(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isParenthesizedExpression(n))) return false; n = n.expression; } };
   const fileReal = fileUsesReals(sf); // a real file: `/` is real division, the translator's numbers are reals
@@ -921,7 +923,10 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const o = declOf(x); if (o.kind !== 'local' || !isParam(o.decl) || o.decl.parent !== currentFn || !ownedHere(o.decl)) return null;
     return { decl: o.decl, steps };
   };
-  const heldAlias = (decl) => !!decl && !!currentFn && ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!decl.initializer && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && !aliasCalls.has(decl) && decl.pos >= currentFn.pos && decl.end <= currentFn.end && ownedHere(decl) && (heldNodePath(decl.initializer)?.steps ?? 0) >= 1 && plainNode(tOf(decl.name)); // `const names = b.names`: another name for a node a parameter holds
+  // an instance of a class of this file: the heap core's cell of its fields (translate/heap.mjs classDeclOf, row 1), held
+  // by reference, so a const name for it, the parameter itself included, is the same cell (design/heap-stage5.md 18)
+  const fileInstance = (t) => !!t && !(t.flags & TF.Union) && !!(t.flags & TF.Object) && !t.getCallSignatures().length && !!t.symbol?.declarations?.some((d) => ts.isClassDeclaration(d) && !!d.name && d.getSourceFile() === sf);
+  const heldAlias = (decl) => !!decl && !!currentFn && ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!decl.initializer && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && !aliasCalls.has(decl) && decl.pos >= currentFn.pos && decl.end <= currentFn.end && ownedHere(decl) && ((h) => !!h && (fileInstance(tOf(decl.name)) || (h.steps >= 1 && plainNode(tOf(decl.name)))))(heldNodePath(decl.initializer)); // `const names = b.names`: another name for a node a parameter holds; `const h = a` of an instance of a class of this file names the parameter's own cell (design/heap-stage5.md 18, the handle held)
   const returnsHeldPath = (u) => { // every return of the unit is a field path of one of its own parameters, or of `this` in a method
     if (!u?.body || u.fn.asteriskToken || u.fn.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return false;
     const held = (x) => { x = unparenX(x); while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; if (ts.isConditionalExpression(x)) return held(x.whenTrue) && held(x.whenFalse); let steps = 0; while (ts.isPropertyAccessExpression(x) && !x.questionDotToken) { steps++; x = x.expression; while (ts.isNonNullExpression(x) || ts.isParenthesizedExpression(x)) x = x.expression; } if (!steps) return false; if (x.kind === K.ThisKeyword) return !!u.cls; if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isParameter(d) && d.parent === u.fn; };
@@ -1323,8 +1328,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       case K.JsxExpression: return e.expression ? expr(e.expression) : undefined;
       case K.NoSubstitutionTemplateLiteral: return;
       case K.TemplateExpression: return e.templateSpans.forEach((sp) => expr(sp.expression));
-      case K.TaggedTemplateExpression: { // an uninterpreted function of its parts, keyed by the tag
+      case K.TaggedTemplateExpression: { // the call of its tag on the site's strings object (its raw parts) and the holes
         if (ts.isPropertyAccessExpression(e.tag)) expr(e.tag.expression); else if (!ts.isIdentifier(e.tag)) v(e, 'template', 'the tag must be a name');
+        { const lits = ts.isNoSubstitutionTemplateLiteral(e.template) ? [e.template] : [e.template.head, ...e.template.templateSpans.map((sp) => sp.literal)]; if (!rawTag(checker, e, sf) && lits.some((l) => (l.templateFlags ?? 0) & ts.TokenFlags.ContainsInvalidEscape)) v(e, 'template', 'an invalid escape under a tag: its cooked part is undefined, which the reading of the strings does not hold; escape the backslash or use String.raw'); }
         if (ts.isTemplateExpression(e.template)) e.template.templateSpans.forEach((sp) => expr(sp.expression));
         return;
       }
@@ -1529,11 +1535,12 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const p0 = decl.parameters[0];
     return { decl, args: p0 && ts.isIdentifier(p0.name) && p0.name.text === 'this' ? args : args.slice(1) };
   }
-  // branch results carry the world and value, but not a callee's parameter updates
+  // a short-circuit operand's result carries the world and value, but not a callee's parameter updates; a conditional's
+  // operand carries them too (translate.mjs carried: each arm returns every name an operand rebinds)
   function conditionalEffect(e) {
     let branch = false;
     for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
-      if ((ts.isConditionalExpression(p) && child !== p.condition) || (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && child === p.right)) branch = true;
+      if (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && child === p.right) branch = true;
     }
     if (!branch) return;
     const mutations = (decl, seen = new Set()) => {
@@ -1593,7 +1600,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (ts.isPropertyAccessExpression(f)) {
       // `a?.m()`: the call happens when a is present; the result is an Option (the receiver's type says whether it may be absent)
       const recv = f.expression, name = f.name.text;
-      const rt = tOf(recv);
+      const rt = asInstance(tOf(recv)); // a receiver typed `this` (a fluent call's result) is an instance of the class
       if (recv.kind === K.ThisKeyword) { if (!currentClass && !objectMethod && !thisParam) return v(e, 'this', '`this` outside a class method'); return argsOf(e); }
       if (ts.isIdentifier(recv) && (name === 'call' || name === 'apply' || name === 'bind') && declOf(recv).kind === 'unit') { // `h.call(o, a)` / `h.apply(o, [a])` on a same-file function: the receiver is its first operand (the declared `this` parameter, else ignored); `bind` fixes a receiver for a later call, outside the subset
         if (name === 'bind') return v(e, 'bound-function', '`bind` fixes a receiver for a later call; call the function with its receiver instead', uselessCallSite(e, units.get(recv.text)));
@@ -2057,6 +2064,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (name === 'length' && parts.every((t) => isArrayLike(checker, t) || isStr(t))) return;
     if (name === 'size' && parts.every((t) => isSetT(t) || isMapT(t))) return;
     if (execMatchMember(e, checker)) return; // `m.index` / `m.input` of a match of a non-global regular expression literal (common.mjs)
+    if (matchGroupRead(e, checker) || matchGroupsTested(e, checker) || (matchGroups(e, checker) && matchGroupRead(e.parent, checker)?.recv && e.parent.expression === e)) return; // `m.groups.k` of a group in every match, `m.groups` as a presence or as that read's receiver (common.mjs)
     for (const t of parts) {
       if (t.flags & TF.Never) continue; // stage 5 rank 17: a read on never is unreachable; any reading is sound
       if (t.flags & TF.IndexedAccess) continue; // an indexed this type (`this["options"]`): an opaque value, read through an uninterpreted accessor (the translator types it Any)

@@ -141,6 +141,17 @@ withdraws `logic-values` and shows, on pair `nested_ternary` unit `choose`: the 
 refuse with the same rule and reason; the command lines exit 1; check answers without a proof (lane A ASK); with the
 reading back the same unit is PASS-proved.
 
+2026-10-31 (lane withdrawal-catalogue): the audit found nine translator sites the night's readings added with no
+entry, so a withdrawal of their reading named nothing for them. Each is now a `translate` pattern of the reading its
+design note defines: six of `tagged-template` (design/heap-stage5.md 1b: the raw parts the parser did not keep, an invalid
+escape under a tag other than String.raw, a tag that is not a name or a member, a tag read without the world that may write
+a hole or its receiver, no TemplateStringsArray type) and three of `regex` (6b: `.groups` of a pattern that names no group,
+a named capture of a match that may be null read without `?.`, a named capture read as another type; outside 6b the lint
+refuses by library row `match-groups`, rule `unsupported-member`). Withdrawn, either reading refuses its unit `withdrawn`
+in the gate before any of these sites is reached (pairs `template_literals` `tagged`, `path` and `regular_expressions`
+`year`: PASS-bounded, lane A ASK; PASS-proved without). `tagged-template` v1 (one pure function of the cooked parts,
+replaced by the call of the tag in 1b without a new version) is recorded withdrawn with that reason; v2 is current.
+
 ## The census per reading
 
 `census.mjs` reads the record of each file: its JSON gains `readings: [{ id, admitted, refused }]` (units admitted that
@@ -166,10 +177,10 @@ Generated from `readings.mjs` (the full entry, with each reading's assumptions a
 | `names` | an identifier read as a value: a parameter or local, a unit of the file, a module constant, an import, a global | Identifier, MetaProperty | `global-read`, `arguments`, `dynamic-eval` | 3 | v1; 1 withdrawn | SEMANTICS.md, design/reach-keys.md, design/lib-globals.md, design/named-then.md |
 | `module-state` | a module `let`, an object-valued module constant, a static field of a class of the file: a cell of the world | (a form) | `toplevel-effect`, `toplevel-state` | 2 | v1; 1 withdrawn | design/module-forms.md, design/reach-keys.md, design/class-statics.md |
 | `numbers` | number literals and arithmetic: integers in an integer file, exact reals in a real file, finite values | NumericLiteral, BigIntLiteral | `division`, `number-special`, `unary-coercion` | 2 | v1; 1 withdrawn | design/special-numbers.md, design/signed-zero.md, design/numbers-bitwise-nan.md, design/prelude-unit.md |
-| `bitwise` | bitwise and shift operators on numbers: ToInt32 and ToUint32 helpers over bv32 | (a form) | `bitwise` | 0 | v1 | design/numbers-bitwise-nan.md |
+| `bitwise` | bitwise and shift operators on numbers: ToInt32 and ToUint32 over bv32, a chain one inline bv32 term, `x & (2^k - 1)` through the low-bits lemma (an operand the faithful reading does not hold: one uninterpreted ToInt32, the result exact; heap-stage5.md section 13, 2026-10-31; design/bitwise-lemmas.md) | (a form) | `bitwise` | 0 | v1 | design/numbers-bitwise-nan.md |
 | `strings` | string literals and templates: seq<char> of BMP code units, the string methods the prelude defines | StringLiteral, NoSubstitutionTemplateLiteral, TemplateExpression | `string-code-unit`, `string-order` | 0 | v1 | design/strings.md |
-| `tagged-template` | a tagged template: an uninterpreted function of the literal parts and the holes, named by the tag and the code it reaches | TaggedTemplateExpression | `template` | 0 | v1; 1 withdrawn | design/reach-keys.md |
-| `regex` | a regular expression literal: an opaque constant named by its text; the match members of a non-global literal as functions of the pattern and the string | RegularExpressionLiteral |  | 0 | v1 | design/library-rows.md |
+| `tagged-template` | a tagged template: the call tag(strings, ...holes), strings a bodiless function of the raw parts; a tag of the file through its unit, any other through the outside call, String.raw exact | TaggedTemplateExpression | `template` | 6 | v2; 2 withdrawn | design/reach-keys.md, design/heap-stage5.md |
+| `regex` | a regular expression literal: an opaque constant named by its text; the match members of a non-global literal as functions of the pattern and the string | RegularExpressionLiteral |  | 3 | v1 | design/library-rows.md, design/heap-stage5.md |
 | `equality` | === and == between values: equality of the value reading, the coercion table for == between primitives | (a form) | `loose-equality`, `reference-equality`, `mixed-types` | 1 | v1 | design/mixed-vs-literal.md, design/null-undefined.md |
 | `logic-values` | booleans, conditionals, &&, \|\| and ??: JavaScript truthiness by the static type, the deciding operand evaluated once | TrueKeyword, FalseKeyword, ConditionalExpression, (a form) | `conditional-effect` | 0 | v1 | design/mixed-logic-values.md, SEMANTICS.md |
 | `absence` | null and undefined: Option<T> for one absence, Nullish<T> with distinct tags for both, Any_null and Any_undefined in Any | NullKeyword |  | 1 | v1 | design/null-undefined.md, design/absent-number.md, design/branch-types.md |
@@ -783,6 +794,7 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | translate/translate.mjs:6072 | translate-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (parameterMutationConflicts) | param-assign: parameter `${}` is rebound and also changed in place |
 | translate/translate.mjs:6175 | translate-refuse | untyped-js | types | shared (callbackUntypedJsUnit) | untyped-js: ${} |
 | translate/translate.mjs:6177 | translate-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (firstElementMutation) | alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so t |
+| translate/translate.mjs (emitUnit) | translate-refuse | alias-mutation | mutation | exception:shared-object-vs-value-reading (sharedMutation) | alias-mutation: `${}` is changed in place while ${} holds the same object (line ${}); this reading reads an object as a value |
 | translate/translate.mjs:6181 | translate-refuse |  | generators | shared (asyncGenerator) | async generators need --core |
 | translate/translate.mjs:6182 | translate-refuse |  | generators | one-decider | generators need --core |
 | translate/translate.mjs:6206 | translate-refuse |  | control-flow | one-decider | a path ends without a return |

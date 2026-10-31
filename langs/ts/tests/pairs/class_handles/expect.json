@@ -1,0 +1,48 @@
+{
+ "scope": [
+  "held",
+  "keep",
+  "alias",
+  "twice",
+  "both",
+  "pay",
+  "step",
+  "charge",
+  "add",
+  "bump",
+  "log",
+  "account_deposit",
+  "spill"
+ ],
+ "equal": {
+  "held": true,
+  "keep": true,
+  "alias": false,
+  "twice": true,
+  "both": false,
+  "pay": true,
+  "step": true,
+  "charge": false,
+  "add": true,
+  "bump": true,
+  "log": true,
+  "account_deposit": true,
+  "spill": false
+ },
+ "why": "a local bound to an instance of a class of this file, or to a handle, is the same reference, and a callee of this file handed one receives that reference: held writes the field through a second name of the instance and calls deposit through it, where the candidate does both on the parameter (proved: one cell, the same field write, the same transition on the same receiver); keep calls the handle's methods through a local (proved); alias reads the field before the write made through a second name (unproved, WITNESS); twice adds through two names of one instance where the candidate adds twice through the parameter (proved: one cell); both reads the balance of a second handle before recording on the first, which may be the same object (unproved, WITNESS); pay hands a second name of the instance to add, which writes the field the candidate writes itself (proved), and step inlines what log does with the handle it is handed (proved); charge reads the field before the callee deposits (unproved, WITNESS); add, bump, log and Account.deposit are untouched. spill leaves the heap core (a handle's method called in a loop) and is read as a value tree, where a write through a second name of the input is a write to a copy: the identity guard withholds its lemma (unproved; without the guard the value reading proved it, the parent's read of b.total missing the write through h), lane B WITNESS.",
+ "b": {
+  "held": "PASS-bounded",
+  "keep": "PASS-bounded",
+  "alias": "WITNESS",
+  "twice": "PASS-bounded",
+  "both": "WITNESS",
+  "pay": "PASS-bounded",
+  "step": "PASS-bounded",
+  "charge": "WITNESS",
+  "add": "PASS-bounded",
+  "bump": "PASS-bounded",
+  "log": "PASS-bounded",
+  "spill": "WITNESS"
+ },
+ "heap": true
+}

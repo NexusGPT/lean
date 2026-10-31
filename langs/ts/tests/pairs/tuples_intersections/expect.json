@@ -1,0 +1,35 @@
+{
+ "scope": [
+  "ends",
+  "spread",
+  "entry",
+  "caption",
+  "describe",
+  "older",
+  "width",
+  "tag",
+  "joined"
+ ],
+ "equal": {
+  "ends": true,
+  "spread": true,
+  "entry": true,
+  "caption": false,
+  "describe": true,
+  "older": false,
+  "width": true,
+  "tag": true,
+  "joined": false
+ },
+ "why": "tuples and intersections in the heap core (heap-stage5.md section 17, 2026-10-31): spread destructures a tuple of one shape a same-file unit returns where the candidate indexes it (proved: the same element reads in order, in range through the callee's allocation); caption writes = for : between the positions of a destructured tuple of mixed shapes (WITNESS); describe names a field of a parameter whose type parameter is bounded by an intersection of records (proved: the parameter is the record of all their fields); older adds 2 for 1 to that field (WITNESS); width destructures a tuple of records where the parent indexes it (proved: the elements are the same references); ends and entry are untouched, each allocating the tuple its caller destructures; tag is untouched, a tuple of mixed records destructured; joined swaps the references of a tuple of records it builds (WITNESS: the result's graph differs).",
+ "b": {
+  "spread": "PASS-bounded",
+  "caption": "WITNESS",
+  "describe": "PASS-bounded",
+  "older": "WITNESS",
+  "width": "PASS-bounded",
+  "tag": "PASS-bounded",
+  "joined": "WITNESS"
+ },
+ "heap": true
+}

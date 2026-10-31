@@ -13,7 +13,11 @@
 // Exact sources (each with a static interval, the safe-range obligation discharged by interval arithmetic):
 //   an integer literal within 2^53; `.length` of a string, an array or a tuple (ECMA-262: an array length is a Uint32,
 //   a string length below 2^53; both below 2^32 here as the lead's axiom); indexOf, lastIndexOf, findIndex,
-//   findLastIndex, search ([-1, 2^32)); the result of a bitwise operator on exact operands (int32 / uint32);
+//   findLastIndex, search ([-1, 2^32)); the result of a bitwise operator (int32 / uint32), its operands exact or not:
+//   ECMA-262 6.1.6.1 reads every operand of a bitwise operator through ToInt32 (ToUint32 for the right operand of a
+//   shift and the left of `>>>`, both ToInt32 modulo 2^32), so a number the model does not hold enters as one
+//   uninterpreted int32, `Math.__lean_int32(x)`, and the operator itself is the translator's exact reading of it
+//   (translate.mjs bitwiseOf: `x | 0` and `~~x` are both JsInt32 of that int32);
 //   Math.trunc/floor/ceil/round/abs/min/max/sign of exact operands; `a + b`, `a - b`; `a * b` when both are nonnegative
 //   or one is a positive literal; `a % b` with a nonnegative dividend and a divisor that is never 0; `Math.floor(a / b)`
 //   and `Math.trunc(a / b)` with a >= 0 and b > 0; unary minus of an exact value that is never 0; a conditional of two
@@ -87,10 +91,10 @@ export function faithfulNumbers(loaded) {
     if (!isNum(n)) return null;
     const lv = literalValue(n); if (lv !== null) return fits({ lo: lv, hi: lv });
     if (ts.isPrefixUnaryExpression(n)) {
+      if (n.operator === K.TildeToken && isNum(n.operand)) return I32; // ToInt32 of any number is an int32 (its operand, when not held, read through __lean_int32)
       const o = exact(n.operand); if (!o) return null;
       if (n.operator === K.PlusToken) return o;
       if (n.operator === K.MinusToken) return has0(o) ? null : { lo: -o.hi, hi: -o.lo };
-      if (n.operator === K.TildeToken) return I32;
       return null;
     }
     if (ts.isPropertyAccessExpression(n) && n.name.text === 'length' && isSeqT(typeAt(n.expression))) return { lo: 0n, hi: LEN - 1n };
@@ -99,9 +103,9 @@ export function faithfulNumbers(loaded) {
       const op = n.operatorToken.kind;
       if (op === K.CommaToken) return exact(n.right);
       if (!isNum(n.left) || !isNum(n.right)) return null;
+      if (BITS[op]) return op === K.GreaterThanGreaterThanGreaterThanToken ? U32 : I32; // whatever the operands: each is read through ToInt32 (below), the result an int32 or a uint32
       const a = exact(n.left), b = exact(n.right);
       if (!a || !b) return null;
-      if (BITS[op]) return op === K.GreaterThanGreaterThanGreaterThanToken ? U32 : I32;
       if (op === K.PlusToken) return fits({ lo: a.lo + b.lo, hi: a.hi + b.hi });
       if (op === K.MinusToken) return fits({ lo: a.lo - b.hi, hi: a.hi - b.lo });
       if (op === K.AsteriskToken) {
@@ -315,6 +319,7 @@ export function faithfulNumbers(loaded) {
     return out + sf.text.slice(at, n.end);
   }
   const numOperand = (x) => isNum(x);
+  const int32 = (x) => (exact(x) ? text(x) : call('int32', [text(x)])); // an operand of a bitwise operator: ToInt32 of a number the model does not hold
   const inType = (n) => { for (let p = n.parent; p; p = p.parent) { if (ts.isTypeNode(p) || ts.isTypeAliasDeclaration(p) || ts.isInterfaceDeclaration(p)) return true; if (ts.isStatement(p) || ts.isFunctionLike(p)) return false; } return false; };
   function rewrite(n) {
     if (!ts.isExpression(n) && !ts.isExpressionStatement(n) && !ts.isForStatement(n)) return null;
@@ -324,7 +329,8 @@ export function faithfulNumbers(loaded) {
     if (ts.isBinaryExpression(n)) {
       const op = n.operatorToken.kind;
       const both = numOperand(n.left) && numOperand(n.right);
-      if ((ARITH[op] || BITS[op]) && both && !exact(n)) return call(ARITH[op] ?? BITS[op], [text(n.left), text(n.right)]);
+      if (BITS[op] && both && !(exact(n.left) && exact(n.right))) return `(${int32(n.left)} ${ts.tokenToString(op)} ${int32(n.right)})`; // the operator over the ToInt32 of each operand: exact
+      if (ARITH[op] && both && !exact(n)) return call(ARITH[op], [text(n.left), text(n.right)]);
       if (REL[op] && both && !(exact(n.left) && exact(n.right))) return call(REL[op], [text(n.left), text(n.right)]);
       if (EQ.has(op) && !both && ((hasNumT(typeAt(n.left)) && !exact(n.left)) || (hasNumT(typeAt(n.right)) && !exact(n.right))) && !pinned(n.left) && !pinned(n.right)) { refuse(n, 'an equality over a value that may be a number the model does not hold'); return null; }
       if (EQ.has(op) && both && !(exact(n.left) && exact(n.right)) && !pinned(n.left) && !pinned(n.right)) { const e = call('eq', [text(n.left), text(n.right)]); return op === K.EqualsEqualsEqualsToken || op === K.EqualsEqualsToken ? e : `!${e}`; }
@@ -339,7 +345,8 @@ export function faithfulNumbers(loaded) {
           if (!ts.isExpressionStatement(n.parent) && !(ts.isForStatement(n.parent) && n.parent.incrementor === n)) { refuse(n, 'an update whose value is used'); return null; }
           if (unionMember(n.left)) { refuse(n, 'an update of a member of a union value'); return null; }
           const k = COMPOUND[op];
-          return `${text(n.left)} = ${call(ARITH[k] ?? BITS[k], [text(n.left), text(n.right)])}`;
+          if (BITS[k]) return `${text(n.left)} = (${int32(n.left)} ${ts.tokenToString(k)} ${int32(n.right)})`; // the target read once more as the operand: an identifier or a field, no effect
+          return `${text(n.left)} = ${call(ARITH[k], [text(n.left), text(n.right)])}`;
         }
       }
       return null;
@@ -355,7 +362,7 @@ export function faithfulNumbers(loaded) {
     if (ts.isPrefixUnaryExpression(n) && numOperand(n.operand)) {
       if (n.operator === K.MinusToken && !exact(n) && !ts.isNumericLiteral(unparen(n.operand))) return call('neg', [text(n.operand)]);
       if (n.operator === K.MinusToken && ts.isNumericLiteral(unparen(n.operand)) && literalValue(unparen(n.operand)) === 0n) return call('neg', [text(n.operand)]); // `-0`
-      if (n.operator === K.TildeToken && !exact(n.operand)) return call('bitnot', [text(n.operand)]);
+      if (n.operator === K.TildeToken && !exact(n.operand)) return `(~${int32(n.operand)})`;
       if (n.operator === K.ExclamationToken && !exact(n.operand)) return `!${call('truthy', [text(n.operand)])}`;
       return null;
     }

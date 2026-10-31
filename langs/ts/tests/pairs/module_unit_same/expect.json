@@ -1,0 +1,6 @@
+{
+ "laneBOnly": true,
+ "why": "The module unit with the same init: the candidate names the options and the doubled count in module bindings of its own and builds the message with `+`; the requests, their order, the exports and every binding both sides declare are equal, so lane B finds no difference (PASS-bounded). A binding only one side declares is no observation: it is read only by the units, each its own unit.",
+ "b": { "(module)": "PASS-bounded" },
+ "check": { "(module)": { "verdict": "PASS-bounded" } }
+}

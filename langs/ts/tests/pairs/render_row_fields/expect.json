@@ -1,0 +1,12 @@
+{
+ "scope": ["panel", "total", "toggle"],
+ "equal": { "panel": true, "total": true, "toggle": false },
+ "laneBOnly": true,
+ "why": "the render row of the certificate (lanes.B.bound.render), the five fields the pixel-diff lane reads: Panel renders on every input, its clean sequences walk the button's click and, after a click, the reset span's hover (a target reached only after a click); total never renders (component false, no sequence, no target); Toggle's candidate shows another text after one click, a WITNESS whose sequence is that click; every row carries lean's clock epoch (the witness record's clockEpoch) and lean's head (the record's leanHead)",
+ "b": { "Panel": "PASS-bounded", "total": "PASS-bounded", "Toggle": "WITNESS" },
+ "render": {
+  "Panel": { "component": true, "sequences": [["div[0]:onClick"], ["div[0]:onClick", "div[1]:onMouseEnter"]], "targets": [{ "label": "div[0]:onClick", "path": "div[0]", "key": null, "id": "inc", "testid": "inc-button", "role": "button", "name": "increment" }, { "label": "div[1]:onMouseEnter", "path": "div[1]", "key": "more", "id": null, "testid": "reset", "role": null, "name": null }] },
+  "total": { "component": false, "sequences": [], "targets": [] },
+  "Toggle": { "component": true, "witnessSequence": [":onClick"], "targets": [{ "label": ":onClick", "path": "", "key": null, "id": null, "testid": "toggle", "role": null, "name": null }] }
+ }
+}

@@ -1,4 +1,5 @@
-// a key typed string | symbol: no runtime discriminator between a string and a symbol, refused by the type reading
-export function keyName(k: string | symbol): number {
-  return 1;
+// a fixed tuple of two element types read by an array method: no one element type holds every position, refused by
+// the value reading (heap-stage5.md 17c); the refusal names the tuple's types only in its message
+export function keyName(k: [string, number]): number {
+  return k.map(String).length;
 }

@@ -15,8 +15,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, topLevelFunctions, COMPILER_OPTIONS, loadProgramOptions } from '../common.mjs';
+import { ts, topLevelFunctions, COMPILER_OPTIONS, loadProgramOptions, callbackEnvironment } from '../common.mjs';
 import { makeHeap } from '../translate/heap.mjs';
+import { fileURLToPath } from 'node:url';
+import { walkerJournal, superviseWalk, assertSupervised, walkEnd, exitAfter } from '../walk-supervisor.mjs';
 
 const args = process.argv.slice(2);
 const flag = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : null; };
@@ -42,6 +44,29 @@ for (const name of Object.keys(baseline.perRepo).sort()) {
   const report = JSON.parse(fs.readFileSync(path.join(path.dirname(census), 'concepts', name + '.json'), 'utf8'));
   repos.push({ name, roots: report.roots });
 }
+// The walk runs under a supervisor (walk-supervisor.mjs): an end without its `complete` record writes the summary with
+// `partial: true`, `filesNotWalked` and `notWalked` (absolute paths), names them on stderr and exits non-zero.
+const summaryFile = path.join(outDir, `summary${tag}.json`);
+const journal = walkerJournal();
+if (journal === null) {
+  const recordsFile = path.join(outDir, `walk${tag}.records.jsonl`);
+  const planned = repos.flatMap((repo) => repo.roots.filter((root) => fs.existsSync(root)).flatMap((root) => [...walk(root)]));
+  const pending = { census, resolve, complete: false, files: planned.length };
+  fs.writeFileSync(recordsFile, JSON.stringify({ kind: 'reach-census', ...pending }) + '\n');
+  fs.writeFileSync(summaryFile, JSON.stringify({ ...pending, partial: true, filesNotWalked: planned.length, notWalked: planned }, null, 1) + '\n');
+  const end = await superviseWalk({ script: fileURLToPath(import.meta.url), args, journal: recordsFile, planned });
+  if (!end.complete) {
+    const walker = { pid: end.pid, exit: end.code, signal: end.signal };
+    fs.writeFileSync(summaryFile, JSON.stringify({ ...pending, partial: true, filesNotWalked: end.notWalked.length, notWalked: end.notWalked, walked: { files: end.walked }, walker }, null, 1) + '\n');
+    fs.appendFileSync(recordsFile, JSON.stringify({ kind: 'partial', complete: false, filesNotWalked: end.notWalked.length, walker }) + '\n');
+    console.error(`reach census incomplete: the walk ${walkEnd(end)}; ${end.notWalked.length} of ${planned.length} files not walked (partial: true in ${summaryFile}):`);
+    for (const f of end.notWalked.slice(0, 50)) console.error(`  ${f}`);
+    if (end.notWalked.length > 50) console.error(`  ... and ${end.notWalked.length - 50} more, every one under notWalked in ${summaryFile}`);
+  }
+  exitAfter(end);
+  await new Promise(() => {}); // exitAfter ends the process
+}
+const walked = (files) => fs.appendFileSync(journal, JSON.stringify({ kind: 'chunk', records: files.map((file) => ({ file })) }) + '\n');
 const K = ts.SyntaxKind, TF = ts.TypeFlags;
 const HW = 'hw_';
 const coarse = (r) => r.replace(/^(calls|called by) .*, outside the core$/, '$1 a unit outside the core').replace(/^(parameter type|return type|value type|local type|receiver type|array literal type|object literal type): .*$/, '$1').replace(/^property \S+$/, 'property outside the shape').replace(/^operator .*$/, 'operator outside the core').replace(/^call \.\S+$/, 'method call').replace(/^(expression|statement|expression statement) \S+$/, '$1 outside the core');
@@ -628,15 +653,19 @@ for (const repo of repos) {
   let done = 0;
   for (const [cfg, chunk] of chunks) {
     if (units >= limit) break;
+    assertSupervised();
     let options = { ...COMPILER_OPTIONS }, host;
     if (resolve) { if (cfg) options = loadProgramOptions(chunk[0], cfg).options; host = ts.createCompilerHost(options); }
     else { host = ts.createCompilerHost(options); host.resolveModuleNames = (names) => names.map(() => undefined); }
     let program;
-    try { program = ts.createProgram(chunk, options, host); } catch (e) { planErrors.push(`${chunk[0]}: program ${String(e.message).slice(0, 120)}`); continue; }
+    try { program = ts.createProgram(chunk, options, host); } catch (e) { planErrors.push(`${chunk[0]}: program ${String(e.message).slice(0, 120)}`); walked(chunk); continue; }
     const checker = program.getTypeChecker();
     for (const file of chunk) {
       const sf = program.getSourceFile(file); if (!sf) continue;
       const fns = topLevelFunctions(sf);
+      // a callback unit's captured bindings are its parameters, as the translator plans the core (translate.mjs, the
+      // 'units' analysis): without them every callback that reads an outer name is out, and so is the unit around it
+      for (const u of fns.values()) if (u.form === 'callback') { let caps = []; try { caps = callbackEnvironment(checker, u); } catch { caps = []; } u.params = [...u.params, ...caps.map((c) => Object.assign(Object.create(c.decl), { name: c.decl.name, initializer: undefined, questionToken: undefined, dotDotDotToken: undefined, modifiers: undefined }))]; }
       const order = [...fns.values()];
       const calls = new Map(order.map((u) => [u.name, new Set()]));
       for (const u of order) { const w = (n) => { if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && fns.has(n.expression.text)) calls.get(u.name).add(n.expression.text); ts.forEachChild(n, w); }; w(u.body); }
@@ -683,7 +712,7 @@ for (const repo of repos) {
         const cl = rec.classes.join('+') || '(none)'; classAlone[cl] = (classAlone[cl] ?? 0) + 1;
       }
     }
-    files += chunk.length; done += chunk.length;
+    files += chunk.length; done += chunk.length; walked(chunk);
     process.stderr.write(`${repo.name}: ${done}/${list.length} files, units ${row.units}, core ${row.core}, own ${row.ownFit}, mismatch ${row.mismatch}, ${Math.round((Date.now() - t0) / 1000)} s\n`);
   }
   perRepo[repo.name] = row;
@@ -691,5 +720,6 @@ for (const repo of repos) {
 fs.closeSync(out);
 const sortDesc = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => b[1] - a[1]));
 const summary = { census, resolve, repos: repos.map((r) => r.name), files, units, written, core, heapOwnFit: own, mirrorMismatch: mismatch, mismatches, planErrors: planErrors.slice(0, 50), planErrorCount: planErrors.length, perRepo, firstReasonCoarse: sortDesc(firstCoarse), topClassSets: Object.fromEntries(Object.entries(sortDesc(classAlone)).slice(0, 40)), seconds: Math.round((Date.now() - t0) / 1000), digest: createHash('sha256').update(JSON.stringify({ perRepo, firstCoarse })).digest('hex') };
-fs.writeFileSync(path.join(outDir, `summary${tag}.json`), JSON.stringify(summary, null, 1) + '\n');
+fs.writeFileSync(summaryFile, JSON.stringify(summary, null, 1) + '\n');
+fs.appendFileSync(journal, JSON.stringify({ kind: 'complete', complete: true, files, units }) + '\n');
 console.log(JSON.stringify({ files, units, core, heapOwnFit: own, mirrorMismatch: mismatch, planErrorCount: planErrors.length, seconds: summary.seconds }));

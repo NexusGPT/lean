@@ -18,6 +18,7 @@ import { compileSide, compiledSide, loadSide, OpaqueHit, opaqueValue, canon } fr
 import { makeBridge, NoBridge, OutOfDomain, Opaque, show } from './bridge.mjs';
 import { domainOf } from './dafny-text.mjs';
 import { heapBridge } from './heap.mjs';
+import { causeOf } from './cause.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const translate = path.join(here, '../translate/translate.mjs');
@@ -42,7 +43,10 @@ const exp = JSON.parse(fs.readFileSync(path.join(pairDir, 'expect.json'), 'utf8'
 if (exp.candidateOnly || exp.laneBOnly) { result.skipped = exp.candidateOnly ? 'candidate-only units: no parent model' : 'lane A refuses this pair by design (laneBOnly)'; write(); process.exit(0); }
 
 // ----- the translation, exactly as the suite's pair step -----
-const tr = (which, extra) => spawnSync('node', [translate, pairFile(which), '--core', '--suffix', which, '--out', path.join(work, `${which}.dfy`), '--prelude', path.join(work, `${which}.pre.dfy`), '--no-project', ...(exp.heap !== false ? ['--heap'] : []), ...extra], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
+// `project` in expect.json: the pair is read with the tsconfig it names, in both lanes (tests/run.mjs projectArgs), so the
+// model and Node read one set of options (the class-field emit mode, common.mjs classFieldsDefine); else each file alone
+const project = exp.project ? path.join(pairDir, exp.project) : false;
+const tr = (which, extra) => spawnSync('node', [translate, pairFile(which), '--core', '--suffix', which, '--out', path.join(work, `${which}.dfy`), '--prelude', path.join(work, `${which}.pre.dfy`), ...(project ? ['--project', project] : ['--no-project']), ...(exp.heap !== false ? ['--heap'] : []), ...extra], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26 });
 const tTranslate = performance.now();
 const agreed = ONLY ? {} : agreeCore({ files: { parent: pairFile('parent'), candidate: pairFile('candidate') }, dfyOf: (w) => path.join(work, `${w}.dfy`), heap: exp.heap !== false, tr: (w, eff, units) => tr(w, [...(eff ? ['--effectful', eff] : []), ...(units !== undefined ? ['--heap-units', units || '-'] : [])]) });
 if (!ONLY) result.timing.translateS = secs(tTranslate);
@@ -58,7 +62,7 @@ for (const s of exp.scope) if (!units.some((u) => dafnyName(u) === s)) result.no
 const models = {};
 for (const side of ['parent', 'candidate']) {
   const tCompile = performance.now();
-  const c = (ONLY && compiledSide({ dir: path.join(work, 'js'), label: side })) || compileSide({ dfy: path.join(work, `${side}.dfy`), prelude: path.join(work, `${side}.pre.dfy`), units: units.map((u) => `${dafnyName(u)}_${side}`), dir: path.join(work, 'js'), label: side });
+  const c = (ONLY && compiledSide({ dir: path.join(work, 'js'), label: side })) || await compileSide({ dfy: path.join(work, `${side}.dfy`), prelude: path.join(work, `${side}.pre.dfy`), units: units.map((u) => `${dafnyName(u)}_${side}`), dir: path.join(work, 'js'), label: side });
   if (!ONLY) result.timing[`compile_${side}S`] = secs(tCompile);
   if (!c.ok) { result.skipped = `the ${side} model does not compile: ${c.error}`; write(); process.exit(0); }
   const m = loadSide(c); m.bridge = makeBridge(m); m.heap = heapBridge(m); models[side] = m;
@@ -89,7 +93,7 @@ function prepare(m, fname, live, side) {
     if (p.name === 'slots') throw new NoBridge('callback slots');
     if (k >= live.length) { if (t.k === 'name' && (t.name === 'Option' || t.name === 'Nullish')) { args.push(m.bridge.into(undefined, p.type)); k++; continue; } throw new NoBridge('more model parameters than arguments'); }
     if (hw) { args.push({ heapArg: k, type: p.type, name: p.name }); k++; continue; }
-    m.bridge.state.none = absenceIn(tsSig?.params?.[k]?.type); args.push(m.bridge.into(live[k], p.type)); k++;
+    m.bridge.state.none = absenceIn(tsSig?.params?.[k]?.type, tsSig?.params?.[k]?.optional); args.push(m.bridge.into(live[k], p.type)); k++;
   }
   if (k < live.length && live.slice(k).some((x) => x !== undefined)) throw new NoBridge('fewer model parameters than arguments');
   if (hw) m.heap.fill(args, hw.index, live, fname); // the heap world: every object the heap-typed arguments reach, allocated by shape
@@ -124,8 +128,11 @@ function unary(m, fname, live, node, paramNames) {
   try { return compare(m, prep, parts(prep, out), node, paramNames); } catch (e) { return { status: 'model error', why: `compare: ${String(e && e.message).slice(0, 160)}`, ...(process.env.LEAN_CONFORMANCE_DEBUG ? { stack: String(e.stack).split('\n').slice(0, 6).join(' | ') } : {}) }; }
 }
 
-// the absence a None of this unit stands for, from its TypeScript signature (translate.mjs writes `// SIG <fn>: {...}`)
-const absenceIn = (tsType) => { if (typeof tsType !== 'string') return 'either'; const n = /\bnull\b/.test(tsType), u = /\bundefined\b|\bvoid\b/.test(tsType); return n && !u ? 'null' : u && !n ? 'undefined' : 'either'; };
+// the absence a None of this unit stands for, from its TypeScript signature (translate.mjs writes `// SIG <fn>: {...}`).
+// An optional mark (`x?: T`, a property `k?: T` of the type) declares undefined, never null: `{ tag?: Tag }` admits no
+// null tag, and a model reading it as None would take a default that Node's null skips (ECMA-262 KeyedBindingInitialization: a default
+// applies on undefined only)
+const absenceIn = (tsType, optional = false) => { if (typeof tsType !== 'string') return 'either'; const n = /\bnull\b/.test(tsType), u = optional || /\bundefined\b|\bvoid\b|\?\s*:/.test(tsType); return n && !u ? 'null' : u && !n ? 'undefined' : 'either'; };
 const sigOf = (m, fname) => { try { return JSON.parse((m.text.match(new RegExp(`^// SIG ${fname}: (.+)$`, 'm')) ?? [])[1] ?? 'null'); } catch { return null; } };
 // the model's answer against Node's observation of the same input
 function compare(m, prep, p, node, paramNames) {
@@ -141,7 +148,7 @@ function compare(m, prep, p, node, paramNames) {
   try {
     m.bridge.state.none = absenceIn(tsSig?.ret);
     let d = prep.hw ? m.heap.agreeResult(p.hw, p.result, p.resultType, o.returned) : m.bridge.agree(p.result, p.resultType, o.returned);
-    if (!d) for (const mu of p.mutated) { const k = paramNames.indexOf(mu.name); if (k < 0) { d = null; continue; } m.bridge.state.none = absenceIn(tsSig?.params?.[k]?.type); d = m.bridge.agree(mu.value, mu.type, node.after[k], `argument ${mu.name} after the call`); if (d) break; }
+    if (!d) for (const mu of p.mutated) { const k = paramNames.indexOf(mu.name); if (k < 0) { d = null; continue; } m.bridge.state.none = absenceIn(tsSig?.params?.[k]?.type, tsSig?.params?.[k]?.optional); d = m.bridge.agree(mu.value, mu.type, node.after[k], `argument ${mu.name} after the call`); if (d) break; }
     if (!d && prep.hw) d = m.heap.agreeArgs(p.hw, prep.args, node.after);
     if (d) return { status: 'disagree', cause: causeOf(d, tsSig, node.drawn), diff: d };
   } catch (e) { if (e instanceof Opaque) return { status: 'not executable', why: `the result holds a part with no body: ${e.why}` }; return { status: 'model error', why: `compare: ${String(e.message).slice(0, 160)}` }; }
@@ -151,20 +158,6 @@ function compare(m, prep, p, node, paramNames) {
   return { status: 'agree' };
 }
 const safeCanon = (x) => { try { return canon(x).slice(0, 120); } catch { return '?'; } };
-// a disagreement's cause: the kind of value that differs, read off the difference itself
-function causeOf(d, tsSig, drawn) {
-  if (/"\$ref":\d+\}/.test(JSON.stringify(drawn ?? null))) return 'aliased arguments: one object at two places of the input';
-  if (/\$negativeZero/.test(d)) return 'signed zero: Node -0, the model 0';
-  if (/\$bigint/.test(d) || [...d.matchAll(/-?\d{16,}/g)].some((m) => (BigInt(m[0]) < 0n ? -BigInt(m[0]) : BigInt(m[0])) > 2n ** 53n)) return 'an integer past 2^53: the model is exact, Node rounds to binary64';
-  if (tsSig?.params?.some((p) => p.rest)) return 'a rest parameter: lane B passes the drawn array as one argument';
-  if (/model -?\d+\/\d+ \(/.test(d)) return 'real arithmetic: the model is exact, Node rounds to binary64';
-  if (/model -?\d+ against -?\d+(\.\d+)?(e[+-]?\d+)?$/.test(d)) return 'integer value';
-  if (/model "[^"]*" against "/.test(d)) return 'string value';
-  if (/rest|undeclared key|no key|has the key/.test(d)) return 'record keys';
-  if (/model None|model undefined|model null|\$undefined/.test(d)) return 'absence (undefined, null, missing)';
-  if (/sequence of/.test(d)) return 'sequence length';
-  return 'value';
-}
 
 // the product: both models with one table for the parts with no body, under a seed
 function product(fnames, lives, seed) {
@@ -200,7 +193,7 @@ function gen(m, t0, key, tick) {
     if (t.k === 'tuple') return D.Tuple.of(...t.items.map((x) => g(x, depth + 1)));
     if (t.k !== 'name') return opaqueValue(key);
     switch (t.name) {
-      case 'int': { const xs = [-1, 0, 1, 2, ...POOL.ints]; return new B(xs[rnd(xs.length)]); } case 'nat': { const xs = [0, 1, 2, ...POOL.ints.filter((x) => x >= 0)]; return new B(xs[rnd(xs.length)]); }
+      case 'int': case 'BigInt': { const xs = [-1, 0, 1, 2, ...POOL.ints]; return new B(xs[rnd(xs.length)]); } case 'nat': { const xs = [0, 1, 2, ...POOL.ints.filter((x) => x >= 0)]; return new B(xs[rnd(xs.length)]); }
       case 'real': return new D.BigRational(new B(rnd(7) - 3), new B(rnd(3) + 1));
       case 'bool': return rnd(2) === 1; case 'string': { const xs = ['', `o${rnd(5)}`, ...POOL.strings]; return D.Seq.UnicodeFromString(xs[rnd(xs.length)]); }
       case 'seq': return depth > 2 || rnd(2) ? D.Seq.of() : D.Seq.of(g(t.args[0], depth + 1));
@@ -234,11 +227,20 @@ if (!ONLY) { // the pair's process: each unit in its own process under the bound
   write(); process.exit(0);
 }
 const { planOf, drawCopy, nodeRun } = await import('./node-side.mjs');
+// lane A's answer on the unit, as check.mjs gives it: the pair's expectation of the lemma, read as withheld where the
+// candidate's cell audit holds an obligation (a cell the unit touches with no transition: check.mjs answers
+// ASK:obligation, the lemma proves nothing about that cell, so a sampled agreement over it is no coupling finding)
+const laneAOf = (unit) => {
+  const want = exp.equal?.[dafnyName(unit)] ?? null;
+  const cells = models.candidate.text.match(new RegExp(`^// CELLS ${dafnyName(unit)}_candidate: (.*)$`, 'm'));
+  let obligations = []; try { obligations = cells ? JSON.parse(cells[1]).obligations ?? [] : []; } catch { obligations = []; }
+  return want === true && obligations.length ? 'obligation' : want;
+};
 for (const unit of units.filter((u) => u === ONLY)) {
   const fn = { parent: `${dafnyName(unit)}_parent`, candidate: `${dafnyName(unit)}_candidate` };
-  const rec = { unit, dafny: dafnyName(unit), laneA: exp.equal?.[dafnyName(unit)] ?? null, inputs: 0, sides: { parent: {}, candidate: {} }, disagreements: [], coupling: [], product: { inputs: 0, coupled: 0, agreedAllSeeds: 0 } };
+  const rec = { unit, dafny: dafnyName(unit), laneA: laneAOf(unit), inputs: 0, sides: { parent: {}, candidate: {} }, disagreements: [], coupling: [], product: { inputs: 0, coupled: 0, agreedAllSeeds: 0 } };
   result.units.push(rec);
-  let plan; try { plan = planOf(pairFile('parent'), pairFile('candidate'), unit, SEED); } catch (e) { rec.skipped = `lane B has no input plan: ${String(e.message).slice(0, 160)}`; rec.cpuS = cpuSecs(); fs.writeFileSync(path.join(work, `unit-${dafnyName(unit)}.json`), JSON.stringify(rec, null, 1)); continue; }
+  let plan; try { plan = planOf(pairFile('parent'), pairFile('candidate'), unit, SEED, project); } catch (e) { rec.skipped = `lane B has no input plan: ${String(e.message).slice(0, 160)}`; rec.cpuS = cpuSecs(); fs.writeFileSync(path.join(work, `unit-${dafnyName(unit)}.json`), JSON.stringify(rec, null, 1)); continue; }
   const paramNames = plan.spec.params?.map((p) => p.name) ?? [];
   for (let i = 0; i < N; i++) {
     const live = { parent: drawCopy(plan, i, SEED), candidate: drawCopy(plan, i, SEED) };

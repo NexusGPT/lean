@@ -317,6 +317,24 @@ export function specOf(file, unitName, opts = {}) {
       if (ts.isConstructorDeclaration(m)) for (const p of m.parameters) if (ts.isIdentifier(p.name) && ts.getModifiers?.(p)?.some((x) => [ts.SyntaxKind.PrivateKeyword, ts.SyntaxKind.PublicKeyword, ts.SyntaxKind.ProtectedKeyword, ts.SyntaxKind.ReadonlyKeyword].includes(x.kind)) && readerOf(p.type)) metadataReaders.push(p.name.text);
     }
   }
+  // a class whose chain declares a private name (#x, ECMA-262 7.3.31 PrivateBrandCheck) is nominal: a value of it is an
+  // object its constructor made, and a proxy over its prototype holds no brand, so `this.#x` throws there and nowhere on a
+  // value of the type. `branded` is the required parameter count of the constructor the chain runs: lane B makes the
+  // receiver with that constructor (run.mjs pickUnit), and asks when it takes arguments. A base whose declaration is not
+  // seen is no brand lane B can know of: the receiver stays the proxy, as before
+  let branded = null;
+  if (u.cls && !u.isStatic) {
+    let has = false, ctor = null;
+    for (let c = u.cls, seen = new Set(); c && !seen.has(c); ) {
+      seen.add(c);
+      if (c.members.some((m) => m.name && ts.isPrivateIdentifier(m.name) && !m.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword))) has = true;
+      ctor ??= c.members.find((m) => ts.isConstructorDeclaration(m) && m.body) ?? null;
+      const ext = c.heritageClauses?.find((h) => h.token === ts.SyntaxKind.ExtendsKeyword)?.types[0]?.expression;
+      let d = null; try { const sym = ext && checker.getSymbolAtLocation(ext); d = sym && (sym.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(sym) : sym)?.declarations?.find((x) => ts.isClassLike(x)); } catch { d = null; }
+      c = d ?? null;
+    }
+    if (has) branded = { required: ctor ? ctor.parameters.filter((p) => !p.questionToken && !p.initializer && !p.dotDotDotToken).length : 0 };
+  }
   // only the shapes a `ref` points at are emitted; a shape is written inline where it first occurs
   const used = new Set(); const mark = (x) => { if (!x || typeof x !== 'object') return; if (Array.isArray(x)) return x.forEach(mark); if (x.kind === 'ref' && !used.has(x.key)) { used.add(x.key); mark(defs[x.key]); } for (const v of Object.values(x)) mark(v); };
   mark(params); mark(returns); mark(receiver); mark(imports);
@@ -339,7 +357,7 @@ export function specOf(file, unitName, opts = {}) {
   // of it), and carries its leaf's spec, so a copied value is written only where the type admits it (gen.mjs)
   if (changed) changed = changed.map((tg) => { const leaf = tg.at.length ? null : specAtPath(params[tg.at.param], tg.at.chain, usedDefs); if (!tg.at.length && !leaf) return null; if (tg.values) { const vs = tg.at.length ? tg.values : tg.values.filter((v) => (v && typeof v === 'object' && v.t === 'undefined' ? leaf.optional || admitsUndefined(leaf.spec, usedDefs) : fits(leaf.spec, v, usedDefs))); return vs.length ? { ...tg, values: vs } : null; } return { ...tg, ...(leaf ? { leaf: leaf.spec } : {}) }; }).filter(Boolean);
   const timers = /\b(setTimeout|setInterval|setImmediate|requestAnimationFrame|requestIdleCallback)\b/.test(sf.text); // the file arms timers: the timer-order family has ties to reorder
-  return { unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}) };
+  return { unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}), ...(branded ? { branded } : {}) };
 }
 
 // ---- inputs shaped by usage ------------------------------------------------------------------------------------

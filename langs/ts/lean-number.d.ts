@@ -6,7 +6,7 @@ interface Math {
   __lean_div(a: number, b: number): number; __lean_rem(a: number, b: number): number;
   __lean_bitand(a: number, b: number): number; __lean_bitor(a: number, b: number): number; __lean_bitxor(a: number, b: number): number;
   __lean_shl(a: number, b: number): number; __lean_shr(a: number, b: number): number; __lean_ushr(a: number, b: number): number;
-  __lean_bitnot(a: number): number; __lean_neg(a: number): number;
+  __lean_bitnot(a: number): number; __lean_neg(a: number): number; __lean_int32(a: number): number;
   __lean_lt(a: number, b: number): boolean; __lean_le(a: number, b: number): boolean; __lean_gt(a: number, b: number): boolean; __lean_ge(a: number, b: number): boolean;
   __lean_eq(a: number, b: number): boolean; __lean_truthy(a: number): boolean;
   __lean_floor1(a: number): number; __lean_ceil1(a: number): number; __lean_trunc1(a: number): number; __lean_round1(a: number): number;

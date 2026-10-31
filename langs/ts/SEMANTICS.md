@@ -7,7 +7,7 @@ The checker compares a parent and a candidate version of a function. It says PAS
 One call of a function on one input observes:
 
 1. **outcome**: the returned value or the thrown value, where an Error is its class and message and never its stack text, a stack string reads as its header without the frame lines, and the directories lean loaded the two copies from read as one token (`design/stack-text.md`);
-2. **reachable mutation**: every object reachable from the arguments and the receiver before the call, field by field after the call;
+2. **reachable mutation**: every object reachable from the arguments and the receiver before the call, field by field after the call; and the module's own state, the change the call made to each binding of the unit's file (a member of a record added, changed or deleted, or the binding's new value; a function by its identity, an accessor never run), so a write to module state, a constructor's too, is observed (`design/heap-stage5.md` 21, 2026-10-31);
 3. **effect trace**: the ordered list of effect requests (operation, arguments) and the environment's responses;
 4. **pending work**: promises returned unsettled, timers armed, jobs queued.
 
@@ -17,7 +17,7 @@ Two versions are **equal outside the scope S** when, for every input outside S a
 
 An effect is a transition of a world: `effect(w, op, args) = (w', result)`. The same operation on the same arguments in the same world gives the same result; in a different world it may not. Two reads of the clock are two transitions.
 
-In the proof lane every effectful call takes the current world and returns the next one. A function with an effect takes `wld: World` first and returns `(World, R)`. The world is threaded in source order; a logical operand or conditional branch returns its world and value only when selected. The deciding operand is evaluated once. Conditional calls that update value-model arguments remain refused as `conditional-effect`; use an explicit `if` branch.
+In the proof lane every effectful call takes the current world and returns the next one. A function with an effect takes `wld: World` first and returns `(World, R)`. The world is threaded in source order; a logical operand or conditional branch returns its world and value only when selected. The deciding operand is evaluated once. A conditional's arm also returns every name a same-file call in it rebinds (the arguments the call changes), so `c ? change(xs) : 0` changes `xs` only when its arm is taken (design/heap-stage5.md section 3). A short-circuit operand's calls that update value-model arguments remain refused as `conditional-effect`; use an explicit `if` branch.
 
 A parent and a candidate are compared under the same initial world. When one side asks the environment something the other never asked, no answer is invented for it: the world token makes the two histories different values, and equality is not provable.
 

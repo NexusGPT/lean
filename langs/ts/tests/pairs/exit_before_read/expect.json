@@ -1,0 +1,24 @@
+{
+ "candidateOnly": [
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "guarded",
+   "verdict": "PASS-proved",
+   "laneA": "PASS-proved"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "broken",
+   "verdict": "WITNESS"
+  },
+  {
+   "parent": "parent.ts",
+   "file": "candidate.ts",
+   "unit": "caught",
+   "verdict": "WITNESS"
+  }
+ ],
+ "why": "A call on a path that leaves the function before a read does not run before it (common.mjs readAfterCall exitsBefore, design/census-reach-2026-10-31.md). guarded calls g(p) only on a branch that returns, so the read of p.n after the if is on the other path: lane A reads p.n as it is and proves the candidate that reads it first; on master text order counted g(p) before the read, which became a world read, ext_now(wld, p).n, and the lemma was unproved. What stays: broken's break leaves the switch, not the function, so g runs before the read (lane A reads ext_now after the call), and caught's throw is resumed by the catch (the try is one opaque block); lane B witnesses both (its fake g writes p)."
+}

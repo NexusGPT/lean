@@ -251,6 +251,22 @@ export function makeReach(checker, sf) {
     visit(impl, 0);
     return { base: declClass.name?.text ?? 'anonymous', key: [...new Set(texts)].sort().join('\n\u0002'), admitted: !why, why };
   };
+  // `r.m(args)` where lane A holds no unit for m and no inherited key (a #m method, a field holding a function, a
+  // member of a class another source file declares): the call runs the code the class declares for m, so the external
+  // that stands for it is named by that code, never by the bare name, which stays one function across a changed
+  // member under an unchanged caller (a false proof: Shifted.run, conformance-readings.md section 4). The key text:
+  // every declaration of m as a class member in a source file, and every member named m that a class of this file
+  // below the declaring class declares (a subclass instance runs that one; a #m is no property and has none). '' when
+  // m is declared nowhere but in a declaration file or a type (an interface, a record): the bare name stands.
+  reachOf.memberKeyText = (access) => {
+    if (!ts.isPropertyAccessExpression(access)) return '';
+    let sym; try { sym = checker.getSymbolAtLocation(access.name); } catch { sym = undefined; }
+    const decls = (sym?.declarations ?? []).filter((d) => ts.isClassElement(d) && isClassLike(d.parent) && !d.getSourceFile().isDeclarationFile);
+    if (!decls.length) return '';
+    const texts = new Set(decls.map((d) => reachFor(d.getSourceFile()).keyText(d)));
+    if (!ts.isPrivateIdentifier(access.name)) for (const d of decls) for (const c of classes) if (c !== d.parent && chainOf(c).includes(d.parent)) for (const m of c.members) if (memberName(m) === access.name.text) texts.add(reachOf.keyText(m));
+    return [...texts].sort().join('\n\u0002');
+  };
   // `super(args)` in a constructor runs the base class's constructor and field initializers, then its own base's: the
   // key is the text of every class above the receiver's along the extends chain (each with its members, heritage and
   // decorators), in whatever file declares it; a class from a declaration file contributes its name only

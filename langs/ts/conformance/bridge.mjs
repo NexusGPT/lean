@@ -37,9 +37,12 @@ export function makeBridge(model) {
   const make = (name, ctorIndex, fields) => { const f = ctorFns(name)[ctorIndex]; if (!f) throw new NoBridge(`no constructor ${ctorIndex} of ${name}`); return f(...fields); };
   const fieldsOf = (x) => Object.keys(x).filter((k) => k !== '$tag').map((k) => x[k]); // in constructor order (create_ assigns them so)
 
-  // a type with its synonyms and type parameters resolved
+  // a type with its synonyms and type parameters resolved. BigInt stays: the translator's reading of TypeScript's bigint
+  // (translate.mjs `type BigInt = int`) is an int to Dafny, and a bigint to Node, which renders it apart from a number
+  const isBigInt = (t) => t.k === 'name' && t.name === 'BigInt' && !t.args.length && decls.synonyms.get('BigInt')?.type.text === 'int';
   function resolve(t, env = {}) {
     if (t.k === 'name' && env[t.name] && !t.args.length) return resolve(env[t.name], {});
+    if (isBigInt(t)) return t;
     if (t.k === 'name' && decls.synonyms.has(t.name)) { const s = decls.synonyms.get(t.name); const e = {}; s.tparams.forEach((p, i) => { e[p] = t.args[i]; }); return resolve(s.type, e); }
     if (t.k === 'name' && t.args.length) return { ...t, args: t.args.map((a) => resolve(a, env)) };
     if (t.k === 'tuple') return { ...t, items: t.items.map((a) => resolve(a, env)) };
@@ -72,6 +75,7 @@ export function makeBridge(model) {
     if (t.name === 'Fn' && dt('Fn')) { if (typeof v !== 'function') throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads a function`); return make('Fn', 0, [D.Seq.UnicodeFromString(`input function ${JSON.stringify(render(v))}`), D.Seq.of()]); } // a function value is its code and its captures, compared only: an input function is named by lane B's rendering of it
     if (typeof v === 'function') throw new NoBridge('a function value where the model reads a data type');
     if (t.name === 'Error' && dt('Error') && v instanceof Error === false && Object.prototype.toString.call(v) === '[object Error]') v = Object.assign(Object.create(null), { message: v.message, name: v.name }, v); // an error from another realm
+    if (isBigInt(t)) { if (typeof v !== 'bigint') throw new OutOfDomain(`a ${typeOfJs(v)} where the model reads bigint`); return big(v); }
     switch (t.name) {
       case 'int': case 'nat': {
         if (typeof v === 'bigint') return big(v);
@@ -172,6 +176,7 @@ export function makeBridge(model) {
       return null;
     }
     if (t.k !== 'name') throw new Opaque(`${at}: type ${t.text}`);
+    if (isBigInt(t)) return r && typeof r === 'object' && typeof r.$bigint === 'string' && BigInt(r.$bigint) === BigInt(x.toFixed()) ? null : no(`model ${x.toFixed()}n against ${show(r)}`); // lane B renders a bigint {$bigint: digits}, never a number
     switch (t.name) {
       case 'int': case 'nat': {
         if (typeof r !== 'number') return no(`model ${x.toFixed()} against ${show(r)}`); // -0, NaN and the infinities render as objects: never SameValue an int

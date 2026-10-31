@@ -74,7 +74,7 @@ lint prints; the lint takes the messages of these members from the table, so a r
 | tostring-object | `v.toString()` on a value that may be an object | refused, `unsupported-call`; narrow with `typeof` | 4, 55 |
 | locale-in-callback | `toLocaleLowerCase`, `toLocaleUpperCase`, `toLocaleString` in a map, filter, find, findIndex, some, every, flatMap or reduce callback | admitted, a transition per element | 8, 29 |
 | match-index | `m.index` of a global, exec-loop or matchAll match | refused, `unsupported-member`; the non-global literal match stays read | 24, 4 |
-| match-groups | `m.groups` | refused, `unsupported-member`; name the capture by position | 3, 25 |
+| match-groups | `m.groups` held, destructured, or a group that may not take part | refused, `unsupported-member`; `m.groups.k` of a group in every match of a non-global literal, and `m.groups` as a presence test, are read ([heap-stage5.md 6b](heap-stage5.md#6b-the-named-captures-of-a-match-2026-10-31)) | 3, 25 |
 | method-on-union | `v.indexOf(x)` on `string | string[]` | refused, `unsupported-call`; narrow first | 0, 21 |
 | matchall-named | `s.matchAll(RE)` with a const g pattern nothing in the file advances, or `new RegExp(src, "g")` | admitted, uninterpreted | 15, 2 |
 | sort-default-statement | `c.sort()` as a statement | refused; write `c = [...c].sort()` | 3, 6 |

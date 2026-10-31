@@ -18,36 +18,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { spawn } from 'node:child_process';
-
-// a child's output collected as spawnSync collects it ({ status, signal, stdout, stderr, error }). The child writes
-// its stdout and stderr to two files in `dir`, read when it exits: a child that ends with process.exit loses no output
-// whatever this process is doing meanwhile (a pipe this process is slow to read holds the child's writes in its own
-// memory, and process.exit drops them; spawnSync reads its pipe at once, this process reads many children's). Past
-// maxBuffer on stdout or stderr the result is spawnSync's: the text cut there, error ENOBUFS, status null, SIGTERM
-// (spawnSync kills the child at that point; here it has run to its end). A spawn failure is `error` with status null.
-let named = 0;
-export function spawnCollect(cmd, args, { cwd, env, maxBuffer = 1024 * 1024, dir = os.tmpdir(), onSpawn = null } = {}) {
-  return new Promise((resolve) => {
-    const base = path.join(dir, `child-${process.pid}-${named++}`), files = [`${base}.out`, `${base}.err`];
-    const read = () => files.map((f) => { try { const b = fs.readFileSync(f); fs.rmSync(f, { force: true }); return b; } catch { return Buffer.alloc(0); } });
-    let fds = [], child, error, done = false;
-    const finish = (status, signal) => {
-      if (done) return; done = true;
-      const [out, err] = read();
-      if (out.length > maxBuffer || err.length > maxBuffer) { error ??= Object.assign(new Error(`spawn ${cmd} ENOBUFS`), { code: 'ENOBUFS' }); status = null; signal = 'SIGTERM'; }
-      resolve({ status, signal, stdout: out.subarray(0, maxBuffer).toString('utf8'), stderr: err.subarray(0, maxBuffer).toString('utf8'), ...(error ? { error } : {}) });
-    };
-    try {
-      fds = files.map((f) => fs.openSync(f, 'w', 0o600));
-      child = spawn(cmd, args, { cwd, env, stdio: ['ignore', fds[0], fds[1]] });
-    } catch (e) { error = e; for (const fd of fds) fs.closeSync(fd); finish(null, null); return; }
-    for (const fd of fds) fs.closeSync(fd); // the child holds its own copies
-    if (onSpawn && child.pid !== undefined) onSpawn(child.pid);
-    child.on('error', (e) => { error ??= e; if (child.pid === undefined) finish(null, null); });
-    child.on('close', (code, signal) => finish(code, signal));
-  });
-}
+import { spawnCollect } from '../exec/capped.mjs';
+export { spawnCollect, killTree, dafnyWallCapMs, DAFNY_DEFAULT_TIME_LIMIT_S, wallCapMs } from '../exec/capped.mjs'; // the wall cap, shared with check.mjs
 
 // outDir: where the children's output files go while they run
 // weightsFile: the measured weights; traceFile: a line `<pid> <job key>` per child started (what measure-weights reads)

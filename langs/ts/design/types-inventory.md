@@ -69,10 +69,10 @@ are summed over where the type is written (a file may count twice).
 | 1 | A finite type nested deeper than 8 | 772 | 400 | 15 | reading gap |
 | 2 | A type parameter of an enclosing class or function | 335 | 142 | 14 | reading gap |
 | 3 | A recursive type through a generic or a callable | 269 | 154 | 3 | reading gap |
-| 4 | The polymorphic `this` type of a class | 241 | 107 | 6 | reading gap |
-| 5 | A union with a symbol member | 179 | 117 | 10 | reading gap |
-| 6 | A union with a bigint member | 8 | 7 | 2 | reading gap |
-| 7 | `type nesting too deep`, the site not located by the walk | 18 | 15 | 4 | unknown until located |
+| 4 | The polymorphic `this` type of a class | 241 | 107 | 6 | read 2026-10-31 (below, "Form 4, read") |
+| 5 | A union with a symbol member | 179 | 117 | 10 | reading gap; read 2026-10-31 (below, forms 5 and 6 read) |
+| 6 | A union with a bigint member | 8 | 7 | 2 | reading gap; read 2026-10-31 (below, forms 5 and 6 read) |
+| 7 | `type nesting too deep`, the site not located by the walk | 18 | 15 | 4 | located: form 1 by other routes (below) |
 
 Forms a reader might expect and that do not occur: a mapped type, a conditional type, an indexed access, a template
 literal type, `object`, `never` and a lone `symbol` are read as Any already (`dtype`, the opaque branch); an intersection
@@ -160,6 +160,70 @@ parameter, constraint `C`). A subclass instance carries more than `C` names. The
 that, and a class with methods is already the opaque `Ext_C`. So reading `this` as `C` drops nothing a proof could
 use.
 
+#### Form 4, read (2026-10-31)
+
+Lane `types-form4-this` (branch `lane/types-form4-this`) writes the reading above. Its pair is `tests/pairs/types_this`.
+
+**The rule.** A type parameter that is the polymorphic `this` (the checker's `isThisType`) is read as its base
+constraint, the class's or interface's instance type, at every place `dtype` meets it: a method's result (`: this`, or
+inferred from `return this`), a parameter (`other: this`), a field (`next: this | null`), the value of the `this`
+expression itself. A `this` whose constraint the checker does not give, or gives as another type parameter, is read
+opaque (Any), never guessed. It is one branch of `dtype` (translate.mjs), before the type-parameter branch, so a `this` never
+reaches the form-2 rule and is never one of the unit's Dafny type parameters.
+- In a generic class the constraint is `C<T>`. It is read exactly as `C<T>` written by hand is (a class with methods is
+  the opaque `Ext_C`; a data class is its datatype, generic in the parameters its fields name, form 2).
+- A data class holding `this` (`next: this | null`) is its own datatype with its open rest (`Option<Node>`): a
+  subclass instance's extra fields are in that rest.
+
+**The lint, the same reading.** The lint asked for the receiver's type of a method call (`this.where(a).where(b)`: the
+second call's receiver is typed `this`) and found a type parameter, not a record, so the call was `unsupported-call`.
+It now reads a receiver typed `this` as the instance it is (lint.mjs `asInstance`), so the call is the same method call on
+a class instance that it already was when the receiver was typed `C`. A field read on a `this`-typed value already went through the
+constraint (the lint's type-parameter member rule). Nothing else in the lint changed.
+
+**Why it is sound.** The section above: every value of type `this` is a value of type `C`, and the readings of `C`
+already account for an instance carrying more than `C` names (the opaque `Ext_C`, a record's open rest). What a call
+on such a value does is the request the reading of calls already names: a call on an instance of this file's classes is
+a request named by the code of every class the receiver's type admits (heldKey, design/conformance-readings.md), and
+with `this` read as `C` that is the same set of classes as for `C`.
+
+**What stays refused, and why.**
+- Nothing new: no form-4 message remains. The units it stopped now meet whatever comes next in them (below).
+- The pair records two readings this lane did not touch. *A call on this file's classes after an edit to one of them.*
+  The request is named by the class's code, so an edit inside `Query` or `Named` gives each side its own request, and a
+  subclass method calling the chain is not proved after any edit in its class (`named_capped`, the same with `Query`
+  written for `this`). *Two receivers read in another order* (`other.parts.length < this.parts.length` for the
+  reverse): a different order of reads on two world values, witnessed by lane B and not proved. That is why the pair's
+  `longer` reads in the same order.
+- A nested callback unit that reads `this` from the method around it (an arrow inside a method) is refused by the lint
+  as `` `this` outside a class method ``; on base `types` stopped some of them first (3 in langchainjs). That is a
+  callback reading, not form 4.
+
+**The census.** Base is lean `lead-b5c07450` (b5c074508), head this lane's 3e99d51b8, each a `git archive` in
+its own folder. Every census: `NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs
+/root/da/census/repos/<root> [--include <dir>/] --out <json>`, run from each tree, one at a time. Form 4 is counted as
+`types-inventory.mjs` counts it (a unit's first non-environment finding, `type parameter C is not one of this
+function's` with `class C` in its file). Where each unit went is its first finding at head, unit by unit (the lane's
+`lane/types-form4-this-scripts/form4-moves.mjs`, committed with its result).
+- nexus: base over `apps/backend/src/` (13,672 files, 23,328 units; it holds every form-4 unit of nexus on this base;
+  the frontend directory the inventory named holds none since form 2 was read). The whole-directory head run was
+  killed by the machine's out-of-memory killer, so head is censused in the 51 directories that hold a form-4 unit on
+  base (`--include`, one run each, 2,140 files) and compared unit by unit with the base run.
+
+| Root | Units | Form 4 | Stopped by `types` | Entered | Units entered on base and stopped at head |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| langchainjs | 6,709 | 59 → 0 | 96 → 37 | 2,766 → 2,805 | 0 |
+| n8n | 9,610 | 32 → 0 | 37 → 5 | 2,680 → 2,699 | 0 |
+| nexus (`apps/backend/src/`; head in 51 directories) | 23,328 | 120 → 0 | the 51 directories: `types` refusals 625 → 505 | the 51 directories: 3,320 → 3,401 | 0 |
+
+Where the form-4 units went (their first finding at head):
+- langchainjs (59): 39 entered; `copied-argument` 15, `classes` 3, `read-after-call` 2.
+- n8n (32): 19 entered; `read-after-call` 10, `classes` 2, `reference-key` 1.
+- nexus (120): 81 entered; `classes` 31, `copied-argument` 5, `read-after-call` 3.
+
+Every `classes` stop among them (36) is a nested callback unit reading the receiver of the method around it, refused as
+`` `this` outside a class method `` (above). `census.mjs --diff` on langchainjs and n8n: no reading loses a unit.
+
 ### 5. A union with a symbol member (179 units)
 
 `string | number | symbol` (a property key, `keyof` of an open type), `T | unique symbol` (a cancel sentinel of a
@@ -189,6 +253,64 @@ with another flag.
 
 The reading it needs: the same as form 5, the union opaque. One change to `unionType` covers forms 5 and 6.
 
+#### Forms 5 and 6, read (2026-10-31)
+
+Lane `types-form5-6-primitives` writes the reading forms 5 and 6 need. Its pair is `tests/pairs/types_symbol_bigint`.
+
+**The rule.** `unionType`'s list of members an opaque union may hold now holds `ESSymbolLike` and `BigIntLike`
+(translate.mjs). A union none of the earlier readings takes (all strings, all numbers, all booleans, a sum separated by
+`typeof` or by a tag) and whose members include a symbol (`symbol`, a `unique symbol`) or a bigint (`bigint`, a bigint
+literal) is read opaque (Any), as a lone symbol already is. Nothing else about the union changes: a union a sum
+already reads (`number | bigint`, `string | false | 0 | 0n`: one member per `typeof` result) stays that sum.
+
+**Two defects the reading met, each fixed at its mechanism.**
+- *A bigint and an integer number were one Dafny type.* `dtype` read a bigint as `int`, and a file without a fraction
+  or a `/` reads its numbers as `int` too. Every conversion is named by its Dafny type (`Any_of_int`, `cast_int_<sum>`),
+  so `0n` and `0` put into an opaque value were the same injection, and lane A proved `zero ? 0 : v` equal to
+  `zero ? 0n : v`. On base the same text came out of a lone bigint returned as `unknown` (`return 0n` and `return 0`),
+  and of a `number | bigint` sum in such a file. A bigint is now read as `BigInt`, a Dafny synonym of `int` the prelude
+  declares (`type BigInt = int`): its arithmetic is int's, its conversions are its own (`Any_of_BigInt`). theorem.py
+  counts `BigInt` among its primitive types, as it counts `int`. The pair's `amount_or` row is the one that fails
+  without it (proved where the two differ).
+- *A symbol-keyed field was named by the checker's symbol id.* The checker names a property keyed by a unique symbol
+  `__@TAG@<id>`, the id counting the symbols of one program in the order it met them. A candidate that declares
+  another symbol before `TAG` gave the one record two datatypes, and theorem.py refused the pair (the prelude block
+  differs). A symbol key is now named by the name it was declared under (`__@TAG`, Dafny `u___TAG`; common.mjs
+  `stableKey`, used by `dn` and by `recordType`'s field list, which names and orders the fields). The checker
+  writes a string key that looks like one (`"__@TAG@1"`) with one more underscore, so only symbol keys take this
+  form. Two keys `[a.TAG]` and `[b.TAG]` from two modules in one record would read as one field name: Dafny refuses
+  the duplicate field, so the unit is not proved (no unit of the three roots has one).
+
+**Why it is sound.** As for every opaque union: every read on it is an uninterpreted accessor and every construction an
+uninterpreted injection named by the Dafny type it comes from, called alike on both sides, so a proof holds of every
+interpretation, the real one included. With the `BigInt` name, two values of different runtime kinds never share an
+injection.
+
+**What stays refused, and why.**
+- A symbol-keyed member read by its key (`t[TAG]`) is the lint's `dynamic-key` refusal ("a symbol key is outside the
+  open-key reading"), another reading's construct. The pair reads the record's other fields and passes it whole.
+- A `typeof x === "symbol"` arm of an opaque union is read through the uninterpreted `typeof` of Any: it narrows
+  nothing a proof could use. A sum with a symbol arm is the later refinement the section names.
+- Lane B draws no symbol: a planted difference reached only on a symbol arm is not witnessed by drawing. The pair plants
+  its differences on the string and bigint arms.
+
+**The census.** Base `b5c074508`, head `273cc7d3b`, each a `git archive` in its own folder:
+`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs /root/da/census/repos/<root> --out <json>`, one at a
+time. Each unit attributed as the census attributes it, forms 5 and 6 told apart by this script's union test.
+
+| Root | Units | Form 5 | Form 6 | Stopped by `types` | Entered | Where the form 5/6 units went | Other units that moved |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| n8n | 9,610 | 5 → 0 | 0 → 0 | 37 → 32 | 4,308 → 4,313 | entered 5 | 0 |
+| langchainjs | 6,709 | 37 → 0 | 0 → 0 | 96 → 59 | 3,504 → 3,506 | entered 2; `reference-key` 35 (a Map keyed by `ZodTypeDef`) | 0 |
+
+No unit entered at base is stopped at head. nexus (84 + 7 units of these forms in the inventory) was not censused: the
+machine stayed below the 25 GB a census may start with from 01:05 to the end of this lane (03:30). Its 41 directories
+holding those findings run one at a time with `nexus_one.sh` (lane folder `census/`).
+
+**Seen and left to their readings.** Any `/` makes a file read its numbers as reals (common.mjs `fileUsesReals`), a
+bigint division included, though a bigint is never real. A bigint rendered in JSX (`{n}`) now converts through an
+uninterpreted cast where it was formatted as a number (same text in React; not proved where it was).
+
 ### 7. Nesting sites the walk did not locate (18 units)
 
 The raised line holds a declaration whose type the walk does not find past depth 8, for example a method header whose
@@ -197,6 +319,51 @@ refusal came from a local inside it. n8n 7, nexus 9, pipedream 1, pyka 1: n8n `p
 (`InferenceAgent.constructor`), pipedream `components/twitter/common/addObjIncludes.ts:88` (`getObjIncludes`). They
 are presumably forms 1 or 3. That is not shown. If the nesting message named its outermost type, the next census
 would say.
+
+#### Form 7, located (2026-10-31)
+
+Lane `types-form7-unlocated` (pair `tests/pairs/types_unlocated`). The 18 sites were located by the translator itself,
+not by the walk: the pre-A7a translator (merge 55fc7a771, `git archive` into a scratch folder) with one scratch-only
+probe that keeps a stack of the types `dtype` is inside and prints it at the depth refusal, run as `LOCATE_NEST=1 node
+langs/ts/lint/lint.mjs <file> --json` on each site's file in its project. Nothing of the probe is committed.
+
+**What they are.** Every one is a finite type ten levels deep (form 1); none recurs. In each the type is reached by a
+route the walk does not take from the raised line:
+- a field read through `this` (nexus `InferenceAgent.toString`, `toJSON`: `this.data`, an `InferenceAgentType` whose
+  `productionPromptVersion.promptJson` reaches `JSONContent.marks[].attrs`; n8n `WorkflowRunner.runMainProcess`'s
+  `setTimeout` callback, `this.activeExecutions`);
+- a `let` with no type and no initializer, typed by its first assignment (n8n `ActiveExecutions.getActiveExecutions`,
+  `let data;`): the checker types its declaration `any`, so the walk found nothing there;
+- an argument read at its callee's parameter type (n8n `AbstractOAuthController.getDecryptedData`: `undefined` passed
+  where the callee takes `IExecuteData | undefined`; `ActiveWebhooks.executeWebhook`'s callback, `workflowData`);
+- a callback reading a parameter of the function around it (pyka `Head/SORTS.find()#0`, the census's "raised outside
+  this unit");
+- a method's result or a type met in its body, raised at the method's header (nexus `getRegulationRequirements`,
+  `RenderHtmlMessageTemplateUseCase.execute`, `generateTestParameters`, `AgentInferenceCacheService.setToCache`);
+- a record met near the top and again ten levels down (pipedream `getObjIncludes`, nexus `InferenceAgent.constructor`):
+  the walk expands a record once per walk, so a record first met on a shallow branch hides its deep path; the
+  translator's own memo is per file and order-dependent, and its depth bound was checked before the memo.
+Five of the 18 (n8n `setProviderConnected`, `credText`, `nodeText`; nexus `SetChatAssignedUsersUseCase.execute`,
+`FillHtmlMessageTemplateUseCase.execute`) did not raise the refusal at all when their file was linted alone: their
+depth was reached through a record another unit read first in the census's chunk, the same order dependence.
+
+**At this head.** Lane A7a's descent guard reads all of them: none stops on `types`. The pair holds one unit per route
+(the deep type is nine records, then `string | null`, then string): refused at the pre-A7a base, read now.
+
+**What the pair found.** The route through an untyped `let x;` was read at two types. Its declaration is `var x:
+Option<T> := None` (T its first assigned type), but `symType`, which every read asks for the name's stored type, gave
+the checker's `any`: a field read took the stored Option for an opaque value (`ext_Any_f_Any(x)`), and a read lost its
+`.value`. That is a Dafny resolution error, which costs every unit of the file its proof (the lint admitted the
+unit). The reading: `symType` returns the held type of an untyped `let` of the unit, `T | undefined` from the same
+`firstAssignedType` its declaration uses (`untypedLetHeld`), so the declaration and every read are one decision, as
+for a typed `let x: T;` that TypeScript does not fix. A let whose first assignment is `any` stays `Any` at both.
+
+**What stays.** `untypedLetHeld` answers only for a `let` declared in the unit's own body (the body
+`firstAssignedType` reads). A callback reading an untyped `let` of the function around it is refused before any
+type is read (`definite-assignment`: TypeScript does not check that read follows the assignment). The commuted
+test inside a `find` callback (the pair's `captured`) proves the callback, not the function around it, at any depth;
+that is a limit of the callback reading, not of the types. The census for this reading: the lane's result
+(`lane/types-form7-unlocated-result.md`).
 
 ## Forms 1 and 3 read (2026-10-30, lane A7a)
 
@@ -216,8 +383,9 @@ By units, and by how many roots each reading reaches:
    recurring type read by its reserved name or opaque. One mechanism, `dtype`. Its pair: a unit whose parameter is a
    finite type nested ten deep (form 1 red today) and a unit over a recursive JSON value (form 3).
 2. Form 2 (335 units, 14 roots): the enclosing declarations' type parameters as the unit's own.
-3. Form 4 (241 units, 6 roots): `this` read as its constraint.
+3. Form 4 (241 units, 6 roots): `this` read as its constraint. Read 2026-10-31 (section 4, "Form 4, read").
 4. Forms 5 and 6 (187 units, 12 roots): `ESSymbolLike` and `BigIntLike` among the members an opaque union may hold.
+   Read 2026-10-31 ("Forms 5 and 6, read", under form 6).
 
 The figure the plan quotes (7.8 percent) came from an earlier census. On this head `types` is 6.0 percent of the
 language-refused units over the 40 roots, and it is the top rule on no root. "The three roots where it is the top rule"

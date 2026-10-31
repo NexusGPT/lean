@@ -1,0 +1,25 @@
+{
+ "scope": [
+  "level_order",
+  "dropped",
+  "strict",
+  "id_order"
+ ],
+ "equal": {
+  "level_order": true,
+  "dropped": true,
+  "strict": false,
+  "id_order": true
+ },
+ "canon": {
+  "dropped": true
+ },
+ "why": "An order of two values whose shape is the primitive string reads StrLt in the heap core, whatever type spells the string (design/heap-stage5.md 8b, the union-order case read 2026-10-31): a union of string literals and a branded string are their string at run time, as a string enum's member is. Before, the heap checker tested the operands' StringLike flag alone, which a union and an intersection do not carry, and the units stayed out of the core. levelOrder: b > a for a < b over a literal union (proved). dropped: the candidate allocates a record it drops, then orders the copied field (proved up to the dropped allocation, the canonical heap reading, which only a unit in the heap core has; the whole heap differs by the cell). strict: <= for < (unproved, WITNESS at a == b). idOrder: b > a for a < b over a branded string (proved).",
+ "b": {
+  "levelOrder": "PASS-bounded",
+  "dropped": "PASS-bounded",
+  "strict": "WITNESS",
+  "idOrder": "PASS-bounded"
+ },
+ "heap": true
+}
