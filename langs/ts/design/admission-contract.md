@@ -123,7 +123,7 @@ optionalCallShape owns one record with sourcePathAdmission and emittedCalleeShap
 
 inlinePromiseStatementKind is the single statement vocabulary used by the lint and the promise emitter dispatch. The opaque return of a throwing handler remains the named promise-opaque-return exception: syntactic inline-body admission and opaque-block Promise settlement are different conditions, both recorded in the promises catalogue entry.
 
-The conditional-state-channels permanent exception records argumentUpdatesInBranch (lint) and worldEffectInPureBranch (emission). They protect different state channels. No predicate is widened and no admission or emission behavior changes.
+The conditional-state-channels permanent exception is retired (2026-10-31, lane short-circuit-carried): its argumentUpdatesInBranch condition is read (a short-circuit right operand carries the names a same-file call in it rebinds, design/heap-stage5.md section 3b), so worldEffectInPureBranch is the translator's one condition of `conditional-effect`.
 
 The receiver-scope-vs-self-type permanent exception records lexicalReceiverAvailable and materializableUnitReceiver. Literal methods have lexical this through a captured field environment, not a unit self type. Both named conditions are linked through the classes reading in the lowering record; no receiver behavior changes.
 
@@ -237,7 +237,6 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | exception:element-shape-vs-selected-emission | heapShapeEligible; heapSelected | Admission knows eligible shapes; value emission knows the actual planner selection. Owned reduce accumulators additionally distinguish ownership from safe write depth. |
 | exception:mutation-admission-vs-value-output | admissionRisk; valueOutputs | The same facts feed two projections with different purposes and traversal scopes; equating them changes admission or function outputs. |
 | exception:receiver-scope-vs-self-type | lexicalReceiverAvailable; materializableUnitReceiver | Lexical this validity and the availability of a unit self type have different domains. A literal method has lexical this but no unit self type. Combining them would reject valid literal methods or invent a receiver type. |
-| exception:conditional-state-channels | argumentUpdatesInBranch; worldEffectInPureBranch | These are different state channels: admission protects callee argument updates, while emission requires the world channel of the enclosing unit. Neither condition implies the other. |
 | exception:promise-opaque-return | inlineStatementAdmission; opaqueFaultReturn | Statement admissibility is syntactic; the fault emitter additionally needs to settle a Promise returned by an opaque block. A valid statement can reach this separate emission limit. |
 
 | site | kind | rule | reading | decided | message |
@@ -437,7 +436,6 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | lint/lint.mjs:1481 | lint-refuse | string-order | strings | one-decider | compare two strings, or convert both operands explicitly |
 | lint/lint.mjs:1490 | lint-refuse | mixed-types | equality | one-decider | a value that is sometimes a primitive and sometimes a record or array compares with === only against |
 | lint/lint.mjs:1491 | lint-refuse | reference-equality | equality | one-decider | === on arrays and records compares references; compare fields |
-| lint/lint.mjs:1535 | lint-refuse | conditional-effect | logic-values | exception:conditional-state-channels | move a call that changes its arguments into an explicit if branch so the updated values leave the br |
 | lint/lint.mjs:1545 | lint-refuse | generator-bound | generators | shared (generatorReading) | <shape.message> |
 | lint/lint.mjs:1545 | lint-refuse | generator-effect | generators | shared (generatorReading) | <shape.message> |
 | lint/lint.mjs:1545 | lint-refuse | generator-use | generators | shared (generatorReading) | <shape.message> |
@@ -680,7 +678,7 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | translate/translate.mjs:2584 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
 | translate/translate.mjs:2592 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
 | translate/translate.mjs:2615 | translate-refuse | prototype | prototype | shared (plainObjectTest) |  |
-| translate/translate.mjs:2707 | translate-refuse | conditional-effect | logic-values | exception:conditional-state-channels | conditional-effect: move the effect into an explicit if statement |
+| translate/translate.mjs:2707 | translate-refuse | conditional-effect | logic-values | one-decider | conditional-effect: move the effect into an explicit if statement |
 | translate/translate.mjs:2724 | translate-refuse | prototype | prototype | shared (inPrototypeReach) | prototype: this file makes an object whose prototype is not Object.prototype (line ${}), and ${}; `i |
 | translate/translate.mjs:2725 | translate-refuse | dynamic-key | keys | shared (openRecordIn) | dynamic-key: ${} |
 | translate/translate.mjs:2772 | translate-refuse |  | equality | one-decider | loose equality on a non-primitive operand is not translated |

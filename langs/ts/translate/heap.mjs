@@ -719,8 +719,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (m !== 'at' && shapeOf(typeOf(e.arguments[0]))?.key !== s.elem.key && keyOf(shapeOf(typeOf(e.arguments[0])) ?? {}) !== keyOf(s.elem)) return no(`${m} of another shape`);
         checkExpr(e.expression.expression); return checkExpr(e.arguments[0]);
       }
-      if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { // a ?? b: the left a value that may be absent, the right pure (it is read whatever the left holds)
-        if (shapeOf(typeOf(e.left))?.kind !== 'opt') return no('?? on a value that is never absent'); if (!pureExpr(e.right)) return no('?? with a right side that calls or allocates'); if (!shapeOf(typeOf(e))) return no('?? result type'); checkExpr(e.left); return checkExpr(e.right);
+      if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { // a ?? b: the left a value that may be absent; the right runs only when it is absent (its lines in its branch, as && and || read theirs)
+        if (shapeOf(typeOf(e.left))?.kind !== 'opt') return no('?? on a value that is never absent'); if (!shapeOf(typeOf(e))) return no('?? result type'); checkExpr(e.left); return checkExpr(e.right);
       }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind) && (isAbsent(e.left) || isAbsent(e.right))) { // a presence test
         const other = isAbsent(e.left) ? e.right : e.left; if (isAbsent(other)) return no('absent compared to absent'); { const os = shapeOf(typeOf(other)); if (os && isRefShape(os) && (keyedLocal(other, u.fn) || pureExpr(other))) { if (lambdaDepth) return no('a reference tested inside a callback'); return checkExpr(other); } } if (shapeOf(typeOf(other))?.kind !== 'opt') return no('presence test of a value that is never absent'); return checkExpr(other);
@@ -1298,7 +1298,11 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
         return `${helper('At', [E])}(${it}, ${isReal ? `${helper('JsTrunc', ['real'])}(${v})` : v})`; // in a real file the position is ToIntegerOrInfinity of the number: its truncation
       }
       if (ts.isPrefixUnaryExpression(e)) return e.operator === K.ExclamationToken ? `!${cond(e.operand)}` : e.operator === K.PlusToken ? expr(e.operand) : e.operator === K.TildeToken ? (bitwise ? bitwiseCode(e) : `${helper('JsBitNot', [NUM])}(${expr(e.operand)})`) : negZeroRisk(e) ? (() => { divUsed = true; const x = bind(expr(e.operand), 'n'); lines.push(`var ${HW} := NegZeroMark(${HW}, ${x} == ${isReal ? '0.0' : '0'});`); return `(-(${x}))`; })() : `(-(${expr(e.operand)}))`;
-      if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { const ls = locShape(e); const a = expr(e.left); return ls.kind === 'opt' ? `OptOrOpt(${a}, ${exprAs(e.right, ls)})` : `OptOr(${a}, ${expr(e.right)})`; }
+      if (ts.isBinaryExpression(e) && e.operatorToken.kind === K.QuestionQuestionToken) { // the right operand runs only when the left is absent: its lines (a transition, an allocation, a mark) stay inside its branch
+        const ls = locShape(e); const a = expr(e.left); const saved = lines.splice(0); const r = ls.kind === 'opt' ? exprAs(e.right, ls) : expr(e.right); const lr = lines.splice(0); lines.push(...saved);
+        if (!lr.length) return ls.kind === 'opt' ? `OptOrOpt(${a}, ${r})` : `OptOr(${a}, ${r})`;
+        const o = bind(a, 'o'), q = fresh('q'); lines.push(`var (${HW}, ${q}) := if ${o}.Some? then (${HW}, ${ls.kind === 'opt' ? o : `${o}.value`}) else (${[...lr, `(${HW}, ${r})`].join(' ')});`); return q;
+      }
       if (ts.isBinaryExpression(e) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind) && (isAbsent(e.left) || isAbsent(e.right))) {
         const lit = isAbsent(e.left) ? unparen(e.left) : unparen(e.right), other = isAbsent(e.left) ? e.right : e.left;
         const negated = [K.ExclamationEqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind), loose = [K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(e.operatorToken.kind);

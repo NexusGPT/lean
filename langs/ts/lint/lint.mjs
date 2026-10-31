@@ -1523,55 +1523,11 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     }
   }
 
-  // `h.call(o, a)` / `h.apply(o, [a])` on a same-file function: its declaration and the argument nodes in parameter order
-  // (the receiver first when it declares `this`, else dropped), so a receiver or argument it changes is followed
-  function receiverCall(n) {
-    const f = n.expression;
-    if (!ts.isPropertyAccessExpression(f) || !ts.isIdentifier(f.expression) || (f.name.text !== 'call' && f.name.text !== 'apply')) return null;
-    const vd = checker.getSymbolAtLocation(f.expression)?.valueDeclaration;
-    const decl = vd && ts.isFunctionDeclaration(vd) ? vd : vd && ts.isVariableDeclaration(vd) && vd.initializer && (ts.isFunctionExpression(vd.initializer) || ts.isArrowFunction(vd.initializer)) ? vd.initializer : null;
-    if (!decl || decl.getSourceFile() !== sf) return null;
-    let arr = n.arguments[1]; while (arr && ts.isParenthesizedExpression(arr)) arr = arr.expression;
-    const args = f.name.text === 'call' ? [...n.arguments] : [n.arguments[0], ...(arr && ts.isArrayLiteralExpression(arr) ? arr.elements : [])];
-    const p0 = decl.parameters[0];
-    return { decl, args: p0 && ts.isIdentifier(p0.name) && p0.name.text === 'this' ? args : args.slice(1) };
-  }
-  // a short-circuit operand's result carries the world and value, but not a callee's parameter updates; a conditional's
-  // operand carries them too (translate.mjs carried: each arm returns every name an operand rebinds)
-  function conditionalEffect(e) {
-    let branch = false;
-    for (let child = e, p = e.parent; p && !ts.isFunctionLike(p); child = p, p = p.parent) {
-      if (ts.isBinaryExpression(p) && LOGIC.has(p.operatorToken.kind) && child === p.right) branch = true;
-    }
-    if (!branch) return;
-    const mutations = (decl, seen = new Set()) => {
-      if (!decl?.body || decl.getSourceFile() !== sf || seen.has(decl)) return new Set();
-      seen = new Set(seen).add(decl);
-      const params = decl.parameters.map((p) => ts.isIdentifier(p.name) ? p.name.text : null), changed = new Set();
-      const hit = (n) => { let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isNonNullExpression(root) || ts.isParenthesizedExpression(root)) root = root.expression; if (ts.isIdentifier(root) && params.includes(root.text)) changed.add(params.indexOf(root.text)); if (root.kind === K.ThisKeyword && params[0] === 'this') changed.add(0); }; // a write through a declared `this` changes the receiver operand
-      const walk = (n) => {
-        if (ts.isFunctionLike(n)) return;
-        if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && !ts.isIdentifier(n.left)) hit(n.left);
-        if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && !ts.isIdentifier(n.operand)) hit(n.operand);
-        if (ts.isDeleteExpression(n)) hit(n.expression);
-        if (ts.isCallExpression(n)) {
-          if (ts.isPropertyAccessExpression(n.expression) && MUT_NAMES.has(n.expression.name.text)) hit(n.expression.expression);
-          const via = receiverCall(n);
-          for (const i of mutations(via ? via.decl : checker.getResolvedSignature(n)?.declaration, seen)) { const a = via ? via.args[i] : n.arguments[i]; if (a) hit(a); }
-        }
-        ts.forEachChild(n, walk);
-      };
-      walk(decl.body); return changed;
-    };
-    const via = receiverCall(e);
-    if (mutations(via ? via.decl : checker.getResolvedSignature(e)?.declaration).size) v(e, 'conditional-effect', 'move a call that changes its arguments into an explicit if branch so the updated values leave the branch');
-  }
   // an optional call `f?.(x)` is `if f is absent then absent else f(x)`: the arguments and the call run only when the
   // callee is present. The callee is a local function value, a function field of a record path rooted at a local (each
   // link a plain record, the last one optional under `?.`), or a function field of `this` in a class; the expression
   // around it holds no assignment, update or comma, whose value reading evaluates every operand before any branch
   function call(e) {
-    conditionalEffect(e);
     const generatorDecl = checker.getResolvedSignature(e)?.declaration;
     const producer = [...units.values()].find((u) => u.fn === generatorDecl && u.fn.asteriskToken);
     if (producer) { const shape = generators.shape(producer); if (shape.rule) v(e, shape.rule, shape.message); }
