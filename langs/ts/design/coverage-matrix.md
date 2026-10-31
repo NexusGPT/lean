@@ -48,7 +48,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | JsxSelfClosingElement | 5080 | 8.1% | admitted | exact as a JsxElem value | same, with component instance identity under re-render sequences |
 | JsxElement | 4911 | 7.8% | admitted | exact as a JsxElem value | same |
 | JsxText | 4770 | 7.6% | no case (refused by default, or reached through its parent) | exact (JSX whitespace rule) | same |
-| ArrayBindingPattern | 3982 | 6.4% | no case (refused by default, or reached through its parent) | exact | same |
+| ArrayBindingPattern | 3982 | 6.4% | no case (refused by default, or reached through its parent) | exact; in the heap core a const pattern of a tuple reads each position in order, a tuple of one shape through its element reads (heap-stage5.md section 17, 2026-10-31) | same |
 | SpreadElement | 3661 | 5.8% | admitted | exact in array literals and calls of known shape; a fixed tuple spread into an outside call is its elements in order (stage 5 rank 18); otherwise refused (spread); a Map, a Set and their iterators spread in insertion order since stage 5 rank 22 (ordered-collections); a string or opaque spread stays refused | same |
 | TypeOfExpression | 3649 | 5.8% | admitted | exact (type tests) | same |
 | RegularExpressionLiteral | 2457 | 3.9% | admitted | exact for the supported regex forms (strings reading); otherwise opaque | same |

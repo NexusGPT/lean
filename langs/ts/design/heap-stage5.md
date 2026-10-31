@@ -433,6 +433,63 @@ Census (resolved, 39 roots), strict graph 886 -> 901, own syntax 2182 -> 2216; `
 {"files":23359,"units":53918,"core":901,"heapOwnFit":2216,"mirrorMismatch":2074,"planErrorCount":0,"seconds":319}
 ```
 
+### 17b. A tuple destructured, a type parameter bounded by records, two tuples in one file (2026-10-31)
+
+Read (`translate/heap.mjs`: `tupleBinding`, `boundShape`, `genericArgWhy`, the prelude's `fld`):
+- `const [a, , b] = e` where `e` is a tuple (step 17's two readings). The array's iterator yields its elements in order,
+  so each name is the element at its position, read in order, and a hole skips one: a field `_i` of a tuple of mixed
+  shapes, an element read with its out-of-range mark for a tuple of one shape (the unit carries `// INRANGE`; a
+  parameter's hypothesis or the callee's allocation shows the reads in range). `Array.prototype[Symbol.iterator]` is
+  assumed unpatched, as for-of over an array already assumes. The source is evaluated once, before any name is bound.
+- A type parameter `T extends A & B` whose bound is a record (an intersection of records, or one record) is the record
+  of the bound's fields. A value of T is an object of a subtype of the bound, and shapes are views (an object may hold
+  more keys than its type names), so the value is read as a parameter typed by the bound is read: the same hypothesis
+  `IsR_<bound>`, the same field reads and writes, and a result of type T is the reference.
+- A call of a generic same-file unit passes, for each parameter of a reference shape, an argument of exactly that shape.
+  The callee reads the cell through the bound's constructor, and a wider record (`Person` with an `id` beside the
+  bound's fields) is another constructor whose reads there would be defaults. A caller passing another shape stays out
+  of the core, and with it the callee (`called by .., outside the core`).
+- A field name that two records of one file hold at two Dafny types (the positions `_0`, `_1` of two tuples of mixed
+  shapes, `id: number` beside `id: string`) gets one destructor per constructor (`u_0_<key>_f`). Dafny gives a
+  destructor one type, and before this change such a file's prelude did not resolve, so no lemma of it was proved.
+  A name holding one type keeps its destructor `<name>_f`, so every other prelude is byte-identical.
+
+Stays refused, and why:
+- A rest element, a default (it reads `undefined` past the end) and a nested pattern: the reading names one element per
+  position. A `let` pattern (a name rebound later) is refused: the core's writes to a local are not read for pattern
+  names. A pattern longer than the tuple, or one whose source is not a tuple (`const [a] = xs` of `T[]`, whose length
+  is not known), is refused, as is a pattern of a tuple of one shape in a real file (an element index there is an
+  integer of the int reading only).
+- A destructured parameter (`([a, b]: [number, number]) =>`): the core's parameters are names.
+- A type parameter with no bound, or a bound that is not a record (a primitive, an array, a union, a dictionary): a
+  subtype there may be a value the bound's shape does not hold (a tuple for an array, a literal for a primitive), and
+  this reading does not decide it. A bound of `T & X` (an intersection holding a type parameter) has no shape.
+- A call of a generic unit with an argument of another shape, as above. The same reading of a non-generic callee (a
+  `Person` passed to a `Named` parameter) is outside this section. It is reported in the lane's result
+  (`lane/core-tuples-intersections-result.md`) and left as it is.
+
+Pair `tuples_intersections` (17 checks): `spread` (a tuple of one shape a callee returns, destructured, against indexed:
+proved, in range through the callee's allocation), `caption` (`=` for `:` between the positions of a destructured tuple
+of mixed shapes: WITNESS, unproved), `describe` (a field of a `T extends Named & Aged` named first: proved), `older`
+(`+= 2` for `+ 1` through that parameter: WITNESS, unproved), `width` (a tuple of records destructured against indexed:
+proved), `tag` (untouched, a tuple of two record shapes destructured: proved), `joined` (the references of a tuple of
+records swapped: WITNESS, unproved), `ends` and `entry` (untouched). Before this reading the pair's parent did not
+translate: the ordinary lane refuses `older`'s write through a type parameter (`field age is not a declared field of a
+record`).
+
+Census of the heap core, unit by unit (the plan of `design/heap-core-census.mjs`, modules unresolved, before at
+b5c07450 and after at 5bda69a7):
+
+| Root | Units | Core | Moved to another stop |
+| --- | ---: | ---: | --- |
+| n8n | 9,609 | 49 -> 49 | 9: `binding form` -> `destructuring of a non-tuple` |
+| langchainjs | 6,705 | 16 -> 16 | 1: `binding form` -> `destructuring of a non-tuple` |
+| nexus | 43,944 | 294 -> 294 | 17 `binding form` -> `destructuring of a non-tuple`, 1 -> `calls a unit outside the core`; 26 `generic` -> their next stop (9 `parameter type`, 4 `return type`, 2 each `element access of a non-array`, `parameter form`, `call outside the file`, `called by a unit outside the core`, 1 each `call .keys`, `callback form`, three `outside name`) |
+
+No unit entered or left the core. The destructurings met in these roots are of `string[]` (`s.split(..)`), whose length
+is not known, and each generic unit had a second stop. 12 nexus rows differ only in a unique symbol's id between two
+program builds (`__@NARROWING_DECIDED@<id>`), which is not a move.
+
 ## 18. Class instances and handles
 
 Reading: a handle is a parameter or local of an object type with methods that is not a record the core reads (an

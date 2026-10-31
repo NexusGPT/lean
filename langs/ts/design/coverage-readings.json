@@ -161,7 +161,7 @@
   "faithful": "same"
  },
  "ArrayBindingPattern": {
-  "today": "exact",
+  "today": "exact; in the heap core a const pattern of a tuple reads each position in order, a tuple of one shape through its element reads (heap-stage5.md section 17, 2026-10-31)",
   "faithful": "same"
  },
  "SpreadElement": {
