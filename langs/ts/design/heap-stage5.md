@@ -429,6 +429,33 @@ Census (resolved, 39 roots), strict graph 901 -> 917, own syntax 2216 -> 2269; `
 {"files":23359,"units":53918,"core":917,"heapOwnFit":2269,"mirrorMismatch":2127,"planErrorCount":0,"seconds":305}
 ```
 
+### 2026-10-31: the instance held (lane core-class-handles)
+
+Read: a const local bound to a parameter of the unit that holds an instance of a class of this file (`const h = a`), or
+to a field path of one (`const h = b.inner`), is another name for that cell: a field written through it (`h.total += n`,
+`h.total = v`, `h.n++`) is the core's field write on the one reference both names hold, a method called through it is
+step 18's transition on that receiver, and a callee of this file handed it receives the same reference. The core
+already read all of this (a local of a reference shape is a `Ref`); the lint refused the write as `alias-mutation`,
+since its held-alias rule (heap shapes) took a plain data record or an array one field step below a parameter only. It
+now also takes an instance of a class of this file at any depth, the parameter itself included (`lint.mjs`
+`fileInstance`, `heldAlias`). A handle (an interface with methods, a class of another file) held in a local was
+already read: it is only ever a call's receiver, never written.
+Soundness: a unit the core does not take is read as a value tree, where `const h = a` copies the record and the write
+through `h` never reaches `a`. The identity guard missed that write (it counted an alias one level down only), so the
+value reading would prove a changed unit equal. The guard now names a write through a const local bound to an input itself
+(a `let` name the lint admits a write through is fresh there, its flow-sensitive alias rule; `layer1Risk`: "write through another name of an input"; `identitySkeleton`: such a local is an input alias, its write
+an unreadable path), so that unit keeps no value lemma and lane B decides. A write through a held name of a class of
+another file or a handle stays refused: the core has no cell for it.
+Stays refused: a write through a name bound to a plain data record parameter itself (`const h = p` with `p` a plain
+record: outside this section, found and reported), a `let` name, a name bound to `this`, to an element, or to a call's
+result, a name the unit passes to a callee that writes it before the lint's alias rules allow it (`aliasCalls`).
+Pair `class_handles`: `held` (a field write and a method call through a second name: proved), `keep` (a handle's methods
+through a local: proved), `alias` (WITNESS, unproved), `twice` (two names of one instance: proved), `both` (two
+handles that may be one object: WITNESS, unproved), `pay` (a second name handed to a callee that writes it: proved),
+`step` (proved), `charge` (WITNESS, unproved), `spill` (out of the core, a handle called in a loop; the value lemma
+withheld by the guard, WITNESS; with the lint widened and the guard as it was, lane A proved it), `add`, `bump`, `log`,
+`Account.deposit` (untouched). At the base the lint refused `held`, `alias`, `twice` and `spill`.
+
 ## 20. Decorators read as metadata
 
 Reading: a decorated class is read like any other: a method's body is its text whatever a decorator wraps around it.
