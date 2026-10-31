@@ -557,3 +557,9 @@ Pair `shared_readings` (red at lead-b5c07450 in `bits`, `low`, `grid`): `bits` (
 then a division: proved), `halve` (`/ 4` for `/ 2` after them: WITNESS), `field` (for-of over `b.items` in a real file:
 proved). `heap5_arith` `bump` (`4 | c.flags` for `c.flags | 4`, `+= 1` for `++`) is proved now: equal in JavaScript,
 its lane B row PASS-bounded, its expectation raised from false (the faithful commit had made the operator opaque).
+Census (`NODE_OPTIONS=--max-old-space-size=12288 node langs/ts/census.mjs <root> --out <json>`, base lead-b5c07450
+against 6886149dd, `census.mjs --diff`): n8n 9,610 units, entered 2,680 -> 2,680; langchainjs 6,709 units, entered
+2,766 -> 2,766; nexus in the 17 directories holding a bitwise operator outside tests (`--include <dir>/`), 1,225 units,
+entered 595 -> 595. No reading gains or loses a unit on any root: both readings change what the core proves of a unit
+it already enters (the faithful rewrite's terms, a loop helper's world), never what it refuses. The reach is measured by
+the pairs, not by the census.
