@@ -7,14 +7,16 @@
 // ensureInstalled: the lockfile's package manager, frozen, --ignore-scripts, once per lockfile content); a root outside
 // it is read as it stands. A unit an `unresolved-module` finding reaches is environment-blocked (census-env.mjs names the
 // kind of its first such finding, or `install-failed` when the install failed), apart from entered and language-refused:
-// its types are unknown, so its language findings are not read as refusals.
+// its types are unknown, so its language findings are not read as refusals. So is a unit every refusal of which names a
+// value whose type does not resolve (environmentOf), under the kind of that symbol's diagnostic, its reason naming the
+// symbol and its import; a unit refused on a value whose type resolves keeps its reading.
 // Walks .ts/.tsx/.mts under the root (skipping node_modules, dist, build, .next, coverage, tests, stories,
 // declarations; --js also walks .js/.jsx/.mjs/.cjs, counted apart under `languages`), lints each file inside its project, and reports: units, units inside the subset, the rule counts
 // with three examples each, per package and in total. Read-only: nothing is written into the repository.
 import fs from 'node:fs';
 import path from 'node:path';
 import { lowerFile, startLoweringProfile, measureLowering, loweringProfile, loweringProfileTable } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
-import { loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
+import { ts, loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
 import { classifier, ensureInstalled, cleanInstall, GENERATED } from './census-env.mjs';
 // The stratum of a file: machine-written code is counted beside written code, never mixed into one share (research 24;
 // the nexus census held 1,675 units of seven generated minified Prisma clients). The rule, stated once here:
@@ -30,6 +32,101 @@ export function stratumOf(relPath, text) {
   const lens = text.split(/\r?\n/).map((l) => l.length).sort((a, b) => a - b);
   const longest = lens[lens.length - 1] ?? 0, median = lens[Math.floor(lens.length / 2)] ?? 0;
   return longest > 1000 && median > 200 ? 'minified' : 'written';
+}
+// The environment behind a reading's refusal (design/census-reach-2026-10-31.md, 2026-10-31). A reading judges the
+// values it names; a value whose type does not resolve has the checker's error type (an import of a module that does not
+// resolve, an import its module lacks, a name no declaration holds, a member a dependency's declaration lacks), and it
+// reaches anything, so the refusal was judged on an unknown type. The values a finding names: its own node (a lint
+// finding's span) and each `code` its message quotes, on the line it gives as `(line N)` or else on the finding's line.
+// A finding naming such a value is the environment's; the origin names the unresolved symbol and its import.
+const isErrorType = (t) => !!t && !!(t.flags & ts.TypeFlags.Any) && t.intrinsicName === 'error';
+const libraryFile = (d) => /[\\/]node_modules[\\/]|[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/.test(d.getSourceFile().fileName);
+export function unresolvedOrigin(checker, node) {
+  const seen = new Set();
+  const importOf = (s) => {
+    const d = s.declarations?.[0]; if (!d) return null;
+    let p = d; while (p && !ts.isImportDeclaration(p) && !ts.isImportEqualsDeclaration(p) && !ts.isExportDeclaration(p)) p = p.parent;
+    const spec = p && (ts.isImportEqualsDeclaration(p) ? (ts.isExternalModuleReference(p.moduleReference) ? p.moduleReference.expression : null) : p.moduleSpecifier);
+    return spec && ts.isStringLiteral(spec) ? spec : null;
+  };
+  const ofSymbol = (s, name) => {
+    if (!s || seen.has(s)) return null; seen.add(s);
+    if (s.flags & ts.SymbolFlags.Alias) {
+      const spec = importOf(s);
+      if (spec && !checker.getSymbolAtLocation(spec)) return { name, from: spec.text, how: 'module' }; // the module does not resolve
+      const target = checker.getAliasedSymbol(s);
+      if (!target?.declarations?.length) return spec ? { name, from: spec.text, how: 'member' } : null; // the module lacks the name
+      return ofSymbol(target, name);
+    }
+    for (const d of s.declarations ?? []) {
+      if (d.type) { const o = ofType(d.type); if (o) return o; }
+      if ((ts.isVariableDeclaration(d) || ts.isPropertyDeclaration(d) || ts.isPropertyAssignment(d)) && d.initializer) { const o = ofValue(d.initializer); if (o) return o; }
+      if (ts.isBindingElement(d)) { let v = d.parent; while (v && !ts.isVariableDeclaration(v) && !ts.isParameter(v)) v = v.parent; if (v?.type) { const o = ofType(v.type); if (o) return o; } if (v && ts.isVariableDeclaration(v) && v.initializer) { const o = ofValue(v.initializer); if (o) return o; } }
+      if (ts.isShorthandPropertyAssignment(d)) { const o = ofSymbol(checker.getShorthandAssignmentValueSymbol(d), name); if (o) return o; }
+    }
+    return null;
+  };
+  const ofEntity = (e) => { // a type's name or a typeof's expression
+    if (ts.isQualifiedName(e)) { const o = isErrorType(checker.getTypeAtLocation(e.left)) || !checker.getSymbolAtLocation(e.left) ? ofEntity(e.left) : null; return o ?? ofSymbol(checker.getSymbolAtLocation(e), e.getText()); }
+    const s = checker.getSymbolAtLocation(e);
+    return s ? ofSymbol(s, e.getText()) : { name: e.getText(), from: null, how: 'global' };
+  };
+  const ofType = (tn) => { // the first reference in a type node whose type does not resolve
+    let hit = null;
+    const w = (n) => {
+      if (hit) return;
+      if ((ts.isTypeReferenceNode(n) || ts.isExpressionWithTypeArguments(n)) && isErrorType(checker.getTypeFromTypeNode(n))) { hit = ofEntity(n.typeName ?? n.expression); if (hit) return; }
+      if (ts.isTypeQueryNode(n)) { hit = ofEntity(n.exprName); if (hit) return; }
+      ts.forEachChild(n, w);
+    };
+    w(tn);
+    return hit;
+  };
+  const ofValue = (n) => {
+    if (!n || seen.has(n)) return null; seen.add(n);
+    while (ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isAwaitExpression(n)) n = n.expression;
+    if (ts.isAsExpression(n) || ts.isSatisfiesExpression(n) || ts.isTypeAssertionExpression(n)) return ofType(n.type) ?? ofValue(n.expression);
+    if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n)) {
+      const callee = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression;
+      if (isErrorType(checker.getTypeAtLocation(callee))) return ofValue(callee);
+      const d = checker.getResolvedSignature(n)?.declaration;
+      return d?.type ? ofType(d.type) : null; // a declared answer whose type does not resolve
+    }
+    if (ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n)) {
+      if (isErrorType(checker.getTypeAtLocation(n.expression))) return ofValue(n.expression);
+      const s = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(n) ? n.name : n.argumentExpression);
+      if (s) return ofSymbol(s, n.getText());
+      const holder = checker.getTypeAtLocation(n.expression), decl = (holder.symbol ?? holder.aliasSymbol)?.declarations?.[0];
+      return decl && libraryFile(decl) ? { name: n.getText(), from: null, how: 'member' } : null; // a member a dependency's declaration lacks; one the source's own type lacks is the source's
+    }
+    if (ts.isIdentifier(n)) { const s = checker.getSymbolAtLocation(n); return s ? ofSymbol(s, n.text) : { name: n.text, from: null, how: 'global' }; }
+    return null;
+  };
+  return isErrorType(checker.getTypeAtLocation(node)) ? ofValue(node) : null;
+}
+// the values a finding names (see above): expression nodes of the file
+export function namedValues(sf, f) {
+  const starts = sf.getLineStarts(), out = [];
+  const lineRange = (line) => [starts[line - 1] ?? sf.end, starts[line] ?? sf.end];
+  const isValue = (n) => ts.isExpression(n) || n.kind === ts.SyntaxKind.ThisKeyword;
+  const nodes = (from, to, keep) => { const hits = []; const w = (n) => { if (n.end < from || n.getStart(sf) > to) return; if (keep(n)) hits.push(n); ts.forEachChild(n, w); }; w(sf); return hits; };
+  if (f.col && f.endLine && f.endCol) {
+    const s = lineRange(f.line)[0] + f.col - 1, e = lineRange(f.endLine)[0] + f.endCol - 1;
+    out.push(...nodes(s, e, (n) => isValue(n) && n.getStart(sf) === s && n.getEnd() === e));
+  }
+  const norm = (n) => n.getText(sf).replace(/\s+/g, ' ');
+  for (const m of String(f.msg ?? '').matchAll(/`([^`\n]+)`(?: \(line (\d+)\))?/g)) {
+    const [from, to] = lineRange(m[2] ? Number(m[2]) : f.line), code = m[1];
+    const onLine = (n) => isValue(n) && n.getStart(sf) >= from && n.getStart(sf) < to;
+    const exact = nodes(from, to, (n) => onLine(n) && norm(n) === code);
+    out.push(...(exact.length || code.length < 40 ? exact : nodes(from, to, (n) => onLine(n) && norm(n).startsWith(code)))); // a long value is quoted cut short
+  }
+  return out;
+}
+// the first unresolved origin among the values a finding names, or null: the refusal was judged on resolved types
+export function environmentOf(checker, sf, f) {
+  for (const n of namedValues(sf, f)) { const o = unresolvedOrigin(checker, n); if (o) return { ...o, value: n.getText(sf).replace(/\s+/g, ' ').slice(0, 60) }; }
+  return null;
 }
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', 'out', 'generated', '__generated__', 'storybook-static', 'vendor', '.turbo']);
 const SKIP_FILE = /\.(test|spec|stories|d|e2e|cy)\.(ts|tsx|mts|js|jsx|mjs|cjs)$|(^|\/)(tests?|__tests__|__mocks__|e2e|fixtures?|__fixtures__|stories|cypress|playwright)(\/|$)/;
@@ -65,6 +162,7 @@ export function census(root, opts = {}) {
   const languages = {}; // ts and (with --js) js: files, units, units inside the subset
   const records = []; // one per file: what the per-file reader needs
   let files = 0, units = 0, entered = 0, failedFiles = 0, nested = 0, nestedEntered = 0, environmentBlocked = 0, languageRefused = 0, oversizedClosures = 0;
+  const typeBlocked = { units: 0, byReading: {} }; // units environment-blocked by a refusal judged on a value whose type does not resolve (environmentOf), by the rule that refused
   const strata = { written: { files: 0, units: 0, entered: 0 }, generated: { files: 0, units: 0, entered: 0 }, minified: { files: 0, units: 0, entered: 0 } }; // machine-written code counted beside written code (stratumOf) // nested: units inside another unit's body (callbacks), covered by it
   const t0 = Date.now();
   const list = [];
@@ -90,7 +188,7 @@ export function census(root, opts = {}) {
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
-    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written';
+    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv;
     try {
       const L = loaded.get(path.resolve(file));
       if (!L || L.error) throw new Error(L?.error ?? 'not loaded');
@@ -103,7 +201,23 @@ export function census(root, opts = {}) {
       for (const f of findings) f.unit = findingUnit(sf, inventory, f)?.name ?? null; // a finding belongs to the unit the lint named, else the innermost containing unit
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
       envBlocked = new Set(findings.filter((f) => f.rule === 'unresolved-module' && f.unit).map((f) => f.unit)); // judged on unknown types: neither admitted nor refused by a reading
-      for (const u of rec.units) { if (envBlocked.has(u.unit)) continue; if (u.refusal) reading(u.refusal.id).refused++; else for (const r of u.readings) reading(r.id).admitted++; }
+      // a stopping finding that names a value whose type does not resolve was judged on an unknown type (environmentOf); a
+      // unit every stopping finding of which is such is environment-blocked by the first; one with a finding judged on
+      // resolved types is stopped by that finding, its reading
+      origins = new Map(); const stopsOf = new Map();
+      for (const f of findings) if (f.unit && !f.env && !envBlocked.has(f.unit)) { const o = environmentOf(L.checker, sf, f); if (o) origins.set(f, o); if (!stopsOf.has(f.unit)) stopsOf.set(f.unit, []); stopsOf.get(f.unit).push(f); }
+      typeEnv = new Map([...stopsOf].filter(([, fs_]) => fs_.every((f) => origins.has(f))).map(([unit, fs_]) => [unit, fs_[0]]));
+      const kindOf = (o) => {
+        if (install.status === 'install-failed') return 'install-failed';
+        if (!o.from && o.how === 'member') return 'member';
+        const key = `'${o.from ?? o.name.split('.')[0]}'`; // the checker's own diagnostic for the name, classified as the unresolved-module findings are
+        const d = L.diagnostics.find((x) => x.file === sf && ts.flattenDiagnosticMessageText(x.messageText, ' ').includes(key));
+        if (!d) return o.how === 'member' ? 'member' : 'unresolved';
+        const c = env.classify(file, `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`);
+        return c.kind + (c.generated ? ' (generated)' : '');
+      };
+      for (const o of origins.values()) o.kind = kindOf(o);
+      for (const u of rec.units) { if (envBlocked.has(u.unit) || typeEnv.has(u.unit)) continue; if (u.refusal) reading(u.refusal.id).refused++; else for (const r of u.readings) reading(r.id).admitted++; }
     } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, ...(closure ? { closure } : {}), error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
     // an unresolved-module finding names its module (or global) and its kind; the unit it falls in is counted once
     const envSeen = new Set();
@@ -117,7 +231,8 @@ export function census(root, opts = {}) {
       if (f.unit && !envSeen.has(f.unit)) { envSeen.add(f.unit); envUnits.set(o.kind, (envUnits.get(o.kind) ?? 0) + 1); }
       return o;
     });
-    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: named });
+    const unresolvedTypes = [...typeEnv].map(([unit, f]) => { const o = origins.get(f); return { unit, line: f.line, rule: f.rule, value: o.value, symbol: o.name, from: o.from, how: o.how, kind: o.kind }; });
+    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: named, ...(unresolvedTypes.length ? { unresolvedTypes } : {}) });
     const blocked = new Set();
     const stop = (unit, f, rule) => {
       blocked.add(unit);
@@ -138,9 +253,17 @@ export function census(root, opts = {}) {
     // types are unknown. It is counted once, apart from the language refusals, under `environment: <kind>` of its first
     // such finding; its language findings are not read as refusals, since they were judged on unknown types.
     named.forEach((o, i) => { if (o.rule === 'unresolved-module' && o.unit && !blocked.has(o.unit)) { stop(o.unit, findings[i], `environment: ${o.kind}`); environmentBlocked++; } });
+    // A unit every refusal of which was judged on a value whose type does not resolve is environment-blocked too, under the
+    // kind of that symbol's own diagnostic; the reason names the value, the symbol and its import, and the refusal
+    for (const [unit, f] of typeEnv) if (!blocked.has(unit)) {
+      const o = origins.get(f);
+      const why = o.from ? `\`${o.name}\` is imported from '${o.from}', which ${o.how === 'module' ? 'does not resolve' : 'does not declare it'}` : o.how === 'member' ? `\`${o.name}\` is a member its dependency's declaration lacks` : `\`${o.name}\` has no declaration`;
+      stop(unit, { ...f, msg: `\`${o.value}\` has no type: ${why}; the ${f.rule} refusal was judged on it: ${f.msg}` }, `environment: ${o.kind}`); environmentBlocked++;
+      typeBlocked.units++; typeBlocked.byReading[f.rule] = (typeBlocked.byReading[f.rule] ?? 0) + 1;
+    }
     for (const f of findings) {
       const unit = f.unit;
-      if (unit && !f.env && !blocked.has(unit)) {
+      if (unit && !f.env && !blocked.has(unit) && !origins.has(f)) { // a finding judged on an unknown type stops no unit by its reading
         // Count each stopped unit under its first refusal. Environment findings do not stop a unit.
         stop(unit, f, f.rule); languageRefused++;
       }
@@ -170,7 +293,7 @@ export function census(root, opts = {}) {
     directories: [...r.directories.values()].sort((a, b) => a.directory.localeCompare(b.directory)),
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
   const blockedKinds = Object.fromEntries([...refusalGroups.values()].filter((r) => r.rule.startsWith('environment: ')).map((r) => [r.rule.slice(13), r.units]).sort((a, b) => b[1] - a[1]));
-  const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds };
+  const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds, unresolvedTypes: { units: typeBlocked.units, byReading: Object.fromEntries(Object.entries(typeBlocked.byReading).sort((a, b) => b[1] - a[1])) } };
   const shareWritten = strata.written.units ? Math.round((1000 * strata.written.entered) / strata.written.units) / 10 : null;
   return { complete: true, root, date, depth, oversizedClosures, languages, strata, shareWritten, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
@@ -187,6 +310,7 @@ export function censusReport(res) {
     ...(res.languages?.js ? [`By language: TypeScript ${res.languages.ts?.units ?? 0} units (${res.languages.ts?.entered ?? 0} inside, ${res.languages.ts?.files ?? 0} files); JavaScript ${res.languages.js.units} units (${res.languages.js.entered} inside, ${res.languages.js.files} files).`, ''] : []),
     '| Entered | Environment-blocked | Language-refused |', '| ---: | ---: | ---: |', `| ${res.entered} | ${res.environmentBlocked ?? 0} | ${res.languageRefused ?? res.refused} |`, '',
     ...(res.environment && Object.keys(res.environment.blockedKinds ?? {}).length ? ['Environment-blocked by kind: ' + Object.entries(res.environment.blockedKinds).map(([k, n]) => `${k} ${n}`).join(', ') + '.', ''] : []),
+    ...(res.environment?.unresolvedTypes?.units ? [`Of these, refused only on a value whose type does not resolve: ${res.environment.unresolvedTypes.units} (` + Object.entries(res.environment.unresolvedTypes.byReading).map(([k, n]) => `${k} ${n}`).join(', ') + ').', ''] : []),
     'Each refused unit is counted once, under the first rule the lint names for it. A unit whose module or global still does not resolve is environment-blocked instead, under `environment: <kind>` of its first such finding.', '',
     `Directory depth: ${res.depth}. A dot means the repository root.`, '',
     '## Top five rules by units stopped', '',
@@ -279,7 +403,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   if (report) fs.writeFileSync(report, censusReport(res));
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
-  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked, ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);
+  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked (${res.environment.unresolvedTypes.units} on an unresolved type), ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);
   const st = res.environment.install;
   console.log(`  environment: install ${st.status}${st.exit !== undefined ? ` (exit ${st.exit}, ${st.command})` : ''}; ${res.environment.units} units reach an unresolved module or global: ${Object.entries(res.environment.kinds).map(([k, n]) => `${k} ${n}`).join(', ') || 'none'}`);
   for (const r of res.rules.slice(0, 25)) console.log(`  ${String(r.units).padStart(6)} units  ${r.rule.padEnd(22)} ${r.examples[0] ?? ''}`);
