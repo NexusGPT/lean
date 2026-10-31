@@ -155,6 +155,34 @@ Census (resolved, 39 roots), strict graph 564 -> 572, own syntax 1449 -> 1471; `
 {"files":23359,"units":53918,"core":572,"heapOwnFit":1471,"mirrorMismatch":1329,"planErrorCount":0,"seconds":1246}
 ```
 
+### 8, read again (2026-10-31): a returned call of a procedure
+
+Checked form by form against the section (pair `void_results`, one unit per form): a body falling off its end
+(declared and inferred `void`), a branch falling through to the rest, a nested bare `return`, a bare `return` in an
+`else`, an expression body, a class method: each was already in the core. One form the section names was not: the
+expression-body reading carried to a `return`. `return f(..);` in a procedure, with `f` a same-file procedure, was
+refused as `a value returned from a procedure`. The refusal pushed out `f` (`called by .., outside the core`) and every
+caller of the unit too, so their lemmas were withheld by the identity guard (`write through an input in a same-file
+callee`).
+Reading: a call of a same-file procedure (`procCall`: a same-file unit, not a constructor, whose result is `void`)
+evaluates to `undefined`, the unit value. A procedure's expression body and the operand of a procedure's `return` may be
+such a call, read as the call and then a bare return: `var (hw_, c0_) := f(hw_, ..); (hw_, c0_)`, where `c0_` is `()`.
+That one predicate now decides both places. Before this, the expression body took any same-file call, so a void arrow
+whose body called a unit with a value (a TypeScript error the core did not rely on) gave a Dafny type error, never a
+proof. Now it stays out.
+Soundness: a procedure in the core returns only by a bare return or by falling off its end, so its value is
+`undefined` on both sides, and the core reads it as `()`. JavaScript evaluates the operand once, then returns, so the
+heap is the callee's. The callee joins the core under the usual rule (every caller in the core).
+Stays out, and why: `return e;` of any other expression in a procedure. An outside call typed `void` may return a value,
+because TypeScript lets a function with a result be used where `() => void` is expected, so its value is unread. The
+same holds for an `any` value (`return x as any`). `return undefined;` and `return void e;` are equal to a bare return,
+but the section does not name them; they stay refused until a reading names them. A `return` inside a loop is also
+unchanged (stage 4's loop helper has no exit).
+Pair `void_results`: `add` (untouched), `bump` (inferred void), `cap` (fall-through), `guard` (nested bare return),
+`onlyEmpty` (return in an else), `addOne` (expression body against a block), `addFree` (a returned call against the call
+and a bare return), `topUp` (a returned call against the opposite test returning first: red before, withheld; proved
+after), `refill` (WITNESS, another argument), `Counter.tick` (WITNESS). Lint: unchanged.
+
 ## 8b. Two corrections of the stage 4 core
 
 Found by checking every other pair against the widened core. `a === b` between a value that may be `null` and one that
