@@ -46,7 +46,7 @@ import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the lint
 import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
-import { syncLoopCall } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
+import { syncLoopCall, voidReturn } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
 import { optionalCallShape } from '../lower.mjs';
 import { admitUnits, measureLowering } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
@@ -455,6 +455,8 @@ function translateOnce(file, fnName, opts = {}) {
   // before the loop, the step is the body's last statement and what `continue` runs; the loop takes the while reading
   // (a derived bound, a @decreases hint, else an opaque block holding the whole statement)
   const generalFor = (s) => ts.isForStatement(s) && !emptyFor(s) && !countedFor(s);
+  // `return void e;` where a bare return is admitted (the lint's reading, common.mjs voidReturn): `void e;` then `return;`
+  const voidSplit = (s) => { if (!s.__void) { const st = ts.setTextRange(ts.factory.createExpressionStatement(s.expression), s); st.parent = s.parent; const r = ts.setTextRange(ts.factory.createReturnStatement(), s); r.parent = s.parent; s.__void = [st, r]; } return s.__void; };
   const forStep = (s) => { if (!s.__step) { const st = ts.setTextRange(ts.factory.createExpressionStatement(s.incrementor), s.incrementor); st.parent = s; s.__step = st; } return s.__step; };
   const forInit = (s) => { if (!s.initializer) return []; if (!s.__init) { const st = ts.isVariableDeclarationList(s.initializer) ? ts.factory.createVariableStatement(undefined, s.initializer) : ts.factory.createExpressionStatement(s.initializer); ts.setTextRange(st, s.initializer); st.parent = s; s.__init = st; } return [s.__init]; };
   // stage 5 rank 21: a local procedure (common.mjs localProcedure) is spliced at each call statement; its declaration emits nothing
@@ -5284,7 +5286,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       }
       case K.ExpressionStatement: return emit(assignText(s.expression));
       case K.ThrowStatement: return fail(s, 'throw is translated in --core mode only');
-      case K.ReturnStatement: return emit(`return ${outerParens(s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s))};`);
+      case K.ReturnStatement: if (voidReturn(s)) return stmts(voidSplit(s), ind, u, out); return emit(`return ${outerParens(s.expression ? expr(s.expression, retType(u)) : bareReturn(u, s))};`);
       case K.IfStatement: {
         emit(`if ${outerParens(truthy(s.expression))} {`);
         stmts(flatten(s.thenStatement), ind + 1, u, out);
@@ -5877,6 +5879,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const next = () => faultTr(rest, fin, u, ctx);
     if (s.__scope) return `${scopeText(s)}\n${next()}`;
     { const inl = inlineCall(s); if (inl) return faultTr([...inl, ...rest], fin, u, ctx); if (procDecl(s)) return next(); } // stage 5 rank 21
+    if (voidReturn(s)) return faultTr([...voidSplit(s), ...rest], fin, u, ctx);
     if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
       let propagates = false, inCallback = false;
       const throwing = (n) => ts.isThrowStatement(n) || ((ts.isCallExpression(n) || ts.isNewExpression(n)) && exceptionUnits.has(unitNameOfCall(n)));
@@ -5974,6 +5977,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const [s, ...rest] = list;
     if (s.__scope) return `${scopeText(s)}\n${tr(rest, fin, u)}`; // a block's own declarations end with it (scopedList)
     { const inl = inlineCall(s); if (inl) return tr([...inl, ...rest], fin, u); if (procDecl(s)) return tr(rest, fin, u); } // stage 5 rank 21
+    if (voidReturn(s)) return tr([...voidSplit(s), ...rest], fin, u);
     { const g = absenceGuard(s, u, () => tr(list, fin, u)); if (g) return g; } // a payload read: the option tested before the statement
     const more0 = (r = rest) => tr(r, fin, u);
     // after a statement of an exact try body that may fault: the catch path, else what follows

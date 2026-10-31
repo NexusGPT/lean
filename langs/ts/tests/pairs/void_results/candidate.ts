@@ -100,8 +100,8 @@ export function firstOver(c: Cart, prices: number[], n: number): void {
 
 export function overAt(c: Cart, prices: number[], n: number): void {
   for (const p of prices) {
-    if (p >= n) {
-      c.total = p;
+    if (p > n) {
+      c.total = n;
       return;
     }
     c.count += 1;
