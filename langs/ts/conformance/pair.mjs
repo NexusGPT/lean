@@ -129,7 +129,7 @@ function unary(m, fname, live, node, paramNames) {
 
 // the absence a None of this unit stands for, from its TypeScript signature (translate.mjs writes `// SIG <fn>: {...}`).
 // An optional mark (`x?: T`, a property `k?: T` of the type) declares undefined, never null: `{ tag?: Tag }` admits no
-// null tag, and a model reading it as None would take a default that Node's null skips (ECMA-262 8.6.2: a default
+// null tag, and a model reading it as None would take a default that Node's null skips (ECMA-262 KeyedBindingInitialization: a default
 // applies on undefined only)
 const absenceIn = (tsType, optional = false) => { if (typeof tsType !== 'string') return 'either'; const n = /\bnull\b/.test(tsType), u = optional || /\bundefined\b|\bvoid\b|\?\s*:/.test(tsType); return n && !u ? 'null' : u && !n ? 'undefined' : 'either'; };
 const sigOf = (m, fname) => { try { return JSON.parse((m.text.match(new RegExp(`^// SIG ${fname}: (.+)$`, 'm')) ?? [])[1] ?? 'null'); } catch { return null; } };
