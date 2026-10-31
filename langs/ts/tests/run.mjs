@@ -18,7 +18,7 @@ import { cachedRun, cachedRunAsync, stepCacheStats, CACHE_DIR } from './stepcach
 import { createPool, spawnCollect } from './pool.mjs';
 import { faithfulPlacement, checkWallCapMs } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
-import { dafnySolverArgs } from '../solve/z3.mjs'; // the one Z3 (solve/z3.mjs): the Z3 the certificate names is the one the suite's Dafny runs
+import { dafnyVerifyArgs } from '../exec/dafny-args.mjs'; // the one bound and the one Z3 (solve/z3.mjs) of every `dafny verify`: the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -127,14 +127,10 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] }); // the preludes too: theorem.py reads each side's include, and a prelude can change while the main text does not
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
   if (th.status !== 0) return;
-  // lane A's time limit stretches with the share of the machine one Dafny process gets: alone it verifies a lemma's parts
-  // across the cores (--cores above), under JOBS neighbours it holds floor(cpus / JOBS) cores and the same parts run in
-  // sequence, so the wall a lemma needs grows by that ratio. The stretch is that ratio, capped at 4 (heap_canonical's
-  // EqualCanon_pair runs in 4 parts: 13 of 13 alone on 11 cores, 2 rows red twice under JOBS 28 on 32 cores at 30 s)
-  const coresEach = Math.max(1, Math.floor(os.cpus().length / JOBS));
-  const dafnyStretch = Math.min(4, Math.max(1, os.cpus().length / coresEach / 4));
+  // lane A is bounded by the solver's resource count (exec/dafny-args.mjs), the same whatever the load; the cores
+  // split across the pairs running at once only changes how long it takes
   // the one Dafny of the pair runs through the async runner: its wall cap kills Dafny and its solvers (pool.mjs spawnCollect)
-  const v = await cachedRunAsync((cmd, args, env) => spawnCollect(cmd, args, { cwd: root, env: env ? { ...process.env, ...env } : process.env, maxBuffer: 1 << 26, dir: tmp }), 'dafny', ['verify', '--verification-time-limit', String(Math.round(30 * dafnyStretch)), ...dafnySolverArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { root, files: [path.join(tmpd, 'theorem.dfy')], normalise: NORMALISE }); // the cores split across the pairs running at once
+  const v = await cachedRunAsync((cmd, args, env) => spawnCollect(cmd, args, { cwd: root, env: env ? { ...process.env, ...env } : process.env, maxBuffer: 1 << 26, dir: tmp }), 'dafny', ['verify', ...dafnyVerifyArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(tmpd, 'theorem.dfy')], { root, files: [path.join(tmpd, 'theorem.dfy')], normalise: NORMALISE }); // the cores split across the pairs running at once
   const text = v.stdout + v.stderr;
   const lines = fs.readFileSync(path.join(tmpd, 'theorem.dfy'), 'utf8').split('\n');
   const spans = {}; let cur = null;
@@ -370,7 +366,7 @@ const runner = (key, group = null) => {
     job,
     run: prun,
     crun: (cmd, args, { files = [], outs = [], env = null } = {}) => cachedRunAsync(prun, cmd, args, { root, files, outs, env, normalise: NORMALISE }),
-    dafny: async (file) => dafnyResult(await prun('dafny', ['verify', '--verification-time-limit', '60', ...dafnySolverArgs(), file])),
+    dafny: async (file) => dafnyResult(await prun('dafny', ['verify', ...dafnyVerifyArgs(), file])),
     // "lsc accepts": does LemmaScript's `lsc gen --backend=dafny` take the file (exit 0)? Reach comparison only.
     lsc: async (file) => {
       if (!fs.existsSync(LSC)) return 'no binary';
@@ -710,6 +706,8 @@ async function adviceLabels(add) {
     // of two or more, null beside the special value), so a witness found once is found again (lane lost-witnesses)
     // a child past its wall cap is killed with every process under it and reads as a timeout; every Dafny child carries one (pool.mjs, design/suite.md)
     ['wall-cap', scriptRow('runtime', 'wall-cap', 'a 2 s cap kills a fake Dafny and its sleeping child within 5 s, shaped as a timeout; a run under the cap unchanged', [path.join(here, 'wall-cap.mjs')], lastLine)],
+    // a proof's verdict never depends on the machine's load: every dafny verify is bounded by resources (exec/dafny-args.mjs, design/suite.md)
+    ['dafny-resource-limit', scriptRow('runtime', 'dafny-resource-limit', 'every dafny verify passes the resource limit; one proof alone and eleven at once: the same verdict and resource count', [path.join(here, 'dafny-resource-limit.mjs')], lastLine)],
     ['gen-invariants', scriptRow('runtime', 'gen-invariants', 'the input generator keeps its stated invariants over seeds 1 to 20', [path.join(here, '../exec/gen.test.mjs')], lastLine)],
     // the enumerated small heaps draw every slot within the suite's 30 inputs, the absent value of a nullable item or key, and a Map's record values from the pool (exec/korat.mjs, heap-stage5.md 16c)
     ['korat-order', scriptRow('runtime', 'korat-order', 'every slot within 30 enumerated heaps; a nullable item or key draws null; a Map\'s record values pooled', [path.join(here, '../exec/korat.test.mjs')], lastLine)],
