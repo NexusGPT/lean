@@ -79,7 +79,7 @@ Generated 2026-10-26 by `design/coverage-matrix.mjs` from `syntax-census.json` (
 | TypeAliasDeclaration | 60 | 0.1% | admitted | erased at run time, inside a function too (stage 5 rank 16); its uses are read through the checker | none |
 | MetaProperty | 41 | 0.1% | admitted | `import.meta.x` is a world read (stage 5 rank 16); `import.meta.env` and `new.target` refused | none |
 | GetAccessor | 22 | 0% | no case (refused by default, or reached through its parent) |  |  |
-| BigIntLiteral | 20 | 0% | admitted | exact as int | same |
+| BigIntLiteral | 20 | 0% | admitted | exact as int, its type `BigInt` (a synonym of int whose conversions are its own: 0n and 0 are two values of an opaque type; types-inventory.md, forms 5 and 6 read) | same |
 | MethodSignature | 15 | 0% | no case (refused by default, or reached through its parent) |  |  |
 | LabeledStatement | 10 | 0% | admitted | refused (unsupported-syntax) | same as the loop it labels |
 | InterfaceDeclaration | 9 | 0% | admitted | erased at run time, inside a function too (stage 5 rank 16) | none |
