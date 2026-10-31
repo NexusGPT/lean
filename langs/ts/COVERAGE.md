@@ -95,7 +95,7 @@ reading no value model can give; the lint says what to write instead).
 | function-typed parameters and locals, called | | exact (applied as a function value) | same | done |
 | a function value returned, stored in a record field, or compared | 262 units (`function-value`) | anywhere (dev): a pure lambda when its body has no effect, else an opaque value keyed by its text; lane B compares a returned function by its source | same | done (dev) |
 | `this` binding of a free function, `.call`/`.apply`/`.bind` | | refused / uninterpreted | by design | by design |
-| tagged templates | 173 | uninterpreted function of the strings and the values | same | done |
+| tagged templates | 173 | the call of the tag on the site's strings object (a bodiless function of its raw parts) and the holes: a tag of this file through its unit, any other through the outside call (a transition when the tag runs outside code); `String.raw` exact, its raw parts and ToString of each hole; an invalid escape under another tag refused ([design](design/heap-stage5.md) 1b, 2026-10-31) | same; the heap core admits `String.raw` with primitive holes | done |
 | `void f()` | 686 | exact (the call) | same | done |
 | comma operator | 8 | ordered evaluation of left values, then the last value; conditional sequences and discarded container mutators refused by name | exact (sequence) in every context | partial (lane) |
 

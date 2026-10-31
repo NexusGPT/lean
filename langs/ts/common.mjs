@@ -2351,6 +2351,22 @@ export function erasedReferenceSlot(checker, n) {
     : { rule, message: `${what}; this comparison compares references, and the value reading would equate two objects with the same fields; compare fields` };
 }
 
+// A tagged template `tag`a${x}b`` is the call `tag(strings, x)` (design/heap-stage5.md section 1, 2026-10-31): strings is
+// the site's frozen array of the cooked parts with its `raw` array of the raw parts. The cooked parts are a function of
+// the raw ones (an invalid escape cooks to undefined), so the raw parts, each line end read as LF as JavaScript reads
+// it, name the strings object whole. Null when the parser kept no raw text.
+export function templateRaws(tpl) {
+  const parts = ts.isNoSubstitutionTemplateLiteral(tpl) ? [tpl] : [tpl.head, ...tpl.templateSpans.map((sp) => sp.literal)];
+  if (parts.some((p) => typeof p.rawText !== 'string')) return null;
+  return parts.map((p) => p.rawText.replace(/\r\n?/g, '\n'));
+}
+export const templateHoles = (tpl) => (ts.isNoSubstitutionTemplateLiteral(tpl) ? [] : tpl.templateSpans.map((sp) => sp.expression));
+// `String.raw` of the platform as the tag: the raw parts joined with ToString of each hole, the template of its raw parts
+export function rawTag(checker, n, sf) {
+  const t = n.tag;
+  return !n.typeArguments && ts.isPropertyAccessExpression(t) && !t.questionDotToken && t.name.text === 'raw' && ts.isIdentifier(t.expression) && t.expression.text === 'String' && originOf(checker, t.expression, sf, null).kind === 'global' && templateRaws(n.template) !== null;
+}
+
 // A read after a call that may change what it reads (design/alias-result.md, 2026-10-30). The ordinary lane reads
 // an object as a value: `p.x`, `ext_Any_x_Any(g)`, `ext_Ext_C_x_Ext_C(self)`, a copy, a library read, the unit's
 // result take the object as it was when the unit received it, while a call that runs outside code (isEffectCall, a
@@ -2380,11 +2396,11 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   const inOpaque = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) { if (ts.isFunctionLike(p)) return false; if (ts.isStatement(p) && h.opaque?.(p)) return true; } return false; }; // a statement the decider reads as one uninterpreted transition holds no read of its own
   const effect = (n) => { try { return h.effect(n); } catch { return true; } };
   const walk = (n) => {
-    if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
+    if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
       points.push(n);
-      if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
-        for (const a of n.arguments ?? []) { if (!ts.isSpreadElement(a) && ((inline(a) && h.freshAlone(a)) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts written in the call reaches only itself, which no name of the unit holds; one bound to a name is that name's object, which the call may write (`const x = { n: 1 }; g(x); x.n`), so it is handed (design/census-reach-2026-10-31.md)
-        const f = n.expression;
+      if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n)) { // a tagged template is the call of its tag on its holes
+        for (const a of ts.isTaggedTemplateExpression(n) ? templateHoles(n.template) : n.arguments ?? []) { if (!ts.isSpreadElement(a) && ((inline(a) && h.freshAlone(a)) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts reaches only itself
+        const f = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression;
         if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression });
       } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression), node: n.expression });
     }

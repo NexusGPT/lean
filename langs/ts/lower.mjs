@@ -481,6 +481,11 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
         if (admission && ts.isIdentifier(f) && units.get(f.text)?.body) edge(units.get(f.text), n.arguments, 'admissionRisk', true);
         if (output) { const via = emission.receiverCallArgs(n); if ((ts.isIdentifier(f) && units.has(f.text)) || via) edge(via ? via.callee : units.get(f.text), via ? via.args : n.arguments, 'valueOutputs', false); }
       }
+      if (ts.isTaggedTemplateExpression(n) && ts.isIdentifier(n.tag) && units.has(n.tag.text)) { // the call of its tag: the strings object first, then the holes
+        const args = [n.template, ...(ts.isNoSubstitutionTemplateLiteral(n.template) ? [] : n.template.templateSpans.map((sp) => sp.expression))];
+        if (admission && units.get(n.tag.text)?.body) edge(units.get(n.tag.text), args, 'admissionRisk', true);
+        if (output) edge(units.get(n.tag.text), args, 'valueOutputs', false);
+      }
       if (output && ts.isExpressionStatement(n)) {
         let e = n.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
         if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression)) {
