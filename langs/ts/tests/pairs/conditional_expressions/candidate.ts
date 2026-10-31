@@ -86,3 +86,70 @@ export function leak(on: boolean, by: number): number {
 export function plain(t: Tally, on: boolean): number {
   return on ? t.total : t.seen.length;
 }
+
+// the short-circuit operators are conditionals too: the right operand runs only when the left does not decide
+
+// && in a return: the record changed only when the flag holds
+export function noted(t: Tally, s: string, on: boolean): boolean {
+  if (!on) return false;
+  return record(t, s) > 1;
+}
+
+// && bound to a name: the counter read after it is the one the right operand left
+export function gated(on: boolean, by: number): number {
+  const c: Count = { hits: 0 };
+  let ok = false;
+  if (on) ok = bump(c, by) > 1;
+  return (ok ? 10 : 0) + c.hits;
+}
+
+// ||: the right operand runs when the left is falsy
+export function spare(on: boolean, by: number): number {
+  const c: Count = { hits: 0 };
+  let ok = true;
+  if (!on) ok = bump(c, by) > 1;
+  return (ok ? 10 : 0) + c.hits;
+}
+
+// || with a planted difference: the candidate changes the counter on both paths
+export function slipped(on: boolean, by: number): number {
+  const c: Count = { hits: 0 };
+  const b = bump(c, by) > 1;
+  let ok = true;
+  if (!on) ok = b;
+  return (ok ? 10 : 0) + c.hits;
+}
+
+// ??: the right operand runs when the left is absent
+export function fallback(k: number | undefined, by: number): number {
+  const c: Count = { hits: 0 };
+  let n = 0;
+  if (k === undefined) n = bump(c, by);
+  else n = k;
+  return n + c.hits;
+}
+
+export interface Slot { id: string; kind: string; owner: string }
+
+// adds a slot to the list and names it
+function attach(xs: Slot[], kind: string, owner: string): string {
+  const id = owner + ":" + kind;
+  xs.push({ id: id, kind: kind, owner: owner });
+  return id;
+}
+
+// the found slot's id, or one attached when none is found: the list is changed only when nothing is found
+export function childOf(xs: Slot[], kind: string, owner: string): number {
+  const found = xs.find((n) => n.kind === kind && n.owner === owner);
+  if (found !== undefined) return found.id.length + xs.length;
+  const id = attach(xs, kind, owner);
+  return id.length + xs.length;
+}
+
+// the same with a planted difference: the candidate attaches whatever is found
+export function orphan(xs: Slot[], kind: string, owner: string): number {
+  const found = xs.find((n) => n.kind === kind && n.owner === owner);
+  const id = attach(xs, kind, owner);
+  if (found !== undefined) return found.id.length + xs.length;
+  return id.length + xs.length;
+}
