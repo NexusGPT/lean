@@ -187,6 +187,14 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const ok = got?.verdict === want.verdict && sb?.network === 'deny' && JSON.stringify(denied) === JSON.stringify([...want.denied].sort());
     add('pair', name, `lane B ${unit} under LEAN_NET=deny: ${want.verdict}, denied ${JSON.stringify(want.denied)}`, ok, `${got?.verdict ?? 'no result'}; sandbox ${sb ? `${sb.network}, denied ${JSON.stringify(denied)}` : 'not recorded'}`);
   }
+  // lane B under the recording proxy alone (LEAN_FAKES=record, design/w2b-node-fakes.md): every Node core specifier keeps
+  // the recording fake, no behavioural model answers; the verdict the pair had before the fakes (the gap they close)
+  for (const [unit, want] of Object.entries(exp.bRecord ?? {})) {
+    const out = path.join(tmpd, `brec_${artifactName(unit)}.json`);
+    crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [out], env: { LEAN_FAKES: 'record' } });
+    let got = 'no result'; try { got = JSON.parse(fs.readFileSync(out, 'utf8')).verdict; } catch { /* keep */ }
+    add('pair', name, `lane B ${unit} under the recording proxy alone (LEAN_FAKES=record) ${want}`, got === want, got);
+  }
   // the states lane B reached (bound.states, for the gate's rendering check): one per input that ran on both sides, each
   // with its index and its arguments as drawn; `states` in expect.json names the unit and the count of inputs it ran
   for (const [unit, want] of Object.entries(exp.states ?? {})) {
