@@ -188,6 +188,7 @@ export function census(root, opts = {}) {
   const languages = {}; // ts and (with --js) js: files, units, units inside the subset
   const records = []; // one per file: what the per-file reader needs
   let files = 0, units = 0, entered = 0, failedFiles = 0, nested = 0, nestedEntered = 0, environmentBlocked = 0, languageRefused = 0, oversizedClosures = 0;
+  const handles = { units: 0, entered: 0 }; // units reading an unresolved name as an opaque handle (the lint's `handle`), and those of them entered
   const typeBlocked = { units: 0, byReading: {} }; // units environment-blocked by a refusal judged on a value whose type does not resolve (environmentOf), by the rule that refused
   const strata = { written: { files: 0, units: 0, entered: 0 }, generated: { files: 0, units: 0, entered: 0 }, minified: { files: 0, units: 0, entered: 0 } }; // machine-written code counted beside written code (stratumOf) // nested: units inside another unit's body (callbacks), covered by it
   const t0 = Date.now();
@@ -227,7 +228,10 @@ export function census(root, opts = {}) {
       const rec = lowerFile(file, null, { project: true, loaded: L }); findings = rec.findings;
       for (const f of findings) f.unit = findingUnit(sf, inventory, f)?.name ?? null; // a finding belongs to the unit the lint named, else the innermost containing unit
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
-      envBlocked = new Set(findings.filter((f) => f.rule === 'unresolved-module' && f.unit).map((f) => f.unit)); // judged on unknown types: neither admitted nor refused by a reading
+      // judged on unknown types: neither admitted nor refused by a reading. A name the reading holds as an opaque handle
+      // (the lint's `handle`: an unresolved global read from the world at Any, an unresolved type name read as Any) sets
+      // no unit aside: the unit is graded on the handle, and counted under environment.handles (design/w1e-opaque-this-globals.md)
+      envBlocked = new Set(findings.filter((f) => f.rule === 'unresolved-module' && f.unit && !f.handle).map((f) => f.unit));
       // a stopping finding that names a value whose type does not resolve was judged on an unknown type (environmentOf); a
       // unit every stopping finding of which is such is environment-blocked by the first; one with a finding judged on
       // resolved types is stopped by that finding, its reading
@@ -256,7 +260,7 @@ export function census(root, opts = {}) {
     // an unresolved-module finding names its module (or global) and its kind; the unit it falls in is counted once
     const envSeen = new Set();
     const named = findings.map((f) => {
-      const o = { line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env };
+      const o = { line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env, ...(f.handle ? { handle: true } : {}) };
       if (f.rule !== 'unresolved-module') return o;
       const c = env.classify(file, f.msg);
       o.kind = install.status === 'install-failed' ? 'install-failed' : c.kind + (c.generated ? ' (generated)' : '');
@@ -286,7 +290,7 @@ export function census(root, opts = {}) {
     // A unit whose module or global still does not resolve (after the environment rungs) is not inside the subset: its
     // types are unknown. It is counted once, apart from the language refusals, under `environment: <kind>` of its first
     // such finding; its language findings are not read as refusals, since they were judged on unknown types.
-    named.forEach((o, i) => { if (o.rule === 'unresolved-module' && o.unit && !blocked.has(o.unit)) { stop(o.unit, findings[i], `environment: ${o.kind}`); environmentBlocked++; } });
+    named.forEach((o, i) => { if (o.rule === 'unresolved-module' && o.unit && !o.handle && !blocked.has(o.unit)) { stop(o.unit, findings[i], `environment: ${o.kind}`); environmentBlocked++; } });
     // A unit every refusal of which was judged on a value whose type does not resolve is environment-blocked too, under the
     // kind of that symbol's own diagnostic; the reason names the value, the symbol and its import, and the refusal
     for (const [unit, f] of typeEnv) if (!blocked.has(unit)) {
@@ -309,6 +313,7 @@ export function census(root, opts = {}) {
     // a nested unit is covered by its enclosing unit (pr.mjs, check.mjs): a stopped enclosing unit stops it too, counted under covered-by
     for (const u of inventory.values()) if (u.enclosingUnit && !blocked.has(u.name)) { let p = u.enclosingUnit; while (p && !blocked.has(p.name)) p = p.enclosingUnit; if (p) { blocked.add(u.name); const r = rules.get('covered-by') ?? { count: 0, units: new Set(), examples: [] }; r.count++; r.units.add(`${file}:${u.name}`); rules.set('covered-by', r); } }
     { const ns = [...inventory.values()].filter((u) => u.enclosingUnit); nested += ns.length; nestedEntered += ns.filter((u) => !blocked.has(u.name)).length; }
+    { const hs = new Set(named.filter((o) => o.handle && o.unit).map((o) => o.unit)); handles.units += hs.size; handles.entered += [...hs].filter((u) => !blocked.has(u)).length; }
     units += unitNames.length; entered += unitNames.length - blocked.size;
     { const St = strata[stratum]; St.files++; St.units += unitNames.length; St.entered += unitNames.length - blocked.size; }
     { const lang = JS_EXT.test(file) ? 'js' : 'ts'; const Lg = languages[lang] ??= { files: 0, units: 0, entered: 0 }; Lg.files++; Lg.units += unitNames.length; Lg.entered += unitNames.length - blocked.size; }
@@ -327,7 +332,7 @@ export function census(root, opts = {}) {
     directories: [...r.directories.values()].sort((a, b) => a.directory.localeCompare(b.directory)),
   })).sort((a, b) => b.units - a.units || a.rule.localeCompare(b.rule));
   const blockedKinds = Object.fromEntries([...refusalGroups.values()].filter((r) => r.rule.startsWith('environment: ')).map((r) => [r.rule.slice(13), r.units]).sort((a, b) => b[1] - a[1]));
-  const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds, unresolvedTypes: { units: typeBlocked.units, byReading: Object.fromEntries(Object.entries(typeBlocked.byReading).sort((a, b) => b[1] - a[1])) } };
+  const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds, handles, unresolvedTypes: { units: typeBlocked.units, byReading: Object.fromEntries(Object.entries(typeBlocked.byReading).sort((a, b) => b[1] - a[1])) } };
   const shareWritten = strata.written.units ? Math.round((1000 * strata.written.entered) / strata.written.units) / 10 : null;
   return { complete: true, root, date, depth, oversizedClosures, languages, strata, shareWritten, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, skipped, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
 }
@@ -345,6 +350,7 @@ export function censusReport(res) {
     ...(res.languages?.js ? [`By language: TypeScript ${res.languages.ts?.units ?? 0} units (${res.languages.ts?.entered ?? 0} inside, ${res.languages.ts?.files ?? 0} files); JavaScript ${res.languages.js.units} units (${res.languages.js.entered} inside, ${res.languages.js.files} files).`, ''] : []),
     '| Entered | Environment-blocked | Language-refused |', '| ---: | ---: | ---: |', `| ${res.entered} | ${res.environmentBlocked ?? 0} | ${res.languageRefused ?? res.refused} |`, '',
     ...(res.environment && Object.keys(res.environment.blockedKinds ?? {}).length ? ['Environment-blocked by kind: ' + Object.entries(res.environment.blockedKinds).map(([k, n]) => `${k} ${n}`).join(', ') + '.', ''] : []),
+    ...(res.environment?.handles?.units ? [`Units reading an unresolved name as an opaque handle (an unresolved global read from the world, an unresolved type name read as Any; design/w1e-opaque-this-globals.md): ${res.environment.handles.units}, of which entered: ${res.environment.handles.entered}.`, ''] : []),
     ...(res.environment?.unresolvedTypes?.units ? [`Of these, refused only on a value whose type does not resolve: ${res.environment.unresolvedTypes.units} (` + Object.entries(res.environment.unresolvedTypes.byReading).map(([k, n]) => `${k} ${n}`).join(', ') + ').', ''] : []),
     'Each refused unit is counted once, under the first rule the lint names for it. A unit whose module or global still does not resolve is environment-blocked instead, under `environment: <kind>` of its first such finding.', '',
     `Directory depth: ${res.depth}. A dot means the repository root.`, '',
@@ -459,7 +465,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   if (report) fs.writeFileSync(report, censusReport(res));
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
-  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked (${res.environment.unresolvedTypes.units} on an unresolved type), ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);
+  console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked (${res.environment.unresolvedTypes.units} on an unresolved type), ${res.environment.handles?.entered ?? 0} of ${res.environment.handles?.units ?? 0} units reading an unresolved name as an opaque handle entered, ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);
   console.log(`  skipped: appledouble/binary ${res.skipped.appledouble + res.skipped.binary} (${res.skipped.appledouble} appledouble, ${res.skipped.binary} binary)`);
   const st = res.environment.install;
   console.log(`  environment: install ${st.status}${st.exit !== undefined ? ` (exit ${st.exit}, ${st.command})` : ''}; ${res.environment.units} units reach an unresolved module or global: ${Object.entries(res.environment.kinds).map(([k, n]) => `${k} ${n}`).join(', ') || 'none'}`);
