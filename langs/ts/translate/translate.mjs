@@ -1984,7 +1984,7 @@ function translateOnce(file, fnName, opts = {}) {
     const spread = args.some(ts.isSpreadElement);
     if (spread && recvCode !== null) { const v = `sr${tempCount++}_`; pending.push(`var ${v}: ${recvType} := ${recvCode};`); recvCode = v; }
     // an outside method is looked up before its arguments; a throwing argument still observes that lookup
-    if (faultMode && isEff && ts.isPropertyAccessExpression(n.expression)) {
+    if (faultMode && isEff && ts.isPropertyAccessExpression(ts.isTaggedTemplateExpression(n) ? n.tag : n.expression)) { // a tagged template is the call of its tag (common.mjs templateRaws)
       const ps = ['World', ...(recvCode !== null ? [recvType] : [])];
       const args = [WORLD, ...(recvCode !== null ? [recvCode] : [])];
       const lookup = `${external(`lookup_${calleeName}`, ps, '(World, Unit)')}(${args.join(', ')})`;
