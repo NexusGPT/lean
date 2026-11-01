@@ -8,7 +8,10 @@
 // In a pair's expect.json:
 //   "break": [{ "mechanism": "<name>", "equal": { "<lemma unit>": true } }]
 // `equal` lists the lemmas the broken run proves; each must be expected `false` in the pair's own `equal` (a flip).
-// The runner (tests/run.mjs) translates both sides again with LEAN_BREAK=<name> and checks each listed lemma.
+// A mechanism that keeps a reading well-formed rather than honest flips the other way: `"<lemma unit>": false` lists a
+// lemma the pair expects proved that the broken run does not prove (refused or unproved), so the row shows the
+// mechanism is what makes the proof. The runner (tests/run.mjs) translates both sides again with LEAN_BREAK=<name> and
+// checks each listed lemma.
 //
 // Mechanisms registered here, one line each, by the lane that owns them:
 export const MECHANISMS = {
@@ -49,6 +52,7 @@ export const MECHANISMS = {
   'cex-replay-by-index': 'solve/counterexample.mjs: lane B\'s draw at the replay\'s index is replayed instead of the model\'s value (lane w3a)',
   'package-rows': 'library-rows.mjs: every package call keeps the outside call\'s reading (lane w2d)',
   'library-fakes': 'exec/fakes/lib/index.mjs libraryFakesOn: every library fake is off, the recording proxy answers (lane w2d)',
+  'async-branch-exit': 'translate/translate.mjs awaitExits: an await inside an if of an async unit no longer leaves the unit: the branches merge as values before what follows and an awaited condition is not tested for a fault (the rejection read as a branch\'s state; lane w8d, pairs async_branch_exit, async_branch_exit_arms)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
@@ -59,8 +63,8 @@ export function breakRows(exp) {
   for (const b of exp.break ?? []) {
     if (!MECHANISMS[b.mechanism]) throw new Error(`break: ${b.mechanism} is not a registered mechanism (tests/break.mjs MECHANISMS)`);
     for (const [unit, want] of Object.entries(b.equal ?? {})) {
-      if (exp.equal?.[unit] !== false || want !== true) throw new Error(`break ${b.mechanism}: ${unit} must be expected not proved and proved under the break (a flip)`);
-      rows.push({ mechanism: b.mechanism, unit });
+      if (typeof want !== 'boolean' || exp.equal?.[unit] !== !want) throw new Error(`break ${b.mechanism}: ${unit} must be expected not proved and proved under the break, or proved and not proved under it (a flip)`);
+      rows.push({ mechanism: b.mechanism, unit, proves: want });
     }
   }
   return rows;

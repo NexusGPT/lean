@@ -3516,8 +3516,8 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };
   const asyncFailure = (u) => retIn(promiseFailure(dtype(retType(u), u.node)));
   // an await at n leaves the unit on a rejection (the unit's statement flow, outside a loop, whose own exit routes it);
-  // LEAN_BREAK=async-branch-exit merges the branches as values again (the fault exit read as a branch's state)
-  const awaitExits = (u, n) => u.isAsync && !loopCtx.length && awaitsHere(n) && !(process.env.LEAN_BREAK ?? '').split(',').includes('async-branch-exit');
+  // (tests/break.mjs async-branch-exit merges the branches as values again: the fault exit read as a branch's state)
+  const awaitExits = (u, n) => u.isAsync && !loopCtx.length && awaitsHere(n) && !broken('async-branch-exit');
   function awaitExpr(n) {
     const shape = promiseAllMapShape(n);
     if (shape) return callbackValue(n, shape);

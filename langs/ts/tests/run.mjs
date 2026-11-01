@@ -214,22 +214,23 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // `break` in expect.json (tests/break.mjs, the one convention): both sides translated again with LEAN_BREAK=<mechanism>;
   // each listed lemma, expected not proved above, must prove now: without the mechanism the reading proves a false
   // equality, so the mechanism is what keeps the pair honest (the row passes when the broken run is wrong)
-  for (const { mechanism, unit } of breakRows(exp)) {
+  for (const { mechanism, unit, proves } of breakRows(exp)) {
     const bd = path.join(tmpd, `break_${mechanism}`); fs.mkdirSync(bd, { recursive: true });
     const env = { LEAN_BREAK: mechanism };
     for (const which of ['parent', 'candidate']) crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(bd, `${which}.dfy`), '--prelude', path.join(bd, `${which}.pre.dfy`), ...projectArgs, ...(exp.heap !== false ? ['--heap'] : [])], { files: [pairFile(d, which), ...projectFiles], outs: [path.join(bd, `${which}.dfy`), path.join(bd, `${which}.pre.dfy`)], env });
     const bth = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(bd, 'parent.dfy'), '--candidate', path.join(bd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(bd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy'].map((f) => path.join(bd, f)).concat([path.join(tmpd, 'scope.json')]), outs: [path.join(bd, 'theorem.dfy')] });
-    let ok = false, got = (bth.stderr || bth.stdout || '').trim().slice(-160);
+    let ok = false, got = (bth.stderr || bth.stdout || '').trim().slice(-160), provedUnder = false;
     if (bth.status === 0) {
       const bv = await cachedRunAsync((cmd, args, e2) => spawnCollect(cmd, args, { cwd: root, env: e2 ? { ...process.env, ...e2 } : process.env, maxBuffer: 1 << 26, dir: tmp }), 'dafny', ['verify', ...dafnyVerifyArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(bd, 'theorem.dfy')], { root, files: [path.join(bd, 'theorem.dfy')], normalise: NORMALISE });
       const bt = bv.stdout + bv.stderr, bl = fs.readFileSync(path.join(bd, 'theorem.dfy'), 'utf8').split('\n');
       const bs = {}; let bc = null; bl.forEach((ln, i) => { const m = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon|Direct)?_\w+)(?:<[^>]*>)?\(/); if (m) { bc = m[1]; bs[bc] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon|Direct)?_/.test(ln) && bc) bs[bc][1] = i + 1; });
       const be = [...bt.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
       const bfin = /finished with \d+ verified/.test(bt);
-      ok = bfin && provedLemma(`Equal_${unit}`, (k) => bfin && !!bs[k] && !be.some((L) => bs[k][0] <= L && L <= bs[k][1]), restsOf(bl));
-      got = ok ? `proved under LEAN_BREAK=${mechanism}: the mechanism is what refuses it` : bs[`Equal_${unit}`] ? 'still not proved under the break: the mechanism is not what refuses it' : 'lemma missing under the break';
+      provedUnder = bfin && provedLemma(`Equal_${unit}`, (k) => bfin && !!bs[k] && !be.some((L) => bs[k][0] <= L && L <= bs[k][1]), restsOf(bl));
+      got = provedUnder ? `proved under LEAN_BREAK=${mechanism}${proves ? ': the mechanism is what refuses it' : ': the mechanism is not what proves it'}` : !bs[`Equal_${unit}`] ? 'lemma missing under the break' : !bfin ? `not proved under LEAN_BREAK=${mechanism}: ${(bt.match(/theorem\.dfy\(\d+,\d+\): Error: [^\n]*/) ?? ['the theorem does not resolve'])[0].replace(/^.*?Error: /, '').slice(0, 120)}` : `not proved under LEAN_BREAK=${mechanism}${proves ? ': the mechanism is not what refuses it' : ': the mechanism is what proves it'}`;
     }
-    add('pair', name, `break ${mechanism}: Equal_${unit} flips to proved (a false PASS-proved without the mechanism)`, ok, got);
+    ok = proves ? provedUnder : !provedUnder && bth.status === 0; // a lost proof counts only where the broken reading still yields a theorem (a crash is not the mechanism's work)
+    add('pair', name, proves ? `break ${mechanism}: Equal_${unit} flips to proved (a false PASS-proved without the mechanism)` : `break ${mechanism}: Equal_${unit} flips to not proved (the mechanism is what proves it)`, ok, got);
   }
   }
   // lane B on the same pair
