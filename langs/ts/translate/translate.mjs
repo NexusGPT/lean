@@ -2917,15 +2917,14 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     return vo.kind === 'local' ? vo : o;
   }
   // the certificate row of a slot an expression row grades (lint.mjs OPAQUE_ROWS; amendment A5): its span is the
-  // occurrence's own, and it covers its enclosing statement once (the opaque fraction counts that statement, never less)
-  const gradedSeen = new Set(), gradedStatements = new Set();
+  // occurrence's own, and it covers the statements wholly inside that span (opaque.mjs statementCount): an opaque value
+  // inside a statement leaves the statement's own reading exact
+  const gradedSeen = new Set();
   function gradedStep(rule, node, id, reads) {
     const u = currentUnit; if (!u || !node?.getStart) return;
     const k = `${u.name}:${rule}:${node.getStart(sf)}:${node.getEnd()}`; if (gradedSeen.has(k)) return; gradedSeen.add(k);
-    let st = node; while (st.parent && !ts.isStatement(st)) st = st.parent;
-    const sk = `${u.name}:${st.getStart(sf)}`, first = !gradedStatements.has(sk); gradedStatements.add(sk);
     const a = sf.getLineAndCharacterOfPosition(node.getStart(sf)), z = sf.getLineAndCharacterOfPosition(node.getEnd());
-    const rows = opaqueRows.get(u.name) ?? []; rows.push(opaqueEntry({ rule, line: a.line + 1, id, reads, writes: [], construct: 'expression', span: [a.line + 1, a.character + 1, z.line + 1, z.character + 1], statements: first ? 1 : 0 })); opaqueRows.set(u.name, rows);
+    const rows = opaqueRows.get(u.name) ?? []; rows.push(opaqueEntry({ rule, line: a.line + 1, id, reads, writes: [], construct: 'expression', span: [a.line + 1, a.character + 1, z.line + 1, z.character + 1], statements: statementCount([node]) })); opaqueRows.set(u.name, rows);
   }
   // any other read of an object after a call that may change it (common.mjs worldForm 'value', design/w1g-opaque-handed.md):
   // the object as the world holds it now, read exactly from there (a copy, an element, a library read, the result)

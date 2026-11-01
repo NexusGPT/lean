@@ -4,8 +4,12 @@ The rules: `read-after-call`, `copied-argument`, `type-assertion`. At the lane b
 stopped 1,130 of the 7,962 units of agent-nexus, nexus-learning and itsme-backend with the install (the census's
 `refusalRules`, first rule per unit): copied-argument 533, read-after-call 421, type-assertion 176. Each rule now has
 the `opaque` column `expression` (lint.mjs `OPAQUE_ROWS`): a slot the reading below grades is one opaque value at the
-finding's own span, listed in the certificate (`lanes.A.opaque`, construct `expression`, the span of the occurrence,
-the enclosing statement counted once in the opaque fraction). What the rules still find stays a refusal: an
+finding's own span, listed in the certificate (`lanes.A.opaque`, construct `expression`, the span of the occurrence).
+The opaque fraction (A5, opaque statements over statements) counts the statements wholly inside a step's span
+(opaque.mjs `statementCount`): an opaque value inside a statement leaves that statement's reading exact (the call,
+its other arguments, the values are all read; only the handed identity, the world's state of a handle or an unchecked
+conversion is uninterpreted). The result reports beside it the share of the unit's text its opaque spans cover, a
+measure neither count can game. What the rules still find stays a refusal: an
 expression row makes no block site (translate.mjs `translateGraded` and the lint-site deferral take `block` rows only;
 every w1a row is `block`, so nothing of theirs changes).
 
