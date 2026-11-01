@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadTransforms, convertFile, judgedByOwner } from '../convert.mjs';
+import { loadTransforms, convertFile, judgedByOwner, sameReason } from '../convert.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const BREAK = process.argv.includes('--break');
@@ -76,6 +76,13 @@ const passed = (v) => v === 'PASS-proved' || v === 'PASS-bounded' || v === 'PASS
   const rows = [owner, renamed, removed, own];
   const ok = judgedByOwner(rows, renamed) === owner && judgedByOwner(rows, removed) === null && judgedByOwner(rows, own) === null && judgedByOwner(rows, { ...renamed, verdict: 'WITNESS' }) === null;
   say(ok, 'prove: a nested row is judged by the enclosing row its verdict came from', ok ? 'renamed callback follows Board; a removed row, an unnested row and a WITNESS do not' : 'no');
+}
+
+{
+  const a = 'parent: load failed: tools/docs/.lean_ctl_2563585_check-links.ts: await is only valid in async functions';
+  const b = 'parent: load failed: tools/docs/.lean_base_2667180_check-links.ts: await is only valid in async functions';
+  const ok = sameReason(a, b) && !sameReason(a, b.replace('check-links', 'other')) && !sameReason(a, b.replace('await', 'yield')) && sameReason(null, undefined);
+  say(ok, 'prove: the control reads a lane B reason up to the names of lean\'s copies of the parent', ok ? 'the copy names differ, the reason is the same' : 'no');
 }
 
 // part 1: the fixtures

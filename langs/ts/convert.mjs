@@ -176,6 +176,12 @@ const onSignal = Object.fromEntries(SIGNALS.map(([sig, code]) => [sig, () => { f
 const holdControl = (c) => { if (!controls.size) for (const [sig] of SIGNALS) process.on(sig, onSignal[sig]); controls.add(c); };
 const dropControl = (c) => { fs.rmSync(c, { force: true }); controls.delete(c); if (!controls.size) for (const [sig] of SIGNALS) process.off(sig, onSignal[sig]); };
 
+// two lane B reasons alike, up to the names of lean's own copies of the parent: pr.mjs loads the parent from
+// `.lean_base_<pid>_<file>` and the control from `.lean_ctl_<pid>_<file>`, and a load failure names the copy it read
+// (driftbench tools/docs/check-links.ts: a top-level await refused alike on both, reverted for the name alone)
+const COPY_NAME = /\.lean_[a-z]+_\d+_/g;
+export const sameReason = (a, b) => (a ?? null) === (b ?? null) || (typeof a === 'string' && typeof b === 'string' && a.replace(COPY_NAME, '.lean_copy_') === b.replace(COPY_NAME, '.lean_copy_'));
+
 // the enclosing row a nested row's verdict was copied from (pr.mjs: a nested row runs no lane), when that row judges it:
 // the nested row is not removed, is no WITNESS (a WITNESS reverts whoever carries it), and carries its owner's verdict
 export function judgedByOwner(rows, r) {
@@ -228,7 +234,7 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
           fs.writeFileSync(ctl, git(repo, ['show', `${base}:${r.file}`]));
           const res = await check({ parent: ctl, candidate: ctl, unit: r.unit, n, project, dafnySeconds });
           ctlB = res.certificate?.lanes?.B ?? null;
-          bOwn = !!ctlB && ctlB.verdict === B.verdict && (ctlB.reason ?? null) === (B.reason ?? null);
+          bOwn = !!ctlB && ctlB.verdict === B.verdict && sameReason(ctlB.reason, B.reason);
         } catch { bOwn = false; } finally { dropControl(ctl); }
       }
       if (!A && !B) reverted.set(r.file, `${r.verdict ?? 'no verdict'} on ${r.unit}: no lane answered (${String(r.reason ?? r.coverage ?? '').slice(0, 80)}), so the rewrite was not checked`);
