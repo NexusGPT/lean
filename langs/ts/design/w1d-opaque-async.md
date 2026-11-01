@@ -1,13 +1,17 @@
 # W1d: the opacity ladder for async, promises and generators (2026-11-01)
 
 Lane w1d-opaque-async, workstream W1 (`/root/briefs/da-v4/w1-opacity.md`, with the plan review's amendments A1 to A8).
-Code: `opaque-async.mjs` (the column, the site decision, the write set, the pending-work test, the reached functions),
-the lint's label (`lint/lint.mjs`, the pass at the end of `admissionFindings`), the translator's step
-(`translate/translate.mjs` `opaqueExpression`, emitted through w1a's shared `translate/opaque.mjs` `opaqueForm`,
-`opaqueText`, `opaqueKey`, `opaqueEntry`), the catalogue entry `opaque-steps` (`readings.mjs`, recorded per unit by
-`lower.mjs`). Pairs: `tests/pairs/opaque_<rule>/` (the per-rule ones written by `tests/w1d-make-pairs.py`),
-`opaque_async_origin` (A2), `opaque_async_callee` (A3), `opaque_capture` (pending work); the driver with the breaks
-`tests/w1d-opaque-async.mjs`. Measurement: `lane/w1d-opaque-async-result.md`.
+Built on lane w1a's schema (A7: `lint/lint.mjs` OPAQUE_ROWS, the reading `opaque`, the lowering's deferral of graded
+findings to the translator, `translate/opaque.mjs`, the certificate's `// OPAQUE` rows, `tests/break.mjs`); this lane
+fills the rows of its family and adds the expression grade's site test and emission. Code: `opaque-async.mjs` (the
+reasons per rule, the site decision, the write set, the pending-work test, the reached functions), the lint's site pass
+(`lint/lint.mjs`, at the end of `admissionFindings`: it withdraws the grade where the construct is no step), the
+translator's step (`translate/translate.mjs` `opaqueExpression`, through `opaqueForm`, `opaqueText`, `opaqueKey`,
+`opaqueEntry`). Pairs: `tests/pairs/opaque_<rule>/` (the per-rule ones written by `tests/w1d-make-pairs.py`),
+`opaque_async_origin` (A2), `opaque_async_callee` (A3), `opaque_capture` (pending work), `opaque_promise_thenable` and
+`opaque_promise_all_order` (the locality refusals); the driver `tests/w1d-opaque-async.mjs`; the lint fixture of the
+generator rules `tests/w1d-fixtures/generators.ts`; the opaque-fraction tool `tests/w1d-opaque-fraction.mjs`.
+Measurement: `lane/w1d-opaque-async-result.md`.
 
 ## What
 
@@ -29,9 +33,10 @@ reading. Each now has an `opaque` column (`ASYNC_OPAQUE`):
 | `generator-effect` | none | the body of a sequence generator is its yields (generators.mjs); a step inside it would hide them |
 | `generator-bound` | none | a generator with an unbounded loop has no measure; an opaque reading would hide the missing measure (by design, ASK) |
 
-A finding of an `expression` rule keeps its rule and message, gains `opaque: 'expression'`, and refuses nothing when its
-node is a step; the node is handed to the translator. Otherwise the refusal stands and the finding carries the reason
-(`opaqueWhy`). A node is a step when (`asyncOpaqueSite`):
+A finding of an `expression` rule keeps its rule and message and carries `opaque: 'expression'` (the schema's label);
+the lowering defers it to the translator, which emits the construct as a step (the unit then holds the reading
+`opaque`). Where the construct is no step the lint withdraws the grade, and the finding refuses as before with the
+reason (`opaqueWhy`). A node is a step when (`asyncOpaqueSite`):
 
 1. it is a call, a `new` or an `await` of the unit's own code: not inside a function nested in the unit (that function
    runs where it is called), not a value (a callback, a held promise, an identifier). This is the locality test of A4:
@@ -57,7 +62,8 @@ captured mutable binding the lint names.
   the same symbol on both sides; the reads' values are its arguments, so the symbol key is (text, callee texts, reads'
   values) as the effect axiom keys an outside call.
 - `reads`: the world and every local the construct mentions, functions nested in it included (`freeVars`).
-- `writes` (`stepWrites`, amendment A2): every reference binding of the unit the construct mentions (the step may change
+- `writes` (`stepWrites`, amendment A2; w1a's own `opaque-drop-write` drops the first of them, mine below drops the
+  closure): every reference binding of the unit the construct mentions (the step may change
   what it names: it hands it to a call, a callback writes through an element), closed under sharing in both directions:
   a binding shares with every binding its values mention (`const t = user.tags` shares with `user`; `const u = user`
   shares with `user`), so the name an alias came from and every other name for it are written. Parameters are two by
@@ -126,12 +132,34 @@ refused behaviour runs where the value is used, so they stay `none` (the first t
 test). Pairs `opaque_promise_thenable` and `opaque_promise_all_order` keep the refusal with its reason, and lane B
 reads their units (the latter's `reorder` unit swaps two `Promise.all` steps: WITNESS).
 
-## Span (A5)
+## Span and fraction (A5)
 
-The step's span is the finding's node: the lint hands the translator the node's offsets, and the certificate row
-(`opaqueEntry`: rule, line, id, reads, writes, construct) names that node, never its statement or the unit. The
-translator returns the rows of the steps it emitted; the certificate field and the per-unit opaque fraction are w1a's
-(A7). The measured opaque fraction of the units these rules newly let enter is in the result file.
+The step is the finding's node: the translator finds it by the finding's own span (as written, mapped through the
+faithful rewrite), and its certificate row (`opaqueEntry`, the `// OPAQUE <unit>` line check.mjs reads into
+`lanes.A.opaque`) carries `construct: 'expression'`, `span` equal to the finding's span and `findings: [that span]`,
+never its statement or the unit. For the fraction the step covers the one statement it sits in (counted once however
+many steps it holds) over the unit's statements (`statementCount`, w1a's). The census tool
+`tests/w1d-opaque-fraction.mjs` measures the fraction of every unit these rules newly let enter with the same statement
+counting, nested callbacks included (stricter: a large async callback inside a step counts in full).
+
+## Each pair's breaks (A1, A6)
+
+Every break is a pair's own `break` row (tests/break.mjs, run by tests/run.mjs): the per-rule pairs' `upstream` unit
+under `async-drop-reads` (a local the step reads, changed before the step: a change outside the construct), the
+`opaque_async_origin` units under `async-drop-origins`, `opaque_async_callee`'s run under `async-drop-callees`; each must
+prove under the break (a false PASS-proved) and not without it. `opaque_capture` is lane B's (its site is refused, so it
+has no lemma): the driver runs its check row under `async-drop-pending` and asserts it fails.
+
+## Shapes that would read a step as a loop
+
+The translator reads an array method with an inline callback as a loop (`arrayCallbackShape`, `namedCallbackShape`,
+the `forEach` statement, `await Promise.all(xs.map(...))`). None of them may claim a node that is a step: each returns no
+shape there, so the construct reaches `expr` and is the step.
+
+## Escape fixtures
+
+The escape fixtures of these rules keep their `// expect: <rule>` line; w1a's escapes row for a graded rule asks the lint
+to name the finding graded or refused, and the translator without the world (no `--core`) still refuses it.
 
 ## Measurement
 
