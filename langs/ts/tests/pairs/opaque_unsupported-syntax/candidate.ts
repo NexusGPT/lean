@@ -20,6 +20,6 @@ export function read_syntax(x: number): number {
 }
 
 export function planted_syntax(x: number): number {
-  const z = (import.meta as any).env.LIMIT === "1x" ? x : 0;
+  const z = (import.meta as any).env.LIMIT !== "1" ? x : 0;
   return z;
 }

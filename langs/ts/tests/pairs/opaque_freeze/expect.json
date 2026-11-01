@@ -12,5 +12,12 @@
   "planted_freeze": false
  },
  "why": "design/w1c-opaque-calls.md, rule freeze (amendment A4): Object.freeze changes every LATER write to the object, anywhere, outside any step at the freeze site, so its column is none and the refusal stands; every unit of the pair stays refused by the lint (`refused`), none is read.",
- "refused": "freeze"
+ "refused": "freeze",
+ "laneBOnly": true,
+ "b": {
+  "outside_freeze": "PASS-bounded",
+  "inside_freeze": "PASS-bounded",
+  "read_freeze": "PASS-bounded",
+  "planted_freeze": "WITNESS"
+ }
 }

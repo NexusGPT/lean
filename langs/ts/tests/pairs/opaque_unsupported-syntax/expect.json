@@ -11,5 +11,11 @@
   "read_syntax": false,
   "planted_syntax": false
  },
- "why": "design/w1c-opaque-calls.md, rule unsupported-syntax: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+ "why": "design/w1c-opaque-calls.md, rule unsupported-syntax: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json).",
+ "b": {
+  "outside_syntax": "PASS-bounded",
+  "inside_syntax": "PASS-bounded",
+  "read_syntax": "PASS-bounded",
+  "planted_syntax": "PASS-bounded"
+ }
 }

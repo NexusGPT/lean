@@ -1,8 +1,8 @@
 {
  "planted_del": {
-  "index": 1,
-  "kind": "string",
-  "was": "\"z\"",
-  "text": "\"zx\""
+  "index": 0,
+  "kind": "operator",
+  "was": ">",
+  "text": ">="
  }
 }

@@ -1,5 +1,24 @@
 {
-  "scope": ["outside_del", "inside_del", "read_del", "write_del", "planted_del"],
-  "equal": { "outside_del": true, "inside_del": false, "read_del": false, "write_del": false, "planted_del": false },
-  "why": "design/w1c-opaque-calls.md, rule delete (a delete used as a value, of an index entry: the type admits the absence). outside_del: the statement unchanged, `n * 2` against `2 * n` after it: proved, the step listed. inside_del: the deleted key changed inside the statement: two symbols, never proved. read_del: the key the step reads changed before it (the --break unit: with the read dropped it is a false proof). write_del: `k in o.cache` read after the step, which writes o: not proved. planted_del: mutate.mjs's string change inside the statement: not proved, lane B runs it."
+ "scope": [
+  "outside_del",
+  "inside_del",
+  "read_del",
+  "write_del",
+  "planted_del"
+ ],
+ "equal": {
+  "outside_del": true,
+  "inside_del": false,
+  "read_del": false,
+  "write_del": false,
+  "planted_del": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule delete (a delete used as a value, of an index entry: the type admits the absence). outside_del: the statement unchanged, `n * 2` against `2 * n` after it: proved, the step listed. inside_del: the deleted key changed inside the statement: two symbols, never proved. read_del: the key the step reads changed before it (the --break unit: with the read dropped it is a false proof). write_del: `k in o.cache` read after the step, which writes o: not proved. planted_del: mutate.mjs's string change inside the statement: not proved, lane B runs it.",
+ "b": {
+  "outside_del": "PASS-bounded",
+  "inside_del": "PASS-bounded",
+  "read_del": "PASS-bounded",
+  "write_del": "PASS-bounded",
+  "planted_del": "WITNESS"
+ }
 }

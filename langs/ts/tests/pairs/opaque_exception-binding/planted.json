@@ -1,8 +1,8 @@
 {
  "planted_eb": {
-  "index": 2,
-  "kind": "operator",
-  "was": ">",
-  "text": ">="
+  "index": 0,
+  "kind": "boundary",
+  "was": "1",
+  "text": "2"
  }
 }

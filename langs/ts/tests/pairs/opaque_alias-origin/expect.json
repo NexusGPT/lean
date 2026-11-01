@@ -1,5 +1,12 @@
 {
- "scope": ["count"],
- "equal": { "count": false },
- "why": "amendment A2 (design/w1c-opaque-calls.md): the step `if (k === 7919) t[m](k)` may push onto user.tags through the alias t; the candidate's n is read before it. The step writes every reference in scope (reachWrites), so user after the step is the step's output and the two sides return two values: not proved. Lane B draws k from the type and meets 7919 only on a boundary draw: WITNESS when it does, PASS-bounded when not; never PASS-proved. The break row (tests/opaque-calls.mjs, drop-write) removes the reference writes and must turn this into a false proof."
+ "scope": [
+  "count"
+ ],
+ "equal": {
+  "count": false
+ },
+ "why": "amendment A2 (design/w1c-opaque-calls.md): the step `if (k === 7919) t[m](k)` may push onto user.tags through the alias t; the candidate's n is read before it. The step writes every reference in scope (reachWrites), so user after the step is the step's output and the two sides return two values: not proved. Lane B draws k from the type and meets 7919 only on a boundary draw: WITNESS when it does, PASS-bounded when not; never PASS-proved. The break row (tests/opaque-calls.mjs, drop-write) removes the reference writes and must turn this into a false proof.",
+ "b": {
+  "count": "WITNESS"
+ }
 }

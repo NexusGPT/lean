@@ -241,606 +241,638 @@ The permanent exceptions below retain both named conditions. These reasons also 
 
 | site | kind | rule | reading | decided | message |
 | --- | --- | --- | --- | --- | --- |
-| lint/lint.mjs:261 | lint-refuse | read-after-call | mutation | shared (readAfterCall) | <rc.message> |
-| lint/lint.mjs:283 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal this reads scalar fields; reference-valued receiver state needs a class |
-| lint/lint.mjs:284 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | keep literal this as a direct data-field read; use a class for aliases or rebinding |
-| lint/lint.mjs:285 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
+| lint/lint.mjs:262 | lint-refuse | read-after-call | mutation | shared (readAfterCall) | <rc.message> |
+| lint/lint.mjs:284 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal this reads scalar fields; reference-valued receiver state needs a class |
+| lint/lint.mjs:285 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | keep literal this as a direct data-field read; use a class for aliases or rebinding |
 | lint/lint.mjs:286 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
-| lint/lint.mjs:311 | lint-refuse | prototype | prototype | lowering (NULL_PROTOTYPE_WHY, nullPrototypeCreate) | <NULL_PROTOTYPE_WHY> |
-| lint/lint.mjs:312 | lint-refuse | prototype | prototype | one-decider | `Object.${}` reaches the prototype chain or the property descriptors; no transition models it |
-| lint/lint.mjs:313 | lint-refuse | freeze | prototype | one-decider | `Object.${}` makes a later write throw in strict code; the value reading has no fault for that write |
-| lint/lint.mjs:314 | lint-refuse | assign-target | record-copy | one-decider | `Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread th |
-| lint/lint.mjs:315 | lint-refuse | spread-source | record-copy | shared (copySource) | `Object.assign` onto a literal copies every own key of `${}`: ${}; the call is read as a function of |
-| lint/lint.mjs:504 | lint-refuse | unsupported-type | types | one-decider | type ${} is not translatable |
-| lint/lint.mjs:512 | lint-refuse | arguments | names | one-decider | `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a re |
-| lint/lint.mjs:515 | lint-refuse | exception-callback | exceptions | one-decider | call the throwing unit directly, or pass it to a call; a stored function value has no fault channel |
-| lint/lint.mjs:516 | lint-refuse | generator-use | generators | shared (asyncGenerator) | consume a pure generator directly in for-of, spread, Array.from or yield* |
-| lint/lint.mjs:517 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | pass a fresh literal handler or keep calls on the local object; sharing a named method object needs  |
-| lint/lint.mjs:521 | lint-refuse | toplevel-effect | module-state | shared (moduleState) | move the effectful module initializer into a function |
-| lint/lint.mjs:524 | lint-refuse | global-read | names | one-decider | `${}` is module state that can change; the subset reads constants only |
-| lint/lint.mjs:526 | lint-refuse | number-special | numbers | lowering (numberSpecial) | the finite number model has no NaN or infinity; use lane B for special-value arithmetic |
-| lint/lint.mjs:527 | lint-refuse | dynamic-eval | names | one-decider | `${}` is outside the subset |
-| lint/lint.mjs:527 | lint-refuse | prototype | prototype | one-decider | `${}` is outside the subset |
-| lint/lint.mjs:530 | lint-refuse | global-read | names | one-decider | global `${}` is outside the subset |
-| lint/lint.mjs:531 | lint-refuse | global-read | names | one-decider | `${}` cannot be resolved |
-| lint/lint.mjs:555 | lint-refuse | static-this | classes | one-decider | `${}` in a static method is the class the call names, a subclass too; name the class itself, or give |
-| lint/lint.mjs:563 | lint-refuse | global-read | names | one-decider | `${}` holds a function; call a static method of the class instead |
-| lint/lint.mjs:565 | lint-refuse | global-read | names | one-decider | `.${}()` changes the static `${}` in place; assign a new value to the field instead |
-| lint/lint.mjs:649 | lint-refuse | var | declarations | one-decider | `var` is outside the subset; use let or const |
-| lint/lint.mjs:650 | lint-refuse | definite-assignment | declarations | shared (absenceCarried, absenceHome) | this let may be read before its first assignment (a read TypeScript does not check, or a write insid |
-| lint/lint.mjs:650 | lint-refuse | definite-assignment | declarations | one-decider | `${}` may be read here before its first assignment (TypeScript does not check this read), and lean t |
-| lint/lint.mjs:658 | lint-refuse | bare-return | control-flow | one-decider | return needs a value |
-| lint/lint.mjs:664 | lint-refuse | destructuring | destructuring | one-decider | for-of binds one name or one pattern |
-| lint/lint.mjs:666 | lint-refuse | for-of-non-array | loops | one-decider | for-of runs over arrays, strings, sets, maps and iterable values |
-| lint/lint.mjs:681 | lint-refuse | for-in | loops | one-decider | for-in takes `const k` |
-| lint/lint.mjs:682 | lint-refuse | key-order | loops | shared (forInKeyOrder) | a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this o |
-| lint/lint.mjs:683 | lint-refuse | for-in-delete | loops | one-decider | a for-in skips a key deleted before its visit (ECMA-262 14.7.5.9), and the reading visits the keys t |
-| lint/lint.mjs:686 | lint-refuse | break-continue | control-flow | one-decider | break outside a loop or switch |
-| lint/lint.mjs:687 | lint-refuse | break-continue | control-flow | one-decider | continue outside a loop |
-| lint/lint.mjs:689 | lint-refuse | exception-callback | exceptions | one-decider | move the throw to a same-file unit and call it directly |
-| lint/lint.mjs:694 | lint-refuse | destructuring | destructuring | one-decider | catch binds one name |
-| lint/lint.mjs:700 | lint-refuse | label | control-flow | one-decider | a label must name a loop; replace a labelled block with conditional control |
-| lint/lint.mjs:704 | lint-refuse | generator | local-functions | one-decider | generators are outside the subset |
-| lint/lint.mjs:706 | lint-refuse | param-form | declarations | one-decider | rest parameters are outside the subset |
-| lint/lint.mjs:715 | lint-refuse | class | classes | one-decider | classes are outside the subset |
-| lint/lint.mjs:716 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | statement ${} is outside the subset |
-| lint/lint.mjs:764 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | read named fields on the literal object; copying accessors or detached methods needs a receiver |
-| lint/lint.mjs:767 | lint-refuse | unsupported-member | members | one-decider | ${} |
-| lint/lint.mjs:771 | lint-refuse | record-rest | destructuring | one-decider | record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record |
-| lint/lint.mjs:882 | lint-refuse | uninitialised | destructuring | one-decider | a pattern needs an initial value |
-| lint/lint.mjs:957 | lint-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (elementMutation) | `${}` is the accumulator `reduce` hands its callback: it holds the array's first element when the ca |
-| lint/lint.mjs:958 | lint-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (elementMutation) | `${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `+ |
-| lint/lint.mjs:966 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
-| lint/lint.mjs:976 | lint-refuse | global-mutation | mutation | shared (moduleState) | assignment to `${}`, which this function does not own |
-| lint/lint.mjs:977 | lint-refuse | render-impure | react | shared (moduleState) | a render function writes `${}`, a variable outside it; move the write into an event handler or an ef |
-| lint/lint.mjs:978 | lint-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (moduleState) | <why> |
-| lint/lint.mjs:979 | lint-refuse | closure-mutation | mutation | shared (moduleState) | `${}` is declared outside this callback; a callback cannot change it |
-| lint/lint.mjs:984 | lint-refuse | index-assign | mutation | one-decider | index assignment into `${}`, which this function does not own |
-| lint/lint.mjs:985 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(l.expression.text, o.decl)> |
-| lint/lint.mjs:986 | lint-refuse | closure-mutation | mutation | one-decider | a callback cannot change an outer ${} |
-| lint/lint.mjs:987 | lint-refuse | index-assign | mutation | one-decider | compound assignment on an element is outside the subset |
-| lint/lint.mjs:988 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
-| lint/lint.mjs:989 | lint-refuse | prototype | prototype | shared (protoKeyWrite) | a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the  |
-| lint/lint.mjs:993 | lint-refuse | global-read | names | one-decider | `${}` holds a function; call a static method of the class instead |
-| lint/lint.mjs:994 | lint-refuse | property-assign | mutation | one-decider | only =, +=, -=, *= on a static field |
-| lint/lint.mjs:997 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal methods keep immutable data fields; use a class for mutable receiver state |
-| lint/lint.mjs:997 | lint-refuse | receiver-mutation | mutation | shared (receiverRecordPath) | a receiver path needs nonoptional data records; assign a field itself for class or opaque handles |
-| lint/lint.mjs:997 | lint-refuse | receiver-mutation | mutation | one-decider | only =, +=, -=, *= on a field of `this` |
-| lint/lint.mjs:998 | lint-refuse | receiver-write | mutation | shared (thisParamPath) | <RECEIVER_WRITE> |
-| lint/lint.mjs:1000 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
-| lint/lint.mjs:1005 | lint-refuse | property-assign | mutation | shared (outsideRoot) | a field of `${}` is written by a plain `=` statement; read the old value into a local first |
-| lint/lint.mjs:1006 | lint-refuse | property-assign | mutation | lowering (INSTALLS_FUNCTION_WHY, installsFunction, outsideRoot) | <INSTALLS_FUNCTION_WHY(root.text)> |
-| lint/lint.mjs:1015 | lint-refuse | property-assign | mutation | shared (elementWritePath) | assignment into `${}`, an element of `${}`, which is not a parameter of this function; write an elem |
-| lint/lint.mjs:1016 | lint-refuse | alias-mutation | mutation | shared (elementWritePath) | <aliasMsg(ep.root.text, po.decl)> |
-| lint/lint.mjs:1017 | lint-refuse | closure-mutation | mutation | shared (elementWritePath) | a callback cannot change an outer record |
-| lint/lint.mjs:1018 | lint-refuse | property-assign | mutation | shared (elementWritePath) | only =, +=, -=, *= on a field |
-| lint/lint.mjs:1023 | lint-refuse | property-assign | mutation | one-decider | only =, +=, -=, *= on a field |
-| lint/lint.mjs:1024 | lint-refuse | property-assign | mutation | one-decider | only =, +=, -=, *= on a field |
-| lint/lint.mjs:1025 | lint-refuse | property-assign | mutation | one-decider | assignment into `${}`: a field of an element is written when the path from a parameter takes field a |
-| lint/lint.mjs:1026 | lint-refuse | property-assign | mutation | one-decider | assignment into `${}`, which this function does not own; records it owns are updated in place |
-| lint/lint.mjs:1027 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(root.text, o.decl)> |
-| lint/lint.mjs:1028 | lint-refuse | closure-mutation | mutation | shared (cellWrite) | a callback cannot change an outer record |
-| lint/lint.mjs:1029 | lint-refuse | property-assign | mutation | shared (cellWrite) | only =, +=, -=, *= on a field |
-| lint/lint.mjs:1032 | lint-refuse | index-assign | mutation | one-decider | compound assignment on an element is outside the subset |
-| lint/lint.mjs:1033 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
-| lint/lint.mjs:1034 | lint-refuse | prototype | prototype | shared (protoKeyWrite) | a key that may be '__proto__' with an object value replaces the dictionary's prototype (the setter o |
-| lint/lint.mjs:1038 | lint-refuse | index-assign | mutation | one-decider | compound assignment on an element is outside the subset |
-| lint/lint.mjs:1039 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
-| lint/lint.mjs:1042 | lint-refuse | index-assign | mutation | one-decider | write a record field by name, or use a local Record<string, T> dictionary |
-| lint/lint.mjs:1043 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | assignment target |
-| lint/lint.mjs:1046 | lint-refuse | division | numbers | one-decider | compound division is outside the subset |
-| lint/lint.mjs:1047 | lint-refuse | unsupported-operator | mutation | one-decider | assignment operator is outside the subset |
-| lint/lint.mjs:1050 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
-| lint/lint.mjs:1050 | lint-refuse | receiver-mutation | mutation | shared (receiverRecordPath) | a receiver path needs nonoptional data records |
-| lint/lint.mjs:1050 | lint-refuse | receiver-write | mutation | shared (thisParamPath) | <RECEIVER_WRITE> |
-| lint/lint.mjs:1054 | lint-refuse | property-assign | mutation | one-decider | update of a field of `${}`, which this function does not own |
-| lint/lint.mjs:1055 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | increment of a non-name |
-| lint/lint.mjs:1058 | lint-refuse | global-mutation | mutation | shared (moduleState) | update of `${}`, which this function does not own |
-| lint/lint.mjs:1059 | lint-refuse | render-impure | react | shared (moduleState) | a render function updates `${}`, a variable outside it; move the write into an event handler or an e |
-| lint/lint.mjs:1060 | lint-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (moduleState) | <why> |
-| lint/lint.mjs:1061 | lint-refuse | closure-mutation | mutation | shared (moduleState) | a callback cannot change an outer variable |
-| lint/lint.mjs:1076 | lint-refuse | assign-target | record-copy | one-decider | `Object.assign` copies every own key of its source, and a value of a record type may carry keys its  |
-| lint/lint.mjs:1091 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(r.text, declOf(r).decl)> |
-| lint/lint.mjs:1098 | lint-refuse | opaque-mutation | mutation | one-decider | .${}() as a statement on an opaque value may mutate it; name the receiver first |
-| lint/lint.mjs:1104 | lint-refuse | receiver-write | mutation | shared (thisParamPath) | <RECEIVER_WRITE> |
-| lint/lint.mjs:1105 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(pr.text, declOf(pr).decl)> |
-| lint/lint.mjs:1108 | lint-refuse | param-mutation | mutation | shared (bucketMaps, thisParamPath) | ${} on `${}`, which is not a local array${} |
-| lint/lint.mjs:1113 | lint-refuse | param-mutation | mutation | shared (thisParamPath) | ${} on `${}`, which is not a local array |
-| lint/lint.mjs:1114 | lint-refuse | unsupported-call | library | one-decider | pop takes no argument |
-| lint/lint.mjs:1115 | lint-refuse | unsupported-call | library | one-decider | sort as a statement needs one comparator, an arrow of two parameters; with the default order write ` |
-| lint/lint.mjs:1116 | lint-refuse | unsupported-call | library | one-decider | ${} takes no argument |
-| lint/lint.mjs:1117 | lint-refuse | unsupported-call | library | one-decider | splice as a statement needs a start, a count and plain items |
-| lint/lint.mjs:1120 | lint-refuse | param-mutation | mutation | shared (thisParamPath) | set mutation on a non-local |
-| lint/lint.mjs:1121 | lint-refuse | param-mutation | mutation | shared (thisParamPath) | map mutation on a non-local |
-| lint/lint.mjs:1125 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | only assignments, ++/--, calls, and await may stand as statements |
-| lint/lint.mjs:1132 | lint-refuse | var | declarations | shared (countedFor) | `var` is outside the subset; use let or const |
-| lint/lint.mjs:1188 | lint-refuse | promise-handler | promises | shared (namedPromiseHandler) | <named.message> |
-| lint/lint.mjs:1188 | lint-refuse | promise-thenable | promises | shared (namedPromiseHandler) | <named.message> |
-| lint/lint.mjs:1190 | lint-refuse | promise-handler | promises | shared (namedPromiseHandler) | inline a handler that mutates so its state is visible |
-| lint/lint.mjs:1194 | lint-refuse | promise-handler | promises | one-decider | use an arrow with plain parameters |
-| lint/lint.mjs:1203 | lint-refuse | promise-handler | promises | one-decider | inline a same-file call that throws or mutates so its fault and state are visible |
-| lint/lint.mjs:1204 | lint-refuse | promise-handler | promises | lowering (inlinePromiseStatementKind) | use declarations, conditionals, calls, return and throw in an inline promise body |
-| lint/lint.mjs:1211 | lint-refuse | promise-thenable | promises | one-decider | use a plain value or a statically typed native Promise; custom thenable adoption is not read |
-| lint/lint.mjs:1215 | lint-refuse | promise-pending | promises | shared (promiseConsumed) | await or return the promise directly; a dangling or stored continuation leaves observable pending wo |
-| lint/lint.mjs:1218 | lint-refuse | promise-executor | promises | shared (executorShape) | <shape.message> |
-| lint/lint.mjs:1218 | lint-refuse | promise-executor-escape | promises | shared (executorShape) | <shape.message> |
-| lint/lint.mjs:1218 | lint-refuse | promise-unsettled | promises | shared (executorShape) | <shape.message> |
-| lint/lint.mjs:1222 | lint-refuse | promise-executor | promises | shared (executorShape) | a callback bridge must call an outside API |
-| lint/lint.mjs:1229 | lint-refuse | promise-handler | promises | one-decider | Promise.resolve and Promise.reject take at most one value |
-| lint/lint.mjs:1233 | lint-refuse | promise-handler | promises | one-decider | use one explicit handler per link; use catch for rejection |
-| lint/lint.mjs:1239 | lint-refuse | async | promises | one-decider | `await` outside an async function |
-| lint/lint.mjs:1253 | lint-refuse | async | promises | one-decider | awaited callee form is outside the subset |
-| lint/lint.mjs:1257 | lint-refuse | string-code-unit | strings | lowering (LONE_SURROGATE_WHY, loneSurrogate) | <LONE_SURROGATE_WHY> |
-| lint/lint.mjs:1268 | lint-refuse | operator-value-context | operators-as-values | one-decider | move this value step into an explicit statement and conditional branch |
-| lint/lint.mjs:1279 | lint-refuse | operator-value-context | operators-as-values | one-decider | write this mutating method call as a separate statement |
-| lint/lint.mjs:1288 | lint-refuse | update-expression | operators-as-values | one-decider | increment a numeric local or numeric field |
-| lint/lint.mjs:1288 | lint-refuse | assignment-expression | operators-as-values | one-decider | increment a numeric local or numeric field |
-| lint/lint.mjs:1289 | lint-refuse | update-expression | operators-as-values | lowering (valueAssignmentWhy) | <valueAssignmentWhy(e.operatorToken.kind)> |
-| lint/lint.mjs:1289 | lint-refuse | assignment-expression | operators-as-values | lowering (valueAssignmentWhy) | <valueAssignmentWhy(e.operatorToken.kind)> |
-| lint/lint.mjs:1290 | lint-refuse | update-expression | operators-as-values | one-decider | use numeric compound assignment or string += with a string value |
-| lint/lint.mjs:1290 | lint-refuse | assignment-expression | operators-as-values | one-decider | use numeric compound assignment or string += with a string value |
-| lint/lint.mjs:1309 | lint-refuse | operator-value-context | operators-as-values | one-decider | keep the target root unchanged while evaluating the assignment reference and right side |
-| lint/lint.mjs:1314 | lint-refuse | operator-value-context | operators-as-values | one-decider | keep the target root unchanged while evaluating an enclosing assignment |
-| lint/lint.mjs:1320 | lint-refuse | update-expression | operators-as-values | one-decider | narrow optional paths before assigning |
-| lint/lint.mjs:1320 | lint-refuse | assignment-expression | operators-as-values | one-decider | narrow optional paths before assigning |
-| lint/lint.mjs:1328 | lint-refuse | type-assertion | type-assertion | shared (typeAssertion) | <why> |
-| lint/lint.mjs:1329 | lint-refuse | update-expression | operators-as-values | shared (erasedReferenceSlot) | <er.message> |
-| lint/lint.mjs:1329 | lint-refuse | assignment-expression | operators-as-values | shared (erasedReferenceSlot) | <er.message> |
-| lint/lint.mjs:1338 | lint-refuse | template | tagged-template | one-decider | the tag must be a name |
-| lint/lint.mjs:1339 | lint-refuse | template | tagged-template | shared (rawTag) | an invalid escape under a tag: its cooked part is undefined, which the reading of the strings does n |
-| lint/lint.mjs:1352 | lint-refuse | non-null-assertion | non-null-assertion | shared (payloadRead, payloadStatement) | `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test  |
-| lint/lint.mjs:1358 | lint-refuse | bitwise | bitwise | one-decider | bitwise operands must be numbers; BigInt and opaque coercions need lane B |
-| lint/lint.mjs:1360 | lint-refuse | unary-coercion | numbers | one-decider | unary + coerces; it is outside the subset |
-| lint/lint.mjs:1366 | lint-refuse | delete | mutation | one-decider | `delete` is a statement, not a value |
-| lint/lint.mjs:1367 | lint-refuse | receiver-write | mutation | one-decider | <RECEIVER_WRITE> |
-| lint/lint.mjs:1367 | lint-refuse | delete | mutation | one-decider | delete on `${}`, which this function does not own |
-| lint/lint.mjs:1367 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(root.text, o.decl, false)> |
-| lint/lint.mjs:1367 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
-| lint/lint.mjs:1368 | lint-refuse | delete | mutation | one-decider | delete of a field of this is outside the subset; assign undefined |
-| lint/lint.mjs:1368 | lint-refuse | delete | mutation | one-decider | delete on `${}`, which this function does not own |
-| lint/lint.mjs:1368 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(root.text, o.decl, false)> |
-| lint/lint.mjs:1369 | lint-refuse | delete | mutation | one-decider | delete of this target is outside the subset |
-| lint/lint.mjs:1371 | lint-refuse | void | unread-syntax | one-decider | `void` is outside the subset |
-| lint/lint.mjs:1375 | lint-refuse | generator-use | generators | one-decider | yield is a statement; sent values need a step reading |
-| lint/lint.mjs:1376 | lint-refuse | this | classes | exception:receiver-scope-vs-self-type | `this` outside a class method; a free function declares its receiver as a `this` parameter |
-| lint/lint.mjs:1377 | lint-refuse | class | classes | one-decider | `super` is read only as `super.m(...)` or `super(...)` in a constructor, a call of the parent's meth |
-| lint/lint.mjs:1378 | lint-refuse | class | classes | one-decider | classes are outside the subset |
-| lint/lint.mjs:1382 | lint-refuse | unsupported-call | library | one-decider | new ${}(...) reads an array, a Map, a Set or one of their iterators; build the entries as an array f |
-| lint/lint.mjs:1384 | lint-refuse | dynamic-eval | names | one-decider | `new Function` is outside the subset |
-| lint/lint.mjs:1386 | lint-refuse | async | promises | shared (promiseForm) | `new Promise` inside an opaque promise call has no reading |
-| lint/lint.mjs:1389 | lint-refuse | dynamic-eval | names | one-decider | `new ${}` is outside the subset |
-| lint/lint.mjs:1389 | lint-refuse | prototype | prototype | one-decider | `new ${}` is outside the subset |
-| lint/lint.mjs:1397 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | `new.target` reads how the function was called; it is outside the subset |
-| lint/lint.mjs:1399 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | `import.meta.env` is injected at build time; read it outside the subset |
-| lint/lint.mjs:1405 | lint-refuse | spread | arrays | shared (generatorReading) | spread works on arrays, sets, maps and their keys(), values() and entries() |
-| lint/lint.mjs:1406 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | array holes are outside the subset |
-| lint/lint.mjs:1411 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | literal getters need fixed named fields; use a class for spread or computed accessors |
-| lint/lint.mjs:1412 | lint-refuse | spread-source | record-copy | shared (spreadReadWhy) | <why> |
-| lint/lint.mjs:1414 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly |
-| lint/lint.mjs:1414 | lint-refuse | spread-source | record-copy | shared (copySource) | `{ ...${} }` copies every own key: ${} (escape spread_source) |
-| lint/lint.mjs:1417 | lint-refuse | prototype | prototype | shared (literalProtoMember) | `__proto__:` in a literal sets the object's prototype, not a key; the value reading has only plain o |
-| lint/lint.mjs:1421 | lint-refuse | dynamic-key | keys | one-decider | <why> |
-| lint/lint.mjs:1426 | lint-refuse | iterator-protocol | object-literal-methods | one-decider | custom iterator protocol methods need a step reading; use a generator or an array |
-| lint/lint.mjs:1433 | lint-refuse | closure-mutation | mutation | one-decider | a literal method cannot change a captured binding; use a class for shared state |
-| lint/lint.mjs:1440 | lint-refuse | object-method-capture | object-literal-methods | one-decider | a literal method needs stable captured bindings; use a class for shared changing state |
-| lint/lint.mjs:1449 | lint-refuse | object-method-capture | object-literal-methods | one-decider | a literal method captures an unchanging value; copy mutable data before capturing it |
-| lint/lint.mjs:1453 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | literal setters and computed methods need a class accessor or a named method |
-| lint/lint.mjs:1456 | lint-refuse | spread | arrays | one-decider | spread is allowed in array and record literals only |
-| lint/lint.mjs:1458 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | expression ${} is outside the subset |
-| lint/lint.mjs:1466 | lint-refuse | prototype | prototype | shared (plainObjectTest) | <po.refuse> |
-| lint/lint.mjs:1470 | lint-refuse | division | numbers | one-decider | `/` on numbers is real division; write Math.floor(a / b) for integer division |
-| lint/lint.mjs:1475 | lint-refuse | bitwise | bitwise | one-decider | bitwise operands must be numbers; BigInt and opaque coercions need lane B |
-| lint/lint.mjs:1483 | lint-refuse | loose-equality | equality | one-decider | use === and !== with an object, bigint or symbol operand; between primitives == follows the coercion |
-| lint/lint.mjs:1487 | lint-refuse | instanceof-constructor | instanceof | one-decider | use a named ordinary constructor for instanceof; dynamic constructors may run effects |
-| lint/lint.mjs:1490 | lint-refuse | instanceof-constructor | instanceof | one-decider | use a class declaration for instanceof; a constructor value needs a runtime identity |
-| lint/lint.mjs:1497 | lint-refuse | instanceof-constructor | instanceof | one-decider | a custom Symbol.hasInstance may run effects; use an ordinary constructor |
-| lint/lint.mjs:1502 | lint-refuse | prototype | prototype | shared (inPrototypeReach) | this file makes an object whose prototype is not Object.prototype (line ${}), and ${}; `in` reads th |
-| lint/lint.mjs:1503 | lint-refuse | dynamic-key | keys | shared (openRecordIn) | <why> |
-| lint/lint.mjs:1507 | lint-refuse | bitwise | bitwise | one-decider | bitwise and shift operators are outside the subset |
-| lint/lint.mjs:1513 | lint-refuse | mixed-types | equality | one-decider | + adds two numbers or joins to a string |
-| lint/lint.mjs:1515 | lint-refuse | string-order | strings | one-decider | compare two strings, or convert both operands explicitly |
-| lint/lint.mjs:1526 | lint-refuse | mixed-types | equality | one-decider | a value that is sometimes a primitive and sometimes a record or array compares with === only against |
-| lint/lint.mjs:1527 | lint-refuse | reference-equality | equality | one-decider | === on arrays and records compares references; compare fields |
-| lint/lint.mjs:1538 | lint-refuse | generator-bound | generators | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:1538 | lint-refuse | generator-effect | generators | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:1538 | lint-refuse | generator-use | generators | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:1540 | lint-refuse | hook-order | react | shared (reactHook) | a hook is called under a branch, a loop, a nested function or after an early return; hooks run at th |
-| lint/lint.mjs:1547 | lint-refuse | prototype | prototype | shared (ownKeyTest) | <ok.refuse> |
-| lint/lint.mjs:1548 | lint-refuse | optional-chain | optional-chain | exception:optional-source-vs-emitted-callee (optionalCallShape) | <shape.why> |
-| lint/lint.mjs:1555 | lint-refuse | unsupported-call | calls | one-decider | ${} takes ${} arguments |
-| lint/lint.mjs:1556 | lint-refuse | generator-use | generators | one-decider | consume a pure generator directly in for-of, spread, Array.from or yield* |
-| lint/lint.mjs:1557 | lint-refuse | async | promises | shared (promiseConsumed) | an async unit is called without await |
-| lint/lint.mjs:1559 | lint-refuse | spread | arrays | one-decider | a spread argument goes to a rest parameter, as the last argument |
-| lint/lint.mjs:1559 | lint-refuse | function-value | calls | one-decider | a same-file function takes values, not callbacks |
-| lint/lint.mjs:1566 | lint-refuse | this | classes | one-decider | `this` outside a class method |
-| lint/lint.mjs:1568 | lint-refuse | bound-function | calls | one-decider | `bind` fixes a receiver for a later call; call the function with its receiver instead |
-| lint/lint.mjs:1569 | lint-refuse | unsupported-call | calls | one-decider | `call` and `apply` take the receiver first |
-| lint/lint.mjs:1570 | lint-refuse | unsupported-call | calls | one-decider | `apply` takes its arguments as one array literal |
-| lint/lint.mjs:1577 | lint-refuse | math-empty | library | lowering (nonemptyMathArgs) | Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback |
-| lint/lint.mjs:1578 | lint-refuse | spread | arrays | one-decider | Math sequence arguments must be numbers; narrow opaque values before spreading |
-| lint/lint.mjs:1588 | lint-refuse | unsupported-call | calls | one-decider | ${}.${} takes ${} arguments |
-| lint/lint.mjs:1589 | lint-refuse | generator-use | generators | one-decider | consume a static generator through a top-level generator function |
-| lint/lint.mjs:1590 | lint-refuse | async | promises | shared (promiseConsumed) | an async unit is called without await |
-| lint/lint.mjs:1597 | lint-refuse | opaque-mutation | mutation | one-decider | .${}() on `${}`, an opaque value${}, used as a value: the call may mutate it |
-| lint/lint.mjs:1597 | lint-refuse | param-mutation | mutation | one-decider | .${}() on `${}`, an opaque value${}, used as a value: the call may mutate it |
-| lint/lint.mjs:1606 | lint-refuse | async-predicate | callbacks | one-decider | ${} does not await its predicate: a Promise is truthy even when it resolves false; await values with |
-| lint/lint.mjs:1607 | lint-refuse | async-reduce | callbacks | one-decider | reduce passes a Promise accumulator without waiting; use a for-of loop with await |
-| lint/lint.mjs:1608 | lint-refuse | async-callback | callbacks | one-decider | ${} does not await its callbacks; use await Promise.all(xs.${}(...)) |
-| lint/lint.mjs:1609 | lint-refuse | callback-form | callbacks | one-decider | a callback thisArg is outside the subset; capture the receiver in an arrow |
-| lint/lint.mjs:1612 | lint-refuse | callback-result | callbacks | one-decider | an effectful type-predicate callback needs an explicit for-of loop with a type guard |
-| lint/lint.mjs:1613 | lint-refuse | callback-result | callbacks | one-decider | a thenable callback needs an async arrow with an explicit await |
-| lint/lint.mjs:1614 | lint-refuse | callback-result | callbacks | one-decider | an effectful flatMap callback returns either arrays on every path or scalar values on every path; us |
-| lint/lint.mjs:1617 | lint-refuse | callback-form | callbacks | one-decider | an effectful array callback takes the element (and an index), or the accumulator and the element; an |
-| lint/lint.mjs:1619 | lint-refuse | callback-form | callbacks | one-decider | <bad> |
-| lint/lint.mjs:1621 | lint-refuse | promise-all-order | promises | one-decider | Promise.all does not order work after await; use a for-of loop with await for ordered effects |
-| lint/lint.mjs:1624 | lint-refuse | callback-form | callbacks | one-decider | Promise.all callback loops take one element name and an optional index name |
-| lint/lint.mjs:1638 | lint-refuse | foreach | callbacks | one-decider | forEach does not wait for an async callback: the function returns before the steps finish; write `fo |
-| lint/lint.mjs:1645 | lint-refuse | foreach | callbacks | one-decider | forEach is read as a statement; put it in a block before returning a value |
-| lint/lint.mjs:1652 | lint-refuse | foreach | callbacks | one-decider | forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the l |
-| lint/lint.mjs:1656 | lint-refuse | in-place-mutation | library | one-decider | ${} changes `${}` in place; write `${} = [...${}].${}(...)` |
-| lint/lint.mjs:1656 | lint-refuse | param-mutation | mutation | one-decider | ${} changes `${}` in place; write `${} = [...${}].${}(...)` |
-| lint/lint.mjs:1659 | lint-refuse | param-mutation | mutation | one-decider | push is a statement on a local only |
-| lint/lint.mjs:1663 | lint-refuse | unsupported-call | library | one-decider | ${} needs a callback |
-| lint/lint.mjs:1668 | lint-refuse | unsupported-call | library | one-decider | reduce needs a callback and an initial value |
-| lint/lint.mjs:1671 | lint-refuse | function-value | calls | one-decider | unexpected callback |
-| lint/lint.mjs:1675 | lint-refuse | unsupported-call | library | one-decider | Set.forEach is outside the subset; write for (const x of s) |
-| lint/lint.mjs:1675 | lint-refuse | collection-iterator | library | one-decider | s.${}() is an iterator its first read uses up; spread it, loop over it with for-of or pass it to Arr |
-| lint/lint.mjs:1676 | lint-refuse | unsupported-call | library | one-decider | Map.forEach is outside the subset; write for (const [k, v] of m) |
-| lint/lint.mjs:1676 | lint-refuse | collection-iterator | library | one-decider | m.${}() is an iterator its first read uses up; spread it, loop over it with for-of or pass it to Arr |
-| lint/lint.mjs:1683 | lint-refuse | unsupported-call | library | one-decider | .toString() on ${} reads Object.prototype.toString or the object's own toString, a prototype this un |
-| lint/lint.mjs:1684 | lint-refuse | unsupported-call | library | one-decider | method .${}() on ${} is outside the subset; narrow the union with typeof or Array.isArray first so t |
-| lint/lint.mjs:1685 | lint-refuse | unsupported-call | calls | one-decider | method .${}() on ${} is outside the subset |
-| lint/lint.mjs:1689 | lint-refuse | unsupported-call | calls | one-decider | calls through computed callees are outside the subset |
-| lint/lint.mjs:1698 | lint-refuse | update-expression | operators-as-values | one-decider | <msg> |
-| lint/lint.mjs:1698 | lint-refuse | assignment-expression | operators-as-values | one-decider | <msg> |
-| lint/lint.mjs:1701 | lint-refuse | unsupported-call | library | shared (ARRAY_VALUE_MUTATORS) | splice as a value takes plain arguments |
-| lint/lint.mjs:1702 | lint-refuse | unsupported-call | library | shared (ARRAY_VALUE_MUTATORS) | .${}() in an optional chain changes a receiver that may be absent; check it first |
-| lint/lint.mjs:1706 | lint-refuse | unsupported-call | library | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value changes `${}`; call it on a local array or on a fresh one |
-| lint/lint.mjs:1707 | lint-refuse | param-mutation | mutation | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value changes the parameter `${}`; copy it to a local first |
-| lint/lint.mjs:1708 | lint-refuse | alias-mutation | mutation | shared (ARRAY_VALUE_MUTATORS) | `${}` is another name for a value this function was handed; copy it first |
-| lint/lint.mjs:1709 | lint-refuse | closure-mutation | mutation | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value inside a callback changes `${}`; use a for-of loop |
-| lint/lint.mjs:1711 | lint-refuse | mutator-value | library | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind i |
-| lint/lint.mjs:1712 | lint-refuse | mutator-value | library | shared (ARRAY_VALUE_MUTATORS) | `${}` is read again in the statement that calls .${}() on it; read it in its own statement |
-| lint/lint.mjs:1716 | lint-refuse | unsupported-call | library | one-decider | fill takes a value and an optional start and end |
-| lint/lint.mjs:1717 | lint-refuse | in-place-mutation | library | shared (freshArray) | fill changes its receiver in place and returns it; fill a fresh array (`new Array(n).fill(v)`, `[... |
-| lint/lint.mjs:1721 | lint-refuse | unsupported-call | library | one-decider | toReversed takes no argument |
-| lint/lint.mjs:1722 | lint-refuse | unsupported-call | library | one-decider | toSorted takes one comparator |
-| lint/lint.mjs:1723 | lint-refuse | callback-form | callbacks | one-decider | the comparator of toSorted is a pure function of two elements |
-| lint/lint.mjs:1728 | lint-refuse | unsupported-call | library | one-decider | ${} takes one callback |
-| lint/lint.mjs:1729 | lint-refuse | callback-form | callbacks | one-decider | the callback of ${} takes the element only (an index counts from the end); use a for loop over the i |
-| lint/lint.mjs:1730 | lint-refuse | callback-form | callbacks | one-decider | the callback of ${} is a pure predicate; an effect needs a for loop |
-| lint/lint.mjs:1734 | lint-refuse | unsupported-call | library | one-decider | lastIndexOf takes one value (a start index stays out) |
-| lint/lint.mjs:1736 | lint-refuse | unsupported-call | library | one-decider | lastIndexOf compares by identity; on objects it is outside the subset |
-| lint/lint.mjs:1739 | lint-refuse | unsupported-call | library | one-decider | toString on an array takes no argument |
-| lint/lint.mjs:1740 | lint-refuse | unsupported-call | library | shared (primitiveText) | toString with a radix is read on numbers only |
-| lint/lint.mjs:1744 | lint-refuse | unsupported-call | library | shared (LOCALE_READS) | .${}() reads the host's locale (a world read); call it in a map, filter, find, findIndex, some, ever |
-| lint/lint.mjs:1745 | lint-refuse | unsupported-call | library | shared (LOCALE_READS) | .${}() takes plain arguments |
-| lint/lint.mjs:1748 | lint-refuse | unsupported-call | library | one-decider | substr takes a numeric start and an optional numeric length |
-| lint/lint.mjs:1751 | lint-refuse | unsupported-call | library | one-decider | matchAll takes one pattern |
-| lint/lint.mjs:1752 | lint-refuse | unsupported-call | library | one-decider | matchAll needs the g flag; without it the call throws a TypeError |
-| lint/lint.mjs:1755 | lint-refuse | unsupported-call | library | one-decider | matchAll needs the g flag (and not y); without it the call throws a TypeError |
-| lint/lint.mjs:1757 | lint-refuse | unsupported-call | library | one-decider | matchAll starts at its pattern's lastIndex, which another call may have moved; pass a regular expres |
-| lint/lint.mjs:1759 | lint-refuse | unsupported-call | library | one-decider | search takes one pattern |
-| lint/lint.mjs:1771 | lint-refuse | callback-form | callbacks | one-decider | ${} is read as a callback only through an arrow; write `(x) => ${}(x)` with the arguments it reads |
-| lint/lint.mjs:1772 | lint-refuse | callback-form | callbacks | one-decider | ${} as a callback is read for map${}; write an inline arrow for ${} |
-| lint/lint.mjs:1776 | lint-refuse | async-callback | callbacks | one-decider | Promise.all over the named async function `${}` needs an inline async arrow so its awaits are read i |
-| lint/lint.mjs:1782 | lint-refuse | callback-form | callbacks | one-decider | a class method passed as a callback loses its receiver; write an inline arrow |
-| lint/lint.mjs:1783 | lint-refuse | async | promises | one-decider | an async function cannot be a callback |
-| lint/lint.mjs:1784 | lint-refuse | callback-form | callbacks | one-decider | a generator passed as a callback returns its iterator; write an inline arrow |
-| lint/lint.mjs:1785 | lint-refuse | callback-form | callbacks | one-decider | `${}` is generic; pass it through an inline arrow so its type arguments are fixed |
-| lint/lint.mjs:1786 | lint-refuse | callback-form | callbacks | one-decider | a named effectful callback takes plain parameters, at most ${} (what ${} passes); write an inline ar |
-| lint/lint.mjs:1787 | lint-refuse | callback-form | callbacks | one-decider | `${}` changes its argument, which here is the array's element; write an inline arrow that copies it |
-| lint/lint.mjs:1791 | lint-refuse | callback-form | callbacks | one-decider | a named effectful callback takes plain parameters, at most ${} (what ${} passes); write an inline ar |
-| lint/lint.mjs:1792 | lint-refuse | callback-form | callbacks | one-decider | an effectful array callback needs an inline arrow so its world transitions are read in array order |
-| lint/lint.mjs:1794 | lint-refuse | callback-result | callbacks | one-decider | an effectful type-predicate callback needs an explicit for-of loop with a type guard |
-| lint/lint.mjs:1795 | lint-refuse | callback-result | callbacks | one-decider | an effectful flatMap callback returns either arrays on every path or scalar values on every path; us |
-| lint/lint.mjs:1797 | lint-refuse | unsupported-call | library | one-decider | reduce needs a callback and an initial value |
-| lint/lint.mjs:1911 | lint-refuse | callback-control | exceptions | shared (syncLoopCallback) | try, throw or a return from an inner loop in a callback needs an explicit for-of loop |
-| lint/lint.mjs:1921 | lint-refuse | callback-form | callbacks | one-decider | a class method cannot be passed as a callback |
-| lint/lint.mjs:1921 | lint-refuse | async | promises | one-decider | an async function cannot be a callback |
-| lint/lint.mjs:1921 | lint-refuse | callback-form | callbacks | one-decider | the callback takes at most ${} plain parameter(s) |
-| lint/lint.mjs:1923 | lint-refuse | callback-form | callbacks | one-decider | a callback is an arrow function, a same-file function or a local function value |
-| lint/lint.mjs:1925 | lint-refuse | callback-form | callbacks | one-decider | the callback must be an arrow function |
-| lint/lint.mjs:1927 | lint-refuse | async | promises | one-decider | async callbacks are outside the subset |
-| lint/lint.mjs:1928 | lint-refuse | callback-form | callbacks | one-decider | the callback takes at most ${} plain parameter(s); a default is read only where the parameter's type |
-| lint/lint.mjs:1959 | lint-refuse | react-handler-capture | react | shared (arrowOf) | a React closure captures a changing local; capture a const value or use a state setter |
-| lint/lint.mjs:1967 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | a local component value must be a string tag name or a named component |
-| lint/lint.mjs:1968 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | tag form ${} is outside the subset |
-| lint/lint.mjs:1973 | lint-refuse | callback-form | callbacks | one-decider | a handler is an arrow function |
-| lint/lint.mjs:1984 | lint-refuse | spread | arrays | one-decider | spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outsi |
-| lint/lint.mjs:1994 | lint-refuse | spread | arrays | one-decider | bind same-file call arguments inside an if statement before spreading; conditional expressions do no |
-| lint/lint.mjs:2008 | lint-refuse | spread | arrays | one-decider | spread arguments need an outside callee or a supported sequence operation |
-| lint/lint.mjs:2013 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | call a literal method on its object; detached methods need an explicit receiver |
-| lint/lint.mjs:2017 | lint-refuse | prototype | prototype | one-decider | `this.constructor` is the run-time class of the receiver, a subclass too; name the class to read its |
-| lint/lint.mjs:2020 | lint-refuse | prototype | prototype | one-decider | `.${}` reaches the prototype chain |
-| lint/lint.mjs:2021 | lint-refuse | global-read | names | one-decider | `${}` is a static method used as a value; call it, or pass an arrow that calls it |
-| lint/lint.mjs:2035 | lint-refuse | unsupported-member | members | shared (matchGroupRead) | group `${}` may not take part in a match (undefined when it does not, whatever TypeScript says) and  |
-| lint/lint.mjs:2037 | lint-refuse | unsupported-member | members | shared (matchGroupsDestructure) | group `${}` may not take part in a match (undefined when it does not, whatever TypeScript says) and  |
-| lint/lint.mjs:2044 | lint-refuse | unsupported-member | members | one-decider | property .${} on ${}: constrain the type parameter to one record declaring it |
-| lint/lint.mjs:2047 | lint-refuse | unsupported-member | members | one-decider | `.${}` called through apply or call is not the direct call here: ${}; call it on the array: `a.${}(. |
-| lint/lint.mjs:2048 | lint-refuse | unsupported-member | members | one-decider | <memberRow(name === 'index' ? 'match-index' : 'match-groups')> |
-| lint/lint.mjs:2049 | lint-refuse | unsupported-member | members | one-decider | property .${} on ${} is outside the subset |
-| lint/lint.mjs:2051 | lint-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
-| lint/lint.mjs:2051 | lint-refuse | prototype | prototype | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
-| lint/lint.mjs:2052 | lint-refuse | unsupported-member | members | one-decider | property .${} is not declared on ${} |
-| lint/lint.mjs:2083 | lint-refuse | arguments | names | one-decider | `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a re |
-| lint/lint.mjs:2086 | lint-refuse | unsupported-member | members | shared (matchCapture) | ${} |
-| lint/lint.mjs:2086 | lint-refuse | unsupported-member | members | shared (matchCapture) | ${} |
-| lint/lint.mjs:2087 | lint-refuse | unsupported-member | members | shared (matchGroupRead) | group `${}` may not take part in a match (undefined when it does not, whatever TypeScript says) and  |
-| lint/lint.mjs:2094 | lint-refuse | prototype | prototype | one-decider | this bracket key reaches the prototype chain; read a declared data field |
-| lint/lint.mjs:2102 | lint-refuse | dynamic-key | keys | one-decider | narrow the record receiver before indexing it |
-| lint/lint.mjs:2108 | lint-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
-| lint/lint.mjs:2108 | lint-refuse | prototype | prototype | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
-| lint/lint.mjs:2108 | lint-refuse | dynamic-key | keys | shared (openRecordType) | bind the computed key before reading the record; a key call may mutate its receiver |
-| lint/lint.mjs:2109 | lint-refuse | dynamic-key | keys | one-decider | <why> |
-| lint/lint.mjs:2113 | lint-refuse | dynamic-key | keys | one-decider | bind the computed key before reading the record; a key call may mutate its receiver |
-| lint/lint.mjs:2114 | lint-refuse | dynamic-key | keys | one-decider | read a literal getter by its declared property name |
-| lint/lint.mjs:2116 | lint-refuse | dynamic-key | keys | shared (openRecordReadWhy, openRecordType) | <w.why> |
-| lint/lint.mjs:2116 | lint-refuse | prototype | prototype | shared (openRecordReadWhy, openRecordType) | <w.why> |
-| lint/lint.mjs:2117 | lint-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY, openRecordType) | <INDEX_WHY> |
-| lint/lint.mjs:2118 | lint-refuse | dynamic-key | keys | one-decider | key ${} is not declared on ${} |
-| lint/lint.mjs:2119 | lint-refuse | dynamic-key | keys | one-decider | call a method by its declared name; computed record reads select data fields |
-| lint/lint.mjs:2123 | lint-refuse | dynamic-key | keys | one-decider | index an array or string by a number, or a record by declared string keys |
-| lint/lint.mjs:2133 | lint-refuse | promise | promises | one-decider | a Promise-returning function must return a promise or be async |
-| lint/lint.mjs:2135 | lint-refuse | promise | promises | one-decider | a promise built with new Promise is not a handle; make the function async |
-| lint/lint.mjs:2139 | lint-refuse | promise | promises | one-decider | a same-file async function runs on after its first await; return it from an async function with awai |
-| lint/lint.mjs:2140 | lint-refuse | promise | promises | one-decider | a promise read out of a collection has no identity in the reading; return the call that made it |
-| lint/lint.mjs:2145 | lint-refuse | promise | promises | one-decider | a held promise of this result type has no identity in the reading; return the call itself |
-| lint/lint.mjs:2148 | lint-refuse | promise | promises | one-decider | return the promise from a call, a name or a conditional, or make the function async |
-| lint/lint.mjs:2169 | lint-refuse | this-param | classes | shared (untypedThisParam) | <why> |
-| lint/lint.mjs:2170 | lint-refuse | untyped-js | types | shared (untypedJsUnit) | <why> |
-| lint/lint.mjs:2171 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2171 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2171 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2172 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | function without a body |
-| lint/lint.mjs:2179 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
-| lint/lint.mjs:2197 | lint-refuse | untyped-js | types | shared (untypedJsUnit) | <why> |
-| lint/lint.mjs:2198 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2198 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2198 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2205 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
-| lint/lint.mjs:2223 | lint-refuse | toplevel-state | module-state | one-decider | bind module state to a plain name |
-| lint/lint.mjs:2224 | lint-refuse | toplevel-effect | module-state | one-decider | move the effectful module initializer into a function |
-| lint/lint.mjs:2231 | lint-refuse | class | classes | one-decider | an anonymous class is outside the subset |
-| lint/lint.mjs:2238 | lint-refuse | untyped-js | types | shared (untypedJsUnit) | <why> |
-| lint/lint.mjs:2239 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2239 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2239 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2246 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
-| lint/lint.mjs:2260 | lint-refuse | toplevel-effect | module-state | one-decider | code at module level runs on import; it is outside the subset |
-| lint/lint.mjs:2266 | lint-refuse | captured-mutable | callback-units | one-decider | captured binding `${}` may be written after this callback is created; capture a stable value |
-| lint/lint.mjs:2268 | lint-refuse | untyped-js | types | shared (callbackUntypedJsUnit) | <why> |
-| lint/lint.mjs:2269 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2269 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2269 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
-| lint/lint.mjs:2274 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
-| lint/lint.mjs:2292 | lint-refuse | exception-binding | exceptions | one-decider | use a distinct name for a local that shadows a value read by finally |
-| lint/lint.mjs:2297 | lint-refuse | exception-return | exceptions | one-decider | return a primitive or copy the value; finally can change the returned alias |
-| lint/lint.mjs:2347 | lint-refuse | implicit-this | classes | one-decider | TS${}: `this` the function does not declare; declare the receiver as a `this` parameter |
-| lint/lint.mjs:2357 | lint-refuse | unresolved-module | types | one-decider | TS${}: `import.meta.${}` is a host-defined property whose type the checkout's lib does not declare |
-| lint/lint.mjs:2368 | lint-refuse | ts-strict | types | one-decider | TS${}: ${} (the value is read at Any: no fact of its type is used; narrow it to give the proof its t |
-| lint/lint.mjs:2371 | lint-refuse | update-expression | operators-as-values | one-decider | <msg> |
-| lint/lint.mjs:2371 | lint-refuse | assignment-expression | operators-as-values | one-decider | <msg> |
-| lint/lint.mjs:2389 | lint-advice | nested-ternary | advice | advice | a branch contains another conditional expression; nested if statements preserve its evaluation order |
-| lint/lint.mjs:2392 | lint-advice | inner-html | advice | advice | this HTML property receives a value that is not a literal; use textContent if the intent is plain te |
-| lint/lint.mjs:2397 | lint-advice | inner-html | advice | advice | document.write parses HTML and changes the document; choose an element for textContent |
-| lint/lint.mjs:2404 | lint-advice | promise-all-order | advice | advice | this loop awaits one call per element; Promise.all needs independent calls that commute in the world |
-| lint/lint.mjs:2412 | lint-advice | foreach | advice | advice | forEach with an index is read as the loop over the positions; a counted for states the index and the |
-| lint/lint.mjs:2431 | lint-refuse | any-type | advice | one-decider | any-type could not read this file: ${} |
-| translate/translate.mjs:154 | translate-throw |  | proof-shape | one-decider | no top-level function named ${} in ${} |
-| translate/translate.mjs:155 | translate-throw |  | proof-shape | one-decider | --fn is required unless --core is given |
-| translate/translate.mjs:225 | translate-refuse |  | proof-shape | one-decider | no top-level function or class method named ${} |
-| translate/translate.mjs:258 | translate-throw |  | translator-internal | one-decider | outside the subset: ${} |
-| translate/translate.mjs:615 | translate-refuse |  | callbacks | one-decider | ${} has no call signature to read as a callback |
-| translate/translate.mjs:649 | translate-refuse |  | callbacks | one-decider | ${} returns a promise; an async callback needs an inline arrow under Promise.all |
-| translate/translate.mjs:653 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
-| translate/translate.mjs:654 | translate-refuse |  | callbacks | one-decider | ${} changes its argument; a callback's argument is the array's element |
-| translate/translate.mjs:655 | translate-refuse |  | callbacks | one-decider | ${} is generic; pass it through an inline arrow |
-| translate/translate.mjs:681 | translate-refuse |  | callbacks | one-decider | parseInt reads the index JavaScript passes as its radix |
-| translate/translate.mjs:682 | translate-refuse |  | callbacks | one-decider | ${} has no reading as a callback |
-| translate/translate.mjs:832 | translate-refuse | property-assign | mutation | lowering (INSTALLS_FUNCTION_WHY, installsFunction) | property-assign: ${} |
-| translate/translate.mjs:969 | translate-refuse | this-param | classes | shared (untypedThisParam) | this-param: ${} |
-| translate/translate.mjs:970 | translate-refuse | this | classes | exception:receiver-scope-vs-self-type | this: `this` outside a class method; a free function declares its receiver as a `this` parameter |
-| translate/translate.mjs:1024 | translate-refuse | internal | translator-internal | one-decider | internal: a static cell read in a pure unit |
-| translate/translate.mjs:1250 | translate-refuse |  | types | one-decider | type parameter ${} is not one of this function's |
-| translate/translate.mjs:1251 | translate-refuse |  | types | one-decider | type parameter ${} hides another of the same name |
-| translate/translate.mjs:1271 | translate-refuse | builtin-type | types | one-decider | builtin-type: ${} needs a standard-library declaration and ${} type argument(s) for its collection r |
-| translate/translate.mjs:1281 | translate-refuse |  | types | one-decider | array-like type ${} has no element type |
-| translate/translate.mjs:1282 | translate-refuse | reference-key | types | one-decider | reference-key: a ${} by ${} compares by reference (SameValueZero); the value reading would equate tw |
-| translate/translate.mjs:1299 | translate-refuse |  | types | one-decider | type ${} is not translatable |
-| translate/translate.mjs:1571 | translate-refuse |  | types | one-decider | union type ${} is not translatable |
-| translate/translate.mjs:1642 | translate-refuse |  | types | one-decider | a field named ${} or ${} is the open record's own slot |
-| translate/translate.mjs:1687 | translate-refuse |  | translator-internal | one-decider | ${} reads or writes a metadata cell of the world in a unit not marked effectful |
-| translate/translate.mjs:1843 | translate-refuse | promise-handler | promises | shared (namedPromiseHandler, promiseForm) |  |
-| translate/translate.mjs:1843 | translate-refuse | promise-thenable | promises | shared (namedPromiseHandler, promiseForm) |  |
-| translate/translate.mjs:1844 | translate-refuse |  | names | one-decider | ${} is a function value; call it |
-| translate/translate.mjs:1942 | translate-refuse | copied-argument | mutation | one-decider | copied-argument: this call may write or keep the object it is handed, and its argument is ${}; bind  |
-| translate/translate.mjs:1943 | translate-refuse | copied-argument | mutation | one-decider | copied-argument: a new object holding objects is handed to a call that may write or keep it; this re |
-| translate/translate.mjs:1948 | translate-refuse | copied-argument | mutation | one-decider | copied-argument: a new object made in a loop is handed to a call that may keep it; every pass makes  |
-| translate/translate.mjs:1955 | translate-refuse | internal | translator-internal | one-decider | internal: an effect in a unit not marked effectful (${}) |
-| translate/translate.mjs:2022 | translate-refuse |  | arrays | one-decider | spread arguments need an ordinary array |
-| translate/translate.mjs:2380 | translate-refuse |  | translator-internal | one-decider | no helper ${} |
-| translate/translate.mjs:2393 | translate-refuse | number-special | numbers | lowering (numberSpecial) | number-special: a non-finite literal needs the opaque numeric reading |
-| translate/translate.mjs:2395 | translate-refuse |  | numbers | one-decider | number literal ${} is not an integer; use --real |
-| translate/translate.mjs:2421 | translate-refuse |  | promises | one-decider | a promise a same-file async unit returns, stored as a handle: the call reads its settled value, so n |
-| translate/translate.mjs:2454 | translate-refuse | type-assertion | type-assertion | shared (typeAssertion) | type-assertion: ${} |
-| translate/translate.mjs:2455 | translate-refuse |  | regex | one-decider | a capture of a group that may not take part (undefined when it does not, whatever TypeScript says) i |
-| translate/translate.mjs:2503 | translate-refuse | string-code-unit | strings | lowering (loneSurrogate) | string-code-unit: ${} |
-| translate/translate.mjs:2613 | translate-refuse | type-assertion | type-assertion | one-decider | type-assertion: a compound write other than +=, -=, *= to a local holding a value whose type nothing |
-| translate/translate.mjs:2617 | translate-refuse |  | operators-as-values | one-decider | value updates need --core |
-| translate/translate.mjs:2630 | translate-refuse |  | mutation | one-decider | assignment value needs a named array or dictionary |
-| translate/translate.mjs:2637 | translate-refuse | assignment-expression | operators-as-values | lowering (valueAssignmentWhy) | assignment-expression: ${} |
-| translate/translate.mjs:2662 | translate-refuse | prototype | prototype | shared (moduleState, protoKeyWrite) | prototype: a key that may be '__proto__' with an object or null value replaces the prototype |
-| translate/translate.mjs:2679 | translate-refuse | update-expression | operators-as-values | shared (erasedReferenceSlot) |  |
-| translate/translate.mjs:2679 | translate-refuse | assignment-expression | operators-as-values | shared (erasedReferenceSlot) |  |
-| translate/translate.mjs:2713 | translate-refuse | internal | translator-internal | one-decider | internal: an effect in a conditional branch of a pure unit |
-| translate/translate.mjs:2778 | translate-refuse |  | names | one-decider | ${} is a function value; call it |
-| translate/translate.mjs:2788 | translate-refuse | definite-assignment | declarations | shared (payloadRead) | definite-assignment: a read TypeScript does not check, of a let that may be unassigned here |
-| translate/translate.mjs:2844 | translate-refuse |  | classes | one-decider | `this` outside a class method |
-| translate/translate.mjs:2867 | translate-refuse |  | tagged-template | one-decider | a tagged template whose raw parts the parser did not keep |
-| translate/translate.mjs:2870 | translate-refuse |  | tagged-template | one-decider | a tagged template with an invalid escape (its cooked part is undefined, which a string sequence does |
-| translate/translate.mjs:2877 | translate-refuse |  | tagged-template | one-decider | a tagged template whose tag is not a name or a member |
-| translate/translate.mjs:2878 | translate-refuse |  | tagged-template | one-decider | a tagged template whose tag may write an object it is handed, read without the world |
-| translate/translate.mjs:2879 | translate-refuse |  | tagged-template | one-decider | a tagged template whose tag is a method that may write its receiver, read without the world |
-| translate/translate.mjs:2881 | translate-refuse |  | tagged-template | one-decider | a tagged template without the TemplateStringsArray type |
-| translate/translate.mjs:2900 | translate-refuse | non-null-assertion | non-null-assertion | shared (payloadRead) | non-null-assertion: `x!` on a value that may be null or undefined, outside a statement lean tests fi |
-| translate/translate.mjs:2903 | translate-refuse | non-null-assertion | non-null-assertion | shared (nonNullOnAbsent) | non-null-assertion: `x!` on a value that may be null or undefined |
-| translate/translate.mjs:2919 | translate-refuse |  | names | one-decider | new.target is not translated |
-| translate/translate.mjs:2942 | translate-refuse |  | unread-syntax | one-decider | expression ${} is not translated |
-| translate/translate.mjs:2949 | translate-refuse |  | arrays | one-decider | a tuple of ${} read as a sequence needs one element type |
-| translate/translate.mjs:2959 | translate-refuse |  | unread-syntax | one-decider | expression SpreadElement is not translated |
-| translate/translate.mjs:2968 | translate-refuse |  | library | one-decider | .${}() on a tuple writes it in place; the tuple is read as a Dafny tuple of its positions, which a s |
-| translate/translate.mjs:2973 | translate-refuse |  | promises | one-decider | an opaque promise call requires an effectful unit |
-| translate/translate.mjs:3062 | translate-refuse | definite-assignment | declarations | shared (absenceCarried) | definite-assignment: a let that may be read unassigned, in a promise handler |
-| translate/translate.mjs:3078 | translate-refuse | promise-handler | promises | lowering (inlinePromiseStatementKind) | promise-handler: this statement has no inline continuation reading |
-| translate/translate.mjs:3093 | translate-refuse | promise-handler | promises | exception:promise-opaque-return | promise-handler: a promise returned from an opaque block of a throwing handler is not read |
-| translate/translate.mjs:3103 | translate-refuse | promise-handler | promises | shared (namedPromiseHandler) |  |
-| translate/translate.mjs:3103 | translate-refuse | promise-thenable | promises | shared (namedPromiseHandler) |  |
-| translate/translate.mjs:3112 | translate-refuse | promise-handler | promises | shared (namedPromiseHandler) | promise-handler: a named handler mutates its argument |
-| translate/translate.mjs:3146 | translate-refuse | promise-pending | promises | shared (promiseConsumed) | promise-pending: await or return the promise directly |
-| translate/translate.mjs:3147 | translate-refuse |  | promises | one-decider | promise forms require an effectful core unit |
-| translate/translate.mjs:3164 | translate-refuse | generator-bound | generators | shared (executorShape) |  |
-| translate/translate.mjs:3164 | translate-refuse | generator-effect | generators | shared (executorShape) |  |
-| translate/translate.mjs:3164 | translate-refuse | generator-use | generators | shared (executorShape) |  |
-| translate/translate.mjs:3167 | translate-refuse | promise-unsettled | promises | shared (executorShape) | promise-unsettled: an executor path does not settle |
-| translate/translate.mjs:3169 | translate-refuse | promise-combinator | promises | one-decider | promise-combinator: completion order is not read |
-| translate/translate.mjs:3197 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
-| translate/translate.mjs:3205 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
-| translate/translate.mjs:3279 | translate-refuse | prototype | prototype | shared (plainObjectTest) |  |
-| translate/translate.mjs:3376 | translate-refuse | conditional-effect | logic-values | one-decider | conditional-effect: move the effect into an explicit if statement |
-| translate/translate.mjs:3397 | translate-refuse | prototype | prototype | shared (inPrototypeReach) | prototype: this file makes an object whose prototype is not Object.prototype (line ${}), and ${}; `i |
-| translate/translate.mjs:3398 | translate-refuse | dynamic-key | keys | shared (openRecordIn) | dynamic-key: ${} |
-| translate/translate.mjs:3445 | translate-refuse |  | equality | one-decider | loose equality on a non-primitive operand is not translated |
-| translate/translate.mjs:3558 | translate-refuse | prototype | prototype | shared (literalProtoMember) | prototype: `__proto__:` in a literal sets the prototype, not a key |
-| translate/translate.mjs:3559 | translate-refuse | spread-source | record-copy | shared (copySource) | spread-source: ${} |
-| translate/translate.mjs:3643 | translate-refuse |  | keys | one-decider | a computed key on a record with declared keys is a literal or a union of literals |
-| translate/translate.mjs:3661 | translate-refuse | spread-source | record-copy | shared (spreadReadWhy) | spread-source: ${} |
-| translate/translate.mjs:3687 | translate-refuse |  | keys | one-decider | the fields of a computed key union have different types |
-| translate/translate.mjs:3929 | translate-refuse |  | callbacks | one-decider | ${} is not a function |
-| translate/translate.mjs:3935 | translate-refuse |  | callbacks | one-decider | ${} has effects; it cannot be a callback |
-| translate/translate.mjs:3940 | translate-refuse |  | callbacks | one-decider | ${} is not a same-file function or a local function value |
-| translate/translate.mjs:3942 | translate-refuse |  | callbacks | one-decider | an effect inside a callback; the order of its world transitions is not defined |
-| translate/translate.mjs:3956 | translate-refuse |  | callbacks | one-decider | callback path ends without a return |
-| translate/translate.mjs:3968 | translate-refuse |  | regex | shared (matchGroupsDestructure) | `${}` of the destructured groups may be undefined (its group does not take part in every match) |
-| translate/translate.mjs:3978 | translate-refuse |  | react | one-decider | a hook result is taken apart field by field |
-| translate/translate.mjs:3978 | translate-refuse |  | react | one-decider | ${} is not a field the hook table declares for ${} |
-| translate/translate.mjs:3989 | translate-refuse |  | destructuring | one-decider | record rest needs a typed source record |
-| translate/translate.mjs:3991 | translate-refuse |  | destructuring | one-decider | a computed key in a record rest pattern is not translated |
-| translate/translate.mjs:4035 | translate-refuse |  | destructuring | one-decider | a rest element of a tuple or an opaque value is not translated |
-| translate/translate.mjs:4043 | translate-refuse |  | destructuring | one-decider | pattern is not translated |
-| translate/translate.mjs:4062 | translate-refuse |  | regex | one-decider | `.groups` of a pattern that names no group is undefined |
-| translate/translate.mjs:4065 | translate-refuse |  | regex | one-decider | a capture of a match that may be null, read without `?.` |
-| translate/translate.mjs:4065 | translate-refuse |  | regex | one-decider | a capture that may not take part read as a string |
-| translate/translate.mjs:4066 | translate-refuse |  | regex | one-decider | a capture read as ${} |
-| translate/translate.mjs:4078 | translate-refuse | read-after-call | mutation | one-decider | read-after-call: `${}` is read after a call that may change its object, and this reading holds the o |
-| translate/translate.mjs:4100 | translate-refuse |  | names | shared (moduleState) | ${}.${} is a function; call it |
-| translate/translate.mjs:4105 | translate-refuse | internal | translator-internal | one-decider | internal: a world field read in a pure method |
-| translate/translate.mjs:4110 | translate-refuse | internal | translator-internal | one-decider | internal: a world field read in a pure unit |
-| translate/translate.mjs:4139 | translate-refuse |  | members | one-decider | property .${} on ${}: the constraint declares no such member |
-| translate/translate.mjs:4141 | translate-refuse |  | optional-chain | one-decider | ?. on a type parameter is not translated |
-| translate/translate.mjs:4280 | translate-refuse | absent-number | absence | one-decider | absent-number: ${} of a local that holds a dictionary read typed without undefined and may change; b |
-| translate/translate.mjs:4315 | translate-refuse |  | keys | one-decider | an absent key reads undefined, which this value type leaves out |
-| translate/translate.mjs:4340 | translate-refuse | prototype | prototype | shared (openRecordReadWhy) | prototype: ${} names a member of Object.prototype, which an open record reads through its prototype, |
-| translate/translate.mjs:4342 | translate-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY) | dynamic-key: ${} |
-| translate/translate.mjs:4350 | translate-refuse | prototype | prototype | shared (matchCapture, matchGroupRead) |  |
-| translate/translate.mjs:4355 | translate-refuse |  | keys | one-decider | tuple index must be a literal |
-| translate/translate.mjs:4378 | translate-refuse |  | keys | one-decider | key ${} is not a declared data field |
-| translate/translate.mjs:4419 | translate-refuse | internal | translator-internal | one-decider | internal: a same-file constructor called from a pure unit |
-| translate/translate.mjs:4423 | translate-refuse |  | calls | one-decider | the constructor of ${} was not translated |
-| translate/translate.mjs:4460 | translate-refuse |  | library | shared (freshArray) | .${}() as a value needs a local array or a fresh one |
-| translate/translate.mjs:4514 | translate-refuse |  | arrays | one-decider | a spread among other arguments is not translated |
-| translate/translate.mjs:4531 | translate-refuse |  | calls | one-decider | ${} needs ${} arguments |
-| translate/translate.mjs:4568 | translate-refuse |  | proof-shape | one-decider | unknown record enumeration needs the world; use --core |
-| translate/translate.mjs:4621 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
-| translate/translate.mjs:4623 | translate-refuse | internal | translator-internal | one-decider | internal: an accessor of a receiver not made here, in a pure unit |
-| translate/translate.mjs:4638 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
-| translate/translate.mjs:4640 | translate-refuse |  | proof-shape | one-decider | ${} loops, so it is a Dafny method and cannot be called inside an expression |
-| translate/translate.mjs:4645 | translate-refuse |  | calls | one-decider | the argument for `${}`, which ${} changes, must be a name or a fresh literal |
-| translate/translate.mjs:4647 | translate-refuse | internal | translator-internal | one-decider | internal: effectful callee in a pure unit |
-| translate/translate.mjs:4657 | translate-refuse | internal | translator-internal | one-decider | internal: effectful callee in a pure unit |
-| translate/translate.mjs:4673 | translate-refuse | optional-chain | optional-chain | exception:optional-source-vs-emitted-callee (optionalCallShape) | optional-chain: ${} |
-| translate/translate.mjs:4756 | translate-refuse |  | react | one-decider | a lazy initializer with more than a return is not read |
-| translate/translate.mjs:4784 | translate-refuse |  | calls | one-decider | `apply` takes its arguments as one array literal |
-| translate/translate.mjs:4785 | translate-refuse |  | calls | one-decider | `call` and `apply` take the receiver first |
-| translate/translate.mjs:4790 | translate-refuse |  | calls | one-decider | an array method called through ${} is not the direct call here: ${} |
-| translate/translate.mjs:4793 | translate-refuse |  | translator-internal | one-decider | hook ${} is a world transition in a unit not marked effectful |
-| translate/translate.mjs:4799 | translate-refuse |  | translator-internal | one-decider | hook ${} is a world transition in a unit not marked effectful |
-| translate/translate.mjs:4805 | translate-refuse | prototype | prototype | shared (ownKeyTest) |  |
-| translate/translate.mjs:4809 | translate-refuse | prototype | prototype | lowering (nullPrototypeCreate) | prototype: ${} |
-| translate/translate.mjs:4830 | translate-refuse |  | calls | one-decider | call through a computed callee is not translated |
-| translate/translate.mjs:4878 | translate-refuse | internal | translator-internal | one-decider | internal: effectful method called from a pure method |
-| translate/translate.mjs:4922 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
-| translate/translate.mjs:4926 | translate-refuse | internal | translator-internal | one-decider | internal: effectful method called from a pure unit |
-| translate/translate.mjs:4965 | translate-refuse | math-empty | library | lowering (nonemptyMathArgs) | math-empty: provide a nonempty argument list |
-| translate/translate.mjs:5017 | translate-refuse |  | library | one-decider | reduce without an initial value throws a TypeError on an empty array, which this reading of a value  |
-| translate/translate.mjs:5047 | translate-refuse |  | library | one-decider | array method .${}() is not translated |
-| translate/translate.mjs:5105 | translate-refuse |  | library | one-decider | Set.${}() is not translated as an expression |
-| translate/translate.mjs:5118 | translate-refuse |  | library | one-decider | Map.${}() is not translated as an expression |
-| translate/translate.mjs:5138 | translate-refuse |  | control-flow | one-decider | bare return |
-| translate/translate.mjs:5280 | translate-refuse |  | control-flow | one-decider | a case declaration shadows a name the switch head assigns |
-| translate/translate.mjs:5326 | translate-refuse |  | control-flow | one-decider | a path ends without a return |
-| translate/translate.mjs:5343 | translate-refuse |  | control-flow | one-decider | statement ${} cannot be an expression |
-| translate/translate.mjs:5361 | translate-refuse |  | exceptions | one-decider | throw is translated in --core mode only |
-| translate/translate.mjs:5415 | translate-refuse |  | unread-syntax | one-decider | statement ${} is not translated |
-| translate/translate.mjs:5435 | translate-refuse | receiver-write | mutation | shared (thisParamPath) | receiver-write: a free function writes a nonoptional data record receiver |
-| translate/translate.mjs:5438 | translate-refuse | receiver-mutation | mutation | shared (receiverRecordPath) | receiver-mutation: a receiver path needs nonoptional data records |
-| translate/translate.mjs:5440 | translate-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (loopElementBinding) | alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so a |
-| translate/translate.mjs:5453 | translate-refuse |  | mutation | one-decider | field ${} is not a declared field of a record |
-| translate/translate.mjs:5465 | translate-refuse |  | mutation | one-decider | assignment through an optional field is not translated |
-| translate/translate.mjs:5485 | translate-refuse |  | mutation | one-decider | an element write through a value that is not an array |
-| translate/translate.mjs:5492 | translate-refuse |  | mutation | one-decider | field ${} is not a declared field of a record |
-| translate/translate.mjs:5501 | translate-refuse |  | mutation | one-decider | assignment through an optional field is not translated |
-| translate/translate.mjs:5537 | translate-refuse |  | module-state | shared (moduleState) | a logical module assignment uses the opaque unit reading |
-| translate/translate.mjs:5548 | translate-refuse |  | module-state | one-decider | a logical static assignment is outside the reading |
-| translate/translate.mjs:5557 | translate-refuse | prototype | prototype | shared (protoKeyWrite) | prototype: a key that may be '__proto__' with an object or null value replaces the prototype |
-| translate/translate.mjs:5565 | translate-refuse |  | mutation | one-decider | index assignment on a non-array |
-| translate/translate.mjs:5578 | translate-refuse | internal | translator-internal | one-decider | internal: an outside write in a pure unit |
-| translate/translate.mjs:5582 | translate-refuse | internal | translator-internal | one-decider | internal: a world field written in a pure unit |
-| translate/translate.mjs:5602 | translate-refuse |  | mutation | one-decider | a compound assignment on an optional field is not translated |
-| translate/translate.mjs:5603 | translate-refuse |  | mutation | one-decider | assignment operator is not translated |
-| translate/translate.mjs:5615 | translate-refuse | internal | translator-internal | one-decider | internal: a world field written in a pure method |
-| translate/translate.mjs:5619 | translate-refuse |  | mutation | one-decider | delete of a field of this is not translated; assign undefined |
-| translate/translate.mjs:5620 | translate-refuse |  | mutation | one-decider | delete of `${}`, a field that is not optional |
-| translate/translate.mjs:5622 | translate-refuse |  | mutation | one-decider | delete target is not translated |
-| translate/translate.mjs:5625 | translate-refuse |  | mutation | one-decider | element write through a path: the heap core reads it, the value reading does not |
-| translate/translate.mjs:5658 | translate-refuse |  | proof-shape | shared (bucketMaps) | a push through a bucket map is read in --core mode |
-| translate/translate.mjs:5694 | translate-refuse |  | library | one-decider | .${}() is not translated here |
-| translate/translate.mjs:5697 | translate-refuse |  | control-flow | one-decider | statement expression is not translated |
-| translate/translate.mjs:5705 | translate-refuse |  | control-flow | one-decider | a bare await statement has no effect in the core |
-| translate/translate.mjs:5705 | translate-refuse | alias-mutation | mutation | one-decider | alias-mutation: `${}` and `${}` name one object; this reading carries a write through either in --co |
-| translate/translate.mjs:5711 | translate-refuse |  | loops | one-decider | in --real mode a for-loop counter starts at an integer literal |
-| translate/translate.mjs:5758 | translate-refuse |  | control-flow | one-decider | an abrupt exit has no enclosing loop or switch |
-| translate/translate.mjs:6009 | translate-refuse | definite-assignment | declarations | shared (absenceCarried) | definite-assignment: a let that may be read unassigned, inside a try |
-| translate/translate.mjs:6039 | translate-refuse | non-null-assertion | non-null-assertion | one-decider | non-null-assertion: the value read is not held as an option here |
-| translate/translate.mjs:6053 | translate-refuse | non-null-assertion | non-null-assertion | one-decider | non-null-assertion: the value read is not held as an option here |
-| translate/translate.mjs:6096 | translate-refuse | definite-assignment | declarations | shared (absenceCarried, absenceHome) | definite-assignment: a let that may be read unassigned, outside a function's own flow |
-| translate/translate.mjs:6135 | translate-refuse |  | local-functions | one-decider | a nested function needs a name |
-| translate/translate.mjs:6152 | translate-refuse |  | control-flow | one-decider | break or continue outside a loop |
-| translate/translate.mjs:6155 | translate-refuse |  | unread-syntax | one-decider | statement ${} is not translated |
-| translate/translate.mjs:6194 | translate-refuse | internal | translator-internal | one-decider | internal: an opaque block in a unit not marked effectful |
-| translate/translate.mjs:6303 | translate-refuse |  | proof-shape | one-decider | effectful callbacks need --core |
-| translate/translate.mjs:6315 | translate-refuse |  | exceptions | one-decider | a throwing callback here has no fault channel; call the array method in a statement of the unit |
-| translate/translate.mjs:6382 | translate-refuse |  | loops | one-decider | async iterator abrupt completion needs an opaque loop |
-| translate/translate.mjs:6514 | translate-refuse |  | exceptions | one-decider | a throwing callback here has no fault channel; call the array method in a statement of the unit |
-| translate/translate.mjs:6524 | translate-refuse |  | loops | one-decider | an effect in a for header |
-| translate/translate.mjs:6575 | translate-refuse | key-order | loops | shared (forInKeyOrder) | key-order: a for-in over an object whose key order the function does not fix (a parameter, a spread, |
-| translate/translate.mjs:6621 | translate-refuse |  | loops | one-decider | while needs `// @decreases <expr>` |
-| translate/translate.mjs:6636 | translate-refuse |  | control-flow | one-decider | a labelled exit lacks its completion channel |
-| translate/translate.mjs:6636 | translate-refuse | internal | translator-internal | one-decider | internal: return in a loop without the return shape |
-| translate/translate.mjs:6845 | translate-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (parameterMutationConflicts) | param-assign: parameter `${}` is rebound and also changed in place |
-| translate/translate.mjs:6968 | translate-refuse | type-assertion | type-assertion | one-decider | type-assertion: `${}` hands a value whose type nothing checked to ${}, or reads its held result, and |
-| translate/translate.mjs:6971 | translate-refuse | type-assertion | type-assertion | one-decider | type-assertion: a unit named ${}${} takes the name of ${}'s reading at Any |
-| translate/translate.mjs:6987 | translate-refuse | untyped-js | types | shared (callbackUntypedJsUnit) | untyped-js: ${} |
-| translate/translate.mjs:6989 | translate-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (firstElementMutation) | alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so t |
-| translate/translate.mjs:6990 | translate-refuse | alias-mutation | mutation | lowering (bucketMaps, sharedMutation) | alias-mutation: `${}` is changed in place while ${} (line ${}); this reading reads an object as a va |
-| translate/translate.mjs:6994 | translate-refuse |  | generators | shared (asyncGenerator) | async generators need --core |
-| translate/translate.mjs:6995 | translate-refuse |  | generators | one-decider | generators need --core |
-| translate/translate.mjs:7023 | translate-refuse |  | control-flow | one-decider | a path ends without a return |
-| translate/translate.mjs:7029 | translate-refuse | read-after-call | mutation | shared (readAfterCall) | read-after-call: ${} |
-| translate/translate.mjs:7031 | translate-refuse | read-after-call | mutation | one-decider | read-after-call: `${}` is read after a call that may change it, and this form of read does not take  |
-| translate/translate.mjs:7051 | translate-refuse |  | decorators | one-decider | the route wrapper is not read: ${} |
-| translate/translate.mjs:7057 | translate-refuse |  | decorators | one-decider | a piped parameter is a plain required name |
-| translate/translate.mjs:7100 | translate-throw |  | numbers | one-decider | internal: an integer division was not placed under Math.floor |
+| lint/lint.mjs:287 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
+| lint/lint.mjs:312 | lint-refuse | prototype | prototype | lowering (NULL_PROTOTYPE_WHY, nullPrototypeCreate) | <NULL_PROTOTYPE_WHY> |
+| lint/lint.mjs:313 | lint-refuse | prototype | prototype | one-decider | `Object.${}` reaches the prototype chain or the property descriptors; no transition models it |
+| lint/lint.mjs:314 | lint-refuse | freeze | prototype | one-decider | `Object.${}` makes a later write throw in strict code; the value reading has no fault for that write |
+| lint/lint.mjs:315 | lint-refuse | assign-target | record-copy | one-decider | `Object.assign` writes into its first argument; pass a fresh literal `{}` as the target or spread th |
+| lint/lint.mjs:316 | lint-refuse | spread-source | record-copy | shared (copySource) | `Object.assign` onto a literal copies every own key of `${}`: ${}; the call is read as a function of |
+| lint/lint.mjs:513 | lint-refuse | unsupported-type | types | one-decider | type ${} is not translatable |
+| lint/lint.mjs:521 | lint-refuse | arguments | names | one-decider | `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a re |
+| lint/lint.mjs:524 | lint-refuse | exception-callback | exceptions | one-decider | call the throwing unit directly, or pass it to a call; a stored function value has no fault channel |
+| lint/lint.mjs:525 | lint-refuse | generator-use | generators | shared (asyncGenerator) | consume a pure generator directly in for-of, spread, Array.from or yield* |
+| lint/lint.mjs:526 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | pass a fresh literal handler or keep calls on the local object; sharing a named method object needs  |
+| lint/lint.mjs:530 | lint-refuse | toplevel-effect | module-state | shared (moduleState) | move the effectful module initializer into a function |
+| lint/lint.mjs:533 | lint-refuse | global-read | names | one-decider | `${}` is module state that can change; the subset reads constants only |
+| lint/lint.mjs:535 | lint-refuse | number-special | numbers | lowering (numberSpecial) | the finite number model has no NaN or infinity; use lane B for special-value arithmetic |
+| lint/lint.mjs:536 | lint-refuse | dynamic-eval | names | one-decider | `${}` is outside the subset |
+| lint/lint.mjs:536 | lint-refuse | prototype | prototype | one-decider | `${}` is outside the subset |
+| lint/lint.mjs:539 | lint-refuse | global-read | names | one-decider | global `${}` is outside the subset |
+| lint/lint.mjs:540 | lint-refuse | global-read | names | one-decider | `${}` cannot be resolved |
+| lint/lint.mjs:564 | lint-refuse | static-this | classes | one-decider | `${}` in a static method is the class the call names, a subclass too; name the class itself, or give |
+| lint/lint.mjs:572 | lint-refuse | global-read | names | one-decider | `${}` holds a function; call a static method of the class instead |
+| lint/lint.mjs:574 | lint-refuse | global-read | names | one-decider | `.${}()` changes the static `${}` in place; assign a new value to the field instead |
+| lint/lint.mjs:658 | lint-refuse | var | declarations | one-decider | `var` is outside the subset; use let or const |
+| lint/lint.mjs:659 | lint-refuse | definite-assignment | declarations | shared (absenceCarried, absenceHome) | this let may be read before its first assignment (a read TypeScript does not check, or a write insid |
+| lint/lint.mjs:659 | lint-refuse | definite-assignment | declarations | one-decider | `${}` may be read here before its first assignment (TypeScript does not check this read), and lean t |
+| lint/lint.mjs:667 | lint-refuse | bare-return | control-flow | one-decider | return needs a value |
+| lint/lint.mjs:673 | lint-refuse | destructuring | destructuring | one-decider | for-of binds one name or one pattern |
+| lint/lint.mjs:675 | lint-refuse | for-of-non-array | loops | one-decider | for-of runs over arrays, strings, sets, maps and iterable values |
+| lint/lint.mjs:690 | lint-refuse | for-in | loops | one-decider | for-in takes `const k` |
+| lint/lint.mjs:691 | lint-refuse | key-order | loops | shared (forInKeyOrder) | a for-in visits the own keys in creation order (ECMA-262 14.7.5.9, 10.1.11), and the order of this o |
+| lint/lint.mjs:692 | lint-refuse | for-in-delete | loops | one-decider | a for-in skips a key deleted before its visit (ECMA-262 14.7.5.9), and the reading visits the keys t |
+| lint/lint.mjs:695 | lint-refuse | break-continue | control-flow | one-decider | break outside a loop or switch |
+| lint/lint.mjs:696 | lint-refuse | break-continue | control-flow | one-decider | continue outside a loop |
+| lint/lint.mjs:698 | lint-refuse | exception-callback | exceptions | one-decider | move the throw to a same-file unit and call it directly |
+| lint/lint.mjs:703 | lint-refuse | destructuring | destructuring | one-decider | catch binds one name |
+| lint/lint.mjs:709 | lint-refuse | label | control-flow | one-decider | a label must name a loop; replace a labelled block with conditional control |
+| lint/lint.mjs:713 | lint-refuse | generator | local-functions | one-decider | generators are outside the subset |
+| lint/lint.mjs:715 | lint-refuse | param-form | declarations | one-decider | rest parameters are outside the subset |
+| lint/lint.mjs:724 | lint-refuse | class | classes | one-decider | classes are outside the subset |
+| lint/lint.mjs:725 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | statement ${} is outside the subset |
+| lint/lint.mjs:773 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | read named fields on the literal object; copying accessors or detached methods needs a receiver |
+| lint/lint.mjs:776 | lint-refuse | unsupported-member | members | one-decider | ${} |
+| lint/lint.mjs:780 | lint-refuse | record-rest | destructuring | one-decider | record rest needs a parameter of a plain record with written keys, or a fixed nonempty scalar record |
+| lint/lint.mjs:891 | lint-refuse | uninitialised | destructuring | one-decider | a pattern needs an initial value |
+| lint/lint.mjs:966 | lint-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (elementMutation) | `${}` is the accumulator `reduce` hands its callback: it holds the array's first element when the ca |
+| lint/lint.mjs:967 | lint-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (elementMutation) | `${}` is the element `${}` hands its callback; a field written through it (`=`, `+=`, `-=`, `*=`, `+ |
+| lint/lint.mjs:975 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
+| lint/lint.mjs:985 | lint-refuse | global-mutation | mutation | shared (moduleState) | assignment to `${}`, which this function does not own |
+| lint/lint.mjs:986 | lint-refuse | render-impure | react | shared (moduleState) | a render function writes `${}`, a variable outside it; move the write into an event handler or an ef |
+| lint/lint.mjs:987 | lint-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (moduleState) | <why> |
+| lint/lint.mjs:988 | lint-refuse | closure-mutation | mutation | shared (moduleState) | `${}` is declared outside this callback; a callback cannot change it |
+| lint/lint.mjs:993 | lint-refuse | index-assign | mutation | one-decider | index assignment into `${}`, which this function does not own |
+| lint/lint.mjs:994 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(l.expression.text, o.decl)> |
+| lint/lint.mjs:995 | lint-refuse | closure-mutation | mutation | one-decider | a callback cannot change an outer ${} |
+| lint/lint.mjs:996 | lint-refuse | index-assign | mutation | one-decider | compound assignment on an element is outside the subset |
+| lint/lint.mjs:997 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
+| lint/lint.mjs:998 | lint-refuse | prototype | prototype | shared (protoKeyWrite) | a key that may be '__proto__' with an object or null value replaces the dictionary's prototype (the  |
+| lint/lint.mjs:1002 | lint-refuse | global-read | names | one-decider | `${}` holds a function; call a static method of the class instead |
+| lint/lint.mjs:1003 | lint-refuse | property-assign | mutation | one-decider | only =, +=, -=, *= on a static field |
+| lint/lint.mjs:1006 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal methods keep immutable data fields; use a class for mutable receiver state |
+| lint/lint.mjs:1006 | lint-refuse | receiver-mutation | mutation | shared (receiverRecordPath) | a receiver path needs nonoptional data records; assign a field itself for class or opaque handles |
+| lint/lint.mjs:1006 | lint-refuse | receiver-mutation | mutation | one-decider | only =, +=, -=, *= on a field of `this` |
+| lint/lint.mjs:1007 | lint-refuse | receiver-write | mutation | shared (thisParamPath) | <RECEIVER_WRITE> |
+| lint/lint.mjs:1009 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
+| lint/lint.mjs:1014 | lint-refuse | property-assign | mutation | shared (outsideRoot) | a field of `${}` is written by a plain `=` statement; read the old value into a local first |
+| lint/lint.mjs:1015 | lint-refuse | property-assign | mutation | lowering (INSTALLS_FUNCTION_WHY, installsFunction, outsideRoot) | <INSTALLS_FUNCTION_WHY(root.text)> |
+| lint/lint.mjs:1024 | lint-refuse | property-assign | mutation | shared (elementWritePath) | assignment into `${}`, an element of `${}`, which is not a parameter of this function; write an elem |
+| lint/lint.mjs:1025 | lint-refuse | alias-mutation | mutation | shared (elementWritePath) | <aliasMsg(ep.root.text, po.decl)> |
+| lint/lint.mjs:1026 | lint-refuse | closure-mutation | mutation | shared (elementWritePath) | a callback cannot change an outer record |
+| lint/lint.mjs:1027 | lint-refuse | property-assign | mutation | shared (elementWritePath) | only =, +=, -=, *= on a field |
+| lint/lint.mjs:1032 | lint-refuse | property-assign | mutation | one-decider | only =, +=, -=, *= on a field |
+| lint/lint.mjs:1033 | lint-refuse | property-assign | mutation | one-decider | only =, +=, -=, *= on a field |
+| lint/lint.mjs:1034 | lint-refuse | property-assign | mutation | one-decider | assignment into `${}`: a field of an element is written when the path from a parameter takes field a |
+| lint/lint.mjs:1035 | lint-refuse | property-assign | mutation | one-decider | assignment into `${}`, which this function does not own; records it owns are updated in place |
+| lint/lint.mjs:1036 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(root.text, o.decl)> |
+| lint/lint.mjs:1037 | lint-refuse | closure-mutation | mutation | shared (cellWrite) | a callback cannot change an outer record |
+| lint/lint.mjs:1038 | lint-refuse | property-assign | mutation | shared (cellWrite) | only =, +=, -=, *= on a field |
+| lint/lint.mjs:1041 | lint-refuse | index-assign | mutation | one-decider | compound assignment on an element is outside the subset |
+| lint/lint.mjs:1042 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
+| lint/lint.mjs:1043 | lint-refuse | prototype | prototype | shared (protoKeyWrite) | a key that may be '__proto__' with an object value replaces the dictionary's prototype (the setter o |
+| lint/lint.mjs:1047 | lint-refuse | index-assign | mutation | one-decider | compound assignment on an element is outside the subset |
+| lint/lint.mjs:1048 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
+| lint/lint.mjs:1051 | lint-refuse | index-assign | mutation | one-decider | write a record field by name, or use a local Record<string, T> dictionary |
+| lint/lint.mjs:1052 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | assignment target |
+| lint/lint.mjs:1055 | lint-refuse | division | numbers | one-decider | compound division is outside the subset |
+| lint/lint.mjs:1056 | lint-refuse | unsupported-operator | mutation | one-decider | assignment operator is outside the subset |
+| lint/lint.mjs:1059 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | literal method fields are immutable; use a class for mutable receiver state |
+| lint/lint.mjs:1059 | lint-refuse | receiver-mutation | mutation | shared (receiverRecordPath) | a receiver path needs nonoptional data records |
+| lint/lint.mjs:1059 | lint-refuse | receiver-write | mutation | shared (thisParamPath) | <RECEIVER_WRITE> |
+| lint/lint.mjs:1063 | lint-refuse | property-assign | mutation | one-decider | update of a field of `${}`, which this function does not own |
+| lint/lint.mjs:1064 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | increment of a non-name |
+| lint/lint.mjs:1067 | lint-refuse | global-mutation | mutation | shared (moduleState) | update of `${}`, which this function does not own |
+| lint/lint.mjs:1068 | lint-refuse | render-impure | react | shared (moduleState) | a render function updates `${}`, a variable outside it; move the write into an event handler or an e |
+| lint/lint.mjs:1069 | lint-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (moduleState) | <why> |
+| lint/lint.mjs:1070 | lint-refuse | closure-mutation | mutation | shared (moduleState) | a callback cannot change an outer variable |
+| lint/lint.mjs:1085 | lint-refuse | assign-target | record-copy | one-decider | `Object.assign` copies every own key of its source, and a value of a record type may carry keys its  |
+| lint/lint.mjs:1100 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(r.text, declOf(r).decl)> |
+| lint/lint.mjs:1107 | lint-refuse | opaque-mutation | mutation | one-decider | .${}() as a statement on an opaque value may mutate it; name the receiver first |
+| lint/lint.mjs:1113 | lint-refuse | receiver-write | mutation | shared (thisParamPath) | <RECEIVER_WRITE> |
+| lint/lint.mjs:1114 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(pr.text, declOf(pr).decl)> |
+| lint/lint.mjs:1117 | lint-refuse | param-mutation | mutation | shared (bucketMaps, thisParamPath) | ${} on `${}`, which is not a local array${} |
+| lint/lint.mjs:1122 | lint-refuse | param-mutation | mutation | shared (thisParamPath) | ${} on `${}`, which is not a local array |
+| lint/lint.mjs:1123 | lint-refuse | unsupported-call | library | one-decider | pop takes no argument |
+| lint/lint.mjs:1124 | lint-refuse | unsupported-call | library | one-decider | sort as a statement needs one comparator, an arrow of two parameters; with the default order write ` |
+| lint/lint.mjs:1125 | lint-refuse | unsupported-call | library | one-decider | ${} takes no argument |
+| lint/lint.mjs:1126 | lint-refuse | unsupported-call | library | one-decider | splice as a statement needs a start, a count and plain items |
+| lint/lint.mjs:1129 | lint-refuse | param-mutation | mutation | shared (thisParamPath) | set mutation on a non-local |
+| lint/lint.mjs:1130 | lint-refuse | param-mutation | mutation | shared (thisParamPath) | map mutation on a non-local |
+| lint/lint.mjs:1134 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | only assignments, ++/--, calls, and await may stand as statements |
+| lint/lint.mjs:1141 | lint-refuse | var | declarations | shared (countedFor) | `var` is outside the subset; use let or const |
+| lint/lint.mjs:1197 | lint-refuse | promise-handler | promises | shared (namedPromiseHandler) | <named.message> |
+| lint/lint.mjs:1197 | lint-refuse | promise-thenable | promises | shared (namedPromiseHandler) | <named.message> |
+| lint/lint.mjs:1199 | lint-refuse | promise-handler | promises | shared (namedPromiseHandler) | inline a handler that mutates so its state is visible |
+| lint/lint.mjs:1203 | lint-refuse | promise-handler | promises | one-decider | use an arrow with plain parameters |
+| lint/lint.mjs:1212 | lint-refuse | promise-handler | promises | one-decider | inline a same-file call that throws or mutates so its fault and state are visible |
+| lint/lint.mjs:1213 | lint-refuse | promise-handler | promises | lowering (inlinePromiseStatementKind) | use declarations, conditionals, calls, return and throw in an inline promise body |
+| lint/lint.mjs:1220 | lint-refuse | promise-thenable | promises | one-decider | use a plain value or a statically typed native Promise; custom thenable adoption is not read |
+| lint/lint.mjs:1224 | lint-refuse | promise-pending | promises | shared (promiseConsumed) | await or return the promise directly; a dangling or stored continuation leaves observable pending wo |
+| lint/lint.mjs:1227 | lint-refuse | promise-executor | promises | shared (executorShape) | <shape.message> |
+| lint/lint.mjs:1227 | lint-refuse | promise-executor-escape | promises | shared (executorShape) | <shape.message> |
+| lint/lint.mjs:1227 | lint-refuse | promise-unsettled | promises | shared (executorShape) | <shape.message> |
+| lint/lint.mjs:1231 | lint-refuse | promise-executor | promises | shared (executorShape) | a callback bridge must call an outside API |
+| lint/lint.mjs:1238 | lint-refuse | promise-handler | promises | one-decider | Promise.resolve and Promise.reject take at most one value |
+| lint/lint.mjs:1242 | lint-refuse | promise-handler | promises | one-decider | use one explicit handler per link; use catch for rejection |
+| lint/lint.mjs:1248 | lint-refuse | async | promises | one-decider | `await` outside an async function |
+| lint/lint.mjs:1262 | lint-refuse | async | promises | one-decider | awaited callee form is outside the subset |
+| lint/lint.mjs:1266 | lint-refuse | string-code-unit | strings | lowering (LONE_SURROGATE_WHY, loneSurrogate) | <LONE_SURROGATE_WHY> |
+| lint/lint.mjs:1277 | lint-refuse | operator-value-context | operators-as-values | one-decider | move this value step into an explicit statement and conditional branch |
+| lint/lint.mjs:1288 | lint-refuse | operator-value-context | operators-as-values | one-decider | write this mutating method call as a separate statement |
+| lint/lint.mjs:1297 | lint-refuse | update-expression | operators-as-values | one-decider | increment a numeric local or numeric field |
+| lint/lint.mjs:1297 | lint-refuse | assignment-expression | operators-as-values | one-decider | increment a numeric local or numeric field |
+| lint/lint.mjs:1298 | lint-refuse | update-expression | operators-as-values | lowering (valueAssignmentWhy) | <valueAssignmentWhy(e.operatorToken.kind)> |
+| lint/lint.mjs:1298 | lint-refuse | assignment-expression | operators-as-values | lowering (valueAssignmentWhy) | <valueAssignmentWhy(e.operatorToken.kind)> |
+| lint/lint.mjs:1299 | lint-refuse | update-expression | operators-as-values | one-decider | use numeric compound assignment or string += with a string value |
+| lint/lint.mjs:1299 | lint-refuse | assignment-expression | operators-as-values | one-decider | use numeric compound assignment or string += with a string value |
+| lint/lint.mjs:1318 | lint-refuse | operator-value-context | operators-as-values | one-decider | keep the target root unchanged while evaluating the assignment reference and right side |
+| lint/lint.mjs:1323 | lint-refuse | operator-value-context | operators-as-values | one-decider | keep the target root unchanged while evaluating an enclosing assignment |
+| lint/lint.mjs:1329 | lint-refuse | update-expression | operators-as-values | one-decider | narrow optional paths before assigning |
+| lint/lint.mjs:1329 | lint-refuse | assignment-expression | operators-as-values | one-decider | narrow optional paths before assigning |
+| lint/lint.mjs:1337 | lint-refuse | type-assertion | type-assertion | shared (typeAssertion) | <why> |
+| lint/lint.mjs:1338 | lint-refuse | update-expression | operators-as-values | shared (erasedReferenceSlot) | <er.message> |
+| lint/lint.mjs:1338 | lint-refuse | assignment-expression | operators-as-values | shared (erasedReferenceSlot) | <er.message> |
+| lint/lint.mjs:1347 | lint-refuse | template | tagged-template | one-decider | the tag must be a name |
+| lint/lint.mjs:1348 | lint-refuse | template | tagged-template | shared (rawTag) | an invalid escape under a tag: its cooked part is undefined, which the reading of the strings does n |
+| lint/lint.mjs:1361 | lint-refuse | non-null-assertion | non-null-assertion | shared (payloadRead, payloadStatement) | `x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test  |
+| lint/lint.mjs:1367 | lint-refuse | bitwise | bitwise | one-decider | bitwise operands must be numbers; BigInt and opaque coercions need lane B |
+| lint/lint.mjs:1369 | lint-refuse | unary-coercion | numbers | one-decider | unary + coerces; it is outside the subset |
+| lint/lint.mjs:1375 | lint-refuse | delete | mutation | one-decider | `delete` is a statement, not a value |
+| lint/lint.mjs:1376 | lint-refuse | receiver-write | mutation | one-decider | <RECEIVER_WRITE> |
+| lint/lint.mjs:1376 | lint-refuse | delete | mutation | one-decider | delete on `${}`, which this function does not own |
+| lint/lint.mjs:1376 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(root.text, o.decl, false)> |
+| lint/lint.mjs:1376 | lint-refuse | dynamic-key | keys | one-decider | a dictionary key is a string |
+| lint/lint.mjs:1377 | lint-refuse | delete | mutation | one-decider | delete of a field of this is outside the subset; assign undefined |
+| lint/lint.mjs:1377 | lint-refuse | delete | mutation | one-decider | delete on `${}`, which this function does not own |
+| lint/lint.mjs:1377 | lint-refuse | alias-mutation | mutation | one-decider | <aliasMsg(root.text, o.decl, false)> |
+| lint/lint.mjs:1378 | lint-refuse | delete | mutation | one-decider | delete of this target is outside the subset |
+| lint/lint.mjs:1380 | lint-refuse | void | unread-syntax | one-decider | `void` is outside the subset |
+| lint/lint.mjs:1384 | lint-refuse | generator-use | generators | one-decider | yield is a statement; sent values need a step reading |
+| lint/lint.mjs:1385 | lint-refuse | this | classes | exception:receiver-scope-vs-self-type | `this` outside a class method; a free function declares its receiver as a `this` parameter |
+| lint/lint.mjs:1386 | lint-refuse | class | classes | one-decider | `super` is read only as `super.m(...)` or `super(...)` in a constructor, a call of the parent's meth |
+| lint/lint.mjs:1387 | lint-refuse | class | classes | one-decider | classes are outside the subset |
+| lint/lint.mjs:1391 | lint-refuse | unsupported-call | library | one-decider | new ${}(...) reads an array, a Map, a Set or one of their iterators; build the entries as an array f |
+| lint/lint.mjs:1393 | lint-refuse | dynamic-eval | names | one-decider | `new Function` is outside the subset |
+| lint/lint.mjs:1395 | lint-refuse | async | promises | shared (promiseForm) | `new Promise` inside an opaque promise call has no reading |
+| lint/lint.mjs:1398 | lint-refuse | dynamic-eval | names | one-decider | `new ${}` is outside the subset |
+| lint/lint.mjs:1398 | lint-refuse | prototype | prototype | one-decider | `new ${}` is outside the subset |
+| lint/lint.mjs:1406 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | `new.target` reads how the function was called; it is outside the subset |
+| lint/lint.mjs:1408 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | `import.meta.env` is injected at build time; read it outside the subset |
+| lint/lint.mjs:1414 | lint-refuse | spread | arrays | shared (generatorReading) | spread works on arrays, sets, maps and their keys(), values() and entries() |
+| lint/lint.mjs:1415 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | array holes are outside the subset |
+| lint/lint.mjs:1420 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | literal getters need fixed named fields; use a class for spread or computed accessors |
+| lint/lint.mjs:1421 | lint-refuse | spread-source | record-copy | shared (spreadReadWhy) | <why> |
+| lint/lint.mjs:1423 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | spreading a method object rebinds its receiver and evaluates getters; copy data fields explicitly |
+| lint/lint.mjs:1423 | lint-refuse | spread-source | record-copy | shared (copySource) | `{ ...${} }` copies every own key: ${} (escape spread_source) |
+| lint/lint.mjs:1426 | lint-refuse | prototype | prototype | shared (literalProtoMember) | `__proto__:` in a literal sets the object's prototype, not a key; the value reading has only plain o |
+| lint/lint.mjs:1430 | lint-refuse | dynamic-key | keys | one-decider | <why> |
+| lint/lint.mjs:1435 | lint-refuse | iterator-protocol | object-literal-methods | one-decider | custom iterator protocol methods need a step reading; use a generator or an array |
+| lint/lint.mjs:1442 | lint-refuse | closure-mutation | mutation | one-decider | a literal method cannot change a captured binding; use a class for shared state |
+| lint/lint.mjs:1449 | lint-refuse | object-method-capture | object-literal-methods | one-decider | a literal method needs stable captured bindings; use a class for shared changing state |
+| lint/lint.mjs:1458 | lint-refuse | object-method-capture | object-literal-methods | one-decider | a literal method captures an unchanging value; copy mutable data before capturing it |
+| lint/lint.mjs:1462 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | literal setters and computed methods need a class accessor or a named method |
+| lint/lint.mjs:1465 | lint-refuse | spread | arrays | one-decider | spread is allowed in array and record literals only |
+| lint/lint.mjs:1467 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | expression ${} is outside the subset |
+| lint/lint.mjs:1475 | lint-refuse | prototype | prototype | shared (plainObjectTest) | <po.refuse> |
+| lint/lint.mjs:1479 | lint-refuse | division | numbers | one-decider | `/` on numbers is real division; write Math.floor(a / b) for integer division |
+| lint/lint.mjs:1484 | lint-refuse | bitwise | bitwise | one-decider | bitwise operands must be numbers; BigInt and opaque coercions need lane B |
+| lint/lint.mjs:1492 | lint-refuse | loose-equality | equality | one-decider | use === and !== with an object, bigint or symbol operand; between primitives == follows the coercion |
+| lint/lint.mjs:1496 | lint-refuse | instanceof-constructor | instanceof | one-decider | use a named ordinary constructor for instanceof; dynamic constructors may run effects |
+| lint/lint.mjs:1499 | lint-refuse | instanceof-constructor | instanceof | one-decider | use a class declaration for instanceof; a constructor value needs a runtime identity |
+| lint/lint.mjs:1506 | lint-refuse | instanceof-constructor | instanceof | one-decider | a custom Symbol.hasInstance may run effects; use an ordinary constructor |
+| lint/lint.mjs:1511 | lint-refuse | prototype | prototype | shared (inPrototypeReach) | this file makes an object whose prototype is not Object.prototype (line ${}), and ${}; `in` reads th |
+| lint/lint.mjs:1512 | lint-refuse | dynamic-key | keys | shared (openRecordIn) | <why> |
+| lint/lint.mjs:1516 | lint-refuse | bitwise | bitwise | one-decider | bitwise and shift operators are outside the subset |
+| lint/lint.mjs:1522 | lint-refuse | mixed-types | equality | one-decider | + adds two numbers or joins to a string |
+| lint/lint.mjs:1524 | lint-refuse | string-order | strings | one-decider | compare two strings, or convert both operands explicitly |
+| lint/lint.mjs:1535 | lint-refuse | mixed-types | equality | one-decider | a value that is sometimes a primitive and sometimes a record or array compares with === only against |
+| lint/lint.mjs:1536 | lint-refuse | reference-equality | equality | one-decider | === on arrays and records compares references; compare fields |
+| lint/lint.mjs:1547 | lint-refuse | generator-bound | generators | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:1547 | lint-refuse | generator-effect | generators | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:1547 | lint-refuse | generator-use | generators | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:1549 | lint-refuse | hook-order | react | shared (reactHook) | a hook is called under a branch, a loop, a nested function or after an early return; hooks run at th |
+| lint/lint.mjs:1556 | lint-refuse | prototype | prototype | shared (ownKeyTest) | <ok.refuse> |
+| lint/lint.mjs:1557 | lint-refuse | optional-chain | optional-chain | exception:optional-source-vs-emitted-callee (optionalCallShape) | <shape.why> |
+| lint/lint.mjs:1564 | lint-refuse | unsupported-call | calls | one-decider | ${} takes ${} arguments |
+| lint/lint.mjs:1565 | lint-refuse | generator-use | generators | one-decider | consume a pure generator directly in for-of, spread, Array.from or yield* |
+| lint/lint.mjs:1566 | lint-refuse | async | promises | shared (promiseConsumed) | an async unit is called without await |
+| lint/lint.mjs:1568 | lint-refuse | spread | arrays | one-decider | a spread argument goes to a rest parameter, as the last argument |
+| lint/lint.mjs:1568 | lint-refuse | function-value | calls | one-decider | a same-file function takes values, not callbacks |
+| lint/lint.mjs:1575 | lint-refuse | this | classes | one-decider | `this` outside a class method |
+| lint/lint.mjs:1577 | lint-refuse | bound-function | calls | one-decider | `bind` fixes a receiver for a later call; call the function with its receiver instead |
+| lint/lint.mjs:1578 | lint-refuse | unsupported-call | calls | one-decider | `call` and `apply` take the receiver first |
+| lint/lint.mjs:1579 | lint-refuse | unsupported-call | calls | one-decider | `apply` takes its arguments as one array literal |
+| lint/lint.mjs:1586 | lint-refuse | math-empty | library | lowering (nonemptyMathArgs) | Math.min/max need a nonempty list; use xs.length > 0 ? Math.max(...xs) : a fallback |
+| lint/lint.mjs:1587 | lint-refuse | spread | arrays | one-decider | Math sequence arguments must be numbers; narrow opaque values before spreading |
+| lint/lint.mjs:1597 | lint-refuse | unsupported-call | calls | one-decider | ${}.${} takes ${} arguments |
+| lint/lint.mjs:1598 | lint-refuse | generator-use | generators | one-decider | consume a static generator through a top-level generator function |
+| lint/lint.mjs:1599 | lint-refuse | async | promises | shared (promiseConsumed) | an async unit is called without await |
+| lint/lint.mjs:1606 | lint-refuse | opaque-mutation | mutation | one-decider | .${}() on `${}`, an opaque value${}, used as a value: the call may mutate it |
+| lint/lint.mjs:1606 | lint-refuse | param-mutation | mutation | one-decider | .${}() on `${}`, an opaque value${}, used as a value: the call may mutate it |
+| lint/lint.mjs:1615 | lint-refuse | async-predicate | callbacks | one-decider | ${} does not await its predicate: a Promise is truthy even when it resolves false; await values with |
+| lint/lint.mjs:1616 | lint-refuse | async-reduce | callbacks | one-decider | reduce passes a Promise accumulator without waiting; use a for-of loop with await |
+| lint/lint.mjs:1617 | lint-refuse | async-callback | callbacks | one-decider | ${} does not await its callbacks; use await Promise.all(xs.${}(...)) |
+| lint/lint.mjs:1618 | lint-refuse | callback-form | callbacks | one-decider | a callback thisArg is outside the subset; capture the receiver in an arrow |
+| lint/lint.mjs:1621 | lint-refuse | callback-result | callbacks | one-decider | an effectful type-predicate callback needs an explicit for-of loop with a type guard |
+| lint/lint.mjs:1622 | lint-refuse | callback-result | callbacks | one-decider | a thenable callback needs an async arrow with an explicit await |
+| lint/lint.mjs:1623 | lint-refuse | callback-result | callbacks | one-decider | an effectful flatMap callback returns either arrays on every path or scalar values on every path; us |
+| lint/lint.mjs:1626 | lint-refuse | callback-form | callbacks | one-decider | an effectful array callback takes the element (and an index), or the accumulator and the element; an |
+| lint/lint.mjs:1628 | lint-refuse | callback-form | callbacks | one-decider | <bad> |
+| lint/lint.mjs:1630 | lint-refuse | promise-all-order | promises | one-decider | Promise.all does not order work after await; use a for-of loop with await for ordered effects |
+| lint/lint.mjs:1633 | lint-refuse | callback-form | callbacks | one-decider | Promise.all callback loops take one element name and an optional index name |
+| lint/lint.mjs:1647 | lint-refuse | foreach | callbacks | one-decider | forEach does not wait for an async callback: the function returns before the steps finish; write `fo |
+| lint/lint.mjs:1654 | lint-refuse | foreach | callbacks | one-decider | forEach is read as a statement; put it in a block before returning a value |
+| lint/lint.mjs:1661 | lint-refuse | foreach | callbacks | one-decider | forEach runs a callback for its effects; write `for (const x of xs)` so the state comes out of the l |
+| lint/lint.mjs:1665 | lint-refuse | in-place-mutation | library | one-decider | ${} changes `${}` in place; write `${} = [...${}].${}(...)` |
+| lint/lint.mjs:1665 | lint-refuse | param-mutation | mutation | one-decider | ${} changes `${}` in place; write `${} = [...${}].${}(...)` |
+| lint/lint.mjs:1668 | lint-refuse | param-mutation | mutation | one-decider | push is a statement on a local only |
+| lint/lint.mjs:1672 | lint-refuse | unsupported-call | library | one-decider | ${} needs a callback |
+| lint/lint.mjs:1677 | lint-refuse | unsupported-call | library | one-decider | reduce needs a callback and an initial value |
+| lint/lint.mjs:1680 | lint-refuse | function-value | calls | one-decider | unexpected callback |
+| lint/lint.mjs:1684 | lint-refuse | unsupported-call | library | one-decider | Set.forEach is outside the subset; write for (const x of s) |
+| lint/lint.mjs:1684 | lint-refuse | collection-iterator | library | one-decider | s.${}() is an iterator its first read uses up; spread it, loop over it with for-of or pass it to Arr |
+| lint/lint.mjs:1685 | lint-refuse | unsupported-call | library | one-decider | Map.forEach is outside the subset; write for (const [k, v] of m) |
+| lint/lint.mjs:1685 | lint-refuse | collection-iterator | library | one-decider | m.${}() is an iterator its first read uses up; spread it, loop over it with for-of or pass it to Arr |
+| lint/lint.mjs:1692 | lint-refuse | unsupported-call | library | one-decider | .toString() on ${} reads Object.prototype.toString or the object's own toString, a prototype this un |
+| lint/lint.mjs:1693 | lint-refuse | unsupported-call | library | one-decider | method .${}() on ${} is outside the subset; narrow the union with typeof or Array.isArray first so t |
+| lint/lint.mjs:1694 | lint-refuse | unsupported-call | calls | one-decider | method .${}() on ${} is outside the subset |
+| lint/lint.mjs:1698 | lint-refuse | unsupported-call | calls | one-decider | calls through computed callees are outside the subset |
+| lint/lint.mjs:1707 | lint-refuse | update-expression | operators-as-values | one-decider | <msg> |
+| lint/lint.mjs:1707 | lint-refuse | assignment-expression | operators-as-values | one-decider | <msg> |
+| lint/lint.mjs:1710 | lint-refuse | unsupported-call | library | shared (ARRAY_VALUE_MUTATORS) | splice as a value takes plain arguments |
+| lint/lint.mjs:1711 | lint-refuse | unsupported-call | library | shared (ARRAY_VALUE_MUTATORS) | .${}() in an optional chain changes a receiver that may be absent; check it first |
+| lint/lint.mjs:1715 | lint-refuse | unsupported-call | library | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value changes `${}`; call it on a local array or on a fresh one |
+| lint/lint.mjs:1716 | lint-refuse | param-mutation | mutation | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value changes the parameter `${}`; copy it to a local first |
+| lint/lint.mjs:1717 | lint-refuse | alias-mutation | mutation | shared (ARRAY_VALUE_MUTATORS) | `${}` is another name for a value this function was handed; copy it first |
+| lint/lint.mjs:1718 | lint-refuse | closure-mutation | mutation | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value inside a callback changes `${}`; use a for-of loop |
+| lint/lint.mjs:1720 | lint-refuse | mutator-value | library | shared (ARRAY_VALUE_MUTATORS) | .${}() as a value runs only on some paths here (a condition, a short circuit, a loop header); bind i |
+| lint/lint.mjs:1721 | lint-refuse | mutator-value | library | shared (ARRAY_VALUE_MUTATORS) | `${}` is read again in the statement that calls .${}() on it; read it in its own statement |
+| lint/lint.mjs:1725 | lint-refuse | unsupported-call | library | one-decider | fill takes a value and an optional start and end |
+| lint/lint.mjs:1726 | lint-refuse | in-place-mutation | library | shared (freshArray) | fill changes its receiver in place and returns it; fill a fresh array (`new Array(n).fill(v)`, `[... |
+| lint/lint.mjs:1730 | lint-refuse | unsupported-call | library | one-decider | toReversed takes no argument |
+| lint/lint.mjs:1731 | lint-refuse | unsupported-call | library | one-decider | toSorted takes one comparator |
+| lint/lint.mjs:1732 | lint-refuse | callback-form | callbacks | one-decider | the comparator of toSorted is a pure function of two elements |
+| lint/lint.mjs:1737 | lint-refuse | unsupported-call | library | one-decider | ${} takes one callback |
+| lint/lint.mjs:1738 | lint-refuse | callback-form | callbacks | one-decider | the callback of ${} takes the element only (an index counts from the end); use a for loop over the i |
+| lint/lint.mjs:1739 | lint-refuse | callback-form | callbacks | one-decider | the callback of ${} is a pure predicate; an effect needs a for loop |
+| lint/lint.mjs:1743 | lint-refuse | unsupported-call | library | one-decider | lastIndexOf takes one value (a start index stays out) |
+| lint/lint.mjs:1745 | lint-refuse | unsupported-call | library | one-decider | lastIndexOf compares by identity; on objects it is outside the subset |
+| lint/lint.mjs:1748 | lint-refuse | unsupported-call | library | one-decider | toString on an array takes no argument |
+| lint/lint.mjs:1749 | lint-refuse | unsupported-call | library | shared (primitiveText) | toString with a radix is read on numbers only |
+| lint/lint.mjs:1753 | lint-refuse | unsupported-call | library | shared (LOCALE_READS) | .${}() reads the host's locale (a world read); call it in a map, filter, find, findIndex, some, ever |
+| lint/lint.mjs:1754 | lint-refuse | unsupported-call | library | shared (LOCALE_READS) | .${}() takes plain arguments |
+| lint/lint.mjs:1757 | lint-refuse | unsupported-call | library | one-decider | substr takes a numeric start and an optional numeric length |
+| lint/lint.mjs:1760 | lint-refuse | unsupported-call | library | one-decider | matchAll takes one pattern |
+| lint/lint.mjs:1761 | lint-refuse | unsupported-call | library | one-decider | matchAll needs the g flag; without it the call throws a TypeError |
+| lint/lint.mjs:1764 | lint-refuse | unsupported-call | library | one-decider | matchAll needs the g flag (and not y); without it the call throws a TypeError |
+| lint/lint.mjs:1766 | lint-refuse | unsupported-call | library | one-decider | matchAll starts at its pattern's lastIndex, which another call may have moved; pass a regular expres |
+| lint/lint.mjs:1768 | lint-refuse | unsupported-call | library | one-decider | search takes one pattern |
+| lint/lint.mjs:1780 | lint-refuse | callback-form | callbacks | one-decider | ${} is read as a callback only through an arrow; write `(x) => ${}(x)` with the arguments it reads |
+| lint/lint.mjs:1781 | lint-refuse | callback-form | callbacks | one-decider | ${} as a callback is read for map${}; write an inline arrow for ${} |
+| lint/lint.mjs:1785 | lint-refuse | async-callback | callbacks | one-decider | Promise.all over the named async function `${}` needs an inline async arrow so its awaits are read i |
+| lint/lint.mjs:1791 | lint-refuse | callback-form | callbacks | one-decider | a class method passed as a callback loses its receiver; write an inline arrow |
+| lint/lint.mjs:1792 | lint-refuse | async | promises | one-decider | an async function cannot be a callback |
+| lint/lint.mjs:1793 | lint-refuse | callback-form | callbacks | one-decider | a generator passed as a callback returns its iterator; write an inline arrow |
+| lint/lint.mjs:1794 | lint-refuse | callback-form | callbacks | one-decider | `${}` is generic; pass it through an inline arrow so its type arguments are fixed |
+| lint/lint.mjs:1795 | lint-refuse | callback-form | callbacks | one-decider | a named effectful callback takes plain parameters, at most ${} (what ${} passes); write an inline ar |
+| lint/lint.mjs:1796 | lint-refuse | callback-form | callbacks | one-decider | `${}` changes its argument, which here is the array's element; write an inline arrow that copies it |
+| lint/lint.mjs:1800 | lint-refuse | callback-form | callbacks | one-decider | a named effectful callback takes plain parameters, at most ${} (what ${} passes); write an inline ar |
+| lint/lint.mjs:1801 | lint-refuse | callback-form | callbacks | one-decider | an effectful array callback needs an inline arrow so its world transitions are read in array order |
+| lint/lint.mjs:1803 | lint-refuse | callback-result | callbacks | one-decider | an effectful type-predicate callback needs an explicit for-of loop with a type guard |
+| lint/lint.mjs:1804 | lint-refuse | callback-result | callbacks | one-decider | an effectful flatMap callback returns either arrays on every path or scalar values on every path; us |
+| lint/lint.mjs:1806 | lint-refuse | unsupported-call | library | one-decider | reduce needs a callback and an initial value |
+| lint/lint.mjs:1920 | lint-refuse | callback-control | exceptions | shared (syncLoopCallback) | try, throw or a return from an inner loop in a callback needs an explicit for-of loop |
+| lint/lint.mjs:1930 | lint-refuse | callback-form | callbacks | one-decider | a class method cannot be passed as a callback |
+| lint/lint.mjs:1930 | lint-refuse | async | promises | one-decider | an async function cannot be a callback |
+| lint/lint.mjs:1930 | lint-refuse | callback-form | callbacks | one-decider | the callback takes at most ${} plain parameter(s) |
+| lint/lint.mjs:1932 | lint-refuse | callback-form | callbacks | one-decider | a callback is an arrow function, a same-file function or a local function value |
+| lint/lint.mjs:1934 | lint-refuse | callback-form | callbacks | one-decider | the callback must be an arrow function |
+| lint/lint.mjs:1936 | lint-refuse | async | promises | one-decider | async callbacks are outside the subset |
+| lint/lint.mjs:1937 | lint-refuse | callback-form | callbacks | one-decider | the callback takes at most ${} plain parameter(s); a default is read only where the parameter's type |
+| lint/lint.mjs:1968 | lint-refuse | react-handler-capture | react | shared (arrowOf) | a React closure captures a changing local; capture a const value or use a state setter |
+| lint/lint.mjs:1976 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | a local component value must be a string tag name or a named component |
+| lint/lint.mjs:1977 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | tag form ${} is outside the subset |
+| lint/lint.mjs:1982 | lint-refuse | callback-form | callbacks | one-decider | a handler is an arrow function |
+| lint/lint.mjs:1993 | lint-refuse | spread | arrays | one-decider | spread arguments need an ordinary array or a fixed tuple; open tuples and custom iterables are outsi |
+| lint/lint.mjs:2003 | lint-refuse | spread | arrays | one-decider | bind same-file call arguments inside an if statement before spreading; conditional expressions do no |
+| lint/lint.mjs:2017 | lint-refuse | spread | arrays | one-decider | spread arguments need an outside callee or a supported sequence operation |
+| lint/lint.mjs:2022 | lint-refuse | object-method-mutation | object-literal-methods | one-decider | call a literal method on its object; detached methods need an explicit receiver |
+| lint/lint.mjs:2026 | lint-refuse | prototype | prototype | one-decider | `this.constructor` is the run-time class of the receiver, a subclass too; name the class to read its |
+| lint/lint.mjs:2029 | lint-refuse | prototype | prototype | one-decider | `.${}` reaches the prototype chain |
+| lint/lint.mjs:2030 | lint-refuse | global-read | names | one-decider | `${}` is a static method used as a value; call it, or pass an arrow that calls it |
+| lint/lint.mjs:2044 | lint-refuse | unsupported-member | members | shared (matchGroupRead) | group `${}` may not take part in a match (undefined when it does not, whatever TypeScript says) and  |
+| lint/lint.mjs:2046 | lint-refuse | unsupported-member | members | shared (matchGroupsDestructure) | group `${}` may not take part in a match (undefined when it does not, whatever TypeScript says) and  |
+| lint/lint.mjs:2053 | lint-refuse | unsupported-member | members | one-decider | property .${} on ${}: constrain the type parameter to one record declaring it |
+| lint/lint.mjs:2056 | lint-refuse | unsupported-member | members | one-decider | `.${}` called through apply or call is not the direct call here: ${}; call it on the array: `a.${}(. |
+| lint/lint.mjs:2057 | lint-refuse | unsupported-member | members | one-decider | <memberRow(name === 'index' ? 'match-index' : 'match-groups')> |
+| lint/lint.mjs:2058 | lint-refuse | unsupported-member | members | one-decider | property .${} on ${} is outside the subset |
+| lint/lint.mjs:2060 | lint-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
+| lint/lint.mjs:2060 | lint-refuse | prototype | prototype | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
+| lint/lint.mjs:2061 | lint-refuse | unsupported-member | members | one-decider | property .${} is not declared on ${} |
+| lint/lint.mjs:2092 | lint-refuse | arguments | names | one-decider | `arguments` is the actual argument vector, not the declared one; name the parameter, or declare a re |
+| lint/lint.mjs:2095 | lint-refuse | unsupported-member | members | shared (matchCapture) | ${} |
+| lint/lint.mjs:2095 | lint-refuse | unsupported-member | members | shared (matchCapture) | ${} |
+| lint/lint.mjs:2096 | lint-refuse | unsupported-member | members | shared (matchGroupRead) | group `${}` may not take part in a match (undefined when it does not, whatever TypeScript says) and  |
+| lint/lint.mjs:2103 | lint-refuse | prototype | prototype | one-decider | this bracket key reaches the prototype chain; read a declared data field |
+| lint/lint.mjs:2111 | lint-refuse | dynamic-key | keys | one-decider | narrow the record receiver before indexing it |
+| lint/lint.mjs:2117 | lint-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
+| lint/lint.mjs:2117 | lint-refuse | prototype | prototype | shared (OPEN_RECORD_WHY, openRecordReadWhy, openRecordType) | <w.why> |
+| lint/lint.mjs:2117 | lint-refuse | dynamic-key | keys | shared (openRecordType) | bind the computed key before reading the record; a key call may mutate its receiver |
+| lint/lint.mjs:2118 | lint-refuse | dynamic-key | keys | one-decider | <why> |
+| lint/lint.mjs:2122 | lint-refuse | dynamic-key | keys | one-decider | bind the computed key before reading the record; a key call may mutate its receiver |
+| lint/lint.mjs:2123 | lint-refuse | dynamic-key | keys | one-decider | read a literal getter by its declared property name |
+| lint/lint.mjs:2125 | lint-refuse | dynamic-key | keys | shared (openRecordReadWhy, openRecordType) | <w.why> |
+| lint/lint.mjs:2125 | lint-refuse | prototype | prototype | shared (openRecordReadWhy, openRecordType) | <w.why> |
+| lint/lint.mjs:2126 | lint-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY, openRecordType) | <INDEX_WHY> |
+| lint/lint.mjs:2127 | lint-refuse | dynamic-key | keys | one-decider | key ${} is not declared on ${} |
+| lint/lint.mjs:2128 | lint-refuse | dynamic-key | keys | one-decider | call a method by its declared name; computed record reads select data fields |
+| lint/lint.mjs:2132 | lint-refuse | dynamic-key | keys | one-decider | index an array or string by a number, or a record by declared string keys |
+| lint/lint.mjs:2142 | lint-refuse | promise | promises | one-decider | a Promise-returning function must return a promise or be async |
+| lint/lint.mjs:2144 | lint-refuse | promise | promises | one-decider | a promise built with new Promise is not a handle; make the function async |
+| lint/lint.mjs:2148 | lint-refuse | promise | promises | one-decider | a same-file async function runs on after its first await; return it from an async function with awai |
+| lint/lint.mjs:2149 | lint-refuse | promise | promises | one-decider | a promise read out of a collection has no identity in the reading; return the call that made it |
+| lint/lint.mjs:2154 | lint-refuse | promise | promises | one-decider | a held promise of this result type has no identity in the reading; return the call itself |
+| lint/lint.mjs:2157 | lint-refuse | promise | promises | one-decider | return the promise from a call, a name or a conditional, or make the function async |
+| lint/lint.mjs:2178 | lint-refuse | this-param | classes | shared (untypedThisParam) | <why> |
+| lint/lint.mjs:2179 | lint-refuse | untyped-js | types | shared (untypedJsUnit) | <why> |
+| lint/lint.mjs:2180 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2180 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2180 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2181 | lint-refuse | unsupported-syntax | unread-syntax | one-decider | function without a body |
+| lint/lint.mjs:2188 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
+| lint/lint.mjs:2206 | lint-refuse | untyped-js | types | shared (untypedJsUnit) | <why> |
+| lint/lint.mjs:2207 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2207 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2207 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2214 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
+| lint/lint.mjs:2232 | lint-refuse | toplevel-state | module-state | one-decider | bind module state to a plain name |
+| lint/lint.mjs:2233 | lint-refuse | toplevel-effect | module-state | one-decider | move the effectful module initializer into a function |
+| lint/lint.mjs:2240 | lint-refuse | class | classes | one-decider | an anonymous class is outside the subset |
+| lint/lint.mjs:2247 | lint-refuse | untyped-js | types | shared (untypedJsUnit) | <why> |
+| lint/lint.mjs:2248 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2248 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2248 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2255 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
+| lint/lint.mjs:2269 | lint-refuse | toplevel-effect | module-state | one-decider | code at module level runs on import; it is outside the subset |
+| lint/lint.mjs:2275 | lint-refuse | captured-mutable | callback-units | one-decider | captured binding `${}` may be written after this callback is created; capture a stable value |
+| lint/lint.mjs:2277 | lint-refuse | untyped-js | types | shared (callbackUntypedJsUnit) | <why> |
+| lint/lint.mjs:2278 | lint-refuse | promise-executor | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2278 | lint-refuse | promise-executor-escape | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2278 | lint-refuse | promise-unsettled | promises | shared (generatorReading) | <shape.message> |
+| lint/lint.mjs:2283 | lint-refuse | param-form | declarations | one-decider | a rest parameter is an array |
+| lint/lint.mjs:2301 | lint-refuse | exception-binding | exceptions | one-decider | use a distinct name for a local that shadows a value read by finally |
+| lint/lint.mjs:2306 | lint-refuse | exception-return | exceptions | one-decider | return a primitive or copy the value; finally can change the returned alias |
+| lint/lint.mjs:2356 | lint-refuse | implicit-this | classes | one-decider | TS${}: `this` the function does not declare; declare the receiver as a `this` parameter |
+| lint/lint.mjs:2366 | lint-refuse | unresolved-module | types | one-decider | TS${}: `import.meta.${}` is a host-defined property whose type the checkout's lib does not declare |
+| lint/lint.mjs:2377 | lint-refuse | ts-strict | types | one-decider | TS${}: ${} (the value is read at Any: no fact of its type is used; narrow it to give the proof its t |
+| lint/lint.mjs:2380 | lint-refuse | update-expression | operators-as-values | one-decider | <msg> |
+| lint/lint.mjs:2380 | lint-refuse | assignment-expression | operators-as-values | one-decider | <msg> |
+| lint/lint.mjs:2398 | lint-advice | nested-ternary | advice | advice | a branch contains another conditional expression; nested if statements preserve its evaluation order |
+| lint/lint.mjs:2401 | lint-advice | inner-html | advice | advice | this HTML property receives a value that is not a literal; use textContent if the intent is plain te |
+| lint/lint.mjs:2406 | lint-advice | inner-html | advice | advice | document.write parses HTML and changes the document; choose an element for textContent |
+| lint/lint.mjs:2413 | lint-advice | promise-all-order | advice | advice | this loop awaits one call per element; Promise.all needs independent calls that commute in the world |
+| lint/lint.mjs:2421 | lint-advice | foreach | advice | advice | forEach with an index is read as the loop over the positions; a counted for states the index and the |
+| lint/lint.mjs:2449 | lint-refuse | any-type | advice | one-decider | any-type could not read this file: ${} |
+| translate/translate.mjs:176 | translate-throw |  | proof-shape | one-decider | no top-level function named ${} in ${} |
+| translate/translate.mjs:177 | translate-throw |  | proof-shape | one-decider | --fn is required unless --core is given |
+| translate/translate.mjs:247 | translate-refuse |  | proof-shape | one-decider | no top-level function or class method named ${} |
+| translate/translate.mjs:320 | translate-throw |  | translator-internal | one-decider | outside the subset: ${} |
+| translate/translate.mjs:677 | translate-refuse |  | callbacks | one-decider | ${} has no call signature to read as a callback |
+| translate/translate.mjs:711 | translate-refuse |  | callbacks | one-decider | ${} returns a promise; an async callback needs an inline arrow under Promise.all |
+| translate/translate.mjs:715 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
+| translate/translate.mjs:716 | translate-refuse |  | callbacks | one-decider | ${} changes its argument; a callback's argument is the array's element |
+| translate/translate.mjs:717 | translate-refuse |  | callbacks | one-decider | ${} is generic; pass it through an inline arrow |
+| translate/translate.mjs:743 | translate-refuse |  | callbacks | one-decider | parseInt reads the index JavaScript passes as its radix |
+| translate/translate.mjs:744 | translate-refuse |  | callbacks | one-decider | ${} has no reading as a callback |
+| translate/translate.mjs:894 | translate-refuse | property-assign | mutation | lowering (INSTALLS_FUNCTION_WHY, installsFunction) | property-assign: ${} |
+| translate/translate.mjs:1031 | translate-refuse | this-param | classes | shared (untypedThisParam) | this-param: ${} |
+| translate/translate.mjs:1032 | translate-refuse | this | classes | exception:receiver-scope-vs-self-type | this: `this` outside a class method; a free function declares its receiver as a `this` parameter |
+| translate/translate.mjs:1086 | translate-refuse | internal | translator-internal | one-decider | internal: a static cell read in a pure unit |
+| translate/translate.mjs:1312 | translate-refuse |  | types | one-decider | type parameter ${} is not one of this function's |
+| translate/translate.mjs:1313 | translate-refuse |  | types | one-decider | type parameter ${} hides another of the same name |
+| translate/translate.mjs:1333 | translate-refuse | builtin-type | types | one-decider | builtin-type: ${} needs a standard-library declaration and ${} type argument(s) for its collection r |
+| translate/translate.mjs:1343 | translate-refuse |  | types | one-decider | array-like type ${} has no element type |
+| translate/translate.mjs:1344 | translate-refuse | reference-key | types | one-decider | reference-key: a ${} by ${} compares by reference (SameValueZero); the value reading would equate tw |
+| translate/translate.mjs:1361 | translate-refuse |  | types | one-decider | type ${} is not translatable |
+| translate/translate.mjs:1633 | translate-refuse |  | types | one-decider | union type ${} is not translatable |
+| translate/translate.mjs:1704 | translate-refuse |  | types | one-decider | a field named ${} or ${} is the open record's own slot |
+| translate/translate.mjs:1749 | translate-refuse |  | translator-internal | one-decider | ${} reads or writes a metadata cell of the world in a unit not marked effectful |
+| translate/translate.mjs:1906 | translate-refuse | promise-handler | promises | shared (namedPromiseHandler, promiseForm) |  |
+| translate/translate.mjs:1906 | translate-refuse | promise-thenable | promises | shared (namedPromiseHandler, promiseForm) |  |
+| translate/translate.mjs:1907 | translate-refuse |  | names | one-decider | ${} is a function value; call it |
+| translate/translate.mjs:2005 | translate-refuse | copied-argument | mutation | one-decider | copied-argument: this call may write or keep the object it is handed, and its argument is ${}; bind  |
+| translate/translate.mjs:2006 | translate-refuse | copied-argument | mutation | one-decider | copied-argument: a new object holding objects is handed to a call that may write or keep it; this re |
+| translate/translate.mjs:2011 | translate-refuse | copied-argument | mutation | one-decider | copied-argument: a new object made in a loop is handed to a call that may keep it; every pass makes  |
+| translate/translate.mjs:2018 | translate-refuse | internal | translator-internal | one-decider | internal: an effect in a unit not marked effectful (${}) |
+| translate/translate.mjs:2085 | translate-refuse |  | arrays | one-decider | spread arguments need an ordinary array |
+| translate/translate.mjs:2443 | translate-refuse |  | translator-internal | one-decider | no helper ${} |
+| translate/translate.mjs:2456 | translate-refuse | number-special | numbers | lowering (numberSpecial) | number-special: a non-finite literal needs the opaque numeric reading |
+| translate/translate.mjs:2458 | translate-refuse |  | numbers | one-decider | number literal ${} is not an integer; use --real |
+| translate/translate.mjs:2484 | translate-refuse |  | promises | one-decider | a promise a same-file async unit returns, stored as a handle: the call reads its settled value, so n |
+| translate/translate.mjs:2517 | translate-refuse | type-assertion | type-assertion | shared (typeAssertion) | type-assertion: ${} |
+| translate/translate.mjs:2518 | translate-refuse |  | regex | one-decider | a capture of a group that may not take part (undefined when it does not, whatever TypeScript says) i |
+| translate/translate.mjs:2566 | translate-refuse | string-code-unit | strings | lowering (loneSurrogate) | string-code-unit: ${} |
+| translate/translate.mjs:2676 | translate-refuse | type-assertion | type-assertion | one-decider | type-assertion: a compound write other than +=, -=, *= to a local holding a value whose type nothing |
+| translate/translate.mjs:2680 | translate-refuse |  | operators-as-values | one-decider | value updates need --core |
+| translate/translate.mjs:2693 | translate-refuse |  | mutation | one-decider | assignment value needs a named array or dictionary |
+| translate/translate.mjs:2700 | translate-refuse | assignment-expression | operators-as-values | lowering (valueAssignmentWhy) | assignment-expression: ${} |
+| translate/translate.mjs:2725 | translate-refuse | prototype | prototype | shared (moduleState, protoKeyWrite) | prototype: a key that may be '__proto__' with an object or null value replaces the prototype |
+| translate/translate.mjs:2742 | translate-refuse | update-expression | operators-as-values | shared (erasedReferenceSlot) |  |
+| translate/translate.mjs:2742 | translate-refuse | assignment-expression | operators-as-values | shared (erasedReferenceSlot) |  |
+| translate/translate.mjs:2776 | translate-refuse | internal | translator-internal | one-decider | internal: an effect in a conditional branch of a pure unit |
+| translate/translate.mjs:2841 | translate-refuse |  | names | one-decider | ${} is a function value; call it |
+| translate/translate.mjs:2851 | translate-refuse | definite-assignment | declarations | shared (payloadRead) | definite-assignment: a read TypeScript does not check, of a let that may be unassigned here |
+| translate/translate.mjs:2907 | translate-refuse |  | classes | one-decider | `this` outside a class method |
+| translate/translate.mjs:2930 | translate-refuse |  | tagged-template | one-decider | a tagged template whose raw parts the parser did not keep |
+| translate/translate.mjs:2933 | translate-refuse |  | tagged-template | one-decider | a tagged template with an invalid escape (its cooked part is undefined, which a string sequence does |
+| translate/translate.mjs:2940 | translate-refuse |  | tagged-template | one-decider | a tagged template whose tag is not a name or a member |
+| translate/translate.mjs:2941 | translate-refuse |  | tagged-template | one-decider | a tagged template whose tag may write an object it is handed, read without the world |
+| translate/translate.mjs:2942 | translate-refuse |  | tagged-template | one-decider | a tagged template whose tag is a method that may write its receiver, read without the world |
+| translate/translate.mjs:2944 | translate-refuse |  | tagged-template | one-decider | a tagged template without the TemplateStringsArray type |
+| translate/translate.mjs:2963 | translate-refuse | non-null-assertion | non-null-assertion | shared (payloadRead) | non-null-assertion: `x!` on a value that may be null or undefined, outside a statement lean tests fi |
+| translate/translate.mjs:2966 | translate-refuse | non-null-assertion | non-null-assertion | shared (nonNullOnAbsent) | non-null-assertion: `x!` on a value that may be null or undefined |
+| translate/translate.mjs:2982 | translate-refuse |  | names | one-decider | new.target is not translated |
+| translate/translate.mjs:3005 | translate-refuse |  | unread-syntax | one-decider | expression ${} is not translated |
+| translate/translate.mjs:3012 | translate-refuse |  | arrays | one-decider | a tuple of ${} read as a sequence needs one element type |
+| translate/translate.mjs:3022 | translate-refuse |  | unread-syntax | one-decider | expression SpreadElement is not translated |
+| translate/translate.mjs:3031 | translate-refuse |  | library | one-decider | .${}() on a tuple writes it in place; the tuple is read as a Dafny tuple of its positions, which a s |
+| translate/translate.mjs:3036 | translate-refuse |  | promises | one-decider | an opaque promise call requires an effectful unit |
+| translate/translate.mjs:3125 | translate-refuse | definite-assignment | declarations | shared (absenceCarried) | definite-assignment: a let that may be read unassigned, in a promise handler |
+| translate/translate.mjs:3141 | translate-refuse | promise-handler | promises | lowering (inlinePromiseStatementKind) | promise-handler: this statement has no inline continuation reading |
+| translate/translate.mjs:3156 | translate-refuse | promise-handler | promises | exception:promise-opaque-return | promise-handler: a promise returned from an opaque block of a throwing handler is not read |
+| translate/translate.mjs:3166 | translate-refuse | promise-handler | promises | shared (namedPromiseHandler) |  |
+| translate/translate.mjs:3166 | translate-refuse | promise-thenable | promises | shared (namedPromiseHandler) |  |
+| translate/translate.mjs:3175 | translate-refuse | promise-handler | promises | shared (namedPromiseHandler) | promise-handler: a named handler mutates its argument |
+| translate/translate.mjs:3209 | translate-refuse | promise-pending | promises | shared (promiseConsumed) | promise-pending: await or return the promise directly |
+| translate/translate.mjs:3210 | translate-refuse |  | promises | one-decider | promise forms require an effectful core unit |
+| translate/translate.mjs:3227 | translate-refuse | generator-bound | generators | shared (executorShape) |  |
+| translate/translate.mjs:3227 | translate-refuse | generator-effect | generators | shared (executorShape) |  |
+| translate/translate.mjs:3227 | translate-refuse | generator-use | generators | shared (executorShape) |  |
+| translate/translate.mjs:3230 | translate-refuse | promise-unsettled | promises | shared (executorShape) | promise-unsettled: an executor path does not settle |
+| translate/translate.mjs:3232 | translate-refuse | promise-combinator | promises | one-decider | promise-combinator: completion order is not read |
+| translate/translate.mjs:3260 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
+| translate/translate.mjs:3268 | translate-refuse | internal | translator-internal | one-decider | internal: await in a unit not marked effectful |
+| translate/translate.mjs:3342 | translate-refuse | prototype | prototype | shared (plainObjectTest) |  |
+| translate/translate.mjs:3439 | translate-refuse | conditional-effect | logic-values | one-decider | conditional-effect: move the effect into an explicit if statement |
+| translate/translate.mjs:3460 | translate-refuse | prototype | prototype | shared (inPrototypeReach) | prototype: this file makes an object whose prototype is not Object.prototype (line ${}), and ${}; `i |
+| translate/translate.mjs:3461 | translate-refuse | dynamic-key | keys | shared (openRecordIn) | dynamic-key: ${} |
+| translate/translate.mjs:3508 | translate-refuse |  | equality | one-decider | loose equality on a non-primitive operand is not translated |
+| translate/translate.mjs:3621 | translate-refuse | prototype | prototype | shared (literalProtoMember) | prototype: `__proto__:` in a literal sets the prototype, not a key |
+| translate/translate.mjs:3622 | translate-refuse | spread-source | record-copy | shared (copySource) | spread-source: ${} |
+| translate/translate.mjs:3706 | translate-refuse |  | keys | one-decider | a computed key on a record with declared keys is a literal or a union of literals |
+| translate/translate.mjs:3724 | translate-refuse | spread-source | record-copy | shared (spreadReadWhy) | spread-source: ${} |
+| translate/translate.mjs:3750 | translate-refuse |  | keys | one-decider | the fields of a computed key union have different types |
+| translate/translate.mjs:3992 | translate-refuse |  | callbacks | one-decider | ${} is not a function |
+| translate/translate.mjs:3998 | translate-refuse |  | callbacks | one-decider | ${} has effects; it cannot be a callback |
+| translate/translate.mjs:4003 | translate-refuse |  | callbacks | one-decider | ${} is not a same-file function or a local function value |
+| translate/translate.mjs:4005 | translate-refuse |  | callbacks | one-decider | an effect inside a callback; the order of its world transitions is not defined |
+| translate/translate.mjs:4019 | translate-refuse |  | callbacks | one-decider | callback path ends without a return |
+| translate/translate.mjs:4031 | translate-refuse |  | regex | shared (matchGroupsDestructure) | `${}` of the destructured groups may be undefined (its group does not take part in every match) |
+| translate/translate.mjs:4041 | translate-refuse |  | react | one-decider | a hook result is taken apart field by field |
+| translate/translate.mjs:4041 | translate-refuse |  | react | one-decider | ${} is not a field the hook table declares for ${} |
+| translate/translate.mjs:4052 | translate-refuse |  | destructuring | one-decider | record rest needs a typed source record |
+| translate/translate.mjs:4054 | translate-refuse |  | destructuring | one-decider | a computed key in a record rest pattern is not translated |
+| translate/translate.mjs:4098 | translate-refuse |  | destructuring | one-decider | a rest element of a tuple or an opaque value is not translated |
+| translate/translate.mjs:4106 | translate-refuse |  | destructuring | one-decider | pattern is not translated |
+| translate/translate.mjs:4125 | translate-refuse |  | regex | one-decider | `.groups` of a pattern that names no group is undefined |
+| translate/translate.mjs:4128 | translate-refuse |  | regex | one-decider | a capture of a match that may be null, read without `?.` |
+| translate/translate.mjs:4128 | translate-refuse |  | regex | one-decider | a capture that may not take part read as a string |
+| translate/translate.mjs:4129 | translate-refuse |  | regex | one-decider | a capture read as ${} |
+| translate/translate.mjs:4141 | translate-refuse | read-after-call | mutation | one-decider | read-after-call: `${}` is read after a call that may change its object, and this reading holds the o |
+| translate/translate.mjs:4163 | translate-refuse |  | names | shared (moduleState) | ${}.${} is a function; call it |
+| translate/translate.mjs:4168 | translate-refuse | internal | translator-internal | one-decider | internal: a world field read in a pure method |
+| translate/translate.mjs:4173 | translate-refuse | internal | translator-internal | one-decider | internal: a world field read in a pure unit |
+| translate/translate.mjs:4202 | translate-refuse |  | members | one-decider | property .${} on ${}: the constraint declares no such member |
+| translate/translate.mjs:4204 | translate-refuse |  | optional-chain | one-decider | ?. on a type parameter is not translated |
+| translate/translate.mjs:4343 | translate-refuse | absent-number | absence | one-decider | absent-number: ${} of a local that holds a dictionary read typed without undefined and may change; b |
+| translate/translate.mjs:4378 | translate-refuse |  | keys | one-decider | an absent key reads undefined, which this value type leaves out |
+| translate/translate.mjs:4403 | translate-refuse | prototype | prototype | shared (openRecordReadWhy) | prototype: ${} names a member of Object.prototype, which an open record reads through its prototype, |
+| translate/translate.mjs:4405 | translate-refuse | dynamic-key | keys | shared (OPEN_RECORD_WHY) | dynamic-key: ${} |
+| translate/translate.mjs:4413 | translate-refuse | prototype | prototype | shared (matchCapture, matchGroupRead) |  |
+| translate/translate.mjs:4418 | translate-refuse |  | keys | one-decider | tuple index must be a literal |
+| translate/translate.mjs:4441 | translate-refuse |  | keys | one-decider | key ${} is not a declared data field |
+| translate/translate.mjs:4482 | translate-refuse | internal | translator-internal | one-decider | internal: a same-file constructor called from a pure unit |
+| translate/translate.mjs:4486 | translate-refuse |  | calls | one-decider | the constructor of ${} was not translated |
+| translate/translate.mjs:4523 | translate-refuse |  | library | shared (freshArray) | .${}() as a value needs a local array or a fresh one |
+| translate/translate.mjs:4577 | translate-refuse |  | arrays | one-decider | a spread among other arguments is not translated |
+| translate/translate.mjs:4594 | translate-refuse |  | calls | one-decider | ${} needs ${} arguments |
+| translate/translate.mjs:4631 | translate-refuse |  | proof-shape | one-decider | unknown record enumeration needs the world; use --core |
+| translate/translate.mjs:4684 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
+| translate/translate.mjs:4686 | translate-refuse | internal | translator-internal | one-decider | internal: an accessor of a receiver not made here, in a pure unit |
+| translate/translate.mjs:4701 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
+| translate/translate.mjs:4703 | translate-refuse |  | proof-shape | one-decider | ${} loops, so it is a Dafny method and cannot be called inside an expression |
+| translate/translate.mjs:4708 | translate-refuse |  | calls | one-decider | the argument for `${}`, which ${} changes, must be a name or a fresh literal |
+| translate/translate.mjs:4710 | translate-refuse | internal | translator-internal | one-decider | internal: effectful callee in a pure unit |
+| translate/translate.mjs:4720 | translate-refuse | internal | translator-internal | one-decider | internal: effectful callee in a pure unit |
+| translate/translate.mjs:4736 | translate-refuse | optional-chain | optional-chain | exception:optional-source-vs-emitted-callee (optionalCallShape) | optional-chain: ${} |
+| translate/translate.mjs:4819 | translate-refuse |  | react | one-decider | a lazy initializer with more than a return is not read |
+| translate/translate.mjs:4847 | translate-refuse |  | calls | one-decider | `apply` takes its arguments as one array literal |
+| translate/translate.mjs:4848 | translate-refuse |  | calls | one-decider | `call` and `apply` take the receiver first |
+| translate/translate.mjs:4853 | translate-refuse |  | calls | one-decider | an array method called through ${} is not the direct call here: ${} |
+| translate/translate.mjs:4856 | translate-refuse |  | translator-internal | one-decider | hook ${} is a world transition in a unit not marked effectful |
+| translate/translate.mjs:4862 | translate-refuse |  | translator-internal | one-decider | hook ${} is a world transition in a unit not marked effectful |
+| translate/translate.mjs:4868 | translate-refuse | prototype | prototype | shared (ownKeyTest) |  |
+| translate/translate.mjs:4872 | translate-refuse | prototype | prototype | lowering (nullPrototypeCreate) | prototype: ${} |
+| translate/translate.mjs:4893 | translate-refuse |  | calls | one-decider | call through a computed callee is not translated |
+| translate/translate.mjs:4941 | translate-refuse | internal | translator-internal | one-decider | internal: effectful method called from a pure method |
+| translate/translate.mjs:4985 | translate-refuse |  | calls | one-decider | callee ${} was not translated |
+| translate/translate.mjs:4989 | translate-refuse | internal | translator-internal | one-decider | internal: effectful method called from a pure unit |
+| translate/translate.mjs:5028 | translate-refuse | math-empty | library | lowering (nonemptyMathArgs) | math-empty: provide a nonempty argument list |
+| translate/translate.mjs:5080 | translate-refuse |  | library | one-decider | reduce without an initial value throws a TypeError on an empty array, which this reading of a value  |
+| translate/translate.mjs:5110 | translate-refuse |  | library | one-decider | array method .${}() is not translated |
+| translate/translate.mjs:5168 | translate-refuse |  | library | one-decider | Set.${}() is not translated as an expression |
+| translate/translate.mjs:5181 | translate-refuse |  | library | one-decider | Map.${}() is not translated as an expression |
+| translate/translate.mjs:5201 | translate-refuse |  | control-flow | one-decider | bare return |
+| translate/translate.mjs:5344 | translate-refuse |  | control-flow | one-decider | a case declaration shadows a name the switch head assigns |
+| translate/translate.mjs:5390 | translate-refuse |  | control-flow | one-decider | a path ends without a return |
+| translate/translate.mjs:5407 | translate-refuse |  | control-flow | one-decider | statement ${} cannot be an expression |
+| translate/translate.mjs:5425 | translate-refuse |  | exceptions | one-decider | throw is translated in --core mode only |
+| translate/translate.mjs:5479 | translate-refuse |  | unread-syntax | one-decider | statement ${} is not translated |
+| translate/translate.mjs:5499 | translate-refuse | receiver-write | mutation | shared (thisParamPath) | receiver-write: a free function writes a nonoptional data record receiver |
+| translate/translate.mjs:5502 | translate-refuse | receiver-mutation | mutation | shared (receiverRecordPath) | receiver-mutation: a receiver path needs nonoptional data records |
+| translate/translate.mjs:5504 | translate-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (loopElementBinding) | alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so a |
+| translate/translate.mjs:5517 | translate-refuse |  | mutation | one-decider | field ${} is not a declared field of a record |
+| translate/translate.mjs:5529 | translate-refuse |  | mutation | one-decider | assignment through an optional field is not translated |
+| translate/translate.mjs:5549 | translate-refuse |  | mutation | one-decider | an element write through a value that is not an array |
+| translate/translate.mjs:5556 | translate-refuse |  | mutation | one-decider | field ${} is not a declared field of a record |
+| translate/translate.mjs:5565 | translate-refuse |  | mutation | one-decider | assignment through an optional field is not translated |
+| translate/translate.mjs:5601 | translate-refuse |  | module-state | shared (moduleState) | a logical module assignment uses the opaque unit reading |
+| translate/translate.mjs:5612 | translate-refuse |  | module-state | one-decider | a logical static assignment is outside the reading |
+| translate/translate.mjs:5621 | translate-refuse | prototype | prototype | shared (protoKeyWrite) | prototype: a key that may be '__proto__' with an object or null value replaces the prototype |
+| translate/translate.mjs:5629 | translate-refuse |  | mutation | one-decider | index assignment on a non-array |
+| translate/translate.mjs:5642 | translate-refuse | internal | translator-internal | one-decider | internal: an outside write in a pure unit |
+| translate/translate.mjs:5646 | translate-refuse | internal | translator-internal | one-decider | internal: a world field written in a pure unit |
+| translate/translate.mjs:5666 | translate-refuse |  | mutation | one-decider | a compound assignment on an optional field is not translated |
+| translate/translate.mjs:5667 | translate-refuse |  | mutation | one-decider | assignment operator is not translated |
+| translate/translate.mjs:5679 | translate-refuse | internal | translator-internal | one-decider | internal: a world field written in a pure method |
+| translate/translate.mjs:5683 | translate-refuse |  | mutation | one-decider | delete of a field of this is not translated; assign undefined |
+| translate/translate.mjs:5684 | translate-refuse |  | mutation | one-decider | delete of `${}`, a field that is not optional |
+| translate/translate.mjs:5686 | translate-refuse |  | mutation | one-decider | delete target is not translated |
+| translate/translate.mjs:5689 | translate-refuse |  | mutation | one-decider | element write through a path: the heap core reads it, the value reading does not |
+| translate/translate.mjs:5722 | translate-refuse |  | proof-shape | shared (bucketMaps) | a push through a bucket map is read in --core mode |
+| translate/translate.mjs:5758 | translate-refuse |  | library | one-decider | .${}() is not translated here |
+| translate/translate.mjs:5761 | translate-refuse |  | control-flow | one-decider | statement expression is not translated |
+| translate/translate.mjs:5769 | translate-refuse |  | control-flow | one-decider | a bare await statement has no effect in the core |
+| translate/translate.mjs:5769 | translate-refuse | alias-mutation | mutation | one-decider | alias-mutation: `${}` and `${}` name one object; this reading carries a write through either in --co |
+| translate/translate.mjs:5775 | translate-refuse |  | loops | one-decider | in --real mode a for-loop counter starts at an integer literal |
+| translate/translate.mjs:5822 | translate-refuse |  | control-flow | one-decider | an abrupt exit has no enclosing loop or switch |
+| translate/translate.mjs:6074 | translate-refuse | definite-assignment | declarations | shared (absenceCarried) | definite-assignment: a let that may be read unassigned, inside a try |
+| translate/translate.mjs:6104 | translate-refuse | non-null-assertion | non-null-assertion | one-decider | non-null-assertion: the value read is not held as an option here |
+| translate/translate.mjs:6118 | translate-refuse | non-null-assertion | non-null-assertion | one-decider | non-null-assertion: the value read is not held as an option here |
+| translate/translate.mjs:6162 | translate-refuse | definite-assignment | declarations | shared (absenceCarried, absenceHome) | definite-assignment: a let that may be read unassigned, outside a function's own flow |
+| translate/translate.mjs:6201 | translate-refuse |  | local-functions | one-decider | a nested function needs a name |
+| translate/translate.mjs:6218 | translate-refuse |  | control-flow | one-decider | break or continue outside a loop |
+| translate/translate.mjs:6221 | translate-refuse |  | unread-syntax | one-decider | statement ${} is not translated |
+| translate/translate.mjs:6260 | translate-refuse | internal | translator-internal | one-decider | internal: an opaque block in a unit not marked effectful |
+| translate/translate.mjs:6403 | translate-refuse |  | proof-shape | one-decider | effectful callbacks need --core |
+| translate/translate.mjs:6415 | translate-refuse |  | exceptions | one-decider | a throwing callback here has no fault channel; call the array method in a statement of the unit |
+| translate/translate.mjs:6482 | translate-refuse |  | loops | one-decider | async iterator abrupt completion needs an opaque loop |
+| translate/translate.mjs:6614 | translate-refuse |  | exceptions | one-decider | a throwing callback here has no fault channel; call the array method in a statement of the unit |
+| translate/translate.mjs:6624 | translate-refuse |  | loops | one-decider | an effect in a for header |
+| translate/translate.mjs:6675 | translate-refuse | key-order | loops | shared (forInKeyOrder) | key-order: a for-in over an object whose key order the function does not fix (a parameter, a spread, |
+| translate/translate.mjs:6721 | translate-refuse |  | loops | one-decider | while needs `// @decreases <expr>` |
+| translate/translate.mjs:6736 | translate-refuse |  | control-flow | one-decider | a labelled exit lacks its completion channel |
+| translate/translate.mjs:6736 | translate-refuse | internal | translator-internal | one-decider | internal: return in a loop without the return shape |
+| translate/translate.mjs:6945 | translate-refuse | param-assign | mutation | exception:mutation-admission-vs-value-output (parameterMutationConflicts) | param-assign: parameter `${}` is rebound and also changed in place |
+| translate/translate.mjs:7068 | translate-refuse | type-assertion | type-assertion | one-decider | type-assertion: `${}` hands a value whose type nothing checked to ${}, or reads its held result, and |
+| translate/translate.mjs:7071 | translate-refuse | type-assertion | type-assertion | one-decider | type-assertion: a unit named ${}${} takes the name of ${}'s reading at Any |
+| translate/translate.mjs:7087 | translate-refuse | untyped-js | types | shared (callbackUntypedJsUnit) | untyped-js: ${} |
+| translate/translate.mjs:7089 | translate-refuse | alias-mutation | mutation | exception:element-shape-vs-selected-emission (firstElementMutation) | alias-mutation: `${}` is the element a loop or an array callback walks; this reading copies it, so t |
+| translate/translate.mjs:7090 | translate-refuse | alias-mutation | mutation | lowering (bucketMaps, sharedMutation) | alias-mutation: `${}` is changed in place while ${} (line ${}); this reading reads an object as a va |
+| translate/translate.mjs:7094 | translate-refuse |  | generators | shared (asyncGenerator) | async generators need --core |
+| translate/translate.mjs:7095 | translate-refuse |  | generators | one-decider | generators need --core |
+| translate/translate.mjs:7123 | translate-refuse |  | control-flow | one-decider | a path ends without a return |
+| translate/translate.mjs:7129 | translate-refuse | read-after-call | mutation | shared (readAfterCall) | read-after-call: ${} |
+| translate/translate.mjs:7131 | translate-refuse | read-after-call | mutation | one-decider | read-after-call: `${}` is read after a call that may change it, and this form of read does not take  |
+| translate/translate.mjs:7151 | translate-refuse |  | decorators | one-decider | the route wrapper is not read: ${} |
+| translate/translate.mjs:7157 | translate-refuse |  | decorators | one-decider | a piped parameter is a plain required name |
+| translate/translate.mjs:7200 | translate-throw |  | numbers | one-decider | internal: an integer division was not placed under Math.floor |
+| translate/translate.mjs:7222 | translate-refuse | unsupported-call | calls | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | unsupported-member | members | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | unsupported-syntax | unread-syntax | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | unsupported-operator | mutation | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | unsupported-type | types | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | dynamic-key | keys | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | optional-chain | optional-chain | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | function-value | calls | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | callback-form | callbacks | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | callback-control | exceptions | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | callback-result | callbacks | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | exception-callback | exceptions | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | exception-binding | exceptions | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | exception-return | exceptions | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | conditional-effect | logic-values | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | operator-value-context | operators-as-values | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | instanceof-constructor | instanceof | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | iterator-protocol | object-literal-methods | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | delete | mutation | one-decider |  |
+| translate/translate.mjs:7222 | translate-refuse | assign-target | record-copy | one-decider |  |
+
+
+## 2026-11-01 (lane w1c-opaque-calls): an opaque site keeps its finding's refusal only where no step reaches it
+
+The calls, members, syntax and callbacks rules (lint/opaque-calls.mjs, the column OPAQUE_CALLS) are decided once,
+by `callsOpaqueSite`, which the lint calls when its walk ends and the translator calls for a refusal of its own
+(`translateSites`). A finding the decision gives a statement keeps its message, gains `opaque: statement` and stops
+nothing; the translator reads the statement as one opaque step (design/w1c-opaque-calls.md). One decision site is new:
+`translate.mjs` fails with `${site.rule}: ${site.message}` when a site of an emitted unit was reached by no step (a
+statement another reading took whole), so the finding's refusal stands under its own rule and reading; the audit names
+it once per rule a site can hold (`site.rule` in lower.mjs DYNAMIC_RULES, the rules the catalogue reads; `union-type`
+has no site and no reading). `dynamicRules` now takes an exact key before a contained one (`site.rule` holds `rule`).
 
 ## 2026-10-30: an edit of comments and blank lines is intake, not a verdict
 

@@ -21,6 +21,6 @@ export function read_eb(x: number): number {
 
 export function planted_eb(x: number): number {
   let y = x;
-  try { const y = 1; if (x >= 0) return y; } finally { y += 1; }
+  try { const y = 2; if (x > 0) return y; } finally { y += 1; }
   return y;
 }

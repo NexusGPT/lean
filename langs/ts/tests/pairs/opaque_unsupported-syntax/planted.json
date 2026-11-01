@@ -1,8 +1,8 @@
 {
  "planted_syntax": {
-  "index": 1,
-  "kind": "string",
-  "was": "\"1\"",
-  "text": "\"1x\""
+  "index": 0,
+  "kind": "operator",
+  "was": "===",
+  "text": "!=="
  }
 }

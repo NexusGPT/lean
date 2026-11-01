@@ -7,5 +7,8 @@
   "caller": false,
   "add_tag": true
  },
- "why": "design/w1c-opaque-calls.md: addTag holds an opaque site that may change user through the alias t; caller reads user.tags after calling addTag, the candidate before. The caller reads a parameter after a call of an effectful same-file unit through the world (ext_now: the read-after-call world form), so the two sides read two values: not proved. addTag is the same text on both sides: proved, its step listed. This pair guards the caller's side of A2: a step's reference writes reach the unit's callers through the world."
+ "why": "design/w1c-opaque-calls.md: addTag holds an opaque site that may change user through the alias t; caller reads user.tags after calling addTag, the candidate before. The caller reads a parameter after a call of an effectful same-file unit through the world (ext_now: the read-after-call world form), so the two sides read two values: not proved. addTag is the same text on both sides: proved, its step listed. This pair guards the caller's side of A2: a step's reference writes reach the unit's callers through the world.",
+ "b": {
+  "caller": "WITNESS"
+ }
 }

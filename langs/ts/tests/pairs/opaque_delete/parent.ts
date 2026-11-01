@@ -24,7 +24,7 @@ export function write_del(o: { cache: { [k: string]: number } }, k: string): num
   return had + (r ? 1 : 0);
 }
 
-export function planted_del(o: { cache: { [k: string]: number } }, k: string): number {
-  const r = delete o.cache[k + "z"];
+export function planted_del(o: { cache: { [k: string]: number } }, k: string, x: number): number {
+  const r = delete o.cache[k] && x > 0;
   return r ? 1 : 0;
 }
