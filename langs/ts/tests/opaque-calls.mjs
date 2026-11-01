@@ -68,6 +68,30 @@ function laneA(pair, env = {}) {
 const rows = [];
 const add = (name, ok, detail) => { rows.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`); };
 const pairs = [...Object.keys(OPAQUE_CALLS).map((r) => `opaque_${r}`), ...BREAKS.map((b) => b.pair), 'opaque_param-output'].filter((p, i, xs) => xs.indexOf(p) === i && fs.existsSync(path.join(pairsDir, p, 'expect.json'))).filter((p) => !only || p === only).sort(); // the pairs of this lane: one per rule of the column, and the break pairs
+// the site decision (lint/opaque-calls.mjs callsOpaqueSite), read off the lint: each snippet's finding of the rule is
+// labelled opaque or keeps its refusal with the reason
+const LINT_ROWS = [
+  { name: 'delete of an optional member is a step', rule: 'delete', opaque: true, src: 'export function f(o: { a?: number }, x: number): number { const r = delete o.a; return r ? x : 0; }' },
+  { name: 'delete of an index entry is a step', rule: 'delete', opaque: true, src: 'export function f(o: { [k: string]: number }, k: string): number { const r = delete o[k]; return r ? 1 : 0; }' },
+  { name: 'delete of a member no type declares optional keeps its refusal (A4)', rule: 'delete', opaque: false, why: /not declared|required/, src: 'export function f(o: { a: number }, x: number): number { const s = delete (o as any).b; return s ? x : 0; }' },
+  { name: 'delete by a literal key naming a required member keeps its refusal (A4)', rule: 'delete', opaque: false, why: /required member/, src: 'export function f(o: { a: number; b?: number }, k: "a" | "b"): number { const s = delete o[k]; return s ? 1 : 0; }' },
+  { name: 'a finding in a parameter default keeps its refusal (never the unit, A5)', rule: 'callback-form', opaque: false, why: /no statement/, src: 'export function f(xs: number[], ys = xs.map(function (y) { return y + 1; })): number { return ys.length; }' },
+  { name: 'a finding in a nested (hoisted) function declaration keeps its refusal', rule: 'callback-form', opaque: false, why: /no statement/, src: 'export function f(xs: number[]): number { return g().length; function g() { return xs.map(function (y) { return y + 1; }); } }' },
+  { name: 'exception-binding is sited at its try', rule: 'exception-binding', opaque: true, src: 'export function f(x: number): number { let y = x; try { const y = 1; if (x > 0) return y; } finally { y += 1; } return y; }' },
+  { name: 'freeze keeps its refusal (A4)', rule: 'freeze', opaque: false, src: 'export function f(o: { a: number }): number { Object.freeze(o); return o.a; }' },
+];
+if (!breakOnly && (!only || only === "lint")) {
+  const { lintFile } = await import('../lint/lint.mjs');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'w1c-lint-'));
+  try {
+    for (const [i, r] of LINT_ROWS.entries()) {
+      const f = path.join(dir, `s${i}.ts`); fs.writeFileSync(f, r.src + '\n');
+      const hits = lintFile(f, null, { project: false }).filter((x) => x.rule === r.rule);
+      const ok = hits.length > 0 && hits.every((x) => !!x.opaque === r.opaque && (r.opaque || !r.why || r.why.test(x.opaqueWhy ?? '')));
+      add(`lint: ${r.name}`, ok, hits.map((x) => `${x.rule}${x.opaque ? ' [opaque]' : ''}${x.opaqueWhy ? ': ' + x.opaqueWhy.slice(0, 80) : ''}`).join('; ') || 'no finding of the rule');
+    }
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+}
 if (!breakOnly) for (const p of pairs) {
   const exp = JSON.parse(fs.readFileSync(path.join(pairsDir, p, 'expect.json'), 'utf8'));
   if (exp.refused) { // a rule whose column is none: every finding of it keeps its refusal, no opaque label
