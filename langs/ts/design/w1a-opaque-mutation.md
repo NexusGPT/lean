@@ -58,10 +58,12 @@ returning `(World, result, outputs...)`:
   captured inputs share what that function made them share). The same-file callees are also listed (`// CALLS`), so the
   theorem refuses a block whose callee differs, as for every opaque block.
 - **reads**: every name of the unit the block mentions (freeVars), `this` when it mentions it, the world.
-- **writes**: the world, and every parameter of a reference type the block mentions (and a free function's `this`):
-  these become outputs of the unit (`mutatedOf`, through the `extraOutputs` hook of `mutationAnalysis`, so a caller
-  that passes a name takes the new value back, transitively). No other name is live after the block: it runs to the
-  end of the unit.
+- **writes**: the world, and the parameters the unit's own text writes (`mutationAnalysis` valueOutputs, the outputs
+  the exact reading would give: the unit keeps its interface, so a parent read exactly and a candidate read with a block
+  still meet on one signature). Any other change the block makes to an object it was handed (through an alias, a
+  method, a callee) is a change of the world: the unit reaches outside (`reachesOutside`), so a caller reading an object
+  it handed reads it after the call as the world holds it (the read-after-call world read, `ext_now`), or is refused,
+  exactly as after an outside call. No local is live after the block: it runs to the end of the unit.
 - **control**: a `return` inside is the result channel, `Option<R>` (None: the block fell off the end, which the unit's
   own end reading then takes) unless the block cannot fall through (it always leaves, or the unit's result type admits
   no `undefined`: TypeScript refuses a path that ends without a return there), then `R`. A `throw` is the world's fault
@@ -91,8 +93,9 @@ the rest of a unit: `effect(world, block_id, reads) = (world', result, outputs)`
    both are in the id (and the callees in the theorem's guard). Equal ids and equal reads are therefore the same code
    from equal states, which runs the same: the same result, the same final objects, the same world.
 3. Everything observable after the block is among its outputs: the result, the world (every effect, every fault, every
-   object it handed the outside), and the parameters' objects (the caller's view of what it handed in). A name it
-   does not mention cannot be reached by it: no local holds a reference at its start and the parameters are apart.
+   object it handed the outside, and every object the unit was handed: a caller reads those after the call through the
+   world, the read-after-call reading of an outside call), and the outputs of the unit's interface. A name it does not
+   mention cannot be reached by it: no local holds a reference at its start and the parameters are apart.
 4. So when the two sides have equal ids and equal reads, the two real runs agree on everything the theorem observes,
    and the bodiless function, the same on both sides, gives equal outputs: the lemma's equality is true. When the ids
    differ (a change inside the block) the two calls are of two functions and nothing equates them: never PASS-proved.
@@ -134,16 +137,18 @@ one symbol, so a changed URL inside an opaque loop could be proved equal. The id
 
 ## The amendments (2026-11-01 plan review)
 
-- **A2, writes closed under the alias origin.** The block writes the world and every reference parameter it mentions,
-  whatever name the write goes through: an alias of a parameter's field writes the parameter because the parameter is
-  mentioned by the alias's declaration, which is inside the block (the block starts at the first statement that binds
-  a reference, `heapOperation`). An origin nobody can name (a call's result, an element) writes the world, which the
-  block always writes. The amendment's own pair (`count`, in `opaque_alias_mutation`) is not a finding of this family:
+- **A2, writes closed under the alias origin.** The block writes the world, and every object the unit was handed is
+  read by its callers through the world after the call, whatever name the write went through: an alias of a
+  parameter's field, a call's result, an element. The closure is over every origin at once, so no origin needs a name:
+  an origin nobody can name is covered as one that can (the block starts at the first statement that binds a reference,
+  `heapOperation`, so every alias is made inside it). The amendment's own pair (`count`, in `opaque_alias_mutation`) is not a finding of this family:
   the lint admits it and the value reading reads it exactly, and the heap guard withholds its lemma (`UNGUARDED
   Equal_count: ... exposed by: nested write through an input`): ASK in lane A, WITNESS in lane B, never PASS-proved. The
   pair keeps it as a `withheld` row. The write break is `after`: a caller reading `b.inner.v` after `bump` (whose block
-  writes `b`) against before it; `LEAN_BREAK=opaque-drop-write` drops the step's first written output and the lemma
-  proves, a false PASS-proved.
+  writes `b` through the alias `t`) against before it: not proved, the caller reads `b` through the world after the
+  call. `LEAN_BREAK=opaque-drop-write` drops the writes of the step as its callers see them (its first written output
+  and its reach to the world) and the lemma proves, a false PASS-proved. Dropping only the output proves nothing false:
+  the world read already covers the caller (a first version of the break showed it: the row stayed red).
 - **A3, the key holds the same-file callees.** The step's id hashes the block's tokens, the parameter list, the code
   each statement reaches (reach.mjs `keyText`: the same-file functions it calls and the module bindings it reads,
   transitively), and for a callback unit the enclosing function's text; its prelude entry names the callees (`//

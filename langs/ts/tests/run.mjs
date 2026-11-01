@@ -20,7 +20,8 @@ import { faithfulPlacement, checkWallCapMs } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
 import { dafnyVerifyArgs } from '../exec/dafny-args.mjs'; // the one bound and the one Z3 (solve/z3.mjs) of every `dafny verify`: the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
-import { breakRows } from './break.mjs'; // the one --break convention (amendment A6)
+import { breakRows } from './break.mjs';
+import { opaqueGrade } from '../lint/lint.mjs'; // the opaque column: a graded rule's escape is named with its grade // the one --break convention (amendment A6)
 import { opaqueLines } from '../translate/opaque.mjs'; // the opaque steps a translation lists (design/w1a-opaque-mutation.md)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -127,8 +128,14 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])), summaries: true, ...(Object.keys(allAdapters).length ? { adapters: allAdapters } : {}) }));
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
   const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] }); // the preludes too: theorem.py reads each side's include, and a prelude can change while the main text does not
-  add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
-  if (th.status !== 0) return;
+  // `theoremRefusal` in expect.json: the theorem must refuse the pair with that text (an opaque step whose callee differs,
+  // design/w1a-opaque-mutation.md A3); lane A then proves nothing, the break rows and lane B still run
+  const thText = (th.stderr || th.stdout || '').trim();
+  const refusedAsExpected = !!exp.theoremRefusal && th.status !== 0 && thText.includes(exp.theoremRefusal);
+  if (exp.theoremRefusal) add('pair', name, `theorem refused: ${exp.theoremRefusal}`, refusedAsExpected, th.status === 0 ? 'generated' : thText.slice(-160));
+  else add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : thText.slice(-160));
+  if (th.status !== 0 && !refusedAsExpected) return;
+  if (!refusedAsExpected) {
   // lane A is bounded by the solver's resource count (exec/dafny-args.mjs), the same whatever the load; the cores
   // split across the pairs running at once only changes how long it takes
   // the one Dafny of the pair runs through the async runner: its wall cap kills Dafny and its solvers (pool.mjs spawnCollect)
@@ -167,6 +174,10 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want === 'witness' ? 'witness (doubles)' : want === 'real-only' ? 'real only (doubles unknown)' : want ? 'proved' : 'not proved'}`, ok, got);
     if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
   }
+  // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
+  for (const unit of Object.keys(exp.b ?? {})) if (finished && spans[`Equal_${dafnyName(unit)}`]) await doubles(dafnyName(unit)); // the proof-hunt step reads the doubles reading of every unit lane B ran
+  huntA.set(name, { adapters: Object.keys(allAdapters), bearing: (f) => !!doublesOf.get(f)?.bearing, proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const fp = doublesOf.get(f); if (fp?.bearing && fp.verdict !== 'unknown') return fp.verdict === 'proved'; if (fp?.bearing && !faithfulPlacement(tmpd, f).placed) return false; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
+  } // lane A on the generated theorem
   // `opaque` in expect.json: the opaque steps the candidate's translation lists for a unit (its `// OPAQUE` line, the
   // certificate's lanes.A.opaque), each listed rule among them (design/w1a-opaque-mutation.md)
   if (exp.opaque) { const listed = opaqueLines(fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8')); for (const [f, want] of Object.entries(exp.opaque)) { const steps = listed.get(`${f}_candidate`)?.steps ?? []; const rules = new Set(steps.flatMap((x) => String(x.rule).split(','))); add('pair', name, `opaque ${f}: ${want.join(', ')}`, want.every((r) => rules.has(r)) && steps.length > 0, steps.length ? `${steps.length} step(s): ${steps.map((x) => `${x.rule} at line ${x.line}, reads ${x.reads.join(' ')}, writes ${x.writes.join(' ')}`).join('; ')}` : 'no opaque step listed'); } }
@@ -190,9 +201,6 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     }
     add('pair', name, `break ${mechanism}: Equal_${unit} flips to proved (a false PASS-proved without the mechanism)`, ok, got);
   }
-  // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
-  for (const unit of Object.keys(exp.b ?? {})) if (finished && spans[`Equal_${dafnyName(unit)}`]) await doubles(dafnyName(unit)); // the proof-hunt step reads the doubles reading of every unit lane B ran
-  huntA.set(name, { adapters: Object.keys(allAdapters), bearing: (f) => !!doublesOf.get(f)?.bearing, proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const fp = doublesOf.get(f); if (fp?.bearing && fp.verdict !== 'unknown') return fp.verdict === 'proved'; if (fp?.bearing && !faithfulPlacement(tmpd, f).placed) return false; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
@@ -681,7 +689,11 @@ async function escapes(add) {
     const candidateUnit = (src.match(/^\/\/ candidate-unit:\s*(\S+)/m) ?? [])[1];
     const l = await R.run('node', [lint, ...(candidateUnit ? ['--candidate', file, '--unit', candidateUnit, '--n', '1', '--no-project'] : [file])]);
     const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
-    add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    // a rule the opaque column grades (lint/lint.mjs OPAQUE_ROWS): the lint names the finding with its grade (the unit is
+    // read with an opaque step, design/w1a-opaque-mutation.md); the proof shape below still refuses it
+    const graded = opaqueGrade(want) !== 'none' ? l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s+\\[opaque: `).test(line)) : false;
+    if (opaqueGrade(want) !== 'none') add('escape', name, 'lint names it, graded opaque or refused', graded || (l.status === 1 && hit), graded ? `graded: ${want} [opaque: ${opaqueGrade(want)}]` : l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    else add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
     const fn = (src.match(/^export (?:async )?function (\w+)/m) ?? [])[1];
     if (fn && !candidateUnit) {
       const t = await R.run('node', [translate, file, '--fn', fn, '--out', path.join(tmp, `esc_${name}.dfy`)]);

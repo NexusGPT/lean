@@ -47,7 +47,7 @@ import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../rea
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 import { optionalCallShape } from '../lower.mjs';
-import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
+import { lintFindings, lowerFile } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
 
 const K = ts.SyntaxKind;
@@ -2514,6 +2514,9 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
   else if (args.includes('--agent')) console.log(agentReport(file, res));
   else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
+  // the findings the opaque column graded in units the translator read: each keeps its rule and message, labelled with its
+  // grade; they refuse nothing (design/w1a-opaque-mutation.md)
+  if (!args.includes('--json') && !args.includes('--agent')) { const graded = lowerFile(file, ranges, { project }).units.flatMap((u) => (u.opaque ?? []).filter((o) => o.graded).map((o) => ({ ...o, unit: u.unit }))); for (const o of graded) console.log(`${file}:${o.line}:${o.col}  ${o.rule}  [opaque: ${o.grade}] ${o.msg}`); if (graded.length) console.log(`${graded.length} graded opaque (the unit is read with an opaque step)`); }
   if (res.length) { if (!args.includes('--json')) console.log(`${res.length} violation(s)`); process.exit(1); }
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);
   process.exit(0);

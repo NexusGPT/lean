@@ -1,9 +1,9 @@
 {
   "scope": [
-    "Outside.m",
-    "Inside.m",
-    "Planted.m",
-    "Flows.m",
+    "outside_m",
+    "inside_m",
+    "planted_m",
+    "flows_m",
     "reader"
   ],
   "equal": {
