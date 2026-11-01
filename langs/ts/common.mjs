@@ -2487,8 +2487,14 @@ export function outsideSlot(checker, n) {
       const dsf = d.getSourceFile();
       if (dsf.hasNoDefaultLib || /[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/.test(dsf.fileName)) return false; // a library operation: read exactly
       if (dsf === n.getSourceFile() && ts.isFunctionLike(d) && d.body) return false; // a unit of this file reads its parameter
-      if (dsf !== n.getSourceFile() && !dsf.isDeclarationFile && ts.isFunctionLike(d) && d.body) return true; // another file's function: one transition named by its name
-      return !d.body; // a function value's type, an interface's method, a declaration file's function
+      if (dsf !== n.getSourceFile()) return true; // another file's function or a declaration file's: one transition named by its name
+      if (d.body) return false;
+      // a signature of this file (a function type, an interface's method): outside only when the value called is one the
+      // run was handed (a parameter, an import, an any value), never a value of this file that a body may implement
+      let root = p.expression; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root) || ts.isNonNullExpression(root)) { const t = tAt(checker, root.expression ?? root); if (root.expression && t && opaqueT(t)) return true; root = root.expression; }
+      if (!ts.isIdentifier(root)) return false;
+      const rd = checker.getSymbolAtLocation(root)?.declarations?.[0];
+      return !!rd && (ts.isParameter(rd) || ts.isImportSpecifier(rd) || ts.isImportClause(rd) || ts.isNamespaceImport(rd));
     }
     return false;
   }
