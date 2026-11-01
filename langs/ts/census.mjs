@@ -199,6 +199,7 @@ export function census(root, opts = {}) {
   // read by the typed reading); a JavaScript unit the lint refuses as untyped is read by lane B alone
   const fileUnits = { module: { units: 0, environmentBlocked: 0, js: 0 }, types: { units: 0, js: 0 } };
   const records = []; // one per file: what the per-file reader needs
+  const onFacts = { units: 0, keys: {} }; // the entered units whose entry rests on a callee fact pending lane B's record
   let files = 0, units = 0, entered = 0, failedFiles = 0, nested = 0, nestedEntered = 0, environmentBlocked = 0, languageRefused = 0, oversizedClosures = 0;
   const handles = { units: 0, entered: 0 }; // units reading an unresolved name as an opaque handle (the lint's `handle`), and those of them entered
   const typeBlocked = { units: 0, byReading: {} }; // units environment-blocked by a refusal judged on a value whose type does not resolve (environmentOf), by the rule that refused
@@ -228,7 +229,7 @@ export function census(root, opts = {}) {
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
-    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv, moduleUnit = false, typesUnit = false, opaque = {}, callees = null, refusalCallees = null;
+    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv, moduleUnit = false, typesUnit = false, opaque = {}, facts = {}, callees = null, refusalCallees = null;
     try {
       const L = loaded.get(path.resolve(file));
       if (!L || L.error) throw new Error(L?.error ?? 'not loaded');
@@ -242,6 +243,7 @@ export function census(root, opts = {}) {
       for (const f of findings) f.unit = findingUnit(sf, inventory, f)?.name ?? null; // a finding belongs to the unit the lint named, else the innermost containing unit
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
       // the opacity ladder (A5): per unit its opaque fraction and each step's rule, construct and spans, as the lowering read them
+      for (const u of rec.units) if (u.calleeFacts && !u.refusal) facts[u.unit] = u.calleeFacts; // admitted under a callee fact pending lane B's record (callee-facts.mjs): the facts it rests on
       for (const u of rec.units) if (u.opaqueSteps) opaque[u.unit] = { fraction: u.opaqueSteps.fraction, statements: u.opaqueSteps.statements, covered: u.opaqueSteps.covered, steps: u.opaqueSteps.steps.map((x) => ({ rule: x.rule, construct: x.construct, span: x.span, findings: x.findings, statements: x.statements })) };
       // judged on unknown types: neither admitted nor refused by a reading. A name the reading holds as an opaque handle
       // (the lint's `handle`: an unresolved global read from the world at Any, an unresolved type name read as Any) sets
@@ -298,7 +300,7 @@ export function census(root, opts = {}) {
     { const isJs = JS_EXT.test(file);
       if (moduleUnit) { fileUnits.module.units++; if (isJs) fileUnits.module.js++; if (named.some((o) => o.rule === 'unresolved-module' && !o.unit)) fileUnits.module.environmentBlocked++; }
       if (typesUnit) { fileUnits.types.units++; if (isJs) fileUnits.types.js++; } }
-    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), ...(moduleUnit ? { moduleUnit: true } : {}), ...(typesUnit ? { typesUnit: true } : {}), lowering: lowered, findings: named, ...(unresolvedTypes.length ? { unresolvedTypes } : {}), ...(Object.keys(opaque).length ? { opaque } : {}) });
+    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), ...(moduleUnit ? { moduleUnit: true } : {}), ...(typesUnit ? { typesUnit: true } : {}), lowering: lowered, findings: named, ...(unresolvedTypes.length ? { unresolvedTypes } : {}), ...(Object.keys(opaque).length ? { opaque } : {}), ...(Object.keys(facts).length ? { calleeFacts: facts } : {}) });
     const blocked = new Set();
     const stop = (unit, f, rule) => {
       blocked.add(unit);
@@ -361,6 +363,7 @@ export function census(root, opts = {}) {
     { const ns = [...inventory.values()].filter((u) => u.enclosingUnit); nested += ns.length; nestedEntered += ns.filter((u) => !blocked.has(u.name)).length; }
     { const hs = new Set(named.filter((o) => o.handle && o.unit).map((o) => o.unit)); handles.units += hs.size; handles.entered += [...hs].filter((u) => !blocked.has(u)).length; }
     units += unitNames.length; entered += unitNames.length - blocked.size;
+    for (const [u, keys] of Object.entries(facts)) if (!blocked.has(u)) { onFacts.units++; for (const k of keys) onFacts.keys[k] = (onFacts.keys[k] ?? 0) + 1; } // entered only on the condition lane B confirms these facts when the unit is checked
     { const St = strata[stratum]; St.files++; St.units += unitNames.length; St.entered += unitNames.length - blocked.size; }
     { const lang = JS_EXT.test(file) ? 'js' : 'ts'; const Lg = languages[lang] ??= { files: 0, units: 0, entered: 0, untyped: 0 }; Lg.files++; Lg.units += unitNames.length; Lg.entered += unitNames.length - blocked.size; Lg.untyped += new Set(findings.filter((f) => f.rule === 'untyped-js' && f.unit).map((f) => f.unit)).size; }
     P.units += unitNames.length; P.entered += unitNames.length - blocked.size;
@@ -380,7 +383,7 @@ export function census(root, opts = {}) {
   const blockedKinds = Object.fromEntries([...refusalGroups.values()].filter((r) => r.rule.startsWith('environment: ')).map((r) => [r.rule.slice(13), r.units]).sort((a, b) => b[1] - a[1]));
   const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds, handles, unresolvedTypes: { units: typeBlocked.units, byReading: Object.fromEntries(Object.entries(typeBlocked.byReading).sort((a, b) => b[1] - a[1])) } };
   const shareWritten = strata.written.units ? Math.round((1000 * strata.written.entered) / strata.written.units) / 10 : null;
-  const result = { complete: true, root, date, depth, oversizedClosures, languages, fileUnits, strata, shareWritten, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, skipped, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  const result = { complete: true, root, date, depth, oversizedClosures, languages, fileUnits, strata, shareWritten, enteredOnCalleeFacts: { units: onFacts.units, keys: Object.fromEntries(Object.entries(onFacts.keys).sort((a, b) => b[1] - a[1])) }, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, skipped, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
   if (opts.callees) result.calleeTable = calleeTable([result]);
   return result;
 }
@@ -397,7 +400,7 @@ export function censusReport(res) {
     ...(res.strata ? [`By stratum (census.mjs stratumOf): written ${res.strata.written.units} units (${res.strata.written.entered} inside, ${res.strata.written.files} files; ${res.shareWritten ?? 'n/a'} percent); generated ${res.strata.generated.units} units (${res.strata.generated.entered} inside, ${res.strata.generated.files} files); minified ${res.strata.minified.units} units (${res.strata.minified.entered} inside, ${res.strata.minified.files} files). The share above is over all code; the regression floor R6 binds that share.`, ''] : []),
     ...(res.languages?.js ? [`By language: TypeScript ${res.languages.ts?.units ?? 0} units (${res.languages.ts?.entered ?? 0} inside, ${res.languages.ts?.files ?? 0} files); JavaScript ${res.languages.js.units} units (${res.languages.js.entered} inside, ${res.languages.js.files} files).`, ''] : []),
     ...(res.fileUnits ? [`Beside the ${res.units} function units: ${res.fileUnits.module.units} module units (a file's top-level statements, read by lane B; ${res.fileUnits.module.environmentBlocked} with a top-level import that does not resolve; ${res.fileUnits.module.js} in JavaScript files) and ${res.fileUnits.types.units} types units (a file's type-only statements, read through the emitted JavaScript)${res.languages?.js ? `; of the ${res.languages.js.units} JavaScript units, ${res.languages.js.untyped ?? 0} untyped (refused by the lint as untyped-js, read by lane B)` : ''}.`, ''] : []),
-    '| Entered | Environment-blocked | Language-refused |', '| ---: | ---: | ---: |', `| ${res.entered} | ${res.environmentBlocked ?? 0} | ${res.languageRefused ?? res.refused} |`, '',
+    '| Entered | Environment-blocked | Language-refused |', '| ---: | ---: | ---: |', `| ${res.entered} | ${res.environmentBlocked ?? 0} | ${res.languageRefused ?? res.refused} |`, '', ...(res.enteredOnCalleeFacts?.units ? [`Of the entered, ${res.enteredOnCalleeFacts.units} enter on a callee fact ("writes none of its arguments", callee-facts.mjs) that lane B's record must confirm when the unit is checked; the facts by key: ${Object.entries(res.enteredOnCalleeFacts.keys).slice(0, 10).map(([k, n]) => `${k} ${n}`).join(', ')}.`, ''] : []),
     ...(res.environment && Object.keys(res.environment.blockedKinds ?? {}).length ? ['Environment-blocked by kind: ' + Object.entries(res.environment.blockedKinds).map(([k, n]) => `${k} ${n}`).join(', ') + '.', ''] : []),
     ...(res.environment?.handles?.units ? [`Units reading an unresolved name as an opaque handle (an unresolved global read from the world, an unresolved type name read as Any; design/w1e-opaque-this-globals.md): ${res.environment.handles.units}, of which entered: ${res.environment.handles.entered}.`, ''] : []),
     ...(res.environment?.unresolvedTypes?.units ? [`Of these, refused only on a value whose type does not resolve: ${res.environment.unresolvedTypes.units} (` + Object.entries(res.environment.unresolvedTypes.byReading).map(([k, n]) => `${k} ${n}`).join(', ') + ').', ''] : []),
