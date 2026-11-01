@@ -178,6 +178,8 @@ export function report(study) {
     ...tally(caught, (r) => `${r.foundLane}\u0000${r.foundBy}`).map(([k, n]) => { const [l, s] = k.split('\u0000'); return `| ${l} | ${s} | ${n} |`; }), '',
     '### The ASKs by lane B and lane A verdict', '', '| verdict | lane B | lane A | mutants |', '| --- | --- | --- | ---: |',
     ...tally(asks, (r) => `${r.verdict}\u0000${r.laneB}\u0000${r.laneA}`).map(([k, n]) => { const [v, b, aa] = k.split('\u0000'); return `| ${v} | ${b} | ${aa} | ${n} |`; }), '',
+    ...(rows.some((r) => r.counterexample !== undefined) ? ['### The solver\'s counterexample (W3a), where lane A asked for one', '', `Counterexample witnesses: ${rows.filter((r) => r.foundBy === 'counterexample').length}; of them not replayed (a false witness): ${rows.filter((r) => r.foundBy === 'counterexample' && r.replayed !== true).length}.`, '', '| verdict | counterexample status | mutants |', '| --- | --- | ---: |',
+      ...tally(rows.filter((r) => r.counterexample !== undefined), (r) => `${r.verdict}\u0000${r.counterexample}`).map(([k, n]) => { const [v, st] = k.split('\u0000'); return `| ${v} | ${st} | ${n} |`; }), ''] : []),
     '### The escapes by lane A verdict', '', '| verdict | lane A | mutants |', '| --- | --- | ---: |',
     ...tally(rows.filter((r) => outcomeOf(r.verdict) === 'escaped'), (r) => `${r.verdict}\u0000${r.laneA}`).map(([k, n]) => { const [v, aa] = k.split('\u0000'); return `| ${v} | ${aa} | ${n} |`; }), '',
   ].join('\n');
