@@ -40,7 +40,7 @@ export function holder(r: Row, g: (t: string[]) => void): number {
 
 // (f) a new object a name holds, read after a call that may reach it by type: named by its site, so two new objects of
 // one value are two (LEAN_BREAK=fresh-site names them by value alone and the pair must go red)
-export function fresh(g: (b: { n: number; tags: string[] }) => void): number {
+export function twoNew(g: (b: { n: number; tags: string[] }) => void): number {
   const a = { n: 0, tags: [] as string[] };
   const b = { n: 0, tags: [] as string[] };
   g(a);
