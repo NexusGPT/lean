@@ -169,6 +169,11 @@ export async function check(opts) {
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
   if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; noteDoubles(); return finish(rung(), cert, unreached({})); }
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
+  // the opaque steps each side was read with (design/w1b-opaque-statements.md): the unit's and its same-file callees', each
+  // `{ unit, rules, line, id, reads, writes }`; a PASS-proved holds modulo these uninterpreted transitions
+  { const steps = (text, side) => [...text.matchAll(/^\/\/ OPAQUE (\w+): (\{.*\})$/gm)].map((m) => ({ unit: m[1].replace(new RegExp(`_${side}$`), ''), ...JSON.parse(m[2]) }));
+    const opaque = { parent: steps(fs.readFileSync(path.join(tmp, 'parent.dfy'), 'utf8'), 'parent'), candidate: steps(cand, 'candidate') };
+    if (opaque.parent.length || opaque.candidate.length) cert.opaque = opaque; }
   // The translator states how it keyed this unit's opaque absent result; expose both sides without re-reading reach.
   const absentKey = Object.fromEntries(['parent', 'candidate'].map((side) => {
     const text = side === 'candidate' ? cand : fs.readFileSync(path.join(tmp, 'parent.dfy'), 'utf8');

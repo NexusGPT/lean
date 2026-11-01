@@ -126,6 +126,21 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
   const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] }); // the preludes too: theorem.py reads each side's include, and a prelude can change while the main text does not
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
+  // `opaque` in expect.json (design/w1b-opaque-statements.md): per unit, the rules whose sites the candidate's translation read
+  // as opaque steps (its `// OPAQUE` records, the certificate's list); an empty list: no step at all
+  for (const [unit, want] of Object.entries(exp.opaque ?? {})) {
+    const text = fs.existsSync(path.join(tmpd, 'candidate.dfy')) ? fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8') : '';
+    const got = [...new Set([...text.matchAll(new RegExp(`^// OPAQUE ${dafnyName(unit)}_candidate: (\\{.*\\})$`, 'gm'))].flatMap((m) => JSON.parse(m[1]).rules))].sort();
+    add('pair', name, `opaque ${unit} [${want.join(', ')}]`, JSON.stringify(got) === JSON.stringify([...want].sort()), got.length ? got.join(', ') : 'no opaque step');
+  }
+  // `planted` in expect.json: the candidate's unit is exec/mutate.mjs's planted change of the parent's at that index
+  for (const [unit, index] of Object.entries(exp.planted ?? {})) {
+    const out = path.join(tmpd, `planted_${artifactName(unit)}.ts`);
+    const r = run('node', [path.join(here, '../exec/mutate.mjs'), pairFile(d, 'parent'), '--unit', unit, '--index', String(index), '--out', out]);
+    const unitText = (f) => { try { const L = loadForUnits(f, { project: false }); const u = unitsOfFile(L.sf).get(unit); return u ? u.node.getText(L.sf) : null; } catch { return null; } };
+    const a = r.status === 0 ? unitText(out) : null, b = unitText(pairFile(d, 'candidate'));
+    add('pair', name, `planted ${unit} is mutate.mjs index ${index}`, !!a && a === b, r.status !== 0 ? (r.stderr || r.stdout).trim().slice(-160) : a === b ? 'same text' : 'differs');
+  }
   if (th.status !== 0) return;
   // lane A is bounded by the solver's resource count (exec/dafny-args.mjs), the same whatever the load; the cores
   // split across the pairs running at once only changes how long it takes

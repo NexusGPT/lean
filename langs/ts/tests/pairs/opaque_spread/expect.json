@@ -1,0 +1,38 @@
+{
+  "scope": [
+    "outside",
+    "inside",
+    "upstream",
+    "planted"
+  ],
+  "equal": {
+    "outside": true,
+    "inside": false,
+    "upstream": false,
+    "planted": false
+  },
+  "opaque": {
+    "outside": [
+      "spread"
+    ],
+    "inside": [
+      "spread"
+    ],
+    "upstream": [
+      "spread"
+    ],
+    "planted": [
+      "spread"
+    ]
+  },
+  "planted": {
+    "planted": 2
+  },
+  "b": {
+    "outside": "PASS-bounded",
+    "inside": "WITNESS",
+    "upstream": "WITNESS",
+    "planted": "WITNESS"
+  },
+  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule spread: a string spread into an array (its code points), which the model does not read, so the statement `const xs = [...s, \"?\"];` is one opaque step: an uninterpreted transition keyed by its text and the same-file definitions it names, reading every local it mentions, writing every local it assigns. outside: the step unchanged and the return bound to a local, proved modulo the step. inside: `\"?\", \"x\"]` for `\"?\"]` is another text, another symbol, not proved; lane B finds the difference. planted: exec/mutate.mjs's site 2 inside the step, not proved, lane B WITNESS. upstream: `t + \"!!\"` for `t + \"!\"` changes a value only the step reads; the step takes it, so nothing is proved (tests/opaque-statements.mjs --break drops that read and this unit proves falsely)."
+}

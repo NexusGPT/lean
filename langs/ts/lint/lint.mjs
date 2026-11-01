@@ -2478,7 +2478,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   const res = lintFile(file, ranges, { project, advisory: args.includes('--advice'), anyType: args.includes('--any-type') });
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
   else if (args.includes('--agent')) console.log(agentReport(file, res));
-  else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
+  else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}${r.opaque ? `  [opaque: ${r.opaque}]` : ''}`); // an opaque finding: lane A reads its statement as one opaque step (design/w1b-opaque-statements.md)
   if (res.length) { if (!args.includes('--json')) console.log(`${res.length} violation(s)`); process.exit(1); }
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);
   process.exit(0);

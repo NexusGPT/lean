@@ -1,0 +1,27 @@
+{
+  "scope": [
+    "unchanged",
+    "escapes",
+    "caller"
+  ],
+  "equal": {
+    "unchanged": true,
+    "escapes": false,
+    "caller": false
+  },
+  "opaque": {
+    "unchanged": [
+      "unary-coercion"
+    ],
+    "escapes": [
+      "unary-coercion"
+    ],
+    "caller": []
+  },
+  "b": {
+    "unchanged": "PASS-bounded",
+    "escapes": "PASS-bounded",
+    "caller": "PASS-bounded"
+  },
+  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule unary-coercion: unary + on an object (ToNumber of an object, NaN here). The construct can make a value outside the model, and the translator reads its unit whole (the numeric boundary): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. unchanged: one key on both sides, proved. escapes: a reordered return changes the source, another symbol, not proved (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes, so it is opaque too and its own reordering is not proved; its record lists no site of its own."
+}

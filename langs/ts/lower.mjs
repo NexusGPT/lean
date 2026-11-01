@@ -32,6 +32,7 @@ import { methodLiteralOf } from './common.mjs';
 import { moduleState } from './module-forms.mjs';
 import { admissionFindings } from './lint/lint.mjs';
 import { translate } from './translate/translate.mjs';
+import { opaqueForm } from './translate/opaque-statements.mjs'; // the opaque column of the statement and expression rules (design/w1b-opaque-statements.md)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -760,7 +761,10 @@ export function unitReadings(u, sf, checker) {
 const finding = (sf, file, node, rule, msg, extra = {}) => { const pos = node.getStart(sf), end = node.getEnd(); return { file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200), ...extra }; };
 const unitsIn = (sf, ranges) => [...topLevelFunctions(sf).values()].filter((u) => overlaps(sf, u.node, ranges));
 const spanOf = (sf, u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())];
-const refusing = (f) => !f.env && !f.advisory && !ADVICE_RULES.has(f.rule);
+const refusing = (f) => !f.env && !f.advisory && !ADVICE_RULES.has(f.rule) && !f.opaque; // an opaque finding is the translator's to read (phase 4) or to refuse
+// the opaque column (design/w1b-opaque-statements.md): a finding whose rule reads as an opaque step carries its form; the
+// translator's phase 4 reads its site as that step, or refuses the unit with the finding's rule
+const tagOpaque = (f) => { const c = !f.env && !f.advisory ? opaqueForm(f.rule) : null; if (c) f.opaque = c.form; return f; };
 const tagReading = (f) => { if (!f.reading) { const id = refusing(f) ? (readingOfFinding(f.rule, f.msg) ?? 'uncatalogued') : null; if (id) f.reading = { id, version: readingById(id) ? currentVersion(readingById(id)) : null }; } return f; };
 
 // phases 1-3 for the units the ranges reach: the lint's findings, each tagged with its reading, and a finding for each unit
@@ -770,7 +774,7 @@ export function admitUnits(file, ranges, lintOpts = {}, loaded = null) {
   return measureLowering('phases 1-3 (including translation gates)', () => admission(file, ranges, lintOpts, loaded));
 }
 function admission(file, ranges, lintOpts, loaded) {
-  const out = admissionFindings(file, ranges, lintOpts).map(tagReading);
+  const out = admissionFindings(file, ranges, lintOpts).map(tagReading).map(tagOpaque);
   const L = loaded ?? normaliseApplyCalls(lintOpts.loaded ?? loadProgram(file, { project: lintOpts.project ?? true }));
   const { sf, checker } = L;
   const records = [];
@@ -893,7 +897,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
   const findings = admitUnits(file, ranges, { ...opts, loaded: given }, L);
   const inventory = topLevelFunctions(L.sf); // the unit a finding belongs to: the lint's named unit, else the innermost containing one
   const units = admitted.get(findings).map((r) => {
-    const f = findings.find((x) => refusing(x) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit
+    const f = findings.find((x) => (refusing(x) || (x.opaque && opts.emission === false)) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit; with no emission an opaque finding is not read, so it refuses
     return { ...r, refusal: f ? { id: f.reading?.id ?? 'uncatalogued', version: f.reading?.version ?? null, rule: f.rule, reason: f.msg, line: f.line, by: ['no-reading', 'withdrawn'].includes(f.rule) ? 'catalogue' : 'lint' } : null };
   });
   // phase 4: the translator reads each unit phases 1-3 admitted exactly as the proof lane runs it (check.mjs: --core --heap

@@ -961,8 +961,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   let core = new Set();
   let inrange = new Set(); // core units whose lemma must also show no element access out of range, on either side
   const callsOf = (u) => { const calls = new Set(); const w = (n) => { const c = calleeOf(n, u) ?? (newClass(n) ? ctorUnitOf(newClass(n)) : null); if (c) calls.add(c); else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression.expression))[0]); const name = cd ? `${cd.name.text}.${n.expression.name.text}` : u.literal && !u.isArrow && n.expression.expression.kind === K.ThisKeyword ? `${u.binding}.${n.expression.name.text}` : null; if (name && fns.has(name)) calls.add(name); } ts.forEachChild(n, w); }; w(u.body); return calls; }; // a literal unit's `this.m()` is its sibling unit <binding>.m (design/exported-units.md) // a call of a method on another instance of a same-file class is an edge too: its caller decides its convention
-  function plan(order, only) {
+  function plan(order, only, opaque = new Set()) {
     const own = new Set(order.filter((u) => coreUnit(u) && (!only || only.includes(u.name))).map((u) => u.name));
+    // a unit with an opaque site (design/w1b-opaque-statements.md) is read by the value reading, whose opaque step stands
+    // for the construct the core has no reading of: out of the core, and the plan below moves its callers and callees too
+    for (const name of opaque) if (own.has(name)) { own.delete(name); whyNot.get(name)?.add('an opaque site: its statement is an opaque step of the value reading'); }
     // a unit named as a VALUE anywhere (`.then(bump)`, a callback argument, a stored function) keeps its layer-1 signature: out of the core
     const asValue = new Set();
     for (const u of order) { const w = (n) => { if (ts.isPropertyAccessExpression(n) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression))[0]); const name = cd && `${cd.name.text}.${n.name.text}`; if (name && fns.has(name)) asValue.add(name); } if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && (ts.isFunctionDeclaration(n.parent) || ts.isVariableDeclaration(n.parent)) && n.parent.name === n)) asValue.add(n.text); ts.forEachChild(n, w); }; w(u.body); }
