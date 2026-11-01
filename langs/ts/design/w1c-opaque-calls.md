@@ -149,3 +149,12 @@ All commands are in `lane/w1c-opaque-calls-result.md`.
 Cost seen on the pairs: a number-bearing unit holding a site is not PASS-proved by the official reading (the faithful
 placement reads the step's text, and a held `Any` meets a faithful operation's number slot): `real-only` on seven
 `outside_` units. A gap, never a false proof.
+
+Closed (2026-11-01): w1g's one opaque conversion of a held value in a typed slot (`as_Any_int`) placed five of the seven
+on the merge (lane w1m); lane w8d placed the other two (`outside_iter`, `outside_ovc`, an update used as a value inside
+the step): the faithful reading now copies each statement the lint reads as an opaque step (its findings'
+`opaqueSite`, known before the rewrite: translate.mjs `site-steps`, one admission per file) as written and finds no
+reason inside it (faithful.mjs `steps`). The step is one uninterpreted transition keyed by its text, so no number in it
+is read by the model; the exactness of the names it writes is still read over the whole file. A site the translator
+raises (`translateSites`) is not known before the rewrite and is still rewritten (its reasons dismissed after the
+emission when the offsets map, translate.mjs `opaquePlacement`). Break: `faithful-steps`.
