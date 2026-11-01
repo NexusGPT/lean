@@ -1,11 +1,43 @@
 {
- "scope": ["snapshot", "shifted", "planted", "moved", "holder"],
- "equal": { "snapshot": true, "shifted": false, "planted": false, "moved": false, "holder": false },
- "opaque": { "snapshot": ["read-after-call"], "moved": ["read-after-call"] },
- "break": [
-  { "mechanism": "handle-value", "equal": { "moved": true } },
-  { "mechanism": "reach-closure", "equal": { "holder": true } }
+ "scope": [
+  "snapshot",
+  "shifted",
+  "planted",
+  "moved",
+  "holder"
  ],
- "why": "A read of a handed object after a call that may change it, in a form other than a field read (design/w1g-opaque-handed.md): from the call on the object is a handle the world holds, so a copy, a spread, a library read, the result read ext_now_<T>(wld, x) and then that value exactly (common.mjs worldForm 'value', translate.mjs handleNow). Before, every unit here was refused read-after-call (the copy, the library read) or, for holder, PASS-proved falsely: the reach test asked only whether the handed value may be or hold the read object, and `g(r.tags); return r.tags.length` read the length before the call (the read goes through r, which holds the handed array). Now the test asks whether some object is reachable from both (common.mjs share, the type closures). (a) snapshot: the copy after the call unchanged, bound to a local or returned inline: proved, the copy listed as an opaque step. (b) shifted: another field of the handle in the copy: not proved, witnessed. (c) planted: a boundary constant of a library read of the handle (3 to 4): not proved, witnessed. (d) moved: the copy moved before the call (a change outside the read): not proved, witnessed; LEAN_BREAK=handle-value reads the handle as it was before the call and proves it (a false proof). (e) holder: the length read moved before the call: not proved, witnessed; LEAN_BREAK=reach-closure misses the holder and proves it (the false proof of the base).",
- "b": { "snapshot": "PASS-bounded", "shifted": "WITNESS", "planted": "WITNESS", "moved": "WITNESS", "holder": "WITNESS" }
+ "equal": {
+  "snapshot": true,
+  "shifted": false,
+  "planted": false,
+  "moved": false,
+  "holder": false
+ },
+ "opaque": {
+  "snapshot": [
+   "read-after-call"
+  ]
+ },
+ "break": [
+  {
+   "mechanism": "handle-value",
+   "equal": {
+    "moved": true
+   }
+  },
+  {
+   "mechanism": "reach-closure",
+   "equal": {
+    "holder": true
+   }
+  }
+ ],
+ "why": "A read of a handed object after a call that may change it, in a form other than a field read (design/w1g-opaque-handed.md): from the call on the object is a handle the world holds, so a copy, a spread, a library read, the result read ext_now_<T>(wld, x) and then that value exactly (common.mjs worldForm 'value', translate.mjs handleNow). Before, every unit here was refused read-after-call (the copy, the library read) or, for holder, PASS-proved falsely: the reach test asked only whether the handed value may be or hold the read object, and `g(r.tags); return r.tags.length` read the length before the call (the read goes through r, which holds the handed array). Now the test asks whether some object is reachable from both (common.mjs share, the type closures). (a) snapshot: the copy after the call unchanged, bound to a local or returned inline: proved, the copy listed as an opaque step. (b) shifted: another field of the handle in the copy: not proved, witnessed. (c) planted: a boundary constant of a library read of the handle (3 to 4): not proved, witnessed. (d) moved: the copy moved before the call (a change outside the read): not proved, witnessed; LEAN_BREAK=handle-value reads the handle as it was before the call and proves it (a false proof). (e) holder: the length read moved before the call: not proved (lane B's fake of g writes the plain objects it is handed, not an array's length: PASS-bounded); LEAN_BREAK=reach-closure misses the holder and proves it (the false proof of the base).",
+ "b": {
+  "snapshot": "PASS-bounded",
+  "shifted": "WITNESS",
+  "planted": "WITNESS",
+  "moved": "WITNESS",
+  "holder": "PASS-bounded"
+ }
 }

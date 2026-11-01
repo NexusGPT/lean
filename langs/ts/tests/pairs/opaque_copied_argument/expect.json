@@ -1,8 +1,37 @@
 {
- "scope": ["report", "swapped", "planted", "shared"],
- "equal": { "report": true, "swapped": false, "planted": false, "shared": false },
- "opaque": { "report": ["copied-argument"], "shared": ["copied-argument"] },
- "break": [ { "mechanism": "handed-skeleton", "equal": { "shared": true } } ],
- "why": "A new object holding objects the caller holds, handed to a call that may write or keep it (design/w1g-opaque-handed.md; translate.mjs mixedTree). Every part sits at a key the text fixes (no spread, no computed or repeated key), so the handed value holds each part's value at its path; an existing part (a member read, a parameter, an outside answer) is named by its value, as when it is handed alone, and a new part written in place (a literal, a copy call, new) is held by no other name. The handed term is handed_fresh_<skeleton>_<T>(v, k): the skeleton is the literal's shape with each existing part written E, so a new part and an existing part of equal value are two terms. Before, every unit here was refused copied-argument (a new object holding objects). (a) report: the literal unchanged, the count computed another way outside it: proved, listed as an opaque step. (b) swapped: the two existing parts swapped: not proved, witnessed. (c) planted: a boundary constant inside (1 to 2): not proved, witnessed. (d) shared: one array in two slots against the array and a copy of it (equal values, a callee can tell them apart by identity): not proved, witnessed; LEAN_BREAK=handed-skeleton drops the skeleton from the term and proves it (a false proof).",
- "b": { "report": "PASS-bounded", "swapped": "WITNESS", "planted": "WITNESS", "shared": "WITNESS" }
+ "scope": [
+  "report",
+  "swapped",
+  "planted",
+  "shared"
+ ],
+ "equal": {
+  "report": true,
+  "swapped": false,
+  "planted": false,
+  "shared": false
+ },
+ "opaque": {
+  "report": [
+   "copied-argument"
+  ],
+  "shared": [
+   "copied-argument"
+  ]
+ },
+ "break": [
+  {
+   "mechanism": "handed-skeleton",
+   "equal": {
+    "shared": true
+   }
+  }
+ ],
+ "why": "A new object holding objects the caller holds, handed to a call that may write or keep it (design/w1g-opaque-handed.md; translate.mjs mixedTree). Every part sits at a key the text fixes (no spread, no computed or repeated key), so the handed value holds each part's value at its path; an existing part (a member read, a parameter, an outside answer) is named by its value, as when it is handed alone, and a new part written in place (a literal, a copy call, new) is held by no other name. The handed term is handed_fresh_<skeleton>_<T>(v, k): the skeleton is the literal's shape with each existing part written E, so a new part and an existing part of equal value are two terms. Before, every unit here was refused copied-argument (a new object holding objects). (a) report: the literal unchanged, the count computed another way outside it: proved, listed as an opaque step. (b) swapped: the two existing parts swapped: not proved, witnessed. (c) planted: a boundary constant inside (1 to 2): not proved, witnessed. (d) shared: one array in two slots against the array and structuredClone of it (equal values, a callee can tell them apart by identity): not proved, witnessed; LEAN_BREAK=handed-skeleton drops the skeleton from the term and proves it (a false proof).",
+ "b": {
+  "report": "PASS-bounded",
+  "swapped": "WITNESS",
+  "planted": "WITNESS",
+  "shared": "WITNESS"
+ }
 }

@@ -244,6 +244,7 @@ try {
     if (e.isFile() && /\.(mjs|json|ts)$/.test(e.name)) fs.copyFileSync(path.join(tsRoot, e.name), path.join(source, e.name));
   }
   for (const dir of ['lint', 'translate']) fs.cpSync(path.join(tsRoot, dir), path.join(source, dir), { recursive: true });
+  fs.mkdirSync(path.join(source, 'tests')); fs.copyFileSync(path.join(tsRoot, 'tests', 'break.mjs'), path.join(source, 'tests', 'break.mjs')); // the one --break convention the deciders read (tests/break.mjs)
   for (const dir of ['vendor', 'exec']) fs.symlinkSync(path.join(tsRoot, dir), path.join(source, dir), 'dir');
   const cache = path.join(tmp, 'cache');
   const probe = (label, { env = {}, options = {}, ranges = null, input = file } = {}) => {

@@ -35,7 +35,7 @@ assert.equal(JSON.parse(fs.readFileSync(path.join(tmp, 'in-run.json'), 'utf8')).
 // 4. pr.mjs from a copy of lean with no git history: the table is written, its lean version 'unknown'
 const copy = path.join(tmp, 'lean-copy');
 fs.mkdirSync(path.join(copy, 'langs'), { recursive: true });
-fs.cpSync(lean, path.join(copy, 'langs/ts'), { recursive: true, filter: (f) => !f.startsWith(path.join(lean, 'tests')) });
+fs.cpSync(lean, path.join(copy, 'langs/ts'), { recursive: true, filter: (f) => !f.startsWith(path.join(lean, 'tests')) || f === path.join(lean, 'tests') || f === path.join(lean, 'tests', 'break.mjs') }); // the one --break convention the deciders import (tests/break.mjs) comes along
 fs.cpSync(path.resolve(lean, '../../spec'), path.join(copy, 'spec'), { recursive: true });
 const repo = path.join(tmp, 'repo'); fs.mkdirSync(repo);
 const git = (...args) => { const r = spawnSync('git', ['-C', repo, '-c', 'user.email=lean@example.invalid', '-c', 'user.name=lean', ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stderr); };

@@ -26,6 +26,6 @@ export function planted(r: Row, g: Sink): void {
 // (d) one existing array in two slots against the array and a new copy of it (the same value): the skeleton tells them
 // apart (LEAN_BREAK=handed-skeleton drops it and the pair must go red)
 export function shared(r: Row, g: Pair): number {
-  g({ x: r.tags, y: r.tags.slice() });
+  g({ x: r.tags, y: structuredClone(r.tags) });
   return r.tags.length;
 }

@@ -78,7 +78,7 @@ part written `E`, each leaf `V`, each new call part by its text. With no spread 
 part at its path, so the value and the skeleton give the handed graph: which part is new (an identity no one else
 has), which is existing (named by its value, the convention every handed argument already uses). A new part and an
 existing part of equal value are two terms (pair unit `shared`, `{ x: r.tags, y: r.tags }` against
-`{ x: r.tags, y: r.tags.slice() }`, which a callee tells apart by identity). The skeleton key is sha1 (a 32-bit hash
+`{ x: r.tags, y: structuredClone(r.tags) }`, which a callee tells apart by identity). The skeleton key is sha1 (a 32-bit hash
 could merge two skeletons).
 
 **Stays refused**: a part that is a name bound to a new object (`{ x: a, y: a }`: the callee could see one object in

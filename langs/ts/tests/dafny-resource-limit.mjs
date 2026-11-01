@@ -68,6 +68,7 @@ const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-rlimit-copy-')), cts = 
 fs.mkdirSync(cts, { recursive: true });
 fs.symlinkSync(path.join(ts, '../../spec'), path.join(copy, 'spec')); // the theorem generator, read only
 for (const e of fs.readdirSync(ts)) if (!['audit', 'design', 'tests'].includes(e)) fs.cpSync(path.join(ts, e), path.join(cts, e), { recursive: true });
+fs.mkdirSync(path.join(cts, 'tests')); fs.copyFileSync(path.join(ts, 'tests/break.mjs'), path.join(cts, 'tests/break.mjs')); // the one --break convention the deciders import
 const small = fs.readFileSync(path.join(ts, 'exec/dafny-args.mjs'), 'utf8').replace(/^export const DAFNY_RESOURCE_LIMIT = [\d_]+;/m, 'export const DAFNY_RESOURCE_LIMIT = 2_000;');
 assert.ok(small.includes('DAFNY_RESOURCE_LIMIT = 2_000;'), 'the copy\'s limit was set');
 fs.writeFileSync(path.join(cts, 'exec/dafny-args.mjs'), small);
