@@ -1,0 +1,47 @@
+{
+ "scope": [
+  "fill",
+  "count",
+  "share",
+  "bump",
+  "branch"
+ ],
+ "equal": {
+  "fill": true,
+  "count": false,
+  "share": false,
+  "bump": false,
+  "branch": false
+ },
+ "why": "amendment A2: the step `fill(t, k)` writes t and the name it came from (user), and every other name for that object (u); a read of the length moved before the step is not the read after it, so neither unit may be PASS-proved (design/w1d-opaque-async.md). LEAN_BREAK=async-drop-origins flips both to a false proof (the break row); bump: the step rebinds k in its argument, so k is a write; branch: the step sits in an if, whose result carries the step's writes",
+ "opaque": {
+  "count": [
+   "async"
+  ],
+  "share": [
+   "async"
+  ],
+  "bump": [
+   "async"
+  ],
+  "branch": [
+   "async"
+  ]
+ },
+ "break": [
+  {
+   "mechanism": "async-drop-origins",
+   "equal": {
+    "count": true,
+    "share": true,
+    "bump": true
+   }
+  },
+  {
+   "mechanism": "async-drop-carry",
+   "equal": {
+    "branch": true
+   }
+  }
+ ]
+}

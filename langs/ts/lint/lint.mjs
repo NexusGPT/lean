@@ -48,6 +48,7 @@ import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../rea
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 import { callsOpaqueSite, opaqueCallsForm, siteKey as callsSiteKey } from './opaque-calls.mjs'; // the opacity ladder for calls, members, syntax and callbacks (design/w1c-opaque-calls.md)
+import { ASYNC_OPAQUE, asyncOpaqueSite } from '../opaque-async.mjs'; // the opacity ladder for async, promises and generators (design/w1d-opaque-async.md)
 import { optionalCallShape } from '../lower.mjs';
 import { lintFindings, lowerFile } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
@@ -291,6 +292,19 @@ export const OPAQUE_ROWS = {
   // fall-through are read, subset.md "Operators as values", "Control"). By design none: break-continue (the jump has no
   // loop or switch around it in its function, so a step has no control result to give it), loop-form (a loop with no
   // measure: an opaque reading would hide the missing measure)
+  // w1d-opaque-async: the async family, the construct the finding names (opaque-async.mjs ASYNC_OPAQUE; promise-thenable,
+  // promise-all-order and the generator rules stay none, each with its reason there)
+  'async': 'expression',
+  'async-callback': 'expression',
+  'async-predicate': 'expression',
+  'async-reduce': 'expression',
+  'generator-use': 'expression',
+  'promise': 'expression',
+  'promise-executor': 'expression',
+  'promise-executor-escape': 'expression',
+  'promise-handler': 'expression',
+  'promise-pending': 'expression',
+  'promise-unsettled': 'expression',
 };
 export const OPAQUE_GRADES = new Set(['block', 'statement', 'expression', 'none']);
 for (const [rule, g] of Object.entries(OPAQUE_ROWS)) if (!OPAQUE_GRADES.has(g)) throw new Error(`lint: opaque row ${rule}: ${g} is not a grade`);
@@ -302,6 +316,7 @@ export const opaqueGrade = (rule) => OPAQUE_ROWS[rule] ?? 'none';
 const BOUNDARY_RULES = new Set(['collection-iterator', 'division', 'math-empty', 'number-special', 'reference-key', 'string-code-unit', 'unary-coercion']);
 export const OPAQUE_ENVELOPE = Object.freeze(Object.fromEntries(Object.entries(OPAQUE_ROWS).filter(([, g]) => g === 'statement').map(([r]) => [r, BOUNDARY_RULES.has(r) ? 'boundary' : 'value'])));
 for (const r of BOUNDARY_RULES) if (OPAQUE_ENVELOPE[r] !== 'boundary') throw new Error(`lint: boundary rule ${r} is not graded statement`);
+for (const [rule, c] of Object.entries(ASYNC_OPAQUE)) if (opaqueGrade(rule) !== c.form) throw new Error(`lint: opaque row ${rule}: ${opaqueGrade(rule)}, opaque-async.mjs says ${c.form}`); // one decision per rule
 
 export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
 export function admissionFindings(file, ranges = null, opts = {}) {
@@ -409,7 +424,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const pos = node.getStart(sf), end = node.getEnd();
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}), ...(opaqueGrade(rule) !== 'none' ? { opaque: opaqueGrade(rule) } : {}) });
     if (opaqueCallsForm(rule)) { const rec = { node, fn: currentFn ?? unitFnOf(node), rule }; callsAt.set(out[out.length - 1], rec); callsRecs.push(rec); } // decided when the walk ends
+    if (ASYNC_OPAQUE[rule]) asyncAt.set(out[out.length - 1], { node, fn: currentFn }); // decided when the walk ends (asyncOpaqueSite)
   };
+  const asyncAt = new WeakMap(); // a finding of the async family -> where it was raised
   const callsAt = new WeakMap(); // a finding of a rule the calls column grades -> where it was raised (lint/opaque-calls.mjs)
   const callsRecs = []; // the same records, in order: the site statements so far (callsSiteOf), for the read-after-call reading
   const callsSiteOf = (rec) => { if (!('site' in rec)) rec.site = callsOpaqueSite(checker, rec.rule, rec.node, rec.fn); return rec.site; };
@@ -2546,6 +2563,14 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const site = callsSiteOf(at);
     if (site?.stmt) { f.opaque = 'statement'; f.advisory = true; f.opaqueSite = callsSiteKey(site.stmt, sf); opts.opaqueSites?.add(f.opaqueSite); }
     else if (site?.why) f.opaqueWhy = site.why;
+  }
+  // the async family (design/w1d-opaque-async.md): a finding graded `expression` is a step only where its construct is
+  // one (asyncOpaqueSite: a call, new or await of the unit's own code, its pending work held to the world, its writes
+  // named); elsewhere the grade is withdrawn and the finding refuses as before, with the reason (`opaqueWhy`)
+  for (const f of out) {
+    const at = asyncAt.get(f); if (!at) continue;
+    const site = asyncOpaqueSite(checker, f.rule, at.node, at.fn);
+    if (site?.why) { delete f.opaque; f.opaqueWhy = site.why; }
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);

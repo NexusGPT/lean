@@ -1,0 +1,31 @@
+{
+ "scope": [
+  "save",
+  "keep",
+  "run",
+  "stay"
+ ],
+ "equal": {
+  "save": false,
+  "keep": true,
+  "run": false,
+  "stay": true
+ },
+ "why": "amendment A3: run's step `save(svc, x)` is keyed by save's text, which changed at x === 7919 only; run's own text is equal, its step is another transition, so run is not PASS-proved; stay's callee keep is unchanged and its change is outside the step, so stay proves (design/w1d-opaque-async.md). LEAN_BREAK=async-drop-callees flips run to a false proof (the break row)",
+ "opaque": {
+  "run": [
+   "async"
+  ],
+  "stay": [
+   "async"
+  ]
+ },
+ "break": [
+  {
+   "mechanism": "async-drop-callees",
+   "equal": {
+    "run": true
+   }
+  }
+ ]
+}
