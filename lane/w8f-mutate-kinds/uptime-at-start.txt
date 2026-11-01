@@ -1,0 +1,5 @@
+ 13:28:45 up 2 days,  1:41, 3552 users,  load average: 56.87, 62.14, 63.54
+ 14:02:31 up 2 days,  2:15, 3575 users,  load average: 61.06, 63.50, 63.65
+ 14:54:12 up 2 days,  3:06, 3600 users,  load average: 74.96, 66.54, 64.32
+ 15:23:43 up 2 days,  3:36, 3620 users,  load average: 49.50, 53.44, 57.86
+ 16:50:56 up 2 days,  5:03, 3654 users,  load average: 48.18, 103.62, 102.87
