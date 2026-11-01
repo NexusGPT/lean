@@ -131,11 +131,49 @@ closure break's is `type_only/level.ts`, a const enum member `High = 2` to `High
 either side while the unchanged `alarm.ts` inlines `2` and then `3` (amendment A9); with the closure cut, the types unit
 of `level.ts` is a false PASS-typed, which the pair refuses.
 
-MEASURED
+## Measured (2026-11-01)
+
+Where the edits of a repository's own history go, base lean (4747022f) against this lane's head, on the census roots
+of amendment A8 (`lane/w1f-module-units-scripts/ledger-routes.mjs --limit 300`, read-only on the repository; the counts
+in `lane/w1f-module-units-evidence/routes-*.json`):
+
+| nexus-learning, 159 first-parent commits, 104,467 source edits | before | after |
+| --- | ---: | ---: |
+| edits to a unit | 67,983 | 74,861 |
+| unassigned: type-only | 6,871 | 0 |
+| unassigned: directive comment | 3 | 0 |
+| unassigned: untyped JavaScript file | 4 | 0 |
+| unassigned, still undecided (object-literal member 3,271, class field 114) | 3,385 | 3,385 |
+| unassigned, inert (comment 20,351, whitespace 5,870) | 26,221 | 26,221 |
+| types units read (the PASS-typed reading) | 0 | 816 |
+| module units read | 1,305 | 1,306 |
+
+The 6,878 edits the three removed routes left undecided are all now a unit's (6,871 + 3 + 4); no other route moved.
+nexus-desktop's last 300 commits hold no TypeScript or JavaScript source edit (a Zig repository; the census walks 0
+files), and claude-skills has one commit with no parent.
+
+The census (`node census.mjs <root> --js --install-under /root/census-installs`), head beside base:
+
+| root | function units (entered) | JavaScript units (entered, untyped) | module units (unresolved import, in JavaScript) | types units |
+| --- | ---: | ---: | ---: | ---: |
+| nexus-learning | 4,112 (1,799) | 352 (64, 126) | 727 (382, 37) | 518 |
+| claude-skills | 355 (125) | 0 | 133 (107, 2) | 47 |
+| nexus-desktop | 0 | 0 | 0 | 0 |
+
+Function units, entered units and every reading's admitted and refused counts are the same before and after on both
+roots with code (`census.mjs --diff`: 0 readings with a gain or a loss): this lane adds units beside the function units
+and refuses nothing. Amendment A5's opaque fraction does not apply: this lane adds no opaque step (no rule of W1a to W1e
+is touched); the units it lets in are read whole, by the emit (PASS-typed) or by lane B (the module unit).
 
 ## Still out
 
 - A const enum whose value changes emits nothing in its own file; the importer it is inlined into differs, so the
   types unit is ASK naming it (never PASS-typed), but no lane runs the importer's units, whose text is unchanged: a
-  WITNESS there would need the importers' units read as changed units.
+  WITNESS there would need the importers' units read as changed units. The edit of the enum is its file's module
+  unit's (an enum declaration is evaluated code, `type_only/level.ts`), and lane B evaluates the file as a per-file transpiler emits it
+  (the enum an object, as under isolatedModules) and gives a WITNESS on the export `Level`: a true WITNESS for that
+  emit, while under the project's whole-program emit the difference lives in the importer. The verdict is right under
+  both emits; the witness names the per-file one.
+- w1a's `tests/break.mjs` had not landed when this lane ended: the six mechanisms read `LEAN_BREAK` directly, and move
+  to its helper when it lands (no local copy, amendment A7).
 - ESLint is not run: a lint directive's record names its rules, not the reports it hides.

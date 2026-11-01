@@ -1,0 +1,31 @@
+{
+ "lean": "/tmp/w1f-base/langs/ts",
+ "repo": "/root/da/census/repos/nexus-learning",
+ "commits": 159,
+ "failed": 0,
+ "sourceEdits": 104467,
+ "kinds": {
+  "unit": 67983,
+  "unassigned": 36484
+ },
+ "unassigned": {
+  "type-only": 6871,
+  "whitespace (inert)": 5870,
+  "comment (inert)": 20351,
+  "object-literal member": 3271,
+  "class field": 114,
+  "directive comment": 3,
+  "untyped JavaScript file": 4
+ },
+ "units": {
+  "function": 5579,
+  "module": 1305,
+  "types": 0
+ },
+ "commitsWith": {
+  "module": 47,
+  "types": 0,
+  "typesOnlyCode": 0
+ },
+ "seconds": 447
+}
