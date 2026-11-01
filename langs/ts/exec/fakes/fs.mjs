@@ -8,6 +8,11 @@
 // asks about, and not decided yet, is a folder (something is asked for inside it); a folder the tree holds as absent, or
 // a file in its place, fails as Node fails (ENOENT, ENOTDIR). A folder the run made began empty: what is in it is what
 // the run put there. A folder's listing is what the tree holds in it.
+//
+// Which error: the kernel's path walk (path_resolution(7)) comes first. Every folder on the way to the path is looked up
+// from the root down, and the first one that is not a folder decides: ENOENT when it is absent, ENOTDIR when it is a
+// file (so `stat('/a/x')` with `/a` a file is ENOTDIR, `/a/b/x` with `/a` a file and `/a/b` absent too). Only a walk
+// that reaches the last folder asks the operation's own question of the last component (ENOENT, EEXIST, EISDIR, ...).
 import nodePath from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { drawOf, drawnString, nodeError, worldPromise, nodeCallback, listOf, methodOf, entries, worldError } from './common.mjs';
@@ -39,16 +44,16 @@ function tree(env) {
     const n = u < 0.45 ? { kind: 'absent' } : u < 0.85 ? { kind: 'file', data: Buffer.from(drawnString(env, `fs:${p}`), 'utf8'), mtime: 1700000000000 } : { kind: 'dir', mtime: 1700000000000 };
     nodes.set(p, n); return n;
   };
-  const listing = (p) => [...nodes.keys()].filter((k) => k !== p && P.dirname(k) === p && nodes.get(k).kind !== 'absent').map((k) => P.basename(k)).sort();
-  // the folder a new entry goes in must be a folder: an absent one fails with ENOENT, a file with ENOTDIR
-  const ensureParent = (p, syscall, shownPath) => {
-    const parent = P.dirname(p);
-    if (parent === p) return;
-    const n = nodes.has(parent) ? nodes.get(parent) : folder(parent);
-    if (n.kind === 'absent') throw nodeError('ENOENT', syscall, shownPath);
-    if (n.kind === 'file') throw nodeError('ENOTDIR', syscall, shownPath);
+  // the path walk: null when every folder on the way to p is a folder, else the error of the first that is not
+  const walk = (p) => {
+    const ups = []; for (let q = P.dirname(p); ; q = P.dirname(q)) { ups.unshift(q); if (P.dirname(q) === q) break; }
+    for (const q of ups) { const n = nodes.has(q) ? nodes.get(q) : folder(q); if (n.kind === 'absent') return 'ENOENT'; if (n.kind === 'file') return 'ENOTDIR'; }
+    return null;
   };
-  return { nodes, at, listing, ensureParent, now };
+  // the node at p once the walk reached it; a walk that fails throws its error, for the syscall that failed
+  const reach = (p, syscall, shownPath, ...more) => { const e = walk(p); if (e) throw nodeError(e, syscall, shownPath, ...more); return at(p); };
+  const listing = (p) => [...nodes.keys()].filter((k) => k !== p && P.dirname(k) === p && nodes.get(k).kind !== 'absent').map((k) => P.basename(k)).sort();
+  return { nodes, at, walk, reach, listing, now };
 }
 
 // a path argument as Node reads it: a string, a Buffer, a file: URL; relative to the working directory
@@ -72,85 +77,104 @@ export function fsModel(env) {
   // the operations, each on raw arguments, returning the value the sync form returns
   const ops = {
     readFile(a) {
-      const p = pathArg(a[0]), n = t.at(p);
+      const p = pathArg(a[0]), n = t.reach(p, 'open', shown(a[0]));
       if (n.kind === 'absent') throw nodeError('ENOENT', 'open', shown(a[0]));
       if (n.kind === 'dir') throw nodeError('EISDIR', 'read', shown(a[0]));
       const enc = encodingOf(a[1]);
       return enc ? n.data.toString(enc) : Buffer.from(n.data);
     },
     writeFile(a) {
-      const p = pathArg(a[0]), n = t.at(p);
-      if (n.kind === 'dir') throw nodeError('EISDIR', 'open', shown(a[0]));
+      const p = pathArg(a[0]), n = t.reach(p, 'open', shown(a[0]));
       const flag = a[2] && typeof a[2] === 'object' ? a[2].flag : undefined;
-      if (flag === 'wx' && n.kind === 'file') throw nodeError('EEXIST', 'open', shown(a[0]));
-      if (n.kind === 'absent') t.ensureParent(p, 'open', shown(a[0]));
+      if (flag === 'wx' && n.kind !== 'absent') throw nodeError('EEXIST', 'open', shown(a[0])); // O_CREAT | O_EXCL: anything there
+      if (n.kind === 'dir') throw nodeError('EISDIR', 'open', shown(a[0]));
       const data = dataOf(a[1], a[2]);
       t.nodes.set(p, { kind: 'file', data: flag === 'a' && n.kind === 'file' ? Buffer.concat([n.data, data]) : data, mtime: t.now() });
       return undefined;
     },
     appendFile(a) {
-      const p = pathArg(a[0]), n = t.at(p);
+      const p = pathArg(a[0]), n = t.reach(p, 'open', shown(a[0]));
       if (n.kind === 'dir') throw nodeError('EISDIR', 'open', shown(a[0]));
-      if (n.kind === 'absent') t.ensureParent(p, 'open', shown(a[0]));
       t.nodes.set(p, { kind: 'file', data: Buffer.concat([n.kind === 'file' ? n.data : Buffer.alloc(0), dataOf(a[1], a[2])]), mtime: t.now() });
       return undefined;
     },
-    exists(a) { let p; try { p = pathArg(a[0]); } catch { return false; } return t.at(p).kind !== 'absent'; },
-    access(a) { const p = pathArg(a[0]); if (t.at(p).kind === 'absent') throw nodeError('ENOENT', 'access', shown(a[0])); return undefined; },
-    stat(a) { const p = pathArg(a[0]), n = t.at(p); if (n.kind === 'absent') { if (a[1]?.throwIfNoEntry === false) return undefined; throw nodeError('ENOENT', 'stat', shown(a[0])); } return stats(n); },
-    lstat(a) { const p = pathArg(a[0]), n = t.at(p); if (n.kind === 'absent') { if (a[1]?.throwIfNoEntry === false) return undefined; throw nodeError('ENOENT', 'lstat', shown(a[0])); } return stats(n); },
+    exists(a) { let p; try { p = pathArg(a[0]); } catch { return false; } return !t.walk(p) && t.at(p).kind !== 'absent'; },
+    access(a) { const p = pathArg(a[0]); if (t.reach(p, 'access', shown(a[0])).kind === 'absent') throw nodeError('ENOENT', 'access', shown(a[0])); return undefined; },
+    stat(a) { return statAt(a, 'stat'); },
+    lstat(a) { return statAt(a, 'lstat'); },
     mkdir(a) {
-      const p = pathArg(a[0]), recursive = !!(a[1] && typeof a[1] === 'object' && a[1].recursive), n = t.at(p);
-      if (n.kind === 'dir') { if (recursive) return undefined; throw nodeError('EEXIST', 'mkdir', shown(a[0])); }
-      if (n.kind === 'file') throw nodeError(recursive ? 'ENOTDIR' : 'EEXIST', 'mkdir', shown(a[0]));
-      if (!recursive) { const up = t.at(P.dirname(p)); if (up.kind === 'absent') throw nodeError('ENOENT', 'mkdir', shown(a[0])); if (up.kind === 'file') throw nodeError('ENOTDIR', 'mkdir', shown(a[0])); t.nodes.set(p, { kind: 'dir', made: true, mtime: t.now() }); return undefined; }
-      // recursive: every missing folder from the top, the first one made is the answer
-      const chain = []; let q = p; while (t.at(q).kind === 'absent') { chain.unshift(q); q = P.dirname(q); }
-      if (t.at(q).kind === 'file') throw nodeError('ENOTDIR', 'mkdir', shown(a[0]));
+      const p = pathArg(a[0]), recursive = !!(a[1] && typeof a[1] === 'object' && a[1].recursive);
+      // recursive (Node's MKDirp): a file on the way is ENOTDIR; an absent folder on the way is made, with every one below it
+      const e = t.walk(p);
+      if (e && !(recursive && e === 'ENOENT')) throw nodeError(e, 'mkdir', shown(a[0]));
+      const n = t.at(p);
+      // something at the path itself: EEXIST, except a folder asked for recursively, which is there already
+      if (n.kind === 'dir' && recursive) return undefined;
+      if (n.kind !== 'absent') throw nodeError('EEXIST', 'mkdir', shown(a[0]));
+      if (!recursive) { t.nodes.set(p, { kind: 'dir', made: true, mtime: t.now() }); return undefined; }
+      // every missing folder from the top (the walk found no file on the way), the first one made is the answer
+      const chain = []; for (let q = p; t.at(q).kind === 'absent'; q = P.dirname(q)) chain.unshift(q);
       for (const c of chain) t.nodes.set(c, { kind: 'dir', made: true, mtime: t.now() });
       return chain[0];
     },
     readdir(a) {
-      const p = pathArg(a[0]), n = t.at(p);
+      const p = pathArg(a[0]), n = t.reach(p, 'scandir', shown(a[0]));
       if (n.kind === 'absent') throw nodeError('ENOENT', 'scandir', shown(a[0]));
       if (n.kind === 'file') throw nodeError('ENOTDIR', 'scandir', shown(a[0]));
       const names = t.listing(p);
       if (a[1] && typeof a[1] === 'object' && a[1].withFileTypes) return listOf(env, names.map((name) => { const k = t.nodes.get(P.join(p, name)).kind; return { name, parentPath: p, path: p, isFile: methodOf('Dirent.isFile', () => k === 'file'), isDirectory: methodOf('Dirent.isDirectory', () => k === 'dir'), isSymbolicLink: methodOf('Dirent.isSymbolicLink', () => false) }; }));
       return listOf(env, names);
     },
-    unlink(a) { const p = pathArg(a[0]), n = t.at(p); if (n.kind === 'absent') throw nodeError('ENOENT', 'unlink', shown(a[0])); if (n.kind === 'dir') throw nodeError('EISDIR', 'unlink', shown(a[0])); t.nodes.set(p, { kind: 'absent' }); return undefined; },
+    unlink(a) { const p = pathArg(a[0]), n = t.reach(p, 'unlink', shown(a[0])); if (n.kind === 'absent') throw nodeError('ENOENT', 'unlink', shown(a[0])); if (n.kind === 'dir') throw nodeError('EISDIR', 'unlink', shown(a[0])); t.nodes.set(p, { kind: 'absent' }); return undefined; },
     rmdir(a) {
-      const p = pathArg(a[0]), n = t.at(p);
+      const p = pathArg(a[0]), n = t.reach(p, 'rmdir', shown(a[0]));
       if (n.kind === 'absent') throw nodeError('ENOENT', 'rmdir', shown(a[0]));
       if (n.kind === 'file') throw nodeError('ENOTDIR', 'rmdir', shown(a[0]));
       if (t.listing(p).length && !a[1]?.recursive) throw nodeError('ENOTEMPTY', 'rmdir', shown(a[0]));
       removeUnder(p); return undefined;
     },
     rm(a) {
-      const p = pathArg(a[0]), o = a[1] && typeof a[1] === 'object' ? a[1] : {}, n = t.at(p);
-      if (n.kind === 'absent') { if (o.force) return undefined; throw nodeError('ENOENT', 'stat', shown(a[0])); }
+      // rm starts with an lstat; `force` forgives ENOENT alone (a file on the way is still ENOTDIR)
+      const p = pathArg(a[0]), o = a[1] && typeof a[1] === 'object' ? a[1] : {}, e = t.walk(p), n = e ? { kind: 'absent' } : t.at(p);
+      if (e === 'ENOTDIR') throw nodeError('ENOTDIR', 'lstat', shown(a[0]));
+      if (n.kind === 'absent') { if (o.force) return undefined; throw nodeError('ENOENT', 'lstat', shown(a[0])); }
       if (n.kind === 'dir' && !o.recursive) throw worldError(Error, `Path is a directory: rm returned EISDIR (is a directory) ${shown(a[0])}`, { code: 'ERR_FS_EISDIR' });
       removeUnder(p); return undefined;
     },
     rename(a) {
-      const from = pathArg(a[0]), to = pathArg(a[1]), n = t.at(from);
-      if (n.kind === 'absent') throw nodeError('ENOENT', 'rename', shown(a[0]), shown(a[1]));
-      t.ensureParent(to, 'rename', shown(a[1]));
+      // rename(2): both walks, then the traps (a folder into itself EINVAL, onto its own ancestor ENOTEMPTY), then the kinds
+      const from = pathArg(a[0]), to = pathArg(a[1]), sh = [shown(a[0]), shown(a[1])], n = t.reach(from, 'rename', ...sh);
+      if (n.kind === 'absent') throw nodeError('ENOENT', 'rename', ...sh);
+      const m = t.reach(to, 'rename', ...sh);
+      if (from === to) return undefined;
+      if (to.startsWith(from + '/')) throw nodeError('EINVAL', 'rename', ...sh);
+      if (from.startsWith(to + '/')) throw nodeError('ENOTEMPTY', 'rename', ...sh);
+      if (n.kind === 'file' && m.kind === 'dir') throw nodeError('EISDIR', 'rename', ...sh);
+      if (n.kind === 'dir' && m.kind === 'file') throw nodeError('ENOTDIR', 'rename', ...sh);
+      if (n.kind === 'dir' && m.kind === 'dir' && t.listing(to).length) throw nodeError('ENOTEMPTY', 'rename', ...sh);
+      removeUnder(to); // what was at the new name is replaced
       const moved = [...t.nodes.entries()].filter(([k, v]) => (k === from || k.startsWith(from + '/')) && v.kind !== 'absent');
       removeUnder(from);
       for (const [k, v] of moved) t.nodes.set(to + k.slice(from.length), v);
       return undefined;
     },
     copyFile(a) {
-      const from = pathArg(a[0]), to = pathArg(a[1]), n = t.at(from);
-      if (n.kind === 'absent') throw nodeError('ENOENT', 'copyfile', shown(a[0]), shown(a[1]));
-      if (n.kind === 'dir') throw nodeError('EISDIR', 'copyfile', shown(a[0]), shown(a[1]));
-      t.ensureParent(to, 'copyfile', shown(a[1]));
+      const from = pathArg(a[0]), to = pathArg(a[1]), sh = [shown(a[0]), shown(a[1])], n = t.reach(from, 'copyfile', ...sh);
+      if (n.kind === 'absent') throw nodeError('ENOENT', 'copyfile', ...sh);
+      if (n.kind === 'dir') throw nodeError('EISDIR', 'copyfile', ...sh);
+      if (t.reach(to, 'copyfile', ...sh).kind === 'dir') throw nodeError('EISDIR', 'copyfile', ...sh);
       t.nodes.set(to, { kind: 'file', data: Buffer.from(n.data), mtime: t.now() });
       return undefined;
     },
-    realpath(a) { const p = pathArg(a[0]); if (t.at(p).kind === 'absent') throw nodeError('ENOENT', 'realpath', shown(a[0])); return p; },
+    realpath(a) { const p = pathArg(a[0]); if (t.reach(p, 'realpath', shown(a[0])).kind === 'absent') throw nodeError('ENOENT', 'realpath', shown(a[0])); return p; },
   };
+  // stat and lstat: `throwIfNoEntry: false` answers undefined where there is no entry, ENOENT or ENOTDIR alike (Node's binding)
+  function statAt(a, syscall) {
+    const p = pathArg(a[0]), e = t.walk(p), n = e ? null : t.at(p), code = e ?? (n.kind === 'absent' ? 'ENOENT' : null);
+    if (!code) return stats(n);
+    if (a[1]?.throwIfNoEntry === false) return undefined;
+    throw nodeError(code, syscall, shown(a[0]));
+  }
   function removeUnder(p) { for (const k of [...t.nodes.keys()]) if (k === p || k.startsWith(p + '/')) t.nodes.set(k, { kind: 'absent' }); }
   const calls = {};
   for (const [name, op] of Object.entries(ops)) {
