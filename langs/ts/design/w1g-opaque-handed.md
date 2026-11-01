@@ -195,4 +195,9 @@ is outside the graded construct and whose effect flows through what the mechanis
 
 ## The measurement
 
-See `lane/w1g-opaque-handed-result.md`.
+Census with the install on agent-nexus, nexus-learning and itsme-backend (7,962 units): the three rules stopped 1,130
+units at 4747022f and 528 at 6205d0e8 (−53.3%; read-after-call 421 → 184, copied-argument 533 → 179, type-assertion
+176 → 165). Of the units they stopped at the base, 665 enter; their median opaque fraction is 0 (p90 0) and the median
+share of their text the opaque spans cover is 0.034 (A5 threshold 0.25; `design/w1g-opaque-handed-a5.mjs`). 47 units
+entered at the base are refused now, most by the wider reach that closed the two false proofs. Every number and its
+command: `lane/w1g-opaque-handed-result.md`.
