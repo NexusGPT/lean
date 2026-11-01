@@ -4,13 +4,8 @@
   "scope": [
     "heard"
   ],
-  "why": "vscode's EventEmitter calls a registered listener with the data fired: the model meets it (WITNESS against a constant 0); the recording proxy calls no listener (PASS-bounded under LEAN_BREAK=library-fakes)",
+  "why": "vscode is no library fake (w2f, decision C: no oracle on this machine, no extension host to record vectors from; exec/fakes/lib/index.mjs), so EventEmitter is the recording proxy's and calls no listener: both sides answer alike (PASS-bounded). When the vscode row returns with recorded vectors the model meets the listener (WITNESS against a constant 0) and the break map (library-fakes: PASS-bounded) comes back",
   "b": {
-    "heard": "WITNESS"
-  },
-  "break": {
-    "library-fakes": {
-      "heard": "PASS-bounded"
-    }
+    "heard": "PASS-bounded"
   }
 }

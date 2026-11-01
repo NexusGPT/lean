@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Environment, render, behaviouralGlobals } from '../../fake.mjs';
-import { STATUSES, ORIGIN } from './fetch.mjs';
+import { STATUSES } from './fetch.mjs';
 
 const world = (seed, strings = []) => { const env = new Environment(seed); env.shapes = { strings }; return { env, g: behaviouralGlobals(env) }; };
 const statusOf = (g, url, init) => g.fetch(url, init).then((r) => r.status, (e) => `fault ${e.constructor.name}`); // the world's fault draw (one call in twelve) fails the same request alike on both sides
@@ -50,10 +50,14 @@ test('fetch: the trace records the request as the server receives it (method, ur
   assert.equal(call.args[0].body, 'b');
 });
 
-test('fetch: a relative URL resolves against the virtual origin; an invalid request rejects with the standard TypeError', async () => {
+test('fetch: a relative URL is refused as Node refuses it; an invalid request rejects with the standard TypeError', async () => {
   const { env, g } = world(1);
-  await settle(g.fetch('/api/x'));
-  assert.equal(env.trace.at(-1).args[0].url, new URL('/api/x', ORIGIN).href);
+  const real = await settle(fetch('/api/x')); // Node's own fetch: a URL with no base does not parse
+  const rel = await settle(g.fetch('/api/x'));
+  assert.ok(real.e instanceof TypeError && rel.e instanceof TypeError);
+  assert.equal(rel.e.message, real.e.message);
+  assert.throws(() => new g.Request('not a url'), TypeError);
+  assert.equal(env.trace.at(-1).path, 'global:fetch'); assert.equal(env.trace.at(-1).args[0], '/api/x'); // recorded with the arguments as given
   const bad = await settle(g.fetch('https://x.test/', { method: 'GET', body: 'no' }));
   assert.ok(bad.e instanceof TypeError);
 });
@@ -66,11 +70,26 @@ test('fetch: a body is read once; a null-body status reads as the empty text and
     if (r.e) continue; // the world's fault draw
     const res = r.v;
     if (res.status === 204) { assert.equal(await res.clone().text(), ''); assert.ok((await settle(res.json())).e instanceof SyntaxError); checked204 = true; continue; }
-    await res.json();
+    await settle(res.json()); // the parse of the drawn text: a text that is no JSON rejects, and the body is read either way
     assert.equal(res.bodyUsed, true);
     assert.ok((await settle(res.text())).e instanceof TypeError);
   }
   assert.ok(checked204);
+});
+
+test('fetch: json() is the parse of text(), one body, as on every real Response', async () => {
+  let parsed = 0, refused = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const { g } = world(seed);
+    const r = await settle(g.fetch('https://x.test/same', { method: 'POST', body: String(seed) }));
+    if (r.e) continue; // the world's fault draw
+    const text = await r.v.clone().text();
+    assert.equal(typeof text, 'string');
+    let want; try { want = { v: JSON.parse(text) }; } catch (e) { want = { e: e.name }; }
+    const got = await settle(r.v.json());
+    if (want.e) { assert.equal(got.e?.name, want.e); refused++; } else { assert.deepEqual(got.v, want.v); parsed++; }
+  }
+  assert.ok(parsed > 0 && refused > 0, `both a JSON text and a text that is none met (${parsed}, ${refused})`);
 });
 
 test('fetch: an aborted signal rejects with its reason; the network fails on the fault draw', async () => {

@@ -924,7 +924,7 @@ async function observeWindow(side, spec, args, ms) {
 
 // ----- the virtual clock: armed timers fire in due order -----
 // runTimers fires every armed timer once, in due order (ties by arm order), moving the clock to each due instant; an
-// interval re-arms after its run and stays pending; a timer that arms another runs it too, up to the limit (then a
+// interval re-arms after its run and stays pending, unless its own callback cleared it; a timer that arms another runs it too, up to the limit (then a
 // budget: ASK). The observation holds the fired order (a 'fire' record per timer) and what each callback asked of
 // the environment.
 const PERMS = { 1: [[0]], 2: [[0, 1], [1, 0]], 3: [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]] }; // the firing orders of up to three timers due at one instant
@@ -944,8 +944,9 @@ async function runTimers(env, ms, limit = 50, { until = Infinity, perm = 0, lega
     const i = t.queue.indexOf(e); t.queue.splice(i, 1); const j = env.pending.findIndex((x) => x.id === e.id); if (j >= 0) env.pending.splice(j, 1);
     if (++fired > limit) throw new BudgetError(`more than ${limit} timers fired`);
     env.record('fire', { timeout: 'setTimeout', interval: 'setInterval', immediate: 'setImmediate', frame: 'requestAnimationFrame', idle: 'requestIdleCallback' }[e.kind], [e.due]); // the instant, never the id: an id is an arm counter nobody outside sees
-    try { const r = guardedCall(env, () => e.fn(...e.args), ms); if (r && typeof r.then === 'function') await awaitUnit(env, r, ms); } catch (x) { if (x instanceof BudgetError || x?.message === '__timeout__') throw x; env.record('timer-throw', e.kind, [render(x)]); }
-    if (e.interval) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push(withSite({ op: 'setInterval', ms: e.interval, id: e.id }, e.site)); } // once per run: the interval stays pending for the next tick
+    const outer = t.firing; t.firing = e; // off the queue while its callback runs: a clear of its id in the callback (an interval that stops itself) reaches it here (fake.mjs clearTimer)
+    try { const r = guardedCall(env, () => e.fn(...e.args), ms); if (r && typeof r.then === 'function') await awaitUnit(env, r, ms); } catch (x) { if (x instanceof BudgetError || x?.message === '__timeout__') throw x; env.record('timer-throw', e.kind, [render(x)]); } finally { t.firing = outer; }
+    if (e.interval && !e.cleared) { e.fired = 1; e.due = t.now + e.interval; e.order = t.nextId++; t.queue.push(e); env.pending.push(withSite({ op: 'setInterval', ms: e.interval, id: e.id }, e.site)); } // once per run: the interval stays pending for the next tick
     await new Promise((r) => setImmediate(r));
   }
   for (const e of t.queue) e.fired = 0; // the next run may fire the intervals again

@@ -4,9 +4,16 @@
 // (ties by arm order), one per turn of the event loop, the clock moved to its instant, and each firing recorded.
 import { entries } from './common.mjs';
 
+// Node's delay rule for a timeout or an interval (lib/internal/timers.js Timeout: `after *= 1; if (!(after >= 1 &&
+// after <= TIMEOUT_MAX)) after = 1`): a delay below 1, not a number, or past 2^31 - 1 is 1 ms; any other is its number.
+// So setTimeout(f, 0) joins the 1 ms list and fires after an earlier setTimeout(g, 1). timers/promises' setTimeout builds
+// the same Timeout. (The sandbox's global setTimeout is not this module: it stays the environment's own clock.)
+const TIMEOUT_MAX = 2 ** 31 - 1;
+export const nodeDelay = (ms) => { const n = ms * 1; return n >= 1 && n <= TIMEOUT_MAX ? n : 1; };
+
 export function timersModel(env) {
   const calls = {
-    setTimeout: ([fn, ms, ...a]) => env.arm('timeout', fn, ms, a), setInterval: ([fn, ms, ...a]) => env.arm('interval', fn, ms, a), setImmediate: ([fn, ...a]) => env.arm('immediate', fn, 0, a),
+    setTimeout: ([fn, ms, ...a]) => env.arm('timeout', fn, nodeDelay(ms), a), setInterval: ([fn, ms, ...a]) => env.arm('interval', fn, nodeDelay(ms), a), setImmediate: ([fn, ...a]) => env.arm('immediate', fn, 0, a),
     clearTimeout: ([id]) => env.clearTimer(id, 'clearTimeout'), clearInterval: ([id]) => env.clearTimer(id, 'clearInterval'), clearImmediate: ([id]) => env.clearTimer(id, 'clearImmediate'),
   };
   return entries({ name: 'timers', calls, pure: Object.keys(calls), objects: ['promises'], dynamic: (m) => (m.startsWith('promises.') ? timersPromisesModel(env).entry(m.slice(9)) : null) });
@@ -28,7 +35,7 @@ function awaited(env) {
     if (q.length) { scheduled = true; setImmediate(turn); }
   };
   return (env.awaitedTimers = (kind, ms, value) => new Promise((resolve) => {
-    q.push({ kind, due: env.timers.now + (kind === 'setImmediate' ? 0 : Math.max(0, Number(ms) || 0)), order: order++, value, resolve });
+    q.push({ kind, due: env.timers.now + (kind === 'setImmediate' ? 0 : nodeDelay(ms)), order: order++, value, resolve });
     if (!scheduled) { scheduled = true; setImmediate(turn); }
   }));
 }
