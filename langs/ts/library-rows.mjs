@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ts, isArrayLike } from './common.mjs';
+import { broken } from './break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 // The module rows (translate/library.json, `receiver: module`; design/w2b-node-fakes.md): a member of a Node core module
 // read as a pure bodiless function. The call is `<binding>.<member>(...)` on a default, namespace or `import = require`
@@ -353,7 +354,7 @@ function holdsFunction(checker, t, seen) {
 // transition); and the result cannot share an object the unit holds, by the row's shape and the result's type
 // LEAN_BREAK=package-rows (amendment A6) removes the mechanism: every package call keeps the outside call's reading
 export function pureLibraryCall(checker, n) {
-  if ((process.env.LEAN_BREAK ?? '').split(',').includes('package-rows')) return null;
+  if (broken('package-rows')) return null;
   const call = packageCall(checker, n);
   if (!call?.shape) return null;
   for (const a of n.arguments) {

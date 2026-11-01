@@ -28,13 +28,14 @@ import { spawnCollect } from '../exec/capped.mjs';
 import { dafnyVerifyArgs, outOfResourceLines } from '../exec/dafny-args.mjs';
 import { declarations, parseType, splitTop, legendOf } from '../conformance/dafny-text.mjs';
 import { dn } from '../common.mjs';
+import { breakList } from '../break.mjs';
 
 // the longest sequence whose elements are named in the second extraction
 export const CEX_ELEMENTS = 64;
 // LEAN_BREAK=<mechanism,...> switches a named mechanism off, for the suite row that shows its pair goes red without it
 // (tests/run.mjs `counterexample`): `cex-replay` takes the model's input as the WITNESS without running it,
 // `cex-replay-by-index` replays lane B's draw at the replay's index instead of the model's value
-const breaks = () => new Set(String(process.env.LEAN_BREAK ?? '').split(',').map((x) => x.trim()).filter(Boolean));
+const breaks = () => new Set(breakList()); // ../break.mjs: the one switch (names in tests/break.mjs)
 
 // ---------------------------------------------------------------------------------------------------------------
 // reading Dafny's counterexample text

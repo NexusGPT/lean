@@ -27,6 +27,28 @@ export const MECHANISMS = {
   'unhanded-collection': 'common.mjs readAfterCall unhandedCollection: a collection a call was handed is taken for one no call holds (lane w1g; tests/w1g-opaque-handed.mjs)',
   'handed-call': 'translate/translate.mjs handedArg: a same-file call\'s result is handed without the code its callee reaches in its key (lane w1g)',
   'outside-slot': 'common.mjs outsideSlot: every callee taken for the outside, a same-file callee with a body included (lane w1g; tests/w1g-opaque-handed.mjs)',
+  // the mechanisms of the lanes merged before the registry held every name (they read LEAN_BREAK through ../break.mjs
+  // now; each lane's own test drives them: w1h tests/w1h-new-units.mjs, w1f tests/w1f-module-units.mjs, w3a the pair
+  // runner's `counterexample` rows, w2d tests/package-rows.test.mjs and tests/lib-break.mjs)
+  'platform-gap': 'exec/new-tests.mjs platformGlobal and exec/new-unit.mjs: a ReferenceError for a platform global is not read as the platform\'s gap (lane w1h)',
+  'closed-test': 'exec/new-tests.mjs: a test that touched the world is read as closed (lane w1h)',
+  'declared-edges': 'exec/declared.mjs edgePlan: the declared type\'s edge inputs are not drawn (lane w1h)',
+  'declared-throws': 'exec/declared.mjs declaredThrow: a declared throw is not read as the declaration\'s (lane w1h)',
+  'admitted-input': 'exec/new-unit.mjs: every input is taken as admitted by the declared type (lane w1h)',
+  'closed-call': 'exec/new-unit.mjs: the world the unit touched is not counted, so every admitted input reads as a closed call (lane w1h)',
+  'declared-shape': 'exec/new-unit.mjs: the result is not checked against the declared shape (lane w1h)',
+  'shape-drives': 'exec/new-unit.mjs: the shape check runs although the observer drove functions the unit handed out (lane w1h)',
+  'pr-tests': 'exec/new-unit.mjs: the tests the change adds are not run (lane w1h)',
+  'w1f-module': 'ci/ledger.mjs: the module unit\'s route is removed (lane w1f)',
+  'w1f-js': 'ci/ledger.mjs: a JavaScript file takes the route before the JavaScript module unit (lane w1f)',
+  'w1f-types': 'ci/ledger.mjs: a type-only or directive edit is not routed to the types unit (lane w1f)',
+  'w1f-emit': 'typed.mjs: the typed reading compares no emit (it never decides; lane w1f)',
+  'w1f-closure': 'typed.mjs: the typed reading\'s reach is the changed file alone (lane w1f)',
+  'w1f-directive': 'lint/directives.mjs: directives matched by their line number, not their anchor (lane w1f)',
+  'cex-replay': 'solve/counterexample.mjs: the model\'s input is taken as the WITNESS without running it (lane w3a)',
+  'cex-replay-by-index': 'solve/counterexample.mjs: lane B\'s draw at the replay\'s index is replayed instead of the model\'s value (lane w3a)',
+  'package-rows': 'library-rows.mjs: every package call keeps the outside call\'s reading (lane w2d)',
+  'library-fakes': 'exec/fakes/lib/index.mjs libraryFakesOn: every library fake is off, the recording proxy answers (lane w2d)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
