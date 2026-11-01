@@ -1,0 +1,12 @@
+{
+ "package": "luxon",
+ "version": "3.7.2",
+ "license": "MIT",
+ "from": "https://registry.npmjs.org/luxon/-/luxon-3.7.2.tgz",
+ "main": "build/node/luxon.js",
+ "subpaths": {},
+ "externals": [],
+ "files": {
+  "build/node/luxon.js": "89f0e65bc957cb4574f66f8b4b76b855631d810e5249bf7f5fb98e1e30ace7ca"
+ }
+}

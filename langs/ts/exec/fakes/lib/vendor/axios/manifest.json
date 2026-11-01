@@ -1,0 +1,12 @@
+{
+ "package": "axios",
+ "version": "1.21.0",
+ "license": "MIT",
+ "from": "https://registry.npmjs.org/axios/-/axios-1.21.0.tgz",
+ "main": "dist/browser/axios.cjs",
+ "subpaths": {},
+ "externals": [],
+ "files": {
+  "dist/browser/axios.cjs": "b66a3046dfe0933d3849b62c946ca71f86b36f0906745ed88b08029c71f9dd63"
+ }
+}

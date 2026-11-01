@@ -1,6 +1,6 @@
 {
  "version": 2,
- "about": "The library transition table of the heap core (references, layer 2): one row per built-in operation lean reads through the heap. Each row states what ECMA-262 (edition 2027, section ids as on tc39.es/ecma262) or the HTML standard fixes about the operation, at the level the proof needs: does it allocate, does it change its receiver, what identity it returns, in what order it visits, what a callback may do, and when it throws. heap.mjs generates one total Dafny function per row and per shape from the `dafny` template (`<K>` the shape key, `<E>` the element Dafny type); design/library-ops.dfy holds the monomorphic forms verified with dafny 4.11.0 (23 verified, 0 errors). A row whose `status` is `draft` is not generated. Lane B's call recorder (exec/transitions.mjs) checks every observed call against its row; a mismatch refuses the row's proofs until the row is fixed. Version 2 (2026-10-27): the Map cell is (keys, m), an insertion-ordered key list beside a Dafny map, so repeated writes are idempotent by the map's laws. A row whose `lane` is `ordinary` (stage 5, design/library-rows.md) is read by the ordinary translator (translate.mjs) in the value model (a sequence, a string, a number): its `dafny` field is that reading, `reading` says whether it is exact, uninterpreted (a bodiless function of the value, the same on both sides) or a world read (a bodiless transition), and heap.mjs instantiates none of them. An `ordinary` field on a heap row is the value-model reading of the same operation used as a value. A row whose `receiver` is `module` (2026-11-01, design/w2b-node-fakes.md) is a member of a Node core module named by `module` (the specifiers that import it) and `member`: with `reading: uninterpreted` and `arguments: string` the call, every argument a string, is a pure bodiless function (library-rows.mjs moduleRow, read by the lint and the translator); any other reading keeps the call a transition, the row stating why.",
+ "about": "The library transition table of the heap core (references, layer 2): one row per built-in operation lean reads through the heap. Each row states what ECMA-262 (edition 2027, section ids as on tc39.es/ecma262) or the HTML standard fixes about the operation, at the level the proof needs: does it allocate, does it change its receiver, what identity it returns, in what order it visits, what a callback may do, and when it throws. heap.mjs generates one total Dafny function per row and per shape from the `dafny` template (`<K>` the shape key, `<E>` the element Dafny type); design/library-ops.dfy holds the monomorphic forms verified with dafny 4.11.0 (23 verified, 0 errors). A row whose `status` is `draft` is not generated. Lane B's call recorder (exec/transitions.mjs) checks every observed call against its row; a mismatch refuses the row's proofs until the row is fixed. Version 2 (2026-10-27): the Map cell is (keys, m), an insertion-ordered key list beside a Dafny map, so repeated writes are idempotent by the map's laws. A row whose `lane` is `ordinary` (stage 5, design/library-rows.md) is read by the ordinary translator (translate.mjs) in the value model (a sequence, a string, a number): its `dafny` field is that reading, `reading` says whether it is exact, uninterpreted (a bodiless function of the value, the same on both sides) or a world read (a bodiless transition), and heap.mjs instantiates none of them. An `ordinary` field on a heap row is the value-model reading of the same operation used as a value. A row whose `receiver` is `module` (2026-11-01, design/w2b-node-fakes.md) is a member of a Node core module named by `module` (the specifiers that import it) and `member`: with `reading: uninterpreted` and `arguments: string` the call, every argument a string, is a pure bodiless function (library-rows.mjs moduleRow, read by the lint and the translator); any other reading keeps the call a transition, the row stating why. `packages` (version 2, 2026-11-01, design/w2d-library-rows.md): the exports of ecosystem libraries lane A reads, by package. An export under `pure` is read as a function of its arguments without the world (an uninterpreted function, the same on both sides) when the call's function arguments are arrow literals and its result cannot share an object the unit holds: `primitive` and `argument-part` (the result may be a part of an argument) only at a primitive result type, `fresh-array` (arrays and dictionaries new, their elements the arguments' own) and `fresh-record` (one new record, its values the arguments' own) only when those elements or values are primitives, `deep-fresh` (every object new) at any type; any other call of the package, and every export under `transition` (with the reason), keeps the outside call's reading, a transition of the world. Lane B runs the package itself (the `fake`).",
  "operations": [
   {
    "op": "Array.prototype.push",
@@ -903,5 +903,318 @@
   "Keep_<K>": "function Keep_<K>(xs: seq<<E>>, p: <E> -> bool): seq<<E>> decreases |xs| { if |xs| == 0 then [] else (if p(xs[0]) then [xs[0]] else []) + Keep_<K>(xs[1..], p) }",
   "RemoveKey_<K>": "function RemoveKey_<K>(ks: seq<<KT>>, k: <KT>): seq<<KT>> decreases |ks| { if |ks| == 0 then [] else (if ks[0] == k then [] else [ks[0]]) + RemoveKey_<K>(ks[1..], k) }",
   "RemoveItem_<K>": "function RemoveItem_<K>(xs: seq<<E>>, v: <E>): seq<<E>> decreases |xs| { if |xs| == 0 then [] else (if xs[0] == v then [] else [xs[0]]) + RemoveItem_<K>(xs[1..], v) }"
- }
+ },
+ "packages": [
+  {
+   "package": "lodash",
+   "version": "4.18.1",
+   "specifiers": [
+    "lodash",
+    "lodash-es",
+    "lodash/<export>",
+    "lodash-es/<export>",
+    "lodash.<export in lower case>"
+   ],
+   "source": "lodash 4.18.1, the package's own code (vendored: exec/fakes/lib/vendor/lodash, its manifest's sha256); every export below was read in that source: none changes an argument, none reads Date, Math.random or a timer, none throws on arguments of its declared types (lodash coerces every input), and a callback (iteratee) is called synchronously, its own throw its own",
+   "fake": "exec/fakes/lib/lodash.mjs",
+   "pure": {
+    "primitive": [
+     "sum",
+     "sumBy",
+     "mean",
+     "meanBy",
+     "isEqual",
+     "isEmpty",
+     "isNil",
+     "isNull",
+     "isUndefined",
+     "isString",
+     "isNumber",
+     "isBoolean",
+     "isArray",
+     "isPlainObject",
+     "isObject",
+     "isObjectLike",
+     "isFunction",
+     "isInteger",
+     "isFinite",
+     "isNaN",
+     "isMatch",
+     "has",
+     "hasIn",
+     "includes",
+     "size",
+     "every",
+     "some",
+     "indexOf",
+     "lastIndexOf",
+     "findIndex",
+     "findLastIndex",
+     "camelCase",
+     "kebabCase",
+     "snakeCase",
+     "startCase",
+     "lowerCase",
+     "upperCase",
+     "capitalize",
+     "upperFirst",
+     "lowerFirst",
+     "toLower",
+     "toUpper",
+     "trim",
+     "trimStart",
+     "trimEnd",
+     "pad",
+     "padStart",
+     "padEnd",
+     "repeat",
+     "escape",
+     "unescape",
+     "escapeRegExp",
+     "deburr",
+     "clamp",
+     "inRange",
+     "round",
+     "floor",
+     "ceil"
+    ],
+    "deep-fresh": [
+     "cloneDeep",
+     "words",
+     "range",
+     "rangeRight",
+     "keys",
+     "keysIn"
+    ],
+    "fresh-array": [
+     "uniq",
+     "uniqBy",
+     "sortBy",
+     "orderBy",
+     "groupBy",
+     "keyBy",
+     "countBy",
+     "chunk",
+     "compact",
+     "flatten",
+     "flattenDeep",
+     "flattenDepth",
+     "difference",
+     "differenceBy",
+     "intersection",
+     "intersectionBy",
+     "union",
+     "unionBy",
+     "without",
+     "xor",
+     "take",
+     "takeRight",
+     "drop",
+     "dropRight",
+     "takeWhile",
+     "dropWhile",
+     "initial",
+     "tail",
+     "filter",
+     "reject",
+     "map",
+     "flatMap",
+     "partition",
+     "zip",
+     "unzip",
+     "values",
+     "toPairs",
+     "times",
+     "concat",
+     "sortedUniq"
+    ],
+    "fresh-record": [
+     "pick",
+     "omit",
+     "mapValues",
+     "mapKeys",
+     "fromPairs",
+     "invert",
+     "zipObject",
+     "clone"
+    ],
+    "argument-part": [
+     "get",
+     "head",
+     "first",
+     "last",
+     "nth",
+     "find",
+     "findLast",
+     "max",
+     "min",
+     "maxBy",
+     "minBy",
+     "defaultTo",
+     "identity"
+    ]
+   },
+   "transition": {
+    "changes an argument": [
+     "set",
+     "unset",
+     "update",
+     "merge",
+     "mergeWith",
+     "assign",
+     "assignIn",
+     "defaults",
+     "defaultsDeep",
+     "pull",
+     "pullAll",
+     "remove",
+     "reverse",
+     "fill"
+    ],
+    "reads the clock or arms a timer": [
+     "debounce",
+     "throttle",
+     "now",
+     "delay",
+     "defer"
+    ],
+    "reads the generator": [
+     "random",
+     "shuffle",
+     "sample",
+     "sampleSize"
+    ],
+    "keeps state across calls": [
+     "uniqueId",
+     "memoize",
+     "once",
+     "after",
+     "before"
+    ],
+    "runs what it is handed for its effects": [
+     "forEach",
+     "each",
+     "forEachRight",
+     "invoke",
+     "invokeMap",
+     "result",
+     "attempt",
+     "template",
+     "mixin",
+     "chain",
+     "runInContext"
+    ]
+   }
+  },
+  {
+   "package": "date-fns",
+   "version": "3.6.0",
+   "specifiers": [
+    "date-fns",
+    "date-fns/<export>"
+   ],
+   "source": "date-fns 3.6.0, the package's own code (vendored: exec/fakes/lib/vendor/date-fns): the exports below compute on the instant in milliseconds only (getTime, the millisecond constants), never on the host's local calendar, so their value does not depend on the time zone; each returns a new Date or a primitive and never throws (an invalid date is the Invalid Date or NaN)",
+   "fake": "exec/fakes/lib/index.mjs dateFns",
+   "pure": {
+    "primitive": [
+     "isBefore",
+     "isAfter",
+     "isEqual",
+     "isValid",
+     "isDate",
+     "compareAsc",
+     "compareDesc",
+     "getTime",
+     "getUnixTime",
+     "differenceInMilliseconds",
+     "differenceInSeconds",
+     "differenceInMinutes",
+     "differenceInHours"
+    ],
+    "deep-fresh": [
+     "addMilliseconds",
+     "addSeconds",
+     "addMinutes",
+     "addHours",
+     "subMinutes",
+     "subHours",
+     "fromUnixTime",
+     "toDate",
+     "max",
+     "min"
+    ]
+   },
+   "transition": {
+    "reads the host's local calendar (the time zone is the world's, as a locale is: design/library-rows.md)": [
+     "addDays",
+     "addWeeks",
+     "addMonths",
+     "addYears",
+     "subDays",
+     "subWeeks",
+     "subMonths",
+     "subYears",
+     "startOfDay",
+     "endOfDay",
+     "startOfWeek",
+     "endOfWeek",
+     "startOfMonth",
+     "endOfMonth",
+     "startOfYear",
+     "differenceInDays",
+     "differenceInCalendarDays",
+     "differenceInMonths",
+     "differenceInYears",
+     "isSameDay",
+     "parseISO",
+     "parse",
+     "eachDayOfInterval",
+     "intervalToDuration"
+    ],
+    "throws RangeError on an invalid date": [
+     "format",
+     "formatISO",
+     "formatDistance",
+     "formatDistanceStrict",
+     "formatRelative",
+     "formatDuration"
+    ],
+    "reads the clock": [
+     "formatDistanceToNow",
+     "formatDistanceToNowStrict",
+     "isToday",
+     "isPast",
+     "isFuture"
+    ]
+   }
+  },
+  {
+   "package": "uuid",
+   "version": "9.0.1",
+   "specifiers": [
+    "uuid"
+   ],
+   "source": "uuid 9.0.1 (vendored: exec/fakes/lib/vendor/uuid): validate is a test of the string against the RFC 4122 pattern",
+   "fake": "exec/fakes/lib/uuid.mjs",
+   "pure": {
+    "primitive": [
+     "validate"
+    ]
+   },
+   "transition": {
+    "reads the generator or the clock": [
+     "v1",
+     "v4",
+     "v6",
+     "v7"
+    ],
+    "throws TypeError on a string that is not a UUID": [
+     "version",
+     "parse",
+     "v3",
+     "v5"
+    ]
+   }
+  }
+ ]
 }

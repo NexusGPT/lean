@@ -68,6 +68,10 @@ function withIncludes(files) {
 }
 let hits = 0, misses = 0, stored = 0;
 export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, dir: CACHE_DIR });
+// the switches a step inherits from the suite's own environment that change what a producer does: LEAN_BREAK (amendment
+// A6: a --break run removes the mechanism it names) and LEAN_LIBRARY_FAKES (lane B's library fakes off). A step under
+// one of them is another step (tests/step-cache-break.mjs); LEAN_STEP_CACHE_INHERITED=off is that test's --break
+const PRODUCER_SWITCHES = ['LEAN_BREAK', 'LEAN_LIBRARY_FAKES'];
 // the key of one command, and the stored entry when there is one (a hit); shared by the sync and the async runner
 // the environment variables that change what a command answers, inherited from the suite's own environment: part of
 // the key, so a run with the input search (LEAN_SEARCH, exec/search.mjs) never replays one without it
@@ -79,7 +83,8 @@ function lookup(cmd, args, { root, files = [], outs = [], env = null, normalise 
   const inputs = withIncludes(files).map((f) => { try { return [norm(f), sha(fs.readFileSync(f))]; } catch { return [norm(f), null]; } });
   if (env) for (const v of Object.values(env)) { if (typeof v === 'string' && fs.existsSync(v) && fs.statSync(v).isFile()) inputs.push([norm(v), sha(fs.readFileSync(v))]); } // a table or fixture named by the environment
   const kind = producerKind(cmd, args);
-  const keyObj = { v: 2, cmd, args: args.map(norm), env: { ...answerEnv(), ...(env ?? {}) }, inputs, kind, producer: kind === 'dafny' ? `${dafnyVersionString()} with ${z3Binary().version ?? z3Binary().source}` : producerHash(root, kind) }; // v2: outputs stored normalised
+  const inherited = Object.fromEntries(PRODUCER_SWITCHES.filter((k) => process.env.LEAN_STEP_CACHE_INHERITED !== 'off' && process.env[k] !== undefined).map((k) => [k, process.env[k]])); // keyed only when set: a key without them is the key it was
+  const keyObj = { v: 2, cmd, args: args.map(norm), env: { ...answerEnv(), ...(env ?? {}) }, ...(Object.keys(inherited).length ? { inherited } : {}), inputs, kind, producer: kind === 'dafny' ? `${dafnyVersionString()} with ${z3Binary().version ?? z3Binary().source}` : producerHash(root, kind) }; // v2: outputs stored normalised
   const key = sha(JSON.stringify(keyObj)), file = path.join(CACHE_DIR, key.slice(0, 2), key + '.json');
   const step = { norm, denorm, keyObj, key, file, outs };
   try {

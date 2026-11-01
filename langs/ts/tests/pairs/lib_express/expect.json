@@ -1,0 +1,16 @@
+{
+  "project": "tsconfig.json",
+  "laneBOnly": true,
+  "scope": [
+    "created"
+  ],
+  "why": "express's res.status returns the response itself and sets its statusCode: the response model meets both (WITNESS against a constant 0); the recording proxy answers a new handle (PASS-bounded under LEAN_BREAK=library-fakes)",
+  "b": {
+    "created": "WITNESS"
+  },
+  "break": {
+    "library-fakes": {
+      "created": "PASS-bounded"
+    }
+  }
+}

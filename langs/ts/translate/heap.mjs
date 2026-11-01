@@ -37,6 +37,7 @@ import { sealedMember } from '../common.mjs';
 import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the value reading // `this.m()` is the class's own m only when no subclass can hold another: one test with the value reading
 import { elementWritePath, voidReturn } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 import { carriedAliases } from '../lower.mjs'; // a second name of a parameter the value reading carries: no copy write (one test with the translator) // a field write through a parameter's element path: one test with the lint
+import { pureLibraryCall } from '../library-rows.mjs'; // a package export the library table reads as a function of its arguments: the value lane's reading (design/w2d-library-rows.md)
 import { rawTag, templateRaws, templateHoles } from '../common.mjs'; // String.raw: the template of its raw parts (design/heap-stage5.md section 1)
 // the library transition table: one verified Dafny form per built-in (translate/library.json, forms checked in
 // design/library-ops.dfy and against the engine by exec/transitions.mjs on Test262); the prelude instantiates a row's
@@ -773,6 +774,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         return;
       }
       if (calleeOf(e, u)) { const gw = argShapeWhy(fns.get(calleeOf(e, u)), e.arguments); if (gw) return no(gw); for (const a of e.arguments) checkExpr(a); return; }
+      if (ts.isCallExpression(e) && pureLibraryCall(checker, e)) return no('a pure package call (library.json packages): the value lane reads it as a function of its arguments, the heap core only as a transition of the whole world');
       if (outsideCall(e)) { if (lambdaDepth) return no('a call outside the file inside a callback'); callsOut = true; if (outsideCall(e).recv) checkExpr(outsideCall(e).recv); for (const a of e.arguments) checkExpr(a); return; } // a world transition
       if (globalCall(e)) { const g = globalCall(e); if (g === 'Object.keys' && lambdaDepth) return no('allocation inside a callback'); const fd = (g === 'Math.floor' || g === 'Math.trunc') ? floorDiv(e) : null; if (fd) { if (lambdaDepth) return no('division inside a callback'); usesIndex = true; checkExpr(fd.left); return checkExpr(fd.right); } for (const a of e.arguments) checkExpr(a); return; } // a pure global
       if (reCall(e)) { const rc = reCall(e); if (rc.m === 'split' && lambdaDepth) return no('allocation inside a callback'); if (isReal && rc.m === 'search') return no('search in a real file'); checkExpr(rc.s); if (rc.r) checkExpr(rc.r); return; } // a regular expression literal: uninterpreted

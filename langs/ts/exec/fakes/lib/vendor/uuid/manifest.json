@@ -1,0 +1,29 @@
+{
+ "package": "uuid",
+ "version": "9.0.1",
+ "license": "MIT",
+ "from": "https://registry.npmjs.org/uuid/-/uuid-9.0.1.tgz",
+ "main": "dist/index.js",
+ "subpaths": {},
+ "externals": [
+  "crypto"
+ ],
+ "files": {
+  "dist/index.js": "21f90a4f2f933cdbe9e3afe9274b299a4ceb09fe1d47d513d1a3b7a93d76b1d0",
+  "dist/md5.js": "6ca6276ff35f19ea462bb8c9d6d290994fa9980fc775deb741811ef947196ced",
+  "dist/native.js": "006f218c1c0450ba06917adc2fe7b35f89985b0a7e3d7be9eecdf35d2319b25b",
+  "dist/nil.js": "7395bd919bd1309bcbced245a59dfc6b077f97992a482af2537343e558795b1f",
+  "dist/parse.js": "1a87ed6a6bb0a3edbe266ca55aaf1c5af8e963ee9486f74b59cfd615280b21b4",
+  "dist/regex.js": "acc4c54d987f100093097f4f156ff245394c39d1332eb2114d7e40db00bd6ddd",
+  "dist/rng.js": "fdde4350fc69c07bfed4178eedf6121a56264744207d9f5c8f3e5b1b913dbb06",
+  "dist/sha1.js": "a9eda407444a3f68a0a4db0373346df18f583abbde2c4bf2b3fbc6d73be2c75e",
+  "dist/stringify.js": "6be33f7aa42be82a7e9d3c58a4cbbd345ee2876aade92b8ec65889732db2e6a2",
+  "dist/v1.js": "86f6dc1a1556a9eddad07231c2a4f13e0ad4b6ff964a04d06866f07e36067002",
+  "dist/v3.js": "95e0c6fa204355c6ef7dbac5720a3ef5239454ed6820674dfcc143a55ea6c459",
+  "dist/v35.js": "b8a86ffceb3f1224c2b75b29930215ea590464a257b27ae5d1c867fdae6ff601",
+  "dist/v4.js": "daadf958ab1e8d7e7b371b22d73539aa85f51a4d7970e502025e2100aecbf07b",
+  "dist/v5.js": "d15c31975f31b9abf6a195e70a3dca0843a9257cb51b49214cf7a9f4ed30fc5a",
+  "dist/validate.js": "5497d9adffd73474cf379d3e1b76b28698e408124a0726d54e88282500378502",
+  "dist/version.js": "2e69a54d05ef1342b6fe0a2b7fcdb446179db34ea38aa02c17ae0e1f211a55e4"
+ }
+}

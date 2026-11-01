@@ -1,0 +1,11 @@
+{
+  "project": "tsconfig.json",
+  "laneBOnly": true,
+  "scope": [
+    "poke"
+  ],
+  "why": "lodash's get returns the argument's own object, so the parent's write through its result is a write to the argument: lane B runs the vendored package and the sides differ (WITNESS); the recording proxy may answer with the argument's own object too (the environment graph aliases), so the witness is not the fake's alone and the pair has no break row. Lane B only: the value lane (as of 4747022f) applies a field write through an outside call's result to a local copy and proves the two equal, an aliasing gap reported in lane/w2d-library-rows-result.md, outside this lane's files",
+  "b": {
+    "poke": "WITNESS"
+  }
+}

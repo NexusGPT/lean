@@ -1,0 +1,16 @@
+{
+  "project": "tsconfig.json",
+  "laneBOnly": true,
+  "scope": [
+    "echoes"
+  ],
+  "why": "zod's string schema parses a string to itself: the vendored zod meets the input (WITNESS against a constant 0); the recording proxy answers a value of its own, never the input (PASS-bounded under LEAN_BREAK=library-fakes)",
+  "b": {
+    "echoes": "WITNESS"
+  },
+  "break": {
+    "library-fakes": {
+      "echoes": "PASS-bounded"
+    }
+  }
+}

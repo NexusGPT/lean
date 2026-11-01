@@ -1,0 +1,21 @@
+{
+ "package": "zod",
+ "version": "3.25.76",
+ "license": "MIT",
+ "from": "https://registry.npmjs.org/zod/-/zod-3.25.76.tgz",
+ "main": "index.cjs",
+ "subpaths": {},
+ "externals": [],
+ "files": {
+  "index.cjs": "69025493407e0f37f24e01e363452d75ae43a89aac18eb24806706b5b534b459",
+  "v3/ZodError.cjs": "88b9cdd780a91656965e07b94c86c0e4729f97923d45cc9d7944b0973a462503",
+  "v3/errors.cjs": "bd32dbc86faeec2de1cc8e42ee3b29af2cbeb24fb5e3b57d7f056bb09cf8d4bd",
+  "v3/external.cjs": "224ff76e204434ec469f71dbba41d475db1ea873d3f3a5c26d75ab3a9c9f5f11",
+  "v3/helpers/errorUtil.cjs": "9c9e5dec7d1e9fce6a967735adf0333abd44d5e94a0225537c60ceed0c4f606a",
+  "v3/helpers/parseUtil.cjs": "40aaa18765f13ae1a933c6f215ecceb6d3afee89eaa23bb080997e08c30a5b00",
+  "v3/helpers/typeAliases.cjs": "d43aa81f5bc89faa359e0f97c814ba25155591ff078fbb9bfd40f8c7c9683230",
+  "v3/helpers/util.cjs": "9b75d4955de684d11371054bbf8e4d747cb1ad7284ae1eda85d4c188b84c47fc",
+  "v3/locales/en.cjs": "9f9d945a9e4c920a0790654b6c213839ad90b7414bada0a23c0284d45c8ed840",
+  "v3/types.cjs": "06487cc05ed45c5dd29789bf0aa75734d1ce06592a7f2665ba4ca90a68e8a3e1"
+ }
+}

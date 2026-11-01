@@ -1,0 +1,21 @@
+{
+  "project": "tsconfig.json",
+  "scope": [
+    "later",
+    "gap"
+  ],
+  "equal": {
+    "later": false,
+    "gap": true
+  },
+  "why": "date-fns's addHours of two hours is 7 200 000 ms on the instant: the vendored date-fns meets it (WITNESS against a constant 0; PASS-bounded under LEAN_BREAK=library-fakes). differenceInMinutes and differenceInHours are pure date rows (milliseconds only, the same in every zone: exec/fakes/lib/date-rows.test.mjs): reordered, lane A proves them equal (gap); under LEAN_BREAK=package-rows they are two transitions reordered, unproved",
+  "b": {
+    "later": "WITNESS",
+    "gap": "PASS-bounded"
+  },
+  "break": {
+    "library-fakes": {
+      "later": "PASS-bounded"
+    }
+  }
+}

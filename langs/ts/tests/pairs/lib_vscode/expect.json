@@ -1,0 +1,16 @@
+{
+  "project": "tsconfig.json",
+  "laneBOnly": true,
+  "scope": [
+    "heard"
+  ],
+  "why": "vscode's EventEmitter calls a registered listener with the data fired: the model meets it (WITNESS against a constant 0); the recording proxy calls no listener (PASS-bounded under LEAN_BREAK=library-fakes)",
+  "b": {
+    "heard": "WITNESS"
+  },
+  "break": {
+    "library-fakes": {
+      "heard": "PASS-bounded"
+    }
+  }
+}

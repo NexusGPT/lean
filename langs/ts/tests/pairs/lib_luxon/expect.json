@@ -1,0 +1,16 @@
+{
+  "project": "tsconfig.json",
+  "laneBOnly": true,
+  "scope": [
+    "later"
+  ],
+  "why": "luxon's plus of one minute is 60 000 ms on the instant: the vendored luxon meets it (WITNESS against a constant 0); the recording proxy does not (PASS-bounded under LEAN_BREAK=library-fakes)",
+  "b": {
+    "later": "WITNESS"
+  },
+  "break": {
+    "library-fakes": {
+      "later": "PASS-bounded"
+    }
+  }
+}
