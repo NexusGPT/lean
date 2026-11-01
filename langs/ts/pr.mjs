@@ -40,6 +40,7 @@ import { formatOp } from './patch.mjs';
 import { runPair, setUnitSeconds, UNIT_SECONDS } from './exec/run.mjs';
 import { loadSandboxList, useSandboxList } from './exec/sandbox-list.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
+import { siteKey } from './exec/sites.mjs';
 import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
 const TEST_FILE = /(?:^|[/\\])__tests__(?:[/\\]|$)|\.(?:spec|test)\.[cm]?[jt]sx?$/; // the test modules new-unit.mjs excludes from a unit's own load
 
@@ -199,8 +200,7 @@ const witnessForm = (w) => ({ input: w.input, args: w.args, where: w.where, ...(
 export function siteWitnesses(witnesses) {
   const seen = new Set(), out = [];
   for (const w of witnesses ?? []) {
-    const where = w?.where ?? {}, site = where.lines?.candidate;
-    const key = JSON.stringify([where.field ?? null, where.parent?.op ?? null, where.candidate?.op ?? null, site?.start ?? site?.line ?? null]);
+    const key = siteKey(w?.where);
     if (!seen.has(key)) { seen.add(key); out.push(witnessForm(w)); }
   }
   return process.env.LEAN_BREAK === 'w7a-witnesses' ? out.slice(0, 1) : out;

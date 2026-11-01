@@ -72,7 +72,8 @@ rows, absent }]`.
 
 - Lane B stops after three differing inputs (`exec/run.mjs`, `diffs.length >= 3`). If the first three all reach the
   same statement, a second site is still not found. Raising the cap, or counting distinct sites rather than inputs,
-  would change certificates (their lane B witness list), so this lane left it alone.
+  would change certificates (their lane B witness list), so this lane left it alone. **Closed by lane w8n-all-sites**
+  (design/w8n-all-sites.md): lane B counts sites, not inputs.
 - A nested unit (`covered-by`) takes its enclosing unit's verdict. `--units` keeps exactly the listed names: list
   the enclosing unit too. Otherwise the nested row has no owner to take a verdict from, and its coverage reads
   `skipped:preview`. Listing the enclosing unit alone gives no rows for its nested units.

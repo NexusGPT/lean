@@ -1,0 +1,10 @@
+{
+ "why": "One unit changed at three statements, each reached by its own inputs (design/w8n-all-sites.md): band returns another word for a short s (line 2), a large n (line 3) and a very negative n (line 4). The first three differing inputs complete at lines 3, 4, 3: two sites. Lane B keeps drawing past them and keeps one witness per site, so the row's `witnesses` names all three. LEAN_BREAK=w8n-all-sites stops at the third differing input: two sites, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "band", "verdict": "WITNESS", "sites": 3 }
+  ],
+  "unassigned": false
+ }
+}
