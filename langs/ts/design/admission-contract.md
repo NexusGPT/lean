@@ -980,5 +980,6 @@ first witness it keeps drawing until the input budget (`--n`) is spent, `WITNESS
 `WITNESS_SHARE` (a quarter) of the unit's seconds has passed since the first witness, and it keeps one witness per site
 (`exec/sites.mjs`, the site key w7a's rows use). The certificate's `lanes.B.witnesses` lists those sites in order of
 discovery and `lanes.B.bound.sites` names how many were held, how many inputs differed and why the draws stopped. Past
-the first witness, a harness stop or an error escaping an input ends the draws and leaves the WITNESS
-(design/w8n-all-sites.md).
+the first witness, a harness stop or an error escaping an input ends the draws and leaves the WITNESS. A differing input
+names a site for every field it differs on at another candidate statement (`fieldDifferences`), its first field still
+first (design/w8n-all-sites.md).

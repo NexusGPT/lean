@@ -1595,7 +1595,10 @@ async function runPairOnce(opts) {
       const via = undecided ? null : unloadableOnly(oP, oC, sides); // the sides differ only in requests to a module lean could not load: the inlined or changed call is no difference lean can show
       if (undecided) (diffs.undriven ??= []).push({ input: i, reasons: undecided });
       else if (via) (diffs.unloadable ??= []).push({ input: i, ...via });
-      else if (keepDifference(diffs, { input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) })) { extra.full = true; if (!sawJsx) break; treeDone = true; } // one witness per site (exec/sites.mjs); a rendered unit keeps running for the styles layer
+      else { // one witness per site (exec/sites.mjs), a site for each field this input differs on at its own statement; a rendered unit keeps running for the styles layer
+        const drawn = drawnOf(sides);
+        if (fieldDifferences(oP, oC).some((where, j) => keepDifference(diffs, { input: i, ...drawn, parent: oP, candidate: oC, where }, j > 0))) { extra.full = true; if (!sawJsx) break; treeDone = true; }
+      }
     } else { const u = undrivenOf(oP) ?? undrivenOf(oC); if (u) (diffs.undriven ??= []).push({ input: i, reasons: [u] }); } // equal, with a callback lean could not drive: the gap is carried
   } } catch (e) { if (!extra.past) throw e; extra.error = `${crumb.phase} input ${crumb.input}: ${String(e && e.message).slice(0, 160)}`; }
   // the branch-guided input search (search.mjs, design/w3c-search-inputs.md): the draws agreed and reached the body; a
@@ -1785,8 +1788,8 @@ function siteLines(site) {
   if (!site) return null;
   return { file: site.file, start: site.start, end: site.end, text: site.text ?? '' };
 }
-export function firstDifference(a, b) {
-  const where = differenceField(a, b);
+export function firstDifference(a, b, only = null) {
+  const where = differenceField(a, b, only);
   if (!where) return null;
   const trace = where.field === 'trace';
   let parentSite = trace ? a.trace[where.index]?.site : a.site;
@@ -1804,8 +1807,19 @@ export function firstDifference(a, b) {
   where.lines = { kind, parent: siteLines(parentSite), candidate: siteLines(candidateSite) };
   return where;
 }
-function differenceField(a, b) {
-  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module']) {
+const DIFFERENCE_FIELDS = ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module'];
+// every field two observations differ on, each located as firstDifference locates the first (design/w8n-all-sites.md):
+// the first is firstDifference's; a later field counts when it names another candidate statement than every field
+// before it (a heap or receiver difference at the statement the outcome came from adds no place to look)
+export function fieldDifferences(a, b) {
+  const all = DIFFERENCE_FIELDS.map((k) => firstDifference(a, b, k)).filter(Boolean);
+  if (['w8n-fields', 'w8n-all-sites'].includes(process.env.LEAN_BREAK)) return all.slice(0, 1); // the second restores the earlier rule whole
+  const lineOf = (w) => w.lines?.candidate?.start ?? w.lines?.candidate?.line ?? null, seen = new Set();
+  return all.filter((w, j) => { const l = lineOf(w); if (j === 0) { seen.add(l); return true; } if (l === null || seen.has(l)) return false; seen.add(l); return true; });
+}
+function differenceField(a, b, only = null) {
+  for (const k of DIFFERENCE_FIELDS) {
+    if (only && k !== only) continue;
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
       if (k === 'trace') { let i = 0; while (i < Math.max(a.trace.length, b.trace.length) && JSON.stringify(a.trace[i]) === JSON.stringify(b.trace[i])) i++; return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }

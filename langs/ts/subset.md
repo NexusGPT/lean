@@ -42,7 +42,8 @@ each without its `record`. Two witnesses are one site when they differ on the sa
 operations (`where.parent.op`, `where.candidate.op`) and at the same candidate line (`where.lines.candidate.start`, else
 `.line`). So a change at two statements reached by different inputs has two entries, and `witness` is the first of
 them, its record aside. Lane B keeps drawing past its first witness, to the input budget (`--n`) or until eight
-distinct sites are held, and keeps one witness per site, so a site reached only by a later input is named too
+distinct sites are held, and keeps one witness per site, so a site reached only by a later input is named too.
+An input that differs on several fields at several statements names each of them
 ([design/w8n-all-sites.md](design/w8n-all-sites.md)). `pr.mjs --units path::unit,unit` checks only the listed changed units and their callers; the
 other units get no row ([the design](design/w7a-lean-witnesses.md)).
 

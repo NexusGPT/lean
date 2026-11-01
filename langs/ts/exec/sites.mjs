@@ -11,11 +11,12 @@ export function siteKey(where) {
 }
 
 // a difference lane B found: kept when its site is new; true when the run holds enough and should stop drawing.
-// LEAN_BREAK=w8n-all-sites restores the earlier rule (every differing input kept, stop at the third)
-export function keepDifference(diffs, w) {
+// `sameInput`: a further field of an input already counted (run.mjs fieldDifferences). LEAN_BREAK=w8n-all-sites
+// restores the earlier rule (every differing input kept, stop at the third)
+export function keepDifference(diffs, w, sameInput = false) {
   if (process.env.LEAN_BREAK === 'w8n-all-sites') { diffs.push(w); return diffs.length >= 3; }
   const sites = (diffs.sites ??= new Set()), key = siteKey(w.where);
-  diffs.differing = (diffs.differing ?? 0) + 1;
+  if (!sameInput) diffs.differing = (diffs.differing ?? 0) + 1;
   if (!sites.has(key)) { sites.add(key); diffs.push(w); }
   return diffs.length >= WITNESS_SITES;
 }

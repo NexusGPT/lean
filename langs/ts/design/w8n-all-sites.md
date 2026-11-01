@@ -9,7 +9,7 @@ the first, the second is not named. On the DA-Bench slice, the pull request's ow
 difference lane B meets, and an injected regression elsewhere in the same unit was named only when one of the first
 three differing inputs reached it.
 
-## Mechanism
+## Mechanism 1: sites, not inputs
 
 `exec/sites.mjs`:
 
@@ -37,21 +37,43 @@ per input, which could include repeats of one site. `witness` (the first) is unc
 before is a WITNESS now, with its first witness at the same input. The rule needs no knowledge of the change: it does not
 compare a site with the diff's lines and prefers no site over another.
 
+## Mechanism 2: every field an input differs on
+
+One differing input can differ on several fields (`differenceField` reads, in order, the outcome, the object graph, the
+receiver, the trace, the pending work, the drives and the module). `firstDifference` names the first only. When every
+differing input also differs on an earlier field, a later field is never named, however many inputs are drawn. On the
+slice, a changed request argument at one statement (a trace difference) stayed hidden behind a receiver difference that
+every input showed, located at the statement where the call completed (typescript-go 3834~m1).
+
+`exec/run.mjs fieldDifferences(a, b)` locates every differing field as `firstDifference` locates the first
+(`firstDifference(a, b, field)`). The first is the input's first difference, as before. A later field is kept when it
+names a candidate statement that no field before it named; a field with no candidate line adds no place to look. The
+function loop passes each one to `keepDifference`, so a site is the same site whichever field or input found it, and the
+cap counts them all. The input's first field is still its first witness, so `witness` is unchanged. The module unit's
+loop names one field per input, as before.
+
+`LEAN_BREAK=w8n-fields` names the first field of each input only. `tests/pairs/field_sites` goes red: Counter.save
+writes another count (line 7) before it requests another key (line 8). Every input differs on the object graph first,
+at the statement where the call completed, and line 7 is not named.
+
 The search (`search.mjs`), the class programs, the races and the environment programs run only when the draws found no
 difference. They are unchanged.
 
 A stack-overflow difference has no candidate line when it is kept (its completion lines are added after lane B), so all
 of one unit's stack overflows on one side are one site.
 
-## Break switch
+## Break switches
 
-`LEAN_BREAK=w8n-all-sites` restores the earlier rule: every differing input is kept, the draws stop at the third, and
-there is no `bound.sites`. `tests/pairs/three_sites` goes red (two sites, not three).
+- `LEAN_BREAK=w8n-all-sites` restores the earlier rule whole: one field per input, every differing input kept, the draws
+  stop at the third, and there is no `bound.sites`. `tests/pairs/three_sites` goes red (two sites, not three), and so
+  does `field_sites`;
+- `LEAN_BREAK=w8n-fields` removes mechanism 2 only. `tests/pairs/field_sites` goes red.
 
 ## Validators
 
 - `tests/pairs/three_sites` (`prOnly`): `band` changes at lines 2, 3 and 4. The first three differing inputs complete at
-  lines 3, 4, 3 (two sites). The row's `witnesses` must name three sites. `lane/w8n-all-sites/pairs-break.mjs` runs it
-  and `two_sites` plain and under each break.
+  lines 3, 4, 3 (two sites). The row's `witnesses` must name three sites.
+- `tests/pairs/field_sites` (`prOnly`): the row's `witnesses` name candidate lines 7 and 8 (the harness's `siteLines`
+  form). `lane/w8n-all-sites/pairs-break.mjs` runs the three site pairs plain and under each break.
 - The slice's witnessed mutant units, the ten-pair time ratio and the regression suite:
   `lane/w8n-all-sites-result.md`.
