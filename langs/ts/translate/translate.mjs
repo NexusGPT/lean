@@ -5612,6 +5612,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         const sym = ts.isIdentifier(root) ? checker.getSymbolAtLocation(root) : null;
         const declD = sym && !ownThis ? (letTypeOf(sym) ?? dtype(symType(sym, root), root)) : '';
         if (declD.startsWith('Option<') && !isOptional(typeOf(root)) && !isAny(typeOf(root))) return [rootName, `Some(${leaf(`${dn(rootName)}.value`, null, typeOf(root))})`, root];
+        // a mutating operation on a collection no call is handed, after a call that may reach what it holds (common.mjs
+        // worldForm 'value', unhandedCollection): from the collection as the world holds it now; nothing outside holds it
+        if (ts.isIdentifier(root) && worldAfter?.get(root) === 'value' && !root.__worldNow) { worldUsed.add(root); const now = nowOf(root); pending.push(now.line); gradedStep('read-after-call', root, 'now', ['world', now.name]); return [rootName, leaf(now.t, null, typeOf(root)), root]; }
         return [rootName, leaf(dn(rootName), null, typeOf(root)), root];
       }
       const build = (i, recvCode, recvT) => {

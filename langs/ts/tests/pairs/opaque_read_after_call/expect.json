@@ -8,7 +8,8 @@
   "two_new",
   "written",
   "accumulated",
-  "tally"
+  "tally",
+  "distinct"
  ],
  "equal": {
   "snapshot": true,
@@ -19,10 +20,14 @@
   "written": false,
   "two_new": false,
   "accumulated": false,
-  "tally": true
+  "tally": true,
+  "distinct": true
  },
  "opaque": {
   "snapshot": [
+   "read-after-call"
+  ],
+  "distinct": [
    "read-after-call"
   ]
  },
@@ -58,7 +63,7 @@
    }
   }
  ],
- "why": "A read of a handed object after a call that may change it, in a form other than a field read (design/w1g-opaque-handed.md): from the call on the object is a handle the world holds, so a copy, a spread, a library read, the result read ext_now_<T>(wld, x) and then that value exactly (common.mjs worldForm 'value', translate.mjs handleNow). Before, every unit here was refused read-after-call (the copy, the library read) or, for holder, PASS-proved falsely: the reach test asked only whether the handed value may be or hold the read object, and `g(r.tags); return r.tags.length` read the length before the call (the read goes through r, which holds the handed array). Now the test asks whether some object is reachable from both (common.mjs share, the type closures). (a) snapshot: the copy after the call unchanged, bound to a local or returned inline: proved, the copy listed as an opaque step. (b) shifted: another field of the handle in the copy: not proved, witnessed. (c) planted: a boundary constant of a library read of the handle (3 to 4): not proved, witnessed. (d) moved: the copy moved before the call (a change outside the read): not proved, witnessed; LEAN_BREAK=handle-value reads the handle as it was before the call and proves it (a false proof). (e) holder: the length read moved before the call: not proved (lane B's fake of g writes the plain objects it is handed, not an array's length: PASS-bounded); LEAN_BREAK=reach-closure misses the holder and proves it (the false proof of the base). (f) twoNew: a new object a name holds read after a call that may reach it by type is named by its site (translate.mjs namedSite: ext_now_fresh_<T>(wld, x, k)); before, it was refused (no identity); the candidate reads the other of two new objects of one value: not proved (lane B: PASS-bounded); LEAN_BREAK=fresh-site names them by value and proves it. (g) written: a one-level write to a handle after the call is told to the world (ext_put_<T>(wld, v)); before, the world never saw it and a later call answered as if it had not happened, so the candidate writing another value (bound outside the write) was proved equal: LEAN_BREAK=handle-write restores that false proof. Lane B's fakes do not read the written field back, so written is PASS-bounded there. (h) accumulated: a collection of primitive parts the unit made is sealed while no call is handed it (common.mjs sealedCollection); handed to g it is a handle, and the length read moved before the call is not proved; LEAN_BREAK=sealed-collection seals it whatever its uses and proves it. (i) tally: an accumulator no call is handed, pushed to after a call that may reach a string array by type: exact, proved (before: refused read-after-call, a mutating method on an object a call may reach).",
+ "why": "A read of a handed object after a call that may change it, in a form other than a field read (design/w1g-opaque-handed.md): from the call on the object is a handle the world holds, so a copy, a spread, a library read, the result read ext_now_<T>(wld, x) and then that value exactly (common.mjs worldForm 'value', translate.mjs handleNow). Before, every unit here was refused read-after-call (the copy, the library read) or, for holder, PASS-proved falsely: the reach test asked only whether the handed value may be or hold the read object, and `g(r.tags); return r.tags.length` read the length before the call (the read goes through r, which holds the handed array). Now the test asks whether some object is reachable from both (common.mjs share, the type closures). (a) snapshot: the copy after the call unchanged, bound to a local or returned inline: proved, the copy listed as an opaque step. (b) shifted: another field of the handle in the copy: not proved, witnessed. (c) planted: a boundary constant of a library read of the handle (3 to 4): not proved, witnessed. (d) moved: the copy moved before the call (a change outside the read): not proved, witnessed; LEAN_BREAK=handle-value reads the handle as it was before the call and proves it (a false proof). (e) holder: the length read moved before the call: not proved (lane B's fake of g writes the plain objects it is handed, not an array's length: PASS-bounded); LEAN_BREAK=reach-closure misses the holder and proves it (the false proof of the base). (f) twoNew: a new object a name holds read after a call that may reach it by type is named by its site (translate.mjs namedSite: ext_now_fresh_<T>(wld, x, k)); before, it was refused (no identity); the candidate reads the other of two new objects of one value: not proved (lane B: PASS-bounded); LEAN_BREAK=fresh-site names them by value and proves it. (g) written: a one-level write to a handle after the call is told to the world (ext_put_<T>(wld, v)); before, the world never saw it and a later call answered as if it had not happened, so the candidate writing another value (bound outside the write) was proved equal: LEAN_BREAK=handle-write restores that false proof. Lane B's fakes do not read the written field back, so written is PASS-bounded there. (h) accumulated: a collection of primitive parts the unit made is sealed while no call is handed it (common.mjs sealedCollection); handed to g it is a handle, and the length read moved before the call is not proved; LEAN_BREAK=sealed-collection seals it whatever its uses and proves it. (i) tally: an accumulator no call is handed, pushed to after a call that may reach a string array by type: exact, proved (before: refused read-after-call, a mutating method on an object a call may reach). (j) distinct: a collection the unit made and no call is handed (common.mjs unhandedCollection), changed after a call that may reach what it holds, starts from the collection as the world holds it (ext_now_fresh); renamed in the candidate: proved (before: refused, a mutating method after the call). The handed case stays refused (tests/w1g-opaque-handed.mjs; LEAN_BREAK=unhanded-collection admits it and that check goes red).",
  "b": {
   "snapshot": "PASS-bounded",
   "shifted": "WITNESS",
@@ -68,6 +73,7 @@
   "written": "PASS-bounded",
   "twoNew": "PASS-bounded",
   "accumulated": "PASS-bounded",
-  "tally": "PASS-bounded"
+  "tally": "PASS-bounded",
+  "distinct": "PASS-bounded"
  }
 }

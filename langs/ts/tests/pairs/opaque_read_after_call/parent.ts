@@ -71,3 +71,12 @@ export function tally(names: string[], g: (a: string[]) => void): number {
   out.push("x");
   return out.length;
 }
+
+// (j) a collection the unit made and no call is handed, changed after a call that may reach what it holds: the change
+// starts from the collection as the world holds it; renamed in the candidate, proved
+export function distinct(items: Box[], g: (b: Box[]) => void): number {
+  const seen = new Map<number, Box>();
+  g(items);
+  for (const b of items) seen.set(b.x, b);
+  return seen.size;
+}

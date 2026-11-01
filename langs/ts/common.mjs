@@ -2768,14 +2768,17 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   // to a call that runs outside code. So no call changes it, whatever the types say; its library operations and reads are
   // the value reading's own (sealedCollection; LEAN_BREAK=sealed-collection seals it whatever its uses, a handed one too)
   const COLLECTIONS = new Set(['Map', 'Set', 'Array']);
-  const sealedCollection = (s) => {
+  // a collection the unit made (an array literal, `new Map()`, `new Set()`), whose every use keeps it from the outside
+  // (`anyArgs`: a library operation on it may take objects, which stores them, not it)
+  const unhandedCollection = (s, anyArgs) => {
     const d = declOfSym(s);
     if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !d.initializer || writes(s).length) return false;
     let init = d.initializer; while (ts.isParenthesizedExpression(init) || ts.isAsExpression(init) || ts.isSatisfiesExpression(init)) init = init.expression;
-    const made = ts.isArrayLiteralExpression(init) ? init.elements.every((x) => !ts.isSpreadElement(x) && prim(typeOf(x)))
-      : ts.isNewExpression(init) && ts.isIdentifier(init.expression) && COLLECTIONS.has(init.expression.text) && !checker.getSymbolAtLocation(init.expression)?.declarations?.some((x) => x.getSourceFile() === sf) && (init.arguments ?? []).every((a) => prim(typeOf(a)));
-    if (!made || !primParts(typeOf(d.name))) return false;
-    if (broken('sealed-collection')) return true;
+    const made = ts.isArrayLiteralExpression(init) ? init.elements.every((x) => !ts.isSpreadElement(x) && (anyArgs || prim(typeOf(x))))
+      : ts.isNewExpression(init) && ts.isIdentifier(init.expression) && COLLECTIONS.has(init.expression.text) && !checker.getSymbolAtLocation(init.expression)?.declarations?.some((x) => x.getSourceFile() === sf) && (init.arguments ?? []).every((a) => anyArgs || prim(typeOf(a)));
+    if (!made) return false;
+    if (!anyArgs && !primParts(typeOf(d.name))) return false;
+    if (broken(anyArgs ? 'unhanded-collection' : 'sealed-collection')) return true; // tests/break.mjs: its uses unread, a handed one too
     return uses(s).every((x) => {
       if (madeClosure(x)) return false; // used by a function the unit keeps or hands on: it may run inside a later call
       const { p, x: y } = P(x);
@@ -2786,13 +2789,14 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
       if (ts.isTemplateSpan(p)) return true;
       if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === y) {
         const q = p.parent;
-        if (q && ts.isCallExpression(q) && q.expression === p) return q.arguments.every((a) => prim(typeOf(ts.isSpreadElement(a) ? a.expression : a)) || ts.isArrowFunction(a) || ts.isFunctionExpression(a)); // a library operation on it with primitive arguments, or an inline callback
+        if (q && ts.isCallExpression(q) && q.expression === p) return q.arguments.every((a) => anyArgs || prim(typeOf(ts.isSpreadElement(a) ? a.expression : a)) || ts.isArrowFunction(a) || ts.isFunctionExpression(a)); // a library operation on it with primitive arguments, or an inline callback
         if (q && ts.isBinaryExpression(q) && q.left === p && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) return prim(typeOf(q.right));
         return true;
       }
       return false;
     });
   };
+  const sealedCollection = (s) => unhandedCollection(s, false);
   const promiseLike = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.Undefined | TF.Null | TF.Void)) || ['Promise', 'PromiseLike'].includes(x.symbol?.name ?? '')); // a promise is a handle: its state is read only through then or await, which thread the world
   const objectLike = (t) => !!t && !prim(t) && !primitiveBrand(t) && !promiseLike(t) && !(checker.getSignaturesOfType(t, ts.SignatureKind.Call).length && !isAny(t));
   const kept = (occ) => { // the occurrence hands the object on, names it again or tests what never changes
@@ -2832,7 +2836,13 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     if (ts.isCallExpression(q) && q.expression === y) { // a method called on the path
       if (top === x) return null; // the object called: no read of it
       const m = ts.isPropertyAccessExpression(top) ? top.name.text : null;
-      if (!effect(q) && (!m || MUTATING.has(m))) return null; // x.f.push(v), x.push(v): changes what it reads
+      if (!effect(q) && (!m || MUTATING.has(m))) { // x.f.push(v), x.push(v): changes what it reads
+        // on a collection the unit made and no call is ever handed (unhandedCollection), the outside holds no name of it:
+        // the operation starts from it as the world holds it now (its elements may have changed) and is the value
+        // reading's own; nothing else sees it (design/w1g-opaque-handed.md)
+        const s = field && top === p && m && ts.isIdentifier(x) ? checker.getSymbolAtLocation(x) : null;
+        return s && unhandedCollection(s, true) ? 'value' : null;
+      }
       if (field && top === p) return effect(q) ? null : 'value'; // x.m() running outside code is the receiver handed (kept above); a library read of x reads the handle's value
     }
     if (field) return 'read';
