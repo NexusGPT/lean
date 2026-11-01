@@ -41,6 +41,7 @@ import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText } from './search.mjs';
+import { keepDifference, WITNESS_SITES, WITNESS_SHARE } from './sites.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -1435,6 +1436,18 @@ function moduleDifference(sides, oP, oC) {
   }
   return null;
 }
+// the draws past lane B's first witness (design/w8n-all-sites.md): they look for further sites until the budget of n
+// inputs is spent, WITNESS_SITES sites are held, or WITNESS_SHARE of the unit's seconds has passed since the first
+// witness (the verdict is already WITNESS; the unit's bound must never turn it into a spin-bound ASK)
+function extraDraws(opts) {
+  const ms = WITNESS_SHARE * unitSecondsValue(opts.unitSeconds) * 1000;
+  let first = null, timed = false;
+  return {
+    full: false,
+    over(diffs) { if (!diffs.length || process.env.LEAN_BREAK === 'w8n-all-sites') return false; first ??= Date.now(); this.past = true; if (Date.now() - first > ms) timed = true; return timed; },
+    summary(diffs, n, stopped = null) { if (process.env.LEAN_BREAK === 'w8n-all-sites') return undefined; return { held: diffs.length, differing: diffs.differing ?? diffs.length, cap: WITNESS_SITES, stop: this.full ? `${WITNESS_SITES} sites held` : this.error ? `an error ended the draws (${this.error})` : stopped ? `a harness stop (${stopped})` : timed ? `${WITNESS_SHARE} of the unit's seconds past the first witness` : `the budget of ${n} inputs`, key: 'where.field, the two sides\' operations, the candidate line' }; },
+  };
+}
 // the observation both sides are compared on: a binding counts when both sides declare it
 const comparable = (o, other) => ({ ...o, bindings: Object.fromEntries(Object.entries(o.bindings).filter(([k]) => Object.hasOwn(other.bindings, k))) });
 async function runModuleUnit(opts) {
@@ -1445,18 +1458,18 @@ async function runModuleUnit(opts) {
   setRoots(sideLocations(parent, candidate, roots));
   const sides = { parent: moduleSideOf(parent), candidate: moduleSideOf(candidate) };
   const bound = { n, seed, ms, observation: 'the module\'s evaluation: its outcome, the requests in init order, the work it armed (never fired), its exports by key, the bindings both sides declare', inputs: 'input i seeds the environment (the clock, random); while a module loads the world answers with handles', statements: { parent: sides.parent.statements.length, candidate: sides.candidate.statements.length } };
-  const diffs = [], skipped = [];
+  const diffs = [], skipped = [], extra = extraDraws(opts); let stopped = null;
   for (let i = 0; i < n; i++) {
+    if (extra.over(diffs)) break;
     step('module', i);
     const oP = await observeModule(sides.parent, i, seed, ms, roots.parent), oC = await observeModule(sides.candidate, i, seed, ms, roots.candidate);
     if (oP.harness === 'timeout' && oC.harness === 'timeout') { skipped.push(i); continue; }
-    if (oP.harness || oC.harness) return { verdict: 'ASK', unit, reason: `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`, bound };
+    if (oP.harness || oC.harness) { const reason = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; if (extra.past) { stopped = reason; break; } return { verdict: 'ASK', unit, reason, bound }; } // past the first witness a harness stop ends the draws
     const cP = comparable(oP, oC), cC = comparable(oC, oP);
     if (JSON.stringify(cP) === JSON.stringify(cC)) continue;
-    diffs.push({ input: i, args: [], parent: cP, candidate: cC, where: moduleDifference(sides, oP, oC) });
-    if (diffs.length >= 3) break;
+    if (keepDifference(diffs, { input: i, args: [], parent: cP, candidate: cC, where: moduleDifference(sides, oP, oC) })) { extra.full = true; break; }
   }
-  if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound };
+  if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound: { ...bound, sites: extra.summary(diffs, n, stopped) } };
   if (skipped.length) bound.skipped = { inputs: skipped.length, reason: 'both sides timed out on that input' };
   if (skipped.length >= n) return { verdict: 'ASK', unit, reason: `every input timed out (${skipped.length} of ${n})`, bound };
   return { verdict: 'PASS-bounded', unit, bound };
@@ -1545,7 +1558,9 @@ async function runPairOnce(opts) {
     const { runPrograms } = await import('./programs.mjs'); step('programs');
     try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
-  for (let i = 0; i < n; i++) {
+  const extra = extraDraws(opts);
+  try { for (let i = 0; i < n; i++) { // past the first witness, an error escaping an input ends the draws, never the WITNESS
+    if (!treeDone && extra.over(diffs)) { if (!sawJsx) break; treeDone = true; } // past the first witness the draws look for further sites, within their share of the unit's time
     step('lane B', i); let sides = await mountSides(i);
     if (harnessAsk) break;
     let [oP, oC] = await observeBoth(sides, !treeDone);
@@ -1565,8 +1580,7 @@ async function runPairOnce(opts) {
     if (oP.harness === 'stack overflow' && oC.harness === 'stack overflow') { skipped.push(i); continue; } // both sides exhausted the call stack on this input, with and without the recorder: the input proves nothing
     if ((oP.harness === 'stack overflow' && !oC.harness) || (oC.harness === 'stack overflow' && !oP.harness)) { // one side recursed past the stack where the other returned: the thrown RangeError is that side's outcome (SEMANTICS item 1), observed on the same stack without the recorder
       const side = oP.harness ? 'parent' : 'candidate';
-      diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } });
-      if (diffs.length >= 3) break;
+      if (keepDifference(diffs, { input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } })) { extra.full = true; if (!sawJsx) break; treeDone = true; }
       continue;
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
@@ -1582,9 +1596,12 @@ async function runPairOnce(opts) {
       const via = undecided ? null : unloadableOnly(oP, oC, sides); // the sides differ only in requests to a module lean could not load: the inlined or changed call is no difference lean can show
       if (undecided) (diffs.undriven ??= []).push({ input: i, reasons: undecided });
       else if (via) (diffs.unloadable ??= []).push({ input: i, ...via });
-      else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
+      else { // one witness per site (exec/sites.mjs), a site for each field this input differs on at its own statement; a rendered unit keeps running for the styles layer
+        const drawn = drawnOf(sides);
+        if (fieldDifferences(oP, oC).some((where, j) => keepDifference(diffs, { input: i, ...drawn, parent: oP, candidate: oC, where }, j > 0))) { extra.full = true; if (!sawJsx) break; treeDone = true; }
+      }
     } else { const u = undrivenOf(oP) ?? undrivenOf(oC); if (u) (diffs.undriven ??= []).push({ input: i, reasons: [u] }); } // equal, with a callback lean could not drive: the gap is carried
-  }
+  } } catch (e) { if (!extra.past) throw e; extra.error = `${crumb.phase} input ${crumb.input}: ${String(e && e.message).slice(0, 160)}`; }
   // the branch-guided input search (search.mjs, design/w3c-search-inputs.md): the draws agreed and reached the body; a
   // changed input runs both sides as a draw does, and a difference is a WITNESS only when a second run on fresh
   // environments gives the same two observations
@@ -1619,6 +1636,7 @@ async function runPairOnce(opts) {
   const walkedInto = (i, r) => { if (!r) return; for (const labels of r.walked ?? []) if (!renderRow.sequences.some((x) => x.input === i && JSON.stringify(x.labels) === JSON.stringify(labels))) renderRow.sequences.push({ input: i, labels }); addTargets(renderRow.targets, r.targets ?? []); };
   const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (searchSummary) bound.search = searchSummary;
+  if (diffs.length) bound.sites = extra.summary(diffs, n, harnessAsk);
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
@@ -1771,8 +1789,8 @@ function siteLines(site) {
   if (!site) return null;
   return { file: site.file, start: site.start, end: site.end, text: site.text ?? '' };
 }
-export function firstDifference(a, b) {
-  const where = differenceField(a, b);
+export function firstDifference(a, b, only = null) {
+  const where = differenceField(a, b, only);
   if (!where) return null;
   const trace = where.field === 'trace';
   let parentSite = trace ? a.trace[where.index]?.site : a.site;
@@ -1790,8 +1808,19 @@ export function firstDifference(a, b) {
   where.lines = { kind, parent: siteLines(parentSite), candidate: siteLines(candidateSite) };
   return where;
 }
-function differenceField(a, b) {
-  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module']) {
+const DIFFERENCE_FIELDS = ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module'];
+// every field two observations differ on, each located as firstDifference locates the first (design/w8n-all-sites.md):
+// the first is firstDifference's; a later field counts when it names another candidate statement than every field
+// before it (a heap or receiver difference at the statement the outcome came from adds no place to look)
+export function fieldDifferences(a, b) {
+  const all = DIFFERENCE_FIELDS.map((k) => firstDifference(a, b, k)).filter(Boolean);
+  if (['w8n-fields', 'w8n-all-sites'].includes(process.env.LEAN_BREAK)) return all.slice(0, 1); // the second restores the earlier rule whole
+  const lineOf = (w) => w.lines?.candidate?.start ?? w.lines?.candidate?.line ?? null, seen = new Set();
+  return all.filter((w, j) => { const l = lineOf(w); if (j === 0) { seen.add(l); return true; } if (l === null || seen.has(l)) return false; seen.add(l); return true; });
+}
+function differenceField(a, b, only = null) {
+  for (const k of DIFFERENCE_FIELDS) {
+    if (only && k !== only) continue;
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
       if (k === 'trace') { let i = 0; while (i < Math.max(a.trace.length, b.trace.length) && JSON.stringify(a.trace[i]) === JSON.stringify(b.trace[i])) i++; return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }

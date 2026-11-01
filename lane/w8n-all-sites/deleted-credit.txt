@@ -1,0 +1,10 @@
+google-gemini__gemini-cli#26534~m1 deletes this.orchestrator.setNodeProvider(() => this.buffer.nodes);: named on the parent side
+microsoft__typescript-go#3834~m1 deletes this.outputChannel.appendLine(`Resolved to ${this.exe.path}`);: not named
+mrdoob__three.js#34688~m1 deletes await super.dispose();: not named
+sveltejs__svelte#18661~m3 deletes context.state.init.push(b.stmt(update));: not named
+before: deletion mutants 4, the deleted statement named on a witness's parent side 1
+google-gemini__gemini-cli#26534~m1 deletes this.orchestrator.setNodeProvider(() => this.buffer.nodes);: named on the parent side
+microsoft__typescript-go#3834~m1 deletes this.outputChannel.appendLine(`Resolved to ${this.exe.path}`);: named on the parent side
+mrdoob__three.js#34688~m1 deletes await super.dispose();: not named
+sveltejs__svelte#18661~m3 deletes context.state.init.push(b.stmt(update));: not named
+after: deletion mutants 4, the deleted statement named on a witness's parent side 2
