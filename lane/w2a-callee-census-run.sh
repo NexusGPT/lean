@@ -13,6 +13,8 @@ UNDER=/root/census-installs/w2a
 mkdir -p "$OUT" "$UNDER"
 one() {
   local src="$1" name; name="$(basename "$src")"
+  # a root already read (its log's last line `exit 0`) is not read again: a stopped run is resumed
+  if [ -f "$OUT/$name.log" ] && [ "$(tail -1 "$OUT/$name.log")" = "exit 0" ]; then echo "$(date -u +%FT%TZ) $name kept" >> "$OUT/run.log"; return; fi
   while :; do
     local load; load="$(cut -d' ' -f1 /proc/loadavg)"
     local free; free="$(df --output=avail -BG / | tail -1 | tr -dc 0-9)"
