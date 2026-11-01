@@ -592,6 +592,7 @@ function translateOnce(file, fnName, opts = {}) {
   }
   const opaqueSwitch = (s) => { const t = checker.getTypeAtLocation(s.expression); return (t.flags & TF.Union ? t.types : [t]).some((p) => !(p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined | TF.Never))); };
   const asyncOpaqueAt = (x) => !!expressionSites.size && !!x && typeof x.getStart === 'function' && x.pos >= 0 && !ts.isStatement(x) && x.kind !== K.SourceFile && expressionSites.has(`${x.getStart(sf)}:${x.getEnd()}`); // a synthetic node (a loop the translator builds) is no site
+  const stepWritesMemo = new Map(); const stepWritesOf = (n) => { if (!stepWritesMemo.has(n)) stepWritesMemo.set(n, stepWrites(checker, n, currentUnit.node).writes ?? []); return stepWritesMemo.get(n); }; // one decision per step, read by its emission and by the constructs around it
   const isOpaqueStmt = (x) => (ts.isForOfStatement(x) && x.awaitModifier && !steppedAsyncLoop(x, checker)) || (ts.isSwitchStatement(x) && opaqueSwitch(x)) || (ts.isTryStatement(x) && !exactTry(x)) || ((ts.isWhileStatement(x) || ts.isDoStatement(x) || emptyFor(x) || generalFor(x)) && (!hintsOf(sf, x).decreases && !derivedBound(x)));
   // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
   // in order. The callback takes one plain parameter and returns nothing (a `return` inside it would end one step).
@@ -5321,6 +5322,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if (callee) for (const m of mutatedOf(callee)) { let a = (via ? via.args : x.arguments)[callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m)]; while (a && ts.isParenthesizedExpression(a)) a = a.expression; if (a && (ts.isIdentifier(a) || a.kind === K.ThisKeyword)) note(a); }
       }
       { const pc = procCall(x); if (pc && !seenProcs.has(pc)) { seenProcs.add(pc); walk(pc.fn.body); } } // stage 5 rank 21: a call splices the body here
+      if (asyncOpaqueAt(x) && currentUnit && !broken('async-drop-carry')) for (const d of stepWritesOf(x)) note(d.name); // an opaque step's writes (opaque-async.mjs stepWrites): a branch or a loop around it carries them out
       ts.forEachChild(x, walk);
     };
     const seenProcs = new Set();
@@ -6348,7 +6350,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const typed = (v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) });
     let reads = freeVars(n, null).map(typed);
     if (broken('async-drop-reads')) reads = reads.filter((v) => !ts.isVariableDeclaration(v.sym?.valueDeclaration ?? {})); // the --break: the step no longer reads the unit's locals
-    const sw = stepWrites(checker, n, currentUnit.node);
+    const sw = stepWrites(checker, n, currentUnit.node); stepWritesMemo.set(n, sw.writes ?? []);
     if (sw.why) fail(n, `opaque: the ${site.rule} step's writes cannot be named: ${sw.why}`); // the lint refused that site already (asyncOpaqueSite); the translator's own guard
     const writes = sw.writes.map((d) => typed({ name: d.name.text, sym: checker.getSymbolAtLocation(d.name), node: d.name }));
     const cells = new Set();

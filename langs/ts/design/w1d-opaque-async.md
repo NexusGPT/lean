@@ -66,7 +66,12 @@ captured mutable binding the lint names.
   closure): every reference binding of the unit the construct mentions (the step may change
   what it names: it hands it to a call, a callback writes through an element), closed under sharing in both directions:
   a binding shares with every binding its values mention (`const t = user.tags` shares with `user`; `const u = user`
-  shares with `user`), so the name an alias came from and every other name for it are written. Parameters are two by
+  shares with `user`), so the name an alias came from and every other name for it are written. A binding the
+  construct rebinds itself (`load(svc, k++)`, an assignment in an argument), of any type, is written too.
+- carried: the names a step writes leave every construct around it that the translator reads as a value with its
+  own outputs (an `if`'s arms, a loop's state, an opaque loop block): `assignedOutside`, which already carries the
+  arguments a same-file call rebinds, carries a step's writes. Without it a step inside a branch would change `user`
+  inside the arm only, and a read after the `if` would see the value before the step. Parameters are two by
   two distinct trees (the value reading's axiom) and a call's result is fresh, so nothing else shares. A value that
   shares with `this` cannot be named: the site is refused. Primitive locals are never changed by a call; a rebinding of
   one inside the construct is in a nested function, which pendingWork refuses.
@@ -146,7 +151,8 @@ counting, nested callbacks included (stricter: a large async callback inside a s
 
 Every break is a pair's own `break` row (tests/break.mjs, run by tests/run.mjs): the per-rule pairs' `upstream` unit
 under `async-drop-reads` (a local the step reads, changed before the step: a change outside the construct), the
-`opaque_async_origin` units under `async-drop-origins`, `opaque_async_callee`'s run under `async-drop-callees`; each must
+`opaque_async_origin` units count, share and bump under `async-drop-origins` and its branch unit under
+`async-drop-carry`, `opaque_async_callee`'s run under `async-drop-callees`; each must
 prove under the break (a false PASS-proved) and not without it. `opaque_capture` is lane B's (its site is refused, so it
 has no lemma): the driver runs its check row under `async-drop-pending` and asserts it fails.
 

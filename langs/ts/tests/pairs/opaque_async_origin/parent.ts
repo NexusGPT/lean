@@ -5,7 +5,9 @@
 // length before the step: equal only if the step changes nothing, so neither may be PASS-proved. With
 // LEAN_BREAK=async-drop-origins the writes are the references the step mentions alone and both prove (falsely).
 // bump: the step rebinds `k` itself (`k++` in its argument); the parent returns k after it, the candidate the value
-// before it; under the break k is not written and bump proves (falsely).
+// before it; under the break k is not written and bump proves (falsely). branch: the step sits in an if; the names it
+// writes leave the branch with it, so user after the if is the value after the step; under LEAN_BREAK=async-drop-carry
+// the branch drops them and branch proves (falsely).
 export interface Store { tag(xs: number[], k: number): Promise<void>; }
 export async function fill(st: Store, xs: number[], k: number): Promise<void> {
   await st.tag(xs, k);
@@ -25,4 +27,10 @@ export function bump(st: Store, user: { tags: number[] }, n: number): number {
   const j = n;
   fill(st, user.tags, k++);
   return k;
+}
+export function branch(st: Store, user: { tags: number[] }, k: number): number {
+  if (k > 0) {
+    fill(st, user.tags, k);
+  }
+  return user.tags.length;
 }
