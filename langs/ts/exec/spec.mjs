@@ -106,6 +106,15 @@ export function specOf(file, unitName, opts = {}) {
     const name = own && decl ? checker.getExportsOfModule(own).find((e) => (e.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(e) : e) === decl)?.name : null;
     return name ? { kind: 'symbol', unique: name } : { kind: 'opaque' };
   }
+  // the package that declares a type: the name of the ambient module around its declaration (`declare module 'x'`),
+  // else the package folder of its file under node_modules (`@types/` dropped: the types of package x are x's); null
+  // for a type of the project's own files
+  function declaringModule(t) {
+    const d = (t.aliasSymbol ?? t.symbol)?.declarations?.[0]; if (!d) return null;
+    for (let p = d.parent; p; p = p.parent) if (ts.isModuleDeclaration(p) && ts.isStringLiteral(p.name)) return p.name.text;
+    const m = d.getSourceFile().fileName.match(/\/node_modules\/((?:@[^/]+\/)?[^/]+)\/(?!.*\/node_modules\/)/);
+    return m ? m[1].replace(/^@types\//, '') : null;
+  }
   function recordSpec(t, depth) {
     const key = checker.typeToString(t);
     if (seen.has(key)) return { kind: 'ref', key }; // a recursive shape: the generator unfolds it to a bounded depth
@@ -118,6 +127,7 @@ export function specOf(file, unitName, opts = {}) {
       // a service: a handle whose members are typed, so a call of one of its methods answers a value of the declared
       // return type (an empty list, a record, null) and not a bare handle; the handle itself stays a fake
       const o = { kind: 'service', name: key.slice(0, 40), members: {} };
+      { const lib = declaringModule(t); if (lib) { o.module = lib; o.symbolName = (t.aliasSymbol ?? t.symbol).name; } } // a library's own type: a model of it may answer (exec/fakes/lib, design/w2d-library-rows.md)
       seen.set(key, o); defs[key] = o;
       // a thenable (a query builder that is awaited): what `await` yields is the argument of its `then` callback
       const thenP = props.find((x) => x.name === 'then');

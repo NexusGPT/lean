@@ -10,8 +10,9 @@
 //             the world is recorded on the trace as the recording proxy records it, and the model adds the value flow
 //             (a response's status, a chained `res`, a choice among the items a prompt offered).
 // `libraryFake(env, specifier)` is the module, or null: null keeps the recording proxy (env.fake(`module:<spec>`)). A
-// member a model does not model is the recording proxy's member, recorded as before. LEAN_LIBRARY_FAKES=0 turns every
-// library fake off (the measurement without them, and each test's --break).
+// member a model does not model is the recording proxy's member, recorded as before. LEAN_LIBRARY_FAKES=0, or the
+// one --break convention LEAN_BREAK=library-fakes (amendment A6), turns every library fake off (the measurement
+// without them, and each test's --break).
 import { requireVendored, manifestOf } from './load.mjs';
 import { lodashFor } from './lodash.mjs';
 import { uuidModule } from './uuid.mjs';
@@ -19,7 +20,7 @@ import { axiosModule } from './axios.mjs';
 import { expressModule, expressTypeFake } from './express.mjs';
 import { vscodeModule } from './vscode.mjs';
 
-export const libraryFakesOn = () => process.env.LEAN_LIBRARY_FAKES !== '0';
+export const libraryFakesOn = () => process.env.LEAN_LIBRARY_FAKES !== '0' && !(process.env.LEAN_BREAK ?? '').split(',').includes('library-fakes');
 const esModule = (members, dflt) => new Proxy(members, { get: (t, p) => (p === '__esModule' ? true : p === 'default' ? dflt : Reflect.get(t, p)) });
 const lodashMember = (env, name) => { const _ = lodashFor(env); return typeof _[name] === 'function' ? _[name] : null; };
 // `lodash.isequal` (a per-method package) names its member in lower case

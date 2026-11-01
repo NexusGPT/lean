@@ -1,6 +1,9 @@
 // The library rows of stage 5 (design/library-rows.md): built-ins the ordinary lane reads from the rows of
 // translate/library.json whose `lane` is `ordinary`. The lint and the translator share these predicates, so the lint
 // admits exactly the calls the translator reads.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ts, isArrayLike } from './common.mjs';
 
 // in-place rows used as values: the removed element or run is the value, and the receiver changes
@@ -230,4 +233,86 @@ export function writesThroughIncomplete(checker, fn) {
   walk(fn);
   writesIncompleteCache.set(fn, found);
   return found;
+}
+
+// ----- package rows (translate/library.json `packages`, design/w2d-library-rows.md) -----
+// The exports of ecosystem libraries lane A reads by the table: a call whose callee is an export the table lists under
+// `pure` is a function of its arguments, without the world, when nothing the unit holds can change through it or be
+// shared with it. `packageCall` names the package and the export a call reaches (a named import, a default import of
+// an export's own specifier such as `lodash/get`, or a member of the package's default or namespace import such as
+// `_.uniq`); `pureLibraryCall` adds the conditions under which the pure reading holds; any other call keeps the
+// outside call's reading, a transition.
+const PACKAGES = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'translate/library.json'), 'utf8')).packages ?? [];
+const shapeOf = (row, name) => { for (const [shape, names] of Object.entries(row.pure ?? {})) if (names.includes(name)) return shape; return null; };
+const exportsOf = (row) => [...Object.values(row.pure ?? {}), ...Object.values(row.transition ?? {})].flat();
+// the package row an import specifier reaches, and the export it names when the specifier is an export's own
+// (`lodash/get`, `lodash.get`); `whole` when the specifier is the package's
+export function packageOfSpecifier(spec) {
+  for (const row of PACKAGES) for (const pat of row.specifiers) {
+    if (pat === spec) return { row, whole: true };
+    const sub = pat.match(/^(.*?)<export>$/);
+    if (sub && spec.startsWith(sub[1]) && spec.length > sub[1].length) { const name = spec.slice(sub[1].length); if (exportsOf(row).includes(name)) return { row, export: name }; }
+    const lower = pat.match(/^(.*?)<export in lower case>$/);
+    if (lower && spec.startsWith(lower[1])) { const name = exportsOf(row).find((x) => x.toLowerCase() === spec.slice(lower[1].length)); if (name) return { row, export: name }; }
+  }
+  return null;
+}
+const importOf = (d) => { let p = d; while (p && !ts.isImportDeclaration(p)) p = p.parent; return p && ts.isStringLiteral(p.moduleSpecifier) ? p.moduleSpecifier.text : null; };
+// { row, export, shape } for a call of a listed package's export (shape null: a transition row or an export not listed)
+export function packageCall(checker, n) {
+  if (!ts.isCallExpression(n) || n.questionDotToken) return null;
+  const f = strip(n.expression);
+  const declOf = (id) => checker.getSymbolAtLocation(id)?.declarations?.[0] ?? null;
+  if (ts.isIdentifier(f)) {
+    const d = declOf(f); if (!d) return null;
+    const spec = importOf(d); if (!spec) return null;
+    const pkg = packageOfSpecifier(spec); if (!pkg) return null;
+    const name = ts.isImportSpecifier(d) && pkg.whole ? (d.propertyName ?? d.name).text : ts.isImportClause(d) && pkg.export ? pkg.export : null; // `{ uniq } from 'lodash'`, or `get from 'lodash/get'`
+    return name ? { row: pkg.row, export: name, shape: shapeOf(pkg.row, name) } : null;
+  }
+  if (ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && !f.questionDotToken) {
+    const d = declOf(f.expression); if (!d || !(ts.isImportClause(d) || ts.isNamespaceImport(d))) return null; // `_` of `import _ from 'lodash'` or `import * as _ from 'lodash'`
+    const spec = importOf(d); const pkg = spec ? packageOfSpecifier(spec) : null; if (!pkg?.whole) return null;
+    return { row: pkg.row, export: f.name.text, shape: shapeOf(pkg.row, f.name.text) };
+  }
+  return null;
+}
+// a type whose values are primitives only: no object a result could share with an argument
+function primitiveOnly(t) {
+  const F = ts.TypeFlags;
+  const parts = t.flags & F.Union ? t.types : [t];
+  return parts.length > 0 && parts.every((x) => !!(x.flags & (F.StringLike | F.NumberLike | F.BigIntLike | F.BooleanLike | F.EnumLike | F.Null | F.Undefined | F.Void)));
+}
+// the leaves of a result below its new containers: `levels` 'all' peels every array, tuple and dictionary (fresh-array:
+// each container new, the elements the arguments' own), 'one' peels one array, tuple, dictionary or record (fresh-record)
+function leavesPrimitive(checker, t, levels) {
+  const F = ts.TypeFlags;
+  if (t.flags & F.Union) return t.types.every((x) => leavesPrimitive(checker, x, levels));
+  if (primitiveOnly(t)) return true;
+  if (!(t.flags & F.Object) || checker.getSignaturesOfType(t, ts.SignatureKind.Call).length) return false;
+  const next = levels === 'all' ? 'all' : 'none';
+  if (checker.isArrayType(t) || checker.isTupleType(t)) return levels !== 'none' && checker.getTypeArguments(t).every((x) => leavesPrimitive(checker, x, next));
+  const props = checker.getPropertiesOfType(t), ix = checker.getIndexInfoOfType(t, ts.IndexKind.String);
+  if (!props.length && ix) return levels !== 'none' && leavesPrimitive(checker, ix.type, next);
+  if (levels === 'one' && props.length && !ix) return props.every((p) => leavesPrimitive(checker, checker.getTypeOfSymbol(p), 'none'));
+  return false;
+}
+// the pure reading of a package call holds: the row lists it under `pure`; every function argument is an arrow literal
+// (the translator reads it as a lambda and refuses one with an effect, so the callback the package calls makes no
+// transition); and the result cannot share an object the unit holds, by the row's shape and the result's type
+// LEAN_BREAK=package-rows (amendment A6) removes the mechanism: every package call keeps the outside call's reading
+export function pureLibraryCall(checker, n) {
+  if ((process.env.LEAN_BREAK ?? '').split(',').includes('package-rows')) return null;
+  const call = packageCall(checker, n);
+  if (!call?.shape) return null;
+  for (const a of n.arguments) {
+    if (ts.isSpreadElement(a)) return null;
+    if (ts.isArrowFunction(strip(a))) continue;
+    const t = checker.getTypeAtLocation(a);
+    if (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown) || checker.getSignaturesOfType(checker.getNonNullableType(t), ts.SignatureKind.Call).length) return null; // a function value the package may call: its effects are its own
+  }
+  const rt = checker.getTypeAtLocation(n);
+  if (rt.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return null;
+  const ok = call.shape === 'deep-fresh' ? true : call.shape === 'fresh-array' ? leavesPrimitive(checker, rt, 'all') : call.shape === 'fresh-record' ? leavesPrimitive(checker, rt, 'one') : primitiveOnly(rt);
+  return ok ? call : null;
 }

@@ -58,7 +58,7 @@ import { cellWrite, captureKind, heldFunction } from '../react.mjs'; import { me
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
-import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText, pureLibraryCall } from '../library-rows.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -393,6 +393,18 @@ function translateOnce(file, fnName, opts = {}) {
   const PURE_RECEIVERS = new Set(['Math', 'JSON', 'String', 'Number', 'Boolean', 'Buffer', 'Array', 'BigInt', 'Symbol', 'Object']); // Object.keys/values/entries/assign/fromEntries: pure functions of their arguments (the lint refuses the prototype ones)
   const PURE_CTORS = new Set(['Set', 'Map', 'RegExp', 'Error', 'TypeError', 'RangeError', 'Date', 'URL', 'Uint8Array', 'Array']);
   const localEffectScan = new Set();
+  // an arrow handed to a pure package call (library-rows.mjs pureLibraryCall) that the package may run: it makes no
+  // transition, cannot throw (no throw or try inside, no call of a unit that throws), is not async and writes no cell;
+  // any other callback keeps the call an outside transition, whose throw and effects are the transition's
+  function quietCallback(a) {
+    while (ts.isParenthesizedExpression(a) || ts.isAsExpression(a)) a = a.expression;
+    if (!ts.isArrowFunction(a)) return true;
+    if (a.modifiers?.some((m) => m.kind === K.AsyncKeyword) || containsEffect(a.body) || cellWriter(a)) return false;
+    let loud = false;
+    const w = (x) => { if (loud) return; if (ts.isThrowStatement(x) || ts.isTryStatement(x) || ts.isAwaitExpression(x)) { loud = true; return; } if (ts.isCallExpression(x) || ts.isNewExpression(x)) { const c = x.expression; const name = ts.isIdentifier(c) ? c.text : ts.isPropertyAccessExpression(c) ? c.name.text : null; if (name && [...exceptionUnits].some((u) => u === name || u.endsWith(`.${name}`))) { loud = true; return; } } ts.forEachChild(x, w); };
+    w(a.body);
+    return !loud;
+  }
   function isEffectCall(n) {
     if (faithfulOp(n)) return false; // an uninterpreted number operation (translate/faithful.mjs): the operator it stands for, no transition
     if (n.__namedStep) return true; // one step of a named callback loop calls a function that makes a transition
@@ -408,6 +420,7 @@ function translateOnce(file, fnName, opts = {}) {
     if (ts.isTaggedTemplateExpression(n) && rawTag(checker, n, sf)) return false; // String.raw: its raw parts and ToString of its holes
     if (!ts.isCallExpression(n) && !ts.isTaggedTemplateExpression(n)) return false;
     if (ts.isCallExpression(n) && exactReactHook(checker, n)) return false;
+    if (ts.isCallExpression(n) && pureLibraryCall(checker, n) && n.arguments.every(quietCallback)) return false; // a package export the library table reads as a function of its arguments (library.json `packages`, design/w2d-library-rows.md)
     const f = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression; // a tagged template is the call of its tag (common.mjs templateRaws)
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);
