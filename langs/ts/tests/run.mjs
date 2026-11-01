@@ -716,6 +716,9 @@ async function adviceLabels(add) {
     ['no-silent-exit-importers', scriptRow('runtime', 'no-silent-exit-importers', 'exit 1 outside a unit run; late error recorded inside; pr.mjs lean unknown', [path.join(here, 'no-silent-exit-importers.mjs')], lastLine)],
     ['lowering-cache', scriptRow('runtime', 'lowering-cache', 'shared file analyses and content/source-keyed lowering', [path.join(here, 'lowering-cache.mjs')], (r) => (r.stdout + r.stderr).trim())],
     // the admission contract: a reading withdrawn by name is refused alike by the lint, the translator and the record, and proves nothing (design/admission-contract.md)
+    // each w1e pair run with its mechanism switched off (LEAN_BREAK) goes red: an admitting mechanism leaves a proved row
+    // unproved, a keying mechanism lets a change outside the construct be proved falsely (design/w1e-opaque-this-globals.md)
+    ['w1e-breaks', scriptRow('runtime', 'w1e-breaks', 'every w1e pair goes red with each of its mechanisms switched off', [path.join(here, 'w1e-opaque-this-globals.mjs'), '--break'], lastLine)],
     ['withdrawal', scriptRow('runtime', 'withdrawal', 'a withdrawn reading refused identically; no proof; every decision site catalogued', [path.join(here, 'withdrawal.mjs')], lastLine)],
     ['translator-crashes', scriptRow('runtime', 'translator-crashes', 'node shapes read without translator crashes', [path.join(here, 'translator-crashes.mjs')], (r) => `exit ${r.status}: ${r.stdout.trim()}`, { echoStderr: true })],
     // a module literal's member is named by the path code reaches it by; a same-named class keeps its own units (design/exported-units.md)

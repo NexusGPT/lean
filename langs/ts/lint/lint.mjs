@@ -61,6 +61,7 @@ const unparenX = (x) => { while (ts.isParenthesizedExpression(x)) x = x.expressi
 // LEAN_BREAK=<mechanism,...> switches a named mechanism off, for the test that shows its pair goes red without it
 // (tests/w1e-opaque-this-globals.mjs --break); unset, every mechanism holds
 const breaks = new Set(String(process.env.LEAN_BREAK ?? '').split(',').map((x) => x.trim()).filter(Boolean));
+export const mechanismOff = (name) => breaks.has(name); // the one reader of LEAN_BREAK the translator shares
 const EFFECT_GLOBALS = {
   eval: 'dynamic-eval', Function: 'dynamic-eval', Reflect: 'prototype', Proxy: 'prototype',
 };

@@ -36,6 +36,10 @@ export function producerHash(root, kind = 'all') {
   const tsLib = path.join(ts, 'vendor/typescript/lib/typescript.js'); if (fs.existsSync(tsLib)) files.push(tsLib);
   const h = createHash('sha256');
   for (const f of [...new Set(files)].sort()) if (fs.existsSync(f)) h.update(path.relative(root, f)).update('\0').update(fs.readFileSync(f)).update('\0');
+  // the switches that turn a producer's mechanism off are part of the producer: LEAN_BREAK (a --break run, the
+  // mechanism skipped) and LEAN_WITHDRAW (a reading withdrawn by name) change what the same sources answer, so a result
+  // stored without them is never replayed under them, nor the other way round
+  h.update(`LEAN_BREAK=${process.env.LEAN_BREAK ?? ''}\0LEAN_WITHDRAW=${process.env.LEAN_WITHDRAW ?? ''}\0`);
   const digest = h.digest('hex'); producers.set(kind, digest); return digest;
 }
 // which sources a command depends on, read off the command line

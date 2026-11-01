@@ -9,16 +9,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+// each pair with the mechanisms it rests on: the one that admits its units (a proved row goes red without it) and, where
+// the pair has a soundness row (a change outside the construct that flows into it), the one that keeps that change in
+// the theorem (the row is then proved falsely, which the pair's expect.json refuses)
 const PAIRS = {
-  opaque_this: 'lexical-this',
-  opaque_global_read: 'unresolved-global',
-  opaque_ts_strict: 'incomplete-member',
-  opaque_toplevel_effect: 'effectful-cell',
+  opaque_this: ['lexical-this', 'held-key'],
+  opaque_global_read: ['unresolved-global'],
+  opaque_ts_strict: ['incomplete-member'],
+  opaque_toplevel_effect: ['effectful-cell', 'cell-key'],
 };
 const brk = process.argv.includes('--break');
 const only = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 let bad = 0;
-for (const [pair, mechanism] of Object.entries(PAIRS)) {
+for (const [pair, mechanisms] of Object.entries(PAIRS)) for (const mechanism of brk ? mechanisms : [null]) {
   if (only.length && !only.includes(pair)) continue;
   const env = { ...process.env, ...(brk ? { LEAN_BREAK: mechanism } : {}) };
   delete env.LEAN_PAIRS;

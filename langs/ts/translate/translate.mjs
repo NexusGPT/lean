@@ -47,7 +47,7 @@ import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or f
 import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
 import { syncLoopCall, voidReturn } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
-import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
+import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot, mechanismOff } from '../lint/lint.mjs';
 import { optionalCallShape } from '../lower.mjs';
 import { admitUnits, measureLowering } from '../lower.mjs'; // the gate: the lowering's admission of the units (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
@@ -808,6 +808,9 @@ function translateOnce(file, fnName, opts = {}) {
     const decl = moduleState(checker, n, sf);
     addPrelude('World', 'type World');
     const tag = hash(reachOf.keyText(decl.parent.parent)); // the declaration and the code its initializer reaches (design/reach-keys.md): `const CFG = make(1)` is another cell when `make` changes
+    // LEAN_BREAK=cell-key drops the declaration from the cell's name (tests/w1e-opaque-this-globals.mjs --break: a unit
+    // reading a cell whose initializer changed, its own text unchanged, must then be proved falsely)
+    if (mechanismOff('cell-key')) return external(`Module_file_${kind}_${n.text}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
     return external(`Module_file_${kind}_${n.text}_${tag}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
   }
   function globalRead(n) {
@@ -1549,7 +1552,9 @@ function translateOnce(file, fnName, opts = {}) {
   function heldKey(t) {
     if (isOptional(t)) t = baseOf(t);
     const cs = [...classDecls.values()].filter((c) => { try { return checker.isTypeAssignableTo(checker.getTypeAtLocation(c.name), t); } catch { return false; } });
-    return cs.length ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
+    // LEAN_BREAK=held-key drops the classes' code from the request's name (tests/w1e-opaque-this-globals.mjs --break: a
+    // callback whose text is unchanged, calling a method changed only at one input, must then be proved falsely)
+    return cs.length && !mechanismOff('held-key') ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
   }
   function instanceDecision(t, target, n, made = false) {
     if (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined)) return 'false';
