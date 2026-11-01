@@ -1,0 +1,6 @@
+{
+ "scope": ["snapshot", "shifted", "planted", "moved", "holder"],
+ "equal": { "snapshot": true, "shifted": false, "planted": false, "moved": false, "holder": false },
+ "why": "draft",
+ "b": { "snapshot": "PASS-bounded", "shifted": "WITNESS", "planted": "WITNESS", "moved": "WITNESS", "holder": "WITNESS" }
+}

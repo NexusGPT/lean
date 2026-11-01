@@ -1,0 +1,6 @@
+{
+ "scope": ["report", "swapped", "planted", "shared"],
+ "equal": { "report": true, "swapped": false, "planted": false, "shared": false },
+ "why": "draft",
+ "b": { "report": "PASS-bounded", "swapped": "WITNESS", "planted": "WITNESS", "shared": "WITNESS" }
+}

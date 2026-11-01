@@ -73,7 +73,7 @@ import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../c
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { sealedMember } from '../common.mjs';
 import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the heap core // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
-import { typeAssertion, assertionHeld, erasedReferenceSlot, readAfterCall, heldRecord, heldField, heldCall, withHeldParams } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint; the read-after-call decision shared with the lint
+import { typeAssertion, outsideSlot, assertionHeld, erasedReferenceSlot, readAfterCall, heldRecord, heldField, heldCall, withHeldParams } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint; the read-after-call decision shared with the lint
 const PROMISE_COMBINATORS = new Set(['Promise.resolve', 'Promise.reject', 'Promise.all', 'Promise.allSettled', 'Promise.race', 'Promise.any']), EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect']); // read-after-call: calls that run no outside code while the unit runs, and hooks whose callback runs after the render // a value whose type nothing checked: read with its real type, one test with the lint
 import { callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList, formatUnitList } from '../common.mjs'; // a callback unit's captured inputs and its contextual types; a finding's unit; the one unit-list parser and its inverse
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
@@ -1934,13 +1934,63 @@ function translateOnce(file, fnName, opts = {}) {
     if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => !ts.isSpreadElement(x) && !ts.isOmittedExpression(x) && part(x));
     return false;
   };
+  // A new object holding objects the caller already holds (design/w1g-opaque-handed.md, 2026-11-01): `g({ data: r.data,
+  // at: new Date(), tags: [] })`. Every part is set once at a key the text fixes (no spread, no computed or repeated
+  // key, no hole), so the handed value holds each part's value at its own path. A part is a leaf (a primitive, a
+  // function, an any value, a promise: no identity of its own or its own handle), an existing object (identityOf: a
+  // parameter, a member read, an outside answer, `this`, an alias of one), named by its value as when it is handed alone,
+  // or a new object written in place (a literal, read part by part; `new`, or a call that makes a new object, kept whole
+  // by its text), which no other name holds. The skeleton is the literal's text with each existing part written `E`:
+  // with the value it names every identity of the handed graph (which part is new, which is whose), so a new part and an
+  // existing part of equal value are told apart, and one object in two slots is the value convention's, as for two
+  // arguments. null when a part is none of these (a name bound to a new object: the callee could see it shared), else
+  // { skeleton }; `bad` names the part
+  const mixedTree = (e, bad = {}) => {
+    while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression;
+    const keys = new Set();
+    const part = (v) => {
+      let x = v; while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x) || ts.isNonNullExpression(x)) x = x.expression;
+      if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x)) return mixedTree(x, bad);
+      const t = typeOf(x);
+      if (!t || primT(t) || isAny(t) || (isCallable(t) && !isAny(t)) || nonNull(t).every((y) => isPromiseT(y))) return 'V'; // its value is the handed value's at this path
+      const id = identityOf(x);
+      if (id.kind === 'existing') return 'E';
+      if (id.kind === 'fresh' && id.site === x && !ts.isObjectLiteralExpression(x) && !ts.isArrayLiteralExpression(x)) return `new(${x.getText(sf)})`; // made here, held by no name
+      bad.part = x; bad.why = id.kind === 'fresh' ? `\`${x.getText(sf).slice(0, 40)}\`, a new object a name holds` : id.why;
+      return null;
+    };
+    const out = [];
+    if (ts.isObjectLiteralExpression(e)) {
+      for (const m of e.properties) {
+        const key = (ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m)) && !ts.isComputedPropertyName(m.name) ? m.name.getText(sf) : null;
+        if (key === null || keys.has(key)) { bad.part = m; bad.why = 'a spread, a computed or repeated key, or an accessor'; return null; }
+        keys.add(key);
+        const s = part(ts.isPropertyAssignment(m) ? m.initializer : m.name);
+        if (s === null) return null;
+        out.push(`${key}: ${s}`);
+      }
+      return `{ ${out.join(', ')} }`;
+    }
+    if (ts.isArrayLiteralExpression(e)) {
+      for (const x of e.elements) {
+        if (ts.isSpreadElement(x) || ts.isOmittedExpression(x)) { bad.part = x; bad.why = 'a spread or a hole'; return null; }
+        const s = part(x);
+        if (s === null) return null;
+        out.push(s);
+      }
+      return `[ ${out.join(', ')} ]`;
+    }
+    return null;
+  };
   function handedArg(a, code, d) {
     const t = typeOf(a);
     if (!t || primT(t) || (isCallable(t) && !isAny(t)) || isAny(t) || nonNull(t).every((y) => isPromiseT(y))) return code; // no identity, a function value (its code and cells), an opaque value or a promise (its own handle)
     const id = identityOf(a);
     if (id.kind === 'existing') return code;
     if (id.kind === 'unknown') fail(a, `copied-argument: this call may write or keep the object it is handed, and its argument is ${id.why}; bind it to a name of one kind (a parameter, or a new literal or copy) first`);
-    if (!partsPrim(madeT(id.site)) && !freshTree(id.site)) fail(a, 'copied-argument: a new object holding objects is handed to a call that may write or keep it; this reading does not hold the identities inside it: hand its primitive fields, or the objects themselves');
+    const bad = {};
+    const skeleton = partsPrim(madeT(id.site)) || freshTree(id.site) ? null : mixedTree(id.site, bad);
+    if (!partsPrim(madeT(id.site)) && !freshTree(id.site) && skeleton === null) fail(a, `copied-argument: a new object holding objects is handed to a call that may write or keep it, and ${bad.why ? `its part ${bad.part && ts.isExpression(bad.part) ? `\`${bad.part.getText(sf).slice(0, 40)}\` is ` : 'is '}${bad.why}` : 'this reading does not hold the identities inside it'}: hand the objects themselves, or a literal of them`);
     const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
     for (let p = id.site.parent; p && p !== body; p = p.parent) {
       if (ts.isFunctionLike(p)) break;
@@ -1948,7 +1998,8 @@ function translateOnce(file, fnName, opts = {}) {
       if (ts.isIterationStatement(p, false) && (within(p.statement) || (ts.isForStatement(p) && (within(p.condition) || within(p.incrementor))) || ((ts.isWhileStatement(p) || ts.isDoStatement(p)) && within(p.expression)))) fail(a, 'copied-argument: a new object made in a loop is handed to a call that may keep it; every pass makes another object, which this reading does not count: make it outside the loop, or hand its primitive fields');
     }
     if (!handedSites.has(id.site)) handedSites.set(id.site, handedSites.size);
-    return `${external(`handed_fresh_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.site)})`;
+    const shape = skeleton !== null && process.env.LEAN_BREAK !== 'handed-skeleton' ? `_${createHash('sha1').update(skeleton).digest('hex').slice(0, 16)}` : ''; // which parts are new and which existing: one more handed function per skeleton (LEAN_BREAK=handed-skeleton drops it, tests/break.mjs)
+    return `${external(`handed_fresh${shape}_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.site)})`;
   }
   function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
     const isEff = eff ?? isEffectCall(n);
@@ -2452,6 +2503,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   function convertToD(code, from, td, node) {
     const fd = dtype(from, node);
     if (node && fd !== td) { const why = typeAssertion(checker, node); if (why) fail(node, `type-assertion: ${why}`); } // a value whose type nothing checked, converted where its reading does not carry it: the lint's test on the same node
+    if (node && fd !== td && process.env.LEAN_BREAK === 'assertion-read' && (assertionHeld(checker, node) || isAny(from)) && outsideSlot(checker, node)) return `${external(`as_${mangle(td)}_unread`, [], td)}()`; // tests/w1g-opaque-handed.mjs --break: the handed conversion stops reading its value
     if (node && optionalD(fd) && !optionalD(td) && td !== 'Any') { let c = node; while (ts.isParenthesizedExpression(c)) c = c.expression; if (maybeCapture(c)) fail(node, 'a capture of a group that may not take part (undefined when it does not, whatever TypeScript says) is read where a string is expected; read it as present or absent (`?? d`, a test)'); } // common.mjs matchCapture, matchGroupRead
     if (isNullish(from)) {
       if (optionalD(td)) return missingD(td, from.flags & TF.Null ? 'Null' : 'Undef');
@@ -2763,7 +2815,20 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const vo = originOf(vc, n, sf, currentUnit?.node ?? null);
     return vo.kind === 'local' ? vo : o;
   }
+  // any other read of an object after a call that may change it (common.mjs worldForm 'value', design/w1g-opaque-handed.md):
+  // the object as the world holds it now, read exactly from there (a copy, an element, a library read, the result)
+  function handleNow(n, read) {
+    worldUsed.add(n);
+    if (process.env.LEAN_BREAK === 'handle-value') { n.__worldNow = true; try { return read(); } finally { n.__worldNow = false; } } // tests/w1g-opaque-handed.mjs --break: the read takes the object as it was before the call
+    const now = nowOf(n);
+    n.__worldNow = true; let parts; try { parts = captureParts(read); } finally { n.__worldNow = false; }
+    const lines = parts.lines.map((l) => renameIn(l, now.name, now.t)), text = renameIn(parts.text, now.name, now.t);
+    if (![...lines, text].some((x) => x.includes(now.t))) fail(n, `read-after-call: \`${n.getText(sf).slice(0, 60)}\` is read after a call that may change it, and this reading holds the object under another name here, so it cannot read it as the world holds it`);
+    pending.push(now.line, ...lines);
+    return text;
+  }
   function ident(n) {
+    if (worldAfter?.get(n) === 'value' && !n.__worldNow) return handleNow(n, () => ident(n));
     if (n.text === 'undefined') return absentValue(typeOf(n));
     { let u = n; while (ts.isParenthesizedExpression(u.parent)) u = u.parent; const lit = !(ts.isPropertyAccessExpression(u.parent) && u.parent.name.text === 'lastIndex') && n.getSourceFile() === sf ? heldRegexLiteral(n, checker) : null; if (lit) return expr(lit); } // a pattern held in a const nothing changes, run by a call that ignores lastIndex: its literal (common.mjs heldRegexLiteral)
     const o = readOrigin(n);
@@ -2841,7 +2906,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       case K.TrueKeyword: return 'true';
       case K.FalseKeyword: return 'false';
       case K.NullKeyword: return absentValue(typeOf(n));
-      case K.ThisKeyword: if (thisParamOf(currentUnit)) return dn('this'); if (!classOf(currentUnit) && !literalOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF; // a free function's declared `this` parameter is its receiver operand, an ordinary first parameter
+      case K.ThisKeyword: if (worldAfter?.get(n) === 'value' && !n.__worldNow) return handleNow(n, () => rawExpr(n, expected)); if (thisParamOf(currentUnit)) return dn('this'); if (!classOf(currentUnit) && !literalOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF; // a free function's declared `this` parameter is its receiver operand, an ordinary first parameter
       case K.SatisfiesExpression: return expr(n.expression, expected);
       case K.AsExpression: case K.TypeAssertionExpression: {
         // identity at run time; the types may differ, so the value is converted (opaque when they do)

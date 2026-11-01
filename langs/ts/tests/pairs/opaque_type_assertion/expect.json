@@ -1,0 +1,6 @@
+{
+ "scope": ["forward", "other", "planted", "rebound"],
+ "equal": { "forward": true, "other": false, "planted": false, "rebound": false },
+ "why": "draft",
+ "b": { "forward": "PASS-bounded", "other": "WITNESS", "planted": "WITNESS", "rebound": "WITNESS" }
+}
