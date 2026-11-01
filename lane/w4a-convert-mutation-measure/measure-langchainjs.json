@@ -1,0 +1,225 @@
+{
+ "summary": {
+  "root": "/root/census-installs/w4a/langchainjs",
+  "base": "6e4e73b2028a838a991e59d076ee78d73ce27b03",
+  "dry": false,
+  "n": 30,
+  "dafnySeconds": 30,
+  "files": 4,
+  "converted": 4,
+  "reverted": 0,
+  "erasedOnly": 0,
+  "seconds": 101,
+  "per": {
+   "closure-counter": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   },
+   "hoist-update": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 12
+   },
+   "rebuild-by-spread": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 1
+   },
+   "param-copy": {
+    "applied": 6,
+    "files": 4,
+    "kept": 4,
+    "reverted": 0,
+    "listed": 0
+   },
+   "explicit-return": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   }
+  }
+ },
+ "results": [
+  {
+   "file": "libs/langchain-classic/src/output_parsers/regex.ts",
+   "applied": [
+    {
+     "transform": "param-copy",
+     "rule": "param-assign",
+     "line": 62,
+     "unit": "RegexParser.constructor"
+    }
+   ],
+   "listed": [],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  },
+  {
+   "file": "libs/langchain-core/src/utils/sax-js/sax.ts",
+   "applied": [
+    {
+     "transform": "param-copy",
+     "rule": "param-assign",
+     "line": 660,
+     "unit": "initializeSax"
+    },
+    {
+     "transform": "param-copy",
+     "rule": "param-assign",
+     "line": 668,
+     "unit": "initializeSax"
+    },
+    {
+     "transform": "param-copy",
+     "rule": "param-assign",
+     "line": 1027,
+     "unit": "initializeSax"
+    }
+   ],
+   "listed": [
+    {
+     "rule": "operator-value-context",
+     "line": 69,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 75,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 76,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 96,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 748,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 803,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 885,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "update-expression",
+     "line": 916,
+     "why": "the step is under a WhileStatement, which does not evaluate it once on every path"
+    },
+    {
+     "rule": "update-expression",
+     "line": 935,
+     "why": "the step is under a WhileStatement, which does not evaluate it once on every path"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 936,
+     "why": "pop does not return its receiver or its length"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 955,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 1133,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 1318,
+     "why": "the target is not a name, a plain data field or an element of an array read by a pure key"
+    }
+   ],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  },
+  {
+   "file": "libs/langchain-core/src/utils/uuid/v1.ts",
+   "applied": [
+    {
+     "transform": "param-copy",
+     "rule": "param-assign",
+     "line": 160,
+     "unit": "v1Bytes"
+    }
+   ],
+   "listed": [],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  },
+  {
+   "file": "libs/langchain-core/src/utils/uuid/v7.ts",
+   "applied": [
+    {
+     "transform": "param-copy",
+     "rule": "param-assign",
+     "line": 88,
+     "unit": "v7Bytes"
+    }
+   ],
+   "listed": [],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  }
+ ],
+ "rows": [
+  {
+   "file": "libs/langchain-classic/src/output_parsers/regex.ts",
+   "unit": "RegexParser.constructor",
+   "verdict": "PASS-bounded",
+   "reason": "`x!` on a value that may be null or undefined checks nothing at run time, and here lean cannot test it first (it reads `x!` only on a parameter or local, in a return, a declaration, an expression statement or an if condition of the function itself, outside loops, try and nested functions); test it (`if (x === undefined) ...`) or give it a default (`x ?? d`)",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "libs/langchain-core/src/utils/sax-js/sax.ts",
+   "unit": "initializeSax",
+   "verdict": "ASK",
+   "reason": "parent: load failed: ReadableStream is not defined",
+   "reverted": false,
+   "control": "lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "libs/langchain-core/src/utils/uuid/v1.ts",
+   "unit": "v1Bytes",
+   "verdict": "PASS-bounded",
+   "reason": "Uint8Array<ArrayBufferLike> declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "libs/langchain-core/src/utils/uuid/v7.ts",
+   "unit": "v7Bytes",
+   "verdict": "PASS-bounded",
+   "reason": "Uint8Array<ArrayBufferLike> declares fields and an index signature; its value reading holds the declared fields alone, so a key it does not declare is outside the reading; read a declared field, or keep the open keys in a Record<string, T> of their own",
+   "reverted": false,
+   "control": null
+  }
+ ]
+}

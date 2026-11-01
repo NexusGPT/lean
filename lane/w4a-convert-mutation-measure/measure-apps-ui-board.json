@@ -1,0 +1,374 @@
+{
+ "summary": {
+  "root": "/root/census-installs/w4a/apps-ui",
+  "base": "6c6ae2e5d0c064e704f8639b2523bb1f93a6753c",
+  "dry": false,
+  "n": 30,
+  "dafnySeconds": 30,
+  "files": 1,
+  "converted": 1,
+  "reverted": 0,
+  "erasedOnly": 0,
+  "seconds": 515,
+  "per": {
+   "closure-counter": {
+    "applied": 1,
+    "files": 1,
+    "kept": 1,
+    "reverted": 0,
+    "listed": 19
+   },
+   "hoist-update": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   },
+   "rebuild-by-spread": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   },
+   "param-copy": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   },
+   "explicit-return": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   }
+  }
+ },
+ "results": [
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "applied": [
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 347,
+     "unit": "BoardCanvas/React.useCallback()#0@5/order.forEach()#0@1"
+    }
+   ],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 287,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 287,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 295,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 295,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 316,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 316,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 378,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 424,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 424,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 433,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 433,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 441,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 441,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 443,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 443,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 452,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 452,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 471,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 471,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  }
+ ],
+ "rows": [
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas",
+   "verdict": "ASK",
+   "reason": "callback-undriven: on 1 input(s) a function the unit handed out could not be driven (drive budget spent (64 drives in one observation), first at input 4); an undriven callback is undecided, never a difference",
+   "reverted": false,
+   "control": "lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas/React.useCallback()#0@5",
+   "verdict": "ASK",
+   "reason": "covered-by: BoardCanvas",
+   "reverted": false,
+   "control": "as BoardCanvas: lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas/React.useCallback()#0@5/order.forEach()#0@1",
+   "verdict": "ASK",
+   "reason": "covered-by: BoardCanvas/React.useCallback()#0@5",
+   "reverted": false,
+   "control": "as BoardCanvas/React.useCallback()#0@5: as BoardCanvas: lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas/React.useCallback()#0@5/order.reduce()#0",
+   "verdict": "ASK",
+   "reason": "covered-by: BoardCanvas/React.useCallback()#0@5",
+   "reverted": false,
+   "control": "as BoardCanvas/React.useCallback()#0@5: as BoardCanvas: lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "src/blocks/fx/useGlideBlocks.ts",
+   "unit": "useStableRuns",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/blocks/fx/useGlideBlocks.ts",
+   "unit": "useStableRuns/plain.map()#0@2",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/blocks/tables/FilterTable.tsx",
+   "unit": "FilterTable",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/blocks/tables/FilterTable.tsx",
+   "unit": "FilterTable/rows.map()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/dragVerbs.ts",
+   "unit": "unlockSelection",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout/Object.keys(lanes).forEach()#0@1",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout/Object.keys(lanes).forEach()#0@1/srcSeq.concat(snkSeq.reverse()).forEach()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout/Object.keys(lanes).forEach()#0@1/srcSeq.concat(snkSeq).forEach()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).forEach()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).forEach()#0/segsOf(E[j]).forEach()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).reduce()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).reduce()#0/segsOf(E[j]).reduce()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.forEach()#0@2",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.forEach()#0@2/segsOf(e).forEach()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.reduce()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.reduce()#0/segsOf(e).reduce()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.forEach()#0@2/segsOf(e).forEach()#0/rects.forEach()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.reduce()#0/segsOf(e).reduce()#0/rects.reduce()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/cents.forEach()#0",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/cents.reduce()#0@2",
+   "verdict": "ASK",
+   "reason": "excluded by requested paths",
+   "reverted": false,
+   "control": null
+  }
+ ]
+}

@@ -71,7 +71,7 @@ nothing.
    - The first proof reverted 2 of 44 files (4.5%): apps-ui BoardCanvas.tsx and driftbench check-links.ts. Both were
      control artifacts (the two prove fixes above). Each file was re-proved with the fix and kept, with the commands
      above and `--files` naming that one file.
-   - The listed sites' reasons are in `measure-<root>.json`. The largest classes:
+   - The listed sites' reasons are in `lane/w4a-convert-mutation-measure/measure-<root>.json` (with the candidate lists `files-<root>.txt`). The largest classes:
      - callbacks handed away (`.then`, `on(...)`, timers), which are not loops;
      - a forEach callback that takes an index (lean reads a reduce callback of two parameters only);
      - a callback carrying two or three locals;
