@@ -380,3 +380,70 @@ Validators (output lines verbatim, load about 70-90, `LEAN_LOAD_GATE` set above 
   `as written` line and pass only when the broken run proves falsely. Each of those rows is red as a break, as shown
   above.
 
+
+## Resume 3: the two merge regressions the full suite found on lead-v4 0b260f05
+
+Commits: a83d0574c9 (the two fixes), d0eaa4a095 (lead-v4 merged into this lane, so the suite runs on what the lead
+merges; one conflict, below).
+
+### 1. The `break` key: one shape, one reader
+
+- The shape is the array of rows. A row's `equal` is lane A's (lemmas the broken run proves). Its `b` is lane B's
+  (verdicts under the break; each unit is in the pair's own `b` with another verdict). The array stays because a pair
+  can hold two rows of one mechanism, and one row can name two mechanisms (`opaque_async_origin`). A map keyed by
+  mechanism has no place for either. The reason is recorded in the header of tests/break.mjs and in
+  design/w2d-library-rows.md (the tests table); design/w1a-opaque-mutation.md's A6 line names `b`.
+- One reader: tests/break.mjs `breakRows` refuses a key that is not an array, then returns lane A rows and lane B rows
+  (it also checks each flip). tests/run.mjs takes the lane A rows; tests/lib-break.mjs takes the lane B rows. It no
+  longer reads `exp.break` itself.
+- The 9 `lib_` maps are rewritten as rows. lib_vscode: lead-v4 (w2f) dropped its fake and its break, which caused the
+  one merge conflict. I took lead-v4's side; its why now names the row shape.
+- `node langs/ts/tests/lib-break.mjs --jobs 2` (before the lead-v4 merge, 10 rows with lib_vscode's): `lib-break: 10
+  rows, 0 failed`, with no junk row. After the merge there are 9 lane B rows (`breakRows` over every pair: A 51, B 9).
+- `node langs/ts/tests/run.mjs --pair lib_date_fns`: `| TOTAL | 5 checks | ALL PASS |`; `--pair lib_lodash`:
+  `| TOTAL | 11 checks | ALL PASS |`.
+
+### 2. The four pairs w1g's read-after-call changed
+
+Every translation below was compared with the one at 55875329 (scratch worktree). After the fixes, both sides of
+`service`, `mixed_logic_values` and `type_assertions` translate to the same bodies as at 55875329.
+
+- `service`, `mixed_logic_values`: the reading is fixed, and `Equal_service_both` is proved again. Cause: w1g's
+  `share` closure (common.mjs) took the class's ports in. `this.repo.find(id)` hands `this.repo` (`interface Repo {
+  find(...) }`), and `ChatService` holds a `Repo`, so every later read of `this` met the call. `this.label(...)` (no
+  world form) then refused the unit, and `both`'s else-branch re-read `this` through `ext_now`. Fix: a type whose every
+  member is a method (no data property, no index signature, no type argument; `methodsOnly`) leaves the closure. A
+  read through such a type is a call, which threads the world, and a test of it is a test of identity. `reaches` still
+  counts the handed port itself. Recorded in design/w1g-opaque-handed.md, "A port holds no field".
+- `type_assertions` (4 rows): the reading is fixed. Cause: w1g's `outsideSlot` took the faithful reading's
+  `Math.__lean_add` (declared in `lean-number.d.ts`) for another file's function. Two effects followed. First, a held
+  value in `dbl`'s rewritten `n + n` was converted to int, and the held variant returned an int, so
+  `Equal_param_held`'s real lemma lost its proof. Second, the faithful text, which refused that slot at the base and so
+  left the file to the exact reading, now placed `twice`, `result_held` and `compound_held`. Fix: a callee declared in
+  `lean-number.d.ts` is no outside slot. The `outside-slot` break is untouched: its check comes first. Recorded in
+  design/w1g-opaque-handed.md, the type-assertion section.
+- `fresh_local_handed`: the expectation is updated (lane A `ASK:unproved`, was `read-after-call`). This is w1g's
+  intended reading. A name bound to a new record and handed to `g` now has an identity (its site), so `x.n` after the
+  call reads `ext_now_fresh(wld, x, 0).n`. That is the record as the world holds it after `g`, and the candidate's `1`
+  does not equal it. local is still never proved; it was refused before and is unproved now. Recorded in the pair's
+  why. No proof was lost.
+
+Validators after the fixes (load about 70, verbatim):
+- `run.mjs --pair` service `| TOTAL | 8 checks | ALL PASS |`; fresh_local_handed `| TOTAL | 2 checks | ALL PASS |`;
+  mixed_logic_values `| TOTAL | 40 checks | ALL PASS |`; type_assertions `| TOTAL | 45 checks | ALL PASS |`;
+  opaque_async_origin `| TOTAL | 14 checks | ALL PASS |`; opaque_read_after_call `| TOTAL | 28 checks | ALL PASS |`.
+  The last two cover the reach-closure break rows (holder; count, share and branch).
+- `node langs/ts/tests/w1g-opaque-handed.mjs`: exit 0. With `--break`: exit 1 (red, as it must be).
+- `LEAN_LOAD_GATE=100 node langs/ts/tests/w1d-opaque-async.mjs --jobs 1`: `PASS  as written: 176 of 176 rows pass over
+  15 pairs`, `ALL PASS`, exit 0.
+
+### The full suite (d0eaa4a095, lead-v4 merged)
+
+`LEAN_CONFORMANCE=full JOBS=4 LEAN_LOAD_GATE=100 node langs/ts/tests/run.mjs` (load about 70 from other sessions):
+
+**No TOTAL line: the run did not finish.** The harness's background limit (2 h, the longest it allows) stopped it.
+By then it had printed only its start (`conformance: LEAN_CONFORMANCE=full: every pair`, then a fake's debug output),
+and it had written no result file. I did not restart it, because a second run under the same limit stops the same way.
+The suite has to run where it can take more than 2 h at this load, or with a JOBS the machine allows (the lead's Mac
+took JOBS=6). So "the only failures left are the known ones" is **not verified** here. What is verified is the per-pair
+and driver lines above, for every pair the two regressions named, plus lib-break and the w1d and w1g drivers.
