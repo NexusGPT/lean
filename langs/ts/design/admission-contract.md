@@ -904,3 +904,11 @@ verdict is decided, listed here so the table of deciders stays whole:
 | site | kind | rule | reading | decided | message |
 | --- | --- | --- | --- | --- | --- |
 | exec/run.mjs runPairOnce (the search block after the draw loop) | laneB-witness |  | (lane B) | one-decider (search.mjs searchInputs; run.mjs pairOf/statusOf) | WITNESS, `source: search`: a changed input inside the declared type on which the two sides' observations differ, reproduced byte for byte on fresh environments |
+
+## 2026-11-01: the web fakes add no admission site
+
+The behavioural fakes of the web platform (design/w2c-web-fakes.md) are lane B's world: `exec/fakes/web/` answers
+`fetch`, the Fetch classes, `AbortSignal.timeout` and the storage areas inside the sandbox, and `exec/fake.mjs` renders
+platform objects by their state. No call of the lint's `v`, `refuse` or `note`, no translator `fail` and no
+`Unsupported` was added or moved, so `lower.mjs --audit` reads the same sites and the table above has no new row. The
+one new switch, `LEAN_FAKES=recording`, chooses lane B's world, never what lean admits.

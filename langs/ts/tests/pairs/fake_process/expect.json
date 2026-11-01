@@ -1,8 +1,22 @@
 {
- "scope": ["port", "with_mode", "host"],
- "equal": {},
- "laneBOnly": true,
- "why": "the behavioural process (design/w2b-node-fakes.md). port falls back to another default when PORT is unset: under the fake PORT is drawn absent on some inputs, a WITNESS; under the recording proxy alone (bRecord) a module member is always a handle, never nullish, so the fallback never runs: PASS-bounded, the gap the fake closes. withMode writes APP_MODE and the candidate reads APP_MOD: the reads differ on the trace whatever answers them, a WITNESS either way. host is a refactor (?? and a destructuring default agree on a value that is a string or absent): PASS-bounded either way",
- "b": { "port": "WITNESS", "withMode": "WITNESS", "host": "PASS-bounded" },
- "bRecord": { "port": "PASS-bounded", "withMode": "WITNESS", "host": "PASS-bounded" }
+  "scope": [
+    "port",
+    "with_mode",
+    "host"
+  ],
+  "equal": {},
+  "laneBOnly": true,
+  "why": "the behavioural process (design/w2b-node-fakes.md). port falls back to another default when PORT is unset: under the fake PORT is drawn absent on some inputs, a WITNESS; under the recording proxy alone (bRecord) a module member is always a handle, never nullish, so the fallback never runs: PASS-bounded, the gap the fake closes. withMode writes APP_MODE and the candidate reads APP_MOD: the reads differ on the trace whatever answers them, a WITNESS either way. host is a refactor (?? and a destructuring default agree on a value that is a string or absent): PASS-bounded either way",
+  "b": {
+    "port": "WITNESS",
+    "withMode": "WITNESS",
+    "host": "PASS-bounded"
+  },
+  "bUnder": {
+    "LEAN_FAKES=recording": {
+      "port": "PASS-bounded",
+      "withMode": "WITNESS",
+      "host": "PASS-bounded"
+    }
+  }
 }

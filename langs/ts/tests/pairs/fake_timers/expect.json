@@ -1,8 +1,22 @@
 {
- "scope": ["status", "settled", "echo"],
- "equal": {},
- "laneBOnly": true,
- "why": "the behavioural timers (design/w2b-node-fakes.md). status returns a state a timer sets: under the fake the timer of node:timers is armed on the virtual clock and fires after the call, so the parent returns 'pending' and the candidate 'done' (WITNESS); the recording proxy alone (bRecord) runs a callback handed to a fake at once, inside the call, so both return 'done' (PASS-bounded). settled compares the value node:timers/promises resolves with against another: under the fake it resolves with the value given (WITNESS on a token with a lower-case letter), under the proxy a handle equal to neither (PASS-bounded). echo is a refactor: PASS-bounded either way",
- "b": { "status": "WITNESS", "settled": "WITNESS", "echo": "PASS-bounded" },
- "bRecord": { "status": "PASS-bounded", "settled": "PASS-bounded", "echo": "PASS-bounded" }
+  "scope": [
+    "status",
+    "settled",
+    "echo"
+  ],
+  "equal": {},
+  "laneBOnly": true,
+  "why": "the behavioural timers (design/w2b-node-fakes.md). status returns a state a timer sets: under the fake the timer of node:timers is armed on the virtual clock and fires after the call, so the parent returns 'pending' and the candidate 'done' (WITNESS); the recording proxy alone (bRecord) runs a callback handed to a fake at once, inside the call, so both return 'done' (PASS-bounded). settled compares the value node:timers/promises resolves with against another: under the fake it resolves with the value given (WITNESS on a token with a lower-case letter), under the proxy a handle equal to neither (PASS-bounded). echo is a refactor: PASS-bounded either way",
+  "b": {
+    "status": "WITNESS",
+    "settled": "WITNESS",
+    "echo": "PASS-bounded"
+  },
+  "bUnder": {
+    "LEAN_FAKES=recording": {
+      "status": "PASS-bounded",
+      "settled": "PASS-bounded",
+      "echo": "PASS-bounded"
+    }
+  }
 }

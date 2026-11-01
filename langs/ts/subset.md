@@ -120,6 +120,16 @@ transition the parent did not make, or makes it with another argument or in anot
 | a held handle stored into its optional slot | `this.last = a` with `last: Promise<undefined> \| null`; `slots.last = a` on an interface with methods | `Some(handle)` (`Nullish.Some` when the slot admits null and undefined), never the absent constant its settled value reads as; a field of an opaque record is written by an uninterpreted update `ext_<R>_set_<f>(r, v)`; a promise a same-file async unit returns cannot be held this way and its unit is not translated (design/promise-field.md) |
 | Unknown record enumeration | `Object.keys/values/entries(r)` for a parameter, escaped or mutated record | source-sensitive transition; own keys/order cannot be recovered from the structural datatype |
 
+Lane B answers the web platform with behavioural fakes (exec/fakes/web/, [design](design/w2c-web-fakes.md)): `fetch`
+is a table keyed by (method, url, body), each request recorded as the server receives it and each row drawn by the
+input's seed and the request, never the call order; `Request`, `Response`, `Headers`, `URL`, `URLSearchParams`,
+`TextEncoder`, `TextDecoder`, `structuredClone`, `FormData` and `Blob` are the platform's own; `AbortSignal.timeout`
+runs on the virtual clock; `localStorage` and `sessionStorage` are a record drawn per input over the unit's strings,
+whose writes are recorded. A platform object is observed by the state its standard defines (a URL by its href, a
+Headers object by its entries, a Response by its status, headers and body). Assumed: two identical requests in one run
+get one answer (the server is a function of the request), and a response arrives in the turn it was asked.
+`LEAN_FAKES=recording` restores the recording proxy. Lane A's reading of these calls is unchanged.
+
 ## What is uninterpreted
 
 Each of these becomes a bodiless Dafny function of its arguments, the same on both sides.

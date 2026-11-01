@@ -1,0 +1,8 @@
+{
+ "scope": ["users", "remove", "profile", "failed", "cancelled", "created", "twice"],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "The fetch fake (exec/fakes/web/fetch.mjs, design/w2c-web-fakes.md): a request is read through the Fetch standard's own Request, Headers and URL and recorded as the server receives it (method, URL, headers, body); a response is a row of a table keyed by (method, url, body), its status rotated through the statuses by the seed. users: a changed URL built as a URL object; remove: a changed method carried by a Request; profile: a dropped header carried by a Headers object; failed: a response read differently (status >= 400 against > 400, apart at 400); cancelled: the candidate no longer aborts its AbortController. Each is a WITNESS under the fakes and PASS-bounded under the recording-only proxy (LEAN_FAKES=recording: a URL or Headers object renders as {}, Request, Headers and AbortController are absent and both sides throw the same ReferenceError, a status is a varied answer that is never 400): the gap the fakes close. created and twice are refactors (the same request through a Request object; the same request made twice, either answer read): PASS-bounded under the fakes, and WITNESS under the recording proxy, whose answers are named by call order and which has no Request: the false difference the table removes.",
+ "b": { "users": "WITNESS", "remove": "WITNESS", "profile": "WITNESS", "failed": "WITNESS", "cancelled": "WITNESS", "created": "PASS-bounded", "twice": "PASS-bounded" },
+ "bUnder": { "LEAN_FAKES=recording": { "users": "PASS-bounded", "remove": "PASS-bounded", "profile": "PASS-bounded", "failed": "PASS-bounded", "cancelled": "PASS-bounded", "created": "WITNESS", "twice": "WITNESS" } }
+}

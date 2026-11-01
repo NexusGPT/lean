@@ -1,0 +1,8 @@
+{
+ "scope": ["link", "query", "accept", "sorted", "bytes"],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "URL, URLSearchParams, Headers, TextEncoder and TextDecoder are the platform's real classes (exec/fakes/web/url.mjs, headers.mjs, encoding.mjs); their state is in internal slots, so the generic rendering showed every one as {}. Rendered by the state the standard defines (a URL by its href, a parameter list by its serialisation, a Headers object by its entries), a returned URL built from another path (link), a renamed parameter (query) and a dropped header (accept) are each a WITNESS; under LEAN_FAKES=recording each is PASS-bounded, the gap closed. sorted (the same parameters appended in another order, then sorted) and bytes (the UTF-8 length through TextEncoder or Buffer) are refactors, PASS-bounded under both.",
+ "b": { "link": "WITNESS", "query": "WITNESS", "accept": "WITNESS", "sorted": "PASS-bounded", "bytes": "PASS-bounded" },
+ "bUnder": { "LEAN_FAKES=recording": { "link": "PASS-bounded", "query": "PASS-bounded", "accept": "PASS-bounded", "sorted": "PASS-bounded", "bytes": "PASS-bounded" } }
+}

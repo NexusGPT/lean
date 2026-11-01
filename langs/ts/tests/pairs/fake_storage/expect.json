@@ -1,0 +1,8 @@
+{
+ "scope": ["theme", "language", "save", "logout", "visits"],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "localStorage and sessionStorage as a record (exec/fakes/web/storage.mjs, design/w2c-web-fakes.md): the store before the run is drawn per input over the unit's own strings, a read answers what the record holds, a write is recorded on the trace. theme: the parent reads the item it wrote, the candidate another key; language: a missing item (??) against an empty one (||); save: a write to another key. Each is a WITNESS under the fake and PASS-bounded under LEAN_FAKES=recording, where the sandbox holds no localStorage and both sides throw the same ReferenceError. logout (removeItem against delete of the named property, read back through getItem or in) and visits (getItem and setItem against the named-property forms) are refactors, PASS-bounded under both.",
+ "b": { "theme": "WITNESS", "language": "WITNESS", "save": "WITNESS", "logout": "PASS-bounded", "visits": "PASS-bounded" },
+ "bUnder": { "LEAN_FAKES=recording": { "theme": "PASS-bounded", "language": "PASS-bounded", "save": "PASS-bounded", "logout": "PASS-bounded", "visits": "PASS-bounded" } }
+}

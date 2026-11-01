@@ -1,29 +1,31 @@
 {
- "scope": [
-  "out_path",
-  "same_twice",
-  "join_then_log",
-  "reordered"
- ],
- "equal": {
-  "out_path": true,
-  "same_twice": true,
-  "join_then_log": true,
-  "reordered": false
- },
- "project": "tsconfig.json",
- "heap": false,
- "why": "the path rows (design/w2b-node-fakes.md), read with node:path declared as @types/node declares it (node-path.d.ts): path.join of strings imported from node:path is a pure bodiless function in lane A (library-rows.mjs moduleRow, the lint and the translator alike) and a computed operation of the behavioural fake in lane B (exec/fakes/path.mjs, quiet: never on the compared trace). outPath, sameTwice (one join for two) and joinThenLog (the join moved across a request) prove and agree on the drawn inputs; reordered joins the parts the other way: not proved, a WITNESS. Without the rows (tests/module-rows.mjs --break) sameTwice and joinThenLog are two transitions against one, or two transitions reordered, and do not prove; under the recording proxy alone (bRecord) the moved and the dropped join are a different trace, a WITNESS of no behaviour",
- "b": {
-  "outPath": "PASS-bounded",
-  "sameTwice": "PASS-bounded",
-  "joinThenLog": "PASS-bounded",
-  "reordered": "WITNESS"
- },
- "bRecord": {
-  "outPath": "PASS-bounded",
-  "sameTwice": "WITNESS",
-  "joinThenLog": "WITNESS",
-  "reordered": "WITNESS"
- }
+  "scope": [
+    "out_path",
+    "same_twice",
+    "join_then_log",
+    "reordered"
+  ],
+  "equal": {
+    "out_path": true,
+    "same_twice": true,
+    "join_then_log": true,
+    "reordered": false
+  },
+  "project": "tsconfig.json",
+  "heap": false,
+  "why": "the path rows (design/w2b-node-fakes.md), read with node:path declared as @types/node declares it (node-path.d.ts): path.join of strings imported from node:path is a pure bodiless function in lane A (library-rows.mjs moduleRow, the lint and the translator alike) and a computed operation of the behavioural fake in lane B (exec/fakes/path.mjs, quiet: never on the compared trace). outPath, sameTwice (one join for two) and joinThenLog (the join moved across a request) prove and agree on the drawn inputs; reordered joins the parts the other way: not proved, a WITNESS. Without the rows (tests/module-rows.mjs --break) sameTwice and joinThenLog are two transitions against one, or two transitions reordered, and do not prove; under the recording proxy alone (bRecord) the moved and the dropped join are a different trace, a WITNESS of no behaviour",
+  "b": {
+    "outPath": "PASS-bounded",
+    "sameTwice": "PASS-bounded",
+    "joinThenLog": "PASS-bounded",
+    "reordered": "WITNESS"
+  },
+  "bUnder": {
+    "LEAN_FAKES=recording": {
+      "outPath": "PASS-bounded",
+      "sameTwice": "WITNESS",
+      "joinThenLog": "WITNESS",
+      "reordered": "WITNESS"
+    }
+  }
 }

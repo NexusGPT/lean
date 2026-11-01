@@ -1,0 +1,2383 @@
+{
+ "summary": {
+  "name": "nutshell",
+  "units": 30,
+  "sites": 3,
+  "self": {
+   "runs": 30,
+   "witnessFakes": 0,
+   "witnessRecording": 0,
+   "askFakes": 0,
+   "askRecording": 0
+  },
+  "planted": {
+   "runs": 87,
+   "witnessFakes": 59,
+   "witnessRecording": 46,
+   "onlyFakes": 13,
+   "onlyRecording": 0,
+   "askFakes": 1,
+   "askRecording": 2
+  }
+ },
+ "results": [
+  {
+   "file": "adapters/claude-cli/src/account/ask-anthropic-for-usage-over-https.ts",
+   "unit": "askAnthropicForUsageOverHttps",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'omit'",
+    "text": "\"omitx\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/ask-anthropic-for-usage-over-https.ts",
+   "unit": "askAnthropicForUsageOverHttps",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "usageAddress, {\n          method: 'GET',\n          headers: {\n            Authorization: `Bearer ${token.value}`,\n            'anthropic-beta': betaHeader,\n            'User-Agent': options.userAgent,\n          },\n          signal: AbortSignal.timeout(timeoutMilliseconds),\n          credentials: 'omit',\n          cache: 'no-store',\n        }",
+    "text": "{\n          method: 'GET',\n          headers: {\n            Authorization: `Bearer ${token.value}`,\n            'anthropic-beta': betaHeader,\n            'User-Agent': options.userAgent,\n          },\n          signal: AbortSignal.timeout(timeoutMilliseconds),\n          credentials: 'omit',\n          cache: 'no-store',\n        }, usageAddress"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/ask-anthropic-for-usage-over-https.ts",
+   "unit": "askAnthropicForUsageOverHttps",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-claude-code-at.ts",
+   "unit": "versionFromOutput",
+   "kind": "planted",
+   "index": 1,
+   "skipped": "fewer sites"
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-claude-code-at.ts",
+   "unit": "versionFromOutput",
+   "kind": "planted",
+   "index": 2,
+   "skipped": "fewer sites"
+  },
+  {
+   "file": "adapters/claude-cli/src/account/ask-anthropic-for-usage-over-https.ts",
+   "unit": "askAnthropicForUsageOverHttps",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'GET'",
+    "text": "\"GETx\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-claude-code-at.ts",
+   "unit": "versionFromOutput",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-claude-code-at.ts",
+   "unit": "versionFromOutput",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "boundary",
+    "was": "1",
+    "text": "2"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-readiness-of-claude-cli.ts",
+   "unit": "readinessFromStatus",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "negated-if",
+    "was": "object === undefined",
+    "text": "!(object === undefined)"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-readiness-of-claude-cli.ts",
+   "unit": "readinessFromStatus",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-readiness-of-claude-cli.ts",
+   "unit": "readinessFromStatus",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "operator",
+    "was": "===",
+    "text": "!=="
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/check-readiness-of-claude-cli.ts",
+   "unit": "readinessFromStatus",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'unknown'",
+    "text": "\"unknownx\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/read-claude-code-sign-in.ts",
+   "unit": "readClaudeCodeSignInWithSecurityTool",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/read-claude-code-sign-in.ts",
+   "unit": "readClaudeCodeSignInWithSecurityTool",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "base, options.userName",
+    "text": "options.userName, base"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/read-claude-code-sign-in.ts",
+   "unit": "readClaudeCodeSignInWithSecurityTool",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "swapped-args",
+    "was": "options.spawner, options.clock",
+    "text": "options.clock, options.spawner"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/read-claude-code-sign-in.ts",
+   "unit": "readClaudeCodeSignInWithSecurityTool",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'/usr/bin/security'",
+    "text": "\"/usr/bin/securityx\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/refresh-usage-from-claude-cli.ts",
+   "unit": "refreshUsageFromClaudeCli",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/refresh-usage-from-claude-cli.ts",
+   "unit": "refreshUsageFromClaudeCli",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "negated-if",
+    "was": "resolved.kind !== 'runnable'",
+    "text": "!(resolved.kind !== 'runnable')"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/refresh-usage-from-claude-cli.ts",
+   "unit": "refreshUsageFromClaudeCli",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'runnable'",
+    "text": "\"runnablex\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/account/refresh-usage-from-claude-cli.ts",
+   "unit": "refreshUsageFromClaudeCli",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "operator",
+    "was": "!==",
+    "text": "==="
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "compareRequestedChangeOnDisk",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "compareRequestedChangeOnDisk",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "requested, path",
+    "text": "path, requested"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "compareRequestedChangeOnDisk",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "negated-if",
+    "was": "!isAbsolute(path) || path.includes('\\u0000')",
+    "text": "!(!isAbsolute(path) || path.includes('\\u0000'))"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "readFromDisk",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "compareRequestedChangeOnDisk",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "operator",
+    "was": "||",
+    "text": "&&"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "readFromDisk",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "negated-if",
+    "was": "!info.isFile()",
+    "text": "!(!info.isFile())"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "readFromDisk",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "negated-if",
+    "was": "info.size > limit",
+    "text": "!(info.size > limit)"
+   },
+   "fakes": {
+    "verdict": "ASK",
+    "reason": "spec: cannot read /tmp/w2c/roots/nutshell/adapters/claude-cli/src/live/compare-requested-change-on-disk.lean-mut2.ts",
+    "where": null
+   },
+   "recording": {
+    "verdict": "ASK",
+    "reason": "spec: cannot read /tmp/w2c/roots/nutshell/adapters/claude-cli/src/live/compare-requested-change-on-disk.lean-mut2.ts",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "readFromDisk",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'unreadable'",
+    "text": "\"unreadablex\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "resolved",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'unchecked'",
+    "text": "\"uncheckedx\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "ASK",
+    "reason": "spec: cannot read /tmp/w2c/roots/nutshell/adapters/claude-cli/src/live/compare-requested-change-on-disk.lean-mut1.ts",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "resolved",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "resolved",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "milliseconds, waiting.signal",
+    "text": "waiting.signal, milliseconds"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/compare-requested-change-on-disk.ts",
+   "unit": "resolved",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "swapped-args",
+    "was": "(target): Resolved => ({ kind: 'resolved', target }), (error: unknown): Resolved =>\n      isMissing(error) ? { kind: 'resolved', target: { path, link: undefined } } : { kind: 'unchecked' }",
+    "text": "(error: unknown): Resolved =>\n      isMissing(error) ? { kind: 'resolved', target: { path, link: undefined } } : { kind: 'unchecked' }, (target): Resolved => ({ kind: 'resolved', target })"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-exit.ts",
+   "unit": "waitForExit",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "boundary",
+    "was": "0",
+    "text": "1"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-exit.ts",
+   "unit": "waitForExit",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-exit.ts",
+   "unit": "waitForExit",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "swapped-args",
+    "was": "live, tree",
+    "text": "tree, live"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-exit.ts",
+   "unit": "waitForExit",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "operator",
+    "was": "&&",
+    "text": "||"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-shell.ts",
+   "unit": "runShellCommand",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "live, id",
+    "text": "id, live"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-shell.ts",
+   "unit": "runShellCommand",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-shell.ts",
+   "unit": "runShellCommand",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "negated-if",
+    "was": "!reserved.ok",
+    "text": "!(!reserved.ok)"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-shell.ts",
+   "unit": "runShellCommand",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "negated-if",
+    "was": "reserved.value.kind !== 'reserved'",
+    "text": "!(reserved.value.kind !== 'reserved')"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-state.ts",
+   "unit": "LiveState.withStderrTail",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-state.ts",
+   "unit": "LiveState.withStderrTail",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "changed-return",
+    "was": "tail === '' ? reason : `${reason} — stderr: ${tail}`",
+    "text": "(tail === '' ? reason : `${reason} — stderr: ${tail}`) + \"x\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-state.ts",
+   "unit": "LiveState.withStderrTail",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "operator",
+    "was": "===",
+    "text": "!=="
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/live-state.ts",
+   "unit": "LiveState.withStderrTail",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "''",
+    "text": "\"x\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/login-shell-environment.ts",
+   "unit": "parseEnvironment",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "string",
+    "was": "'\\u0000'",
+    "text": "\"\\u0000x\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/login-shell-environment.ts",
+   "unit": "parseEnvironment",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'='",
+    "text": "\"=x\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/login-shell-environment.ts",
+   "unit": "parseEnvironment",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/login-shell-environment.ts",
+   "unit": "parseEnvironment",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "negated-if",
+    "was": "equals <= 0",
+    "text": "!(equals <= 0)"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/timer.ts",
+   "unit": "startTimer",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/timer.ts",
+   "unit": "startTimer",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "negated-if",
+    "was": "!controller.signal.aborted",
+    "text": "!(!controller.signal.aborted)"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/timer.ts",
+   "unit": "startTimer",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "milliseconds, controller.signal",
+    "text": "controller.signal, milliseconds"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/live/timer.ts",
+   "unit": "startTimer",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "swapped-args",
+    "was": "milliseconds, controller.signal",
+    "text": "controller.signal, milliseconds"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/held-elsewhere.ts",
+   "unit": "collectCapped",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/held-elsewhere.ts",
+   "unit": "collectCapped",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "string",
+    "was": "''",
+    "text": "\"x\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/held-elsewhere.ts",
+   "unit": "collectCapped",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "boundary",
+    "was": "0",
+    "text": "1"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/held-elsewhere.ts",
+   "unit": "collectCapped",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "negated-if",
+    "was": "length > listingCap",
+    "text": "!(length > listingCap)"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/lifecycle-ports.ts",
+   "unit": "WatchFinishingAgentInClaudeCLI.watch",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "swapped-args",
+    "was": "session, projectPath",
+    "text": "projectPath, session"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/lifecycle-ports.ts",
+   "unit": "WatchFinishingAgentInClaudeCLI.watch",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "dropped-effect",
+    "was": "await pusher.readAndPush();",
+    "text": ""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/lifecycle-ports.ts",
+   "unit": "WatchFinishingAgentInClaudeCLI.watch",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "conversation, session",
+    "text": "session, conversation"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/lifecycle-ports.ts",
+   "unit": "WatchFinishingAgentInClaudeCLI.watch",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/reported-models-cache.ts",
+   "unit": "ReportedModelsCache.armLapse",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/reported-models-cache.ts",
+   "unit": "ReportedModelsCache.armLapse",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "operator",
+    "was": "-",
+    "text": "+"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/address.ts",
+   "unit": "isAllowedFeedAddress",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/reported-models-cache.ts",
+   "unit": "ReportedModelsCache.armLapse",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "dropped-effect",
+    "was": "this.lapse?.abort();",
+    "text": ""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "receiver"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "receiver"
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/address.ts",
+   "unit": "isAllowedFeedAddress",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "changed-return",
+    "was": "url.protocol === 'https:' || (url.protocol === 'http:' && lo",
+    "text": "!(url.protocol === 'https:' || (url.protocol === 'http:' && loopbackHosts.has(url.hostname)))"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/address.ts",
+   "unit": "isAllowedFeedAddress",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "operator",
+    "was": "===",
+    "text": "!=="
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/address.ts",
+   "unit": "isAllowedFeedAddress",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'https:'",
+    "text": "\"https:x\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/claude-cli/src/sessions/reported-models-cache.ts",
+   "unit": "ReportedModelsCache.armLapse",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "operator",
+    "was": ">=",
+    "text": ">"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/fetch-bytes.ts",
+   "unit": "fetchBytes",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/fetch-bytes.ts",
+   "unit": "fetchBytes",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "url, { cache: 'no-store', ...(signal === undefined ? {} : { signal }) }",
+    "text": "{ cache: 'no-store', ...(signal === undefined ? {} : { signal }) }, url"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/fetch-bytes.ts",
+   "unit": "fetchBytes",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "operator",
+    "was": "===",
+    "text": "!=="
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/fetch-bytes.ts",
+   "unit": "fetchBytes",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'no-store'",
+    "text": "\"no-storex\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/updater.ts",
+   "unit": "createUpdater",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/updater.ts",
+   "unit": "createUpdater",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "negated-if",
+    "was": "manifest.kind !== 'ok' || signature.kind !== 'ok'",
+    "text": "!(manifest.kind !== 'ok' || signature.kind !== 'ok')"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/updater.ts",
+   "unit": "createUpdater",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "new URL(manifestFileName, base).toString(), signal",
+    "text": "signal, new URL(manifestFileName, base).toString()"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/electron-updater/src/updater.ts",
+   "unit": "createUpdater",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "swapped-args",
+    "was": "new URL(manifestSignatureFileName, base).toString(), signal",
+    "text": "signal, new URL(manifestSignatureFileName, base).toString()"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/local-files/src/describe-attached-file.ts",
+   "unit": "startsLikeUtf8Text",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/local-files/src/describe-attached-file.ts",
+   "unit": "startsLikeUtf8Text",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "negated-if",
+    "was": "leading.includes(0)",
+    "text": "!(leading.includes(0))"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/local-files/src/describe-attached-file.ts",
+   "unit": "startsLikeUtf8Text",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "boundary",
+    "was": "0",
+    "text": "1"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/local-files/src/describe-attached-file.ts",
+   "unit": "startsLikeUtf8Text",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "changed-return",
+    "was": "false",
+    "text": "!(false)"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/login-environment.ts",
+   "unit": "readLoginEnvironment",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/login-environment.ts",
+   "unit": "readLoginEnvironment",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "shell, [...platform.environmentArguments]",
+    "text": "[...platform.environmentArguments], shell"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/login-environment.ts",
+   "unit": "readLoginEnvironment",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'ignore'",
+    "text": "\"ignorex\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/login-environment.ts",
+   "unit": "readLoginEnvironment",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'pipe'",
+    "text": "\"pipex\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "printStream",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "printStream",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "string",
+    "was": "'utf-8'",
+    "text": "\"utf-8x\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "printStream",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "negated-if",
+    "was": "text !== ''",
+    "text": "!(text !== '')"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "printStream",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "operator",
+    "was": "!==",
+    "text": "==="
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "runCommandInLocalShell",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "runCommandInLocalShell",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "boundary",
+    "was": "2000",
+    "text": "2001"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "runCommandInLocalShell",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "boundary",
+    "was": "200",
+    "text": "201"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/project-records/src/editor-recents-entries.ts",
+   "unit": "localFolderPathOf",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/local-shell/src/run-command.ts",
+   "unit": "runCommandInLocalShell",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "dropped-effect",
+    "was": "await Promise.race([ended, clock.sleep(milliseconds, waiting",
+    "text": ""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/project-records/src/editor-recents-entries.ts",
+   "unit": "localFolderPathOf",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "negated-if",
+    "was": "url.protocol !== 'file:'",
+    "text": "!(url.protocol !== 'file:')"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/project-records/src/editor-recents-entries.ts",
+   "unit": "localFolderPathOf",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "operator",
+    "was": "!==",
+    "text": "==="
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/project-records/src/editor-recents-entries.ts",
+   "unit": "localFolderPathOf",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'file:'",
+    "text": "\"file:x\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "outcome"
+   }
+  },
+  {
+   "file": "adapters/settings-file/src/settings-file.ts",
+   "unit": "settingsFile",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/settings-file/src/settings-file.ts",
+   "unit": "settingsFile",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "negated-if",
+    "was": "stopped.signal.aborted",
+    "text": "!(stopped.signal.aborted)"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/settings-file/src/settings-file.ts",
+   "unit": "settingsFile",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "swapped-args",
+    "was": "pollMilliseconds, stopped.signal",
+    "text": "stopped.signal, pollMilliseconds"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/cli/src/app-start.ts",
+   "unit": "answersAfterEvents",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "deadlineMilliseconds, abort.signal",
+    "text": "abort.signal, deadlineMilliseconds"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "adapters/settings-file/src/settings-file.ts",
+   "unit": "settingsFile",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "dropped-effect",
+    "was": "await clock.sleep(pollMilliseconds, stopped.signal);",
+    "text": ""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/cli/src/app-start.ts",
+   "unit": "answersAfterEvents",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/cli/src/app-start.ts",
+   "unit": "answersAfterEvents",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'timedOut'",
+    "text": "\"timedOutx\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/cli/src/app-start.ts",
+   "unit": "answersAfterEvents",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "string",
+    "was": "'cancelled'",
+    "text": "\"cancelledx\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/compose.ts",
+   "unit": "runningHost",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "startup, parts.isProofBuild",
+    "text": "parts.isProofBuild, startup"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/compose.ts",
+   "unit": "runningHost",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/endpoint.ts",
+   "unit": "startControlEndpoint",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/compose.ts",
+   "unit": "runningHost",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "string",
+    "was": "'HOME'",
+    "text": "\"HOMEx\""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/endpoint.ts",
+   "unit": "startControlEndpoint",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "string",
+    "was": "''",
+    "text": "\"x\""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "drives"
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/endpoint.ts",
+   "unit": "startControlEndpoint",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "dropped-effect",
+    "was": "await options.after;",
+    "text": ""
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/compose.ts",
+   "unit": "runningHost",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "operator",
+    "was": "&&",
+    "text": "||"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/endpoint.ts",
+   "unit": "startControlEndpoint",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "negated-if",
+    "was": "identifier === undefined",
+    "text": "!(identifier === undefined)"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/open-reading.ts",
+   "unit": "firstOpenReading",
+   "kind": "planted",
+   "index": 2,
+   "skipped": "fewer sites"
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/open-reading.ts",
+   "unit": "firstOpenReading",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/open-reading.ts",
+   "unit": "firstOpenReading",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "swapped-args",
+    "was": "openReadingWaitMilliseconds, stopping.signal",
+    "text": "stopping.signal, openReadingWaitMilliseconds"
+   },
+   "fakes": {
+    "verdict": "WITNESS",
+    "reason": "",
+    "where": "trace"
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/open-reading.ts",
+   "unit": "firstOpenReading",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "dropped-effect",
+    "was": "stopping.abort();",
+    "text": ""
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/screen-bridge.ts",
+   "unit": "createScreenBridge",
+   "kind": "self",
+   "index": null,
+   "site": null,
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/screen-bridge.ts",
+   "unit": "createScreenBridge",
+   "kind": "planted",
+   "index": 0,
+   "site": {
+    "kind": "negated-if",
+    "was": "index >= 0",
+    "text": "!(index >= 0)"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/screen-bridge.ts",
+   "unit": "createScreenBridge",
+   "kind": "planted",
+   "index": 1,
+   "site": {
+    "kind": "operator",
+    "was": ">=",
+    "text": ">"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  },
+  {
+   "file": "apps/desktop/core-host/src/control/screen-bridge.ts",
+   "unit": "createScreenBridge",
+   "kind": "planted",
+   "index": 2,
+   "site": {
+    "kind": "boundary",
+    "was": "0",
+    "text": "1"
+   },
+   "fakes": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   },
+   "recording": {
+    "verdict": "PASS-bounded",
+    "reason": "",
+    "where": null
+   }
+  }
+ ]
+}

@@ -1,8 +1,25 @@
 {
- "scope": ["cached_count", "read_or_empty", "saved_name", "line_count"],
- "equal": {},
- "laneBOnly": true,
- "why": "the behavioural fs (design/w2b-node-fakes.md): each changed unit makes the same requests in the same order on both sides and differs only in what it does with the value fs answers. cachedCount reads back a JSON it wrote and takes another field; readOrEmpty tests the error code of a missing file against one fs never raises; savedName is the promise form of the round trip. Under the fake each is a WITNESS (the read returns what was written, a missing file is ENOENT); under the recording proxy alone (bRecord) the read answers a handle, JSON.parse of it fails alike on both sides and a drawn fault carries no code, so each is PASS-bounded: the gap the fake closes. lineCount is a refactor: PASS-bounded either way",
- "b": { "cachedCount": "WITNESS", "readOrEmpty": "WITNESS", "savedName": "WITNESS", "lineCount": "PASS-bounded" },
- "bRecord": { "cachedCount": "PASS-bounded", "readOrEmpty": "PASS-bounded", "savedName": "PASS-bounded", "lineCount": "PASS-bounded" }
+  "scope": [
+    "cached_count",
+    "read_or_empty",
+    "saved_name",
+    "line_count"
+  ],
+  "equal": {},
+  "laneBOnly": true,
+  "why": "the behavioural fs (design/w2b-node-fakes.md): each changed unit makes the same requests in the same order on both sides and differs only in what it does with the value fs answers. cachedCount reads back a JSON it wrote and takes another field; readOrEmpty tests the error code of a missing file against one fs never raises; savedName is the promise form of the round trip. Under the fake each is a WITNESS (the read returns what was written, a missing file is ENOENT); under the recording proxy alone (bRecord) the read answers a handle, JSON.parse of it fails alike on both sides and a drawn fault carries no code, so each is PASS-bounded: the gap the fake closes. lineCount is a refactor: PASS-bounded either way",
+  "b": {
+    "cachedCount": "WITNESS",
+    "readOrEmpty": "WITNESS",
+    "savedName": "WITNESS",
+    "lineCount": "PASS-bounded"
+  },
+  "bUnder": {
+    "LEAN_FAKES=recording": {
+      "cachedCount": "PASS-bounded",
+      "readOrEmpty": "PASS-bounded",
+      "savedName": "PASS-bounded",
+      "lineCount": "PASS-bounded"
+    }
+  }
 }

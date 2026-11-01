@@ -9,7 +9,7 @@
 // before it (their paths and rendered arguments), nothing else (no host file system, no host cwd, no wall clock, no host
 // randomness). Two sides whose traces agree up to a request get the same answer to it.
 //
-// LEAN_FAKES=record turns every model off: each specifier keeps the recording proxy alone (the measurement of the gap
+// LEAN_FAKES=recording turns every model off: each specifier keeps the recording proxy alone (the measurement of the gap
 // this closes, and the --break of the fake tests).
 import { fsModel } from './fs.mjs';
 import { pathModel } from './path.mjs';
@@ -36,7 +36,7 @@ const MODULES = {
 export const MODELLED = Object.keys(MODULES);
 const SPEC = new RegExp(`^module:(?:node:)?(${MODELLED.slice().sort((a, b) => b.length - a.length).map((m) => m.replace('/', '\\/')).join('|')})(?=\\.|$)(.*)$`);
 
-export const fakesOff = () => process.env.LEAN_FAKES === 'record';
+export const fakesOff = () => process.env.LEAN_FAKES === 'recording';
 
 // the member a fake path names on a modelled module: `module:node:fs.default.readFileSync` -> fs, `readFileSync`;
 // null for a path of another module, a result of a call (`...()#1`), or a symbol-ish member

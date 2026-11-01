@@ -1,11 +1,11 @@
 // What the protocol tests of the fakes share (exec/fakes/<module>.test.mjs; design/w2b-node-fakes.md). A protocol test
 // runs one stated sequence of operations on the fake and on the real module and compares what each answers. `--break`
-// (or LEAN_FAKES=record) removes the mechanism under test: every specifier keeps the recording proxy alone, and every
+// (or LEAN_FAKES=recording) removes the mechanism under test: every specifier keeps the recording proxy alone, and every
 // protocol must fail.
 import { Environment } from '../fake.mjs';
 
 export const BREAK = process.argv.includes('--break');
-if (BREAK) process.env.LEAN_FAKES = 'record';
+if (BREAK) process.env.LEAN_FAKES = 'recording';
 
 // an environment whose calls never fault: a protocol is stated for a run without the world's drawn failures (those
 // are the recording proxy's, tested with it)

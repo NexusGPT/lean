@@ -47,7 +47,7 @@ handlers consult it before anything else:
 - **set / has / delete**: recorded as before; the model stores the write (`process.env.X = 1` holds `'1'`, as Node).
 
 A specifier with no model, and a member a model does not hold (`fs.watch`, `crypto.subtle`), keep the recording proxy's
-answer exactly. `LEAN_FAKES=record` turns every model off: the recording proxy alone, the measurement of the gap and the
+answer exactly. `LEAN_FAKES=recording` turns every model off: the recording proxy alone, the measurement of the gap and the
 `--break` of every test below.
 
 ## What stays recorded, and why the trace stays the oracle
@@ -72,7 +72,7 @@ so a refactor that joins once instead of twice, or moves the join across a reque
 on the compared trace it would report a WITNESS of a difference no behaviour has. So a quiet model's operations are kept
 in `env.computed` (and in the witness record's events, `record.mjs`, which sees every operation on a fake) and are not
 on the trace the sides are compared by. Effects stay on the trace: every fs operation, every env read and write, every
-random draw, every timer, every console line. Under `LEAN_FAKES=record` nothing is quiet.
+random draw, every timer, every console line. Under `LEAN_FAKES=recording` nothing is quiet.
 
 ## The fs tree
 
@@ -110,5 +110,5 @@ lint and the translator widen it alike).
 
 ## The measurement
 
-Every pair below runs lane B twice: with the fakes (`b`) and with the recording proxy alone (`bRecord`,
-`LEAN_FAKES=record`, tests/run.mjs). The per-fake table, with every command, is in `lane/w2b-node-fakes-result.md`.
+Every pair below runs lane B twice: with the fakes (`b`) and with the recording proxy alone (`bUnder`,
+`LEAN_FAKES=recording`, tests/run.mjs). The per-fake table, with every command, is in `lane/w2b-node-fakes-result.md`.

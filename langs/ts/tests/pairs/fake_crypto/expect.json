@@ -1,8 +1,22 @@
 {
- "scope": ["fingerprint", "new_id", "digest"],
- "equal": {},
- "laneBOnly": true,
- "why": "the behavioural crypto (design/w2b-node-fakes.md). fingerprint tests the length of a SHA-256 hex digest against SHA-1's, newId counts the groups of a UUID wrong: the same requests on both sides, a different use of the answer; under the fake each is a WITNESS (the digest is Node's, the UUID is a version-4 UUID from the seeded generator), under the recording proxy alone (bRecord) the digest and the split are handles of length two on both sides: PASS-bounded, the gap the fake closes. digest is a refactor through Node's Hash object: under the fake the hash's update and digest are the unit's own computation and the two agree (PASS-bounded); the recording proxy records the chained call and the held one as different requests, a WITNESS of a difference no behaviour has: the fake removes it",
- "b": { "fingerprint": "WITNESS", "newId": "WITNESS", "digest": "PASS-bounded" },
- "bRecord": { "fingerprint": "PASS-bounded", "newId": "PASS-bounded", "digest": "WITNESS" }
+  "scope": [
+    "fingerprint",
+    "new_id",
+    "digest"
+  ],
+  "equal": {},
+  "laneBOnly": true,
+  "why": "the behavioural crypto (design/w2b-node-fakes.md). fingerprint tests the length of a SHA-256 hex digest against SHA-1's, newId counts the groups of a UUID wrong: the same requests on both sides, a different use of the answer; under the fake each is a WITNESS (the digest is Node's, the UUID is a version-4 UUID from the seeded generator), under the recording proxy alone (bRecord) the digest and the split are handles of length two on both sides: PASS-bounded, the gap the fake closes. digest is a refactor through Node's Hash object: under the fake the hash's update and digest are the unit's own computation and the two agree (PASS-bounded); the recording proxy records the chained call and the held one as different requests, a WITNESS of a difference no behaviour has: the fake removes it",
+  "b": {
+    "fingerprint": "WITNESS",
+    "newId": "WITNESS",
+    "digest": "PASS-bounded"
+  },
+  "bUnder": {
+    "LEAN_FAKES=recording": {
+      "fingerprint": "PASS-bounded",
+      "newId": "PASS-bounded",
+      "digest": "WITNESS"
+    }
+  }
 }

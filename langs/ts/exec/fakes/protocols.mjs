@@ -1,5 +1,5 @@
 // Every behavioural fake's protocol test (exec/fakes/<module>.test.mjs), run twice: as written, every test must pass;
-// with --break (the recording proxy alone answers, LEAN_FAKES=record), every file must fail at least one test, so each
+// with --break (the recording proxy alone answers, LEAN_FAKES=recording), every file must fail at least one test, so each
 // protocol rests on its fake and not on the proxy. Exit 0 when both hold; the last line is the summary.
 import fs from 'node:fs';
 import path from 'node:path';
