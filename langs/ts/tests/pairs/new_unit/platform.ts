@@ -1,2 +1,2 @@
-const abort = new AbortController();
-export function f() { return abort; }
+const channel = new BroadcastChannel("updates");
+export function f() { return channel; }

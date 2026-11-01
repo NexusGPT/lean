@@ -78,6 +78,9 @@ const addChildRow = (...a) => rows.push(row(...a));
 
 const sharedDir = path.join(root, 'fixtures/shared');
 const pairFile = (d, side) => fs.existsSync(path.join(d, side + '.tsx')) ? path.join(d, side + '.tsx') : path.join(d, side + '.ts');
+// every file of a pair's folder: what a lane B run of the pair may read (a module the two sides import, a package.json, a
+// tsconfig), so its step-cache key changes when any of them does, not only when a side's own file does
+const pairFolderFiles = (d) => { const out = []; const walk = (x) => { for (const e of fs.readdirSync(x, { withFileTypes: true })) { const p = path.join(x, e.name); if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p); } else out.push(p); } }; walk(d); return out.sort(); };
 const casesDir = path.join(here, 'cases');
 const cases = JSON.parse(fs.readFileSync(path.join(here, 'cases.json'), 'utf8'));
 const tflags = (c, withInv) => {
@@ -171,7 +174,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
-    const r = crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--out', path.join(tmpd, `b_${artifactName(unit)}.json`)], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [path.join(tmpd, `b_${artifactName(unit)}.json`)] });
+    const r = crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--out', path.join(tmpd, `b_${artifactName(unit)}.json`)], { files: pairFolderFiles(d), outs: [path.join(tmpd, `b_${artifactName(unit)}.json`)] });
     let got = 'no result';
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
@@ -184,7 +187,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const env = Object.fromEntries(vars.split(',').map((kv) => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]));
     for (const [unit, want] of Object.entries(units)) {
       const out = path.join(tmpd, `bunder_${artifactName(vars)}_${artifactName(unit)}.json`);
-      crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [out], env });
+      crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--out', out], { files: pairFolderFiles(d), outs: [out], env });
       let got = 'no result'; try { got = JSON.parse(fs.readFileSync(out, 'utf8')).verdict; } catch { /* keep */ }
       add('pair', name, `lane B ${unit} under ${vars}: ${want}`, got === want, got);
     }
@@ -749,6 +752,8 @@ async function adviceLabels(add) {
     // a const second name of a parameter's instance of a class of this file is carried by the value reading: a write through either rebinds the other; a pair it cannot carry stays refused (conformance-causeof-spill lane, 2026-10-31)
     ['carried-alias', scriptRow('runtime', 'carried-alias', 'a write through a carried second name of a parameter rebinds the other name, in a loop too; handed, rebound or closed over, it is refused', [path.join(here, 'carried-alias.mjs')], lastLine)],
     // the project's sandbox list, .gate/sandbox.json of the parent commit, holds lane B's reads, writes, programs and packages; every refusal is a certificate row (exec/sandbox-list.mjs, lane lean-allow-list, 2026-10-31)
+    // the web fakes' protocols (exec/fakes/web/web.test.mjs, design/w2c-web-fakes.md): every test passes with the fakes, and every one fails under LEAN_FAKES=recording (the break: the fakes off), so no test passes without the mechanism it tests
+    ['web-fakes', async (R, add) => { const count = (r) => { const t = r.stdout + r.stderr; return { pass: Number(t.match(/ℹ pass (\d+)/)?.[1] ?? NaN), fail: Number(t.match(/ℹ fail (\d+)/)?.[1] ?? NaN) }; }; const file = path.join(here, '../exec/fakes/web/web.test.mjs'); const on = count(await R.run('node', ['--test', file])), off = count(await R.run('node', ['--test', file], { LEAN_FAKES: 'recording' })); add('runtime', 'web-fakes', 'each web fake keeps its protocol (fetch keyed by request, storage a record, the virtual-clock abort, platform objects rendered by their state); every test fails with the fakes off', on.pass > 0 && on.fail === 0 && off.pass === 0 && off.fail === on.pass, `${on.pass} pass, ${on.fail} fail; under LEAN_FAKES=recording ${off.pass} pass, ${off.fail} fail`); }],
     ['sandbox-list', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, '../exec/sandbox-list.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'sandbox-list', 'the list of the parent commit allows and refuses reads, writes, programs and packages, each refusal a certificate row; absent, today\'s sandbox', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     ['refusal-path-space', scriptRow('runtime', 'refusal-path-space', 'a translator refusal in a path with a space keeps its rule', [path.join(here, 'refusal-path-space.mjs')], lastLine)],
     ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],

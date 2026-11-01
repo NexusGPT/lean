@@ -857,3 +857,11 @@ intake row of the ledger: an artifact by kind or class (config, test, lockfile, 
 edit by its named reason, the empty diff. It stays in the intake table. A non-inert intake row keeps its ASK in the
 data, so `--block ask` still blocks on it. Both rules are about what the edit is, decided once in the ledger. Neither
 depends on a hash, a file name or the pull request.
+
+## 2026-11-01: the web fakes add no admission site
+
+The behavioural fakes of the web platform (design/w2c-web-fakes.md) are lane B's world: `exec/fakes/web/` answers
+`fetch`, the Fetch classes, `AbortSignal.timeout` and the storage areas inside the sandbox, and `exec/fake.mjs` renders
+platform objects by their state. No call of the lint's `v`, `refuse` or `note`, no translator `fail` and no
+`Unsupported` was added or moved, so `lower.mjs --audit` reads the same sites and the table above has no new row. The
+one new switch, `LEAN_FAKES=recording`, chooses lane B's world, never what lean admits.
