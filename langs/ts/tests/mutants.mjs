@@ -53,15 +53,16 @@ export function foundBy(res) {
   if (res.verdict !== 'WITNESS') return null;
   if (B.verdict === 'WITNESS') {
     const w = (B.witnesses ?? [])[0] ?? res.witness ?? {};
-    if (w.source) return { lane: 'B', source: String(w.source) };
+    const named = w.source ?? res.witness?.source ?? B.source;
+    if (named) return { lane: 'B', source: String(named) };
     if (typeof w.input === 'number') return { lane: 'B', source: B.record?.draws?.find((d) => d.input === w.input)?.family ?? 'drawn input' };
     if (typeof w.input === 'string') return { lane: 'B', source: w.input.replace(/\s*\d+$/, '') };
     if (w.schedule) return { lane: 'B', source: 'schedule' };
     if (w.sequence) return { lane: 'B', source: 'click sequence' };
     return { lane: 'B', source: 'other' };
   }
-  const w = res.witness ?? {};
-  if (w.source) return { lane: 'A', source: String(w.source) };
+  const named = res.witness?.source ?? A.source ?? A.counterexample?.source;
+  if (named) return { lane: 'A', source: String(named) };
   if (A.verdict === 'WITNESS' && A.doubles) return { lane: 'A', source: 'doubles counterexample' };
   return { lane: A.verdict === 'WITNESS' ? 'A' : '?', source: 'other' };
 }
