@@ -17,7 +17,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { ENVELOPE } from '../translate/opaque-statements.mjs';
 import { BREAK_ENV, MECHANISMS } from './break.mjs'; // the one --break convention (A6)
@@ -37,11 +37,16 @@ const pairs = fs.readdirSync(path.join(here, 'pairs')).filter((n) => { const e =
 
 // a mechanism's run reads the pairs that hold its guarded unit only (in the scope, or checked per unit)
 const holds = (n, unit) => { const e = expectOf(n); return (e.scope ?? []).includes(unit) || (e.candidateOnly ?? []).some((c) => c.unit === unit); };
-function runOnce(mechanism) {
+// each pair alone (`run.mjs --pair <name>`: its own rows, none of the other sections), JOBS at a time; under a break the
+// step cache is off, so no step is read from a run that had the mechanism
+async function runOnce(mechanism) {
   const these = mechanism ? pairs.filter((n) => holds(n, GUARDS[mechanism])) : pairs;
-  const env = { ...process.env, LEAN_PAIRS: these.join(','), JOBS: String(Math.min(4, Number(process.env.JOBS ?? 4))), ...(mechanism ? { [BREAK_ENV]: mechanism, LEAN_STEP_CACHE: '0' } : {}) };
-  const r = spawnSync('node', [path.join(here, 'run.mjs')], { env, encoding: 'utf8', maxBuffer: 1 << 28 });
-  const out = (r.stdout ?? '') + (r.stderr ?? '');
+  const env = { ...process.env, JOBS: '1', ...(mechanism ? { [BREAK_ENV]: mechanism, LEAN_STEP_CACHE: '0' } : {}) };
+  const outs = new Map(); let next = 0;
+  const one = (name) => new Promise((resolve) => { const c = spawn('node', [path.join(here, 'run.mjs'), '--pair', name], { env }); let o = ''; c.stdout.on('data', (d) => { o += d; }); c.stderr.on('data', (d) => { o += d; }); c.on('close', () => { outs.set(name, o); resolve(); }); });
+  const worker = async () => { while (next < these.length) await one(these[next++]); };
+  await Promise.all(Array.from({ length: Math.min(4, Number(process.env.JOBS ?? 3)) }, worker));
+  const out = these.map((n) => outs.get(n) ?? '').join('\n');
   const rows = out.split('\n').filter((l) => /^\|\s*pair\s*\|\s*opaque_/.test(l)); // the runner pads its columns
   const log = path.join(os.tmpdir(), `opaque-statements${mechanism ? '-' + mechanism : ''}.log`); fs.writeFileSync(log, out); console.log(`full output: ${log}`);
   const failed = rows.filter((l) => /\|\s*FAIL\s*\|/.test(l));
@@ -50,7 +55,7 @@ function runOnce(mechanism) {
 }
 
 if (!BREAK) {
-  const { rows, failed } = runOnce(null);
+  const { rows, failed } = await runOnce(null);
   for (const l of failed) console.log(l.replace(/\s+\|/g, ' |').slice(0, 220));
   console.log(`${pairs.length} pairs, ${rows.length} rows, ${failed.length} failed`);
   process.exit(failed.length ? 1 : 0);
@@ -58,7 +63,7 @@ if (!BREAK) {
 let bit = 0;
 const mechanisms = BREAK === 'all' ? Object.keys(GUARDS) : [BREAK];
 for (const m of mechanisms) {
-  const { rows, failed } = runOnce(m);
+  const { rows, failed } = await runOnce(m);
   const guarded = failed.filter((l) => guardRow(GUARDS[m]).test(l));
   for (const l of guarded) console.log(`${m}: ${l.replace(/\s+\|/g, ' |').slice(0, 200)}`);
   console.log(`--break ${m}: ${pairs.filter((n) => holds(n, GUARDS[m])).length} pairs, ${rows.length} rows, ${failed.length} failed, ${guarded.length} \`${GUARDS[m]}\` units proved falsely without the mechanism`);

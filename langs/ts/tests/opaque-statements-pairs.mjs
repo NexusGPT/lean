@@ -86,7 +86,8 @@ export const SPECS = [
   // the translator reads these sites whole-unit (the numeric boundary, subset.md "Numeric special boundary")
   { rule: 'number-special', whole: true, doublesRead: true, params: 'x: number', ret: 'number', body: ['if (x > 0) return NaN;', 'return x + 1;'], change: ['return x + 1;', 'return 1 + x;'],
     why: 'the bare global NaN' },
-  { rule: 'unary-coercion', whole: true, params: 'o: { v: number }, k: number', ret: 'number', body: ['const n = +(o as any);', 'return n + k;'], change: ['return n + k;', 'return k + n;'],
+  { rule: 'unary-coercion', whole: true, b: { caller: 'PASS-bounded' }, // escapes returns NaN, and NaN + 1 is NaN + 2 at run time
+    params: 'o: { v: number }, k: number', ret: 'number', body: ['const n = +(o as any);', 'return n + k;'], change: ['return n + k;', 'return k + n;'],
     why: 'unary + on an object (ToNumber of an object, NaN here)' },
   { rule: 'division', whole: true, doublesRead: true, params: 'x: number', ret: 'number', body: ['let y = x;', 'y /= 2;', 'return y + 1;'], change: ['return y + 1;', 'return 1 + y;'],
     why: 'compound division in an integer file (a fraction where the model holds an integer)' },
