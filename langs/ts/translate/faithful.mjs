@@ -33,6 +33,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ts, topLevelFunctions, fileDiagnostics, assertionHeld } from '../common.mjs';
 import { calleesOf } from '../exec/callees.mjs';
+import { broken } from '../break.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const LEAN_NUMBER_DTS = path.join(here, '..', 'lean-number.d.ts');
@@ -312,11 +313,17 @@ export function faithfulNumbers(loaded, { steps = [] } = {}) {
   const truthy = new Set(), wrapping = new Set(); // conditions holding a non-exact number: read by the uninterpreted truthiness
   const opaqueIn = new Set(); // the units whose text the rewrite changed: their numbers pass through uninterpreted operations
   const touched = (n) => { const u = unitOfNode(n); if (u) opaqueIn.add(u.name); };
+  // a rewritten node holds as many line breaks as its text as written: an operation's arguments are joined on one line
+  // (`Math.max(\n 0,\n x)` read as `Math.__lean_max2(0, x)`), so the breaks it dropped go before its closing parenthesis
+  // (every rewrite ends with one), and the code after it keeps its lines; a file whose rewrite moved a line is read
+  // exactly with every unit unplaced (translate.mjs faithfulFailed). tests/break.mjs faithful-lines drops the padding
+  const breaks = (x) => { let k = 0; for (let i = x.indexOf('\n'); i >= 0; i = x.indexOf('\n', i + 1)) k++; return k; };
+  const keepLines = (n, out) => { if (broken('faithful-lines')) return out; const d = breaks(sf.text.slice(n.getStart(sf), n.end)) - breaks(out); return d > 0 && out.endsWith(')') ? `${out.slice(0, -1)}${'\n'.repeat(d)})` : out; };
   function text(n) {
     if (stepOf(n)) return sf.text.slice(n.getStart(sf), n.end); // an opaque step's statement (or a node in it): as written
-    if (truthy.has(n) && !wrapping.has(n)) { wrapping.add(n); touched(n); try { return call('truthy', [text(n)]); } finally { wrapping.delete(n); } }
+    if (truthy.has(n) && !wrapping.has(n)) { wrapping.add(n); touched(n); try { return keepLines(n, call('truthy', [text(n)])); } finally { wrapping.delete(n); } }
     const own = rewrite(n);
-    if (own !== null) { touched(n); return own; }
+    if (own !== null) { touched(n); return keepLines(n, own); }
     return splice(n);
   }
   function splice(n) {

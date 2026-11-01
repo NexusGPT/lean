@@ -1,0 +1,23 @@
+{
+  "scope": [
+    "clamp",
+    "shifted"
+  ],
+  "equal": {
+    "clamp": true,
+    "shifted": false
+  },
+  "why": "a number operation written over several lines: the faithful rewrite reads it as one call on one line and puts the dropped line breaks before its closing parenthesis (translate/faithful.mjs keepLines), so the lines after it hold and the file's faithful text translates; clamp's outside read leaves the doubles reading unknown and the faithful reading proves y + 1 against 1 + y (one uninterpreted addition). Under LEAN_BREAK=faithful-lines the file's faithful text is refused (the rewrite changed the line count) and clamp is not proved. shifted adds 2 where the parent adds 1: two uninterpreted additions of other operands, never proved (the padded text reads the change).",
+  "b": {
+    "clamp": "PASS-bounded",
+    "shifted": "WITNESS"
+  },
+  "break": [
+    {
+      "mechanism": "faithful-lines",
+      "equal": {
+        "clamp": false
+      }
+    }
+  ]
+}
