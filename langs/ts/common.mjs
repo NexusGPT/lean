@@ -2484,6 +2484,7 @@ export function heldCall(checker, call, seen = new Map()) { // seen: the caller'
 // so the outside is handed the value itself; the reading hands it `ext_<from>_as_<to>(v)`, a function of that value, and
 // no statement of the unit reads it as its declared type. A same-file callee with a body, a library operation, a literal
 // bound to a name, a field write, an element store or a callback result reads it as declared: those stay refused.
+const LEAN_NUMBER_DTS = path.join(here, 'lean-number.d.ts'); // translate/faithful.mjs's declarations
 export function outsideSlot(checker, n) {
   const everyCallee = broken('outside-slot'); // tests/break.mjs: every callee taken for the outside (tests/w1g-opaque-handed.mjs: the refusal check must go red)
   let x = n;
@@ -2501,6 +2502,7 @@ export function outsideSlot(checker, n) {
       if (everyCallee) return true;
       const dsf = d.getSourceFile();
       if (dsf.hasNoDefaultLib || /[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/.test(dsf.fileName)) return false; // a library operation: read exactly
+      if (path.resolve(dsf.fileName) === LEAN_NUMBER_DTS) return false; // the faithful reading's operation (Math.__lean_add and kin, translate/faithful.mjs): it reads its operands as numbers, no outside slot
       if (dsf === n.getSourceFile() && ts.isFunctionLike(d) && d.body) return false; // a unit of this file reads its parameter
       if (dsf !== n.getSourceFile()) return true; // another file's function or a declaration file's: one transition named by its name
       if (d.body) return false;
@@ -2721,6 +2723,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   // `open` when the type is any or unknown or deeper than that (it may hold anything). A function value or a promise
   // holds no object a read takes (a function reaches what it is handed, a promise is read through the world)
   const closures = new Map(), LIB_COLLECTIONS = new Set(['Array', 'ReadonlyArray', 'Map', 'ReadonlyMap', 'Set', 'ReadonlySet']);
+  const methodsOnly = (x) => { if (!(x.flags & TF.Object) || checker.getIndexTypeOfType(x, ts.IndexKind.String) || checker.getIndexTypeOfType(x, ts.IndexKind.Number) || (checker.getTypeArguments?.(x) ?? []).length) return false; const ps = checker.getPropertiesOfType(x); return ps.length > 0 && ps.every((s) => (s.declarations ?? []).length > 0 && s.declarations.every((d) => ts.isMethodSignature(d) || ts.isMethodDeclaration(d))); };
   const closure = (t) => {
     if (closures.has(t)) return closures.get(t);
     const c = { types: new Set(), open: false };
@@ -2731,6 +2734,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
       if (x.flags & TF.Union || x.flags & TF.Intersection) { for (const y of x.types) add(y, depth); return; }
       if (prim(x) || primitiveBrand(x) || c.types.has(x)) return;
       if (checker.getSignaturesOfType(x, ts.SignatureKind.Call).length || ['Promise', 'PromiseLike'].includes(x.symbol?.name ?? '')) return;
+      if (methodsOnly(x)) return; // a port (every member a method, `interface Audit { log(...): ... }`): a read through it is a call, which threads the world, so it holds no field a read takes
       if (depth >= 4 || c.types.size > 200) { c.open = true; return; }
       c.types.add(x);
       for (const y of checker.getTypeArguments?.(x) ?? []) add(y, depth + 1);

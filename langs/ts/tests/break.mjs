@@ -5,10 +5,14 @@
 // the variable set and asserts the verdict flips: a lemma the pair expects not proved becomes proved (a false
 // PASS-proved the suite refuses to count as a pass), so the row shows the mechanism is what keeps the pair honest.
 //
-// In a pair's expect.json:
-//   "break": [{ "mechanism": "<name>", "equal": { "<lemma unit>": true } }]
-// `equal` lists the lemmas the broken run proves; each must be expected `false` in the pair's own `equal` (a flip).
-// The runner (tests/run.mjs) translates both sides again with LEAN_BREAK=<name> and checks each listed lemma.
+// In a pair's expect.json, one shape (an array of rows, each naming its mechanism), whichever lane the row reads:
+//   "break": [{ "mechanism": "<name>", "equal": { "<lemma unit>": true }, "b": { "<unit>": "<verdict>" } }]
+// `equal` (lane A) lists the lemmas the broken run proves; each must be expected `false` in the pair's own `equal` (a
+// flip). The runner (tests/run.mjs) translates both sides again with LEAN_BREAK=<name> and checks each listed lemma.
+// `b` (lane B) lists the verdicts lane B gives under the break; each unit is in the pair's own `b` with another verdict
+// (a flip). tests/lib-break.mjs runs lane B on each such unit as is and under the break. A row carries either or both.
+// Why the array: a pair's rows may share a mechanism (opaque_async_origin) and a row may name two (below); keyed by
+// mechanism, the second row of a name has no place, and both readers read every row through breakRows below.
 // When a second mechanism also refuses the unit, `mechanism` lists both ("<name>,<other>"): every guard off, the false
 // proof shows, and the row stays a break of each name it lists.
 //
@@ -67,15 +71,23 @@ export const MECHANISMS = {
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';
-// a pair's break rows, checked for shape: a mechanism must be registered, a lemma must flip
+// a pair's break rows, checked for shape: a mechanism must be registered, a lemma or a verdict must flip. One reader for
+// both runners: lane A rows ({ lane: 'A', mechanism, unit }) for tests/run.mjs, lane B rows ({ lane: 'B', mechanism,
+// unit, verdict }) for tests/lib-break.mjs
 export function breakRows(exp) {
   const rows = [];
+  if (exp.break !== undefined && !Array.isArray(exp.break)) throw new Error('break: the key is an array of rows ({ mechanism, equal, b }), tests/break.mjs');
   for (const b of exp.break ?? []) {
     // a unit two mechanisms guard is broken by both: `mechanism` may list them ("a,b"), each registered
-    for (const m of b.mechanism.split(',')) if (!MECHANISMS[m]) throw new Error(`break: ${m} is not a registered mechanism (tests/break.mjs MECHANISMS)`);
+    for (const m of String(b.mechanism).split(',')) if (!MECHANISMS[m]) throw new Error(`break: ${m} is not a registered mechanism (tests/break.mjs MECHANISMS)`);
+    if (!b.equal && !b.b) throw new Error(`break ${b.mechanism}: the row lists no lemma (equal) and no verdict (b)`);
     for (const [unit, want] of Object.entries(b.equal ?? {})) {
       if (exp.equal?.[unit] !== false || want !== true) throw new Error(`break ${b.mechanism}: ${unit} must be expected not proved and proved under the break (a flip)`);
-      rows.push({ mechanism: b.mechanism, unit });
+      rows.push({ lane: 'A', mechanism: b.mechanism, unit });
+    }
+    for (const [unit, verdict] of Object.entries(b.b ?? {})) {
+      if (!(unit in (exp.b ?? {})) || exp.b[unit] === verdict) throw new Error(`break ${b.mechanism}: lane B ${unit} must be in the pair's b with another verdict than ${verdict} (a flip)`);
+      rows.push({ lane: 'B', mechanism: b.mechanism, unit, verdict });
     }
   }
   return rows;

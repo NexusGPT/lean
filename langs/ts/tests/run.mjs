@@ -214,7 +214,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // `break` in expect.json (tests/break.mjs, the one convention): both sides translated again with LEAN_BREAK=<mechanism>;
   // each listed lemma, expected not proved above, must prove now: without the mechanism the reading proves a false
   // equality, so the mechanism is what keeps the pair honest (the row passes when the broken run is wrong)
-  for (const { mechanism, unit } of breakRows(exp)) {
+  for (const { mechanism, unit } of breakRows(exp).filter((r) => r.lane === 'A')) { // lane B's rows are tests/lib-break.mjs's
     const bd = path.join(tmpd, `break_${mechanism}`); fs.mkdirSync(bd, { recursive: true });
     const env = { LEAN_BREAK: mechanism };
     for (const which of ['parent', 'candidate']) crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(bd, `${which}.dfy`), '--prelude', path.join(bd, `${which}.pre.dfy`), ...projectArgs, ...(exp.heap !== false ? ['--heap'] : [])], { files: [pairFile(d, which), ...projectFiles], outs: [path.join(bd, `${which}.dfy`), path.join(bd, `${which}.pre.dfy`)], env });

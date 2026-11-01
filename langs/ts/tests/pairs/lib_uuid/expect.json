@@ -8,9 +8,7 @@
   "b": {
     "shaped": "WITNESS"
   },
-  "break": {
-    "library-fakes": {
-      "shaped": "PASS-bounded"
-    }
-  }
+  "break": [
+    {"mechanism": "library-fakes", "b": {"shaped": "PASS-bounded"}}
+  ]
 }

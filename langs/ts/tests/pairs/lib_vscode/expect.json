@@ -8,9 +8,7 @@
   "b": {
     "heard": "WITNESS"
   },
-  "break": {
-    "library-fakes": {
-      "heard": "PASS-bounded"
-    }
-  }
+  "break": [
+    {"mechanism": "library-fakes", "b": {"heard": "PASS-bounded"}}
+  ]
 }

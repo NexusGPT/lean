@@ -80,6 +80,14 @@ already does for a record copy the unit didn't build.
 | `node langs/ts/tests/lib-break.mjs` | see result | each WITNESS unit flips under `LEAN_BREAK=library-fakes` |
 | `node langs/ts/tests/run.mjs --pair lib_lodash` / `lib_date_fns` | lane A proves `spread`, `sizes`, `gap` | `LEAN_BREAK=package-rows`: unproved |
 
+The library pairs' `break` key is the suite's one shape (2026-11-01, the merge with lead-v4; tests/break.mjs): an array
+of rows `{ "mechanism": "library-fakes", "b": { "<unit>": "<verdict>" } }`, where `b` lists lane B's verdict under the
+break, beside the lane A rows' `equal`. It was a map keyed by mechanism (`{ "library-fakes": { ... } }`), while the
+opacity lanes' 30 pairs used the array; merged, tests/run.mjs died on the map and lib-break.mjs read the arrays as maps
+(72 junk rows). The array is kept because a pair may hold two rows of one mechanism, and one row may name two
+mechanisms (`opaque_async_origin`, design/w1d-opaque-async.md), which a map keyed by mechanism has no place for. Both
+readers go through tests/break.mjs `breakRows`: run.mjs takes the lane A rows, lib-break.mjs the lane B rows.
+
 ## Limits
 
 - **Aliasing gap (found here, not fixed here).** The value lane (as of 4747022f) applies a field write through an
