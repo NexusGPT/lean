@@ -10,7 +10,8 @@
 //      erased, so what the guard keeps is the type the callers in other modules read, which no run observes.
 // --break removes the mechanism: the five transforms are taken out of the converter's table, so every fixture of part 1
 // stays as it was and the run fails.
-// Run: node langs/ts/tests/convert_mutation.mjs [--break]
+// --no-fixtures skips part 1 (the suite's row: its convert section runs the fixtures).
+// Run: node langs/ts/tests/convert_mutation.mjs [--break] [--no-fixtures]
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,6 +21,7 @@ import { loadTransforms, convertFile } from '../convert.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const BREAK = process.argv.includes('--break');
+const FIXTURES = !process.argv.includes('--no-fixtures'); // the suite's convert section reads the same fixtures; its row here runs parts 0 and 2
 const MINE = ['closure-counter', 'hoist-update', 'rebuild-by-spread', 'param-copy', 'explicit-return'];
 const pr = path.join(here, '..', 'pr.mjs');
 const cache = fs.mkdtempSync(path.join(os.tmpdir(), 'convert-mutation-cache-'));
@@ -64,7 +66,7 @@ const passed = (v) => v === 'PASS-proved' || v === 'PASS-bounded' || v === 'PASS
 }
 
 // part 1: the fixtures
-for (const name of MINE) {
+if (FIXTURES) for (const name of MINE) {
   const d = path.join(here, 'fixtures', 'convert', name);
   const before = fs.readFileSync(path.join(d, 'before.ts'), 'utf8'), after = fs.readFileSync(path.join(d, 'after.ts'), 'utf8'), wrong = fs.readFileSync(path.join(d, 'wrong.ts'), 'utf8');
   const repo = repoWith(before);
