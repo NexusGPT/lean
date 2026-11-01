@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { intakeRepo } from './build.mjs';
+import { TYPES_UNIT } from '../../../common.mjs';
 import { secretPath, selectUnits, coverageOf, budgetValue, runIdentity, unitKey, markdown, intakeMarkdown } from '../../../pr.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -251,8 +252,9 @@ export function testRunIdentity() {
     assert.ok(fresh.report.rows.every((r) => r.certificate.identity === fresh.report.identity));
     console.log('Identity fresh: 0 reused; report and new certificate identities agree');
     // A head commit is read from that commit's tree only, so each dependency change is committed; the change ledger then
-    // adds its own rows for the edited import and config files, and the guard reads the four unit rows.
-    const unitRows = (report) => report.rows.filter((r) => !['artifact', 'unassigned'].includes(r.decision));
+    // adds its own rows for the edited import and config files (the import file's type-only edit is its types unit's,
+    // design/w1f-module-units.md), and the guard reads the four unit rows of the file that imports it.
+    const unitRows = (report) => report.rows.filter((r) => !['artifact', 'unassigned'].includes(r.decision) && r.unit !== TYPES_UNIT);
     fs.writeFileSync(path.join(refs.repo, 'types.ts'), 'export type Marker = string;\n');
     git('add', 'types.ts');
     git('commit', '-qm', 'Read the changed import');
