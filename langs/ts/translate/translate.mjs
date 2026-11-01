@@ -269,8 +269,11 @@ function translateOnce(file, fnName, opts = {}) {
     if (opaqueGrade(g.rule) !== 'block') return true; // an expression row's finding is a refusal its reading did not grade
     const name = unitOfFinding(g), u = name && fns.get(name);
     if (!gradableUnit(u)) return true;
-    let pos = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1);
-    if (faithful.mapOffset) pos = faithful.mapOffset(pos);
+    const at = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1);
+    let pos = faithful.mapOffset ? faithful.mapOffset(at) : at;
+    // inside text the faithful reading rewrote (`a + f()` becomes a call of its number operation): the site is the start
+    // of the nearest enclosing node the rewrite copied; a site only names the statement that holds it (tailOf)
+    if (!(pos >= 0) && faithful.mapOffset) { let n = ts.getTokenAtPosition?.(normalised.sf, at); while (n && !(pos >= 0)) { n = n.parent; if (n && !ts.isSourceFile(n)) pos = faithful.mapOffset(n.getStart(normalised.sf)); else break; } }
     if (!(pos >= 0)) return true;
     addSite(name, pos, g.rule, g.line, g.msg, [g.line, g.col, g.endLine ?? g.line, g.endCol ?? g.col]); return false;
   });
@@ -6424,7 +6427,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
     const id = `block_opaque_${key}${calleeTag ? '_calls_' + calleeTag : ''}`;
     const step = opaqueForm({ id, external, world: WORLD, inputs, outputs, ret: returns ? { name: 'retb', d: RD, terminal } : null });
-    if (calls.size) { const k = [...prelude.keys()].find((x) => x === step.name); if (k && !prelude.get(k).includes('// CALLS:')) prelude.set(k, `${prelude.get(k)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`); }
+    if (calls.size && !broken('opaque-drop-callees')) { const k = [...prelude.keys()].find((x) => x === step.name); if (k && !prelude.get(k).includes('// CALLS:')) prelude.set(k, `${prelude.get(k)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`); }
     const a0 = t.stmts[0].getStart(sf), z0 = t.stmts[t.stmts.length - 1].getEnd();
     const rows = opaqueRows.get(u.name) ?? []; rows.push(opaqueEntry({ rule: t.rules.join(','), line: lineOf(sf, a0), id: step.name, reads: inputs.map((i) => i.code), writes: ['world', ...outputs.map((o) => o.name), ...(returns ? ['result'] : [])], construct: 'block', span: [lineOf(sf, a0), colOf(sf, a0), lineOf(sf, z0), colOf(sf, z0)], findings: opaqueSites.get(u.name).map((g) => g.span ?? [g.line]), statements: statementCount(t.stmts) })); opaqueRows.set(u.name, rows);
     const ret = (code) => (ctx ? ctx.ret(code) : retIn(code));

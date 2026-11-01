@@ -46,11 +46,11 @@ export const opaqueKey = (parts) => createHash('sha1').update(parts.join('\n\u00
 // inputs: [{ code, d }] the values read (self first when read), outputs: [{ name, d }] the names written, jump: the
 // name of the loop-control code (0 falls through), ret: { name, d, terminal } the result channel (Option<d> unless the
 // construct cannot fall through). `external` declares the bodiless function in the prelude and returns its name.
-// LEAN_BREAK=opaque-drop-read removes the first read and LEAN_BREAK=opaque-drop-write the first written output (the
+// LEAN_BREAK=opaque-drop-read removes the first scalar read (a value a change outside the step flows in through) and LEAN_BREAK=opaque-drop-write the first written output (the
 // value then flows past the step unchanged): the mechanisms the pair tests break, each must turn a change outside the
 // step into a false proof the tests refuse (tests/break.mjs); never set outside them.
 export function opaqueForm({ id, external, world, inputs, outputs, jump = null, ret = null }) {
-  if (broken('opaque-drop-read') && inputs.length) inputs = inputs.slice(1);
+  if (broken('opaque-drop-read') && inputs.length) { const i = Math.max(0, inputs.findIndex((x) => /^(int|real|bool|string)$/.test(x.d))); inputs = inputs.filter((_, j) => j !== i); } // the first scalar read (else the first)
   if (broken('opaque-drop-write') && outputs.length) outputs = outputs.slice(1);
   const inTypes = ['World', ...inputs.map((i) => i.d)];
   const outTypes = ['World', ...(jump ? ['int'] : []), ...(ret ? [ret.terminal ? ret.d : `Option<${ret.d}>`] : []), ...outputs.map((o) => o.d)];
@@ -67,7 +67,7 @@ export const opaqueEntry = ({ rule, line, id, reads, writes, construct, span = n
 export const opaqueLine = (unit, entry) => `// OPAQUE ${unit}: ${JSON.stringify(entry)}`;
 export function opaqueLines(text) {
   const out = new Map();
-  for (const m of String(text).matchAll(/^\/\/ OPAQUE (\S+): (.*)$/gm)) { let e = null; try { e = JSON.parse(m[2]); } catch { continue; } if (!out.has(m[1])) out.set(m[1], []); out.get(m[1]).push(e); }
+  for (const m of String(text).matchAll(/^\/\/ OPAQUE (\S+): (.*)$/gm)) { try { out.set(m[1], JSON.parse(m[2])); } catch { /* a line that does not parse lists nothing */ } } // one line per unit
   return out;
 }
 // The opaque fraction of a unit (A5): the statements its opaque steps cover over the statements of its body, each

@@ -4,7 +4,7 @@ The rules: `alias-mutation`, `param-assign`, `param-mutation`, `property-assign`
 `closure-mutation`, `opaque-mutation`, `receiver-mutation`, `receiver-write`, `object-method-capture`,
 `object-method-mutation`, `mutator-value`. Before this lane a finding of any of them stopped its unit. At v0.1.4 they
 stopped 3,029 units of the 39 census roots (the R6 run at b5c0745, `refusalRules`, first rule per unit). Now each is
-graded `opaque: block` (the column, `translate/opaque.mjs` `OPAQUE`): the unit is translated, and the part of it the
+graded `opaque: block` (the column, `lint/lint.mjs` `OPAQUE_ROWS`, re-exported by `translate/opaque.mjs`): the unit is translated, and the part of it the
 rule could not read is one opaque step. The message is kept; the finding carries `opaque: "block"`.
 
 ## What every refusal in this family protects
@@ -98,9 +98,9 @@ the rest of a unit: `effect(world, block_id, reads) = (world', result, outputs)`
    differ (a change inside the block) the two calls are of two functions and nothing equates them: never PASS-proved.
 
 The over-approximation in reads (every mentioned name) and writes (every mentioned reference parameter) costs proofs,
-never soundness. The one way to a false proof is a missing read: a value the block depends on that differs between
-the sides while the reads are equal. The pairs' `--break` (`LEAN_OPAQUE_BREAK=drop-read`) drops one read and must
-turn a changed read into a false PASS-proved that the tests refuse.
+never soundness. The ways to a false proof are a missing read (a value the block depends on that differs between the
+sides while the reads are equal), a missing write (a value the block changes that a caller reads afterwards), and a
+key that misses code the block runs (a same-file callee). Each has its mechanism and its break (below).
 
 Inherited, not new: a property read of a value the file did not declare an accessor on runs no code (the value
 reading's assumption), and the outside runs file code only through values handed to it (reach.mjs).
@@ -111,6 +111,58 @@ The existing opaque block's id (`opaqueStep`, try/loop/switch blocks) normalised
 `.replace(/\/\/[^\n]*/g, '')`, which cuts a string literal at `//`: `fetch("http://a")` and `fetch("http://b")` were
 one symbol, so a changed URL inside an opaque loop could be proved equal. The id is now the construct's tokens
 (`opaqueText`), shared by every opaque block (pair `opaque_block_text`).
+
+## Who decides: the lint, the lowering, the translator
+
+- The lint keeps every rule and its message; a finding of a graded rule carries `opaque: "block"` (`v` in lint.mjs adds
+  it from the row). The rows live in `lint/lint.mjs` `OPAQUE_ROWS` (amendment A7): each W1 lane fills its own.
+- The lowering (`lower.mjs lowerFile`) does not stop a unit on a graded finding when the translator runs (phase 4): the
+  translator decides. A unit the translator reads holds its graded findings as `opaque: [...]` on its record, with the
+  reading `opaque` (readings.mjs, owning no rule and no kind; its own refusal is `opaque: ...`), and they leave the
+  record's findings, so nothing downstream (the census, the gate, pr.mjs) counts them as refusals. A unit the
+  translator refuses keeps the graded finding only when that refusal is the finding itself; otherwise the finding is
+  not why the unit stops and moves to the record's `opaque` list marked `graded: false`. Without emission
+  (`emission: false`) a graded finding refuses as before.
+- The translator turns the unit's graded lint findings into sites (`opaqueSites`). A translator refusal whose rule the
+  column grades (`gradedRule`, the `<rule>: ` prefix) and that names a node becomes a site too: `translateGraded` reads
+  the file again with it (the unit's outputs and its callers' change, so the whole file is read again, at most 64
+  rounds, a repeated site rethrows). The checks the value reading runs before emitting a unit (`firstElementMutation`,
+  `sharedMutation`, a parameter both rebound and changed in place) do not refuse a construct the block holds: the
+  value reading never reads it.
+- A unit with a block is effectful, reaches outside for its callers (`reachesOutside`), and stays out of the heap core
+  (the heap core has no block step; `heapT.plan` is given the units without sites).
+
+## The amendments (2026-11-01 plan review)
+
+- **A2, writes closed under the alias origin.** The block writes the world and every reference parameter it mentions,
+  whatever name the write goes through: an alias of a parameter's field writes the parameter because the parameter is
+  mentioned by the alias's declaration, which is inside the block (the block starts at the first statement that binds
+  a reference, `heapOperation`). An origin nobody can name (a call's result, an element) writes the world, which the
+  block always writes. The amendment's own pair (`count`, in `opaque_alias_mutation`) is not a finding of this family:
+  the lint admits it and the value reading reads it exactly, and the heap guard withholds its lemma (`UNGUARDED
+  Equal_count: ... exposed by: nested write through an input`): ASK in lane A, WITNESS in lane B, never PASS-proved. The
+  pair keeps it as a `withheld` row. The write break is `after`: a caller reading `b.inner.v` after `bump` (whose block
+  writes `b`) against before it; `LEAN_BREAK=opaque-drop-write` drops the step's first written output and the lemma
+  proves, a false PASS-proved.
+- **A3, the key holds the same-file callees.** The step's id hashes the block's tokens, the parameter list, the code
+  each statement reaches (reach.mjs `keyText`: the same-file functions it calls and the module bindings it reads,
+  transitively), and for a callback unit the enclosing function's text; its prelude entry names the callees (`//
+  CALLS:`), so the theorem refuses the step when a callee changed. `viaCallee` changes its callee `bonus` only at
+  `x === 7919` behind an identical block: not proved; `LEAN_BREAK=opaque-drop-callees` removes the reached code from the
+  key and the CALLS line and the lemma proves.
+- **A5, the span and the fraction.** The certificate (`lanes.A.opaque`) lists each step with its span, the spans of the
+  findings it grades, the statements it covers, and the unit's opaque fraction (covered statements over the body's,
+  every depth counted, nested functions not). **The block's span is not the finding's span:** a block runs from the
+  first reference statement to the end of the unit, because the value reading has no term for sharing (the section
+  "Why the opaque step cannot be one statement here"). A step whose span equals the finding's needs a reading in which
+  sharing is a value, which the heap core is (references are cells, two parameters may be one object): there an opaque
+  statement reading and writing the heap is sound by the effect axiom alone. That second rung is not built in this lane
+  (open, see the result file); the census reports the fraction the block rung gives.
+- **A6, one break convention.** `tests/break.mjs`: the code reads `LEAN_BREAK=<mechanism>` through `broken(name)`; a
+  pair's `expect.json` lists `"break": [{ "mechanism", "equal": { "<unit>": true } }]`, each unit expected `false` in the
+  pair's own `equal`; the runner translates both sides again under the break and requires the lemma to prove (the row
+  passes when the broken run is wrong). Mechanisms: `opaque-drop-read` (the step's first scalar read),
+  `opaque-drop-write` (its first written output), `opaque-drop-callees` (the reached code in its key and its CALLS line).
 
 ## What is not graded
 
