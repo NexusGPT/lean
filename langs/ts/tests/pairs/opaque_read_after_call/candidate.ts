@@ -56,3 +56,20 @@ export function written(make: () => Box, keep: (o: Box) => void, report: () => n
   o.x = w;
   return report();
 }
+
+// (h) a collection of primitive parts the unit made: sealed while no call is handed it (an accumulator read after any
+// call is exact); handed, it is a handle (LEAN_BREAK=sealed-collection seals the handed one and the pair must go red)
+export function accumulated(g: (a: string[]) => void): number {
+  const xs: string[] = [];
+  const n = xs.length;
+  g(xs);
+  return n;
+}
+
+// (i) the accumulator a call is never handed, read after a call that may reach a string array by type: exact, proved
+export function tally(names: string[], g: (a: string[]) => void): number {
+  const out: string[] = [];
+  g(names);
+  out.push("x");
+  return out.length;
+}

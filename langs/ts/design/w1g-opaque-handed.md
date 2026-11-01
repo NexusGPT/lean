@@ -60,30 +60,60 @@ of primitive parts (a literal of primitive members, a copy `{ ...p }` of a recor
 binding, so a call before it cannot reach it (its start is its binding); and such a local only read by field or
 returned is sealed (no call is ever handed it).
 
+### A new object a name holds: named by its site
+
+The wider reach makes a new object the unit made (`const slots = []`, `const program = new Command()`) reached, by type,
+by calls that never saw it; before, such a read was refused ("names no identity") whenever a reached read was. A new
+object bound once to a site that runs once per run of the unit (in no loop of it) is now named by that site, as
+`handed_fresh_<T>(v, k)` already names one handed to a call: the read is `ext_now_fresh_<T>(wld, x, k)`, k the site's
+order among the sites the unit names (translate.mjs `namedSite`, `nowOf`). Sound because after the reaching call every
+write to the object is refused (a write form after the call), so its state at the read is a function of the world,
+its value when the call ran (the current value of the name) and its identity (the site, unique in the run). Two new
+objects of one value are two sites: pair unit `twoNew`, whose break `fresh-site` names them by value and proves the
+false equality.
+
+### A write to a handle is a transition
+
+A one-level write `x.f = v` after a call that may reach `x` was read as `x := ext_now_<T>(wld, x).(f := v)`: the name is
+rebound, but the world never sees the write, so a later call that kept the object (`keep(o); o.x = v; report()`)
+answered as if it had not happened. Two units writing different values then proved equal (the probe was withheld only by
+the identity guard of a record result; with an int result it is pair unit `written`, PASS-proved under the break). The
+write now binds the new value and tells the world, `wld := ext_put_<T>(wld, v)` (translate.mjs `pathUpdate`), so every
+later transition is a function of it. Break `handle-write`.
+
 ## copied-argument: a literal of existing parts
 
 Before, a new object holding objects handed to a call that threads the world was refused unless every part was itself a
 literal (`freshTree`): the reading did not hold the identities inside it. 456 of the 1,134 units' first findings were
-this. Now a literal (translate.mjs `mixedTree`) whose every member sits at a key the text fixes (no spread, no computed
-or repeated key, no hole) is handed when each part is:
+this. Now a literal, or a call that makes a new object, is handed (translate.mjs `mixedTree`) with a skeleton: the
+literal's shape with each part written by its kind. A part is
 
-- a leaf: a primitive, a function value, an any value, a promise (its value is the handed value's at that path);
-- an existing object (`identityOf`: a member read, a parameter, an outside answer, `this`, an alias), named by its value
-  as when it is handed alone;
-- a new object written in place: a literal (read part by part) or a call that makes one (`new`, `slice`, `map`, ...),
-  held by no other name.
+- `V`, a leaf: a primitive, a function value, an any value, a promise (its value is the handed value's at that path);
+- `E`, an existing object (`identityOf`: a member read, a parameter, an outside answer, `this`, an alias), named by its
+  value as when it is handed alone;
+- `{ ... }` / `[ ... ]`, a literal written in place, read part by part;
+- `new(t)`, a new object made in place whose inner identities its text and its value fix: an element-keeping copy
+  (`slice`, `filter`, `concat`, `toSorted`, ...: its elements are the source's), `map`/`flatMap` with an inline callback
+  that calls nothing, the fresh calls (`JSON.parse`, `structuredClone`, `Object.entries`, `Array.from` without a mapper),
+  `new` of a library class; t is its text;
+- `site(k)`, a name bound once to a new object made in no loop, numbered as `handed_fresh` numbers sites, whose own
+  interior holds no named part.
 
-The handed term is `handed_fresh_<skeleton>_<T>(v, k)`, where the skeleton is the literal's shape with each existing
-part written `E`, each leaf `V`, each new call part by its text. With no spread and fixed keys the value holds every
-part at its path, so the value and the skeleton give the handed graph: which part is new (an identity no one else
-has), which is existing (named by its value, the convention every handed argument already uses). A new part and an
-existing part of equal value are two terms (pair unit `shared`, `{ x: r.tags, y: r.tags }` against
-`{ x: r.tags, y: structuredClone(r.tags) }`, which a callee tells apart by identity). The skeleton key is sha1 (a 32-bit hash
-could merge two skeletons).
+Every part sits at a key the text fixes (no computed or repeated key, no hole). A spread copies its source's fields,
+each existing or a leaf (its source is existing, or holds no object); it may stand before every new part, which then
+keeps its key (a later key wins) or its place counted from the end. The handed term is
+`handed_fresh_<skeleton>_<T>(v, k)`. With the value, the skeleton gives the handed graph: which object is new (an identity
+no one else has), which is existing (named by its value, the convention every handed argument already uses), which two
+named parts are one object (one site). A new part and an existing part of equal value are two terms (pair unit `shared`,
+`{ x: r.tags, y: r.tags }` against `{ x: r.tags, y: structuredClone(r.tags) }`, which a callee tells apart by identity).
+The skeleton key is sha1 (a 32-bit hash could merge two skeletons).
 
-**Stays refused**: a part that is a name bound to a new object (`{ x: a, y: a }`: the callee could see one object in
-two slots, which the value cannot say), a spread or computed key (a part's value may be overwritten, so the value no
-longer holds each part), a same-file call's result, a choice between identities, a new object made in a loop.
+A part made by a same-file callee (`xs.map(toRow)`) is refused, never keyed by its text: the callee could change whether
+it returns new or existing objects behind the same text (amendment A3).
+
+**Stays refused**: a spread after a new part (it may replace it), a choice between identities (`body ?? {}`), a part
+made by a same-file callee or a callback that calls, a named part holding another named part, a same-file call's
+result, a new object made in a loop.
 
 ## type-assertion: the outside slot
 
@@ -114,6 +144,8 @@ is outside the graded construct and whose effect flows through what the mechanis
 | opaque_read_after_call | reach-closure | holder | the length read moved before the call | the read through the holder is not reached |
 | opaque_copied_argument | handed-skeleton | shared | a copy of the part in the second slot | a new and an existing part of one value merge |
 | opaque_type_assertion | assertion-read | rebound | the asserted name bound to another input | the handed conversion stops reading its value |
+| opaque_read_after_call | fresh-site | twoNew | the other of two new objects of one value read | the two objects are named by value alone |
+| opaque_read_after_call | handle-write | written | the value written bound another way | the write never reaches the world |
 
 ## The measurement
 

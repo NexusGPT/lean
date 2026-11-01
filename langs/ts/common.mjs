@@ -2523,6 +2523,11 @@ export function typeAssertion(checker, n) {
     const parts = ct.flags & ts.TypeFlags.Union ? ct.types : [ct];
     if (parts.some((x) => x.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown | ts.TypeFlags.TypeParameter | ts.TypeFlags.Void))) return null;
   }
+  if (held) { // a slot of type any or unknown reads the value at Any, as it is held: no declared type to read it as (design/w1g-opaque-handed.md)
+    let ct = null; try { ct = checker.getContextualType(n); } catch { ct = null; }
+    const parts = ct ? (ct.flags & ts.TypeFlags.Union ? ct.types : [ct]) : [];
+    if (parts.length && parts.every((x) => x.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown))) return null;
+  }
   if (carried(checker, n)) return null;
   return `\`${n.getText().slice(0, 60)}\` holds a value whose type nothing checked (an \`as\` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (\`typeof x === "number"\`, a field test), or keep it in a local, an operation or the result`;
 }
@@ -2700,7 +2705,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   // was handed). The objects reachable from a type, by its fields, elements and type arguments to the reading's depth:
   // `open` when the type is any or unknown or deeper than that (it may hold anything). A function value or a promise
   // holds no object a read takes (a function reaches what it is handed, a promise is read through the world)
-  const closures = new Map();
+  const closures = new Map(), LIB_COLLECTIONS = new Set(['Array', 'ReadonlyArray', 'Map', 'ReadonlyMap', 'Set', 'ReadonlySet']);
   const closure = (t) => {
     if (closures.has(t)) return closures.get(t);
     const c = { types: new Set(), open: false };
@@ -2714,6 +2719,8 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
       if (depth >= 4 || c.types.size > 200) { c.open = true; return; }
       c.types.add(x);
       for (const y of checker.getTypeArguments?.(x) ?? []) add(y, depth + 1);
+      const decls = (x.symbol ?? x.aliasSymbol)?.declarations ?? [];
+      if (LIB_COLLECTIONS.has(x.symbol?.name ?? '') && decls.length && decls.every((d) => d.getSourceFile().hasNoDefaultLib)) return; // a library collection holds the program's objects only through its type arguments (its elements); other library types keep their fields (an Error's cause may hold one)
       for (const s of checker.getPropertiesOfType(x)) { let y; try { y = checker.getTypeOfSymbolAtLocation(s, body); } catch { y = undefined; } if (y !== undefined) add(y, depth + 1); }
       for (const k of [ts.IndexKind.String, ts.IndexKind.Number]) { const y = checker.getIndexTypeOfType(x, k); if (y) add(y, depth + 1); }
     };
@@ -2754,6 +2761,37 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     const d = declOfSym(s);
     if (!d || !ts.isVariableDeclaration(d) || !d.initializer || !primLit(d.initializer) || writes(s).length) return false;
     return uses(s).every((x) => { const { p, x: y } = P(x); if (p && (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === y)) && !fnOf(y)) return true; /* the unit's result: no call of the unit runs after it */ if (!((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === y)) return false; const q = p.parent; if (q && ts.isCallExpression(q) && q.expression === p) return false; if (q && ts.isBinaryExpression(q) && q.left === p && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) return prim(typeOf(q.right)); return true; });
+  };
+  // A collection the unit made of primitive parts that no call is ever handed (design/w1g-opaque-handed.md, 2026-11-01):
+  // `const parts: string[] = []` then `parts.push(arg.name())`. It holds no object but itself, and no outside code can
+  // reach it: it is never an argument, never aliased or stored, and never used inside a function the unit keeps or hands
+  // to a call that runs outside code. So no call changes it, whatever the types say; its library operations and reads are
+  // the value reading's own (sealedCollection; LEAN_BREAK=sealed-collection seals it whatever its uses, a handed one too)
+  const COLLECTIONS = new Set(['Map', 'Set', 'Array']);
+  const sealedCollection = (s) => {
+    const d = declOfSym(s);
+    if (!d || !ts.isVariableDeclaration(d) || !ts.isIdentifier(d.name) || !d.initializer || writes(s).length) return false;
+    let init = d.initializer; while (ts.isParenthesizedExpression(init) || ts.isAsExpression(init) || ts.isSatisfiesExpression(init)) init = init.expression;
+    const made = ts.isArrayLiteralExpression(init) ? init.elements.every((x) => !ts.isSpreadElement(x) && prim(typeOf(x)))
+      : ts.isNewExpression(init) && ts.isIdentifier(init.expression) && COLLECTIONS.has(init.expression.text) && !checker.getSymbolAtLocation(init.expression)?.declarations?.some((x) => x.getSourceFile() === sf) && (init.arguments ?? []).every((a) => prim(typeOf(a)));
+    if (!made || !primParts(typeOf(d.name))) return false;
+    if (broken('sealed-collection')) return true;
+    return uses(s).every((x) => {
+      if (madeClosure(x)) return false; // used by a function the unit keeps or hands on: it may run inside a later call
+      const { p, x: y } = P(x);
+      if (!p) return false;
+      if ((ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === y)) && !fnOf(y)) return true; // the unit's result
+      if (ts.isSpreadElement(p) || ts.isSpreadAssignment(p)) return true; // copies its primitive parts
+      if (ts.isForOfStatement(p) && p.expression === y) return true;
+      if (ts.isTemplateSpan(p)) return true;
+      if ((ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) && p.expression === y) {
+        const q = p.parent;
+        if (q && ts.isCallExpression(q) && q.expression === p) return q.arguments.every((a) => prim(typeOf(ts.isSpreadElement(a) ? a.expression : a)) || ts.isArrowFunction(a) || ts.isFunctionExpression(a)); // a library operation on it with primitive arguments, or an inline callback
+        if (q && ts.isBinaryExpression(q) && q.left === p && q.operatorToken.kind >= K.FirstAssignment && q.operatorToken.kind <= K.LastAssignment) return prim(typeOf(q.right));
+        return true;
+      }
+      return false;
+    });
   };
   const promiseLike = (t) => (t.flags & TF.Union ? t.types : [t]).every((x) => !!(x.flags & (TF.Undefined | TF.Null | TF.Void)) || ['Promise', 'PromiseLike'].includes(x.symbol?.name ?? '')); // a promise is a handle: its state is read only through then or await, which thread the world
   const objectLike = (t) => !!t && !prim(t) && !primitiveBrand(t) && !promiseLike(t) && !(checker.getSignaturesOfType(t, ts.SignatureKind.Call).length && !isAny(t));
@@ -2808,7 +2846,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
       const s = isThis ? null : checker.getSymbolAtLocation(n);
       const d = s ? declOfSym(s) : null;
       const t = typeOf(n);
-      if (!inOpaque(n) && !madeClosure(n) && (isThis || (d && d.getSourceFile() === sf && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isBindingElement(d)))) && objectLike(t) && !(s && sealed(s)) && !kept(n)) {
+      if (!inOpaque(n) && !madeClosure(n) && (isThis || (d && d.getSourceFile() === sf && (ts.isParameter(d) || ts.isVariableDeclaration(d) || ts.isBindingElement(d)))) && objectLike(t) && !(s && (sealed(s) || sealedCollection(s))) && !kept(n)) {
         const local = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end;
         let init = local && d.initializer; while (init && (ts.isParenthesizedExpression(init) || ts.isAwaitExpression(init) || ts.isNonNullExpression(init) || ts.isAsExpression(init))) init = init.expression;
         const fresh = init && (ts.isCallExpression(init) || ts.isNewExpression(init) || primLit(init)) && !writes(s).length; // obtained when it was bound; a new object of primitive parts is made there
