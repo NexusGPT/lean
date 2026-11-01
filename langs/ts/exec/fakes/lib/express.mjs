@@ -35,7 +35,15 @@ function responseModel(env, path, tspec) {
   const st = { statusCode: 200, headersSent: false, ended: false, headers: new Map() };
   let self = null;
   const rec = (m, args) => env.record('call', `${path}.${m}`, args.map((a) => a));
-  const body = (m) => (...args) => { if (st.headersSent) throw headersSentError(); rec(m, args.map(render)); if (m === 'sendStatus') st.statusCode = args[0]; if (m === 'redirect' && args.length > 1 && typeof args[0] === 'number') st.statusCode = args[0]; else if (m === 'redirect') st.statusCode = 302; st.headersSent = true; st.ended = true; return self; };
+  // express 4 lib/response.js: sendStatus sets statusCode before its body's header write, so after a body the status
+  // changes and the write throws; redirect writes Location first and sets the status after (302 unless given)
+  const body = (m) => (...args) => {
+    if (m === 'sendStatus') st.statusCode = args[0];
+    if (st.headersSent) throw headersSentError();
+    rec(m, args.map((a) => render(a)));
+    if (m === 'redirect') st.statusCode = args.length > 1 && typeof args[0] === 'number' ? args[0] : 302;
+    st.headersSent = true; st.ended = true; return self;
+  };
   const setHeader = (m) => (field, value) => {
     if (st.headersSent) throw headersSentError();
     rec(m, [render(field), render(value)]);
@@ -46,12 +54,12 @@ function responseModel(env, path, tspec) {
   const methods = {
     status: (code) => { rec('status', [render(code)]); st.statusCode = code; return self; },
     send: body('send'), json: body('json'), jsonp: body('jsonp'), sendStatus: body('sendStatus'), redirect: body('redirect'), render: body('render'), sendFile: body('sendFile'), download: body('download'),
-    end: (...args) => { rec('end', args.map(render)); st.headersSent = true; st.ended = true; return self; },
+    end: (...args) => { rec('end', args.map((a) => render(a))); st.headersSent = true; st.ended = true; return self; },
     set: setHeader('set'), header: setHeader('header'), setHeader: setHeader('setHeader'), append: setHeader('append'),
     type: (t) => setHeader('type')('content-type', t), contentType: (t) => setHeader('contentType')('content-type', t), location: (u) => setHeader('location')('location', u),
     get: (field) => st.headers.get(String(field).toLowerCase()), getHeader: (field) => st.headers.get(String(field).toLowerCase()),
-    cookie: (...args) => { if (st.headersSent) throw headersSentError(); rec('cookie', args.map(render)); return self; },
-    clearCookie: (...args) => { if (st.headersSent) throw headersSentError(); rec('clearCookie', args.map(render)); return self; },
+    cookie: (...args) => { if (st.headersSent) throw headersSentError(); rec('cookie', args.map((a) => render(a))); return self; },
+    clearCookie: (...args) => { if (st.headersSent) throw headersSentError(); rec('clearCookie', args.map((a) => render(a))); return self; },
     vary: (f) => { rec('vary', [render(f)]); return self; },
     links: (l) => { rec('links', [render(l)]); return self; },
     attachment: (f) => { rec('attachment', [render(f)]); return self; },

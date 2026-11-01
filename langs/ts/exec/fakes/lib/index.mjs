@@ -4,7 +4,9 @@
 //             sandbox (load.mjs) or bound to its globals (lodash.mjs): the pure functions are the package's, its world
 //             contact is lean's world (the seeded clock, the seeded generator, the virtual timers, the environment's
 //             modules), so the fake cannot disagree with the package it stands for;
-//   model     a small stateful model of an effectful package (uuid, axios, express, vscode): every request it makes of
+//             axios is vendored too, with lean's adapter as its default adapter (axios.mjs): the request it builds is
+//             the world's, recorded and answered from the world's table;
+//   model     a small stateful model of an effectful package (express, vscode): every request it makes of
 //             the world is recorded on the trace as the recording proxy records it, and the model adds the value flow
 //             (a response's status, a chained `res`, a choice among the items a prompt offered).
 // `libraryFake(env, specifier)` is the module, or null: null keeps the recording proxy (env.fake(`module:<spec>`)). A
@@ -38,7 +40,7 @@ const ROWS = [
   { pkg: 'date-fns', kind: 'vendored', test: (s) => s === 'date-fns', make: (env) => dateFns(env) },
   { pkg: 'date-fns', kind: 'vendored', test: (s) => s.startsWith('date-fns/'), make: (env, s) => vendoredSub(env, 'date-fns', s) },
   { pkg: 'uuid', kind: 'model', test: (s) => s === 'uuid', make: (env) => uuidModule(env) },
-  { pkg: 'axios', kind: 'model', test: (s) => s === 'axios', make: (env) => axiosModule(env) },
+  { pkg: 'axios', kind: 'vendored', test: (s) => s === 'axios', make: (env) => axiosModule(env) },
   { pkg: 'express', kind: 'model', test: (s) => s === 'express', make: (env) => expressModule(env) },
   { pkg: 'vscode', kind: 'model', test: (s) => s === 'vscode', make: (env) => vscodeModule(env) },
 ];
