@@ -231,6 +231,22 @@ See [module forms](design/module-forms.md). Effectful initializers on newly admi
 module let/var remain `toplevel-effect`; existing const initializers retain their outside
 fallback. No initializer is executed or assumed by the proof lane.
 
+### An opaque site (2026-11-01, [design](design/w1c-opaque-calls.md))
+
+A finding of a calls, members, syntax or callbacks rule (`unsupported-call`, `unsupported-member`,
+`unsupported-syntax`, `unsupported-operator`, `unsupported-type`, `dynamic-key`, `optional-chain`, `function-value`,
+`callback-form`, `callback-control`, `callback-result`, `exception-callback`, `exception-binding`, `exception-return`,
+`conditional-effect`, `operator-value-context`, `instanceof-constructor`, `iterator-protocol`, `delete`,
+`assign-target`) that the innermost statement of its unit's own body holds is read, not refused: that statement (the
+`try` for the two finally rules) is one opaque transition keyed by its tokens and the text of every same-file unit it
+reaches, reading every name it mentions, writing every name it assigns, every reference in scope and every name a
+nested function assigns, with the result, fault and jump channels of an opaque block. The finding keeps its message
+with the label `opaque: statement`. A value a boundary construct makes (a computed key or callee, a match item, an
+unsupported operator or type, an optional call) is read at `Any` wherever its name is read. The refusal stands where
+no statement holds the finding (a parameter default, a concise body, a nested declaration), for `freeze`, and for a
+`delete` of a member its type requires: each acts outside its own text. The certificate lists each step and the
+unit's opaque fraction (`lanes.A.opaque`: its `steps` and `fraction`, one row per step as for a block).
+
 ## What is refused
 
 | Rule | Refused | Example that is refused |

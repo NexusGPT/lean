@@ -1,0 +1,24 @@
+{
+ "scope": [
+  "outside_call",
+  "inside_call",
+  "read_call",
+  "write_call",
+  "planted_call"
+ ],
+ "equal": {
+  "outside_call": "real-only",
+  "inside_call": false,
+  "read_call": false,
+  "write_call": false,
+  "planted_call": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule unsupported-call: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_call is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open).",
+ "b": {
+  "outside_call": "PASS-bounded",
+  "inside_call": "WITNESS",
+  "read_call": "WITNESS",
+  "write_call": "PASS-bounded",
+  "planted_call": "WITNESS"
+ }
+}

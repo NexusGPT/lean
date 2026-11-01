@@ -2286,6 +2286,7 @@ function heldOf(checker, n, seen) {
     if (heldParams && n.parent && ts.isParameter(n.parent) && n.parent.name === n && heldParams.has(n.parent)) return any(); // a parameter of a unit read at Any for a call that hands it a held value
     let sym = null; try { sym = n.parent && ts.isShorthandPropertyAssignment(n.parent) && n.parent.name === n ? checker.getShorthandAssignmentValueSymbol(n.parent) : checker.getSymbolAtLocation(n); } catch { return null; } // a shorthand member's name reads the local it names
     if (heldParams && sym?.valueDeclaration && ts.isParameter(sym.valueDeclaration) && heldParams.has(sym.valueDeclaration)) return any();
+    if (opaqueHeld && sym?.valueDeclaration && opaqueHeld.has(sym.valueDeclaration)) return any(); // a name a boundary opaque step writes: its value may be outside its declared type (design/w1c-opaque-calls.md)
     const ws = writesOf(checker, sym);
     if (!ws) return null;
     const declared = tAt(checker, sym.valueDeclaration.name);
@@ -2438,6 +2439,12 @@ function heldResultType(checker, fn) {
 // at Any is one more leaf; any other callee keeps the call refused.
 let heldParams = null; // the parameters (declarations) read at Any while a unit is read once more for a call
 export function withHeldParams(params, f) { const saved = heldParams; heldParams = params; try { return f(); } finally { heldParams = saved; } }
+// the declarations (of locals and parameters) a boundary opaque step writes, read at Any at every read while a file is
+// translated: the construct may have made a value outside the declared type (a prototype function where the type says
+// number, an undefined match item), so no exact reading takes it at that type (design/w1c-opaque-calls.md)
+let opaqueHeld = null;
+export function withOpaqueHeld(f) { const saved = opaqueHeld; opaqueHeld = new Set(); try { return f(); } finally { opaqueHeld = saved; } } // a translation's scope: the set starts empty
+export function holdOpaque(decl) { if (opaqueHeld && decl) opaqueHeld.add(decl); } // inside withOpaqueHeld: the declaration is read at Any from now on
 const variantMemo = new WeakMap();
 export function heldVariantUnit(checker, decl) {
   if (!decl || !ts.isFunctionLike(decl) || !decl.body || !unitFunction(decl) || ts.isMethodDeclaration(decl) || ts.isConstructorDeclaration(decl) || ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl)) return false;
@@ -2596,7 +2603,7 @@ export function rawTag(checker, n, sf) {
 // decider that reads the object as the world holds it at that point passes `h.after` (a Map the forms are put in,
 // occurrence -> 'read' | 'write') and `h.identity(occurrence)` (whether it names the object, else the form is refused);
 // `h.outputs` and `h.afterEnd` the same for the output parameters at the unit's end. Without `h.after` the forms are kept.
-export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
+export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), rebinds(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
 const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (TF.Any | TF.Unknown)), typeOf = (n) => h.typeOf(n);
   const body = u.fn?.body ?? u.node?.body;
   if (!body) return null;
@@ -2671,8 +2678,12 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   // where a call counts: a call inside a callback runs during the call it is handed to (unless that call defers it, an
   // effect hook); inside a function the unit makes and keeps, it runs when that function runs, so only for reads inside it
   const anchorOf = (c) => { let x = c; for (;;) { const f = fnOf(x); if (!f) return x; const q = f.parent; if (q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && (q.arguments ?? []).includes(f) && !h.deferred?.(q)) { x = q; continue; } return null; } };
+  // a call that runs inside a statement the decider reads as a step rebinding every reference in scope (h.rebinds: an
+  // opaque site, design/w1c-opaque-calls.md) is part of that step: a read after the statement reads what the step wrote
+  const stmtRebinds = (x) => { for (let p = x.parent; p && p !== body; p = p.parent) { if (ts.isFunctionLike(p)) return null; if (ts.isStatement(p) && h.rebinds?.(p)) return p; } return null; };
   const between = (start, occ, t) => points.some((c0) => {
     const cf = fnOf(c0), a = anchorOf(c0); if (!a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end)) return false;
+    { const rs = a && stmtRebinds(a); if (rs && !(rs.pos <= occ.pos && occ.end <= rs.end)) return false; }
     const c = a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end) ? a : c0;
     const hit = reached(t, c); if (!hit) return false;
     why = { call: c, handed: hit.node };

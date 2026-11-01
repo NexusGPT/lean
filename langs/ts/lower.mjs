@@ -18,6 +18,7 @@
 //
 // Usage: node lower.mjs --audit [--json] [--md <file>]
 //        node lower.mjs <file.ts> [--no-project]        the record of each unit, as JSON
+import { OPAQUE_CALLS, opaqueCallsForm } from './lint/opaque-calls.mjs'; // the rules an opaque site's refusal may name (the audit's site.rule)
 import fs from 'node:fs';
 import { elementWritePath, syncLoopCallback, reduceAccumulator, plainDataRecord } from './common.mjs';
 import { asyncGenerator } from './generators.mjs';
@@ -72,8 +73,9 @@ const DYNAMIC_RULES = {
   'w.rule': ['dynamic-key', 'prototype'],
   rule: ['update-expression', 'assignment-expression'],
   EFFECT_GLOBALS: ['dynamic-eval', 'prototype'],
+  get 'site.rule'() { return Object.keys(OPAQUE_CALLS).filter((r) => opaqueCallsForm(r) && readingOfFinding(r, '')); }, // an opaque site no step reached keeps its finding's refusal (translate.mjs, design/w1c-opaque-calls.md): the rules a site can hold (union-type has no site, so no reading)
 };
-const dynamicRules = (expr) => { for (const [k, v] of Object.entries(DYNAMIC_RULES)) if (expr === k || expr.includes(k)) return v; const lits = [...expr.matchAll(/'([a-z][a-z0-9-]*)'/g)].map((m) => m[1]); return lits.length ? lits : null; };
+const dynamicRules = (expr) => { if (Object.hasOwn(DYNAMIC_RULES, expr)) return DYNAMIC_RULES[expr]; /* an exact key first: `site.rule` holds `rule` */ for (const [k, v] of Object.entries(DYNAMIC_RULES)) if (expr === k || expr.includes(k)) return v; const lits = [...expr.matchAll(/'([a-z][a-z0-9-]*)'/g)].map((m) => m[1]); return lits.length ? lits : null; };
 
 // the text of a message argument with every hole written `${}`: a literal, a template, a row of the library member table
 // (library-rows.mjs, its message with placeholder arguments), or the first literal branch of a conditional

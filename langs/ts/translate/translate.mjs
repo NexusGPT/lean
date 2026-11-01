@@ -62,6 +62,8 @@ import { opaqueGrade, gradedRule, opaqueText, opaqueKey, opaqueForm, opaqueEntry
 import { broken } from '../break.mjs'; // the opacity ladder (design/w1a-opaque-mutation.md)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, moduleRow, primitiveText, pureLibraryCall } from '../library-rows.mjs';
+import { opaqueCallsForm, callsRefusalRule, callsOpaqueSite, nodeAt, reachWrites, heldDecls, calleeTexts } from './opaque-calls.mjs'; // its statement form for the calls, members, syntax and callbacks rules (design/w1c-opaque-calls.md)
+import { withOpaqueHeld, holdOpaque } from '../common.mjs'; // a name a boundary step writes is read at Any (design/w1c-opaque-calls.md)
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -104,11 +106,30 @@ export function translate(file, fnName, opts = {}) {
 function translateGraded(file, fnName, opts = {}) {
   let sites = opts.opaqueSites ?? [];
   for (let round = 0; ; round++) {
-    try { return translateOnce(file, fnName, { ...opts, opaqueSites: sites }); }
+    try { return translateSites(file, fnName, { ...opts, opaqueSites: sites }); } // each round through the calls column's own loop (translateSites, below)
     catch (e) {
       const rule = e instanceof Unsupported && opts.core && e.at ? gradedRule(e.message) : null;
       if (!rule || round >= 64 || sites.some((x) => x.pos === e.at.pos)) throw e;
       sites = [...sites, { ...e.at, rule, msg: String(e.message).split('\n')[0].replace(/^(?:(?!: )[^\n])*?\.(?:[cm]?[jt]sx?):\d+: /, '') }];
+    }
+  }
+}
+// the opacity ladder's statement form (design/w1c-opaque-calls.md): a refusal the translator raises for a rule the column
+// (lint/opaque-calls.mjs) grades `statement` names the node it stopped at; the translation runs again with that node an
+// opaque site (the statement of its unit's own body that holds it is one opaque step, decided by callsOpaqueSite as the
+// lint decides), until it ends or stops at a node already a site, at a node no step can hold, or for another rule. Each
+// run adds one site, so the runs are bounded by the file's nodes; the cap bounds the cost
+const SITE_RUNS = 24;
+function translateSites(file, fnName, opts) {
+  if (!opts.core) return translateOnce(file, fnName, opts);
+  const sites = [...(opts.opaqueSites ?? [])];
+  for (let run = 0; ; run++) {
+    try { return withOpaqueHeld(() => translateOnce(file, fnName, { ...opts, opaqueSites: sites })); }
+    catch (e) {
+      if (!(e instanceof Unsupported) || e.noSite || run >= SITE_RUNS) throw e;
+      const rule = e.at ? callsRefusalRule(e.message) : null;
+      if (!rule || sites.some((x) => x.start === e.at.start && x.end === e.at.end)) throw e;
+      sites.push({ ...e.at, rule, msg: String(e.message).split('\n')[0].replace(/^[^\n]*?:\d+: [a-z][a-z0-9-]*: /, ''), by: 'translate' });
     }
   }
 }
@@ -172,7 +193,7 @@ function translateOnce(file, fnName, opts = {}) {
   if (!fnName && !core) throw new Unsupported('--fn is required unless --core is given');
 
   const where = (n) => `${path.basename(file)}:${lineOf(sf, n.getStart(sf))}`;
-  const fail = (n, msg) => { const e = new Unsupported(`${where(n)}: ${msg}`); try { const a = n.getStart(sf), z = n.getEnd(); e.at = { pos: a, end: z, line: lineOf(sf, a), col: colOf(sf, a), endLine: lineOf(sf, z), endCol: colOf(sf, z), unit: currentUnit?.name ?? null }; } catch { /* a synthetic node: no site */ } throw e; }; // where: a refusal the opaque column grades becomes a site of its unit (translateGraded)
+  const fail = (n, msg) => { const e = new Unsupported(`${where(n)}: ${msg}`); if (n && n.kind !== K.SourceFile && typeof n.getStart === 'function') { try { const a = n.getStart(sf), z = n.getEnd(); e.at = { pos: a, start: a, end: z, line: lineOf(sf, a), col: colOf(sf, a), endLine: lineOf(sf, z), endCol: colOf(sf, z), unit: currentUnit?.name ?? null }; } catch { /* a synthetic node: no site */ } } throw e; }; // where: a refusal the opaque column grades becomes a site of its unit (translateGraded for OPAQUE_ROWS, translateSites for OPAQUE_CALLS)
 
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
   const classDecls = analyze('classes', () => { const classDecls = new Map(); for (const st of sf.statements) if (ts.isClassDeclaration(st) && st.name) classDecls.set(st.name.text, st); return classDecls; }); // the file's own classes, by name
@@ -279,6 +300,7 @@ function translateOnce(file, fnName, opts = {}) {
   });
   // a translator refusal read again as a site (translateGraded): the innermost unit holding its node
   for (const x of opts.opaqueSites ?? []) {
+    if (opaqueGrade(x.rule) === 'none') continue; // a site of the calls column (translateSites): read below
     // the unit being emitted when the refusal was raised (its body holds the node, a nested callback's included), else
     // the innermost unit holding it
     const holds = (u) => !!u?.node && u.node.getStart(sf) <= x.pos && x.end <= u.node.getEnd();
@@ -286,6 +308,46 @@ function translateOnce(file, fnName, opts = {}) {
     if (!best) for (const u of fns.values()) if (holds(u) && (!best || u.node.getStart(sf) >= best.node.getStart(sf))) best = u;
     if (gradableUnit(best)) addSite(best.name, x.pos, x.rule, x.line, x.msg, [x.line, x.col, x.endLine, x.endCol]);
   }
+  // ----- the opacity ladder, statement form (design/w1c-opaque-calls.md): a finding of a rule the calls column grades
+  // (lint/opaque-calls.mjs) whose site the lint decided is a statement (f.opaqueSite) stops nothing under --core: that
+  // statement of its unit's own body is read as one opaque step. A refusal the translator raises for such a rule comes back
+  // as a site too (translateSites), decided by the same callsOpaqueSite. A site whose statement this text does not hold (the
+  // faithful rewrite moved it) keeps its refusal; a site no step emitted fails the translation with its finding (below)
+  const callSites = new Map(); // `${start}:${end}` of a site statement of sf -> its findings [{ rule, msg, line, col, endLine, endCol, by }]
+  const callSiteUnits = new Map(); // the same key -> the unit (its function node) whose own body holds the statement
+  const callSiteNodes = new Map(); // the same key -> the statement
+  if (core) {
+    const stmts = new Map(); // every statement of sf by its key
+    const unitOfStmt = (st) => { for (let p = st.parent; p; p = p.parent) { const u = order.find((x) => (x.fn ?? x.node) === p); if (u) return u; if (ts.isFunctionLike(p) || ts.isClassLike(p)) return null; } return null; };
+    const walkS = (n) => { if (ts.isStatement(n) && !ts.isBlock(n) && n.pos >= 0) stmts.set(`${n.getStart(sf)}:${n.getEnd()}`, n); ts.forEachChild(n, walkS); };
+    walkS(sf);
+    const mapO = (x) => (faithful.mapOffset ? faithful.mapOffset(x) : x);
+    const take = (key, row) => {
+      const st = stmts.get(key), u = st && unitOfStmt(st);
+      if (!u) return false;
+      if (!callSites.has(key)) callSites.set(key, []);
+      callSites.get(key).push(row); callSiteUnits.set(key, u); callSiteNodes.set(key, st);
+      return true;
+    };
+    gate0 = gate0.filter((g) => {
+      if (!g.opaque || !g.opaqueSite) return true;
+      const [a, z] = g.opaqueSite.split(':').map(Number);
+      return !take(`${mapO(a)}:${mapO(z)}`, { rule: g.rule, msg: g.msg, line: g.line, col: g.col, endLine: g.endLine ?? g.line, endCol: g.endCol ?? g.col, by: 'lint' }); // taken: it stops nothing; else its refusal stands
+    });
+    for (const x of opts.opaqueSites ?? []) { // a translator refusal of a graded rule, by the node it named (translateSites)
+      if (!opaqueCallsForm(x.rule)) continue; // a site of the opaque column (translateGraded): read above
+      const node = nodeAt(sf, x.start, x.end);
+      const u = order.find((y) => { const f = y.fn ?? y.node; return f.getStart(sf) <= x.start && x.end <= f.getEnd(); });
+      const site = u ? callsOpaqueSite(checker, x.rule, node, u.fn ?? u.node) : null;
+      if (site?.stmt) take(`${site.stmt.getStart(sf)}:${site.stmt.getEnd()}`, { rule: x.rule, msg: x.msg, line: lineOf(sf, x.start), col: colOf(sf, x.start), endLine: lineOf(sf, x.end), endCol: colOf(sf, x.end), by: 'translate' });
+    }
+    // a boundary site (its rule's envelope is boundary): every name its step may write is a handle read at Any (common.mjs
+    // holdOpaque), decided before any unit is read, so every read of the name, before the step or after it, takes Any
+    for (const [key, rows] of callSites) if (rows.some((r) => opaqueCallsForm(r.rule)?.envelope === 'boundary')) { const u = callSiteUnits.get(key); for (const d of heldDecls(checker, callSiteNodes.get(key), u.fn ?? u.node)) holdOpaque(d); }
+  }
+  const callSiteKey = (x) => { if (!callSites.size || !x || x.pos < 0 || !ts.isStatement(x) || x.getSourceFile?.() !== sf) return null; const k = `${x.getStart(sf)}:${x.getEnd()}`; return callSites.has(k) ? k : null; };
+  const emittedSites = new Set(); // the site keys a step was emitted for
+  const siteHere = (x) => !!currentUnit && callSiteKey(x) !== null && callSiteUnits.get(callSiteKey(x)) === currentUnit;
   for (const k of lintReadings) { const [a, z] = k.split(':').map(Number); const a2 = faithful.mapOffset ? faithful.mapOffset(a) : a, z2 = faithful.mapOffset ? faithful.mapOffset(z) : z; if (a2 >= 0 && z2 >= 0) promiseReadings.add(`${a2}:${z2}`); }
   const report = { lintedOut: [], translated: [], failed: [] }; // --tolerant: per-unit outcomes for a census
   const failedUnits = new Set();
@@ -596,7 +658,7 @@ function translateOnce(file, fnName, opts = {}) {
     boundCache.set(s, result); return result;
   }
   const opaqueSwitch = (s) => { const t = checker.getTypeAtLocation(s.expression); return (t.flags & TF.Union ? t.types : [t]).some((p) => !(p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined | TF.Never))); };
-  const isOpaqueStmt = (x) => (ts.isForOfStatement(x) && x.awaitModifier && !steppedAsyncLoop(x, checker)) || (ts.isSwitchStatement(x) && opaqueSwitch(x)) || (ts.isTryStatement(x) && !exactTry(x)) || ((ts.isWhileStatement(x) || ts.isDoStatement(x) || emptyFor(x) || generalFor(x)) && (!hintsOf(sf, x).decreases && !derivedBound(x)));
+  const isOpaqueStmt = (x) => siteHere(x) || (ts.isForOfStatement(x) && x.awaitModifier && !steppedAsyncLoop(x, checker)) || (ts.isSwitchStatement(x) && opaqueSwitch(x)) || (ts.isTryStatement(x) && !exactTry(x)) || ((ts.isWhileStatement(x) || ts.isDoStatement(x) || emptyFor(x) || generalFor(x)) && (!hintsOf(sf, x).decreases && !derivedBound(x)));
   // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
   // in order. The callback takes one plain parameter and returns nothing (a `return` inside it would end one step).
   const forEachShape = (st) => {
@@ -1846,7 +1908,8 @@ function translateOnce(file, fnName, opts = {}) {
   };
   // the sign of zero is read exactly by the doubles reading (design/doubles.md): a number-bearing unit is decided over
   // binary64, so no unit is made opaque for a -0 it may produce (the opaque reading of design/signed-zero.md is lifted)
-  if (heapT && heap) heapT.plan(order, opaqueSites.size ? (heapUnits ?? order.map((u) => u.name)).filter((n) => !opaqueSites.has(n)) : heapUnits); // a unit with an opaque block keeps the value reading (the heap core has no block step) // after the type reading it relies on exists
+  { const siteUnits = new Set([...opaqueSites.keys(), ...[...callSiteUnits.values()].map((u) => u.name)]); // a unit with an opaque block (w1a) or an opaque statement step (w1c) is read by the value translator, which emits the step; the heap core's reader has no step
+    if (heapT && heap) heapT.plan(order, siteUnits.size ? (heapUnits ?? order.map((u) => u.name)).filter((n) => !siteUnits.has(n)) : heapUnits); } // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
   // a parameter held under a second reading of its callee (withHeldParams) is Any to its declaration as to its reads: the
   // storage type and the read type come from one decision (assertionHeld), so no read converts between them
@@ -5302,6 +5365,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       { const c = partnerOf(id.text), ps = c && carriedOf(currentUnit).symbols.get(c), pd = ps?.valueDeclaration; if (pd && !names.some((m) => m.name === c) && !(insideNode(pd, node) && !hoisted?.has(pd)) && !insideProc(pd, node)) names.push({ name: c, sym: ps, node: pd.name }); } // its carried partner is rebound beside it
     };
     const walk = (x) => {
+      if (siteHere(x)) for (const id of reachWrites(checker, x, currentUnit.fn ?? currentUnit.node)) note(id); // an opaque site writes every name it may reach (design/w1c-opaque-calls.md): a branch, a loop or a switch holding it carries them out
       if (isAssign(x) && ts.isIdentifier(x.left)) note(x.left);
       if (isAssign(x) && ts.isPropertyAccessExpression(x.left)) { let r = x.left; while (ts.isPropertyAccessExpression(r)) r = r.expression; if (ts.isIdentifier(r) || r.kind === K.ThisKeyword) note(r); }
       if ((isAssign(x) && ts.isPropertyAccessExpression(x.left)) || (isUpdate(x) && ts.isPropertyAccessExpression(x.operand))) { const ew = elementWritePath(checker, isAssign(x) ? x.left : x.operand); if (ew) note(ew.root); } // a field of an element: its array's root is written
@@ -6025,6 +6089,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     if (!loopCtx.length && u && tailOf(u)?.first === s) return opaqueTail(u, fin, ctx); // the unit's block, its fault left through ctx
     const next = () => faultTr(rest, fin, u, ctx);
     if (s.__scope) return `${scopeText(s)}\n${next()}`;
+    if (siteHere(s)) return opaqueCompletion(s, next, u, ctx); // an opaque site's statement (design/w1c-opaque-calls.md)
     { const inl = inlineCall(s); if (inl) return faultTr([...inl, ...rest], fin, u, ctx); if (procDecl(s)) return next(); } // stage 5 rank 21
     if (voidReturn(s)) return faultTr([...voidSplit(s), ...rest], fin, u, ctx);
     if (!ts.isTryStatement(s) && opaqueExceptionTry(s, checker)) {
@@ -6124,6 +6189,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const [s, ...rest] = list;
     if (!loopCtx.length && u && tailOf(u)?.first === s) return opaqueTail(u, fin, null); // the unit's block: one opaque step to its end
     if (s.__scope) return `${scopeText(s)}\n${tr(rest, fin, u)}`; // a block's own declarations end with it (scopedList)
+    if (siteHere(s)) return opaqueBlock(s, rest, fin, u); // an opaque site's statement (design/w1c-opaque-calls.md)
     { const inl = inlineCall(s); if (inl) return tr([...inl, ...rest], fin, u); if (procDecl(s)) return tr(rest, fin, u); } // stage 5 rank 21
     if (voidReturn(s)) return tr([...voidSplit(s), ...rest], fin, u);
     { const g = absenceGuard(s, u, () => tr(list, fin, u)); if (g) return g; } // a payload read: the option tested before the statement
@@ -6266,7 +6332,17 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const declared = new Set();
     if (ts.isVariableStatement(s)) for (const d of s.declarationList.declarations) if (ts.isIdentifier(d.name) && !M.some((m) => m.name === d.name.text)) { const sym = checker.getSymbolAtLocation(d.name); declared.add(d.name.text); M.push({ name: d.name.text, sym, node: d.name, d: letTypeOf(sym) ?? dtype(typeOf(d.name), d) }); }
     // inputs: every local the block reads, and every local it assigns (it may read it first); a name the block declares is an output only
-    const free = [...M.filter((m) => !declared.has(m.name)), ...freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }))];
+    // an opaque site (design/w1c-opaque-calls.md): the step also writes every name it may change through a reference or a
+    // closure (reachWrites: A2, the writes closed under the alias origin), each read too, since the value after the step
+    // depends on the value before it; its pure reads come first (translate/opaque.mjs drop-read removes the first read)
+    const siteK = siteHere(s) ? callSiteKey(s) : null;
+    if (siteK) for (const id of reachWrites(checker, s, u.fn ?? u.node)) {
+      if (M.some((m) => m.name === id.text)) continue;
+      const sym = checker.getSymbolAtLocation(id);
+      M.push({ name: id.text, sym, node: id, d: (sym && letTypeOf(sym)) ?? dtype(sym ? symType(sym, id) : typeOf(id), id) });
+    }
+    const pureReads = freeVars(s, null).filter((v) => !M.some((m) => m.name === v.name)).map((v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) }));
+    const free = siteK ? [...pureReads, ...M.filter((m) => !declared.has(m.name))] : [...M.filter((m) => !declared.has(m.name)), ...pureReads];
     let usesSelf = false; const calls = new Set(), moduleBindings = new Set();
     const w = (x) => {
       const binding = moduleState(checker, x, sf);
@@ -6285,6 +6361,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
     const jumpTag = jumps.length ? '_exits_' + jumps.map((j) => `${j > 0 ? 'b' : 'c'}${Math.abs(j)}`).join('_') : '';
     const moduleTag = moduleBindings.size ? `_modules_${hash([...moduleBindings].sort().join('|'))}` : '';
+    if (siteK) return siteStep({ s, u, siteK, M, declared, free, usesSelf, calls, returns, terminal, jumps, RD, jumpTag, moduleTag });
     const id = `block_${hash(text)}${jumpTag}${moduleTag}${calleeTag ? '_calls_' + calleeTag : ''}`;
     const inTypes = ['World', ...(usesSelf ? [selfType(u)] : []), ...free.map((v) => v.d)];
     const outTypes = ['World', ...(jumps.length ? ['int'] : []), ...(returns ? [terminal ? RD : `Option<${RD}>`] : []), ...M.map((m) => m.d)];
@@ -6298,6 +6375,31 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const outs = [WORLD, ...(jumps.length ? [jumpName] : []), ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
     const line = outs.length === 1 ? `var ${outs[0]} := ${name}(${args.join(', ')});` : `var (${outs.join(', ')}) := ${name}(${args.join(', ')});`;
     return { line, returns, terminal, jumps, jumpName };
+  }
+  // the step of an opaque site (design/w1c-opaque-calls.md), through the shared form (translate/opaque.mjs opaqueForm): keyed
+  // by the statement's tokens and the normalised text of every same-file unit it reaches (calleeTexts: A3), its jumps and
+  // its module cells; the receiver of a literal unit is read and written when the statement names it (a class instance's
+  // fields are world fields, threaded already). Each finding the step holds is a certificate row
+  function siteStep({ s, u, siteK, M, declared, free, usesSelf, calls, returns, terminal, jumps, RD, jumpTag, moduleTag }) {
+    const callees = calleeTexts(checker, sf, s, [...calls]);
+    const keepCalls = !broken('opaque-calls-drop-callees'); // the --break of A3 drops the callees from the tag as from the key (tests/break.mjs)
+    const calleeTag = keepCalls ? [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_') : '';
+    const text = opaqueText([s], sf);
+    const id = `block_${opaqueKey([text, ...callees])}${jumpTag}${moduleTag}${calleeTag ? '_calls_' + calleeTag : ''}`;
+    const selfOut = usesSelf && !!literalOf(u);
+    const inputs = [...free.filter((v) => !M.includes(v)).map((v) => ({ code: dn(v.name), d: v.d })), ...(usesSelf ? [{ code: selfValue(u), d: selfType(u) }] : []), ...free.filter((v) => M.includes(v)).map((v) => ({ code: dn(v.name), d: v.d }))];
+    const outputs = [...(selfOut ? [{ name: SELF, d: selfType(u) }] : []), ...M.map((m) => ({ name: dn(m.name), d: m.d }))];
+    const jumpName = `jumpb${loopCount}_`;
+    if (returns && !terminal) usesOption = true;
+    const form = opaqueForm({ id, external, world: WORLD, inputs, outputs, jump: jumps.length ? jumpName : null, ret: returns ? { name: 'retb', d: RD, terminal } : null });
+    { const mark = `// CALLS: ${calleeTag.split('_').join(',')}`; if (calleeTag && prelude.has(form.name) && !prelude.get(form.name).split('\n').includes(mark)) prelude.set(form.name, `${prelude.get(form.name)}\n${mark}`); } // the theorem refuses a block whose callee changed
+    emittedSites.add(siteK);
+    // the certificate row of the step (w1a's opaqueEntry, one row per step as for a block): its rules, the statement's
+    // span, the spans of the findings it holds, the statements it covers (the unit's opaque fraction, opaqueOut), the
+    // callees whose text is in its key, and who raised each finding (the lint, or the translator: translateSites)
+    const st = callSiteNodes.get(siteK), rs = callSites.get(siteK), a1 = st.getStart(sf), z1 = st.getEnd();
+    const rows = opaqueRows.get(u.name) ?? []; rows.push({ ...opaqueEntry({ rule: [...new Set(rs.map((r) => r.rule))].join(','), line: lineOf(sf, a1), id: form.name, reads: inputs.map((i) => i.code), writes: ['world', ...outputs.map((o) => o.name), ...(returns ? ['result'] : [])], construct: 'statement', span: [lineOf(sf, a1), colOf(sf, a1), lineOf(sf, z1), colOf(sf, z1)], findings: rs.map((r) => [r.line, r.col, r.endLine, r.endCol]), statements: statementCount([st]) }), callees: callees.map((c) => c.split(' ')[0]), by: [...new Set(rs.map((r) => r.by))] }); opaqueRows.set(u.name, rows);
+    return { line: form.line, returns, terminal, jumps, jumpName };
   }
   function opaqueBlock(s, rest, fin, u) {
     const { line, returns, terminal, jumps, jumpName } = opaqueStep(s, u);
@@ -7204,7 +7306,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), rebinds: (st) => siteHere(st), opaque: (st) => siteHere(st) || (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
         body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
         if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
       }
@@ -7294,6 +7396,15 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // the units nested in another emitted unit (a callback passed as an argument, common.mjs enclosingUnit): the theorem reads
   // them as covered by the unit that encloses them when the scope does not list them, never as smuggled entry points
   const nestedNames = order.filter((u) => u.enclosingUnit).map((u) => dn(snake(u.name.replace('.', '_'))));
+  // every opaque site of an emitted unit was read as its step; one no step reached (a statement another reading took
+  // whole) keeps its finding's refusal, never an exact reading the lint refused (design/w1c-opaque-calls.md)
+  const failedHere = new Set(report.failed.map((f) => f.unit));
+  for (const [key, rows] of callSites) {
+    const su = callSiteUnits.get(key);
+    if (emittedSites.has(key) || failedHere.has(su.name) || !order.includes(su)) continue;
+    const site = { rule: rows[0].rule, message: `${rows[0].msg} (an opaque site no step reached)` };
+    try { fail(callSiteNodes.get(key), `${site.rule}: ${site.message}`); } catch (e) { e.noSite = true; throw e; } // never a site again (translateSites)
+  }
   const header = `// Generated by lean-ts translate (version 3) from ${path.basename(file)}, ${fnName ? `function ${formatUnitList([fnName])}` : 'all functions'}. number is ${NUM}.\n// Do not edit: the gate regenerates this file.\n// EFFECTFUL: ${formatUnitList([...effectfulUnits].sort())}${nestedNames.length ? `\n// NESTED: ${nestedNames.join(',')}` : ''}${heapT ? `\n// HEAP: ${formatUnitList([...heapT.core()].sort())}\n// SHAPES: ${heapT.shapeLegend()}\n${[...heapHyps, ...heapGuards].join('\n')}` : ''}${sigLines.length ? '\n' + sigLines.join('\n') : ''}${decoLines.length ? '\n' + decoLines.join('\n') : ''}${cellLines.length ? '\n' + cellLines.join('\n') : ''}${opaqueOutLines.length ? '\n' + opaqueOutLines.join('\n') : ''}${assumeLines.size ? '\n' + [...assumeLines].sort().join('\n') : ''}${(opts.faithfulFailed ? order.map((u) => [u.name, { placed: false, congruence: false, reasons: [`the faithful text does not translate: ${opts.faithfulFailed}`] }]) : [...faithful.units].filter(([n]) => order.some((u) => u.name === n))).map(([n, v]) => `\n// NUMBERS ${fname(n)}: ${JSON.stringify(v)}`).join('')}${fnLines.some((l) => !l.endsWith('[]')) ? '\n' + fnLines.filter((l) => !l.endsWith('[]')).join('\n') : ''}`;
   if (opts.preludeOut) {
     const preludeText = `// Generated by lean-ts translate (version 2): shared declarations. Identical for parent and candidate, or the gate refuses.\n` + pre.map((t) => `// PRELUDE ${t.match(/^(?:datatype|type|function|predicate)\s+([A-Za-z0-9_]+)/)?.[1] ?? hash(t)}\n${t}\n// END PRELUDE`).join('\n') + '\n';

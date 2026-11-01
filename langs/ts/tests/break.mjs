@@ -15,6 +15,8 @@ export const MECHANISMS = {
   'opaque-drop-read': 'translate/opaque.mjs opaqueForm: the first scalar read of an opaque step is dropped (lane w1a)',
   'opaque-drop-write': 'translate/opaque.mjs opaqueForm and translate.mjs reachesOutside: the writes of an opaque step as its callers see them are dropped, its first written output and its reach to the world (lane w1a)',
   'opaque-drop-callees': 'translate/translate.mjs opaqueTail: the code the step reaches leaves its key and its CALLS line is not written (lane w1a)',
+  'opaque-calls-drop-write': 'translate/opaque-calls.mjs reachWrites: a statement step writes only the names it assigns, no reference in scope, no closure-written name (A2; lane w1c, tests/opaque-calls.mjs)',
+  'opaque-calls-drop-callees': 'translate/opaque-calls.mjs calleeTexts and translate.mjs siteStep: a statement step\'s key is its own text alone and its CALLS line is not written (A3; lane w1c, tests/opaque-calls.mjs)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';

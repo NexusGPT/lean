@@ -1,0 +1,7 @@
+{
+ "planted_assign": {
+  "index": 0,
+  "kind": "dropped-effect",
+  "was": "Object.assign(u, p);"
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "scope": [
+  "outside_operator",
+  "inside_operator",
+  "read_operator",
+  "write_operator",
+  "planted_operator"
+ ],
+ "equal": {
+  "outside_operator": true,
+  "inside_operator": false,
+  "read_operator": false,
+  "write_operator": false,
+  "planted_operator": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule unsupported-operator: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json).",
+ "b": {
+  "outside_operator": "PASS-bounded",
+  "inside_operator": "WITNESS",
+  "read_operator": "WITNESS",
+  "write_operator": "WITNESS",
+  "planted_operator": "WITNESS"
+ }
+}

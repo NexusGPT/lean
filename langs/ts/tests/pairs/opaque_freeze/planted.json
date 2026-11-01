@@ -1,0 +1,7 @@
+{
+ "planted_freeze": {
+  "index": 0,
+  "kind": "dropped-effect",
+  "was": "Object.freeze(c);"
+ }
+}

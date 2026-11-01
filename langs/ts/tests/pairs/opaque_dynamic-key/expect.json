@@ -1,0 +1,21 @@
+{
+ "scope": [
+  "outside_key",
+  "inside_key",
+  "read_key",
+  "planted_key"
+ ],
+ "equal": {
+  "outside_key": "real-only",
+  "inside_key": false,
+  "read_key": false,
+  "planted_key": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule dynamic-key: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_key is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open).",
+ "b": {
+  "outside_key": "PASS-bounded",
+  "inside_key": "WITNESS",
+  "read_key": "WITNESS",
+  "planted_key": "WITNESS"
+ }
+}

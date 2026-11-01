@@ -21,7 +21,7 @@ import { solveUnit } from '../solve/fp.mjs';
 import { dafnyVerifyArgs } from '../exec/dafny-args.mjs'; // the one bound and the one Z3 (solve/z3.mjs) of every `dafny verify`: the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
 import { breakRows } from './break.mjs';
-import { opaqueGrade } from '../lint/lint.mjs'; // the opaque column: a graded rule's escape is named with its grade // the one --break convention (amendment A6)
+import { opaqueGrade } from '../lint/lint.mjs'; import { opaqueCallsForm } from '../lint/opaque-calls.mjs'; // the opaque column: a graded rule's escape is named with its grade // the one --break convention (amendment A6)
 import { opaqueLines } from '../translate/opaque.mjs'; // the opaque steps a translation lists (design/w1a-opaque-mutation.md)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -774,10 +774,12 @@ async function escapes(add) {
     const candidateUnit = (src.match(/^\/\/ candidate-unit:\s*(\S+)/m) ?? [])[1];
     const l = await R.run('node', [lint, ...(candidateUnit ? ['--candidate', file, '--unit', candidateUnit, '--n', '1', '--no-project'] : [file])]);
     const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
-    // a rule the opaque column grades (lint/lint.mjs OPAQUE_ROWS): the lint names the finding with its grade (the unit is
-    // read with an opaque step, design/w1a-opaque-mutation.md); the proof shape below still refuses it
-    const graded = opaqueGrade(want) !== 'none' ? l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s+\\[opaque: `).test(line)) : false;
-    if (opaqueGrade(want) !== 'none') add('escape', name, 'lint names it, graded opaque or refused', graded || (l.status === 1 && hit), graded ? `graded: ${want} [opaque: ${opaqueGrade(want)}]` : l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    // a rule the opaque column grades (lint/lint.mjs OPAQUE_ROWS, or the calls column lint/opaque-calls.mjs OPAQUE_CALLS:
+    // design/w1c-opaque-calls.md): the lint names the finding with its grade (the unit is read with an opaque step,
+    // design/w1a-opaque-mutation.md); the proof shape below still refuses it
+    const grade = opaqueGrade(want) !== 'none' ? opaqueGrade(want) : opaqueCallsForm(want)?.form ?? 'none';
+    const graded = grade !== 'none' ? l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s+\\[opaque: `).test(line)) : false;
+    if (grade !== 'none') add('escape', name, 'lint names it, graded opaque or refused', graded || (l.status === 1 && hit), graded ? `graded: ${want} [opaque: ${grade}]` : l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
     else add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
     const fn = (src.match(/^export (?:async )?function (\w+)/m) ?? [])[1];
     if (fn && !candidateUnit) {
