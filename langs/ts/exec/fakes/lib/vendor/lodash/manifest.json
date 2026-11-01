@@ -1,0 +1,14 @@
+{
+ "package": "lodash",
+ "version": "4.18.1",
+ "license": "MIT",
+ "from": "https://registry.npmjs.org/lodash/-/lodash-4.18.1.tgz",
+ "main": "lodash.js",
+ "subpaths": {},
+ "externals": [
+  "util"
+ ],
+ "files": {
+  "lodash.js": "f5465f55566bf544aad0a31c6135889ca1ed81eea8f53ec61c6cbe86926f07cf"
+ }
+}

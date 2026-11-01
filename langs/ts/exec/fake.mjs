@@ -12,6 +12,7 @@
 // diverges on the trace.
 import { createHash } from 'node:crypto';
 import { generator, worldTurn } from './gen.mjs';
+import { libraryFake, libraryTypeFake } from './fakes/lib/index.mjs';
 
 export class BudgetError extends Error {}
 const EMPTY_LIST = Symbol('an empty list');
@@ -196,6 +197,7 @@ export class Environment {
   }
   fake(path, tspec = null) {
     if (path.length > 400) throw new BudgetError('a fake path longer than 400 characters (unbounded recursion through the environment)');
+    if (tspec?.module) { const lib = libraryTypeFake(this, path, tspec); if (lib) return lib; } // a value of a library type a model knows (exec/fakes/lib, design/w2d-library-rows.md): the model over this proxy
     const key = path;
     if (this.cache.has(key)) return this.cache.get(key);
     const typedMember = tspec && tspec.kind === 'service' && tspec.members ? (prop) => Object.hasOwn(tspec.members, prop) : () => false;
@@ -270,7 +272,8 @@ export class Environment {
     return p;
   }
   // the module fake: `require('x')` gives a fake whose members are fakes; default export is itself
-  module(name) { return this.fake(`module:${name}`, this.shapes?.imports?.[name] ?? null); }
+  // a library with a fake (exec/fakes/lib, design/w2d-library-rows.md) answers with its behavioural module; LEAN_LIBRARY_FAKES=0 keeps the proxy
+  module(name) { return libraryFake(this, name) ?? this.fake(`module:${name}`, this.shapes?.imports?.[name] ?? null); }
 }
 
 // The iteration methods a fake answers like an array. Called with a function, the fake is read as an array: its length
