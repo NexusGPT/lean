@@ -895,3 +895,12 @@ the fake's outcomes on the family's seeded script, compared with the real module
 | conformance/fakes.mjs (effectful families) | recorded | a call changes neither the trace nor the pending list | the trace stays the oracle; a pure function's value owes no record |
 | conformance/fakes.mjs (any clause) | HARNESS | the real module fails a clause, a vendored file differs from its manifest, the vectors name another version | the harness's own defect fails the run, never the fake's |
 | conformance/fakes.mjs verdict | a good fake / a wrong fixture | a good fake has a failing clause, a harness defect, or no check ran; a wrong fixture is not refused on every clause its `expectRefused` names | red first: the wrong fixtures stay refused, and under `--break` they are admitted and the row is red |
+## 2026-11-01: lane B's input search adds a verdict site, no admission site
+
+The branch-guided input search (`exec/search.mjs`, design/w3c-search-inputs.md) decides nothing the lint or the
+translator decides: it adds no refusal, no reading and no site to the audit above. It adds one place where lane B's
+verdict is decided, listed here so the table of deciders stays whole:
+
+| site | kind | rule | reading | decided | message |
+| --- | --- | --- | --- | --- | --- |
+| exec/run.mjs runPairOnce (the search block after the draw loop) | laneB-witness |  | (lane B) | one-decider (search.mjs searchInputs; run.mjs pairOf/statusOf) | WITNESS, `source: search`: a changed input inside the declared type on which the two sides' observations differ, reproduced byte for byte on fresh environments |

@@ -46,6 +46,9 @@ const tmp = argvAt('--tmp') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-')
 if (!process.env.LEAN_CPU_BASELINE && !PAIR_ONLY) { const { cpuRateNsPerIter } = await import('../exec/run.mjs'); process.env.LEAN_CPU_BASELINE = String(cpuRateNsPerIter()); }
 // every lane B worker's heap is its equal share of 60 percent of the machine (exec/run.mjs workerFlags): the heaps of JOBS workers must fit, or the operating system, not V8's limit, ends a spinning unit
 if (!process.env.LEAN_WORKER_HEAP_MB && !PAIR_ONLY) process.env.LEAN_WORKER_HEAP_MB = String(Math.max(1024, Math.floor(os.totalmem() * 0.6 / JOBS / 1048576)));
+// the branch-guided input search (exec/search.mjs, design/w3c-search-inputs.md) is on in the suite: lane B searches the
+// typed input space after its draws agree; LEAN_SEARCH=0 runs the suite without it
+process.env.LEAN_SEARCH ??= '1';
 const t0 = Date.now();
 
 const run = (cmd, args, env) => spawnSync(cmd, args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 26, env: env ? { ...process.env, ...env } : process.env });
@@ -186,6 +189,17 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const denied = [...new Set((sb?.denied ?? []).map((a) => `${a.api} ${a.target}`))].sort();
     const ok = got?.verdict === want.verdict && sb?.network === 'deny' && JSON.stringify(denied) === JSON.stringify([...want.denied].sort());
     add('pair', name, `lane B ${unit} under LEAN_NET=deny: ${want.verdict}, denied ${JSON.stringify(want.denied)}`, ok, `${got?.verdict ?? 'no result'}; sandbox ${sb ? `${sb.network}, denied ${JSON.stringify(denied)}` : 'not recorded'}`);
+  }
+  // the input search (exec/search.mjs): `search` in expect.json names a unit's verdict without the search (`off`, lane B
+  // with --no-search) and with it (`on`, check.mjs, the certificate's witness naming `source: search`)
+  for (const [unit, want] of Object.entries(exp.search ?? {})) {
+    const outOff = path.join(tmpd, `search_off_${artifactName(unit)}.json`), outOn = path.join(tmpd, `search_on_${artifactName(unit)}.json`);
+    crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--no-search', '--out', outOff], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [outOff] });
+    await crunCheck(['--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--dafny-seconds', '30', '--out', outOn], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [outOn], env: { LEAN_SEARCH: '1' } });
+    let off = null, on = null; try { off = JSON.parse(fs.readFileSync(outOff, 'utf8')); } catch { /* keep */ } try { on = JSON.parse(fs.readFileSync(outOn, 'utf8')); } catch { /* keep */ }
+    const w = on?.certificate?.lanes?.B?.witnesses?.[0];
+    add('pair', name, `search ${unit}: ${want.off} without the search`, off?.verdict === want.off, off?.verdict ?? 'no result');
+    add('pair', name, `search ${unit}: ${want.on} with it${want.on === 'WITNESS' ? ' (source: search)' : ''}`, on?.verdict === want.on && (want.on !== 'WITNESS' || w?.input?.source === 'search'), `${on?.verdict ?? 'no result'}${w ? `; ${JSON.stringify(w.input)}` : ''}`);
   }
   // the states lane B reached (bound.states, for the gate's rendering check): one per input that ran on both sides, each
   // with its index and its arguments as drawn; `states` in expect.json names the unit and the count of inputs it ran
@@ -747,6 +761,8 @@ async function adviceLabels(add) {
     ['wall-cap', scriptRow('runtime', 'wall-cap', 'a 2 s cap kills a fake Dafny and its sleeping child within 5 s, shaped as a timeout; a run under the cap unchanged', [path.join(here, 'wall-cap.mjs')], lastLine)],
     // a proof's verdict never depends on the machine's load: every dafny verify is bounded by resources (exec/dafny-args.mjs, design/suite.md)
     ['dafny-resource-limit', scriptRow('runtime', 'dafny-resource-limit', 'every dafny verify passes the resource limit; one proof alone and eleven at once: the same verdict and resource count', [path.join(here, 'dafny-resource-limit.mjs')], lastLine)],
+    // the branch-guided input search: targets from the diff, the kept inputs, the pairs off and on, determinism (exec/search.mjs, design/w3c-search-inputs.md)
+    ['search-inputs', scriptRow('runtime', 'search-inputs', 'the diff mapped to the unit\'s branches; a kept input continued; two pairs PASS-bounded off and WITNESS by search on; byte-equal reruns', [path.join(here, 'search-inputs.mjs')], lastLine)],
     ['gen-invariants', scriptRow('runtime', 'gen-invariants', 'the input generator keeps its stated invariants over seeds 1 to 20', [path.join(here, '../exec/gen.test.mjs')], lastLine)],
     // the enumerated small heaps draw every slot within the suite's 30 inputs, the absent value of a nullable item or key, and a Map's record values from the pool (exec/korat.mjs, heap-stage5.md 16c)
     ['korat-order', scriptRow('runtime', 'korat-order', 'every slot within 30 enumerated heaps; a nullable item or key draws null; a Map\'s record values pooled', [path.join(here, '../exec/korat.test.mjs')], lastLine)],

@@ -1,0 +1,8 @@
+{
+  "why": "The branch-guided input search (exec/search.mjs, design/w3c-search-inputs.md). route returns 201 in the parent and 202 in the candidate on a POST to /orders, after the method is trimmed and upper-cased and the path cut at its query. The 30 drawn inputs do not reach the inner branch (PASS-bounded without the search); the search starts from the drawn inputs, sets one leaf at a time to the unit's string literals, and reaches path === \"/orders\" true: a WITNESS whose input is the draw it started from and its one change, replayed on fresh environments (source: search).",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "route": "WITNESS" },
+  "search": { "route": { "off": "PASS-bounded", "on": "WITNESS" } }
+}
