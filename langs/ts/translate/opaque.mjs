@@ -40,6 +40,35 @@ export const OPAQUE = {
   'property-assign': 'block',
   'receiver-mutation': 'block',
   'receiver-write': 'block',
+  // w1b-opaque-statements: the statement and expression family (design/w1b-opaque-statements.md); the envelope of each
+  // (whether its value can leave the model) is translate/opaque-statements.mjs ENVELOPE
+  'assignment-expression': 'statement',
+  'bare-return': 'statement',
+  'bitwise': 'statement',
+  'collection-iterator': 'statement',
+  'destructuring': 'statement',
+  'division': 'statement',
+  'for-in': 'statement',
+  'for-of-non-array': 'statement',
+  'label': 'statement',
+  'loose-equality': 'statement',
+  'math-empty': 'statement',
+  'mixed-types': 'statement',
+  'number-special': 'statement',
+  'param-form': 'statement',
+  'record-rest': 'statement',
+  'reference-key': 'statement',
+  'spread': 'statement',
+  'string-code-unit': 'statement',
+  'string-order': 'statement',
+  'template': 'statement',
+  'unary-coercion': 'statement',
+  'uninitialised': 'statement',
+  'update-expression': 'statement',
+  // no rule to grade: comma and switch-fallthrough (no lint rule or translator refusal names them: the comma and the
+  // fall-through are read, subset.md "Operators as values", "Control")
+  // by design none: break-continue (the jump has no loop or switch around it in its function, so a step has no control
+  // result to give it), loop-form (a loop with no measure: an opaque reading would hide the missing measure)
 };
 export const opaqueGrade = (rule) => OPAQUE[rule] ?? 'none';
 // the rule a translator refusal names (`<rule>: <why>`), when the column grades it

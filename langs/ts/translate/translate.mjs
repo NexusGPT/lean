@@ -59,7 +59,8 @@ import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generator
 import { makeHeap } from './heap.mjs';
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
-import { opaqueForm, opaqueRefusalRule, siteStatement, nodeAt, patternTargets, boundNames, namedDefinitions } from './opaque-statements.mjs'; // the opacity ladder of the statement and expression rules (design/w1b-opaque-statements.md)
+import { statementSite, statementRefusalRule, siteStatement, nodeAt, patternTargets, boundNames, namedDefinitions, reachedUnitTexts, stepHazard, sharedBefore } from './opaque-statements.mjs';
+import { opaqueText, opaqueKey } from './opaque.mjs'; // the opacity ladder of the statement and expression rules (design/w1b-opaque-statements.md)
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -110,7 +111,7 @@ function translateOpaque(file, fnName, opts) {
     catch (e) {
       if (!(e instanceof Unsupported) || e.final || run >= OPAQUE_RUNS) throw e;
       if (e.boundaryUnit && !boundary.includes(e.boundaryUnit)) { boundary.push(e.boundaryUnit); continue; }
-      const rule = e.at && !e.boundaryUnit ? opaqueRefusalRule(e.message) : null;
+      const rule = e.at && !e.boundaryUnit ? statementRefusalRule(e.message) : null;
       const at = rule ? e.at : null;
       if (!at || sites.some((x) => x.start === at.start && x.end === at.end)) throw e;
       sites.push({ ...at, rule, msg: String(e.message).split('\n')[0].replace(/^[^\n]*?:\d+: [a-z][a-z0-9-]*: /, '') });
@@ -177,6 +178,9 @@ function translateOnce(file, fnName, opts = {}) {
   if (!fnName && !core) throw new Unsupported('--fn is required unless --core is given');
 
   const where = (n) => `${path.basename(file)}:${lineOf(sf, n.getStart(sf))}`;
+  // the refusal of an opaque site (design/w1b-opaque-statements.md): the site's own rule, graded `statement`, and message;
+  // `extra` says how translateOpaque takes it (final: no retry; boundaryUnit: the unit joins the value boundary)
+  const siteFail = (n, rule, msg, extra = {}) => { const e = new Unsupported(`${where(n)}: ${rule}: ${msg}`); Object.assign(e, extra); throw e; };
   const fail = (n, msg) => { const e = new Unsupported(`${where(n)}: ${msg}`); if (n && n.kind !== K.SourceFile && typeof n.getStart === 'function' && typeof n.getEnd === 'function') { try { e.at = { start: n.getStart(sf), end: n.getEnd() }; } catch { /* a node with no place: no site */ } } throw e; }; // the node: an opaque rule's refusal becomes a site (translateOpaque)
 
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
@@ -276,7 +280,7 @@ function translateOnce(file, fnName, opts = {}) {
     const lines = normalised.sf.getLineStarts();
     const offsetOf = (line, col) => (lines[line - 1] ?? normalised.sf.end) + (col ?? 1) - 1;
     gate0 = gate0.filter((g) => {
-      if (!g.opaque) return true;
+      if (!g.opaque || !statementSite(g.rule)) return true; // another family's grade (w1a's block) keeps its refusal here
       const a = offsetOf(g.line, g.col), z = offsetOf(g.endLine ?? g.line, g.endCol ?? g.col);
       const a2 = faithful.mapOffset ? faithful.mapOffset(a) : a, z2 = faithful.mapOffset ? faithful.mapOffset(z) : z;
       const unit = unitOfFinding(g);
@@ -290,7 +294,7 @@ function translateOnce(file, fnName, opts = {}) {
     }
     for (const x of opaqueSites) {
       const u = x.unit && fns.get(x.unit);
-      x.envelope = opaqueForm(x.rule).envelope;
+      x.envelope = statementSite(x.rule).envelope;
       if (!u) continue; // no unit holds it: coverage refuses below if a unit in the order reaches it
       const node = nodeAt(ts, sf, x.start, x.end);
       const st = siteStatement(ts, node, u.fn ?? u.node);
@@ -303,6 +307,8 @@ function translateOnce(file, fnName, opts = {}) {
   const designatedHere = (x) => !!currentUnit && !!designated.get(currentUnit.name)?.has(x);
   const coveredStatements = new Set(); // the designated statements an opaque step was emitted for
   const opaqueRecords = []; // the certificate's `opaque` list: one record per step emitted for a site
+  // the statements of a node's own code (the node itself when it is one; a nested function's are its own unit's)
+  const statementCount = (n) => { let c = 0; const w = (x) => { if (x !== n && (ts.isFunctionLike(x) || ts.isClassLike(x))) return; if (!ts.isBlock(x) && ts.isStatement(x) && !(x === n && ts.isFunctionLike(x))) c++; ts.forEachChild(x, w); }; w(n); return c; }; // a unit's own declaration is not one of its statements
   // a number operation inside an opaque step a site was read as needs no faithful placement: the step is one uninterpreted
   // transition on both sides whatever the numbers inside it are (design/w1b-opaque-statements.md); its reason is dropped
   const opaquePlacement = (v) => {
@@ -6307,20 +6313,33 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const jumpTag = jumps.length ? '_exits_' + jumps.map((j) => `${j > 0 ? 'b' : 'c'}${Math.abs(j)}`).join('_') : '';
     const moduleTag = moduleBindings.size ? `_modules_${hash([...moduleBindings].sort().join('|'))}` : '';
     const sites = designated.get(currentUnit?.name)?.get(s) ?? null; // the opaque sites this step covers (design/w1b-opaque-statements.md)
-    // the test's --break (tests/opaque-statements.mjs): one read a site's step takes and does not write is dropped, so a change
-    // to that value before the step goes unseen; the pairs' `upstream` units must then prove falsely, and the test refuses
-    if (sites && process.env.LEAN_OPAQUE_BREAK === 'reads') { const i = free.findIndex((v) => !M.some((m) => m.name === v.name)); if (i >= 0) free.splice(i, 1); }
-    // a site's step is keyed by its text and the text of every same-file definition it names outside the unit (a module
-    // constant, a function passed as a value, a class it builds): the same text naming a changed definition is another symbol
-    const defs = sites ? namedDefinitions(ts, checker, sf, s, currentUnit.node) : [];
-    const defTag = defs.length ? `_defs_${hash(defs.join('\n'))}` : '';
-    const id = `block_${hash(text)}${jumpTag}${moduleTag}${defTag}${calleeTag ? '_calls_' + calleeTag : ''}`;
+    // the mechanisms tests/opaque-statements.mjs --break removes (translate/opaque.mjs's LEAN_OPAQUE_BREAK, never set outside
+    // the tests), each must turn a pair's change outside the step into a false PASS-proved the test refuses:
+    //   drop-read     one read the step takes and does not write (a value changed before the step goes unseen)
+    //   drop-write    every name the step writes (the value from before the step stands after it)
+    //   drop-callees  the reached callees' texts in the key and the theorem's CALLS guard (a changed callee goes unseen)
+    //   drop-sharing  the test that no object is shared when the step changes or compares one (equal values, unequal states)
+    const broken = sites ? process.env.LEAN_OPAQUE_BREAK ?? '' : '';
+    if (broken === 'drop-read') { const i = free.findIndex((v) => !M.some((m) => m.name === v.name)); if (i >= 0) free.splice(i, 1); }
+    if (broken === 'drop-write') { const keep = M.filter((m) => declared.has(m.name)); M.length = 0; M.push(...keep); }
+    // a site's step is keyed (A3) by its tokens (translate/opaque.mjs opaqueText: a comment is no change, every literal
+    // is), the text of every same-file definition it names outside the unit (a module constant, a class it builds), and
+    // the text of every same-file unit it reaches (exec/callees.mjs): the same text naming changed code is another symbol
+    const defs = sites ? [...namedDefinitions(ts, checker, sf, s, currentUnit.node), ...(broken === 'drop-callees' ? [] : reachedUnitTexts(ts, checker, sf, s, currentUnit.node))] : [];
+    const defTag = defs.length ? `_defs_${opaqueKey(defs).slice(0, 16)}` : ''; // sha1: the file's 32-bit hash could name two codes one symbol
+    const id = sites ? `block_${opaqueKey([opaqueText([s], sf)]).slice(0, 16)}${jumpTag}${moduleTag}${defTag}${calleeTag ? '_calls_' + calleeTag : ''}` : `block_${hash(text)}${jumpTag}${moduleTag}${calleeTag ? '_calls_' + calleeTag : ''}`;
     if (sites) {
+      // the step depends on more than its reads' values (it changes an object or compares one by identity) and a statement
+      // before it may have shared an object: the reads' values are not its state, so the site keeps its refusal
+      // (design/w1b-opaque-statements.md); --break drop-sharing removes this test
+      const hazard = broken === 'drop-sharing' ? null : stepHazard(ts, checker, s);
+      const before = hazard ? sharedBefore(ts, checker, s, currentUnit.fn?.body ?? currentUnit.node) : null;
+      if (before) siteFail(s, sites[0].rule, `${sites[0].msg} (its opaque step ${hazard.why}, and \`${before.node.getText(sf).slice(0, 40)}\` before it ${before.why}: the values the step reads are not its state)`, { final: true });
       // a boundary rule's construct can make a value outside the model (subset.md "Modelling axioms"): its step may write
       // the world and jump, never a local or the result; where it would, the unit joins the value boundary and runs again
-      if (sites.some((x) => x.envelope === 'boundary') && (M.length || returns)) { const e = new Unsupported(`${where(s)}: ${sites.find((x) => x.envelope === 'boundary').rule}: its value would leave an opaque step; the unit is read as one opaque function`); e.boundaryUnit = currentUnit.name; throw e; }
+      { const boundary = sites.find((x) => x.envelope === 'boundary'); if (boundary && (M.length || returns)) siteFail(s, boundary.rule, 'its value would leave an opaque step; the unit is read as one opaque function', { boundaryUnit: currentUnit.name }); }
       coveredStatements.add(s);
-      opaqueRecords.push({ unit: currentUnit.name, rules: [...new Set(sites.map((x) => x.rule))], line: lineOf(sf, s.getStart(sf)), id, reads: [...(usesSelf ? ['this'] : []), ...free.map((v) => v.name)], writes: M.map((m) => m.name), ...(returns ? { result: true } : {}), ...(jumps.length ? { jumps: jumps.length } : {}) });
+      opaqueRecords.push({ unit: currentUnit.name, rules: [...new Set(sites.map((x) => x.rule))], line: lineOf(sf, s.getStart(sf)), span: [lineOf(sf, s.getStart(sf)), lineOf(sf, s.getEnd())], sites: sites.map((x) => ({ rule: x.rule, span: [lineOf(sf, x.start), lineOf(sf, x.end)] })), statements: statementCount(s), id, reads: [...(usesSelf ? ['this'] : []), ...free.map((v) => v.name)], writes: M.map((m) => m.name), ...(returns ? { result: true } : {}), ...(jumps.length ? { jumps: jumps.length } : {}) });
     }
     const inTypes = ['World', ...(usesSelf ? [selfType(u)] : []), ...free.map((v) => v.d)];
     const outTypes = ['World', ...(jumps.length ? ['int'] : []), ...(returns ? [terminal ? RD : `Option<${RD}>`] : []), ...M.map((m) => m.d)];
@@ -6328,7 +6347,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const name = external(id, inTypes, outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`);
     // record the callees on the prelude block so the theorem can refuse a block whose callee changed
     const key = [...prelude.keys()].find((k) => k === name);
-    if (key && calls.size) prelude.set(key, `${prelude.get(key)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
+    if (key && calls.size && broken !== 'drop-callees') prelude.set(key, `${prelude.get(key)}\n// CALLS: ${[...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join(',')}`);
     const args = [WORLD, ...(usesSelf ? [selfValue(u)] : []), ...free.map((v) => dn(v.name))];
     const jumpName = `jumpb${loopCount}_`;
     const outs = [WORLD, ...(jumps.length ? [jumpName] : []), ...(returns ? ['retb'] : []), ...M.map((m) => dn(m.name))];
@@ -7099,7 +7118,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       for (const r of requires) specs.push(`  requires ${sub(r)}`);
       for (const e of ensures) specs.push(`  ensures ${sub(e)}`);
     }
-    if (numericOpaque.has(u.name) || unitOpaque.has(u.name)) { for (const x of opaqueSites) if (x.unit === u.name) opaqueRecords.push({ unit: u.name, rules: [x.rule], line: lineOf(sf, x.start), id: numericOpaque.has(u.name) ? 'unit (value boundary)' : 'unit', reads: ['all inputs'], writes: ['result'] }); /* a site in a unit read whole: the unit is its step */ chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
+    if (numericOpaque.has(u.name) || unitOpaque.has(u.name)) { for (const x of opaqueSites) if (x.unit === u.name) opaqueRecords.push({ unit: u.name, rules: [x.rule], line: lineOf(sf, x.start), span: [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())], sites: [{ rule: x.rule, span: [lineOf(sf, x.start), lineOf(sf, x.end)] }], statements: statementCount(u.fn ?? u.node), id: numericOpaque.has(u.name) ? 'unit (value boundary)' : 'unit', reads: ['all inputs'], writes: ['result'] }); /* a site in a unit read whole: the unit is its step */ chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
     const sp = sigParams(u);
     // ECMA-262 15.3.4 ConciseBody: an expression body is evaluated and its value returned; a unit whose return type is void
     // (`x => [x].forEach(f)`, `x => count++`) returns undefined whatever the expression yields, so its body is the one
@@ -7127,7 +7146,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
         body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
         // coverage: every opaque site of the unit is inside a step its emission wrote; a statement the emission reached by
         // another path (a callback read inline, a spliced procedure) keeps the site's own refusal
-        if (!accessorOpaque.has(u.name) && !moduleShape.opaque) for (const [st, xs] of designated.get(u.name) ?? []) if (!coveredStatements.has(st)) { const e = new Unsupported(`${where(xs[0].node ?? st)}: ${xs[0].rule}: ${xs[0].msg}`); e.final = true; throw e; }
+        if (!accessorOpaque.has(u.name) && !moduleShape.opaque) for (const [st, xs] of designated.get(u.name) ?? []) if (!coveredStatements.has(st)) { const site = xs[0]; siteFail(site.node ?? st, site.rule, site.msg, { final: true }); }
         if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
       }
       catch (e) { if (!(e instanceof Unsupported) || e.boundaryUnit || !moduleShape.reads || !eff || u.isCtor) throw e; pending = savedPending; coreHelpers.length = savedHelpers; usedModuleOpaque = true; body0 = opaqueModuleBody(u); }
@@ -7197,7 +7216,12 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // its scrutinee's type and takes no qualifier
   const qualify = (text) => text.replace(/("(?:\\.|[^"\\])*")|(?<![.\w])(?<!\bcase\s+)Some\(/g, (m, literal) => literal ?? 'Option.Some(');
   // the certificate's opaque list (design/w1b-opaque-statements.md): one comment per step a site was read as, check.mjs reads it
-  for (const r of opaqueRecords) chunks.push(`// OPAQUE ${fname(r.unit)}: ${JSON.stringify({ rules: r.rules, line: r.line, id: r.id, reads: r.reads, writes: r.writes, ...(r.result ? { result: true } : {}), ...(r.jumps ? { jumps: r.jumps } : {}) })}`);
+  // A5: per step its span and the findings' spans it covers (a statement step is wider than an expression finding; the
+  // census reports the gap), and per unit the opaque fraction: the statements inside its steps over the statements of
+  // its own body (a unit read whole: 1)
+  const unitStatements = new Map(order.map((u) => [u.name, statementCount(u.fn ?? u.node)]));
+  const opaqueShare = new Map(); for (const r of opaqueRecords) { const total = unitStatements.get(r.unit) || 1; opaqueShare.set(r.unit, Math.min(total, (opaqueShare.get(r.unit) ?? 0) + (r.id.startsWith('unit') ? total : r.statements))); }
+  for (const r of opaqueRecords) chunks.push(`// OPAQUE ${fname(r.unit)}: ${JSON.stringify({ rules: r.rules, line: r.line, span: r.span, sites: r.sites, fraction: Number(((opaqueShare.get(r.unit) ?? 0) / (unitStatements.get(r.unit) || 1)).toFixed(3)), id: r.id, reads: r.reads, writes: r.writes, ...(r.result ? { result: true } : {}), ...(r.jumps ? { jumps: r.jumps } : {}) })}`);
   const main = qualify(chunks.join('\n\n'));
   if (main.includes('__DIV__')) throw new Unsupported('internal: an integer division was not placed under Math.floor');
 

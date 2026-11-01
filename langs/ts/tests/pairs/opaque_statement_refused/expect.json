@@ -1,0 +1,26 @@
+{
+  "candidateOnly": [
+    {
+      "parent": "parent.ts",
+      "file": "candidate.ts",
+      "unit": "alias_origin",
+      "verdict": "PASS-bounded",
+      "laneA": "ASK"
+    },
+    {
+      "parent": "parent.ts",
+      "file": "candidate.ts",
+      "unit": "alias_step",
+      "verdict": "PASS-bounded",
+      "laneA": "ASK"
+    },
+    {
+      "parent": "parent.ts",
+      "file": "candidate.ts",
+      "unit": "identity",
+      "verdict": "WITNESS"
+    }
+  ],
+  "opaque": {},
+  "why": "The statement family's refusals that must stand (design/w1b-opaque-statements.md), each checked per unit by check.mjs: never PASS-proved. alias_origin, alias_step: A2's pair, the push through t writes user.tags, which the candidate read before the alias; the write's origin is user (the lint's alias-mutation names it), and that rule's reading is w1a's, so here the unit is refused and never PASS-proved (lane B does not reach 7919). identity: `x === t` (mixed-types) compares x by identity with t, which the parent makes x itself and the candidate a copy of it when it is a record: equal values, true against false. The step changes or compares an object, and `const t = ...` before it binds a reference, so the values the step reads are not its state and the site keeps its refusal (no step; --break drop-sharing removes the test, the step reads equal values on both sides and this unit proves falsely)."
+}
