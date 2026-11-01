@@ -40,7 +40,9 @@ const cpuSecs = () => { const c = process.cpuUsage(); return Math.round((c.user 
 const write = () => { if (!opt('--unit', null)) fs.writeFileSync(path.join(work, 'result.json'), JSON.stringify(result, null, 1)); }; // a unit's process writes only its unit file
 const pairFile = (side) => (fs.existsSync(path.join(pairDir, side + '.tsx')) ? path.join(pairDir, side + '.tsx') : path.join(pairDir, side + '.ts'));
 const exp = JSON.parse(fs.readFileSync(path.join(pairDir, 'expect.json'), 'utf8'));
-if (exp.candidateOnly || exp.laneBOnly) { result.skipped = exp.candidateOnly ? 'candidate-only units: no parent model' : 'lane A refuses this pair by design (laneBOnly)'; write(); process.exit(0); }
+// a pair read only as a pull request (expect.json prOnly, tests/pr-pair.mjs) names no unit scope: the suite runs no
+// check.mjs on it, so there is no pair of models to compare
+if (exp.candidateOnly || exp.laneBOnly || exp.prOnly) { result.skipped = exp.candidateOnly ? 'candidate-only units: no parent model' : exp.laneBOnly ? 'lane A refuses this pair by design (laneBOnly)' : 'read as a pull request only (prOnly): no unit scope'; write(); process.exit(0); }
 
 // ----- the translation, exactly as the suite's pair step -----
 // `project` in expect.json: the pair is read with the tsconfig it names, in both lanes (tests/run.mjs projectArgs), so the
