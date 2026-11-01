@@ -122,7 +122,7 @@ same gaps.
 ### Determinism, measured
 
 A second run of every pair site the first run did not catch and of 100 it caught (646 sites, `--recheck`, the same
-tree, six hours later at another load) gave 646 rows byte-equal to the first run's. The fixture study run twice gives
+tree, started two hours after the first ended, at another load) gave 646 rows byte-equal to the first run's. The fixture study run twice gives
 byte-equal JSON.
 
 ### The study on W3a and W3c (pair corpus, 2026-11-01)
