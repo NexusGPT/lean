@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { ts, loadProgram } from '../common.mjs';
-import { opaqueText, opaqueKey, opaqueForm, opaqueGrade, gradedRule, heapOperation, blockStart } from '../translate/opaque.mjs';
+import { opaqueText, opaqueKey, opaqueForm, opaqueGrade, gradedRule, heapOperation, blockStart, prefixDeclaration } from '../translate/opaque.mjs';
 
 if (process.argv.includes('--break')) process.env.LEAN_BREAK = 'opaque-drop-read'; // the mechanism removed: one read dropped, so the step checks below go red
 const failures = [];
@@ -55,7 +55,9 @@ check(why(7) === 'calls a method on a reference', `t.push(s): ${why(7)}`);
 check(why(8) === 'writes a field, an element or a pattern', `u.n = 1: ${why(8)}`);
 check(why(9) === 'converts an object implicitly', `\`\${u}\`: ${why(9)}`);
 check(why(10) === null, `const n = u.tags.length: ${why(10)}`);
-check(blockStart(checker, [...st], (s) => s === st[7]) === 6, `block starts at the first reference statement or site: ${blockStart(checker, [...st], (s) => s === st[7])}`);
+check(blockStart(checker, [...st], (s) => s === st[7]) === 7, `a path alias of a parameter (const t = u.tags) is a prefix declaration; the block starts at the site: ${blockStart(checker, [...st], (s) => s === st[7])}`);
+check(blockStart(checker, [...st], (s) => s === st[10]) === 7, `the block starts at the first reference operation that is not a prefix declaration (t.push): ${blockStart(checker, [...st], (s) => s === st[10])}`);
+check(prefixDeclaration(checker, st[6]) && !prefixDeclaration(checker, st[11]), 'a path alias is a prefix declaration; a primitive declaration is not one (it needs none)');
 check(blockStart(checker, [...st], () => false) === -1, 'no site, no block');
 fs.rmSync(dir, { recursive: true, force: true });
 if (failures.length) { for (const f of failures) console.error(`FAIL ${f}`); process.exit(1); }

@@ -12,7 +12,7 @@
 //
 // This file is shared by the W1 lanes: the column (OPAQUE), the key (opaqueText, opaqueKey), the step (opaqueForm),
 // the certificate row (opaqueEntry), and, for the mutation family (lane w1a), the reference test the block of a
-// unit starts from (heapOperation, blockStart).
+// unit starts from (heapOperation, prefixDeclaration, blockStart).
 import { createHash } from 'node:crypto';
 import { ts } from '../common.mjs';
 import { broken } from '../tests/break.mjs'; // the one --break convention (A6): LEAN_BREAK=<mechanism> removes that mechanism
@@ -159,5 +159,29 @@ export function heapOperation(checker, node) {
 // reads are equal states, and the same code from equal states runs the same.
 export function blockStart(checker, statements, holdsSite) {
   if (!statements.some(holdsSite)) return -1;
-  return statements.findIndex((s) => holdsSite(s) || !!heapOperation(checker, s));
+  const aliases = new Set();
+  return statements.findIndex((s) => holdsSite(s) || (!!heapOperation(checker, s) && !prefixDeclaration(checker, s, aliases)));
+}
+// A declaration the block may start after although it binds a reference, because it makes no sharing the key does not
+// name (design/w1a-opaque-mutation.md, "The block's start"): every name a `const` binds to a pure property path from a
+// parameter, `this`, or an earlier such name (`const t = user.tags`): nothing has been written before the block, so
+// the name is the object at that path, and the declaration's text is in the step's key (prefixText); or every name a
+// `const`/`let` binds to a fresh literal of primitives (`const out: number[] = []`): an object no other name holds.
+// Each name of the first kind is added to `aliases` (a later path may start from it).
+export function prefixDeclaration(checker, s, aliases = new Set()) {
+  if (!ts.isVariableStatement(s) || !(s.declarationList.flags & (ts.NodeFlags.Const | ts.NodeFlags.Let))) return false;
+  const isConst = !!(s.declarationList.flags & ts.NodeFlags.Const);
+  const strip = (x) => { while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression?.(x)) x = x.expression; return x; };
+  const pathRoot = (x) => { x = strip(x); if (!ts.isPropertyAccessExpression(x) || x.questionDotToken) return null; while (ts.isPropertyAccessExpression(x) && !x.questionDotToken) x = strip(x.expression); return x; };
+  const handed = (r) => { if (!r) return false; if (r.kind === K.ThisKeyword) return true; if (!ts.isIdentifier(r)) return false; const sym = checker.getSymbolAtLocation(r); const d = sym?.valueDeclaration; return !!d && (ts.isParameter(d) || aliases.has(sym)); };
+  const freshPrimitive = (x) => { x = strip(x); if (ts.isArrayLiteralExpression(x)) return x.elements.every((e) => !ts.isSpreadElement(e) && !isReference(checker.getTypeAtLocation(e)) && !heapOperation(checker, e)); if (ts.isObjectLiteralExpression(x)) return x.properties.every((p) => ts.isPropertyAssignment(p) && !ts.isComputedPropertyName(p.name) && !isReference(checker.getTypeAtLocation(p.initializer)) && !heapOperation(checker, p.initializer)); return false; };
+  const added = [];
+  for (const d of s.declarationList.declarations) {
+    if (!ts.isIdentifier(d.name) || !d.initializer) return false;
+    if (isConst && handed(pathRoot(d.initializer)) && !heapOperation(checker, d.initializer)) { added.push(checker.getSymbolAtLocation(d.name)); continue; }
+    if (freshPrimitive(d.initializer)) continue;
+    return false;
+  }
+  for (const a of added) if (a) aliases.add(a);
+  return true;
 }

@@ -58,7 +58,7 @@ import { readHandler, mentionsParam, localsOf } from '../handlers.mjs';
 import { cellWrite, captureKind, heldFunction } from '../react.mjs'; import { mentions } from '../handlers.mjs'; // a ref cell write in a held function: a cell step of the handler (design/ref-cell.md)
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
-import { opaqueGrade, gradedRule, opaqueText, opaqueKey, opaqueForm, opaqueEntry, opaqueLine, statementCount, isReference, blockStart } from './opaque.mjs';
+import { opaqueGrade, gradedRule, opaqueText, opaqueKey, opaqueForm, opaqueEntry, opaqueLine, statementCount, isReference, blockStart, heapOperation } from './opaque.mjs';
 import { broken } from '../tests/break.mjs'; // the opacity ladder (design/w1a-opaque-mutation.md)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
@@ -6320,6 +6320,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const usesSelf = readsThis && hasSelf(u) && !tp;
     const inputs = [...(usesSelf ? [{ code: SELF, d: selfType(u) }] : []), ...(tp && readsThis ? [{ code: dn('this'), d: dtype(typeOf(tp.name), tp) }] : []), ...free.map((v) => ({ code: dn(v.name), d: v.d }))];
     const outputs = mutatedOf(u).map((m) => { const pr = u.params.find((p) => ts.isIdentifier(p.name) && p.name.text === m); return { name: dn(m), d: dtype(typeOf(pr.name), pr) }; });
+    for (const o of outputs) if (!inputs.some((i) => i.code === o.name)) inputs.push({ code: o.name, d: o.d }); // an output is read too: the step changes it from its value
     const RD = u.isCtor ? 'Unit' : dtype(retType(u), u.node);
     const rt = retType(u);
     const admitsUndefined = (x) => !!(x.flags & (TF.Void | TF.Undefined | TF.Any | TF.Unknown)) || (x.isUnion() && x.types.some(admitsUndefined));
@@ -6333,7 +6334,10 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     t.stmts.forEach(w);
     let encl = u.fn?.parent; while (encl && !ts.isFunctionLike(encl)) encl = encl.parent;
     const reached = t.stmts.map((n) => { try { return reachOf.keyText(n); } catch { return sf.text; } });
-    const key = opaqueKey([opaqueText(t.stmts, sf), u.params.map((p) => p.getText(sf)).join(', '), ...(broken('opaque-drop-callees') ? [] : reached), encl ? encl.getText(sf) : '']); // LEAN_BREAK=opaque-drop-callees: the reached code leaves the key (tests/break.mjs)
+    // the declarations before the block that bind a reference (opaque.mjs prefixDeclaration: a path alias, a fresh
+    // literal): their text names the sharing the block starts from
+    const prefix = ts.isBlock(u.body) ? [...u.body.statements].slice(0, [...u.body.statements].indexOf(t.stmts[0])).filter((x) => ts.isVariableStatement(x) && !!heapOperation(checker, x)) : [];
+    const key = opaqueKey([opaqueText(t.stmts, sf), u.params.map((p) => p.getText(sf)).join(', '), ...(broken('opaque-drop-callees') ? [] : reached), encl ? encl.getText(sf) : '', opaqueText(prefix, sf)]); // LEAN_BREAK=opaque-drop-callees: the reached code leaves the key (tests/break.mjs)
     const calleeTag = [...calls].sort().map((c) => fname(c).replace(new RegExp(`${sfx}$`), '')).join('_');
     const id = `block_opaque_${key}${calleeTag ? '_calls_' + calleeTag : ''}`;
     const step = opaqueForm({ id, external, world: WORLD, inputs, outputs, ret: returns ? { name: 'retb', d: RD, terminal } : null });

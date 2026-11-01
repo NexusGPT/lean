@@ -46,8 +46,19 @@ or may touch a reference** to the end of the body (`blockStart`). A statement ma
 - runs a declared accessor, converts an object implicitly (`+`, `<`, a template hole, unary `+ - ~`, an object key),
   spreads or iterates a reference, or yields.
 
-The statements before the block are read exactly, as before. None of them changes an object or binds a reference,
-so when the block starts every object is as the caller handed it and no local holds one.
+The statements before the block are read exactly, as before. None of them changes an object, and the only
+references they bind are of two kinds (`prefixDeclaration`), so when the block starts every object is as the caller
+handed it and the only sharing among the unit's names is one the step's key names:
+
+- a `const` bound to a pure property path from a parameter, `this` or an earlier such name (`const t = user.tags`,
+  no call, no getter, no optional link): nothing has been written before the block, so `t` is the object at that
+  path, and the declarations' text is part of the key;
+- a `const` or `let` bound to a fresh literal of primitives (`const out: number[] = []`): an object no other name
+  holds (a later write to it is a reference operation and starts the block).
+
+Any other reference operation starts the block. Dropping the declarations' text from the key cannot by itself make
+a false proof (two different paths are two different values of the reads, so the lemma ranges over inputs where
+they differ), so it has no break of its own; it keeps the symbol honest where two paths could name one value.
 
 The step: one bodiless function per block, `ext_block_opaque_<sha1>_..._calls_<callees>(World, [self], reads...)`
 returning `(World, result, outputs...)`:
@@ -57,7 +68,8 @@ returning `(World, result, outputs...)`:
   calls, the module bindings it reads, transitively), and for a callback unit the enclosing function's text (its
   captured inputs share what that function made them share). The same-file callees are also listed (`// CALLS`), so the
   theorem refuses a block whose callee differs, as for every opaque block.
-- **reads**: every name of the unit the block mentions (freeVars), `this` when it mentions it, the world.
+- **reads**: every name of the unit the block mentions (freeVars), `this` when it mentions it, the world, and every
+  output (the step changes it from its value).
 - **writes**: the world, and the parameters the unit's own text writes (`mutationAnalysis` valueOutputs, the outputs
   the exact reading would give: the unit keeps its interface, so a parent read exactly and a candidate read with a block
   still meet on one signature). Any other change the block makes to an object it was handed (through an alias, a
@@ -167,7 +179,7 @@ one symbol, so a changed URL inside an opaque loop could be proved equal. The id
   pair's `expect.json` lists `"break": [{ "mechanism", "equal": { "<unit>": true } }]`, each unit expected `false` in the
   pair's own `equal`; the runner translates both sides again under the break and requires the lemma to prove (the row
   passes when the broken run is wrong). Mechanisms: `opaque-drop-read` (the step's first scalar read),
-  `opaque-drop-write` (its first written output), `opaque-drop-callees` (the reached code in its key and its CALLS line).
+  `opaque-drop-write` (its writes as its callers see them: its first written output and its reach to the world), `opaque-drop-callees` (the reached code in its key and its CALLS line).
 
 ## What is not graded
 
