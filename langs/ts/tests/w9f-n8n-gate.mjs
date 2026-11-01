@@ -6,7 +6,10 @@
 //                    of the same text, so the parent side and each unit's reverted head parse only the changed file
 //   w9f-typed-first  typed.mjs: a unit's reading stops at its first differing file, its own file read first, so a unit
 //                    whose change runs costs two emits, not its whole reach (an erased unit still reads the whole reach)
-// Both leave every decision as it was: f is not erased, g is, the file's emit differs, in every mode.
+//   w9f-lint-routed  pr.mjs changedUnits: only the units the ledger routes to are linted (tests/fixtures/w9f-lint: five
+//                    units, f1 routed), where every unit of every changed file was linted and all but the routed dropped
+// Each leaves every decision as it was: f is not erased, g is, the file's emit differs, f1's findings are the same, in
+// every mode.
 //
 //   node tests/w9f-n8n-gate.mjs              the checks, then each break (each must turn its check red)
 //   node tests/w9f-n8n-gate.mjs --break <m>  one mechanism removed: its check is red, exit 1 (as it must be)
@@ -14,11 +17,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { typedReading, typedReuse } from '../typed.mjs';
+import { loadProgram } from '../common.mjs';
+import { changedUnits } from '../pr.mjs';
+import { lintStats } from '../lint/lint.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, 'fixtures', 'w9f-typed');
 const parent = fs.readFileSync(path.join(root, 'a.parent.ts'), 'utf8'), head = fs.readFileSync(path.join(root, 'src', 'a.ts'), 'utf8');
-const BREAKS = { 'w9f-typed-reuse': 'reuse', 'w9f-typed-first': 'first' };
+const BREAKS = { 'w9f-typed-reuse': 'reuse', 'w9f-typed-first': 'first', 'w9f-lint-routed': 'lint-routed' };
+const lintFixture = path.join(here, 'fixtures', 'w9f-lint', 'src', 'm.ts');
+const lintLoaded = loadProgram(lintFixture, { project: true });
 
 function read(units) {
   Object.assign(typedReuse, { reused: 0, parsed: 0, emits: 0 });
@@ -35,6 +43,14 @@ function checks() {
   out.push({ check: 'reuse', ok: both.parsed === 3 && both.reused > 0, detail: `parsed ${both.parsed} reused ${both.reused} (want parsed 3)` });
   // first difference: f's reading past the file's own costs its own file in the reverted head and in the head: 2 emits
   out.push({ check: 'first', ok: f.emits - file.emits === 2 && f.t.units.f.differs.length === 1 && f.t.units.f.first === true, detail: `unit f emitted ${f.emits - file.emits} file(s) (want 2), differs ${JSON.stringify(f.t.units.f.differs)}` });
+  // lint-routed: the ledger routes f1 alone, so one lint call; f1's findings are the ones every unit's lint gives it
+  lintStats.calls = 0;
+  const kept = changedUnits(lintLoaded, [[1, Infinity]], lintFixture, new Set(['f1'])).filter((u) => u.name === 'f1');
+  const calls = lintStats.calls;
+  const whole = changedUnits({ ...lintLoaded }, [[1, Infinity]], lintFixture).filter((u) => u.name === 'f1');
+  const rules = (us) => JSON.stringify(us.map((u) => u.findings.map((x) => [x.rule, x.line])));
+  out.push({ check: 'decisions', ok: rules(kept) === rules(whole) && rules(kept) === JSON.stringify([[['non-null-assertion', 1]]]), detail: `f1 kept ${rules(kept)} every unit ${rules(whole)}` });
+  out.push({ check: 'lint-routed', ok: calls === 1, detail: `lint calls ${calls} for one routed unit of five (want 1)` });
   return out;
 }
 

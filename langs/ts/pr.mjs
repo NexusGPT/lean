@@ -26,6 +26,7 @@
 import fs from 'node:fs';
 import { createRun, registerTask, startTask, commitArtifact, atomicJSON, supervise, reconcileTasks, taskId, materializeSources } from './ci/supervise.mjs';
 import { buildChangeManifest, routeChanges, ledgerRows, ledgerMarkdown, sensitivePath } from './ci/ledger.mjs';
+import { broken } from './break.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
@@ -241,9 +242,13 @@ function changedRanges(repo, base, head, rel, deleted) {
   });
 }
 
-function changedUnits(loaded, ranges, file) {
+// `keep`: the unit names the caller keeps (the units the ledger routes to); a unit outside it is not linted, since each
+// unit's findings come from its own lint call. LEAN_BREAK=w9f-lint-routed lints every unit (tests/w9f-n8n-gate.mjs)
+export function changedUnits(loaded, ranges, file, keep = null) {
   const { sf } = loaded, units = topLevelFunctions(sf);
+  const kept = keep && !broken('w9f-lint-routed') ? keep : null;
   return [...units.values()].flatMap((u) => {
+    if (kept && !kept.has(u.name)) return [];
     const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
     const end = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
     if (!ranges.some(([a, b]) => a <= end && start <= b)) return [];
@@ -323,7 +328,7 @@ function changedFiles(opts, temps, ledger) {
       const reading = shared ?? loadProgram(entry.headFile, { project }); // a file read alone is let go after its units
       if (shared) entry.keyReading = shared;
       const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
-      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile).filter(u => routed.has(u.name));
+      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile, routed).filter(u => routed.has(u.name));
       // the module unit (common.mjs MODULE_UNIT): the file's top-level statements, the whole file's lines; the ledger routes to it
       // the types unit (common.mjs TYPES_UNIT) likewise: the file's text its emitted JavaScript does not carry, read by the typed reading alone
       for (const name of [MODULE_UNIT, TYPES_UNIT]) if (routed.has(name)) entry.units.push({ name, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
