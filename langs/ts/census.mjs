@@ -256,7 +256,7 @@ export function census(root, opts = {}) {
     // an unresolved-module finding names its module (or global) and its kind; the unit it falls in is counted once
     const envSeen = new Set();
     const named = findings.map((f) => {
-      const o = { line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env };
+      const o = { line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env, ...(f.opaque ? { opaque: f.opaque, opaqueSite: f.opaqueSite } : {}) }; // an opaque site's finding names its statement (design/w1c-opaque-calls.md): the opaque fraction of the units it lets in
       if (f.rule !== 'unresolved-module') return o;
       const c = env.classify(file, f.msg);
       o.kind = install.status === 'install-failed' ? 'install-failed' : c.kind + (c.generated ? ' (generated)' : '');
