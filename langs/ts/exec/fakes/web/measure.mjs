@@ -61,10 +61,14 @@ for (const s of selected) {
 }
 const results = [];
 let next = 0;
-// the machine is shared: no task starts while the one-minute load is above LOAD_CAP (a run under a far higher load would
-// spend its time budgets waiting, and an ASK of contention is no verdict of the fakes)
-const LOAD_CAP = 40;
-const calm = async () => { while (os.loadavg()[0] > LOAD_CAP) await new Promise((r) => setTimeout(r, 30000)); };
+// the machine is shared (the owner's load rule): the run starts only when the one-minute load is at most START_CAP, read
+// again every five minutes; once started it keeps JOBS (at most 4) workers, and no new task starts while the load is
+// above HOLD_CAP (twice the start cap: the machine is overloaded, and a run would spend its time budgets waiting)
+const START_CAP = 40, HOLD_CAP = 80;
+const waitLoad = async (cap, ms) => { while (os.loadavg()[0] > cap) await new Promise((r) => setTimeout(r, ms)); };
+const calm = () => waitLoad(HOLD_CAP, 30000);
+await waitLoad(START_CAP, 300000);
+let done = 0;
 async function worker() {
   while (next < tasks.length) {
     await calm();
@@ -80,6 +84,7 @@ async function worker() {
     const recording = await runOne(t.file, candidate, t.unit, 'recording');
     if (mutFile) fs.rmSync(mutFile, { force: true });
     results.push({ file: path.relative(root, t.file), unit: t.unit, kind: t.kind, index: t.index ?? null, site, fakes, recording });
+    process.stderr.write(`${name}: ${++done} of ${tasks.length} tasks\n`);
   }
 }
 await Promise.all(Array.from({ length: JOBS }, worker));
