@@ -2,25 +2,25 @@
 export function outside(xs: number[]): number {
   const i = xs.length - 1;
   let n = 0;
-  try { n = xs[i] * 2; } catch ({ message }: any) { n = -1; }
+  try { n = i + xs.length; } catch ({ message }: any) { n = -1; }
   const out_ = n;
   return out_;
 }
 export function inside(xs: number[]): number {
   const i = xs.length - 1;
   let n = 0;
-  try { n = xs[i] * 3; } catch ({ message }: any) { n = -1; }
+  try { n = i - xs.length; } catch ({ message }: any) { n = -1; }
   return n;
 }
 export function planted(xs: number[]): number {
   const i = xs.length - 1;
   let n = 0;
-  try { n = xs[i] + 2; } catch ({ message }: any) { n = -1; }
+  try { n = i - xs.length; } catch ({ message }: any) { n = -1; }
   return n;
 }
 export function upstream(xs: number[]): number {
   const i = xs.length - 2;
   let n = 0;
-  try { n = xs[i] * 2; } catch ({ message }: any) { n = -1; }
+  try { n = i + xs.length; } catch ({ message }: any) { n = -1; }
   return n;
 }

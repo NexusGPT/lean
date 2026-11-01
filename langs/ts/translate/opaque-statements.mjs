@@ -38,7 +38,7 @@ export function statementRefusalRule(message) {
 export function siteStatement(ts, node, fn) {
   let st = null;
   for (let p = node; p; p = p.parent) {
-    if (p === fn) return st;
+    if (p === fn) return st && bindsCode(ts, st) ? null : st;
     if (ts.isFunctionLike(p) || ts.isClassLike(p)) st = isStatementNode(ts, p) ? p : null; // a statement of an inner function is not fn's own: the statement holding that function is (a nested declaration is one)
     else if (!st && isStatementNode(ts, p)) st = p;
   }
@@ -48,6 +48,9 @@ function isStatementNode(ts, n) {
   if (ts.isBlock(n)) return false; // a block's own statements are the steps; a block alone is never the innermost
   return ts.isStatement(n) || ts.isVariableStatement(n);
 }
+// a statement whose effect is a function or class value bound to its name: an opaque step's outputs are values of the
+// model, so no step can carry it, and a site inside it makes its unit one opaque function (siteStatement: null)
+const bindsCode = (ts, n) => ts.isFunctionDeclaration(n) || ts.isClassDeclaration(n);
 
 // the deepest node of sf spanning [start, end)
 export function nodeAt(ts, sf, start, end) {

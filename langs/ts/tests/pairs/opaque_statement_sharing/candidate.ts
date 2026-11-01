@@ -15,7 +15,7 @@ export function alias_step(user: { tags: number[] }, k: number): number {
   return n + key.length;
 }
 export function identity(x: number | { o: number }, y: number): boolean {
-  const t = typeof x === "number" ? x : { o: x.o };
+  const t = typeof x === "number" ? x : { ...x };
   const same = x === t;
   return same && y > 0;
 }

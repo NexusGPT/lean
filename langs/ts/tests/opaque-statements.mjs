@@ -16,6 +16,7 @@
 //   opaque-drop-callees  the reached callees' texts and the CALLS guard          callee (opaque_statement_mechanisms)
 //   opaque-drop-sharing  no shared object when a step changes or compares one   identity (opaque_statement_sharing)
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -39,8 +40,9 @@ function runOnce(mechanism) {
   const env = { ...process.env, LEAN_PAIRS: pairs.join(','), JOBS: String(Math.min(4, Number(process.env.JOBS ?? 4))), ...(mechanism ? { [BREAK_ENV]: mechanism, LEAN_STEP_CACHE: '0' } : {}) };
   const r = spawnSync('node', [path.join(here, 'run.mjs')], { env, encoding: 'utf8', maxBuffer: 1 << 28 });
   const out = (r.stdout ?? '') + (r.stderr ?? '');
-  const rows = out.split('\n').filter((l) => /^\| pair \| opaque_/.test(l));
-  const failed = rows.filter((l) => /\| FAIL \|/.test(l));
+  const rows = out.split('\n').filter((l) => /^\|\s*pair\s*\|\s*opaque_/.test(l)); // the runner pads its columns
+  const log = path.join(os.tmpdir(), `opaque-statements${mechanism ? '-' + mechanism : ''}.log`); fs.writeFileSync(log, out); console.log(`full output: ${log}`);
+  const failed = rows.filter((l) => /\|\s*FAIL\s*\|/.test(l));
   if (!rows.length) { console.log(out.trim().split('\n').slice(-20).join('\n')); process.exit(2); }
   return { rows, failed };
 }

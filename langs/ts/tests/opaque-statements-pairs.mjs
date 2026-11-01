@@ -11,7 +11,7 @@
 // A boundary rule (its construct can make a value outside the model) has its construct confined to the world (a call
 // statement) and adds `escapes`: the construct's value used after it, so the unit is one opaque function (the value
 // boundary): a change elsewhere in it is not proved. A rule whose sites the translator reads whole-unit already
-// (number-special, unary-coercion, division) has `unchanged` (proved), `escapes` and `caller` (a same-file caller,
+// (number-special, unary-coercion, division, param-form) has `same` (proved), `escapes` and `caller` (a same-file caller,
 // opaque too) instead.
 //   node tests/opaque-statements-pairs.mjs            write every pair (lane B expectations from `b` in each spec)
 //   node tests/opaque-statements-pairs.mjs <rule>     write one
@@ -58,30 +58,28 @@ export const SPECS = [
     inside: ['3n', '1n'], upstream: ['c + 1n', 'c + 2n'],
     why: '`&` on BigInt values' },
   { rule: 'mixed-types', params: 'x: number | { o: number }, y: number', ret: 'boolean',
-    pre: ['const t = y + 1;'], construct: 'const same = x === t;', retStmt: 'return same;',
-    inside: ['x === t', 'x !== t'], upstream: ['y + 1', 'y + 2'],
+    pre: ['const t = y + 1;'], construct: 'const same = t === x;', retStmt: 'return same;',
+    inside: ['t === x', 't !== x'], b: { upstream: 'PASS-bounded' }, upstream: ['y + 1', 'y + 2'],
     why: '`===` between a primitive-or-record union and a value that is not a literal' },
   { rule: 'destructuring', params: 'xs: number[]', ret: 'number',
-    pre: ['const i = xs.length - 1;', 'let n = 0;'], construct: 'try { n = xs[i] * 2; } catch ({ message }: any) { n = -1; }', retStmt: 'return n;',
-    inside: ['* 2', '* 3'], upstream: ['xs.length - 1', 'xs.length - 2'],
+    pre: ['const i = xs.length - 1;', 'let n = 0;'], construct: 'try { n = i + xs.length; } catch ({ message }: any) { n = -1; }', retStmt: 'return n;',
+    inside: ['i + xs', 'i - xs'], upstream: ['xs.length - 1', 'xs.length - 2'],
     why: 'a catch clause that binds a pattern' },
-  { rule: 'param-form', params: 'k: number', ret: 'number',
-    pre: ['const m = k + 1;'], construct: 'function inner(...ys: number[]) { return ys.length + m; }', retStmt: 'return inner(1, 2);',
-    inside: ['ys.length + m', 'ys.length - m'], upstream: ['k + 1', 'k + 2'],
-    why: 'a rest parameter of a nested function' },
+  { rule: 'param-form', whole: true, params: 'k: number', ret: 'number', body: ['const m = k + 1;', 'function inner(...ys: number[]) { return ys.length + m; }', 'return inner(1, 2);'], change: ['return inner(1, 2);', 'return inner(2, 1);'],
+    why: 'a rest parameter of a nested function (a declaration binds a function value, which no step can output: its unit is read whole)' },
   // boundary rules: the construct confined to the world (a call statement), and `escapes`
-  { rule: 'string-code-unit', boundary: true, params: 'n: number, sink: (s: string) => void', ret: 'number',
-    pre: ['const t = n + 1;', 'const u = n * 2;'], construct: 'sink("\u{1F600}" + u);', retStmt: 'return t;',
+  { rule: 'string-code-unit', boundary: true, params: 'n: number', ret: 'number',
+    pre: ['const t = n + 1;', 'const u = n * 2;'], construct: 'out.sink("\u{1F600}" + u);', retStmt: 'return t;',
     inside: ['"\u{1F600}"', '"\u{1F601}"'], upstream: ['n * 2', 'n * 3'],
     escapes: { params: 'n: number', ret: 'number', body: ['const s = "\u{1F600}" + n;', 'return s.length + n;'], change: ['return s.length + n;', 'return n + s.length;'] },
     why: 'an astral string literal (two UTF-16 code units, outside the BMP envelope of the string model)' },
-  { rule: 'math-empty', boundary: true, params: 'xs: number[], k: number, sink: (n: number) => void', ret: 'number',
-    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'sink(Math.max(...xs) + u);', retStmt: 'return t;',
+  { rule: 'math-empty', boundary: true, params: 'xs: number[], k: number', ret: 'number',
+    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'out.sink(u + Math.max(...xs));', retStmt: 'return t;',
     inside: ['Math.max', 'Math.min'], upstream: ['k * 2', 'k * 3'],
     escapes: { params: 'xs: number[], k: number', ret: 'number', body: ['const m = Math.max(...xs);', 'return m + k;'], change: ['return m + k;', 'return k + m;'] },
     why: '`Math.max` of a list that may be empty (-Infinity)' },
-  { rule: 'collection-iterator', boundary: true, params: 'm: Map<string, number>, k: number, sink: (it: Iterable<string>, n: number) => void', ret: 'number',
-    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'sink(m.keys(), u + 1);', retStmt: 'return t;',
+  { rule: 'collection-iterator', boundary: true, params: 'm: Map<string, number>, k: number', ret: 'number',
+    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'out.sinkIt(u + 1, m.keys());', retStmt: 'return t;',
     inside: ['u + 1', 'u * 3'], upstream: ['k * 2', 'k * 3'],
     escapes: { params: 'm: Map<string, number>, k: number', ret: 'number', body: ['const it = m.keys();', 'return [...it].length + k;'], change: ['return [...it].length + k;', 'return k + [...it].length;'] },
     why: 'a Map iterator passed on: its first read uses it up' },
@@ -111,17 +109,17 @@ function plantedCandidates(file, unit, construct) {
 function write(spec) {
   const dir = path.join(pairs, `opaque_${spec.rule.replace(/-/g, '_')}`);
   fs.mkdirSync(dir, { recursive: true });
-  const header = `// the opacity ladder, rule ${spec.rule} (design/w1b-opaque-statements.md): ${spec.why}; its statement is one opaque step\n`;
+  const header = `// the opacity ladder, rule ${spec.rule} (design/w1b-opaque-statements.md): ${spec.why}; its statement is one opaque step\n${spec.boundary ? 'declare const out: { sink(v: unknown): void; sinkIt(n: number, it: Iterable<string>): void };\n' : ''}`;
   let parent = header, candidate = header;
   const expect = { scope: [], equal: {}, opaque: {}, planted: {}, b: {} }; // break: added for the units a mechanism guards
   const unit = (name, eq, b) => { expect.scope.push(name); expect.equal[name] = eq; expect.opaque[name] = [spec.rule]; expect.b[name] = spec.b?.[name] ?? b; };
   if (spec.whole) {
     const body = spec.body;
-    parent += fn('unchanged', spec.params, spec.ret, body) + fn('escapes', spec.params, spec.ret, body) + fn('caller', spec.params, spec.ret, [`const v = escapes(${spec.params.split(',').map((p) => p.split(':')[0].trim()).join(', ')});`, 'return v + 1;']);
-    candidate += fn('unchanged', spec.params, spec.ret, body) + fn('escapes', spec.params, spec.ret, body.map((l) => (l === spec.change[0] ? spec.change[1] : l))) + fn('caller', spec.params, spec.ret, [`const v = escapes(${spec.params.split(',').map((p) => p.split(':')[0].trim()).join(', ')});`, 'return 1 + v;']);
-    unit('unchanged', true, B.unchanged); unit('escapes', false, B.escapes); unit('caller', false, B.caller); expect.opaque.caller = [];
+    parent += fn('same', spec.params, spec.ret, body) + fn('escapes', spec.params, spec.ret, body) + fn('caller', spec.params, spec.ret, [`const v = escapes(${spec.params.split(',').map((p) => p.split(':')[0].trim()).join(', ')});`, 'return v + 1;']);
+    candidate += fn('same', spec.params, spec.ret, body) + fn('escapes', spec.params, spec.ret, body.map((l) => (l === spec.change[0] ? spec.change[1] : l))) + fn('caller', spec.params, spec.ret, [`const v = escapes(${spec.params.split(',').map((p) => p.split(':')[0].trim()).join(', ')});`, 'return 1 + v;']);
+    unit('same', true, B.unchanged); unit('escapes', false, B.escapes); unit('caller', false, B.caller); expect.opaque.caller = [];
     delete expect.planted;
-    expect.why = `The opacity ladder (design/w1b-opaque-statements.md), rule ${spec.rule}: ${spec.why}. The construct can make a value outside the model, and the translator reads its unit whole (the numeric boundary): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. unchanged: one key on both sides, proved. escapes: a reordered return changes the source, another symbol, not proved (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes, so it is opaque too and its own reordering is not proved; its record lists no site of its own.`;
+    expect.why = `The opacity ladder (design/w1b-opaque-statements.md), rule ${spec.rule}: ${spec.why}. The translator reads its unit whole (the construct can make a value outside the model, the numeric boundary, or it is a declaration whose function value no step can output): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. same: one key on both sides, proved (not named unchanged, a Dafny keyword). escapes: a reordered return changes the source, another symbol, not proved (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes, so it is opaque too and its own reordering is not proved; its record lists no site of its own.`;
   } else {
     const units = ['outside', 'inside', 'planted', 'upstream'];
     for (const u of units) parent += fn(u, spec.params, spec.ret, [...spec.pre, spec.construct, spec.retStmt]);
@@ -151,7 +149,7 @@ function write(spec) {
     if (!spec.pre.some((l) => l.includes(spec.upstream[0]))) throw new Error(`${spec.rule} upstream: no \`${spec.upstream[0]}\` before the construct`);
     unit('outside', true, B.outside); unit('inside', false, B.inside); unit('upstream', false, B.upstream);
     expect.break = [{ mechanism: 'opaque-drop-read', equal: { upstream: true } }]; // tests/break.mjs: without the read the step does not see the change, and the unit proves falsely
-    if (index !== null) { unit('planted', false, B.planted); expect.planted = { planted: index }; } else { expect.planted = {}; expect.noPlanted = spec.noPlanted; }
+    if (index !== null) { unit('planted', false, B.planted); expect.planted = { planted: index }; } else { unit('planted', true, B.outside); expect.planted = {}; expect.noPlanted = spec.noPlanted; } // no planted change: the unit is the parent's, proved
     if (spec.boundary) {
       const e = spec.escapes;
       parent += fn('escapes', e.params, e.ret, e.body);

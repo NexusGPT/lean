@@ -1,5 +1,5 @@
 // the opacity ladder, rule division (design/w1b-opaque-statements.md): compound division in an integer file (a fraction where the model holds an integer); its statement is one opaque step
-export function unchanged(x: number): number {
+export function same(x: number): number {
   let y = x;
   y /= 2;
   return y + 1;

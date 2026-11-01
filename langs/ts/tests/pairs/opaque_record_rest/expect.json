@@ -2,12 +2,14 @@
   "scope": [
     "outside",
     "inside",
-    "upstream"
+    "upstream",
+    "planted"
   ],
   "equal": {
     "outside": true,
     "inside": false,
-    "upstream": false
+    "upstream": false,
+    "planted": true
   },
   "opaque": {
     "outside": [
@@ -18,13 +20,17 @@
     ],
     "upstream": [
       "record-rest"
+    ],
+    "planted": [
+      "record-rest"
     ]
   },
   "planted": {},
   "b": {
     "outside": "PASS-bounded",
     "inside": "WITNESS",
-    "upstream": "WITNESS"
+    "upstream": "WITNESS",
+    "planted": "PASS-bounded"
   },
   "break": [
     {

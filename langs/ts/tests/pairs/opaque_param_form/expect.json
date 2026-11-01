@@ -1,46 +1,27 @@
 {
   "scope": [
-    "outside",
-    "inside",
-    "upstream",
-    "planted"
+    "same",
+    "escapes",
+    "caller"
   ],
   "equal": {
-    "outside": true,
-    "inside": false,
-    "upstream": false,
-    "planted": false
+    "same": true,
+    "escapes": false,
+    "caller": false
   },
   "opaque": {
-    "outside": [
+    "same": [
       "param-form"
     ],
-    "inside": [
+    "escapes": [
       "param-form"
     ],
-    "upstream": [
-      "param-form"
-    ],
-    "planted": [
-      "param-form"
-    ]
-  },
-  "planted": {
-    "planted": 2
+    "caller": []
   },
   "b": {
-    "outside": "PASS-bounded",
-    "inside": "WITNESS",
-    "upstream": "WITNESS",
-    "planted": "WITNESS"
+    "same": "PASS-bounded",
+    "escapes": "PASS-bounded",
+    "caller": "PASS-bounded"
   },
-  "break": [
-    {
-      "mechanism": "opaque-drop-read",
-      "equal": {
-        "upstream": true
-      }
-    }
-  ],
-  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule param-form: a rest parameter of a nested function, which the model does not read, so the statement `function inner(...ys: number[]) { return ys.length + m; }` is one opaque step: an uninterpreted transition keyed by its text and the same-file definitions it names, reading every local it mentions, writing every local it assigns. outside: the step unchanged and the return bound to a local, proved modulo the step. inside: `ys.length - m` for `ys.length + m` is another text, another symbol, not proved; lane B finds the difference. planted: exec/mutate.mjs's site 2 inside the step, not proved, lane B WITNESS. upstream: `k + 2` for `k + 1` changes a value only the step reads; the step takes it, so nothing is proved (LEAN_BREAK=opaque-drop-read drops that read and this unit proves falsely: the pair's break row)."
+  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule param-form: a rest parameter of a nested function (a declaration binds a function value, which no step can output: its unit is read whole). The translator reads its unit whole (the construct can make a value outside the model, the numeric boundary, or it is a declaration whose function value no step can output): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. same: one key on both sides, proved (not named unchanged, a Dafny keyword). escapes: a reordered return changes the source, another symbol, not proved (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes, so it is opaque too and its own reordering is not proved; its record lists no site of its own."
 }

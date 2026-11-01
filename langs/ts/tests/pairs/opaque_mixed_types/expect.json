@@ -31,7 +31,7 @@
   "b": {
     "outside": "PASS-bounded",
     "inside": "WITNESS",
-    "upstream": "WITNESS",
+    "upstream": "PASS-bounded",
     "planted": "WITNESS"
   },
   "break": [
@@ -42,5 +42,5 @@
       }
     }
   ],
-  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule mixed-types: `===` between a primitive-or-record union and a value that is not a literal, which the model does not read, so the statement `const same = x === t;` is one opaque step: an uninterpreted transition keyed by its text and the same-file definitions it names, reading every local it mentions, writing every local it assigns. outside: the step unchanged and the return bound to a local, proved modulo the step. inside: `x !== t` for `x === t` is another text, another symbol, not proved; lane B finds the difference. planted: exec/mutate.mjs's site 2 inside the step, not proved, lane B WITNESS. upstream: `y + 2` for `y + 1` changes a value only the step reads; the step takes it, so nothing is proved (LEAN_BREAK=opaque-drop-read drops that read and this unit proves falsely: the pair's break row)."
+  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule mixed-types: `===` between a primitive-or-record union and a value that is not a literal, which the model does not read, so the statement `const same = t === x;` is one opaque step: an uninterpreted transition keyed by its text and the same-file definitions it names, reading every local it mentions, writing every local it assigns. outside: the step unchanged and the return bound to a local, proved modulo the step. inside: `t !== x` for `t === x` is another text, another symbol, not proved; lane B finds the difference. planted: exec/mutate.mjs's site 2 inside the step, not proved, lane B WITNESS. upstream: `y + 2` for `y + 1` changes a value only the step reads; the step takes it, so nothing is proved (LEAN_BREAK=opaque-drop-read drops that read and this unit proves falsely: the pair's break row)."
 }

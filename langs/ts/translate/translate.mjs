@@ -303,7 +303,17 @@ function translateOnce(file, fnName, opts = {}) {
     const offsetOf = (line, col) => { let o = normalised.sf.getPositionOfLineAndCharacter(line - 1, (col ?? 1) - 1); if (faithful.mapOffset) o = faithful.mapOffset(o); return o; };
     gate0 = gate0.filter((g) => {
       if (!statementSite(g.rule)) return true; // another family's grade is read above, an ungraded rule refuses
-      const a2 = offsetOf(g.line, g.col), z2 = offsetOf(g.endLine ?? g.line, g.endCol ?? g.col);
+      let a2 = offsetOf(g.line, g.col), z2 = offsetOf(g.endLine ?? g.line, g.endCol ?? g.col);
+      // a finding inside an expression the faithful rewrite replaced (`u + m` read as `Math.__lean_add(u, m)`) has no
+      // place in the rewritten text: its site is the innermost node around it that has one, inside the same statement
+      if (faithful.mapOffset && !(a2 >= 0 && z2 >= a2)) {
+        const line0 = (l, c) => normalised.sf.getPositionOfLineAndCharacter(l - 1, (c ?? 1) - 1);
+        for (let n = nodeAt(ts, normalised.sf, line0(g.line, g.col), line0(g.endLine ?? g.line, g.endCol ?? g.col)); n && n.kind !== K.SourceFile; n = n.parent) {
+          const p = faithful.mapOffset(n.getStart(normalised.sf)), q = faithful.mapOffset(n.getEnd());
+          if (p >= 0 && q >= p) { a2 = p; z2 = q; break; }
+          if (ts.isStatement(n) || ts.isFunctionLike(n)) break; // never wider than the statement that holds it
+        }
+      }
       const unit = unitOfFinding(g);
       if (!(a2 >= 0) || z2 < a2 || !unit || !fns.has(unit)) return true; // a site the rewrite moved out of reach, or no unit of the translation holds: it keeps its refusal
       if ((opts.opaqueSites ?? []).some((x) => x.form === 'block' && x.pos === a2)) return false; // read in its unit's block (a step whose reads are not its state, translateGraded toBlock)
