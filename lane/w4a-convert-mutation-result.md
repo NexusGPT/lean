@@ -38,7 +38,7 @@ dated section appended to `langs/ts/design/converter.md`.
 | `node langs/ts/tests/convert_mutation.mjs` | all passed: advice table check, 2 prove-control checks, 5 fixtures × 3 (before→after exact; after proves: closure-counter 11 PASS-bounded, hoist-update 4, rebuild-by-spread 3, param-copy 3, explicit-return 1; wrong is a WITNESS: topOf, labelOf, byLength, positiveSum, find/weightOf), 5 guards refuse, 4 unguarded rewrites are WITNESS |
 | `node langs/ts/tests/convert_mutation.mjs --break` (the five transforms removed) | 5 failed: every fixture stays as it was |
 | red first | the first run found that param-copy's default guard did not hold (`w = v` passed; contains() skips the root); fixed |
-| `LEAN_PAIRS=callback_units,array_callback_cells,mutation,bare_return_void,library_assign_sort JOBS=2 node langs/ts/tests/run.mjs` | 920 checks ALL PASS (the convert section includes the five new fixtures; convert-mutation row PASS) |
+| `LEAN_PAIRS=callback_units,array_callback_cells,mutation,bare_return_void,library_assign_sort JOBS=2 node langs/ts/tests/run.mjs` | 920 checks ALL PASS (the convert section includes the five new fixtures; convert-mutation row PASS); re-run at the final head after the two prove fixes: 920 checks ALL PASS, and convert_mutation.mjs all passed / --break 5 failed |
 | `LEAN_PAIRS=<same five> node langs/ts/conformance/run.mjs --jobs 2` | 25 units in 5 pairs, 13 executable: 9 agree, 4 disagree (known), NO NEW FINDING |
 
 ## Measured on copies of census roots
