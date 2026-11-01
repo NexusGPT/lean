@@ -857,3 +857,13 @@ intake row of the ledger: an artifact by kind or class (config, test, lockfile, 
 edit by its named reason, the empty diff. It stays in the intake table. A non-inert intake row keeps its ASK in the
 data, so `--block ask` still blocks on it. Both rules are about what the edit is, decided once in the ledger. Neither
 depends on a hash, a file name or the pull request.
+
+## 2026-11-01: lane B's input search adds a verdict site, no admission site
+
+The branch-guided input search (`exec/search.mjs`, design/w3c-search-inputs.md) decides nothing the lint or the
+translator decides: it adds no refusal, no reading and no site to the audit above. It adds one place where lane B's
+verdict is decided, listed here so the table of deciders stays whole:
+
+| site | kind | rule | reading | decided | message |
+| --- | --- | --- | --- | --- | --- |
+| exec/run.mjs runPairOnce (the search block after the draw loop) | laneB-witness |  | (lane B) | one-decider (search.mjs searchInputs; run.mjs pairOf/statusOf) | WITNESS, `source: search`: a changed input inside the declared type on which the two sides' observations differ, reproduced byte for byte on fresh environments |

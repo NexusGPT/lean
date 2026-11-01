@@ -1482,6 +1482,7 @@ async function newModuleUnit(opts) {
 }
 
 async function runPairOnce(opts) {
+  probes = null; // the branch probes are this unit's, set below when its search runs
   if (opts.unit === MODULE_UNIT) return runModuleUnit(opts);
   const { parent, candidate, unit, n = 200, seed = 1, ms = 2000, project = true, sequenceDepth = 2, sequenceBreadth = 4, sequenceInputs = 2, deep = false } = opts;
   deepMode.depth = deepDepth(deep); deepLog.rendered.clear(); deepLog.handles.clear(); deepLog.contexts.clear();
@@ -1605,7 +1606,7 @@ async function runPairOnce(opts) {
       if (w.record) w.record.search = recipeText(recipe); // the record's input is draw `from` with these changes, not the plain draw
       diffs.push(w);
     }
-  } else if (sPlan) searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length ? 'the draws differ' : harnessAsk ? 'harness stop' : 'rendered unit', targets: sPlan.targets?.length ?? 0 };
+  } else if (sPlan) { const T = new Set(sPlan.targets ?? []), got = new Set(drawHits.flatMap((x) => [...x.hits].filter((h) => T.has(h)))); searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length ? 'the draws differ' : harnessAsk ? 'harness stop' : 'rendered unit', targets: T.size, reachedByDraws: got.size, reached: got.size, tried: 0 }; } // not searched: the branches the draws reached, for the before/after count
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run
