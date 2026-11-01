@@ -51,7 +51,32 @@ before at the cut point 4747022f (`git archive` into scratch), after at this bra
 | nexus-meeting-recorder | 105 | 39 (37.1%) | none |
 | apps-ui | 2,361 | 714 (30.2%) | promise 1, promise-executor-escape 1, promise-pending 1 |
 
-FINAL-CENSUS
+Three heads, the same command on the same roots, each run at load ≤ 40: before = the cut point 4747022f; w1a = w1a's
+head 0952b040ef (the base this branch is rebuilt on: the mutation family's gains are in it, not this lane's); after =
+this branch at b230c7b6b8. This lane's delta is w1a → after.
+
+| root | entered before / w1a / after | refused w1a → after | my rules stop (refusalRules) w1a → after |
+|---|---|---|---|
+| nexus-automations | 78 / 78 / 80 | 157 → 155 | async 1, promise 1, promise-pending 1 → none |
+| nexus-meeting-recorder | 39 / 39 / 39 | 0 change | none → none |
+| apps-ui | 714 / 727 / 732 | 1,634 → 1,629 | promise 1, promise-executor-escape 1, promise-pending 1 → promise-pending 1 |
+
+Units, by their findings, w1a → after: three stop no longer (nexus-automations `acquire`, apps-ui `fakeCopilotSend`
+and `fileToDataUri`; the census counts each with its executor callback, hence entered +2 and +5); four lose this family's
+finding and stop on another family's rule (`overGh.rest` global-read, `executeRun` read-after-call, apps-ui
+`Thumbnail/React.useEffect()#0` type-assertion); one keeps it with its reason (apps-ui `prepareUpload`: the
+`new Promise` sits inside a nested arrow, and its executor writes `canvas.width` of an element a call returned). No unit
+that entered at w1a stops at after. My rules stop 0 units on nexus-automations and nexus-meeting-recorder and 1 on apps-ui
+(the brief's threshold, 0, is not met there: that unit is refused by locality and by the pending-work test, by design).
+
+**Opaque fraction (A5)**, `node langs/ts/tests/w1d-opaque-fraction.mjs <root> <w1a.json> <after.json>` over the units
+newly entered (the statements inside a step or holding one, over every statement of the unit, nested callbacks
+included): acquire 1/3 = 0.33, fileToDataUri 4/7 = 0.57, fakeCopilotSend 3/3 = 1.0 (its body is `return new Promise(...)`
+with a timer inside). **Median 0.57 over 3 units: the A5 threshold (≤ 0.25) is NOT met.** With w1a's own counting
+(statements of the unit's body, nested functions excluded) the three are 0.33, 0.33 and 1.0, median 0.33: still not met.
+These units are small and the construct is most of each; the step is the finding's node, never widened, so the
+fraction is what the construct is. Reading such an executor exactly (a promise-executor reading) is what would lower it;
+opacity cannot. w3b's mutant study on these units has not run (this lane does not own it).
 
 ## Measured on the way (the census showed it, the mechanism fixed it)
 
