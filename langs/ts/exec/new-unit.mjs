@@ -233,7 +233,7 @@ export async function runNew(opts) {
     }
     await loadCandidate(abs, new Environment(seed * 7919), options, ms, sources);
   } catch (e) { const r = loadFailure(base, e, 0, bound); return { ...r, records: [coverage('load', r.reason)] }; }
-  let spec, reading, decl, nullable = false;
+  let spec, reading, decl, nullable = false, exactOptional = false;
   try {
     reading = typeof opts.loaded === 'function' ? opts.loaded() : opts.loaded ?? loadProgram(candidate, { project });
     spec = specOf(candidate, unit, { project, loaded: reading });
@@ -243,8 +243,9 @@ export async function runNew(opts) {
     // the project's own null discipline: without strictNullChecks null and undefined are values of every declared type
     const own = reading.projectFile ? parseProjectConfig(reading.projectFile)?.options : null;
     nullable = !!own && !(own.strictNullChecks ?? own.strict ?? false);
+    exactOptional = !!own?.exactOptionalPropertyTypes;
   } catch { decl = null; }
-  const declared = spec.declared;
+  const declared = decl?.overloaded ? null : spec.declared; // an overloaded unit is admitted through its overloads, which this reading does not take one by one
   const plan = declared ? edgePlan(declared) : [];
   const edges = Math.min(plan.length, Math.floor(n / 2)); // the edge inputs come first, at most half the inputs: the generator's draws keep the rest
   let faults = 0;
@@ -282,7 +283,7 @@ export async function runNew(opts) {
     // the declaration's reading of this input (design/w1h-new-units.md): a record is a fact only about a call the
     // declaration admits and the world did not answer
     reach.inputs++;
-    const ok = !declared ? 'unknown' : process.env.LEAN_BREAK === 'admitted-input' ? 'yes' : admitted(declared, inputs, { nullable });
+    const ok = !declared ? 'unknown' : process.env.LEAN_BREAK === 'admitted-input' ? 'yes' : admitted(declared, inputs, { nullable, exactOptional });
     if (ok !== 'yes') { reach.notAdmitted++; continue; }
     reach.admitted++;
     const world = process.env.LEAN_BREAK === 'closed-call' ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
@@ -291,8 +292,10 @@ export async function runNew(opts) {
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
     if (threw) {
       if (declaredThrow(decl, observation.raw?.threw)) continue; // a throw the declaration names (`@throws {T}`, `asserts`, `never`) is the declared behaviour
+      const missing = platformGap(observation.raw?.threw);
+      if (missing) { book.add(coverage('draw', `the unit reads the global \`${missing}\`, which Node holds and lean's sandbox does not`), `coverage global ${missing}`); continue; } // lean's sandbox, not the unit
       const error = thrownText(observation.raw?.threw, observation.outcome.threw);
-      book.add({ kind: 'new:fault', ...named, error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${error.message ?? JSON.stringify(error)}`);
+      book.add({ kind: 'new:fault', ...named, error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(error.message ?? JSON.stringify(error))}`); // one record per error and message template: a message that quotes the input is one outcome
       continue;
     }
     if (process.env.LEAN_BREAK === 'declared-shape' || !decl || decl.inferred || decl.voidLike || !declared?.returns) continue;
@@ -311,7 +314,7 @@ export async function runNew(opts) {
     tests = await runTests({ candidate: abs, aliases, unit, testFiles: opts.tests.map((t) => path.resolve(t)), ms, seed, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), graphWorld: (loaded) => graphWorld(loaded, sources, TEST_MODULES), options });
     for (const r of tests.records) book.add(r, `${r.kind} ${r.file}:${r.test}`);
   }
-  if (!reach.closed) book.add(coverage('draw', !declared ? 'the declaration was not read' : reach.admitted === 0 ? `no drawn input is one the declared types say they admit (${reach.notAdmitted} of ${reach.inputs}: a parameter type lean reads as opaque, a type parameter, or a draw wider than the declaration)` : `every admitted input reached the world (${reach.world} of ${reach.admitted}): ${[...reach.worldOps.keys()].slice(0, 4).join('; ')}`), 'coverage draw');
+  if (!reach.closed) book.add(coverage('draw', decl?.overloaded ? 'the unit is overloaded: its callers are admitted by its overload signatures, which this reading does not take one by one' : !declared ? 'the declaration was not read' : reach.admitted === 0 ? `no drawn input is one the declared types say they admit (${reach.notAdmitted} of ${reach.inputs}: a parameter type lean reads as opaque, a type parameter, or a draw wider than the declaration)` : `every admitted input reached the world (${reach.world} of ${reach.admitted}): ${[...reach.worldOps.keys()].slice(0, 4).join('; ')}`), 'coverage draw');
   return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, records: book.list(), declaration: declarationRecord(decl, reach, nullable, edges), ...(tests ? { tests: tests.summary } : {}), ...(networkDenied() ? { sandbox: sandboxEntry() } : {}), ...(opts.sandboxSpawn ? { sandboxSpawned: spawnRefusals() } : {}) };
 }
 
@@ -353,11 +356,37 @@ function graphWorld(loaded, sources, runner = new Set()) {
   }
   return out;
 }
+// a message with what it quotes and its numbers taken out: `Unexpected token 'x', "x..." is not valid JSON` is one template
+const template = (m) => String(m).replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`[^`]*`/g, '<q>').replace(/-?\d+(?:\.\d+)?/g, '<n>');
 // a thrown value as a record names it: an error by its name and message (lean's own paths rendered as tokens), else rendered
 function thrownText(raw, rendered) {
   try { if (raw && typeof raw === 'object' && typeof raw.message === 'string') return { name: String(raw.name ?? 'Error'), message: render(raw.message.slice(0, 300)) }; } catch { /* a value that refuses its members */ }
   return { value: rendered };
 }
+// a ReferenceError naming a global Node holds: the sandbox lacks it (a gap of lean's world, never the unit's fault)
+function platformGap(thrown) {
+  try { const m = thrown && thrown.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(thrown.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; }
+}
 const holdsElement = (v, d = 0) => { if (!v || typeof v !== 'object' || d > 3) return false; try { if (Object.hasOwn(v, '$el')) return true; return Array.isArray(v) ? v.some((x) => holdsElement(x, d + 1)) : false; } catch { return true; } };
 
-if (process.argv[1] && path.resolve(process.argv[1]) === here) { scrubEnv(); absentOutsideReads(); console.log(JSON.stringify(await runNew(JSON.parse(process.argv[2])))); }
+// every unit of one file in one child (the census's new-unit pass, exec/new-census.mjs): the file's program is read once,
+// and each unit's result is a line of its own as it ends, so a child stopped at its bound keeps the units it finished
+export function runNewFile(opts) {
+  const { candidate, units, n = 30, ms = 2000, seconds = 300 } = opts;
+  const box = workerSandbox(opts);
+  const child = spawnSync(process.execPath, [...workerFlagsFrom(box.flags), '--experimental-vm-modules', here, JSON.stringify({ ...opts, sandboxList: undefined, batch: true, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) })], { encoding: 'utf8', env: workerEnv(), timeout: seconds * 1000, maxBuffer: 64 * 1024 * 1024 });
+  const done = new Map();
+  for (const line of (child.stdout ?? '').split('\n')) { if (!line.trim()) continue; try { const r = JSON.parse(line); if (r && r.unit) done.set(r.unit, r); } catch { /* a line the stop cut */ } }
+  const stopped = child.error?.code === 'ETIMEDOUT' ? `the file's child passed its bound of ${seconds} s` : child.status !== 0 ? `the file's child exited ${child.status ?? child.signal}: ${(child.stderr ?? '').trim().split('\n').filter((l) => !/ExperimentalWarning|trace-warnings/.test(l)).slice(-1)[0] ?? ''}` : null;
+  return units.map((unit) => done.get(unit) ?? { candidateOnly: true, unit, file: candidate, verdict: 'ASK', loaded: false, inputs: 0, reason: stopped ?? 'no result', records: [{ kind: 'new:coverage', phase: 'harness', reason: stopped ?? 'no result' }] });
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === here) {
+  scrubEnv(); absentOutsideReads();
+  const opts = JSON.parse(process.argv[2]);
+  if (!opts.batch) console.log(JSON.stringify(await runNew(opts)));
+  else {
+    let loaded = null; try { loaded = loadProgram(opts.candidate, { project: opts.project ?? true }); } catch { /* each unit says so */ }
+    for (const unit of opts.units) { let r; try { r = await runNew({ ...opts, unit, units: undefined, batch: undefined, ...(loaded ? { loaded } : {}) }); } catch (e) { r = { candidateOnly: true, unit, file: opts.candidate, verdict: 'ASK', reason: `harness: ${String(e?.message ?? e).slice(0, 200)}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: String(e?.message ?? e).slice(0, 200) }] }; } process.stdout.write(JSON.stringify({ ...r, unit }) + '\n'); }
+  }
+}

@@ -42,3 +42,17 @@ export async function size(s: string | undefined): Promise<number> {
 export function opaque(x: Missing): number {
   throw new Error("always");
 }
+
+// (h) a branded string: only a value the brand's maker certified is one of it, so no drawn string is known admitted
+export type Slug = string & { readonly __brand: "Slug" };
+export function slugHead(s: Slug): string {
+  return encodeURIComponent(s);
+}
+
+// (i) overloaded: its callers are admitted by the two overloads, not by the implementation's `any`
+export function twice(x: string): string;
+export function twice(x: number): number;
+export function twice(x: any): any {
+  if (x === undefined) throw new Error("undefined");
+  return x + x;
+}

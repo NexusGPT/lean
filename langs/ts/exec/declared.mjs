@@ -31,6 +31,7 @@ export function member(spec, v, defs = {}, opts = {}, depth = 0) {
   if (spec.kind === 'ref') return defs[spec.key] ? member(defs[spec.key], v, defs, opts, depth + 1) : 'unknown';
   if (isFake(v)) return opts.side === 'input' && ['function', 'service', 'class'].includes(spec.kind) ? 'yes' : 'unknown';
   const m = (s, x) => member(s, x, defs, opts, depth + 1);
+  if (spec.narrowed) return ['string', 'number', 'bigint', 'boolean'].includes(typeof v) && typeof v === spec.kind ? 'unknown' : 'no'; // a brand or a template literal type: some values of the primitive only
   switch (spec.kind) {
     case 'opaque': return spec.all ? 'yes' : 'unknown';
     case 'tparam': return 'unknown';
@@ -59,7 +60,8 @@ export function member(spec, v, defs = {}, opts = {}, depth = 0) {
       return all(Object.entries(spec.fields).filter(([, f]) => !f.extra).map(([k, f]) => {
         const p = own(v, k);
         if (p.unknown) return 'unknown';
-        if (p.absent || p.value === undefined) return f.optional ? 'yes' : p.absent ? 'no' : m(f.spec, undefined);
+        if (p.absent) return f.optional ? 'yes' : 'no';
+        if (p.value === undefined) return f.optional ? (opts.exactOptional ? 'unknown' : 'yes') : m(f.spec, undefined); // exactOptionalPropertyTypes: a present undefined is not an absent field
         return m(f.spec, p.value);
       }));
     }
@@ -155,9 +157,12 @@ export function declaration(sf, unitName, checker) {
   const throwTags = tags.filter((t) => ['throws', 'throw', 'exception'].includes(t.tagName.text));
   const throwTypes = throwTags.map((t) => t.typeExpression?.type?.getText(sf) ?? (typeof t.comment === 'string' ? t.comment.match(/^\s*\{([^}]+)\}/)?.[1] : null) ?? null);
   const params = tags.filter((t) => ts.isJSDocParameterTag(t)).map((t) => t.name.getText(sf));
+  // an overloaded function is called through its overloads: the implementation's signature is no caller's declaration
+  let overloaded = false;
+  try { const sym = fn.name && checker ? checker.getSymbolAtLocation(fn.name) : null; overloaded = !!sym?.declarations?.some((d) => d !== fn && ts.isFunctionLike(d) && !d.body); } catch { /* none */ }
   const voidLike = !!returns && /^(?:void|Promise<void>|PromiseLike<void>)$/.test(returns.replace(/\s+/g, ''));
   return {
-    returns, voidLike, inferred: !returns,
+    returns, voidLike, inferred: !returns, ...(overloaded ? { overloaded: true } : {}),
     throws: asserts || returns === 'never' ? 'any' : throwTypes.some((x) => !x) ? 'any' : throwTypes.flatMap((x) => x.split('|').map((y) => y.trim())),
     ...(asserts ? { asserts: true } : {}),
     jsdoc: { params, returns: tags.some((t) => ['returns', 'return'].includes(t.tagName.text)), throws: throwTags.length },
