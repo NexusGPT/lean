@@ -2483,3 +2483,4 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);
   process.exit(0);
 }
+export { directiveRecords, directivesOf } from './directives.mjs'; // directive comments a change adds or removes: rule records (design/w1f-module-units.md)

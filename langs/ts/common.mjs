@@ -503,6 +503,14 @@ export function topLevelFunctions(sf) {
  * of its own body, and the module unit owns what no listed unit holds (ci/ledger.mjs routeChanges). design/module-unit.md.
  */
 export const MODULE_UNIT = '(module)';
+/**
+ * The types unit: the text of a file the compiler reads and its emitted JavaScript does not carry, outside every listed
+ * unit (an interface, a type alias, a type-only import or export, a directive comment, a JSDoc type of a JavaScript
+ * file), read as one unit named TYPES_UNIT (a name no declaration can take). It has no evaluation of its own: its one
+ * reading is the typed one (typed.mjs): PASS-typed when every file its types can reach emits byte-equal JavaScript on
+ * both sides, else ASK naming the files that differ. design/w1f-module-units.md.
+ */
+export const TYPES_UNIT = '(types)';
 const typeOnlyStatement = (st) => ts.isInterfaceDeclaration(st) || ts.isTypeAliasDeclaration(st)
   || !!st.modifiers?.some((m) => m.kind === ts.SyntaxKind.DeclareKeyword)
   || (ts.isImportDeclaration(st) && !!st.importClause?.isTypeOnly) || (ts.isExportDeclaration(st) && st.isTypeOnly);

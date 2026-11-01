@@ -28,7 +28,9 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { ts, loadProgram, loadProgramOptions, fileDiagnostics, topLevelFunctions, findingUnit, parseUnitList, formatUnitList, MODULE_UNIT } from './common.mjs';
+import { ts, loadProgram, loadProgramOptions, fileDiagnostics, topLevelFunctions, findingUnit, parseUnitList, formatUnitList, MODULE_UNIT, TYPES_UNIT } from './common.mjs';
+import { typedReading, typedReason } from './typed.mjs';
+import { directiveRecords } from './lint/directives.mjs';
 import { check } from './check.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { lintFile } from './lint/lint.mjs';
@@ -263,9 +265,11 @@ function changedFiles(opts, temps, ledger) {
       const text = bytes.toString('utf8');
       if (original && !original.includes(0)) entry.removed = removedUnits(rel, original.toString('utf8'), entry.deleted ? null : text);
       if (entry.deleted) { // a deleted file has no head side to read: its units are removed rows
-        // its module unit too, when the ledger routes its top-level statements there (common.mjs MODULE_UNIT): the parent's lines
-        const mod = ledger.edits.find(e => e.file === rel && e.primary.kind === 'unit' && e.primary.unit === MODULE_UNIT);
-        if (mod) (entry.removed ??= []).push({ name: MODULE_UNIT, start: mod.primary.start, end: mod.primary.end });
+        // its module unit and its types unit too, when the ledger routes edits there (common.mjs MODULE_UNIT, TYPES_UNIT): the parent's lines
+        for (const name of [MODULE_UNIT, TYPES_UNIT]) {
+          const mod = ledger.edits.find(e => e.file === rel && e.primary.kind === 'unit' && e.primary.unit === name);
+          if (mod) (entry.removed ??= []).push({ name, start: mod.primary.start, end: mod.primary.end });
+        }
         entry.units = []; return entry;
       }
       fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -293,7 +297,8 @@ function changedFiles(opts, temps, ledger) {
       const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
       entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile).filter(u => routed.has(u.name));
       // the module unit (common.mjs MODULE_UNIT): the file's top-level statements, the whole file's lines; the ledger routes to it
-      if (routed.has(MODULE_UNIT)) entry.units.push({ name: MODULE_UNIT, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
+      // the types unit (common.mjs TYPES_UNIT) likewise: the file's text its emitted JavaScript does not carry, read by the typed reading alone
+      for (const name of [MODULE_UNIT, TYPES_UNIT]) if (routed.has(name)) entry.units.push({ name, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
     } catch (e) {
       entry.error = String(e.message).slice(0, 300);
       try { entry.units = changedUnits({ sf: ts.createSourceFile(rel, text, ts.ScriptTarget.Latest, true) }, ranges, entry.headFile); } catch (f) { entry.error = String(f.message).slice(0, 300); }
@@ -304,7 +309,7 @@ function changedFiles(opts, temps, ledger) {
 
 export function coverageOf(result) {
   const lanes = result.certificate?.lanes ?? {};
-  if (['WITNESS', 'PASS-proved', 'PASS-decided', 'PASS-bounded', 'NEW', 'IN-SCOPE'].includes(result.verdict)) return 'checked';
+  if (['WITNESS', 'PASS-proved', 'PASS-typed', 'PASS-decided', 'PASS-bounded', 'NEW', 'IN-SCOPE'].includes(result.verdict)) return 'checked';
   const reason = lanes.B?.reason ?? result.reason ?? '';
   if (lanes.B?.kind === 'load' || /load failed:/.test(reason)) return 'failed:loader';
   if (lanes.B?.kind === 'spin-bound' || /^spin-bound:/.test(reason)) return 'failed:spin-bound'; // lane B killed at its per-unit wall-clock bound (exec/run.mjs runPair): never cached, a larger bound may finish
@@ -325,7 +330,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), ...(rows.valuesNearest?.length ? { valuesNearest: rows.valuesNearest } : {}), rows, order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), ...(rows.valuesNearest?.length ? { valuesNearest: rows.valuesNearest } : {}), rows, ...(rows.directives?.length ? { directives: rows.directives } : {}), order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
 }
 
 export function stopNote(stop) {
@@ -344,6 +349,8 @@ const siteFile = (file, row, repo) => {
 };
 export function refusalRecords(rows, { repo = null } = {}) {
   const records = [];
+  // a directive comment a change added or removed (lint/directives.mjs): a rule record of its own, never a unit's verdict
+  for (const d of rows.directives ?? []) records.push({ check: `directive:${d.directive ?? d.rule}`, unit: d.unit ?? null, file: d.file, location: { start: d.line, end: d.scope?.end ?? d.line }, kind: 'rule', change: d.change, ...(d.suppresses?.length ? { suppresses: d.suppresses } : {}), ...(d.exposes?.length ? { exposes: d.exposes } : {}), reason: d.msg });
   for (const r of rows) {
     const base = { unit: r.unit, file: r.file };
     const unitLocation = { start: r.lines?.[0] ?? 1, end: r.lines?.[1] ?? r.lines?.[0] ?? 1 };
@@ -432,7 +439,7 @@ export async function prReport(opts) {
   try { metadata = JSON.parse(fs.readFileSync(path.join(dir, 'worker-report.json'), 'utf8')); }
   catch (e) { if (e.code !== 'ENOENT') console.error('Worker metadata unreadable: ' + e.name); }
   const rows = Object.assign(terminal.rows, { identity: metadata.identity ?? ledger.id, leanVersion: metadata.leanVersion ?? leanVersion(),
-    values: metadata.values, valuesNearest: metadata.valuesNearest, order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
+    values: metadata.values, valuesNearest: metadata.valuesNearest, directives: metadata.directives ?? [], order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
     ledger, reconciliation: terminal.reconciliation, terminalFile: path.join(dir, 'terminal.json'), runDir: dir });
   rows.refusalsFile = writeRefusals(rows, dir, { repo: path.resolve(opts.repo) });
   atomicJSON(path.join(dir, 'report.json'), reportJSON(rows));
@@ -479,6 +486,16 @@ async function prWorker(opts) {
     rows.ledger = routeChanges(buildChangeManifest(opts));
     if (rows.ledger.id !== opts.expectedLedgerId) throw new Error('change frame moved before dispatch');
     const files = changedFiles(opts, temps, rows.ledger);
+    // the typed reading (typed.mjs): per changed file read on both sides, whether every file its types can reach emits
+    // byte-equal JavaScript; such a file's rows are PASS-typed before any lane runs. A preview runs no reading.
+    const compared = files.filter((e) => e.baseFile && e.headFile && !e.deleted && !e.error && !e.binary);
+    const typed = opts.preview || !compared.length ? new Map() : typedReading({ root: opts.filesRoot ?? repo, project,
+      changes: compared.map((e) => ({ rel: e.file, parent: fs.readFileSync(e.baseFile, 'utf8'), head: fs.readFileSync(e.headFile, 'utf8') })) });
+    // the directive comments a change adds or removes (lint/directives.mjs): rule records, never a unit's verdict
+    rows.directives = files.filter((e) => !e.error && !e.binary && (e.baseFile || e.headFile)).flatMap((e) => {
+      try { return directiveRecords({ file: e.file, parent: e.baseFile ? fs.readFileSync(e.baseFile, 'utf8') : null, head: e.deleted || !e.headFile ? null : fs.readFileSync(e.headFile, 'utf8'), headFile: e.deleted ? null : e.headFile, project }); }
+      catch (err) { return [{ file: e.file, rule: 'directive', change: 'unread', line: 1, msg: `directive reading failed: ${String(err.message).slice(0, 200)}` }]; }
+    });
     const unitRoutes = rows.ledger.edits.filter(e => e.primary.kind === 'unit');
     const selected = selectUnits(files, opts).filter(x => unitRoutes.some(e => e.file === x.unit.file && e.links.some(u => u.unit === x.unit.name)));
     // Artifact rows were committed by the supervisor before dispatch.
@@ -510,7 +527,9 @@ async function prWorker(opts) {
         rows.push({ editIds: unitRoutes.filter(e => e.file === rel && e.links.some(link => link.unit === u.name)).map(e => e.id), file: rel, unit: u.name, lines: [u.start, u.end], coverage: item.decision === 'check' ? 'pending' : item.decision === 'removed' ? 'removed' : `${item.decision}:${item.reason}`, decision: item.decision, ...(u.enclosingUnit ? { 'covered-by': u.enclosingUnit } : {}), verdict: null, reason: item.decision === 'removed' ? item.reason : entry.error ?? u.error ?? item.reason, advice: [] });
         if (!opts.preview && !u.enclosingUnit && (item.decision === 'check' || item.decision === 'refused')) changed.push({ entry, u, index });      }
       if (opts.preview || !units.length || !entry.baseFile || entry.deleted) continue;
-      const changedNames = new Set(units.map((u) => u.name).filter((n) => n !== MODULE_UNIT)); // the module unit has no caller
+      // the module unit and the types unit have no caller; a file whose emit is byte-equal changes no caller's run
+      if (typed.get(rel)?.equal) continue;
+      const changedNames = new Set(units.map((u) => u.name).filter((n) => n !== MODULE_UNIT && n !== TYPES_UNIT));
       if (!changedNames.size) continue;
       let loaded;
       try { loaded = loadProgram(entry.headFile, { project: false }); } catch { continue; }
@@ -563,6 +582,19 @@ async function prWorker(opts) {
         continue;
       }
       rows.stop.reached++;
+      const basicCertificate = (lanes = {}) => ({ tool: 'lean-ts v3', identity: rows.identity, unit: u.name,
+        parent: { file: baseFile, sha256: baseFile ? fileHash(baseFile).slice(0, 16) : null },
+        candidate: { file: entry.deleted ? null : headFile, sha256: entry.deleted ? null : fileHash(headFile).slice(0, 16) }, lanes });
+      // the typed reading decides first: a file whose reachable emit is byte-equal runs the same JavaScript, so each of its
+      // changed units (the module unit, the types unit, a function whatever the lint said of it) is PASS-typed; the types
+      // unit has no other reading, so without that it is ASK naming the files whose emit differs
+      const t = caller ? null : typed.get(rel);
+      if (!caller && (t?.equal || u.name === TYPES_UNIT)) {
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: t?.equal ? 'PASS-typed' : 'ASK', coverage: 'checked', laneB: null, laneA: null, witness: null,
+          certificate: { ...basicCertificate(), typed: t ?? { equal: false, reason: entry.deleted ? 'deleted file' : !baseFile ? 'added file: no parent emit' : 'no typed reading' } },
+          reason: t ? typedReason(t) : entry.deleted ? 'deleted file: no head emit' : !baseFile ? 'new file: no parent emit to compare with' : 'the typed reading made no decision', advice: [] });
+        continue;
+      }
       if (!u.findings?.length) {
         try {
           const parent = keySide(baseFile, u.name, loadedKeys, project, opts.filesRoot ?? repo, baseFile ? baseReadings.get(path.resolve(baseFile)) : undefined);
@@ -582,9 +614,6 @@ async function prWorker(opts) {
         save({ ...cached, lines: [u.start, u.end], coverage: 'reused', verdict: cached.certificate.verdict, note: `reused from ${key.slice(0, 12)}` });
         continue;
       }
-      const basicCertificate = (lanes = {}) => ({ tool: 'lean-ts v3', identity: rows.identity, unit: u.name,
-        parent: { file: baseFile, sha256: baseFile ? fileHash(baseFile).slice(0, 16) : null },
-        candidate: { file: entry.deleted ? null : headFile, sha256: entry.deleted ? null : fileHash(headFile).slice(0, 16) }, lanes });
       if (caller) {
         callersChecked++;
         let b = null;
@@ -721,7 +750,7 @@ export function markdown(allRows, base, head) {
   const rows = verdictRows(allRows); // an intake row is listed by intakeMarkdown, never counted or tabled here
   const count = (v) => rows.filter((r) => !r['covered-by'] && r.verdict === v).length; // a nested row inherits its enclosing unit's verdict: counted once, on that unit's row
   const covered = rows.filter((r) => r['covered-by'] && r.decision !== 'removed').length;
-  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), '', valuesLine(listedValues(rows), rows.valuesNearest), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
+  const lines = [`# lean report: ${base} → ${head}${stopNote(rows.stop) ? '; ' + stopNote(rows.stop) : ''}`, ...(rows.identity ? ['', `Identity: ${rows.identity}${rows.leanVersion ? `; lean ${rows.leanVersion}` : ''}`] : []), '', valuesLine(listedValues(rows), rows.valuesNearest), '', `${rows.filter((r) => !r.caller).length} changed function(s)${covered ? ` (${covered} nested in another, carrying its verdict)` : ''}${rows.callersChecked ? `; ${rows.callersChecked} unchanged caller(s) checked through lane B, ${rows.filter((r) => r.caller && r.verdict === 'WITNESS').length} with a WITNESS through a changed callee` : ''}: **${count('IN-SCOPE')} in scope · ${count('WITNESS')} WITNESS · ${count('PASS-proved')} PASS-proved · ${count('PASS-typed') ? `${count('PASS-typed')} PASS-typed · ` : ''}${count('PASS-decided')} PASS-decided · ${count('PASS-bounded')} PASS-bounded · ${count('ASK')} ASK · ${count('REFUSE')} REFUSE · ${count('NEW')} NEW**`, '',
     '| file | function | verdict | coverage | lane B | lane A | note |', '|---|---|---|---|---|---|---|'];
   for (const r of rows) {
     let note = r.coverage === 'reused' ? r.note : r.verdict === 'WITNESS' && r.witness?.where?.cause === 'callee' ? `input ${r.witness?.input}: ${calleeNote(r, rows)}`.replace(/\|/g, '/') : r.verdict === 'WITNESS' ? `input ${r.witness?.input}: ${r.witness?.where ? r.witness.where.field + (r.witness.where.path ? ' ' + r.witness.where.path : '') : ''}${r.witness?.patchSummary ? '; patch: ' + String(r.witness.patchSummary).replace(/\|/g, '/') : ''}` : (r.reason ? String(r.reason).replace(/\n/g, ' ').slice(0, 90) : '');
@@ -746,7 +775,12 @@ export function markdown(allRows, base, head) {
     lines.push('', '## What would make the asks provable', '');
     for (const r of asks) { lines.push(`### ${r.file} · ${unitCell(r.unit)}`, ''); for (const a of r.advice) { lines.push(`- line ${a.line}, \`${a.rule}\`: ${a.msg}`); if (a.do) lines.push(`  do: ${a.do}`); } lines.push(''); }
   }
-  lines.push('', 'A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny; PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.');
+  const directives = allRows.directives ?? [];
+  if (directives.length) {
+    lines.push('', '## Directive comments', '', 'A directive changes what the checker or the linter reports, never what runs: a rule record, not a verdict.', '', '| file | line | unit | directive | change | reading |', '|---|---|---|---|---|---|');
+    for (const d of directives) lines.push(`| ${cell(d.file)} | ${d.line} | ${d.unit ? unitCell(d.unit) : ''} | \`${cell(d.directive ?? d.rule)}\` | ${d.change} | ${cell(d.msg)} |`);
+  }
+  lines.push('', `A WITNESS is an input on which the two versions differ; PASS-proved is a theorem checked by Dafny;${rows.some((r) => r.verdict === 'PASS-typed') ? ' PASS-typed is a change the compiler erases: both sides emit byte-equal JavaScript in every file its types reach;' : ''} PASS-decided is a finite component explored over every event sequence; PASS-bounded is no difference found within the stated bound; ASK is undecided with its reason; REFUSE(load) names a local source linkage failure; candidate-only evaluation failures are ASK with their environment class; NEW records a standalone run and makes no equality claim.`);
   // the change ledger and the task reconciliation describe the whole row set (WHOLE_SET_FIELDS): read from allRows
   if (allRows.ledger) lines.push('', ledgerMarkdown(allRows.ledger));
   if (allRows.reconciliation) lines.push('', `Task reconciliation: expected ${allRows.reconciliation.expected.length}; terminal ${allRows.reconciliation.terminal.length}; missing ${allRows.reconciliation.missing.length}; unexpected ${allRows.reconciliation.unexpected.length}; identities ${allRows.reconciliation.complete ? 'complete' : 'INCOMPLETE'}.`, `Durable ledger: ${allRows.terminalFile}`);
