@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadTransforms, convertFile } from '../convert.mjs';
+import { loadTransforms, convertFile, judgedByOwner } from '../convert.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const BREAK = process.argv.includes('--break');
@@ -63,6 +63,19 @@ const passed = (v) => v === 'PASS-proved' || v === 'PASS-bounded' || v === 'PASS
   const byFile = new Map([...(await loadTransforms())].map(([rule, t]) => [rule, t]));
   const bad = Object.entries(ADVICE).filter(([rule, a]) => a.transform && !(byFile.get(rule) && path.basename(a.transform, '.mjs') === fileOf(byFile.get(rule))));
   say(bad.length === 0, 'advice: every entry marked with a transform is that transform\'s rule', bad.map(([r, a]) => `${r} -> ${a.transform}`).join(', ') || `${Object.values(ADVICE).filter((a) => a.transform).length} entries`);
+}
+
+// part 0b: convert.mjs prove() judges a nested row by its enclosing row (pr.mjs copies the enclosing verdict into it): a
+// callback a rewrite renamed (forEach()#0 to reduce()#0) is absent at the parent, so a control of its own would answer
+// "no unit" and revert a file whose enclosing ASK is lean's own (apps-ui BoardCanvas.tsx, measured)
+{
+  const owner = { file: 'a.ts', unit: 'Board', verdict: 'ASK', control: "lean's own" };
+  const renamed = { file: 'a.ts', unit: 'Board/xs.reduce()#0', 'covered-by': 'Board', decision: 'check', verdict: 'ASK' };
+  const removed = { file: 'a.ts', unit: 'Board/xs.forEach()#0', 'covered-by': 'Board', decision: 'removed', verdict: null };
+  const own = { file: 'a.ts', unit: 'Other', verdict: 'ASK' };
+  const rows = [owner, renamed, removed, own];
+  const ok = judgedByOwner(rows, renamed) === owner && judgedByOwner(rows, removed) === null && judgedByOwner(rows, own) === null && judgedByOwner(rows, { ...renamed, verdict: 'WITNESS' }) === null;
+  say(ok, 'prove: a nested row is judged by the enclosing row its verdict came from', ok ? 'renamed callback follows Board; a removed row, an unnested row and a WITNESS do not' : 'no');
 }
 
 // part 1: the fixtures

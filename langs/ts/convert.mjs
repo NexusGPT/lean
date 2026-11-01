@@ -176,6 +176,14 @@ const onSignal = Object.fromEntries(SIGNALS.map(([sig, code]) => [sig, () => { f
 const holdControl = (c) => { if (!controls.size) for (const [sig] of SIGNALS) process.on(sig, onSignal[sig]); controls.add(c); };
 const dropControl = (c) => { fs.rmSync(c, { force: true }); controls.delete(c); if (!controls.size) for (const [sig] of SIGNALS) process.off(sig, onSignal[sig]); };
 
+// the enclosing row a nested row's verdict was copied from (pr.mjs: a nested row runs no lane), when that row judges it:
+// the nested row is not removed, is no WITNESS (a WITNESS reverts whoever carries it), and carries its owner's verdict
+export function judgedByOwner(rows, r) {
+  if (!r['covered-by'] || r.decision === 'removed' || r.verdict === 'WITNESS') return null;
+  const owner = rows.find((x) => x.file === r.file && x.unit === r['covered-by']);
+  return owner && owner !== r && owner.verdict === r.verdict ? owner : null;
+}
+
 // prove the changed files of one folder with pr.mjs; revert a file on a WITNESS, or on an ASK the parent against
 // itself does not share; returns the rows and the reverted files
 export async function prove({ repo, base, files, project, n, dafnySeconds, cacheDir }) {
@@ -196,6 +204,10 @@ export async function prove({ repo, base, files, project, n, dafnySeconds, cache
         r.certificate = { ...owner.certificate, unit: r.unit, 'covered-by': r['covered-by'] };
       }
     }
+    // A nested row runs no lane: pr.mjs copies its enclosing unit's verdict and certificate into it (pr.mjs, "Nested
+    // rows ... never run a lane"), and the enclosing row comes first. Its ASK is that unit's ASK, judged there; a control
+    // of its own would ask the parent for a callback a rewrite may have renamed (forEach()#0 to reduce()#0), absent there.
+    { const owner = judgedByOwner(rows, r); if (owner) { if (owner.control) r.control = `as ${owner.unit}: ${owner.control}`; continue; } }
     if (r.verdict === 'WITNESS') { reverted.set(r.file, `WITNESS on ${r.unit}${r.caller ? ' (an unchanged caller)' : ''}: input ${r.witness?.input ?? '?'}`); continue; }
     if (r.verdict === 'ASK' || r.verdict === 'REFUSE' || r.verdict === null) {
       // the control, lane by lane: an ASK is lean's own when every lane that did not pass failed on the parent alone;
