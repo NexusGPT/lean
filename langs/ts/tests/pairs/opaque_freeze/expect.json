@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "outside_freeze",
+  "inside_freeze",
+  "read_freeze",
+  "planted_freeze"
+ ],
+ "equal": {
+  "outside_freeze": false,
+  "inside_freeze": false,
+  "read_freeze": false,
+  "planted_freeze": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule freeze: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+}

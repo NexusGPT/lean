@@ -1,0 +1,17 @@
+{
+ "scope": [
+  "outside_call",
+  "inside_call",
+  "read_call",
+  "write_call",
+  "planted_call"
+ ],
+ "equal": {
+  "outside_call": true,
+  "inside_call": false,
+  "read_call": false,
+  "write_call": false,
+  "planted_call": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule unsupported-call: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+}

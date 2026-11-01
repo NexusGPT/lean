@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "outside_syntax",
+  "inside_syntax",
+  "read_syntax",
+  "planted_syntax"
+ ],
+ "equal": {
+  "outside_syntax": true,
+  "inside_syntax": false,
+  "read_syntax": false,
+  "planted_syntax": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule unsupported-syntax: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+}

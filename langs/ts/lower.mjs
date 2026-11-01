@@ -18,6 +18,7 @@
 //
 // Usage: node lower.mjs --audit [--json] [--md <file>]
 //        node lower.mjs <file.ts> [--no-project]        the record of each unit, as JSON
+import { OPAQUE_CALLS, opaqueCallsForm } from './lint/opaque-calls.mjs'; // the rules an opaque site's refusal may name (the audit's site.rule)
 import fs from 'node:fs';
 import { elementWritePath, syncLoopCallback, reduceAccumulator, plainDataRecord } from './common.mjs';
 import { asyncGenerator } from './generators.mjs';
@@ -72,6 +73,7 @@ const DYNAMIC_RULES = {
   'w.rule': ['dynamic-key', 'prototype'],
   rule: ['update-expression', 'assignment-expression'],
   EFFECT_GLOBALS: ['dynamic-eval', 'prototype'],
+  'site.rule': Object.keys(OPAQUE_CALLS).filter(opaqueCallsForm), // an opaque site no step reached keeps its finding's refusal (translate.mjs, design/w1c-opaque-calls.md)
 };
 const dynamicRules = (expr) => { for (const [k, v] of Object.entries(DYNAMIC_RULES)) if (expr === k || expr.includes(k)) return v; const lits = [...expr.matchAll(/'([a-z][a-z0-9-]*)'/g)].map((m) => m[1]); return lits.length ? lits : null; };
 

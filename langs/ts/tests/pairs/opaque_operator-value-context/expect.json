@@ -1,0 +1,17 @@
+{
+ "scope": [
+  "outside_ovc",
+  "inside_ovc",
+  "read_ovc",
+  "write_ovc",
+  "planted_ovc"
+ ],
+ "equal": {
+  "outside_ovc": true,
+  "inside_ovc": false,
+  "read_ovc": false,
+  "write_ovc": false,
+  "planted_ovc": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule operator-value-context: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+}

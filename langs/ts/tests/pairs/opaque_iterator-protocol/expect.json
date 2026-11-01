@@ -1,0 +1,11 @@
+{
+ "scope": [
+  "outside_iter",
+  "inside_iter"
+ ],
+ "equal": {
+  "outside_iter": true,
+  "inside_iter": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule iterator-protocol: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+}

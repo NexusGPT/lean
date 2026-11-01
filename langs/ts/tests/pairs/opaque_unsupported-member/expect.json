@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "outside_member",
+  "inside_member",
+  "read_member",
+  "planted_member"
+ ],
+ "equal": {
+  "outside_member": true,
+  "inside_member": false,
+  "read_member": false,
+  "planted_member": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule unsupported-member: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+}

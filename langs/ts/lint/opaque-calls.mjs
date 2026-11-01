@@ -113,6 +113,9 @@ export function deleteLeavesType(checker, node) {
 // the statement's key (siteKey).
 export function callsOpaqueSite(checker, rule, node, fn) {
   if (!opaqueCallsForm(rule) || !fn) return null;
+  // exception-binding, exception-return: what has no reading is the finally reading a name the try body shadows or a
+  // returned alias it may change; that behaviour is the try statement's, so the step is the try (its own text)
+  if (rule === 'exception-binding' || rule === 'exception-return') { let t = node; while (t && !(ts.isTryStatement(t) && t.finallyBlock)) t = t.parent; if (!t) return { why: 'no try with a finally holds it' }; node = t; }
   const stmt = siteStatement(node, fn);
   if (!stmt) return { why: 'no statement of the unit\'s own body holds it (a parameter, a concise body, a field initialiser): the unit is never one opaque function' };
   if (ts.isFunctionDeclaration(stmt) || ts.isClassDeclaration(stmt)) return { why: 'it sits in a hoisted declaration, which runs before the statement that holds it' };

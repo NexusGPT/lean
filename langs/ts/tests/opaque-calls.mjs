@@ -30,7 +30,7 @@ const breakOnly = args.includes('--break');
 export const BREAKS = [
   { pair: 'opaque_delete', mechanism: 'drop-read', units: ['read_del'] }, // the key changed before the step, read by it
   { pair: 'opaque_alias-origin', mechanism: 'drop-write', units: ['count'] }, // A2: the origin `user` of the alias `t` the step may change
-  { pair: 'opaque_callee-text', mechanism: 'drop-callees', units: ['viaCallee'] }, // A3: a callee changed only at x === 7919 behind one statement
+  { pair: 'opaque_callee-text', mechanism: 'drop-callees', units: ['via_callee'] }, // A3: a callee changed only at x === 7919 behind one statement
   { pair: 'opaque_dynamic-key', mechanism: 'drop-read', units: ['read_key'] },
   { pair: 'opaque_assign-target', mechanism: 'drop-write', units: ['write_assign'] },
 ];
@@ -48,7 +48,9 @@ function laneA(pair, env = {}) {
     fs.writeFileSync(path.join(tmp, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])), summaries: true }));
     fs.writeFileSync(path.join(tmp, 'edit.json'), '{}');
     const th = run('python3', ['-I', path.join(root, '../../spec/theorem.py'), '--parent', path.join(tmp, 'parent.dfy'), '--candidate', path.join(tmp, 'candidate.dfy'), '--scope', path.join(tmp, 'scope.json'), '--edit', path.join(tmp, 'edit.json'), '--out', path.join(tmp, 'theorem.dfy')]);
-    if (th.status !== 0) return { error: `theorem: ${(th.stderr || th.stdout).trim().slice(-300)}` };
+    const why = (th.stderr || th.stdout).trim();
+    if (th.status !== 0 && /differs|opaque block calls/.test(why)) return { proved: Object.fromEntries(exp.scope.map((u) => [u, false])), lemma: Object.fromEntries(exp.scope.map((u) => [u, true])), opaque: {}, finished: true, tail: '', refused: why.slice(-200) }; // the theorem refuses the comparison (check.mjs: ASK:interface): nothing is proved
+    if (th.status !== 0) return { error: `theorem: ${why.slice(-300)}` };
     const v = run('dafny', ['verify', ...dafnyVerifyArgs(), '--cores', '2', path.join(tmp, 'theorem.dfy')]);
     const text = v.stdout + v.stderr;
     const lines = fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').split('\n');

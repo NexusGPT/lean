@@ -256,7 +256,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf),
     quiet: (n) => !!reactHook(checker, n) || /^Promise\.(resolve|reject|all|allSettled|race|any)$/.test(n.expression?.getText?.(sf) ?? ''),
     deferred: (q) => /^use(Layout|Insertion)?Effect$/.test(reactHook(checker, q) ?? ''),
-    opaque: (st) => ts.isTryStatement(st) || ts.isSwitchStatement(st) || ts.isLabeledStatement(st) || ts.isIterationStatement(st, false), // weaker than the translator's own test: never more refusals
+    opaque: (st) => ts.isTryStatement(st) || ts.isSwitchStatement(st) || ts.isLabeledStatement(st) || ts.isIterationStatement(st, false) || callsRecs.some((r) => callsSiteOf(r)?.stmt === st), rebinds: (st) => callsRecs.some((r) => callsSiteOf(r)?.stmt === st), // weaker than the translator's own test: never more refusals; an opaque site's statement is one step (lint/opaque-calls.mjs), as the translator reads it
     freshAlone: (a) => { let e = a; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; if (ts.isIdentifier(e)) { const d = checker.getSymbolAtLocation(e)?.valueDeclaration; e = d && ts.isVariableDeclaration(d) && d.initializer ? d.initializer : e; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; } return ts.isObjectLiteralExpression(e) || ts.isArrayLiteralExpression(e); },
   };
   const readAfter = (u) => { if (!u?.fn?.body) return; const rc = readAfterCall(checker, sf, u, rafHooks); if (rc) v(rc.node, 'read-after-call', rc.message); };
@@ -320,9 +320,15 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
-    if (opaqueCallsForm(rule)) callsAt.set(out[out.length - 1], { node, fn: currentFn }); // decided when the walk ends
+    if (opaqueCallsForm(rule)) { const rec = { node, fn: currentFn ?? unitFnOf(node), rule }; callsAt.set(out[out.length - 1], rec); callsRecs.push(rec); } // decided when the walk ends
   };
   const callsAt = new WeakMap(); // a finding of a rule the calls column grades -> where it was raised (lint/opaque-calls.mjs)
+  const callsRecs = []; // the same records, in order: the site statements so far (callsSiteOf), for the read-after-call reading
+  const callsSiteOf = (rec) => { if (!('site' in rec)) rec.site = callsOpaqueSite(checker, rec.rule, rec.node, rec.fn); return rec.site; };
+  // the function of the unit a node sits in, for a finding raised outside the walk of a unit (the finally gate): the
+  // innermost enclosing function that is a unit's own
+  const unitFns = new Set([...units.values()].map((u) => u.fn).filter(Boolean));
+  const unitFnOf = (n) => { for (let p = n; p; p = p.parent) if (unitFns.has(p)) return p; return null; };
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
   // undefined: the coercion table's identity row, where the translator writes == and === alike
@@ -2419,7 +2425,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // (opts.opaqueSites, by siteKey), which reads it as one opaque step. Where it is no step, the refusal stands with why
   for (const f of out) {
     const at = callsAt.get(f); if (!at || f.advisory) continue;
-    const site = callsOpaqueSite(checker, f.rule, at.node, at.fn);
+    const site = callsSiteOf(at);
     if (site?.stmt) { f.opaque = 'statement'; f.advisory = true; f.opaqueSite = callsSiteKey(site.stmt, sf); opts.opaqueSites?.add(f.opaqueSite); }
     else if (site?.why) f.opaqueWhy = site.why;
   }

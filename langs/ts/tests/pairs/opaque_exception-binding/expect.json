@@ -1,0 +1,15 @@
+{
+ "scope": [
+  "outside_eb",
+  "inside_eb",
+  "read_eb",
+  "planted_eb"
+ ],
+ "equal": {
+  "outside_eb": true,
+  "inside_eb": false,
+  "read_eb": false,
+  "planted_eb": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule exception-binding: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+}
