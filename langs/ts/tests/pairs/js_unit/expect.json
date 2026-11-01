@@ -1,0 +1,37 @@
+{
+ "why": "JavaScript units through the checker's JavaScript mode (allowJs, checkJs). index.js has no JSDoc: its module-level constant is the module unit's (WITNESS: a binding the module holds differs; before, an edit outside every unit of an untyped JavaScript file was left unassigned, which --break w1f-js restores); scale, untyped, is refused by the lint by name (untyped-js) and lane B's WITNESS stays in its row. counter.js is typed by JSDoc: double is read by both lanes (n * 2 to n + n), and the JSDoc-only edit of inc, outside every unit, is the types unit's: the file's emit differs (double), so the types unit is ASK naming counter.js, while inc's text is unchanged and has no row.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   {
+    "file": "index.js",
+    "unit": "(module)",
+    "verdict": "WITNESS"
+   },
+   {
+    "file": "index.js",
+    "unit": "scale",
+    "verdict": "WITNESS",
+    "coverage": "refused:untyped-js"
+   },
+   {
+    "file": "counter.js",
+    "unit": "double",
+    "notVerdict": "WITNESS"
+   },
+   {
+    "file": "counter.js",
+    "unit": "(types)",
+    "verdict": "ASK",
+    "reason": "counter.js"
+   }
+  ],
+  "unassigned": false,
+  "absent": [
+   {
+    "file": "counter.js",
+    "unit": "inc"
+   }
+  ]
+ }
+}

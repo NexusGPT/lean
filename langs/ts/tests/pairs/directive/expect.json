@@ -1,0 +1,55 @@
+{
+ "why": "Directive comments: a change adds `@ts-expect-error` above a line the checker rejects (it hides TS2322), adds `@ts-ignore` above a clean line (it hides nothing), adds a block `eslint-disable no-magic-numbers` and removes an `eslint-disable-next-line no-console`. Each is a rule record (lint/directives.mjs) in the report and the refusals file, never a verdict; the units that hold them emit the same JavaScript and are PASS-typed. legacy's `@ts-ignore` only moved down two lines: matched by what it governs, it is no record (--break w1f-directive matches by line number and lists it).",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   {
+    "file": "index.ts",
+    "unit": "parse",
+    "verdict": "PASS-typed"
+   },
+   {
+    "file": "index.ts",
+    "unit": "shout",
+    "verdict": "PASS-typed"
+   }
+  ],
+  "absent": [
+   {
+    "file": "index.ts",
+    "unit": "legacy"
+   }
+  ],
+  "directives": [
+   {
+    "file": "index.ts",
+    "directive": "eslint-disable",
+    "change": "added",
+    "line": 1
+   },
+   {
+    "file": "index.ts",
+    "directive": "ts-expect-error",
+    "change": "added",
+    "line": 5,
+    "suppresses": [
+     2322
+    ]
+   },
+   {
+    "file": "index.ts",
+    "directive": "eslint-disable-next-line",
+    "change": "removed",
+    "line": 7
+   },
+   {
+    "file": "index.ts",
+    "directive": "ts-ignore",
+    "change": "added",
+    "line": 12,
+    "suppresses": []
+   }
+  ],
+  "unassigned": false
+ }
+}

@@ -107,6 +107,12 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   const d = path.join(pairsDir, name);
   const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
   const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
+  // the pair read as a pull request (tests/pr-pair.mjs): the rows and directive records pr.mjs gives between its two commits
+  if (exp.pr) {
+    const { prPair } = await import('./pr-pair.mjs');
+    for (const r of await prPair(d, { tmp: tmpd })) add('pair', name, r.check, r.ok, r.detail);
+    if (exp.prOnly) return;
+  }
   if (exp.candidateOnly) {
     for (const [i, want] of exp.candidateOnly.entries()) {
       const out = path.join(tmpd, `new_${i}.json`);
@@ -790,6 +796,8 @@ async function adviceLabels(add) {
     // a child past its wall cap is killed with every process under it and reads as a timeout; every Dafny child carries one (pool.mjs, design/suite.md)
     ['wall-cap', scriptRow('runtime', 'wall-cap', 'a 2 s cap kills a fake Dafny and its sleeping child within 5 s, shaped as a timeout; a run under the cap unchanged', [path.join(here, 'wall-cap.mjs')], lastLine)],
     // a proof's verdict never depends on the machine's load: every dafny verify is bounded by resources (exec/dafny-args.mjs, design/suite.md)
+    // units outside every function (design/w1f-module-units.md): the module unit, the typed reading, directive records, JavaScript units, each pair read as a pull request and red under its --break
+    ['w1f-module-units', scriptRow('runtime', 'w1f-module-units', 'module, types and JavaScript units and directive records in pr.mjs rows; every --break turns its pair red', [path.join(here, 'w1f-module-units.mjs'), '--breaks'], lastLine)],
     ['dafny-resource-limit', scriptRow('runtime', 'dafny-resource-limit', 'every dafny verify passes the resource limit; one proof alone and eleven at once: the same verdict and resource count', [path.join(here, 'dafny-resource-limit.mjs')], lastLine)],
     // the branch-guided input search: targets from the diff, the kept inputs, the pairs off and on, determinism (exec/search.mjs, design/w3c-search-inputs.md)
     ['search-inputs', scriptRow('runtime', 'search-inputs', 'the diff mapped to the unit\'s branches; a kept input continued; two pairs PASS-bounded off and WITNESS by search on; byte-equal reruns', [path.join(here, 'search-inputs.mjs')], lastLine)],

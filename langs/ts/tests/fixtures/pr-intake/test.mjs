@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { intakeRepo } from './build.mjs';
+import { TYPES_UNIT } from '../../../common.mjs';
 import { secretPath, selectUnits, coverageOf, budgetValue, runIdentity, unitKey, markdown, intakeMarkdown } from '../../../pr.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -251,8 +252,9 @@ export function testRunIdentity() {
     assert.ok(fresh.report.rows.every((r) => r.certificate.identity === fresh.report.identity));
     console.log('Identity fresh: 0 reused; report and new certificate identities agree');
     // A head commit is read from that commit's tree only, so each dependency change is committed; the change ledger then
-    // adds its own rows for the edited import and config files, and the guard reads the four unit rows.
-    const unitRows = (report) => report.rows.filter((r) => !['artifact', 'unassigned'].includes(r.decision));
+    // adds its own rows for the edited import and config files (the import file's type-only edit is its types unit's,
+    // design/w1f-module-units.md), and the guard reads the four unit rows of the file that imports it.
+    const unitRows = (report) => report.rows.filter((r) => !['artifact', 'unassigned'].includes(r.decision) && r.unit !== TYPES_UNIT);
     fs.writeFileSync(path.join(refs.repo, 'types.ts'), 'export type Marker = string;\n');
     git('add', 'types.ts');
     git('commit', '-qm', 'Read the changed import');
@@ -303,26 +305,26 @@ export function testCommentOnly() {
       'every edit that changes no token outside comments and blank lines is inert');
     assert.ok(inert.every((r) => r.decision === 'unassigned' && r.verdict === null), 'an inert row is unassigned and carries no verdict');
     assert.deepEqual(rows.filter((r) => !r.inert).map((r) => [r.coverage, r.verdict]).sort(),
-      [['artifact:config', 'ASK'], ['skipped:preview', null], ['skipped:preview', null], ['unassigned:directive comment', 'ASK']],
-      'the config file and the reference directive stay undecided (ASK) in the data; the function and the module unit are previewed');
+      [['artifact:config', 'ASK'], ['skipped:preview', null], ['skipped:preview', null], ['skipped:preview', null]],
+      'the config file stays undecided (ASK) in the data; the function, the module unit and the types unit (the reference directive: typed.mjs reads it) are previewed');
     const md = markdown(rows, 'base', 'head');
     const table = md.split('## Change ledger')[0];
-    assert.deepEqual(table.split('\n').filter((l) => /^\| (notes\.ts|app\.config\.json) \|/.test(l)).map((l) => l.split('|')[2].trim()).sort(), ['`(module)` (1-29)', '`bump` (12-14)'], 'the verdict table holds the changed function and the module unit');
-    assert.match(md, /2 changed function\(s\): \*\*0 in scope · 0 WITNESS · 0 PASS-proved · 0 PASS-decided · 0 PASS-bounded · 0 ASK · 0 REFUSE · 0 NEW\*\*/);
+    assert.deepEqual(table.split('\n').filter((l) => /^\| (notes\.ts|app\.config\.json) \|/.test(l)).map((l) => l.split('|')[2].trim()).sort(), ['`(module)` (1-29)', '`(types)` (1-29)', '`bump` (12-14)'], 'the verdict table holds the changed function, the module unit and the types unit');
+    assert.match(md, /3 changed function\(s\): \*\*0 in scope · 0 WITNESS · 0 PASS-proved · 0 PASS-decided · 0 PASS-bounded · 0 ASK · 0 REFUSE · 0 NEW\*\*/);
     const intake = intakeMarkdown(rows).split('\n');
     assert.equal(intake.filter((l) => /\| unassigned:(comment|whitespace) \| unassigned \|/.test(l)).length, 5, 'the intake table lists the five inert groups as unassigned');
-    assert.equal(intake.filter((l) => /\| (artifact:config \| artifact|unassigned:directive comment \| unassigned|unassigned:module-level statement \| unassigned) \|/.test(l)).length, 2, 'and the two undecided intake rows');
+    assert.equal(intake.filter((l) => /\| (artifact:config \| artifact|unassigned:directive comment \| unassigned|unassigned:module-level statement \| unassigned) \|/.test(l)).length, 1, 'and the one undecided intake row');
     // the plain run prints the intake table before the verdicts, as the comment does; no lane runs at a zero unit budget
     const plain = spawnSync(process.execPath, [pr, ...args, '--unit-budget', '0'], { encoding: 'utf8' });
     assert.equal(plain.status, 0, plain.stderr);
     assert.ok(plain.stdout.indexOf('## Intake') >= 0 && plain.stdout.indexOf('## Intake') < plain.stdout.indexOf('## Verdicts'), 'the run prints intake, then verdicts');
-    assert.match(plain.stdout, /2 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/);
+    assert.match(plain.stdout, /3 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/);
     assert.equal(plain.stdout.split('## Verdicts')[1].split('## Change ledger')[0].split('\n').filter((l) => /artifact:|unassigned:/.test(l)).length, 0, 'no intake row in the run\'s verdict table');
     const comment = spawnSync(process.execPath, [path.resolve(here, '../../../ci/comment.mjs'), ...args, '--unit-budget', '0', '--block', 'ask'], { encoding: 'utf8' });
-    assert.match(comment.stdout, /2 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/, 'the comment renders the same counts');
+    assert.match(comment.stdout, /3 changed function\(s\): \*\*.* 0 ASK · 0 REFUSE · 0 NEW\*\*/, 'the comment renders the same counts');
     // a blocking level still reads the data: an undecided intake row blocks, an inert one never does
     const blocked = [...comment.stderr.matchAll(/::error file=([^,]+),line=(\d+)::lean ASK/g)].map((m) => m[1] + ':' + m[2]).sort();
-    assert.deepEqual(blocked, ['app.config.json:1', 'notes.ts:1'], 'the directive and the config file block under --block ask; no inert row does, nor a unit the budget skipped');
-    return 'only the changed function and the module unit are verdict rows; 5 inert groups and 2 undecided intake rows stay in intake; template line is code (the module unit\'s), block comment line is comment; run and comment agree; blocking reads the data';
+    assert.deepEqual(blocked, ['app.config.json:1'], 'the config file blocks under --block ask; no inert row does, nor a unit the budget skipped (the directive is the types unit\'s)');
+    return 'only the changed function, the module unit and the types unit are verdict rows; 5 inert groups and 1 undecided intake row stay in intake; template line is code (the module unit\'s), block comment line is comment; run and comment agree; blocking reads the data';
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }

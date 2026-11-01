@@ -1,0 +1,20 @@
+{
+ "lean": "/root/lanes/w1f-module-units/tree/langs/ts",
+ "repo": "/root/da/census/repos/nexus-desktop",
+ "commits": 300,
+ "failed": 0,
+ "sourceEdits": 0,
+ "kinds": {},
+ "unassigned": {},
+ "units": {
+  "function": 0,
+  "module": 0,
+  "types": 0
+ },
+ "commitsWith": {
+  "module": 0,
+  "types": 0,
+  "typesOnlyCode": 0
+ },
+ "seconds": 113
+}
