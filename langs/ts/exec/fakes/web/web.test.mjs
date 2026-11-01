@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Environment, render, behaviouralGlobals } from '../../fake.mjs';
-import { STATUSES, ORIGIN } from './fetch.mjs';
+import { STATUSES } from './fetch.mjs';
 
 const world = (seed, strings = []) => { const env = new Environment(seed); env.shapes = { strings }; return { env, g: behaviouralGlobals(env) }; };
 const statusOf = (g, url, init) => g.fetch(url, init).then((r) => r.status, (e) => `fault ${e.constructor.name}`); // the world's fault draw (one call in twelve) fails the same request alike on both sides
@@ -50,10 +50,14 @@ test('fetch: the trace records the request as the server receives it (method, ur
   assert.equal(call.args[0].body, 'b');
 });
 
-test('fetch: a relative URL resolves against the virtual origin; an invalid request rejects with the standard TypeError', async () => {
+test('fetch: a relative URL is refused as Node refuses it; an invalid request rejects with the standard TypeError', async () => {
   const { env, g } = world(1);
-  await settle(g.fetch('/api/x'));
-  assert.equal(env.trace.at(-1).args[0].url, new URL('/api/x', ORIGIN).href);
+  const real = await settle(fetch('/api/x')); // Node's own fetch: a URL with no base does not parse
+  const rel = await settle(g.fetch('/api/x'));
+  assert.ok(real.e instanceof TypeError && rel.e instanceof TypeError);
+  assert.equal(rel.e.message, real.e.message);
+  assert.throws(() => new g.Request('not a url'), TypeError);
+  assert.equal(env.trace.at(-1).path, 'global:fetch'); assert.equal(env.trace.at(-1).args[0], '/api/x'); // recorded with the arguments as given
   const bad = await settle(g.fetch('https://x.test/', { method: 'GET', body: 'no' }));
   assert.ok(bad.e instanceof TypeError);
 });

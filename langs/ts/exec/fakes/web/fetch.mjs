@@ -3,8 +3,9 @@
 // Request, Response, Headers, FormData and Blob are the platform's own classes (Node's undici, the Fetch standard),
 // so a unit that builds a request, reads a header or makes a response runs the standard's code. Two things are added:
 // - Request and Response are subclassed only to remember the body they were built with (the standard keeps it in a
-//   stream, readable only asynchronously), so a request is keyed and a response rendered synchronously; a relative URL
-//   resolves against the one origin lean's virtual document has (ORIGIN), as it does in a page.
+//   stream, readable only asynchronously), so a request is keyed and a response rendered synchronously. The URL is read
+//   as Node reads it (the real module is the oracle): a URL that does not parse without a base (a relative one, "not a
+//   url") is the TypeError Node's Request raises, and fetch rejects with it; Node has no document to resolve against.
 // - fetch is the world: a table keyed by (method, url, body). The first request with a key draws its row from the
 //   seeded generator, by the input's seed and the key only (never by call order), and every later request with the key
 //   answers the same row, so both sides of an input are served alike and a refactor that reorders its requests sees the
@@ -21,7 +22,6 @@ import { render, namePromise, programBuilt } from '../../fake.mjs';
 import { HostHeaders, headerEntries } from './headers.mjs';
 import { keyName, drawText, hashOf } from './draw.mjs';
 
-export const ORIGIN = 'http://localhost/';
 export const HostRequest = globalThis.Request;
 export const HostResponse = globalThis.Response;
 export const HostFormData = globalThis.FormData;
@@ -50,11 +50,9 @@ export function bodyText(body) {
   if (typeof body.getReader === 'function') return '<stream>';
   return String(body);
 }
-const resolved = (input) => (input instanceof HostRequest ? input : new URL(String(input), ORIGIN).href); // anything but a Request is read as its string, as the standard reads it
-
 export class Request extends HostRequest {
   constructor(input, init) {
-    super(resolved(input), init);
+    super(input, init); // anything but a Request is read as its string, as the standard reads it; no base
     const own = init && init.body !== undefined && init.body !== null ? bodyText(init.body) : null;
     bodies.set(this, own ?? (input instanceof HostRequest ? bodies.get(input) ?? null : null));
   }
