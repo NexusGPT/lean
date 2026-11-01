@@ -1,7 +1,7 @@
 # w1c-opaque-calls: result (2026-11-01)
 
 Branch `lane/w1c-opaque-calls`, cut from `lead-vm` 4747022f, with w1a's helper cherry-picked (9c185509 → 11fa9bd0).
-Design note: `langs/ts/design/w1c-opaque-calls.md`. Scratch (removed at the end): `/root/lanes/w1c-opaque-calls/scratch`.
+Design note: `langs/ts/design/w1c-opaque-calls.md`. Tools (`lane/w1c-opaque-calls-tools/`: census.sh, measure.mjs, guarddiff.mjs) read the census JSON and the base tree from the lane scratch `/root/lanes/w1c-opaque-calls/scratch` (removed at the end; base = `git archive 4747022f langs/ts spec`).
 
 ## What landed
 
@@ -37,9 +37,9 @@ Design note: `langs/ts/design/w1c-opaque-calls.md`. Scratch (removed at the end)
 | repo conformance | 252 of 252 | `python3 -I conformance/run.py ts` |
 | suite on the lane's pairs (first run) | 1027 checks, 75 failed: 65 escape + 1 advice (fixed by the opaque-step rows), 8 pair rows (fixed: real-only, A3 pair moved), conformance/run.py (fixed) | `JOBS=2 LEAN_PAIRS=<the 22 opaque_ pairs> node langs/ts/tests/run.mjs` |
 | suite on the lane's pairs (after the fixes) | 1026 checks, 1 failed: runtime census-environment (its fixture's `take` refused on `void x`, now an opaque step; the fixture now refuses on a read-after-call judged on the unresolved type, as `unbox` does; `node langs/ts/tests/census_environment.mjs`: all hold); proof-hunt: no hidden false proof over 68 units; model conformance on the 20 pairs with lane A: PASS (79 units); self-pair: no WITNESS | `JOBS=2 LEAN_PAIRS=<the 21 opaque_ pairs> node langs/ts/tests/run.mjs` |
-| lemmas generated and withheld by the identity guard, base vs head, every pair | 324 pairs, 22 changed: the lane's 21 (refused at base, read at head) and `faithful_held` (`held_num`'s lemma, withheld at base, is generated and not proved: `+` on Any does not commute; `node langs/ts/tests/run.mjs --pair faithful_held`: 9/9 rows hold) | `node scratch/guarddiff.mjs` (translate both sides and theorem.py with each tree) |
+| lemmas generated and withheld by the identity guard, base vs head, every pair | 324 pairs, 22 changed: the lane's 21 (refused at base, read at head) and `faithful_held` (`held_num`'s lemma, withheld at base, is generated and not proved: `+` on Any does not commute; `node langs/ts/tests/run.mjs --pair faithful_held`: 9/9 rows hold) | `node lane/w1c-opaque-calls-tools/guarddiff.mjs` (translate both sides and theorem.py with each tree) |
 
-Census (A8 roots; base = git archive of 4747022f, head = e7a211c9 + the census fix below; `node langs/ts/census.mjs /root/da/census/repos/<root> --install-under /root/census-installs/w1c --out <json> --report <md>`, summed by `node scratch/measure.mjs nexus-agent-api snitch pipedream`):
+Census (A8 roots; base = git archive of 4747022f, head = e7a211c9 + the census fix below; `node langs/ts/census.mjs /root/da/census/repos/<root> --install-under /root/census-installs/w1c --out <json> --report <md>`, summed by `node lane/w1c-opaque-calls-tools/measure.mjs nexus-agent-api snitch pipedream`):
 
 | root | units | entered base → head | the lane's rules stopped base → head |
 | --- | ---: | --- | --- |
