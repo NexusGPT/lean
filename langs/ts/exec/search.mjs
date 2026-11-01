@@ -23,7 +23,7 @@ export function branchTable(sf) {
   const lineOf = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
   const span = (n) => (n ? [lineOf(n.getStart(sf)), lineOf(n.end)] : null);
   const out = [];
-  const add = (holder, cond, mode, arms) => out.push({ k: out.length, key: `${holder.pos}:${holder.end}:${holder.kind}`, mode, start: holder.getStart(sf), end: holder.end, cond: cond ? span(cond) : span(holder), arms, text: (cond ?? holder).getText(sf).slice(0, 80) });
+  const add = (holder, cond, mode, arms) => out.push({ k: out.length, key: `${holder.pos}:${holder.end}:${holder.kind}`, mode, start: holder.getStart(sf), end: holder.end, cs: (cond ?? holder).pos, ce: (cond ?? holder).end, cond: cond ? span(cond) : span(holder), arms, text: (cond ?? holder).getText(sf).slice(0, 80) });
   const visit = (n) => {
     if (ts.isIfStatement(n)) {
       let F = n.elseStatement ? [span(n.elseStatement)] : [];
@@ -115,7 +115,7 @@ const touches = (r, lines) => { if (!r) return false; for (let L = r[0]; L <= r[
 export function unitBranches(sf, unit, table, changed) {
   const u = topLevelFunctions(sf).get(unit);
   const node = u && (u.node ?? u.fn);
-  if (!node) return { targets: [], literals: { strings: [], numbers: [] } };
+  if (!node) return { targets: [], literals: { strings: [], numbers: [], near: { strings: [], numbers: [] } } };
   const from = node.getStart(sf), to = node.end;
   const targets = [];
   for (const e of table) {
@@ -124,14 +124,19 @@ export function unitBranches(sf, unit, table, changed) {
     for (const [o, arms] of Object.entries(e.arms)) if (own || arms.some((r) => touches(r, changed))) targets.push(`${e.k}${o}`);
   }
   const strings = new Set(), numbers = new Set();
+  const near = { strings: new Set(), numbers: new Set() }; // the literals inside a target condition: the values that decide it come first
+  const conds = table.filter((e) => targets.some((t) => Number(t.slice(0, -1)) === e.k)).map((e) => [e.cs, e.ce]);
   const walk = (n) => {
+    const inCond = conds.some(([a, b]) => n.pos >= a && n.end <= b);
+    if (inCond && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n))) near.strings.add(n.text);
+    if (inCond && ts.isNumericLiteral(n)) near.numbers.add(ts.isPrefixUnaryExpression(n.parent) && n.parent.operator === ts.SyntaxKind.MinusToken ? -Number(n.text) : Number(n.text));
     if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) strings.add(n.text);
     else if (ts.isNumericLiteral(n)) { const v = Number(n.text); numbers.add(ts.isPrefixUnaryExpression(n.parent) && n.parent.operator === ts.SyntaxKind.MinusToken ? -v : v); }
     else if (ts.isTemplateExpression(n)) { if (n.head.text) strings.add(n.head.text); for (const s of n.templateSpans) if (s.literal.text) strings.add(s.literal.text); }
     ts.forEachChild(n, walk);
   };
   walk(node);
-  return { targets, literals: { strings: [...strings], numbers: [...numbers] } };
+  return { targets, literals: { strings: [...strings], numbers: [...numbers], near: { strings: [...near.strings], numbers: [...near.numbers] } } };
 }
 // the search's plan for a pair: the branch table of each file, the targets (side-tagged: P parent, C candidate) and the
 // literals of both versions of the unit
@@ -144,8 +149,9 @@ export function searchPlan(parent, candidate, unit, readText) {
   const bP = unitBranches(sfP, unit, tables.P, ch.parent), bC = unitBranches(sfC, unit, tables.C, ch.candidate);
   const targets = [...bP.targets.map((t) => `P:${t}`), ...bC.targets.map((t) => `C:${t}`)];
   const strings = [...new Set([...bC.literals.strings, ...bP.literals.strings])], numbers = [...new Set([...bC.literals.numbers, ...bP.literals.numbers])];
+  const near = { strings: [...new Set([...bC.literals.near.strings, ...bP.literals.near.strings])], numbers: [...new Set([...bC.literals.near.numbers, ...bP.literals.near.numbers])] };
   const describe = (tag) => { const [side, rest] = tag.split(':'); const k = Number(rest.slice(0, -1)); const e = tables[side][k]; return { side: side === 'P' ? 'parent' : 'candidate', line: e.cond[0], condition: e.text, outcome: rest.slice(-1) }; };
-  return { files: { [path.resolve(parent)]: { tag: 'P', table: tables.P }, [path.resolve(candidate)]: { tag: 'C', table: tables.C } }, targets, literals: { strings, numbers }, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, describe };
+  return { files: { [path.resolve(parent)]: { tag: 'P', table: tables.P }, [path.resolve(candidate)]: { tag: 'C', table: tables.C } }, targets, literals: { strings, numbers, near }, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, describe };
 }
 
 // ----- the changes of one input: leaves walked with their declared types -----
@@ -158,7 +164,8 @@ const neighbours = (lit) => [...new Set([lit.toUpperCase(), lit.toLowerCase(), `
 function leafValues(s, v, defs, lits, aware = true) {
   const out = [], seen = [];
   if (!aware) { lits = { strings: [], numbers: [] }; } // the --break of tests/search-inputs.mjs: no literal of the text, no boundary of the type
-  const add = (tier, x) => { if (Object.is(x, v) || seen.some((y) => Object.is(y, x)) || !fits(s, x, defs)) return; seen.push(x); out.push({ tier, value: x }); };
+  const isNear = (x) => !!lits.near && (typeof x === 'string' ? lits.near.strings.includes(x) : lits.near.numbers.some((y) => Object.is(y, x)));
+  const add = (tier, x) => { if (Object.is(x, v) || seen.some((y) => Object.is(y, x)) || !fits(s, x, defs)) return; seen.push(x); out.push({ tier: tier === 1 && isNear(x) ? 0 : tier, value: x }); }; // tier 0: a literal of a target condition
   const opts = optionsOf(s, defs);
   for (const o of opts) {
     if (o.kind === 'string') { for (const x of lits.strings) add(1, x); add(2, ''); for (const x of lits.strings) for (const y of neighbours(x)) add(3, y); }
@@ -173,12 +180,18 @@ function leafValues(s, v, defs, lits, aware = true) {
 const copyOf = (x, d = 0) => { if (d > 8) throw new Error('deep'); if (x === null || typeof x !== 'object') { if (typeof x === 'function') throw new Error('function'); return x; } if (x.__isFake) throw new Error('fake'); if (Array.isArray(x)) return x.map((y) => copyOf(y, d + 1)); if (!isPlain(x)) throw new Error('instance'); const o = Object.create(Object.getPrototypeOf(x)); for (const k of Object.keys(x)) o[k] = copyOf(x[k], d + 1); return o; };
 export function changesOf(inputs, params, defs, lits, { maxDepth = 5, aware = true } = {}) {
   const out = [];
+  if (!aware) lits = { strings: [], numbers: [] };
   const valuesOf = (s, v, d, l) => leafValues(s, v, d, l, aware);
   const walk = (v, s, at, d) => {
     if (d > maxDepth) return;
     const opts = optionsOf(s, defs);
     for (const c of valuesOf(s, v, defs, lits)) out.push({ at, op: 'set', value: c.value, tier: c.tier });
-    if (v === null || typeof v !== 'object' || v.__isFake) return;
+    if (v === null || v === undefined) { // an absent dictionary the type admits present: one entry keyed by a literal of the unit, its value one the value type admits
+      const dict = opts.find((o) => o.kind === 'dict'), val = dict && valuesOf(dict.value, undefined, defs, lits)[0];
+      if (val) for (const k of lits.strings) { const o = {}; o[k] = val.value; if (fits(s, o, defs)) out.push({ at, op: 'set', value: o, tier: lits.near?.strings.includes(k) ? 1 : 2 }); }
+      return;
+    }
+    if (typeof v !== 'object' || v.__isFake) return;
     if (Array.isArray(v)) {
       const arr = opts.find((o) => o.kind === 'array'), tup = opts.find((o) => o.kind === 'tuple');
       if (tup) { v.slice(0, tup.items.length).forEach((x, i) => walk(x, tup.items[i], [...at, i], d + 1)); return; }
@@ -202,7 +215,7 @@ export function changesOf(inputs, params, defs, lits, { maxDepth = 5, aware = tr
       const keys = Object.keys(v);
       keys.slice(0, 3).forEach((k) => walk(v[k], dict.value, [...at, k], d + 1));
       const fill = keys.length ? (() => { try { return { value: copyOf(v[keys[0]]) }; } catch { return null; } })() : (valuesOf(dict.value, undefined, defs, lits)[0] ?? null);
-      if (fill) for (const k of lits.strings) if (!Object.hasOwn(v, k)) out.push({ at: [...at, k], op: 'set', value: fill.value, tier: 1 });
+      if (fill) for (const k of lits.strings) if (!Object.hasOwn(v, k)) out.push({ at: [...at, k], op: 'set', value: fill.value, tier: lits.near?.strings.includes(k) ? 0 : 1 });
       for (const k of keys.slice(0, 3)) out.push({ at: [...at, k], op: 'delete', tier: 2 });
     }
   };
@@ -251,33 +264,44 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
   if (reached.size === T.size) return summary('every target branch reached by the draws');
   const rng = makeRng((seed ^ 0x51ed270b) >>> 0);
   const gain = (hits) => [...hits].filter((h) => T.has(h)).length;
-  const order = start.map((s, j) => ({ s, j, g: gain(s.hits) })).sort((a, b) => b.g - a.g || a.j - b.j).map((x) => ({ recipe: { from: x.s.input, changes: [] }, ops: null, next: 0 }));
+  const hitKey = (hits) => [...hits].sort().join(',');
+  const order = start.map((s, j) => ({ s, j, g: gain(s.hits) })).sort((a, b) => b.g - a.g || a.j - b.j).map((x) => ({ recipe: { from: x.s.input, changes: [] }, base: hitKey(x.s.hits), ops: null }));
   const stack = order.reverse(); // the best drawn input on top; a kept input goes on top of everything
   const seen = new Set(stack.map((e) => recipeKey(e.recipe)));
   const t0 = now();
+  // an entry's changes: by tier, and within a tier one change per leaf in turn (the leaves rotated by the seed), so no
+  // leaf spends the budget before every other leaf had its first value
   const listFor = async (e) => {
     const all = await changes(e.recipe); if (!all) return [];
     const leaves = [...new Set(all.map((c) => JSON.stringify(c.at)))];
-    const turn = leaves.length ? Math.floor(rng() * leaves.length) : 0; // the seed's rotation of the leaves: which leaf each tier starts from
+    const turn = leaves.length ? Math.floor(rng() * leaves.length) : 0;
     const rank = new Map(leaves.map((l, i) => [l, (i - turn + leaves.length) % leaves.length]));
-    return all.map((c, i) => ({ c, i })).sort((a, b) => a.c.tier - b.c.tier || rank.get(JSON.stringify(a.c.at)) - rank.get(JSON.stringify(b.c.at)) || a.i - b.i).map((x) => x.c);
+    const nth = new Map(); // a change's place among its leaf's changes of the same tier
+    const placed = all.map((c, i) => { const k = `${c.tier}|${JSON.stringify(c.at)}`; const m = nth.get(k) ?? 0; nth.set(k, m + 1); return { c, i, m, leaf: JSON.stringify(c.at) }; });
+    return placed.sort((a, b) => a.c.tier - b.c.tier || a.m - b.m || rank.get(a.leaf) - rank.get(b.leaf) || a.i - b.i).map((x) => ({ c: x.c, leaf: x.leaf, done: false }));
   };
+  // a leaf whose changes moved no branch outcome of the entry (every probe, either side) twice is inert: its other changes
+  // wait until every live leaf's are tried
+  const pick = (e) => { let fallback = null; for (const o of e.ops) { if (o.done) continue; if (!e.inert.has(o.leaf)) return o; fallback ??= o; } return fallback; };
   while (stack.length) {
     if (tried >= maxInputs) return summary('input bound');
     if (now() - t0 > maxMs) return summary('wall-time bound');
     const e = stack[stack.length - 1];
-    if (!e.ops) e.ops = await listFor(e);
-    if (e.next >= e.ops.length) { stack.pop(); continue; }
-    const recipe = extend(e.recipe, e.ops[e.next++]);
+    if (!e.ops) { e.ops = await listFor(e); e.inert = new Set(); e.still = new Map(); }
+    const o = pick(e);
+    if (!o) { stack.pop(); continue; }
+    o.done = true;
+    const recipe = extend(e.recipe, o.c);
     const key = recipeKey(recipe); if (seen.has(key)) continue; seen.add(key);
     const r = await run(recipe); tried++;
     if (r.status === 'skip') continue;
     if (r.status === 'diff') return summary('divergence', { witness: r, recipe });
+    if (hitKey(r.hits) === e.base) { const n = (e.still.get(o.leaf) ?? 0) + 1; e.still.set(o.leaf, n); if (n >= 2) e.inert.add(o.leaf); }
     const fresh = [...r.hits].filter((h) => T.has(h) && !reached.has(h));
     if (fresh.length) {
       fresh.forEach((h) => reached.add(h));
       kept.push({ recipe: recipeText(recipe), reached: fresh });
-      if (keep) stack.push({ recipe, ops: null, next: 0 });
+      if (keep) stack.push({ recipe, base: hitKey(r.hits), ops: null });
       if (reached.size === T.size) return summary('every target branch reached');
     }
   }
