@@ -1,39 +1,24 @@
 {
   "scope": [
-    "weight",
-    "stale",
-    "callee"
+    "stale"
   ],
   "equal": {
-    "stale": false,
-    "callee": false,
-    "weight": false
+    "stale": false
   },
   "opaque": {
     "stale": [
       "for-in"
-    ],
-    "callee": [
-      "for-in"
     ]
   },
   "b": {
-    "stale": "WITNESS",
-    "callee": "PASS-bounded",
-    "weight": "PASS-bounded"
+    "stale": "WITNESS"
   },
-  "why": "The mechanisms of the statement family's opaque step (design/w1b-opaque-statements.md), each a change OUTSIDE the step whose effect flows through what the step reads, writes or reaches (A1). stale: the candidate returns the value of n from before the step; the step writes n, so the two differ and nothing is proved (LEAN_BREAK=opaque-drop-write keeps n's old value after the step and this unit proves falsely). callee: the step is the same text on both sides and calls weight, changed only at x === 7919; the step's key holds the text of every same-file unit it reaches (exec/callees.mjs) and the theorem's CALLS guard refuses a changed callee, so nothing is proved (LEAN_BREAK=opaque-drop-callees removes both and this unit proves falsely; lane B does not reach 7919, PASS-bounded). weight: the changed callee itself, in the scope as every function the file defines: not proved.",
+  "why": "The mechanisms of the statement family's opaque step (design/w1b-opaque-statements.md), each a change OUTSIDE the step whose effect flows through what the step reads, writes or reaches (A1). stale: the candidate returns the value of n from before the step; the step writes n, so the two differ and nothing is proved (LEAN_BREAK=opaque-drop-write keeps n's old value after the step and this unit proves falsely).",
   "break": [
     {
       "mechanism": "opaque-drop-write",
       "equal": {
         "stale": true
-      }
-    },
-    {
-      "mechanism": "opaque-drop-callees",
-      "equal": {
-        "callee": true
       }
     }
   ]

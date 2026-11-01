@@ -12,8 +12,8 @@ export function alias_step(user: { tags: number[] }, k: number): number {
   for (key in { a: 1 }) if (k === 7919) t.push(k);
   return user.tags.length + key.length;
 }
-export function identity(x: number | { o: number }, y: number): boolean {
+export function identity(x: { o: number }, y: number): boolean {
   const t = x;
-  const same = x === t;
+  const same = x == t;
   return same && y > 0;
 }

@@ -215,7 +215,7 @@ export function census(root, opts = {}) {
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
-    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv;
+    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv, opaque = {};
     try {
       const L = loaded.get(path.resolve(file));
       if (!L || L.error) throw new Error(L?.error ?? 'not loaded');
@@ -227,6 +227,8 @@ export function census(root, opts = {}) {
       const rec = lowerFile(file, null, { project: true, loaded: L }); findings = rec.findings;
       for (const f of findings) f.unit = findingUnit(sf, inventory, f)?.name ?? null; // a finding belongs to the unit the lint named, else the innermost containing unit
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
+      // the opacity ladder (A5): per unit its opaque fraction and each step's rule, construct and spans, as the lowering read them
+      for (const u of rec.units) if (u.opaqueSteps) opaque[u.unit] = { fraction: u.opaqueSteps.fraction, statements: u.opaqueSteps.statements, covered: u.opaqueSteps.covered, steps: u.opaqueSteps.steps.map((x) => ({ rule: x.rule, construct: x.construct, span: x.span, findings: x.findings, statements: x.statements })) };
       envBlocked = new Set(findings.filter((f) => f.rule === 'unresolved-module' && f.unit).map((f) => f.unit)); // judged on unknown types: neither admitted nor refused by a reading
       // a stopping finding that names a value whose type does not resolve was judged on an unknown type (environmentOf); a
       // unit every stopping finding of which is such is environment-blocked by the first; one with a finding judged on
@@ -266,7 +268,7 @@ export function census(root, opts = {}) {
       return o;
     });
     const unresolvedTypes = [...typeEnv].map(([unit, f]) => { const o = origins.get(f); return { unit, line: f.line, rule: f.rule, value: o.value, symbol: o.name, from: o.from, how: o.how, kind: o.kind }; });
-    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: named, ...(unresolvedTypes.length ? { unresolvedTypes } : {}) });
+    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), lowering: lowered, findings: named, ...(unresolvedTypes.length ? { unresolvedTypes } : {}), ...(Object.keys(opaque).length ? { opaque } : {}) });
     const blocked = new Set();
     const stop = (unit, f, rule) => {
       blocked.add(unit);

@@ -164,7 +164,7 @@ false PASS-proved (A1):
 | --- | --- | --- |
 | `opaque-drop-read` | the first read of the step (a value it only reads) | `upstream` of every rule's pair (a value only the step reads, changed before it) |
 | `opaque-drop-write` | the first name the step writes | `opaque_statement_mechanisms` `stale` (the candidate returns the value from before the step) |
-| `opaque-drop-callees` | the reached callees' texts and the CALLS line | `opaque_statement_mechanisms` `callee` (the step calls `weight`, changed only at `x === 7919`) |
+| `opaque-drop-callees` | the reached callees' texts and the CALLS line | `opaque_statement_callee` `callee` (the step calls `weight`, changed only at `x === 7919`) |
 | `opaque-drop-sharing` | the sharing test | `opaque_statement_sharing` `identity` (a copy for an alias before `x === t`) |
 
 Each rule's pair `opaque_<rule>` (written by `tests/opaque-statements-pairs.mjs`) holds these units:

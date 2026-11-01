@@ -13,7 +13,7 @@
 // units whose `not proved` row each guards (a false PASS-proved without it):
 //   opaque-drop-read     the first read of a step (its read-only values first)   upstream (every rule's pair)
 //   opaque-drop-write    the first name a step writes                            stale (opaque_statement_mechanisms)
-//   opaque-drop-callees  the reached callees' texts and the CALLS guard          callee (opaque_statement_mechanisms)
+//   opaque-drop-callees  the reached callees' texts and the CALLS guard          callee (opaque_statement_callee, per unit)
 //   opaque-drop-sharing  no shared object when a step changes or compares one   identity (opaque_statement_sharing)
 import fs from 'node:fs';
 import os from 'node:os';

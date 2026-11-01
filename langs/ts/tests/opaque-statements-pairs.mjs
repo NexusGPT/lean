@@ -68,27 +68,27 @@ export const SPECS = [
   { rule: 'param-form', whole: true, params: 'k: number', ret: 'number', body: ['const m = k + 1;', 'function inner(...ys: number[]) { return ys.length + m; }', 'return inner(1, 2);'], change: ['return inner(1, 2);', 'return inner(2, 1);'],
     why: 'a rest parameter of a nested function (a declaration binds a function value, which no step can output: its unit is read whole)' },
   // boundary rules: the construct confined to the world (a call statement), and `escapes`
-  { rule: 'string-code-unit', boundary: true, params: 'n: number', ret: 'number',
-    pre: ['const t = n + 1;', 'const u = n * 2;'], construct: 'out.sink("\u{1F600}" + u);', retStmt: 'return t;',
+  { rule: 'string-code-unit', boundary: true, params: 'n: number, sink: (s: string) => void', ret: 'number',
+    pre: ['const t = n + 1;', 'const u = n * 2;'], construct: 'sink("\u{1F600}" + u);', retStmt: 'return t;',
     inside: ['"\u{1F600}"', '"\u{1F601}"'], upstream: ['n * 2', 'n * 3'],
     escapes: { params: 'n: number', ret: 'number', body: ['const s = "\u{1F600}" + n;', 'return s.length + n;'], change: ['return s.length + n;', 'return n + s.length;'] },
     why: 'an astral string literal (two UTF-16 code units, outside the BMP envelope of the string model)' },
-  { rule: 'math-empty', boundary: true, params: 'xs: number[], k: number', ret: 'number',
-    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'out.sink(u + Math.max(...xs));', retStmt: 'return t;',
+  { rule: 'math-empty', boundary: true, params: 'xs: number[], k: number, sink: (n: number) => void', ret: 'number',
+    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'sink(u + Math.max(...xs));', retStmt: 'return t;',
     inside: ['Math.max', 'Math.min'], upstream: ['k * 2', 'k * 3'],
     escapes: { params: 'xs: number[], k: number', ret: 'number', body: ['const m = Math.max(...xs);', 'return m + k;'], change: ['return m + k;', 'return k + m;'] },
     why: '`Math.max` of a list that may be empty (-Infinity)' },
-  { rule: 'collection-iterator', boundary: true, params: 'm: Map<string, number>, k: number', ret: 'number',
-    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'out.sinkIt(u + 1, m.keys());', retStmt: 'return t;',
+  { rule: 'collection-iterator', boundary: true, params: 'm: Map<string, number>, k: number, sink: (n: number, it: Iterable<string>) => void', ret: 'number',
+    pre: ['const t = k + 1;', 'const u = k * 2;'], construct: 'sink(u + 1, m.keys());', retStmt: 'return t;',
     inside: ['u + 1', 'u * 3'], upstream: ['k * 2', 'k * 3'],
     escapes: { params: 'm: Map<string, number>, k: number', ret: 'number', body: ['const it = m.keys();', 'return [...it].length + k;'], change: ['return [...it].length + k;', 'return k + [...it].length;'] },
     why: 'a Map iterator passed on: its first read uses it up' },
   // the translator reads these sites whole-unit (the numeric boundary, subset.md "Numeric special boundary")
-  { rule: 'number-special', whole: true, params: 'x: number', ret: 'number', body: ['if (x > 0) return NaN;', 'return x + 1;'], change: ['return x + 1;', 'return 1 + x;'],
+  { rule: 'number-special', whole: true, doublesRead: true, params: 'x: number', ret: 'number', body: ['if (x > 0) return NaN;', 'return x + 1;'], change: ['return x + 1;', 'return 1 + x;'],
     why: 'the bare global NaN' },
   { rule: 'unary-coercion', whole: true, params: 'o: { v: number }, k: number', ret: 'number', body: ['const n = +(o as any);', 'return n + k;'], change: ['return n + k;', 'return k + n;'],
     why: 'unary + on an object (ToNumber of an object, NaN here)' },
-  { rule: 'division', whole: true, params: 'x: number', ret: 'number', body: ['let y = x;', 'y /= 2;', 'return y + 1;'], change: ['return y + 1;', 'return 1 + y;'],
+  { rule: 'division', whole: true, doublesRead: true, params: 'x: number', ret: 'number', body: ['let y = x;', 'y /= 2;', 'return y + 1;'], change: ['return y + 1;', 'return 1 + y;'],
     why: 'compound division in an integer file (a fraction where the model holds an integer)' },
 ];
 
@@ -109,7 +109,7 @@ function plantedCandidates(file, unit, construct) {
 function write(spec) {
   const dir = path.join(pairs, `opaque_${spec.rule.replace(/-/g, '_')}`);
   fs.mkdirSync(dir, { recursive: true });
-  const header = `// the opacity ladder, rule ${spec.rule} (design/w1b-opaque-statements.md): ${spec.why}; its statement is one opaque step\n${spec.boundary ? 'declare const out: { sink(v: unknown): void; sinkIt(n: number, it: Iterable<string>): void };\n' : ''}`;
+  const header = `// the opacity ladder, rule ${spec.rule} (design/w1b-opaque-statements.md): ${spec.why}; its statement is one opaque step\n`;
   let parent = header, candidate = header;
   const expect = { scope: [], equal: {}, opaque: {}, planted: {}, b: {} }; // break: added for the units a mechanism guards
   const unit = (name, eq, b) => { expect.scope.push(name); expect.equal[name] = eq; expect.opaque[name] = [spec.rule]; expect.b[name] = spec.b?.[name] ?? b; };
@@ -117,9 +117,9 @@ function write(spec) {
     const body = spec.body;
     parent += fn('same', spec.params, spec.ret, body) + fn('escapes', spec.params, spec.ret, body) + fn('caller', spec.params, spec.ret, [`const v = escapes(${spec.params.split(',').map((p) => p.split(':')[0].trim()).join(', ')});`, 'return v + 1;']);
     candidate += fn('same', spec.params, spec.ret, body) + fn('escapes', spec.params, spec.ret, body.map((l) => (l === spec.change[0] ? spec.change[1] : l))) + fn('caller', spec.params, spec.ret, [`const v = escapes(${spec.params.split(',').map((p) => p.split(':')[0].trim()).join(', ')});`, 'return 1 + v;']);
-    unit('same', true, B.unchanged); unit('escapes', false, B.escapes); unit('caller', false, B.caller); expect.opaque.caller = [];
+    unit('same', true, B.unchanged); unit('escapes', !!spec.doublesRead, B.escapes); unit('caller', !!spec.doublesRead, B.caller); expect.opaque.caller = []; // doublesRead: the doubles reading reads the construct exactly (design/doubles.md), so a reordered sum outside it proves there
     delete expect.planted;
-    expect.why = `The opacity ladder (design/w1b-opaque-statements.md), rule ${spec.rule}: ${spec.why}. The translator reads its unit whole (the construct can make a value outside the model, the numeric boundary, or it is a declaration whose function value no step can output): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. same: one key on both sides, proved (not named unchanged, a Dafny keyword). escapes: a reordered return changes the source, another symbol, not proved (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes, so it is opaque too and its own reordering is not proved; its record lists no site of its own.`;
+    expect.why = `The opacity ladder (design/w1b-opaque-statements.md), rule ${spec.rule}: ${spec.why}. The translator reads its unit whole (the construct can make a value outside the model, the numeric boundary, or it is a declaration whose function value no step can output): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. same: one key on both sides, proved (not named unchanged, a Dafny keyword). escapes: a reordered return changes the source, another symbol, so the real reading does not prove it${spec.doublesRead ? '; the doubles reading reads the construct exactly and proves it' : ''} (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes, so it is opaque too${spec.doublesRead ? ' in the real reading, and proved in the doubles reading' : ' and its own reordering is not proved'}; its record lists no site of its own.`;
   } else {
     const units = ['outside', 'inside', 'planted', 'upstream'];
     for (const u of units) parent += fn(u, spec.params, spec.ret, [...spec.pre, spec.construct, spec.retStmt]);

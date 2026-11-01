@@ -6348,9 +6348,10 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const jumpTag = jumps.length ? '_exits_' + jumps.map((j) => `${j > 0 ? 'b' : 'c'}${Math.abs(j)}`).join('_') : '';
     const moduleTag = moduleBindings.size ? `_modules_${hash([...moduleBindings].sort().join('|'))}` : '';
     const sites = designated.get(currentUnit?.name)?.get(s) ?? null; // the opaque sites this step covers (design/w1b-opaque-statements.md)
-    // a site's step lists the values it only reads before the names it also writes: tests/break.mjs opaque-drop-read (in
-    // opaqueForm) drops the first, a value that changes before the step and that the step alone reads
-    if (sites) free.sort((a, b) => Number(M.some((m) => m.name === a.name)) - Number(M.some((m) => m.name === b.name)));
+    // a site's step takes its arguments in one order: the values it only reads, then the function values it only reads,
+    // then the names it also writes (any order is the same uninterpreted function on both sides; tests/break.mjs
+    // opaque-drop-read, in opaqueForm, drops the first: a value that changes before the step and that the step reads)
+    if (sites) { const rank = (v) => (M.some((m) => m.name === v.name) ? 2 : String(v.d).includes('->') ? 1 : 0); free.sort((a, b) => rank(a) - rank(b)); }
     // a site's step is keyed (A3) by its tokens (translate/opaque.mjs opaqueText: a comment is no change, every literal
     // is), the text of every same-file definition it names outside the unit (a module constant, a class it builds), and
     // the text of every same-file unit it reaches (exec/callees.mjs): the same text naming changed code is another symbol

@@ -6,8 +6,8 @@
 //   - units, entered (the census's own counts);
 //   - per rule of the statement family, the units it stopped (refusalRules, a unit counted under its first refusal),
 //     before and after: the lane's threshold is that its rules stop 0 units (they grade instead);
-//   - the units the family newly lets enter: refused before by one of its rules (the lowering record's refusal), not
-//     refused after, and holding an opaque step of one of its rules after (the lowering record's opaqueSteps); per rule,
+//   - the units the family newly lets enter: stopped before by one of its rules (the unit's first finding), stopped by
+//     nothing after, and holding an opaque step of one of its rules after (the census record's `opaque`); per rule,
 //     their count and the distribution of their opaque fraction (statements inside steps over the unit's statements;
 //     A5: median at most 0.25), and how many steps' spans equal their findings' spans (A5) or are wider (a statement
 //     step around an expression finding).
@@ -19,7 +19,16 @@ const FAMILY = new Set(Object.keys(OPAQUE_ENVELOPE));
 const args = process.argv.slice(2);
 if (!args.length || args.length % 2) { console.error('usage: measure <before.json> <after.json> [...]'); process.exit(2); }
 const read = (f) => JSON.parse(fs.readFileSync(f, 'utf8'));
-const unitsOf = (c) => { const m = new Map(); for (const r of c.records ?? []) for (const u of r.lowering?.units ?? []) m.set(`${r.file}#${u.unit}`, u); return m; };
+// per unit of the census record: the rule that stops it (its first finding that is not the environment's, as the census
+// counts a unit under its first refusal; null when it entered) and its opaque steps (the lowering record's, census `opaque`)
+const unitsOf = (c) => {
+  const m = new Map();
+  for (const r of c.records ?? []) {
+    const first = new Map(); for (const f of r.findings ?? []) if (f.unit && !f.env && !first.has(f.unit)) first.set(f.unit, f.rule);
+    for (const u of r.lowering ?? []) m.set(`${r.file}#${u.unit}`, { stoppedBy: first.get(u.unit) ?? null, opaqueSteps: r.opaque?.[u.unit] ?? null });
+  }
+  return m;
+};
 const q = (xs, p) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); const i = (s.length - 1) * p; const lo = Math.floor(i), hi = Math.ceil(i); return Math.round(1000 * (s[lo] + (s[hi] - s[lo]) * (i - lo))) / 1000; };
 const total = { units: [0, 0], entered: [0, 0], stopped: {}, entering: {}, fractions: [], spans: { equal: 0, wider: 0 } };
 const out = [];
@@ -34,10 +43,10 @@ for (let i = 0; i < args.length; i += 2) {
   const ub = unitsOf(B), ua = unitsOf(A);
   for (const [k, u] of ua) {
     const b = ub.get(k);
-    if (!b?.refusal || !FAMILY.has(b.refusal.rule) || u.refusal) continue;
+    if (!b?.stoppedBy || !FAMILY.has(b.stoppedBy) || u.stoppedBy) continue;
     const steps = (u.opaqueSteps?.steps ?? []).filter((s) => String(s.rule).split(',').some((r) => FAMILY.has(r)));
     if (!steps.length) continue;
-    const rule = b.refusal.rule;
+    const rule = b.stoppedBy;
     row.entering[rule] = (row.entering[rule] ?? 0) + 1;
     row.fractions.push({ rule, fraction: u.opaqueSteps.fraction });
     for (const s of steps) for (const f of s.findings ?? []) { const eq = JSON.stringify(f) === JSON.stringify(s.span); row.spans[eq ? 'equal' : 'wider']++; }

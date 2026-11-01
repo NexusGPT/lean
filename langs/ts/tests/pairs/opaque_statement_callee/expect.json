@@ -1,0 +1,13 @@
+{
+  "candidateOnly": [
+    {
+      "parent": "parent.ts",
+      "file": "candidate.ts",
+      "unit": "callee",
+      "verdict": "WITNESS",
+      "laneA": "ASK"
+    }
+  ],
+  "opaque": {},
+  "why": "A3, the step's key holds the code it reaches (design/w1b-opaque-statements.md), checked per unit by check.mjs. callee: the for-in step `for (k in o2) n += weight(x)` is the same text on both sides and calls weight, changed only at x === 7919. The step's key holds the text of every same-file unit it reaches (exec/callees.mjs) and the theorem's CALLS guard refuses a step whose callee differs, so lane A is an ASK, never PASS-proved; lane B reaches 7919 (a literal of the code): WITNESS. tests/opaque-statements.mjs --break opaque-drop-callees removes both: the two steps are one symbol, lane A proves the unit equal, falsely, and this row goes red."
+}
