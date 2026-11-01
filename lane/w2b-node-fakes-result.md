@@ -81,4 +81,18 @@ buffer 2. 763 files read `process.env.` (the global, now the same fake). Command
 `rg -l --type ts --type js -g '!node_modules' -g '!*.d.ts' "from ['\"](node:)?<m>(/promises|/posix)?['\"]|require\(['\"](node:)?<m>(/promises)?['\"]\)" .`
 This is no unblock count: w2a's ranking is the validator.
 
-REGRESSION_PLACEHOLDER
+## No regression
+
+The pairs that touch Node core or its globals, read off the pair sources (`grep` for process./console./crypto. and the
+core specifiers): callback_units, cheap_rungs_parsed, clock_read, clock_read_integer, dynamic_reads, generators,
+gen_walk, hash_keys, lib_globals, library_members, module_forms, named_then, new_unit, process-write, reach_absent,
+rest_param, strings, timers, plus window_timers, env_programs, library_rows and the six new pairs. With them, every
+runtime, construct, escape, shared, convert and differential row the LEAN_PAIRS mode runs:
+
+    JOBS=4 LEAN_PAIRS=fake_fs,fake_path,fake_crypto,fake_timers,fake_process,fake_path_row,callback_units,cheap_rungs_parsed,clock_read,clock_read_integer,dynamic_reads,generators,gen_walk,hash_keys,lib_globals,library_members,module_forms,named_then,new_unit,process-write,reach_absent,rest_param,strings,timers,window_timers,env_programs,library_rows node langs/ts/tests/run.mjs
+    | TOTAL | 1255 checks | ALL PASS |   (WALL 1153 s, at f4dbf98 + the design note)
+
+The rows include runtime fake-protocols, module-rows, children-shapes (a source scan that caught the fs tree's
+`children` method on the first run: renamed `listing`) and withdrawal, plus the 488 escape fixtures of the lint.
+
+CONFORMANCE_PLACEHOLDER
