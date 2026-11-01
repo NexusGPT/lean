@@ -1,0 +1,24 @@
+{
+ "scope": [
+  "route"
+ ],
+ "equal": {
+  "route": false
+ },
+ "why": "The solver's counterexample replayed as a witness (design/w3a-counterexample.md). The candidate opens the console on `path === PREFIX + 'debug'`, a string the text holds only in two parts. Lane B's draws do not hold it (PASS-bounded); no number is read, so the doubles reading does not run. Dafny's first model names the path only by its length (`11 == |path|`); the second extraction, the first state assumed and every element read by a ghost variable, names each character: 'admin/debug', replayed in lane B: WITNESS, source counterexample.",
+ "b": {
+  "route": "PASS-bounded"
+ },
+ "counterexample": {
+  "route": {
+   "verdict": "WITNESS",
+   "value": [
+    "admin/debug"
+   ],
+   "breaks": [
+    "cex-replay",
+    "cex-replay-by-index"
+   ]
+  }
+ }
+}

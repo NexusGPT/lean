@@ -1,0 +1,35 @@
+{
+ "scope": [
+  "lane"
+ ],
+ "equal": {
+  "lane": false
+ },
+ "why": "The solver's counterexample replayed as a witness (design/w3a-counterexample.md). The candidate ships one account's slow orders fast, behind `!o.express && o.id === VIP + '-0001'`. The record parameter is a heap reference: the model's cell for it is read by the `// SHAPES` legend (conformance/heap.mjs) into { id, express }; the id's characters are read where the model evaluates them (the state after the ghost reads). {express: false, id: 'vip-0001'} replayed in lane B: WITNESS, source counterexample.",
+ "b": {
+  "lane": "PASS-bounded"
+ },
+ "counterexample": {
+  "lane": {
+   "verdict": "WITNESS",
+   "value": [
+    {
+     "$obj": [
+      [
+       "express",
+       false
+      ],
+      [
+       "id",
+       "vip-0001"
+      ]
+     ]
+    }
+   ],
+   "breaks": [
+    "cex-replay",
+    "cex-replay-by-index"
+   ]
+  }
+ }
+}

@@ -1,0 +1,26 @@
+{
+ "scope": [
+  "classify"
+ ],
+ "equal": {
+  "classify": false
+ },
+ "why": "The solver's counterexample replayed as a witness (design/w3a-counterexample.md). The candidate reserves one id behind `id === 7919n`. Lane B's 30 typed draws of a bigint do not hold 7919 (PASS-bounded) and the doubles reading does not read a bigint, so the unit was PASS-bounded with lane A ASK:unproved. The failed equality lemma's model names `7919 == id`; that input, carried by value, replayed on both sides in lane B, returns 'standard' and 'reserved': WITNESS, source counterexample. LEAN_BREAK=cex-replay (the model's word taken without the replay) and LEAN_BREAK=cex-replay-by-index (lane B's seeded draw replayed at the replay's index instead of the model's value) each make the row refuse.",
+ "b": {
+  "classify": "PASS-bounded"
+ },
+ "counterexample": {
+  "classify": {
+   "verdict": "WITNESS",
+   "value": [
+    {
+     "$bigint": "7919"
+    }
+   ],
+   "breaks": [
+    "cex-replay",
+    "cex-replay-by-index"
+   ]
+  }
+ }
+}

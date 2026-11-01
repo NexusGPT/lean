@@ -842,6 +842,21 @@ The permanent exceptions below retain both named conditions. These reasons also 
 | translate/translate.mjs:7057 | translate-refuse |  | decorators | one-decider | a piped parameter is a plain required name |
 | translate/translate.mjs:7100 | translate-throw |  | numbers | one-decider | internal: an integer division was not placed under Math.floor |
 
+## 2026-11-01: the proof step's counterexample sites (check.mjs, solve/counterexample.mjs)
+
+`lower.mjs --audit` reads the refusals of lint.mjs and translate.mjs; the sites below decide a verdict after them, in the
+proof step, and are listed here by hand (design/w3a-counterexample.md). None refuses a construct; each decides what a
+failed equality lemma's model becomes.
+
+| site | kind | decides | from | to |
+| --- | --- | --- | --- | --- |
+| check.mjs counterexampleStep | verdict | the step runs | lane A's own lemma failed, no adapter, no identity guard, lane B not a WITNESS | one extraction (solve/counterexample.mjs) |
+| check.mjs counterexampleStep | verdict | the step is not asked | every failed condition of the lemma ran out of the resource limit | lanes.A.counterexample `none`, lane A ASK:resource-limit, the reason kept |
+| solve/counterexample.mjs counterexample | verdict | no model | the extraction printed no state for the lemma's lines, or passed its wall cap | `none` with the reason; the unit's verdict unchanged |
+| solve/counterexample.mjs argsFromModel | verdict | not bridged | a parameter type the model-to-JavaScript reading does not hold (NotBridged) | `unconfirmed`, input null, the type named |
+| solve/counterexample.mjs replayInput | verdict | the replay agrees | lane B's comparison finds no difference on the value (or only an undriven callback, an unloadable module, function text) | `unconfirmed: {input, reason}` on the ASK |
+| solve/counterexample.mjs replayInput | verdict | WITNESS | the replay of the carried value differs | WITNESS, witness.source `counterexample`, witness.value and both observations |
+
 ## 2026-10-30: an edit of comments and blank lines is intake, not a verdict
 
 Before admission, the change ledger (`ci/ledger.mjs`) routes every edited line. An edit outside every listed unit that

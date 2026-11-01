@@ -249,6 +249,32 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const ok = got.verdict === want.verdict && (!want.laneA || A.verdict === want.laneA) && (!want.reason || (got.reason ?? '').includes(want.reason)) && (!want.door || A.adapter?.door === want.door);
     add('pair', name, `check ${unit} ${want.verdict}${want.laneA ? ' (' + want.laneA + ')' : ''}`, ok, `${got.verdict ?? 'no result'} | A: ${A.verdict ?? '-'} | B: ${got.certificate?.lanes?.B?.verdict ?? '-'} | ${(got.reason ?? '').slice(0, 140)}`);
   }
+  // the solver's counterexample replayed as a witness (solve/counterexample.mjs, design/w3a-counterexample.md): check.mjs
+  // on the unit; a WITNESS must come from the counterexample, carry the input value stated, and stand when this process
+  // replays that value from the certificate alone (replayWitness: fresh sandboxes, both sides, the observations the
+  // certificate records); any other verdict names its lane A verdict, the step's status and its reason. Each mechanism
+  // under `breaks` is switched off (LEAN_BREAK) and the same acceptance must then refuse
+  for (const [unit, want] of Object.entries(exp.counterexample ?? {})) {
+    const { replayWitness } = await import('../solve/counterexample.mjs');
+    const accept = async (env) => {
+      const out = path.join(tmpd, `cex_${artifactName(unit)}${env ? '_' + env.LEAN_BREAK : ''}.json`);
+      await crunCheck(['--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--dafny-seconds', '30', '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [out], env });
+      let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
+      const A = got.certificate?.lanes?.A ?? {}, cx = A.counterexample ?? {}, w = got.witness ?? null;
+      const head = `${got.verdict ?? 'no result'} | A: ${A.verdict ?? '-'} | B: ${got.certificate?.lanes?.B?.verdict ?? '-'} | step ${cx.status ?? '-'}`;
+      if (got.verdict !== want.verdict) return { ok: false, detail: `${head} | ${(cx.reason ?? got.reason ?? '').slice(0, 120)}` };
+      if (want.verdict === 'WITNESS') {
+        if (w?.source !== 'counterexample' || JSON.stringify(w.value) !== JSON.stringify(want.value)) return { ok: false, detail: `${head} | source ${w?.source ?? '-'}, value ${JSON.stringify(w?.value ?? null)}` };
+        const rp = await replayWitness({ parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate'), unit, project: exp.project ? path.join(d, exp.project) : false, witness: w });
+        return { ok: rp.ok, detail: `${head} | input ${JSON.stringify(w.args)} | replayed from the certificate: ${rp.ok ? `differs at ${rp.where?.field}` : 'refused: ' + rp.why}` };
+      }
+      const ok = (!want.laneA || A.verdict === want.laneA) && cx.status === want.status && (cx.reason ?? '').includes(want.reason) && (want.status !== 'unconfirmed' || (got.unconfirmed?.reason === cx.reason && JSON.stringify(got.unconfirmed?.input) === JSON.stringify(cx.input)));
+      return { ok, detail: `${head} | ${(cx.reason ?? '').slice(0, 120)}${got.unconfirmed ? ` | unconfirmed ${JSON.stringify(got.unconfirmed.input).slice(0, 60)}` : ''}` };
+    };
+    const r = await accept(null);
+    add('pair', name, `counterexample ${unit} ${want.verdict}${want.status ? ' (' + want.status + ')' : ''}`, r.ok, r.detail);
+    for (const b of want.breaks ?? []) { const x = await accept({ LEAN_BREAK: b }); add('pair', name, `counterexample ${unit} LEAN_BREAK=${b} refused`, !x.ok, x.detail); }
+  }
   // the layered UI certificate (design/ui-layers.md): check.mjs on the unit, at the stated depth; the tree layer (its verdict,
   // the depth, the children rendered and left as handles, each context read and where it came from) and the styles layer
   // (its verdict, the classes it could not read), each carrying its assumptions
@@ -750,6 +776,8 @@ async function adviceLabels(add) {
     ['carried-alias', scriptRow('runtime', 'carried-alias', 'a write through a carried second name of a parameter rebinds the other name, in a loop too; handed, rebound or closed over, it is refused', [path.join(here, 'carried-alias.mjs')], lastLine)],
     // the project's sandbox list, .gate/sandbox.json of the parent commit, holds lane B's reads, writes, programs and packages; every refusal is a certificate row (exec/sandbox-list.mjs, lane lean-allow-list, 2026-10-31)
     ['sandbox-list', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, '../exec/sandbox-list.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'sandbox-list', 'the list of the parent commit allows and refuses reads, writes, programs and packages, each refusal a certificate row; absent, today\'s sandbox', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
+    // the solver's counterexample read and carried by value (solve/counterexample.mjs, design/w3a-counterexample.md): the parts that need no solver
+    ['counterexample-reading', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, 'counterexample.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'counterexample-reading', "Dafny's counterexample text read into the unit's values, the elements read after the reads, the input by value round-tripped", r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     ['refusal-path-space', scriptRow('runtime', 'refusal-path-space', 'a translator refusal in a path with a space keeps its rule', [path.join(here, 'refusal-path-space.mjs')], lastLine)],
     ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
