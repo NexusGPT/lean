@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ts, COMPILER_OPTIONS, projectless, parseProjectConfig, topLevelFunctions } from './common.mjs';
+import { broken, breakList } from './break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 const hash = (v) => createHash('sha256').update(v).digest('hex');
 // the files of a program read beyond the changed ones are capped: past it the reading is not made (no PASS-typed)
@@ -24,7 +25,6 @@ export const TYPED_FILE_CAP = 3000;
 const TEMPORARY = /(^|[\\/])\.lean_(?:head|base|values)_\d+_/; // pr.mjs's materialised sides, never a file of the project
 // LEAN_BREAK (the suite's one convention, tests/w1f-module-units.mjs --break): `w1f-emit` compares nothing (the reading never decides), `w1f-closure`
 // reads the changed file's own emit alone (the importers' closure removed: a type read by another file's emit is missed)
-const BREAK = process.env.LEAN_BREAK ?? '';
 
 // the project's options with emit on: JavaScript only, no maps (positions are not behaviour), no comments (a comment is
 // not behaviour: the ledger's inert rule), into a folder no file is read from, whatever the project says of errors
@@ -137,7 +137,7 @@ export function typedReading({ root, changes, project = true }) {
         // the files whose emit this file's change can reach
         const sides = [parent.getSourceFile(c.abs), head.getSourceFile(c.abs)];
         let reach;
-        if (BREAK === 'w1f-closure') reach = new Set([c.abs]);
+        if (broken('w1f-closure')) reach = new Set([c.abs]);
         else if (sides.some((sf) => !sf || declaresGlobals(sf))) reach = new Set(all);
         else {
           reach = new Set([c.abs]);
@@ -148,7 +148,7 @@ export function typedReading({ root, changes, project = true }) {
         const files = [...reach].filter((f) => all.has(f) || f === c.abs);
         if (files.length > TYPED_FILE_CAP) { out.set(c.rel, { equal: false, reason: `the files its emit can reach (${files.length}) exceed the cap (${TYPED_FILE_CAP})` }); continue; }
         const own = emitOf(c.abs);
-        const differs = BREAK === 'w1f-emit' ? [c.abs] : files.filter((f) => !emitOf(f).equal);
+        const differs = broken('w1f-emit') ? [c.abs] : files.filter((f) => !emitOf(f).equal);
         const diag = (p, sf) => sf ? [...p.getSyntacticDiagnostics(sf), ...p.getSemanticDiagnostics(sf)].filter((d) => d.category === ts.DiagnosticCategory.Error).length : 0;
         out.set(c.rel, {
           equal: !differs.length, emitted: { parent: own.parent, head: own.head }, files: files.length,
@@ -158,9 +158,9 @@ export function typedReading({ root, changes, project = true }) {
           errors: { parent: diag(parent, sides[0]), head: diag(head, sides[1]) },
           project: cfg ? path.relative(root, cfg).split(path.sep).join('/') : null,
           options: { module: options.module ?? null, target: options.target ?? null, emitDecoratorMetadata: !!options.emitDecoratorMetadata, isolatedModules: !!options.isolatedModules, verbatimModuleSyntax: !!options.verbatimModuleSyntax },
-          ...(BREAK.startsWith('w1f-') ? { broken: BREAK } : {}),
+          ...(breakList().some((b) => b.startsWith('w1f-')) ? { broken: breakList().filter((b) => b.startsWith('w1f-')).join(',') } : {}),
         });
-        if (differs.length && c.units?.length && BREAK !== 'w1f-emit') {
+        if (differs.length && c.units?.length && !broken('w1f-emit')) {
           const ps = ts.createSourceFile(c.abs, c.parent, ts.ScriptTarget.Latest, true), hs = ts.createSourceFile(c.abs, c.head, ts.ScriptTarget.Latest, true);
           const pu = topLevelFunctions(ps), hu = topLevelFunctions(hs), units = {};
           for (const name of c.units) {

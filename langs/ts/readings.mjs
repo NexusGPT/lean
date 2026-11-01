@@ -434,6 +434,23 @@ export const READINGS = [
     versions: [{ version: 1, status: 'current' }],
   },
   {
+    // the opacity ladder (W1): owns no rule and no kind; a unit uses it when a finding the lint's opaque column grades
+    // (lint/lint.mjs OPAQUE_ROWS) is emitted as a step instead of refusing (lower.mjs marks the record)
+    id: 'opaque', construct: 'Opaque(id, reads) -> (writes, control, world\'): a construct a rule grades opaque, one uninterpreted transition keyed by its tokens and the same-file code it reaches',
+    kinds: [],
+    lint: [],
+    translate: rx('^opaque: '),
+    assumptions: {
+      runtime: 'the effect axiom (subset.md "Modelling axioms") applied to a piece of the program: effect(world, id, reads) = (world\', writes, control); equal ids and equal reads are the same code from the same state',
+      aliasing: 'a mutation-family block starts where no object has changed and no local holds a reference (opaque.mjs blockStart), runs to the end of its unit, and writes every reference parameter it mentions and the world',
+      exceptions: 'a throw inside is the world\'s fault channel, tested after the step',
+      termination: 'assumed to return, as an outside call is; lane B runs the real code',
+    },
+    refusal: 'this construct has no opaque reading here (a site outside the block, a generator, the proof shape without --core)',
+    design: ['design/w1a-opaque-mutation.md'],
+    versions: [{ version: 1, status: 'current' }],
+  },
+  {
     id: 'operators', construct: 'arithmetic, comparison, unary and update operators, typeof: Dafny operators on the value reading',
     kinds: ['BinaryExpression', 'PrefixUnaryExpression', 'PostfixUnaryExpression', 'TypeOfExpression'],
     lint: [],

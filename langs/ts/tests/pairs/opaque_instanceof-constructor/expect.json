@@ -1,0 +1,21 @@
+{
+ "scope": [
+  "outside_inst",
+  "inside_inst",
+  "read_inst",
+  "planted_inst"
+ ],
+ "equal": {
+  "outside_inst": true,
+  "inside_inst": false,
+  "read_inst": false,
+  "planted_inst": false
+ },
+ "why": "design/w1c-opaque-calls.md, rule instanceof-constructor: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json).",
+ "b": {
+  "outside_inst": "PASS-bounded",
+  "inside_inst": "WITNESS",
+  "read_inst": "PASS-bounded",
+  "planted_inst": "WITNESS"
+ }
+}

@@ -1,0 +1,34 @@
+{
+  "scope": [
+    "outside",
+    "inside",
+    "planted",
+    "flows"
+  ],
+  "equal": {
+    "outside": true,
+    "inside": false,
+    "planted": false,
+    "flows": false
+  },
+  "opaque": {
+    "outside": [
+      "object-method-capture"
+    ]
+  },
+  "break": [
+    {
+      "mechanism": "opaque-drop-read",
+      "equal": {
+        "flows": true
+      }
+    }
+  ],
+  "b": {
+    "outside": "PASS-bounded",
+    "inside": "WITNESS",
+    "planted": "WITNESS",
+    "flows": "WITNESS"
+  },
+  "why": "object-method-capture graded block (design/w1a-opaque-mutation.md). outside: a statement added before the block, the block and its reads unchanged: proved with the step listed. inside: the block's text changed, another symbol, not proved; lane B differs. planted: exec/mutate.mjs site 2 (changed-return) inside the block, not proved; lane B differs. flows: k * 3 before the block reaches it through its scalar read only: not proved; LEAN_BREAK=opaque-drop-read drops that read and the lemma proves, a false PASS-proved the break row shows."
+}

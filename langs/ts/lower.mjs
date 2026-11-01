@@ -18,6 +18,7 @@
 //
 // Usage: node lower.mjs --audit [--json] [--md <file>]
 //        node lower.mjs <file.ts> [--no-project]        the record of each unit, as JSON
+import { OPAQUE_CALLS, opaqueCallsForm } from './lint/opaque-calls.mjs'; // the rules an opaque site's refusal may name (the audit's site.rule)
 import fs from 'node:fs';
 import { elementWritePath, syncLoopCallback, reduceAccumulator, plainDataRecord } from './common.mjs';
 import { asyncGenerator } from './generators.mjs';
@@ -30,7 +31,7 @@ import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, r
 import { memberRow } from './library-rows.mjs';
 import { methodLiteralOf } from './common.mjs';
 import { moduleState } from './module-forms.mjs';
-import { admissionFindings } from './lint/lint.mjs';
+import { admissionFindings, OPAQUE_ENVELOPE as ENVELOPE } from './lint/lint.mjs'; // the envelope: the audit's rules of an opaque site's refusal (design/w1b-opaque-statements.md)
 import { translate } from './translate/translate.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -72,8 +73,15 @@ const DYNAMIC_RULES = {
   'w.rule': ['dynamic-key', 'prototype'],
   rule: ['update-expression', 'assignment-expression'],
   EFFECT_GLOBALS: ['dynamic-eval', 'prototype'],
+  get 'site.rule'() { return Object.keys(OPAQUE_CALLS).filter((r) => opaqueCallsForm(r) && readingOfFinding(r, '')); }, // an opaque site no step reached keeps its finding's refusal (translate.mjs, design/w1c-opaque-calls.md): the rules a site can hold (union-type has no site, so no reading)
+  // translate.mjs siteFail (design/w1b-opaque-statements.md): an opaque site's refusal names its own rule, one the
+  // statement family grades; a boundary site's, one whose envelope is `boundary`; both from the
+  // statement family's envelope: read when the audit runs (opaque-statements.mjs imports the lint, which imports this file).
+  // Looked up as `siteFail <expression>`: the calls column's site above is written `site.rule` too (one key per family)
+  get 'siteFail boundary.rule'() { return Object.keys(ENVELOPE).filter((r) => ENVELOPE[r] === 'boundary'); },
+  get 'siteFail site.rule'() { return Object.keys(ENVELOPE); },
 };
-const dynamicRules = (expr) => { for (const [k, v] of Object.entries(DYNAMIC_RULES)) if (expr === k || expr.includes(k)) return v; const lits = [...expr.matchAll(/'([a-z][a-z0-9-]*)'/g)].map((m) => m[1]); return lits.length ? lits : null; };
+const dynamicRules = (expr) => { if (Object.hasOwn(DYNAMIC_RULES, expr)) return DYNAMIC_RULES[expr]; /* an exact key first: `site.rule` holds `rule` */ for (const [k, v] of Object.entries(DYNAMIC_RULES)) if (expr === k || expr.includes(k)) return v; const lits = [...expr.matchAll(/'([a-z][a-z0-9-]*)'/g)].map((m) => m[1]); return lits.length ? lits : null; };
 
 // the text of a message argument with every hole written `${}`: a literal, a template, a row of the library member table
 // (library-rows.mjs, its message with placeholder arguments), or the first literal branch of a conditional
@@ -138,13 +146,14 @@ export function auditSites(root = here) {
   for (const [i, [rel, who]] of files.entries()) {
     const sf = parsed[i];
     const line = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
-    const add = (n, kind, rules, msgNode) => {
+    const add = (n, kind, rules, msgNode, ruled = false) => { // ruled: the refusal's text is `<rule>: <message>` (translate.mjs siteFail)
       const template = templateOf(msgNode, sf);
       const msgText = template ?? (msgNode ? `<${msgNode.getText(sf).slice(0, 60)}>` : null);
       for (const rule of rules ?? [null]) {
         let reading;
         if (kind === 'lint-advice' || ADVICE_RULES.has(rule)) reading = 'advice';
         else if (who === 'lint') reading = rule ? readingOfFinding(rule, template ?? '') : null;
+        else if (ruled) reading = rule ? readingOfRefusal(`${rule}: ${template ?? ''}`) : null; // the lookup the lowering makes of the refusal at run time
         else if (template !== null && !template.startsWith('${}')) reading = readingOfRefusal(template); // the translator's own table: a rule prefix through the lint's, else its patterns
         else reading = rule ? readingOfFinding(rule, '') : template !== null ? readingOfRefusal(template) : null;
         const by = deciders(n, sf);
@@ -170,10 +179,11 @@ export function auditSites(root = here) {
           else if (!t && /\.refuse$/.test(a[1].getText(sf))) add(n, 'translate-refuse', ['prototype'], null); // a shared decorators.mjs test's refusal text, the rule the lint names it by
           else add(n, 'translate-refuse', m ? [m[1]] : null, a[1]);
         }
+        if (who === 'translate' && f === 'siteFail' && a.length >= 3) add(n, 'translate-refuse', ts.isStringLiteral(a[1]) ? [a[1].text] : dynamicRules(`siteFail ${a[1].getText(sf)}`), a[2], true); // an opaque site's refusal: its rule is the site's (DYNAMIC_RULES `siteFail ...`)
       }
       if (who === 'translate' && ts.isNewExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'Unsupported') {
         let fn = n.parent; while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
-        const inFail = !!fn && fn.parent && ts.isVariableDeclaration(fn.parent) && fn.parent.name.getText(sf) === 'fail'; // the mechanism every fail site throws through, not a site
+        const inFail = !!fn && fn.parent && ts.isVariableDeclaration(fn.parent) && ['fail', 'siteFail'].includes(fn.parent.name.getText(sf)); // the mechanism every fail site throws through, not a site
         if (!inFail) add(n, 'translate-throw', null, n.arguments?.[0]);
       }
       if (who === 'lint' && ts.isObjectLiteralExpression(n) && n.parent && ts.isCallExpression(n.parent) && /\.push$/.test(n.parent.expression.getText(sf))) {
@@ -877,7 +887,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
     !process.env.LEAN_DECORATOR_TABLE && !process.env.LEAN_DECORATOR_FIXTURES;
   const key = cacheable ? sha(JSON.stringify({ file, abs, text: sha(given.sf.text),
     project: opts.project ?? true, ranges, advisory: !!opts.advisory, anyType: !!opts.anyType,
-    emission: opts.emission !== false, withdrawals: withdrawalKey(),
+    emission: opts.emission !== false, withdrawals: withdrawalKey(), breaks: process.env.LEAN_BREAK ?? '',
     versions: READINGS.map((r) => [r.id, currentVersion(r)]), producer: producers(),
     program: programHash(given.program), diagnostics: given.diagnostics.map((d) =>
       ({ code: d.code, start: d.start, length: d.length, messageText: d.messageText })),
@@ -892,8 +902,11 @@ export function lowerFile(file, ranges = null, opts = {}) {
   const L = normaliseApplyCalls(given);
   const findings = admitUnits(file, ranges, { ...opts, loaded: given }, L);
   const inventory = topLevelFunctions(L.sf); // the unit a finding belongs to: the lint's named unit, else the innermost containing one
+  // a finding the opaque column grades (lint/lint.mjs OPAQUE_ROWS) stops no unit here when the translator runs: the
+  // translator emits it as an opaque step, or refuses the unit with it (phase 4); without emission it refuses as before
+  const deferred = (x) => !!x.opaque && opts.emission !== false;
   const units = admitted.get(findings).map((r) => {
-    const f = findings.find((x) => refusing(x) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit
+    const f = findings.find((x) => refusing(x) && !deferred(x) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit
     return { ...r, refusal: f ? { id: f.reading?.id ?? 'uncatalogued', version: f.reading?.version ?? null, rule: f.rule, reason: f.msg, line: f.line, by: ['no-reading', 'withdrawn'].includes(f.rule) ? 'catalogue' : 'lint' } : null };
   });
   // phase 4: the translator reads each unit phases 1-3 admitted exactly as the proof lane runs it (check.mjs: --core --heap
@@ -905,7 +918,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
   if (open.length && opts.emission !== false) {
     const refuse = (u, id, rule, reason, line, by, site = null) => { u.refusal = { id, version: readingById(id) ? currentVersion(readingById(id)) : null, rule, reason, line, by, ...(site ? { site } : {}) }; };
     for (const u of open) {
-      try { measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given, normalized: L, fileAnalysis })); }
+      try { const tr = measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given, normalized: L, fileAnalysis })); if (tr?.opaque?.[u.unit]) u.opaqueSteps = tr.opaque[u.unit]; } // the unit's opaque steps, their spans and its opaque fraction (A5: the census reads them per unit)
       catch (e) {
         const message = String(e?.message ?? e);
         if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }
@@ -924,13 +937,30 @@ export function lowerFile(file, ranges = null, opts = {}) {
     }
     findings.sort((x, y) => x.line - y.line || x.col - y.col);
   }
-  const rec = { file, units, findings };
+  // the graded findings: a unit the translator read holds them as its opaque sites (the reading `opaque`), and they stop
+  // nothing; a unit it refused keeps the one its refusal names (the column could not grade it), the others are not why
+  // (`graded`: each such finding whole, its label and advice kept, for the advisory listing: lintFindings)
+  const graded = [];
+  { const keep = [];
+    for (const f of findings) {
+      if (!deferred(f)) { keep.push(f); continue; }
+      const u = units.find((x) => x.unit === findingUnit(L.sf, inventory, f)?.name);
+      if (u && u.refusal && !(u.refusal.rule === f.rule && u.refusal.line === f.line)) { (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, grade: f.opaque, graded: false }); graded.push({ ...f, graded: false }); continue; }
+      if (!u || u.refusal) { keep.push(f); continue; }
+      (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, grade: f.opaque, graded: true }); graded.push({ ...f, graded: true });
+      if (!u.readings.some((x) => x.id === 'opaque')) { u.readings.push({ id: 'opaque', version: currentVersion(readingById('opaque')) }); u.readings.sort((a, b) => a.id.localeCompare(b.id)); }
+    }
+    findings.length = 0; findings.push(...keep); }
+  const rec = { file, units, findings, graded };
   const json = JSON.stringify(rec); // the public and retained record is plain data
   if (key) { remember(key, json); measureLowering('disk cache write', () => cacheWrite(cacheFile, key, json)); }
   return JSON.parse(json);
 }
 // the lint's findings read off the record: the lint never admits a unit the translator refuses
-export const lintFindings = (file, ranges = null, opts = {}) => lowerFile(file, ranges, opts).findings.map((f) => ({ ...f }));
+// with the advice (advisory) the findings the opaque column graded follow, each with `graded` (true: the unit is read
+// with an opaque step; false: it stops on another refusal), label and advice kept: a rewrite of one still makes the
+// unit's reading exact (convert.mjs applies it as before); they refuse nothing (design/w1a-opaque-mutation.md)
+export const lintFindings = (file, ranges = null, opts = {}) => { const r = lowerFile(file, ranges, opts); return [...r.findings, ...(opts.advisory ? r.graded ?? [] : [])].map((f) => ({ ...f })).sort((x, y) => x.line - y.line || x.col - y.col); };
 
 export function auditTable(sites) {
   const rows = sites.map((s) => `| ${s.file.replace('langs/ts/', '')}:${s.line} | ${s.kind} | ${s.rule ?? ''} | ${s.reading ?? '**uncatalogued**'} | ${s.decided}${s.by?.length ? ` (${s.by.join(', ')})` : ''} | ${String(s.message ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ').slice(0, 100)} |`);

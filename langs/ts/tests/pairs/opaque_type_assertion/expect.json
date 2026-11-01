@@ -1,0 +1,8 @@
+{
+ "scope": ["forward", "other", "planted", "rebound"],
+ "equal": { "forward": true, "other": false, "planted": false, "rebound": false },
+ "opaque": { "forward": ["type-assertion"], "rebound": ["type-assertion"] },
+ "break": [ { "mechanism": "assertion-read", "equal": { "rebound": true } } ],
+ "why": "A value whose type nothing checked, handed to the outside as it is (design/w1g-opaque-handed.md; common.mjs outsideSlot): alone or as a part of a literal written in the argument, of a call whose callee has no body this program reads (a function value, an interface method, an import) and is no library operation. An `as` is erased at run time, so the outside is handed the value itself; the reading hands it ext_<from>_as_<to>(v), a function of that value, and no statement of the unit reads it as its declared type. Before, every unit here was refused type-assertion (this slot reads it as its declared type). (a) forward: the handed assertion unchanged, the result computed another way: proved, listed as an opaque step. (b) other: another input asserted: not proved, witnessed. (c) planted: a boundary constant beside the asserted part (1 to 2): not proved, witnessed. (d) rebound: the asserted name bound to another input, a change outside the slot that reaches the outside through the value the slot reads: not proved, witnessed; LEAN_BREAK=assertion-read stops the conversion reading its value and proves it (a false proof). A same-file callee with a body reads its parameter as declared, so it stays refused (tests/w1g-opaque-handed.mjs checks it by translation, and LEAN_BREAK=outside-slot turns that check red).",
+ "b": { "forward": "PASS-bounded", "other": "WITNESS", "planted": "WITNESS", "rebound": "WITNESS" }
+}

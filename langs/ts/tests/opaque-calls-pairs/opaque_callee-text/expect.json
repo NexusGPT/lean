@@ -1,0 +1,14 @@
+{
+ "scope": [
+  "via_callee",
+  "helper"
+ ],
+ "equal": {
+  "via_callee": false,
+  "helper": false
+ },
+ "why": "amendment A3 (design/w1c-opaque-calls.md): viaCallee's statement is the same text on both sides, its callee helper differs at x === 7919. The step's key holds helper's normalised text (calleeTexts), so the two sides apply two symbols: not proved (the theorem also refuses a block whose callee changed, the CALLS marker). helper itself differs at 7919: not proved. The break row (drop-callees) removes both and must turn viaCallee into a false proof.",
+ "b": {
+  "viaCallee": "PASS-bounded"
+ }
+}
