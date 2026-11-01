@@ -57,6 +57,8 @@ Protocol tests: `node --test langs/ts/exec/fakes/web/web.test.mjs`: 12 pass, 0 f
   rows were keyed on parent, candidate and tsconfig only, not `settings.ts`. Fixed (every file of the pair folder).
 - `LEAN_PAIRS=bench_drops,new_unit,fake_fetch,fake_url,fake_storage JOBS=4 node langs/ts/tests/run.mjs`: 931 checks,
   ALL PASS (WALL 429 s).
+- At the final code head 9ebd603c (07:28, load read at most 40): `LEAN_PAIRS=fake_fetch,fake_url,fake_storage,bench_drops,new_unit
+  JOBS=4 node langs/ts/tests/run.mjs`: 931 checks, ALL PASS (WALL 704 s).
 - No change under `translate/` or `lint/`: the conformance run is not required for this lane.
 
 ## The measurement on real code
