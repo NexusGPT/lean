@@ -79,11 +79,39 @@ own `this`, an anonymous class, global assignment, module state binding patterns
 React rules (hook order, render purity, handler captures). The React rules are Rules of React findings: their readings
 (hook slots, handler descriptors) depend on the order and purity they state.
 
-## The breaks
+## Locality, per rule (amendment A4)
 
-`LEAN_BREAK=<mechanism>` switches one mechanism off: `lexical-this`, `incomplete-member`, `unresolved-global`,
-`environment-handle`, `effectful-cell`. `node langs/ts/tests/w1e-opaque-this-globals.mjs --break` runs each pair with its
-mechanism off and fails unless the pair goes red.
+A rule is read inside the construct only when the behaviour it refused happens inside the construct's text. None of the
+fixes above is an opaque step over source text; each is the world-held reading of the affected value:
+
+| rule | reading | where the behaviour happens | the pair that decides it |
+| --- | --- | --- | --- |
+| `this` (an arrow's receiver) | the member's receiver, a captured input that never changes; `this.m()` on an unsealed class a world request named by the class's code | the receiver is outside the callback: it is an input of the lemma, and a method it reaches is keyed by its code | `opaque_this` (e): unchanged callback, callee changed at `x === 7919`: not proved |
+| `global-read` (unresolved) | a world-held handle: every read a world read, every call a transition, in order | outside (the environment's) | `opaque_global_read` (b), (d): the same reads in another order: not proved |
+| `ts-strict` (incomplete member) | the accessor of the opaque value; a write stays refused | outside (the unknown base) | `opaque_ts_strict` (b): another member: not proved; escape `incomplete_base_write` |
+| `toplevel-effect` (an effectful module-let initializer) | a world-held cell: its value at entry is the world's, every read and write a transition, its name the declaration's text | outside (load time) | `opaque_toplevel_effect` (b) jitter: the initializer changes, the unit's text does not: not proved |
+| `implicit-this`, `static-this`, `class`, `inheritance`, `global-mutation`, `toplevel-state`, executable module statements, `react-handler-capture`, `hook-order`, `render-impure` | `none`: stay refused | outside the construct (a later read elsewhere sees the change) or the reading depends on the order or purity the rule states | the existing escapes |
+
+The opaque fraction (amendment A5) of every unit these fixes let enter is 0: they add no opaque step, so the
+certificate has no opaque span to record for them, and the median-fraction threshold holds trivially.
+
+## The breaks (amendments A1, A6)
+
+`LEAN_BREAK=<mechanism>` switches one mechanism off (lint.mjs `mechanismOff`, the one reader; it moves to
+`tests/break.mjs` when lane w1a lands it). Admitting mechanisms: `lexical-this`, `incomplete-member`,
+`unresolved-global`, `environment-handle`, `effectful-cell`; switched off, a proved row goes red. Keying mechanisms,
+the soundness rows of A1 (a change outside the construct that flows into it): `held-key` (translate.mjs heldKey: a
+request `this.m()` named by the class's code, so its same-file callee's text is in the key, A3) and `cell-key`
+(moduleAccessor: a module cell named by its declaration's text); switched off, the soundness row is proved falsely,
+which the pair's expect.json refuses. `node langs/ts/tests/w1e-opaque-this-globals.mjs --break` runs each pair once
+per mechanism and fails unless every run goes red; the suite runs it as the runtime row `w1e-breaks`.
+
+The step cache (tests/stepcache.mjs) keyed a command by its sources and the environment it was handed, not the
+environment it inherited: a `--break` run replayed the green result stored without the break, and every break looked
+inert. `LEAN_BREAK` and `LEAN_WITHDRAW` switch producer code off, so they are now part of the producer hash.
+
+Open: the global-read and ts-strict families have no keying break. Their soundness rows rest on the world threading
+every read and on the member's name in its accessor, both core to every reading, not to this lane.
 
 ## Measurement
 
