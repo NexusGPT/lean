@@ -146,7 +146,23 @@ most 9.6 points are open on the pairs, and 105 of the escapes are equivalent mut
 cannot be reached on the pair corpus by any lane. False witnesses: 0 (w3a's seven counterexample witnesses all replayed).
 Time: within the 2x (w3a) and 1.5x (w3c) bounds on these sites, apart from the w3a unit above.
 
-{{DETERMINISM}}
+## Determinism
+
+The second run is the same `--recheck` on this lane's own tree (lean code at lead-vm), started 08:21 at load 59.9
+(the first ran 02:33 to 06:01 at loads 39 to 220):
+
+    cd /root/lanes/w3b-mutant-study/tree/langs/ts && node tests/mutants.mjs --recheck $S/baseline.json --source pairs \
+      --plus-caught 100 --jobs 4 --work $S/det2/w --out $S/det2/recheck.json --report $S/det2/recheck.md --timing $S/det2/recheck.timing.json
+    python3 lane/w3b-mutant-study/compare.py $S/baseline.json $S/det2/recheck.json $S/base1/pairs.timing.json $S/det2/recheck.timing.json
+
+Result: 646 of 646 rows byte-equal to the first run's rows (the 646-row JSON array, 165,861 bytes, equal as text): every
+pair site the first run did not catch (389 PASS-bounded, 105 PASS-proved, 48 ASK, 4 REFUSE) and 100 of its caught
+ones. Those are the verdicts most exposed to load (lane B's wall-clock bounds, the ASKs after a spin bound). The w3c
+recheck agrees with it: there, 629 of 646 rows are byte-equal to the baseline and the other 17 are the search's gains.
+What was not done: a second full run of all 7,112 sites (3.5 h for the pairs and 4.4 h for the census sample at
+this load); the census sample's second reading is the w3c and w3a census rechecks below, on other code. The fixture
+(16 sites), the whole study twice: `node tests/mutants.mjs --pairs $PWD/tests/fixtures/mutants --jobs 2 --out $S/fx2.json`
+and the same to `fx3.json`: `cmp` byte-equal; their rows also equal those of the 02:25 run at another head.
 
 ## Open
 
