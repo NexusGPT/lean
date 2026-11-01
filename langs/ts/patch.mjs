@@ -227,11 +227,13 @@ export function statementMarks(ts, file, sites, stateName = '__lean_site') {
       stmt(assign(prop(state(), 'current'), frame)),
       stmt(assign(prop(frame, 'site'), at)),
     ];
-    const returnAt = (expression, at) => f.createReturnStatement(f.createParenthesizedExpression(f.createCommaListExpression([
+    // the rewritten return and await keep their source node as original (metadata only), so a later transform keyed on
+    // original nodes (exec/search.mjs branchMarks) still meets them
+    const returnAt = (expression, at, node) => ts.setOriginalNode(f.createReturnStatement(f.createParenthesizedExpression(f.createCommaListExpression([
       assign(prop(frame, 'value'), expression ?? f.createVoidZero()),
       assign(prop(frame, 'returned'), at),
       prop(frame, 'value'),
-    ])));
+    ]))), node);
     const capture = (error) => f.createIfStatement(f.createBinaryExpression(f.createPrefixUnaryExpression(ts.SyntaxKind.ExclamationToken, prop(state(), 'fault')), ts.SyntaxKind.BarBarToken, f.createBinaryExpression(prop(prop(state(), 'fault'), 'value'), ts.SyntaxKind.ExclamationEqualsEqualsToken, error)),
       stmt(assign(prop(state(), 'fault'), f.createObjectLiteralExpression([f.createPropertyAssignment('value', error), f.createPropertyAssignment('site', prop(frame, 'site'))]))));
     const declaration = (name, value) => f.createVariableStatement(undefined, f.createVariableDeclarationList([f.createVariableDeclaration(name, undefined, undefined, value)], ts.NodeFlags.Const));
@@ -265,7 +267,7 @@ export function statementMarks(ts, file, sites, stateName = '__lean_site') {
         frame = outer;
         return updated;
       }
-      if (frame && ts.isReturnStatement(node)) return returnAt(ts.visitNode(node.expression, visit), site(node));
+      if (frame && ts.isReturnStatement(node)) return returnAt(ts.visitNode(node.expression, visit), site(node), node);
       if (frame && ts.isCatchClause(node)) {
         const block = ts.visitNode(node.block, visit);
         return f.updateCatchClause(node, node.variableDeclaration, f.updateBlock(block, [stmt(assign(prop(state(), 'fault'), nil())), ...block.statements]));
@@ -277,11 +279,11 @@ export function statementMarks(ts, file, sites, stateName = '__lean_site') {
         return f.updateTryStatement(updated, f.createBlock([f.createTryStatement(updated.tryBlock, caught, undefined)], true), updated.catchClause, updated.finallyBlock);
       }
       if (frame && ts.isAwaitExpression(node)) {
-        return f.createParenthesizedExpression(f.createCommaListExpression([
+        return ts.setOriginalNode(f.createParenthesizedExpression(f.createCommaListExpression([
           assign(prop(frame, 'value'), f.updateAwaitExpression(node, ts.visitNode(node.expression, visit))),
           assign(prop(state(), 'current'), frame),
           prop(frame, 'value'),
-        ]));
+        ])), node);
       }
       if (frame && ts.isBlock(node)) return f.updateBlock(node, node.statements.flatMap(instrument));
       if (frame && ts.isCaseClause(node)) return f.updateCaseClause(node, ts.visitNode(node.expression, visit), node.statements.flatMap(instrument));
