@@ -36,8 +36,8 @@ Design note: `langs/ts/design/w1c-opaque-calls.md`. Scratch (removed at the end)
 | withdrawal test | passes (620 rows, 0 uncatalogued) | `node langs/ts/tests/withdrawal.mjs` |
 | repo conformance | 252 of 252 | `python3 -I conformance/run.py ts` |
 | suite on the lane's pairs (first run) | 1027 checks, 75 failed: 65 escape + 1 advice (fixed by the opaque-step rows), 8 pair rows (fixed: real-only, A3 pair moved), conformance/run.py (fixed) | `JOBS=2 LEAN_PAIRS=<the 22 opaque_ pairs> node langs/ts/tests/run.mjs` |
-| suite on the lane's pairs (after the fixes) | SUITE2 | same, 21 pairs |
-| identity-guard / lemma diff, base vs head, all 325 pairs | GUARDDIFF | `node scratch/guarddiff.mjs` |
+| suite on the lane's pairs (after the fixes) | 1026 checks, 1 failed: runtime census-environment (its fixture's `take` refused on `void x`, now an opaque step; the fixture now refuses on a read-after-call judged on the unresolved type, as `unbox` does; `node langs/ts/tests/census_environment.mjs`: all hold); proof-hunt: no hidden false proof over 68 units; model conformance on the 20 pairs with lane A: PASS (79 units); self-pair: no WITNESS | `JOBS=2 LEAN_PAIRS=<the 21 opaque_ pairs> node langs/ts/tests/run.mjs` |
+| lemmas generated and withheld by the identity guard, base vs head, every pair | 324 pairs, 22 changed: the lane's 21 (refused at base, read at head) and `faithful_held` (`held_num`'s lemma, withheld at base, is generated and not proved: `+` on Any does not commute; `node langs/ts/tests/run.mjs --pair faithful_held`: 9/9 rows hold) | `node scratch/guarddiff.mjs` (translate both sides and theorem.py with each tree) |
 
 Census (A8 roots; base = git archive of 4747022f, head = e7a211c9 + the census fix below; `node langs/ts/census.mjs /root/da/census/repos/<root> --install-under /root/census-installs/w1c --out <json> --report <md>`, summed by `node scratch/measure.mjs nexus-agent-api snitch pipedream`):
 
