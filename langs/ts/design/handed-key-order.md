@@ -43,11 +43,13 @@ items, dictionary values and fields). `keyOrderOf` gives the argument's order:
 - **each element**: `xs.map((x) => tree)` with an expression body (or one `return`) has the tree's order for every
   element (`[*{...}]`).
 - **refused** (`key-order`): anything else that holds a record the unit builds: a same-file call's result, a `new` of a
-  class of the file (its constructor makes the keys), a choice of two different orders, a built local that is passed,
-  stored, aliased or deleted from, a spread call of built records. Also an own object of a type the unit may reorder
-  (`reorderedTypes`, over the unit and every same-file function it calls): a record it built stored into an object, an
-  optional key written (it may be added at the end), a key deleted, `Object.assign` onto it. Each of these can hold one
-  datatype value in two key orders.
+  class of the file whose text does not fix its keys, a choice of two orders on any other test, a built local that is
+  passed, stored, aliased or deleted from, a spread call of built records. Also an own object of a type the unit may
+  reorder (`reorderedTypes`, over the unit and every same-file function it calls): a record it built stored into an
+  object, an optional key written (it may be added at the end), a key deleted, `Object.assign` onto it, where that may
+  run before the hand (`mayRunBefore`: not when it comes later in the text, outside every loop holding the hand and
+  inside no function made before it; a callee's reordering counts at its call). Each of these can hold one datatype
+  value in two key orders.
 
 **The heap core** (`heap.mjs`) holds a record as a cell, its fields and never its key order, so it had the same hole
 (`log({ a, b })` against `log({ b, a })` in a unit that writes a parameter: proved at 844ddac2). Its outside call is now
