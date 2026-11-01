@@ -20,8 +20,8 @@ finding refuses with the reason.
 ## The pairs and the breaks
 
 Command: `node langs/ts/tests/w1d-opaque-async.mjs --jobs 2` (pairs through `run.mjs --pair`, each started only while
-the one-minute load is at most 40). At ce1e6c415c (the last full run; the commits after it change only `pendingWork`'s
-heap and handed-reference tests and add a lint fixture, rerun below when it lands):
+the one-minute load is at most 40), at c1c2f382bb (the code of this branch's head; the commits after it touch the
+result file only): **ALL PASS**.
 
 - 15 pairs, **176 of 176 rows PASS**, the break rows included: `async-drop-reads` flips each of the 10 per-rule pairs'
   `upstream` unit to a false proof (a local only the step reads, changed before it: a change outside the construct, A1);
@@ -30,13 +30,13 @@ heap and handed-reference tests and add a lint fixture, rerun below when it land
   `async-drop-callees` flips opaque_async_callee's run (a callee changed at `x === 7919` only, A3); each without the break
   is not proved, and stay (an unchanged callee, a change outside the step) is PASS-proved.
 - `async-drop-pending`: lane A on opaque_capture directly: refused as written (naming async-callback), a false
-  `Equal_capture` proof under the break. **PASS.**
+  `Equal_capture` proof under the break. Both PASS.
 - Lint: every graded unit's findings labelled `expression`, the two locality pairs' findings keep their refusal with the
   column's reason, the three generator rules keep theirs (`tests/w1d-fixtures/generators.ts`), and the five pending-work
   cases of `tests/w1d-fixtures/pending.ts` (deep alias refused, own-level write graded, module cell graded, handed and
-  read after refused, handed and read before graded): **ALL PASS** at 9e6c3772b5 (`--only none`, lint rows alone).
+  read after refused, handed and read before graded): 60 lint rows, all PASS.
 
-Other checks at 9e6c3772b5: `node langs/ts/tests/opaque-unit.mjs` passes; `node langs/ts/tests/withdrawal.mjs` passes;
+Other checks at 9e6c3772b5 (the same code): `node langs/ts/tests/opaque-unit.mjs` passes; `node langs/ts/tests/withdrawal.mjs` passes;
 `node langs/ts/lower.mjs --audit`: 605 sites, 0 uncatalogued (the table in admission-contract.md regenerated).
 
 ## Conformance on the pairs
@@ -95,6 +95,12 @@ opacity cannot. w3b's mutant study on these units has not run (this lane does no
   `user`) stays refused (a hole the earlier test had, closed by the same change).
 
 ## Open
+
+- Not run in this lane (the machine held a one-minute load of 40 to 160 for most of the day, and the gated runs ate the
+  budget): w1a's own pairs in this tree (my gate change reads the finding's own grade, which for w1a's rules equals the
+  column; their unit test passes), the additional roots nutshell and nexus-learning, the full suite (`LEAN_CONFORMANCE=full`,
+  the lead's at merge).
+- A5: the fraction threshold is not met (above); w3b's mutant study on these units is not run.
 
 - No promise-handler pair: no unit-level site of the rule was raised by the probes or the census (its findings sit on
   handlers, values, which keep their refusal by locality).
