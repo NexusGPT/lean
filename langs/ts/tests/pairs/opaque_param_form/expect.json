@@ -21,7 +21,7 @@
   "b": {
     "same": "PASS-bounded",
     "escapes": "PASS-bounded",
-    "caller": "PASS-bounded"
+    "caller": "WITNESS"
   },
-  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule param-form: a rest parameter of a nested function (a declaration binds a function value, which no step can output: its unit is read whole). The translator reads its unit whole (the construct can make a value outside the model, the numeric boundary, or it is a declaration whose function value no step can output): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. same: one key on both sides, proved (not named unchanged, a Dafny keyword). escapes: a reordered return changes the source, another symbol, so the real reading does not prove it (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes, so it is opaque too and its own reordering is not proved; its record lists no site of its own."
+  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule param-form: a rest parameter of a nested function (a declaration binds a function value, which no step can output: its unit is read whole). The translator reads its unit whole (the construct can make a value outside the model, the numeric boundary, or it is a declaration whose function value no step can output): the unit is one opaque function keyed by its source and the same-file units it reaches, and every same-file caller is one too, so no exact reading meets the value. same: one key on both sides, proved (not named unchanged, a Dafny keyword). escapes: a reordered return changes the source, another symbol, so the real reading does not prove it (lane B: the same behaviour, PASS-bounded). caller: it reaches escapes and returns v + 2 for v + 1, a real difference: not proved, lane B WITNESS; its record lists no site of its own."
 }

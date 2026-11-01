@@ -9,5 +9,5 @@ export function escapes(o: { v: number }, k: number): number {
 }
 export function caller(o: { v: number }, k: number): number {
   const v = escapes(o, k);
-  return 1 + v;
+  return v + 2;
 }

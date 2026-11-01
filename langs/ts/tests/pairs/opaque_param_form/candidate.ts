@@ -11,5 +11,5 @@ export function escapes(k: number): number {
 }
 export function caller(k: number): number {
   const v = escapes(k);
-  return 1 + v;
+  return v + 2;
 }

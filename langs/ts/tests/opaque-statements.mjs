@@ -14,7 +14,6 @@
 //   opaque-drop-read     the first read of a step (its read-only values first)   upstream (every rule's pair)
 //   opaque-drop-write    the first name a step writes                            stale (opaque_statement_mechanisms)
 //   opaque-drop-callees  the reached callees' texts and the CALLS guard          callee (opaque_statement_callee, per unit)
-//   opaque-drop-sharing  no shared object when a step changes or compares one   identity (opaque_statement_sharing)
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,7 +23,7 @@ import { ENVELOPE } from '../translate/opaque-statements.mjs';
 import { BREAK_ENV, MECHANISMS } from './break.mjs'; // the one --break convention (A6)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const GUARDS = { 'opaque-drop-read': 'upstream', 'opaque-drop-write': 'stale', 'opaque-drop-callees': 'callee', 'opaque-drop-sharing': 'identity' };
+const GUARDS = { 'opaque-drop-read': 'upstream', 'opaque-drop-write': 'stale', 'opaque-drop-callees': 'callee' }; // opaque-drop-sharing has no guarded row: the heap identity guard refuses first (design/w1b-opaque-statements.md)
 // the row a guarded unit fails on: its `not proved` row, or, checked per unit (opaque_statement_refused), its verdict row
 const guardRow = (unit) => new RegExp(`Equal_${unit} not proved|candidate\\.ts ${unit} `);
 const bi = process.argv.indexOf('--break');

@@ -56,9 +56,15 @@ generator, an accessor) the site keeps its rule's refusal. A unit that already h
 reads its statement sites in that block too. The pair that decides this is `opaque_statement_sharing` `identity`:
 `const t = x; const same = x === t;` (`mixed-types`), where the candidate makes `t` a copy of `x` when it is a record.
 The step reads equal values on both sides, but JavaScript answers true for the parent and false for the candidate.
-Without the test (`LEAN_BREAK=opaque-drop-sharing`) the statement step reads equal values and the unit is proved equal,
-falsely. With it, `const t = x` binds a reference before an identity comparison, so the site is read in the block from
-`const t = ...`, whose texts differ: not proved. Lane B finds the difference: WITNESS.
+With the test, `const t = x` binds a reference before an identity comparison, so the site is read in the block from
+`const t = ...`, whose texts differ: not proved. Lane B finds the difference: WITNESS. Without the test
+(`LEAN_BREAK=opaque-drop-sharing`) the statement step reads equal values, but the case is still refused. The heap
+reading's guard on the unit ("identity comparison of two references", `heapT.guard`) leaves `Equal_identity`
+unguarded, so the theorem holds no lemma for it. For a `Set` of the two records, the step's value cannot leave a
+boundary step, so the unit is read whole. I found no construct of this family whose identity dependence only the
+sharing test refuses. The test is the argument's condition (equal reads are equal states), and it decides block
+against statement; it is not, measured, the only barrier. So no pair carries a break row for it, and the result says
+so.
 
 The rest of the argument is w1a's points 2 to 4, with the statement as the block:
 
@@ -165,7 +171,7 @@ false PASS-proved (A1):
 | `opaque-drop-read` | the first read of the step (a value it only reads) | `upstream` of every rule's pair (a value only the step reads, changed before it) |
 | `opaque-drop-write` | the first name the step writes | `opaque_statement_mechanisms` `stale` (the candidate returns the value from before the step) |
 | `opaque-drop-callees` | the reached callees' texts and the CALLS line | `opaque_statement_callee` `callee` (the step calls `weight`, changed only at `x === 7919`) |
-| `opaque-drop-sharing` | the sharing test | `opaque_statement_sharing` `identity` (a copy for an alias before `x === t`) |
+| `opaque-drop-sharing` | the sharing test | none: in `opaque_statement_sharing` `identity` the heap identity guard still refuses (above) |
 
 Each rule's pair `opaque_<rule>` (written by `tests/opaque-statements-pairs.mjs`) holds these units:
 
