@@ -52,8 +52,8 @@ Branch `lane/w2d-library-rows`, from 4747022f. Design note: `langs/ts/design/w2d
 | zod | lib_zod echoes | WITNESS -> PASS-bounded |
 
 Regression (the 25 pairs that import a package or declare a module, plus the 11 `lib_*` pairs):
-`LEAN_PAIRS=<36 pairs> JOBS=2 node langs/ts/tests/run.mjs`: REGRESSION. Conformance:
-`LEAN_PAIRS=<11 lib pairs> node langs/ts/conformance/run.mjs --jobs 2`: CONFORMANCE.
+`LEAN_PAIRS=<36 pairs> JOBS=2 node langs/ts/tests/run.mjs`: **1266 checks ALL PASS** (proof hunt: 139 units read by both lanes, no hidden false proof; self-pair 216 units, no WITNESS; model conformance 155 units in 22 pairs). Conformance:
+`LEAN_PAIRS=<11 lib pairs> node langs/ts/conformance/run.mjs --jobs 2`: **NO NEW FINDING**. 14 units in 3 pairs (8 lane-B-only pairs skipped); 0 executable: the 14 units' Dafny models call uninterpreted package functions, so they are not executable against Node. 24.9 s wall.
 
 ## Units per library (w2a pending: no ranking reached the group; my own count on three roots)
 
