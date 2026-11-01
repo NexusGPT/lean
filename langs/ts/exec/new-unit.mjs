@@ -337,25 +337,65 @@ function declarationRecord(decl, reach, nullable, edges) {
 }
 // the globals the sandbox answers with a handle (run.mjs sandbox): a program that names one can branch on it with no trap
 const WORLD_GLOBALS = new Set(['window', 'globalThis', 'global', 'self', 'document', 'navigator', 'location', 'localStorage', 'sessionStorage', 'process', 'fetch', 'crypto', 'performance', 'Buffer', 'require', 'module', 'exports']);
+// whether the module graph holds a world value a program could read without a trap. A package lean fakes is linked as a
+// handle, and a handle's truth, type or identity is read with no trap, so no trace sees it. The link is harmless when
+// every use of every binding the package reaches traps: its imports, and the module constants initialised from them
+// (the bindings it taints), are used only as a callee, the object of a member read, the target of `new` or a tag, each
+// a trace entry when it runs. Any other use, a re-export of one, a top-level statement other than a declaration that
+// names one, or a dynamic import of the package keeps the graph a world graph. Loading asks nothing but the linker's reads:
+// a value the world answered at load (through a helper, a clock read, a random read) may be kept where no trap guards it.
+// LEAN_BREAK=closed-call switches the whole check off (new-unit.mjs)
 function graphWorld(loaded, sources, runner = new Set()) {
-  const out = loaded.fakes.filter((f) => !runner.has(f)).map((f) => `links ${f}`);
-  out.push(...(loaded.loadTrace ?? []).slice(0, 3).map(({ op, path }) => `loading: ${op} ${path}`));
+  const faked = new Set(loaded.fakes.filter((f) => !runner.has(f)));
+  const out = [];
+  // the linker reads each name it binds once (`get module:<package>.<name>`); a second read, a call or anything else at load
+  // is the program asking the world, and what it answers may be kept anywhere (a constant built through a helper)
+  const linkReads = new Set();
+  for (const { op, path: p } of loaded.loadTrace ?? []) {
+    const link = op === 'get' && [...faked].some((f) => p.startsWith(`module:${f}.`) && !p.slice(`module:${f}.`.length).includes('.'));
+    if (link && !linkReads.has(p)) { linkReads.add(p); continue; }
+    out.push(`loading: ${op} ${p}`); if (out.length >= 3) break;
+  }
   for (const abs of loaded.graph ?? []) {
     const sf = sources.get(abs)?.sf; if (!sf) continue;
+    const where = path.basename(abs);
     const declared = new Set(), named = new Set();
+    const tainted = new Set();
+    const fakedSpecifier = (n) => n && ts.isStringLiteralLike(n) && faked.has(n.text);
+    for (const st of sf.statements) {
+      if (ts.isImportDeclaration(st) && fakedSpecifier(st.moduleSpecifier) && st.importClause) {
+        const c = st.importClause; if (c.name) tainted.add(c.name.text);
+        const nb = c.namedBindings; if (nb && ts.isNamespaceImport(nb)) tainted.add(nb.name.text); if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) tainted.add(el.name.text);
+      }
+      if (ts.isExportDeclaration(st) && fakedSpecifier(st.moduleSpecifier)) out.push(`re-exports ${st.moduleSpecifier.text} (${where})`);
+    }
+    const mentions = (node) => { let hit = false; const w = (n) => { if (hit) return; if (ts.isIdentifier(n) && tainted.has(n.text)) hit = true; else ts.forEachChild(n, w); }; if (node) w(node); return hit; };
+    if (tainted.size) for (let grew = true; grew;) { grew = false; for (const st of sf.statements) if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && !tainted.has(d.name.text) && mentions(d.initializer)) { tainted.add(d.name.text); grew = true; } }
+    if (tainted.size) for (const st of sf.statements) {
+      if (ts.isImportDeclaration(st) || ts.isFunctionDeclaration(st) || ts.isVariableStatement(st) || ts.isInterfaceDeclaration(st) || ts.isTypeAliasDeclaration(st)) continue;
+      if (ts.isClassDeclaration(st) && !st.heritageClauses?.some((h) => mentions(h))) continue; // a class body runs when called; its heritage when it loads
+      if (mentions(st)) out.push(`a top-level statement names a package binding (${where}:${sf.getLineAndCharacterOfPosition(st.getStart(sf)).line + 1})`);
+    }
     const walk = (n) => {
+      if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.ImportKeyword && (!n.arguments.length || !ts.isStringLiteralLike(n.arguments[0]) || faked.has(n.arguments[0].text))) out.push(`imports a package dynamically (${where})`);
       if (ts.isIdentifier(n)) {
         const p = n.parent;
-        const isName = p && ((ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n) || ts.isPropertyDeclaration(p) || ts.isMethodDeclaration(p) || ts.isImportSpecifier(p) || ts.isExportSpecifier(p));
-        if (p && (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isFunctionDeclaration(p) || ts.isClassDeclaration(p) || ts.isBindingElement(p)) && p.name === n) declared.add(n.text);
+        const isName = p && ((ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n) || ts.isPropertyDeclaration(p) || ts.isMethodDeclaration(p) || ts.isImportSpecifier(p) || ts.isImportClause(p) || ts.isNamespaceImport(p) || (ts.isExportSpecifier(p) && p.propertyName === n && false));
+        const binds = p && (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isFunctionDeclaration(p) || ts.isClassDeclaration(p) || ts.isBindingElement(p)) && p.name === n;
+        if (binds) declared.add(n.text);
         else if (!isName && WORLD_GLOBALS.has(n.text)) named.add(n.text);
+        if (!isName && !binds && tainted.has(n.text)) {
+          const traps = (ts.isCallExpression(p) && p.expression === n) || (ts.isPropertyAccessExpression(p) && p.expression === n) || (ts.isElementAccessExpression(p) && p.expression === n) || (ts.isNewExpression(p) && p.expression === n) || (ts.isTaggedTemplateExpression(p) && p.tag === n);
+          const initialiser = ts.isVariableDeclaration(p) && p.initializer === n && ts.isVariableStatement(p.parent?.parent) && p.parent.parent.parent === sf; // a module constant that is the binding itself: tainted in turn, its own uses read
+          if (!traps && !initialiser) out.push(`a package binding \`${n.text}\` is read without a trap (${where}:${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1})`);
+        }
       }
       ts.forEachChild(n, walk);
     };
     walk(sf);
-    for (const g of named) if (!declared.has(g)) out.push(`names ${g} (${path.basename(abs)})`);
+    for (const g of named) if (!declared.has(g)) out.push(`names ${g} (${where})`);
   }
-  return out;
+  return [...new Set(out)];
 }
 // a message with what it quotes and its numbers taken out: `Unexpected token 'x', "x..." is not valid JSON` is one template
 const template = (m) => String(m).replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`[^`]*`/g, '<q>').replace(/-?\d+(?:\.\d+)?/g, '<n>');

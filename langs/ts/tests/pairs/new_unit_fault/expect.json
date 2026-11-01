@@ -161,7 +161,40 @@
       "absent": [
         "new:fault"
       ]
+    },
+    {
+      "file": "world.ts",
+      "unit": "ready",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:coverage",
+          "phase": "draw",
+          "reason": "every admitted input reached the world"
+        }
+      ],
+      "absent": [
+        "new:fault"
+      ]
+    },
+    {
+      "file": "linked.ts",
+      "unit": "last",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:fault",
+          "edge": "s",
+          "args": [
+            {
+              "$undefined": true
+            }
+          ]
+        }
+      ]
     }
   ],
-  "why": "A unit no parent holds is read against its declaration (exec/declared.mjs, exec/new-unit.mjs, design/w1h-new-units.md). new:fault is a throw or a rejection on an input the declared parameter types admit, in a call that asked nothing of the world, and that the declaration does not name (@throws {T}, asserts, never). (a) head throws on undefined, which string | undefined admits; (b) encode throws URIError on a lone surrogate, drawn by the edge inputs only (LEAN_BREAK=declared-edges: no record); (c) headOr guards it: nothing; (d) sqrt's RangeError is its @throws (LEAN_BREAK=declared-throws: a record); (e) defined is an assertion function; (f) size rejects; (g) opaque's parameter type does not resolve, so no input is known admitted (LEAN_BREAK=admitted-input: a record); (h) slugHead's parameter is a branded string, which a drawn string is not known to be; (i) twice is overloaded, its callers admitted by its overloads; (j) asText rejects what unknown admits: a fault, marked wide; (k) width throws on the fake's answer, a call that asked the world (LEAN_BREAK=closed-call: a record)."
+  "why": "A unit no parent holds is read against its declaration (exec/declared.mjs, exec/new-unit.mjs, design/w1h-new-units.md). new:fault is a throw or a rejection on an input the declared parameter types admit, in a call that asked nothing of the world, and that the declaration does not name (@throws {T}, asserts, never). (a) head throws on undefined, which string | undefined admits; (b) encode throws URIError on a lone surrogate, drawn by the edge inputs only (LEAN_BREAK=declared-edges: no record); (c) headOr guards it: nothing; (d) sqrt's RangeError is its @throws (LEAN_BREAK=declared-throws: a record); (e) defined is an assertion function; (f) size rejects; (g) opaque's parameter type does not resolve, so no input is known admitted (LEAN_BREAK=admitted-input: a record); (h) slugHead's parameter is a branded string, which a drawn string is not known to be; (i) twice is overloaded, its callers admitted by its overloads; (j) asText rejects what unknown admits: a fault, marked wide; (k) width throws on the fake's answer, a call that asked the world (LEAN_BREAK=closed-call: a record). (l) ready throws on a module constant the package answered at load, tested for truth with no trap: the graph is a world graph (LEAN_BREAK=closed-call: a record). (m) last is in a file that links the package but only calls it: every reading of it would be a trace entry, so last's throw on undefined is a fault."
 }

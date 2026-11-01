@@ -7,3 +7,11 @@ export function width(s: string): number {
   if (typeof w !== "number") throw new Error("measure answered no number");
   return w;
 }
+
+// A module constant the world answered at load, tested for truth in the unit: a handle is truthy and its test runs no
+// trap, so the call's own trace is empty. The load asked the package, so the graph is a world graph: no fault
+const READY = measure("ready") ? true : false;
+export function ready(s: string): string {
+  if (READY) throw new Error("not ready");
+  return s;
+}
