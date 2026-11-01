@@ -857,3 +857,26 @@ intake row of the ledger: an artifact by kind or class (config, test, lockfile, 
 edit by its named reason, the empty diff. It stays in the intake table. A non-inert intake row keeps its ASK in the
 data, so `--block ask` still blocks on it. Both rules are about what the edit is, decided once in the ledger. Neither
 depends on a hash, a file name or the pull request.
+
+## 2026-11-01: the admission of a behavioural fake (conformance/fakes.mjs)
+
+A behavioural fake is admitted by the suite row `conformance fakes`, not by the lint or the translator, so its decision
+sites are not read by `lower.mjs --audit`. They are listed here, one row per site, the same way. Each site decides from
+the fake's outcomes on the family's seeded script, compared with the real module, never from the fake's source
+(design/w2e-fake-conformance.md).
+
+| Site | Decides | Refuses when | Reason |
+| --- | --- | --- | --- |
+| conformance/fakes.mjs `runFamilies` | no protocol | a specifier the fake answers has no family | a fake is admitted only with its protocol: an untested value flow can hide or invent a WITNESS |
+| conformance/fakes.mjs `testDir` (import) | loads | the module, or the hook asked for a specifier, throws (an exit on import is a throw) | a fake lane B cannot load is not a fake |
+| conformance/fakes.mjs `testDir` (no create) | skipped | a file outside a hook's folder exports neither `create` nor a default function | not a fake module: listed, never admitted |
+| conformance/fakes.mjs `runFamilies` (runs) | runs | the family throws on the fake | the fake broke the script: a refusal, never a pass |
+| conformance/fakes.mjs `differential`, `fsFamily`, `storageFamily`, `vendoredFamily`, `declaredVectors` | agree / vectors | an outcome differs from the real module's (a value in canonical form, a throw by its code) | the fake answers what the real module answers on the same world |
+| conformance/fakes.mjs `fsClauses` | write-then-read, mkdir-then-exists, unlink-then-ENOENT, seeded-read | the fake's outcomes break the clause on names its world holds as absent | the clauses the protocol names (brief w2e) |
+| conformance/fakes.mjs `timersFamily`, `timersPromisesFamily` | virtual order, delay coercion, resolution order | the fake's firing order differs from a clean measurement of the real loop | timers fire in virtual order; an unclean measurement counts as unmeasured, never as agreement |
+| conformance/fakes.mjs `fetchFamily` | request, a real Response, json is the parse of text, repeat, seeded, outside the table | a clause fails (each first checked on the platform's own Request and Response) | fetch's table returns what was seeded, as a Response the platform would make |
+| conformance/fakes.mjs `abortSignalFamily`, `processFamily`, `consoleFamily`, `osFamily`, `randomClauses`, `uuidDraws` | the family's stated clauses | a clause fails | the protocol where no real call can be made (an exit, the host's facts, a seeded draw) |
+| conformance/fakes.mjs (every family) | determinism | two fakes from one seed answer the script differently or write different traces | both sides of an input must meet one world |
+| conformance/fakes.mjs (effectful families) | recorded | a call changes neither the trace nor the pending list | the trace stays the oracle; a pure function's value owes no record |
+| conformance/fakes.mjs (any clause) | HARNESS | the real module fails a clause, a vendored file differs from its manifest, the vectors name another version | the harness's own defect fails the run, never the fake's |
+| conformance/fakes.mjs verdict | a good fake / a wrong fixture | a good fake has a failing clause, a harness defect, or no check ran; a wrong fixture is not refused on every clause its `expectRefused` names | red first: the wrong fixtures stay refused, and under `--break` they are admitted and the row is red |

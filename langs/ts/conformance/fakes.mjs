@@ -3,18 +3,22 @@
 //
 //   node fakes.mjs [--dir <fakes dir>]... [--good <dir>] [--wrong <dir>] [--seed 1] [--cases 12] [--json <out>] [--break]
 //
-// Every module under exec/fakes/** that exports `create` (or a default function) is a fake. Its specifiers (its
-// `specifier` export, else its file name: fs.mjs -> node:fs, web/fetch.mjs -> global:fetch, lib/x.mjs -> x) name the
-// protocol families it is tested by; a fake no family covers fails ("no protocol"), so no fake is admitted untested.
-// Each family runs one seeded script against the fake and against the real module wherever the real module is pure or
-// sandboxable (path, url, URL, Buffer, createHash, Headers, TextEncoder/Decoder, structuredClone, AbortController: in
-// this process; fs: in a fresh temporary folder; timers: on the real event loop; localStorage: in a child with Node's
-// web storage), and compares outcome by outcome, a thrown error by its code. Where the real thing is not reachable (the
-// network, the process) the family's reference is the protocol itself, stated as clauses (fetch answers what was
-// seeded, compared with a real Response built from the seed). Every named clause runs on the real module first: a clause
-// the real module fails is the harness's defect and fails the run. Two clauses hold for every fake: `determinism` (two
-// fakes from one seed answer the script alike, trace included) and `recorded` (every call lands on the trace or the
-// pending list: the trace stays the oracle).
+// A fake is what lane B hands a unit: a module under exec/fakes/** that exports `create(env, recording)` (its specifiers
+// by its `specifier` export, else its file name: fs.mjs -> node:fs, web/fetch.mjs -> global:fetch, lib/x.mjs -> x), or
+// what a hook answers: a module registry (index.mjs MODELLED: env.module(spec), the recording proxy whose members ask the
+// registry), a global lookup (index.mjs lookup(env, 'global:X')), a library hook (libraryFake inside lane B's sandbox).
+// Each is tested with its own tree's Environment and runTimers, fault draws off. A specifier no family covers fails ("no
+// protocol"), so no fake is admitted untested. Each family runs one seeded script against the fake and against the real
+// module wherever the real module is pure or sandboxable (path, url, URL, Buffer, createHash, Headers, Request/Response,
+// FormData, Blob, TextEncoder/Decoder, structuredClone, AbortController, a vendored library: in this process; fs: in a
+// fresh temporary folder brought to the fake's world; timers: on the real event loop, a measurement with too much skew
+// taken again; Web Storage: in a child with Node's; process.env: on fresh names), and compares outcome by outcome, a
+// thrown error by its code. Where the real thing is not reachable (the network, the process's exit, the host's facts) the
+// reference is the protocol itself, stated as clauses checked on the real platform's classes first (fetch's answer is a
+// real Response of its own parts; os answers the real one's shapes). A clause the real module fails is the harness's
+// defect and fails the run. Every fake keeps `determinism` (two fakes from one seed answer alike, trace included); every
+// effectful one keeps `recorded` (each call lands on the trace or the pending list: the trace stays the oracle; a pure
+// function's value flows into the outcome and owes no record).
 //
 // The fixture folders: conformance/fixtures/fakes/good (minimal fakes, each must pass) and .../wrong (each exports
 // `expectRefused`, the clauses it must fail; an fs whose read returns the previous write among them). --break removes
