@@ -95,4 +95,33 @@ runtime, construct, escape, shared, convert and differential row the LEAN_PAIRS 
 The rows include runtime fake-protocols, module-rows, children-shapes (a source scan that caught the fs tree's
 `children` method on the first run: renamed `listing`) and withdrawal, plus the 488 escape fixtures of the lint.
 
-CONFORMANCE_PLACEHOLDER
+## Conformance (translate/ and lint/ changed)
+
+    LEAN_PAIRS=fake_fs,fake_path,fake_crypto,fake_timers,fake_process,fake_path_row,library_rows,library_members,lib_globals node langs/ts/conformance/run.mjs --jobs 2
+    | MODEL-CONFORMANCE TOTAL | 36 units in 4 pairs (5 skipped) | 10 executable: 10 agree, 0 disagree | 26 not executable, ... | NO NEW FINDING |   exit 0
+
+(The 5 skipped pairs are laneBOnly. fake_path_row's units reach the bodiless path.join, so they are not executable: an extern.)
+Load: the first conformance attempt waited 2 h with the one-minute load above 40 and never started; it ran at 05:46
+(load 34). The full `LEAN_CONFORMANCE=full` run is the lead's.
+
+## Open
+
+1. **JSON.stringify and key order (found here, not fixed: outside this lane).** Lane A reads
+   `JSON.stringify({ a: x, b: y })` and `JSON.stringify({ b: y, a: x })` as one term
+   (`Rec_..(a := x, b := y)` and `Rec_..(b := y, a := x)` are one Dafny value handed to one transition). Lane B
+   witnesses the different text, and check.mjs answers WITNESS (`node check.mjs --parent p.ts --candidate c.ts --unit enc
+   --n 30 --no-project`: WITNESS, lane B WITNESS). The lemma is latent: if lane B missed the difference, it would prove
+   two different texts equal. The JSON.stringify row records why no pure row is sound. The fix belongs to the reading
+   of a record handed to an outside call: its key order is part of the value.
+2. The global `crypto` is the node:crypto fake (Node's global is Web Crypto). `process.exit` is catchable. Awaited
+   timers settle before callback timers of the same run (design note, Limits).
+3. Two-level members (`path.posix.join`, `Buffer.byteLength` via `import { Buffer } from 'node:buffer'`) have lane B
+   models, no lane A row.
+4. w2e's harness (conformance/fakes.mjs) has not landed. When it does, the protocol names above are the ones sent to
+   the group, and exec/fakes/<module>.test.mjs can move under it.
+5. The validator (units unblocked over w2a's ranking) needs w2a's census output. No census was run here.
+
+## Commits
+
+14a1159c fakes + wiring + five pairs; f4dbf988 quiet operations, rows, protocols, fake_path_row, suite rows;
+d0198ea3 design note; d721462 result; and the final commit of this file.
