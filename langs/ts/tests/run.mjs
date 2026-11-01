@@ -176,6 +176,19 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     try { got = JSON.parse(fs.readFileSync(path.join(tmpd, `b_${artifactName(unit)}.json`), 'utf8')).verdict; } catch { /* keep */ }
     add('pair', name, `lane B ${unit} ${want}`, got === want, got);
   }
+  // lane B under a stated environment (`bUnder` in expect.json: `{ "K=V,K2=V2": { unit: verdict } }`): the same run with
+  // those variables set, the `--break` of a mechanism a switch turns off (LEAN_FAKES=recording: the behavioural fakes
+  // off, every outside value the recording proxy's, exec/fake.mjs BEHAVIOURAL), so a pair states the verdict the
+  // mechanism gives and the verdict lean gave without it
+  for (const [vars, units] of Object.entries(exp.bUnder ?? {})) {
+    const env = Object.fromEntries(vars.split(',').map((kv) => [kv.slice(0, kv.indexOf('=')), kv.slice(kv.indexOf('=') + 1)]));
+    for (const [unit, want] of Object.entries(units)) {
+      const out = path.join(tmpd, `bunder_${artifactName(vars)}_${artifactName(unit)}.json`);
+      crun('node', [path.join(here, '../exec/run.mjs'), '--parent', pairFile(d, 'parent'), '--candidate', pairFile(d, 'candidate'), '--unit', unit, '--n', '30', ...projectArgs, '--out', out], { files: [pairFile(d, 'parent'), pairFile(d, 'candidate'), ...projectFiles], outs: [out], env });
+      let got = 'no result'; try { got = JSON.parse(fs.readFileSync(out, 'utf8')).verdict; } catch { /* keep */ }
+      add('pair', name, `lane B ${unit} under ${vars}: ${want}`, got === want, got);
+    }
+  }
   // lane B under the network-denied mode (LEAN_NET=deny, design/sandbox-boundary.md): the verdict, and the record's
   // sandbox entry naming the mode and every connection attempt it refused, each as `<api> <host>:<port>`
   for (const [unit, want] of Object.entries(exp.netDeny ?? {})) {

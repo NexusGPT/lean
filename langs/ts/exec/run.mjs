@@ -24,7 +24,7 @@ import { createRequire } from 'node:module';
 import { fork, spawnSync, execFile } from 'node:child_process';
 import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, CLOCK_EPOCH, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName, MODULE_UNIT, moduleStatements, fileClassFieldsDefine } from '../common.mjs';
-import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles , enterWorld } from './fake.mjs';
+import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles , enterWorld, behaviouralGlobals } from './fake.mjs';
 import { specOf, findValues, readValues, argsFor } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength, walkLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
@@ -509,6 +509,7 @@ export function sandbox(env, root) {
     Error: programConstructor(Error), TypeError: programConstructor(TypeError), RangeError: programConstructor(RangeError), SyntaxError: programConstructor(SyntaxError), ReferenceError: programConstructor(ReferenceError), EvalError: programConstructor(EvalError), URIError: programConstructor(URIError), AggregateError: programConstructor(AggregateError), // an error the unit makes is program-built (fake.mjs programConstructor); one the engine raises is observed by its class alone
     parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
+    ...behaviouralGlobals(env), // the behavioural fakes' globals (exec/fakes/): fetch as a table of requests, Request, Response, Headers, AbortController on the virtual clock, localStorage as a record; none under LEAN_FAKES=recording
   };
   { const named = bridgeGlobal(env, g); g.globalThis = named; g.global = named; g.window = named; } // the global object by name: a member the host app sets and the sandbox does not (a preload bridge) is the bridge fake (exec/bridge.mjs, design/bridge-fake.md)
   // the loader's marks (leanMarks): a handler attribute's function value and a useState pair, each with its source position

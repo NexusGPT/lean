@@ -12,6 +12,17 @@
 // diverges on the trace.
 import { createHash } from 'node:crypto';
 import { generator, worldTurn } from './gen.mjs';
+import * as behavioural from './fakes/index.mjs';
+
+// Behavioural fakes (exec/fakes/, briefs w2-world.md): a module or a global answered by a small stateful model of its
+// behaviour (fetch as a table of requests, localStorage as a record) instead of the recording proxy. The trace stays the
+// oracle: every fake still records its requests to the world; the fake adds the value flow. LEAN_FAKES=recording turns
+// them off, every specifier answered by the recording proxy as before (the `--break` of every fake's pair).
+export const BEHAVIOURAL = process.env.LEAN_FAKES !== 'recording';
+// the behavioural fake for a specifier (`fs`, `node:path`, or `global:<name>` for a global), or null: the recording proxy answers
+export function behaviouralFake(env, specifier) { return BEHAVIOURAL ? behavioural.lookup(env, specifier) : null; }
+// every global the behavioural fakes hold, by name: the sandbox's globals take them over its own (exec/run.mjs sandbox)
+export function behaviouralGlobals(env) { return BEHAVIOURAL ? behavioural.globalsOf(env) : {}; }
 
 export class BudgetError extends Error {}
 const EMPTY_LIST = Symbol('an empty list');
@@ -398,6 +409,7 @@ export function render(v, depth = 0, seen = new Set(), share = null) {
 export const renderTree = (v) => (Array.isArray(v) ? v.map(renderTree) : v && typeof v === 'object' && !v.__isFake && Object.hasOwn(v, '$el') ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, k === 'children' && Array.isArray(v.children) ? v.children.map(renderTree) : k === 'rendered' ? renderTree(v.rendered) : render(v[k])])) : render(v));
 function renderBody(v, depth, seen, share) {
   if (Array.isArray(v)) return v.map((x) => render(x, depth + 1, seen, share));
+  if (BEHAVIOURAL) for (const r of behavioural.RENDERERS) { const out = r(v, (x) => render(x, depth + 1, seen, share)); if (out !== undefined) return out; } // a platform object whose state is in internal slots (a URL, a Headers, a Response): rendered by that state, never as `{}`
   if (v instanceof Date) return { $date: Number.isNaN(v.getTime()) ? 'invalid' : v.toISOString() };
   if (v instanceof Map) return { $map: [...v.entries()].map(([k, x]) => [render(k, depth + 1, seen, share), render(x, depth + 1, seen, share)]) };
   if (v instanceof Set) return { $set: [...v].map((x) => render(x, depth + 1, seen, share)) };
