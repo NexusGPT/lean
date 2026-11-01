@@ -20,6 +20,7 @@ import os from 'node:os';
 import path from 'node:path';
 import vm from 'node:vm';
 import crypto from 'node:crypto';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { createRequire } from 'node:module';
 import { fork, spawnSync, execFile } from 'node:child_process';
 import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, CLOCK_EPOCH, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
@@ -37,7 +38,7 @@ import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
 import { stylesLayer, projectConfig } from './styles.mjs';
 import { contextRow } from '../hooks.mjs';
-import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
+import { bridgeGlobal, bridgeCounts, isBridgeName } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText } from './search.mjs';
@@ -138,7 +139,10 @@ function compileWithSites(src, tsName, abs) {
   const bindingsShim = `\nfunction ${bindingsName}() { return { ${bound.map((n) => `${JSON.stringify(n)}: function () { return ${n}; }`).join(', ')} }; }\n`;
   const emit = (before) => ts.transpileModule(src, { compilerOptions: { ...COMPILE, useDefineForClassFields: define }, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
-  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe ? [branchMarks(probe.table, abs, stateName)] : [])]);
+  let globalName = '__lean_global';
+  while (src.includes(globalName)) globalName += '_';
+  const shadowed = shadowedIntrinsics(sf);
+  const marked = intrinsicPrologue(emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe ? [branchMarks(probe.table, abs, stateName)] : [])]), shadowed, globalName);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -147,13 +151,75 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, define, probe, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) + bindingsShim };
+  const compiled = { src, define, probe, sites, stateName, callbackName, globalName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName, shadowed.has('Object') ? `${globalName}.Object` : 'Object') + bindingsShim };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
 
+// The emit's own code before the file's first statement (the "use strict" directive, TypeScript's helpers `var __x =
+// (this && this.__x) || ...`, `Object.defineProperty(exports, "__esModule", ...)`, `exports.a = void 0`) reads the
+// intrinsics of the global object by name. A file that binds such a name at module scope (node's own lib:
+// `const { Object, ... } = primordials`) shadows it, so the emit's first line read the file's `Object` in its temporal
+// dead zone and the module never loaded. Each such read of the prologue reads the global object instead (the wrapper's
+// parameter `globalName`, the sandbox's global), the value an unshadowed name has; the file's own code is unchanged.
+let intrinsicNames = null;
+const intrinsics = () => (intrinsicNames ??= new Set(Object.getOwnPropertyNames(vm.runInNewContext('this'))));
+function shadowedIntrinsics(sf) {
+  const out = new Set();
+  const bind = (n) => { if (!n) return; if (ts.isIdentifier(n)) { if (intrinsics().has(n.text)) out.add(n.text); } else for (const e of n.elements ?? []) if (!ts.isOmittedExpression(e)) bind(e.name); };
+  for (const st of sf.statements) {
+    if (ts.isVariableStatement(st)) st.declarationList.declarations.forEach((d) => bind(d.name));
+    else if (ts.isFunctionDeclaration(st) || ts.isClassDeclaration(st) || ts.isEnumDeclaration(st) || ts.isImportEqualsDeclaration(st)) bind(st.name);
+    else if (ts.isImportDeclaration(st) && st.importClause) { const c = st.importClause; bind(c.name); if (c.namedBindings) { if (ts.isNamespaceImport(c.namedBindings)) bind(c.namedBindings.name); else c.namedBindings.elements.forEach((e) => bind(e.name)); } }
+  }
+  return out;
+}
+function intrinsicPrologue(js, shadowed, globalName) {
+  if (!shadowed.size || broken('emit-intrinsics')) return js;
+  const sf = ts.createSourceFile('emit.js', js, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const isExports = (e) => ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'exports';
+  const emitted = (st) => (ts.isExpressionStatement(st) && ts.isStringLiteral(st.expression))
+    || (ts.isVariableStatement(st) && st.declarationList.declarations.length === 1 && /^__\w+$/.test(st.declarationList.declarations[0].name.getText(sf)) && /^\(this && this\.__\w+\) \|\|/.test(st.declarationList.declarations[0].initializer?.getText(sf) ?? ''))
+    || (ts.isExpressionStatement(st) && /^Object\.defineProperty\(exports, "__esModule"/.test(st.expression.getText(sf)))
+    || (ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && isExports(st.expression.left) && /= void 0$/.test(st.expression.getText(sf)));
+  const at = [];
+  const visit = (n) => {
+    if (ts.isIdentifier(n) && shadowed.has(n.text) && !(n.parent && ((ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) || (ts.isPropertyAssignment(n.parent) && n.parent.name === n) || ((ts.isParameter(n.parent) || ts.isVariableDeclaration(n.parent) || ts.isFunctionLike(n.parent)) && n.parent.name === n)))) at.push(n);
+    ts.forEachChild(n, visit);
+  };
+  for (const st of sf.statements) { if (!emitted(st)) break; visit(st); }
+  let out = js;
+  for (const n of at.reverse()) out = out.slice(0, n.getStart(sf)) + `${globalName}.${n.text}` + out.slice(n.end);
+  return out;
+}
+
+// The names a file reads with no declaration of that name anywhere in it (a value position, never a member name, a key
+// or a type). A unit whose call throws a ReferenceError for a name that both versions of its file read so (`__DEV__`,
+// a bundler's define) meets a name its host sets: the run sets it as the environment's fake from then on and runs the
+// input again (runPair). A name only one version reads stays its ReferenceError: a candidate that reads a name nothing
+// declares (a typo), or one that stops reading it (the fix), is a difference
+function freeReads(src, fileName) {
+  const sf = ts.createSourceFile(fileName, src, ts.ScriptTarget.Latest, true, /x$/.test(fileName) ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const declared = new Set(), read = new Set();
+  const declares = (p) => ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isFunctionDeclaration(p) || ts.isFunctionExpression(p) || ts.isClassDeclaration(p) || ts.isClassExpression(p) || ts.isBindingElement(p) || ts.isImportClause(p) || ts.isImportSpecifier(p) || ts.isNamespaceImport(p) || ts.isImportEqualsDeclaration(p) || ts.isEnumDeclaration(p) || ts.isModuleDeclaration(p);
+  const notValue = (n, p) => (ts.isPropertyAccessExpression(p) && p.name === n) || ((ts.isPropertyAssignment(p) || ts.isMethodDeclaration(p) || ts.isPropertyDeclaration(p) || ts.isGetAccessor(p) || ts.isSetAccessor(p) || ts.isEnumMember(p) || ts.isPropertySignature(p)) && p.name === n) || ts.isQualifiedName(p) || ts.isJsxAttribute(p) || ts.isLabeledStatement(p) || ts.isBreakOrContinueStatement(p) || ts.isExportSpecifier(p) || (ts.isBindingElement(p) && p.propertyName === n) || (ts.isImportSpecifier(p) && p.propertyName === n) || ts.isMetaProperty(p);
+  const ambient = (d) => { for (let x = d; x && !ts.isSourceFile(x); x = x.parent) if ((ts.canHaveModifiers(x) && ts.getModifiers(x)?.some((m) => m.kind === ts.SyntaxKind.DeclareKeyword))) return true; return false; };
+  const walk = (n) => {
+    if (ts.isTypeNode(n) || ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) return;
+    if (ts.isIdentifier(n) && n.parent) { if (declares(n.parent) && n.parent.name === n) { if (!ambient(n.parent)) declared.add(n.text); } else if (!notValue(n, n.parent)) read.add(n.text); } // `declare const __DEV__` says the host gives the name: no declaration
+    ts.forEachChild(n, walk);
+  };
+  walk(sf);
+  return new Set([...read].filter((x) => !declared.has(x)));
+}
+export function sharedFreeReads(parentFile, candidateFile) {
+  if (broken('free-global-call')) return new Set();
+  const a = freeReads(fs.readFileSync(parentFile, 'utf8'), parentFile), b = freeReads(fs.readFileSync(candidateFile, 'utf8'), candidateFile);
+  return new Set([...a].filter((x) => b.has(x) && isBridgeName(x)));
+}
+
 // every top-level function and class of the file, exported or not, reachable for the harness
-function unitShim(src, abs) {
+function unitShim(src, abs, O = 'Object') {
   const sf = ts.createSourceFile(abs, src, ts.ScriptTarget.ES2020, true, abs.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const names = [];
   for (const st of sf.statements) {
@@ -166,7 +232,7 @@ function unitShim(src, abs) {
   const cells = [];
   const bound = (n) => { if (ts.isIdentifier(n)) cells.push(n.text); else for (const e of n.elements) if (!ts.isOmittedExpression(e)) bound(e.name); };
   for (const st of sf.statements) if (ts.isVariableStatement(st) && !(ts.getCombinedModifierFlags(st) & ts.ModifierFlags.Ambient)) for (const d of st.declarationList.declarations) bound(d.name);
-  const state = `\n;try { Object.defineProperty(module.exports, '__lean_state', { enumerable: false, value: () => { const o = Object.create(null); ${cells.map((n) => `try { o[${JSON.stringify(n)}] = ${n}; } catch (e) {}`).join(' ')} return o; } }); } catch (e) {}\n`;
+  const state = `\n;try { ${O}.defineProperty(module.exports, '__lean_state', { enumerable: false, value: () => { const o = ${O}.create(null); ${cells.map((n) => `try { o[${JSON.stringify(n)}] = ${n}; } catch (e) {}`).join(' ')} return o; } }); } catch (e) {}\n`;
   return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n` + state;
 }
 
@@ -534,12 +600,35 @@ export function sandbox(env, root) {
     let real; try { real = fs.realpathSync(file); } catch { return false; }
     return real === realRoot || real.startsWith(realRoot + path.sep);
   };
+  // the files a failed load cached are dropped with it, so a later load of one runs it again
+  const loadMark = () => ({ before: new Set(cache.keys()), seen: new Set(loadedFiles) });
+  const dropSince = ({ before, seen }) => { for (const k of [...cache.keys()]) if (!before.has(k)) { cache.delete(k); delete env.siteState.files[k]; if (!seen.has(k)) loadedFiles.delete(k); } };
+  // A name the module's evaluation reads that no scope declares and the sandbox does not give (a bundler's define,
+  // `__DEV__`; a host's own global, node's `primordials`) throws a ReferenceError, and the module never loads. Wherever
+  // the module loads, its host set the name, so the name is the environment's, as an import of a package the tree does
+  // not hold is: the fake `global:<name>`, its reads recorded, set on the global object on every input, and the module is
+  // evaluated again from its start. A name a default lib declares (a host name the sandbox leaves absent,
+  // exec/bridge.mjs isBridgeName) or the bridge's deny list holds stays the failure. Each pass sets one more name
+  for (const name of env.freeGlobals ?? []) g[name] = env.fake(`global:${name}`); // the names this run found to be the environment's (sharedFreeReads): set before the module loads
+  const loadDefining = (abs) => {
+    for (;;) {
+      const mark = loadMark();
+      try { return loadInner(abs); }
+      catch (e) {
+        const m = e && e.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(e.message));
+        if (!m || m[1] in g || !isBridgeName(m[1]) || broken('free-global')) throw e;
+        dropSince(mark);
+        g[m[1]] = env.fake(`global:${m[1]}`);
+        (env.freeGlobals ??= new Set()).add(m[1]);
+      }
+    }
+  };
   function load(file) {
     const abs = path.resolve(file);
     if (cache.has(abs)) return cache.get(abs).exports;
     const wasLoading = env.loading, wasCrumb = crumb.loading; env.loading = true; crumb.loading = abs;
     // the unit's module is the first one loaded: a unique symbol is drawn as the constant it exports (gen.mjs)
-    try { const out = loadInner(abs); if (!wasLoading && env.exports === undefined) env.exports = out; return out; } finally { env.loading = wasLoading; crumb.loading = wasCrumb; if (!wasLoading) resetEscapes(env); } // the module has loaded: the unit's functions are numbered from here (fake.mjs resetEscapes)
+    try { const out = loadDefining(abs); if (!wasLoading && env.exports === undefined) env.exports = out; return out; } finally { env.loading = wasLoading; crumb.loading = wasCrumb; if (!wasLoading) resetEscapes(env); } // the module has loaded: the unit's functions are numbered from here (fake.mjs resetEscapes)
   }
   function loadInner(abs) {
     const src = fs.readFileSync(abs, 'utf8');
@@ -562,41 +651,49 @@ export function sandbox(env, root) {
     const mod = { exports: {} };
     cache.set(abs, mod);
     loadedFiles.add(abs);
+    // a module of the package (a relative import, the project's own `paths` alias) whose top level cannot run in the
+    // sandbox (a bundler's import.meta.env, a host global, a require.resolve, a build-time fork that throws until the
+    // bundler replaces it, a file TypeScript cannot emit alone) is the environment's module, as every alias was before
+    // aliases were loaded: the same fake on both sides, its reads recorded; the files its failed load cached are dropped
+    // with it. True when it loads, its exports in `out.exports`
+    const loadOrEnvironment = (spec, file, out) => {
+      const mark = loadMark();
+      try { out.exports = load(file); return true; }
+      catch (e) {
+        if (harnessStop(e)) throw e;
+        dropSince(mark);
+        (env.unloadable ??= new Map()).set(spec, { file: path.relative(root || path.dirname(file), file), failure: String(e && e.message).split('\n')[0].slice(0, 160) }); // the module lean could not load: a difference that passes only through it is no difference lean can show (unloadableOnly)
+        return false;
+      }
+    };
     const req = (spec) => {
+      const out = {};
       if (spec.startsWith('.') ) {
         if (/\.(css|scss|sass|less|svg|png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|md|txt|html|wasm)(\?.*)?$/i.test(spec)) return env.module(spec); // an asset, not code: a fake module
         const r = resolveRelative(abs, spec);
         if (r && /\.json$/i.test(r) && insideRoot(r)) { try { return JSON.parse(fs.readFileSync(r, 'utf8')); } catch { return env.module(spec); } } // a .json outside the root falls through to the fake below
-        if (r && !/\.json$/i.test(r) && insideRoot(r)) return load(r);
+        if (r && !/\.json$/i.test(r) && insideRoot(r)) {
+          if (broken('relative-unloadable')) return load(r);
+          if (loadOrEnvironment(spec, r, out)) return out.exports;
+        }
         return env.module(spec);
       }
       if (spec === 'react') return react;
       if (spec === 'react/jsx-runtime' || spec === 'react/jsx-dev-runtime') return jsxRuntimeFor(env); // an element is a value tree, by React's rules for children
       const alias = aliasTarget(abs, spec); // the project's own `paths` alias to a file of this package is code, loaded like a relative import
-      if (alias && insideRoot(alias)) {
-        // an aliased module whose top level cannot run in the sandbox (a bundler's import.meta.env, a host global, a
-        // require.resolve, a file TypeScript cannot emit alone) is the environment's module, as every alias was before
-        // aliases were loaded: the same fake on both sides; the files its failed load cached are dropped with it
-        const before = new Set(cache.keys()), seen = new Set(loadedFiles);
-        try { return load(alias); }
-        catch (e) {
-          if (harnessStop(e)) throw e;
-          for (const k of [...cache.keys()]) if (!before.has(k)) { cache.delete(k); delete env.siteState.files[k]; if (!seen.has(k)) loadedFiles.delete(k); }
-          (env.unloadable ??= new Map()).set(spec, { file: path.relative(root || path.dirname(alias), alias), failure: String(e && e.message).split('\n')[0].slice(0, 160) }); // the module lean could not load: a difference that passes only through it is no difference lean can show (unloadableOnly)
-        }
-      }
+      if (alias && insideRoot(alias) && loadOrEnvironment(spec, alias, out)) return out.exports;
       return decoratedModule(env, spec) ?? env.module(spec); // packages, builtins, aliases that leave the package or resolve to nothing the tree holds: the environment (a package of the decorator table answers its listed exports by their rows)
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
     let wrapper;
-    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName], { parsingContext: ctx, filename: abs }); }
+    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName, compiled.globalName], { parsingContext: ctx, filename: abs }); }
     catch (e) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); } // the file that failed to compile is named
     const callbacks = {
       units: new Map(compiled.callbacks.map(u => [u.name, { inBody: u.inBody, instances: [] }])),
       capture(name, fn) { callbacks.units.get(name).instances.push(fn); return fn; },
     };
-    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks);
+    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks, g); // g: the global object, which the emit's prologue reads an intrinsic the file shadows from (intrinsicPrologue)
     (env.callbackUnits ??= new Map()).set(mod.exports, callbacks);
     return mod.exports;
   }
@@ -1513,11 +1610,14 @@ async function runPairOnce(opts) {
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
   const knownRun = spec.known ? { inputs: 0, body: 0 } : null; // the inputs of the known phase (the project's listed values) and how many of them reached the body
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
+  const sharedFree = sharedFreeReads(parent, candidate), runFree = new Set(); // the names both versions read undeclared, and those a call has met (freeReads)
+  const freeThrown = (o) => { const e = o?.raw && Object.hasOwn(o.raw, 'threw') ? o.raw.threw : null, m = e && e.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(e.message)); return m && sharedFree.has(m[1]) && !runFree.has(m[1]) ? m[1] : null; }; // the thrown value itself (observe: raw), whose engine-made message the outcome omits
   const mountSides = async (i, recipe = null) => { // a fresh environment per side for input i, the unit picked, the inputs drawn; a search recipe's changes applied to the drawn input (search.mjs)
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
       const env = new Environment(seed * 7919 + i);
       env.shapes = spec;
+      if (runFree.size) env.freeGlobals = new Set(runFree);
       let exportsObj;
       try { exportsObj = sandbox(env, roots[name]).load(file); } catch (e) { harnessAsk = `${name}: load failed: ${String(e && e.message).slice(0, 200)}`; break; }
       const u = pickUnit(exportsObj, spec, env);
@@ -1549,6 +1649,8 @@ async function runPairOnce(opts) {
     step('lane B', i); let sides = await mountSides(i);
     if (harnessAsk) break;
     let [oP, oC] = await observeBoth(sides, !treeDone);
+    for (let x; !harnessAsk && (x = freeThrown(oP) ?? freeThrown(oC));) { runFree.add(x); sides = await mountSides(i); if (!harnessAsk) [oP, oC] = await observeBoth(sides, !treeDone); } // a name the host sets (sharedFreeReads): the input once more with it set
+    if (harnessAsk) break;
     if (!treeDone && (oP.harness === 'stack overflow' || oC.harness === 'stack overflow' || oP.harness === 'timeout' || oC.harness === 'timeout')) { // the stop may be the recorder's: once more without it, on fresh environments; a second stop stands
       recorderRetries++; sides = await mountSides(i); if (harnessAsk) break; [oP, oC] = await observeBoth(sides, false);
     }

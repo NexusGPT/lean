@@ -1,0 +1,7 @@
+{
+  "why": "lane w9j (exec/run.mjs sandbox loadDefining). The module's evaluation reads two names nothing declares: a bundler's define (`__BUILD_MODE__`, react's `__DEV__`) and a host's own global (`hostPrimitives`, node's `primordials`). Each threw a ReferenceError and the module never loaded: every unit ASK (parent: load failed). Wherever the module loads its host set them, so each is the environment's fake `global:<name>`, set on every input, and the module is evaluated again. label moves its boundary from > 2 to >= 2: WITNESS. bounded calls the host's clamp the same way on both sides: PASS-bounded. LEAN_BREAK=free-global: the load fails again, ASK.",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "label": "WITNESS", "bounded": "PASS-bounded" }
+}

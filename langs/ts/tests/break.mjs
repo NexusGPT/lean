@@ -49,6 +49,10 @@ export const MECHANISMS = {
   'cex-replay-by-index': 'solve/counterexample.mjs: lane B\'s draw at the replay\'s index is replayed instead of the model\'s value (lane w3a)',
   'package-rows': 'library-rows.mjs: every package call keeps the outside call\'s reading (lane w2d)',
   'library-fakes': 'exec/fakes/lib/index.mjs libraryFakesOn: every library fake is off, the recording proxy answers (lane w2d)',
+  'relative-unloadable': 'exec/run.mjs sandbox loadOrEnvironment: a relative import of the package whose load fails (a build-time fork that throws, a file TypeScript cannot emit) fails the importer\'s load, instead of being the environment\'s module (lane w9j; tests/w9j-parent-load.mjs)',
+  'emit-intrinsics': 'exec/run.mjs intrinsicPrologue: the emit\'s prologue reads an intrinsic (`Object`) by its name although the file shadows it at module scope, so it reads the file\'s binding in its dead zone (lane w9j)',
+  'free-global': 'exec/run.mjs sandbox loadDefining: a name the module\'s evaluation reads that nothing declares fails the load, instead of being the environment\'s fake (lane w9j)',
+  'free-global-call': 'exec/run.mjs sharedFreeReads: a ReferenceError at a call for a name both versions of the file read undeclared stays the outcome, instead of the name being the environment\'s fake (lane w9j)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
