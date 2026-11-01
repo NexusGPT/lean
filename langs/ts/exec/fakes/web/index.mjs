@@ -21,6 +21,9 @@ export function webGlobals(env) {
 
 // a platform object's rendering, or undefined for any other value
 export function renderWeb(v, render) {
+  const s = storageOf(v); if (s) return { $storage: s.entries() };
+  const proto = Object.getPrototypeOf(v);
+  if (proto === null || Object.getPrototypeOf(proto) === null) return undefined; // a plain record of either realm (its prototype is an Object.prototype): no platform object, and the common case of every rendering
   if (v instanceof HostURL) return renderURL(v);
   if (v instanceof HostURLSearchParams) return renderSearchParams(v);
   if (v instanceof HostHeaders) return renderHeaders(v);
@@ -31,6 +34,5 @@ export function renderWeb(v, render) {
   if (v instanceof HostDOMException) return { $error: 'DOMException', name: v.name }; // the standard's name is the error's kind (AbortError, TimeoutError); its message is the engine's text
   if (v instanceof HostTextEncoder) return renderEncoder(v);
   if (v instanceof HostTextDecoder) return renderDecoder(v);
-  const s = storageOf(v); if (s) return { $storage: s.entries() };
   return undefined;
 }
