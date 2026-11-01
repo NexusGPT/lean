@@ -91,14 +91,18 @@ function writtenRoots(node) {
   walk(node);
   return out;
 }
+// a declaration of the module's top level (no function around it) or of another file: a module cell or an import, a
+// field of the world (its changes are transitions), never a binding of a unit
+const moduleCell = (d) => { if (!d) return false; for (let p = d.parent; p; p = p.parent) if (ts.isFunctionLike(p) || ts.isClassLike(p)) return false; return true; };
 const nestedFunctions = (node) => { const out = []; const w = (x) => { if (ts.isFunctionLike(x)) { out.push(x); return; } ts.forEachChild(x, w); }; ts.forEachChild(node, w); return out; };
 
 // The step's pending work acts on the world alone: no function nested in the step (an executor, a handler, an async
 // callback; any of them may run after the step ends)
 //   - rebinds a binding of the unit, or reads one the unit rebinds outside the step (after it, in a loop around it, or
 //     from another nested function): the step's outputs are taken when it ends;
-//   - writes into an object, unless the object is a fresh literal the nested function made itself: a callback's
-//     parameter is an element of the unit's value, a captured name is the unit's;
+//   - writes into an object, unless the object is a fresh literal the nested function made itself, or a module cell
+//     (a field of the world, whose changes are transitions): a callback's parameter is an element of the unit's
+//     value, a captured name is the unit's or an enclosing function's;
 //   - hands a reference the unit holds to a call, or calls a method on one, when the unit uses that reference outside
 //     the step other than as the receiver of a call (the pending call may change what the unit reads later).
 // null when it holds, else the reason
@@ -112,7 +116,7 @@ export function pendingWork(checker, node, fn) {
       const d = id ? declOf(checker, id) : null;
       if (!heap) { if (bindingOfUnit(d, fn)) return `\`${id.text}\` is rebound by a function the step leaves pending`; continue; }
       const fresh = d && inside(d, f) && ts.isVariableDeclaration(d) && d.initializer && [K.ObjectLiteralExpression, K.ArrayLiteralExpression].includes(unparen(d.initializer).kind) && !writtenRoots(f).some((w) => !w.heap && w.id && declOf(checker, w.id) === d);
-      if (!fresh) return `a function the step leaves pending writes into \`${(at ?? id)?.getText().slice(0, 40) ?? 'an object'}\`, which it did not make`;
+      if (!fresh && !moduleCell(d)) return `a function the step leaves pending writes into \`${(at ?? id)?.getText().slice(0, 40) ?? 'an object'}\`, which it did not make`;
     }
     const reads = (x) => {
       if (ts.isIdentifier(x)) {
