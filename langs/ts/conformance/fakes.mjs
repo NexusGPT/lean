@@ -439,21 +439,35 @@ function timerScript(rng) {
   return [{ label: 't0', kind: 'timeout', d: 1, count: 1, nested: null, clear: false, clearOther: null }];
 }
 // play a script through a timer API; returns the fire log once `drain` has run every timer
+// play a script through a timer API; returns the fire log once `drain` has run every timer, and the measurement's skew:
+// the largest delay between the instant a timer was meant to be armed (the start for the first turn, its parent's due
+// instant for a nested one, its previous due instant for an interval's next period) and the instant it was. The real
+// loop takes the time afresh at every arm, so two timers whose due instants are g ms apart can swap only when the skew
+// reaches g: a real measurement with skew below the smallest gap fixes the order, one above it is measured again
 async function playTimers(api, items, K, drain) { // K null: the delays as written (the coercion scripts)
-  const log = [], ids = new Map(), ms = (d) => (K === null ? d : d * K);
+  const log = [], ids = new Map(), ms = (d) => (K === null ? Math.max(1, Number(d) || 0) : d * K), t0 = performance.now(); let skew = 0;
+  const at = (planned) => { skew = Math.max(skew, performance.now() - t0 - planned); };
   for (const it of items) {
-    let n = 0;
+    let n = 0, due = ms(it.d);
+    at(0);
     const cb = () => {
-      n++; log.push(it.kind === 'interval' ? `${it.label}#${n}` : it.label);
+      n++; log.push(it.kind === 'interval' ? `${it.label}#${n}` : it.label); at(due);
       if (it.clearOther != null && items[it.clearOther] && items[it.clearOther] !== it) { const o = items[it.clearOther]; (o.kind === 'interval' ? api.clearInterval : api.clearTimeout)(ids.get(o.label)); }
-      if (it.nested) api.setTimeout(() => log.push(`${it.label}n`), ms(it.nested.d));
+      if (it.nested) api.setTimeout(() => log.push(`${it.label}n`), K === null ? it.nested.d : it.nested.d * K);
       if (it.kind === 'interval' && n >= it.count) api.clearInterval(ids.get(it.label));
+      due += ms(it.d);
     };
-    ids.set(it.label, it.kind === 'interval' ? api.setInterval(cb, ms(it.d)) : api.setTimeout(cb, ms(it.d)));
+    ids.set(it.label, it.kind === 'interval' ? api.setInterval(cb, K === null ? it.d : it.d * K) : api.setTimeout(cb, K === null ? it.d : it.d * K));
     if (it.clear) (it.kind === 'interval' ? api.clearInterval : api.clearTimeout)(ids.get(it.label));
   }
   await drain(items);
-  return log;
+  return { log, skew };
+}
+// the real loop's order of a script: measured until the skew stays below the smallest gap between due instants (at most
+// five tries; the loop's clock counts whole milliseconds, so the skew must stay below the gap less one); null when no try was clean (the machine's load), and the case is counted unmeasured, never as agreement
+async function realOrder(items, K, drain, gap) {
+  for (let i = 0; i < 5; i++) { const r = await playTimers(realApi, items, K, drain); if (r.skew < gap - 1) return r.log; } // the loop's clock counts whole milliseconds: a skew of a fraction can still cross one
+  return null;
 }
 const horizon = (items) => items.reduce((m, it) => Math.max(m, it.d * it.count + (it.nested?.d ?? 0)), 0) + 2;
 const realDrain = (K) => (items) => new Promise((r) => setTimeout(r, horizon(items) * K + 20));
@@ -464,10 +478,10 @@ async function fakeTimers(fake, seed, items, K, H0 = null) {
   if (Object.values(api).some((f) => typeof f !== 'function')) return { absent: Object.entries(api).filter(([, f]) => typeof f !== 'function').map(([k]) => k) };
   const marks = []; const wrap = Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a) => { const b = traceMark(env); const r = f(...a); marks.push(traceMark(env) !== b); return r; }]));
   const drain = async (its) => { const H = H0 ?? horizon(its) * K; if (typeof subject.tick === 'function') { for (let u = 1; u <= H; u++) await subject.tick(1); return; } for (let u = 1; u <= H; u++) await fake.runTimers(env, 1000, 200, { until: u }); };
-  try { const log = await playTimers(wrap, items, K, drain); return { log, recorded: marks.every(Boolean), trace: JSON.stringify(env.trace) }; } catch (e) { return { error: show(thrown(e)) }; }
+  try { const { log } = await playTimers(wrap, items, K, drain); return { log, recorded: marks.every(Boolean), trace: JSON.stringify(env.trace) }; } catch (e) { return { error: show(thrown(e)) }; }
 }
 async function timersFamily(fake, seed) {
-  const K = 10, out = { order: { n: 0, first: null }, coercion: { n: 0, first: null }, det: [], recorded: null, absent: null };
+  const K = 10, out = { order: { n: 0, first: null, unmeasured: 0 }, coercion: { n: 0, first: null, unmeasured: 0 }, det: [], recorded: null, absent: null };
   for (let k = 0; k < CASES; k++) {
     const items = timerScript(draws(seed, 200 + k));
     const f = await fakeTimers(fake, seed, items, K); if (f.absent) { out.absent = f.absent; break; }
@@ -475,21 +489,23 @@ async function timersFamily(fake, seed) {
     if (f.error) { out.order.first ??= `case ${k}: the fake threw ${f.error}`; continue; }
     if (!f.recorded) out.recorded ??= `case ${k}: a timer call added nothing to the trace or the pending list`;
     const g = await fakeTimers(fake, seed, items, K); out.det.push(BREAK || (JSON.stringify(g.log) === JSON.stringify(f.log) && g.trace === f.trace));
-    let real = await playTimers(realApi, items, K, realDrain(K));
-    if (!same(f.log, real)) real = await playTimers(realApi, items, 4 * K, realDrain(4 * K)); // the real loop measured again with wider gaps before a disagreement counts
+    const real = await realOrder(items, K, realDrain(K), K);
+    if (real === null) { out.order.unmeasured++; continue; }
     if (!same(f.log, real)) out.order.first ??= `case ${k}: ${show(items.map((it) => `${it.kind} ${it.label} ${it.d}K${it.kind === 'interval' ? ` x${it.count}` : ''}${it.nested ? ` nests ${it.nested.d}K` : ''}${it.clear ? ' cleared' : ''}${it.clearOther != null ? ` clears t${it.clearOther}` : ''}`))}: fake fired ${show(f.log)}, real ${show(real)}`;
   }
-  // delay coercion: one turn of timeouts with delays Node coerces to 1 ms (0, below 1, not a number) beside 1 ms and 2 ms
-  // ones; one list per coerced delay, so the real order is armed order within 1 ms and 1 ms before 2 ms
-  if (!out.absent) for (const delays of [[1, 0], [0, 1], [2, 0, 1], [-5, 1, NaN], ['2', 1], [1, '0', 2, undefined]]) {
+  // delay coercion: one turn of timeouts with delays Node coerces to 1 ms (0, below 1, not a number, undefined) beside
+  // 1 ms ones and ones 20 and 30 ms long (a numeric string is its number): every coerced delay joins the one 1 ms list,
+  // fired first in, first out whatever the timing; the lists 1, 20 and 30 ms long are 10 ms or more apart
+  if (!out.absent) for (const delays of [[1, 0], [0, 1], [20, 0, 1], [-5, 1, NaN], ['20', 1, 30], [1, '0', 20, undefined], [30, '20', -1]]) {
     const items = delays.map((d, i) => ({ label: `c${i}`, kind: 'timeout', d, count: 1, nested: null, clear: false, clearOther: null }));
-    const f = await fakeTimers(fake, seed, items, null, 5); out.coercion.n++;
-    const real = await playTimers(realApi, items, null, () => new Promise((r) => setTimeout(r, 30)));
+    const f = await fakeTimers(fake, seed, items, null, 40); out.coercion.n++;
+    const real = await realOrder(items, null, () => new Promise((r) => setTimeout(r, 60)), 10);
+    if (real === null) { out.coercion.unmeasured++; continue; }
     if (f.error || !same(f.log, real)) out.coercion.first ??= `delays ${show(delays.map((d) => canon(d)))}: fake fired ${f.error ?? show(f.log)}, real ${show(real)}`;
   }
   return [
-    { clause: 'virtual order', n: out.order.n, first: out.order.first, absent: out.absent ?? [], against: 'the real event loop, delays K = 10 ms apart' },
-    { clause: 'delay coercion', n: out.coercion.n, first: out.coercion.first, against: 'the real event loop' },
+    { clause: 'virtual order', n: out.order.n - out.order.unmeasured, first: out.order.first, absent: out.absent ?? [], against: `the real event loop, delays K = 10 ms apart${out.order.unmeasured ? `; ${out.order.unmeasured} case(s) unmeasured (no try with skew below K less 1 ms)` : ''}` },
+    { clause: 'delay coercion', n: out.coercion.n - out.coercion.unmeasured, first: out.coercion.first, against: `the real event loop${out.coercion.unmeasured ? `; ${out.coercion.unmeasured} script(s) unmeasured (no try with skew below 9 ms)` : ''}` },
     { clause: 'determinism', n: out.det.length, first: out.det.every(Boolean) ? null : 'two fakes from one seed fired differently or wrote different traces' },
     { clause: 'recorded', n: out.order.n, first: out.recorded },
   ];
