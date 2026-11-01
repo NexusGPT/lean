@@ -1,0 +1,20 @@
+{
+ "scope": [
+  "outside",
+  "inside",
+  "reorder"
+ ],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "rule promise-all-order stays none by locality: the finding names the callback; its unordered work runs inside Promise.all, outside the callback's text; lane A reads nothing of these units and lane B runs the real code (design/w1d-opaque-async.md)",
+ "opaqueLint": {
+  "outside": "none",
+  "inside": "none",
+  "reorder": "none"
+ },
+ "b": {
+  "outside": "PASS-bounded",
+  "inside": "WITNESS",
+  "reorder": "WITNESS"
+ }
+}

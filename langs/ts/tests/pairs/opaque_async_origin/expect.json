@@ -1,0 +1,30 @@
+{
+ "scope": [
+  "fill",
+  "count",
+  "share"
+ ],
+ "equal": {
+  "fill": true,
+  "count": false,
+  "share": false
+ },
+ "why": "amendment A2: the step `fill(t, k)` writes t and the name it came from (user), and every other name for that object (u); a read of the length moved before the step is not the read after it, so neither unit may be PASS-proved (design/w1d-opaque-async.md). LEAN_BREAK=async-drop-origins flips both to a false proof (the break row)",
+ "opaque": {
+  "count": [
+   "async"
+  ],
+  "share": [
+   "async"
+  ]
+ },
+ "break": [
+  {
+   "mechanism": "async-drop-origins",
+   "equal": {
+    "count": true,
+    "share": true
+   }
+  }
+ ]
+}
