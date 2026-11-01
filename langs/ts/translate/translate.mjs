@@ -7022,6 +7022,37 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     if (both.length) fail(u.node, `param-assign: parameter \`${both[0].name.text}\` is rebound and also changed in place`);
     return [...out].filter((d) => !d.initializer).map((d) => d.name.text); // a defaulted parameter is already a local (sigParams)
   }
+  // A write through a const name for a node the unit was handed (`const t = user.tags; t.push(k)`, `const o = this.box;
+  // o.n = 1`): the lint admits it as a step on that node for the heap core (lint.mjs heldAlias), and the heap core reads
+  // it so. The value reading holds `t` as a copy of the value, so the write would not reach `user`: a unit the value
+  // reading emits refuses it (alias-mutation, graded opaque: the block holds the write and the world carries it). The
+  // first such write, or null. The forms the value reading carries itself (carriedAliases: `const h = b`, a bare name)
+  // are not paths and are not this test's.
+  function heldAliasWrite(u) {
+    if (!u.body) return null;
+    const params = new Set(u.params.map((p) => p.name).filter(ts.isIdentifier).map((n) => checker.getSymbolAtLocation(n)).filter(Boolean));
+    const strip = (x) => { while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression?.(x) || ts.isTypeAssertionExpression?.(x)) x = x.expression; return x; };
+    const aliases = new Map(); // symbol -> the path text it names
+    const handedPath = (x) => { x = strip(x); if (!ts.isPropertyAccessExpression(x) && !ts.isElementAccessExpression(x)) return false; let r = x; while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r) || ts.isParenthesizedExpression(r) || ts.isNonNullExpression(r) || ts.isAsExpression(r)) r = r.expression; if (r.kind === K.ThisKeyword) return true; if (!ts.isIdentifier(r)) return false; const sym = checker.getSymbolAtLocation(r); return params.has(sym) || aliases.has(sym); };
+    const find = (n) => { if (ts.isFunctionLike(n) && n !== u.fn) return; if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer && (ts.getCombinedNodeFlags(n) & ts.NodeFlags.Const) && handedPath(n.initializer) && isReference(typeOf(n.name))) aliases.set(checker.getSymbolAtLocation(n.name), strip(n.initializer).getText(sf)); ts.forEachChild(n, find); };
+    find(u.body);
+    if (!aliases.size) return null;
+    const rootSym = (x) => { x = strip(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x) || ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x)) x = x.expression; return ts.isIdentifier(x) ? checker.getSymbolAtLocation(x) : null; };
+    let hit = null;
+    const walk = (n) => {
+      if (hit || (ts.isFunctionLike(n) && n !== u.fn)) return;
+      let target = null;
+      if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment && !ts.isIdentifier(strip(n.left))) target = n.left;
+      else if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator) && !ts.isIdentifier(strip(n.operand))) target = n.operand;
+      else if (ts.isDeleteExpression(n)) target = n.expression;
+      else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATORS.has(n.expression.name.text)) target = n.expression.expression;
+      const sym = target && rootSym(target);
+      if (sym && aliases.has(sym)) { hit = { node: n, name: sym.name, path: aliases.get(sym) }; return; }
+      ts.forEachChild(n, walk);
+    };
+    walk(u.body);
+    return hit;
+  }
   // the places a unit assigns a parameter by name (`p = v`, `p += v`, `p++`), outside nested functions
   function paramWrites(u, d) {
     const sym = checker.getSymbolAtLocation(d.name), out = [];
@@ -7183,6 +7214,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     { const t = tailOf(u); if (t?.uncovered) fail(u.node, `opaque: a ${t.uncovered.rule} site outside the unit's body (a parameter default) has no block: ${t.uncovered.msg}`); } // a site the block does not hold (a parameter default) keeps its refusal
     const inBlock = (n) => !!tailOf(u)?.covers(n); // the unit's opaque block holds the construct: the value reading never reads it
     { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw && !inBlock(lw.node)) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
+    { const hw = heldAliasWrite(u); if (hw && !inBlock(hw.node)) fail(hw.node, `alias-mutation: \`${hw.name}\` is another name for \`${hw.path}\`, a node the unit was handed; the heap core does not read this unit and the value reading copies it, so the write would be lost: change it through \`${hw.path}\`, or copy it first`); } // the lint admits the alias for the heap core (lint.mjs heldAlias); emitted here, it is the value reading's
     { const sh = sharedMutation(checker, u, { sf, current: u.node, units: fns, buckets: bucketMaps(u.fn, checker) }); if (sh && !(inBlock(sh.node) && inBlock(sh.holder))) fail(sh.node, `alias-mutation: \`${sh.name}\` is changed in place while ${sh.side === 'source' ? (sh.other ? `\`${sh.other}\`` : 'another slot') + ' holds the same object' : `it holds \`${sh.other}\`'s object`} (line ${lineOf(sf, sh.holder.getStart(sf))}); this reading reads an object as a value, so the change would not show through the other name, and the heap core does not read this unit: copy before the change (\`[...a]\`, \`{ ...o }\`) or change one name only`); } // design/conformance-readings.md section 3: a write through a name another name holds is a write the value reading would lose
     tempCount = 0; // a unit's temporaries are numbered from its own start: an edit elsewhere in the file leaves its text unchanged, so the theorem's identity shortcut still reads it
     faultMode = false;
