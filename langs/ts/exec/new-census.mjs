@@ -13,7 +13,7 @@ const TEST_FILE = /(?:^|[/\\])__tests__(?:[/\\]|$)|\.(?:spec|test)\.[cm]?[jt]sx?
 const SKIP_DIR = new Set(['node_modules', 'dist', 'build', '.next', 'coverage', '.git', '.turbo', 'out']);
 function testFilesOf(root) {
   const out = [];
-  const walk = (d) => { let es; try { es = fs.readdirSync(d, { withFileTypes: true }); } catch { return; } for (const e of es.sort((a, b) => a.name.localeCompare(b.name))) { const p = path.join(d, e.name); if (e.isDirectory()) { if (!SKIP_DIR.has(e.name)) walk(p); } else if (TEST_FILE.test(p) && /\.[cm]?tsx?$/.test(p) && !p.endsWith('.d.ts')) out.push(p); } };
+  const walk = (d) => { let es; try { es = fs.readdirSync(d, { withFileTypes: true }); } catch { return; } for (const e of es.sort((a, b) => a.name.localeCompare(b.name))) { const p = path.join(d, e.name); if (e.isDirectory()) { if (!SKIP_DIR.has(e.name)) walk(p); } else if (TEST_FILE.test(p) && /\.[cm]?tsx?$/.test(p) && !p.endsWith('.d.ts') && !e.name.startsWith('._')) out.push(p); /* an AppleDouble `._` file is metadata, as census.mjs skips it */ } };
   walk(root);
   return out;
 }
