@@ -156,6 +156,14 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   const refusedAsExpected = !!exp.theoremRefusal && th.status !== 0 && thText.includes(exp.theoremRefusal);
   if (exp.theoremRefusal) add('pair', name, `theorem refused: ${exp.theoremRefusal}`, refusedAsExpected, th.status === 0 ? 'generated' : thText.slice(-160));
   else add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : thText.slice(-160));
+  // `planted` in expect.json: the candidate's unit is exec/mutate.mjs's planted change of the parent's at that index
+  for (const [unit, index] of Object.entries(exp.planted ?? {})) {
+    const out = path.join(tmpd, `planted_${artifactName(unit)}.ts`);
+    const r = run('node', [path.join(here, '../exec/mutate.mjs'), pairFile(d, 'parent'), '--unit', unit, '--index', String(index), '--out', out]);
+    const unitText = (f) => { try { const L = loadForUnits(f, { project: false }); const u = unitsOfFile(L.sf).get(unit); return u ? u.node.getText(L.sf) : null; } catch { return null; } };
+    const a = r.status === 0 ? unitText(out) : null, b = unitText(pairFile(d, 'candidate'));
+    add('pair', name, `planted ${unit} is mutate.mjs index ${index}`, !!a && a === b, r.status !== 0 ? (r.stderr || r.stdout).trim().slice(-160) : a === b ? 'same text' : 'differs');
+  }
   if (th.status !== 0 && !refusedAsExpected) return;
   if (!refusedAsExpected) {
   // lane A is bounded by the solver's resource count (exec/dafny-args.mjs), the same whatever the load; the cores
@@ -202,7 +210,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   } // lane A on the generated theorem
   // `opaque` in expect.json: the opaque steps the candidate's translation lists for a unit (its `// OPAQUE` line, the
   // certificate's lanes.A.opaque), each listed rule among them (design/w1a-opaque-mutation.md)
-  if (exp.opaque) { const listed = opaqueLines(fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8')); for (const [f, want] of Object.entries(exp.opaque)) { const steps = listed.get(`${f}_candidate`)?.steps ?? []; const rules = new Set(steps.flatMap((x) => String(x.rule).split(','))); add('pair', name, `opaque ${f}: ${want.join(', ')}`, want.every((r) => rules.has(r)) && steps.length > 0, steps.length ? `${steps.length} step(s): ${steps.map((x) => `${x.rule} at line ${x.line}, reads ${x.reads.join(' ')}, writes ${x.writes.join(' ')}`).join('; ')}` : 'no opaque step listed'); } }
+  if (exp.opaque) { const listed = opaqueLines(fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8')); for (const [f, want] of Object.entries(exp.opaque)) { const steps = listed.get(`${f}_candidate`)?.steps ?? []; const rules = new Set(steps.flatMap((x) => String(x.rule).split(','))); add('pair', name, `opaque ${f}: ${want.join(', ')}`, (want.length ? want.every((r) => rules.has(r)) && steps.length > 0 : steps.length === 0), steps.length ? `${steps.length} step(s): ${steps.map((x) => `${x.rule} at line ${x.line}, reads ${x.reads.join(' ')}, writes ${x.writes.join(' ')}`).join('; ')}` : 'no opaque step listed'); } }
   // `break` in expect.json (tests/break.mjs, the one convention): both sides translated again with LEAN_BREAK=<mechanism>;
   // each listed lemma, expected not proved above, must prove now: without the mechanism the reading proves a false
   // equality, so the mechanism is what keeps the pair honest (the row passes when the broken run is wrong)
@@ -812,6 +820,8 @@ async function adviceLabels(add) {
     const l = await R.run('node', [lint, path.join(advDir, f), '--json', '--advice', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
     let all = [], found = []; try { all = JSON.parse(l.stdout); found = all.filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
     const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
+    // a finding the opaque column grades is listed with the advice (`graded`, label and advice kept) and refuses
+    // nothing, so the lint exits 1 exactly when a refusal is listed (design/w1a-opaque-mutation.md)
     const ok = l.status === (all.some((x) => x.graded === undefined) ? 1 : 0) && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
     add('advice', name, `${rule} ${label}${none ? `, no ${none}` : ''}`, ok, found.length ? found.map((x) => `${x.label}${x.labelDecided ? ' (decided at the site)' : ''}`).join(', ') + (none && all.some((x) => x.rule === none) ? `; ${none} fired` : '') : `no ${rule} finding (exit ${l.status})`);
   } }));

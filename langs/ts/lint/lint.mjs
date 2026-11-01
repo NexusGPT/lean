@@ -245,10 +245,46 @@ export const OPAQUE_ROWS = {
   'read-after-call': 'expression', // a handed object read after the call: ext_now_<T>(wld, x), the handle as the world holds it
   'copied-argument': 'expression', // a new object of existing parts handed to the outside: handed_fresh_<skeleton>_<T>(v, k)
   'type-assertion': 'expression', // a value whose type nothing checked, handed to the outside as it is: ext_<from>_as_<to>(v)
+  // w1b-opaque-statements: the statement and expression family (design/w1b-opaque-statements.md); the envelope of each
+  // (whether its value can leave the model) is translate/opaque-statements.mjs ENVELOPE
+  'assignment-expression': 'statement',
+  'bare-return': 'statement',
+  'bitwise': 'statement',
+  'collection-iterator': 'statement',
+  'destructuring': 'statement',
+  'division': 'statement',
+  'for-in': 'statement',
+  'for-of-non-array': 'statement',
+  'label': 'statement',
+  'loose-equality': 'statement',
+  'math-empty': 'statement',
+  'mixed-types': 'statement',
+  'number-special': 'statement',
+  'param-form': 'statement',
+  'record-rest': 'statement',
+  'reference-key': 'statement',
+  'spread': 'statement',
+  'string-code-unit': 'statement',
+  'string-order': 'statement',
+  'template': 'statement',
+  'unary-coercion': 'statement',
+  'uninitialised': 'statement',
+  'update-expression': 'statement',
+  // no rule to grade: comma and switch-fallthrough (no lint rule or translator refusal names them: the comma and the
+  // fall-through are read, subset.md "Operators as values", "Control"). By design none: break-continue (the jump has no
+  // loop or switch around it in its function, so a step has no control result to give it), loop-form (a loop with no
+  // measure: an opaque reading would hide the missing measure)
 };
 export const OPAQUE_GRADES = new Set(['block', 'statement', 'expression', 'none']);
 for (const [rule, g] of Object.entries(OPAQUE_ROWS)) if (!OPAQUE_GRADES.has(g)) throw new Error(`lint: opaque row ${rule}: ${g} is not a grade`);
 export const opaqueGrade = (rule) => OPAQUE_ROWS[rule] ?? 'none';
+// the statement family's envelope (design/w1b-opaque-statements.md), one row per rule it grades `statement`: `value` when
+// every value the construct can make is a value of the model, `boundary` when it can make one outside it (an astral
+// string, NaN or an infinity, a fraction in an integer file, a key compared by reference, a used-up iterator): a
+// boundary step may write only the world, else its unit joins the value boundary (translate.mjs numericOpaque)
+const BOUNDARY_RULES = new Set(['collection-iterator', 'division', 'math-empty', 'number-special', 'reference-key', 'string-code-unit', 'unary-coercion']);
+export const OPAQUE_ENVELOPE = Object.freeze(Object.fromEntries(Object.entries(OPAQUE_ROWS).filter(([, g]) => g === 'statement').map(([r]) => [r, BOUNDARY_RULES.has(r) ? 'boundary' : 'value'])));
+for (const r of BOUNDARY_RULES) if (OPAQUE_ENVELOPE[r] !== 'boundary') throw new Error(`lint: boundary rule ${r} is not graded statement`);
 
 export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
 export function admissionFindings(file, ranges = null, opts = {}) {

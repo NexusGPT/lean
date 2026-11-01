@@ -31,7 +31,7 @@ import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, r
 import { memberRow } from './library-rows.mjs';
 import { methodLiteralOf } from './common.mjs';
 import { moduleState } from './module-forms.mjs';
-import { admissionFindings } from './lint/lint.mjs';
+import { admissionFindings, OPAQUE_ENVELOPE as ENVELOPE } from './lint/lint.mjs'; // the envelope: the audit's rules of an opaque site's refusal (design/w1b-opaque-statements.md)
 import { translate } from './translate/translate.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -74,6 +74,12 @@ const DYNAMIC_RULES = {
   rule: ['update-expression', 'assignment-expression'],
   EFFECT_GLOBALS: ['dynamic-eval', 'prototype'],
   get 'site.rule'() { return Object.keys(OPAQUE_CALLS).filter((r) => opaqueCallsForm(r) && readingOfFinding(r, '')); }, // an opaque site no step reached keeps its finding's refusal (translate.mjs, design/w1c-opaque-calls.md): the rules a site can hold (union-type has no site, so no reading)
+  // translate.mjs siteFail (design/w1b-opaque-statements.md): an opaque site's refusal names its own rule, one the
+  // statement family grades; a boundary site's, one whose envelope is `boundary`; both from the
+  // statement family's envelope: read when the audit runs (opaque-statements.mjs imports the lint, which imports this file).
+  // Looked up as `siteFail <expression>`: the calls column's site above is written `site.rule` too (one key per family)
+  get 'siteFail boundary.rule'() { return Object.keys(ENVELOPE).filter((r) => ENVELOPE[r] === 'boundary'); },
+  get 'siteFail site.rule'() { return Object.keys(ENVELOPE); },
 };
 const dynamicRules = (expr) => { if (Object.hasOwn(DYNAMIC_RULES, expr)) return DYNAMIC_RULES[expr]; /* an exact key first: `site.rule` holds `rule` */ for (const [k, v] of Object.entries(DYNAMIC_RULES)) if (expr === k || expr.includes(k)) return v; const lits = [...expr.matchAll(/'([a-z][a-z0-9-]*)'/g)].map((m) => m[1]); return lits.length ? lits : null; };
 
@@ -140,13 +146,14 @@ export function auditSites(root = here) {
   for (const [i, [rel, who]] of files.entries()) {
     const sf = parsed[i];
     const line = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
-    const add = (n, kind, rules, msgNode) => {
+    const add = (n, kind, rules, msgNode, ruled = false) => { // ruled: the refusal's text is `<rule>: <message>` (translate.mjs siteFail)
       const template = templateOf(msgNode, sf);
       const msgText = template ?? (msgNode ? `<${msgNode.getText(sf).slice(0, 60)}>` : null);
       for (const rule of rules ?? [null]) {
         let reading;
         if (kind === 'lint-advice' || ADVICE_RULES.has(rule)) reading = 'advice';
         else if (who === 'lint') reading = rule ? readingOfFinding(rule, template ?? '') : null;
+        else if (ruled) reading = rule ? readingOfRefusal(`${rule}: ${template ?? ''}`) : null; // the lookup the lowering makes of the refusal at run time
         else if (template !== null && !template.startsWith('${}')) reading = readingOfRefusal(template); // the translator's own table: a rule prefix through the lint's, else its patterns
         else reading = rule ? readingOfFinding(rule, '') : template !== null ? readingOfRefusal(template) : null;
         const by = deciders(n, sf);
@@ -172,10 +179,11 @@ export function auditSites(root = here) {
           else if (!t && /\.refuse$/.test(a[1].getText(sf))) add(n, 'translate-refuse', ['prototype'], null); // a shared decorators.mjs test's refusal text, the rule the lint names it by
           else add(n, 'translate-refuse', m ? [m[1]] : null, a[1]);
         }
+        if (who === 'translate' && f === 'siteFail' && a.length >= 3) add(n, 'translate-refuse', ts.isStringLiteral(a[1]) ? [a[1].text] : dynamicRules(`siteFail ${a[1].getText(sf)}`), a[2], true); // an opaque site's refusal: its rule is the site's (DYNAMIC_RULES `siteFail ...`)
       }
       if (who === 'translate' && ts.isNewExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'Unsupported') {
         let fn = n.parent; while (fn && !ts.isFunctionLike(fn)) fn = fn.parent;
-        const inFail = !!fn && fn.parent && ts.isVariableDeclaration(fn.parent) && fn.parent.name.getText(sf) === 'fail'; // the mechanism every fail site throws through, not a site
+        const inFail = !!fn && fn.parent && ts.isVariableDeclaration(fn.parent) && ['fail', 'siteFail'].includes(fn.parent.name.getText(sf)); // the mechanism every fail site throws through, not a site
         if (!inFail) add(n, 'translate-throw', null, n.arguments?.[0]);
       }
       if (who === 'lint' && ts.isObjectLiteralExpression(n) && n.parent && ts.isCallExpression(n.parent) && /\.push$/.test(n.parent.expression.getText(sf))) {
@@ -910,7 +918,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
   if (open.length && opts.emission !== false) {
     const refuse = (u, id, rule, reason, line, by, site = null) => { u.refusal = { id, version: readingById(id) ? currentVersion(readingById(id)) : null, rule, reason, line, by, ...(site ? { site } : {}) }; };
     for (const u of open) {
-      try { measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given, normalized: L, fileAnalysis })); }
+      try { const tr = measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given, normalized: L, fileAnalysis })); if (tr?.opaque?.[u.unit]) u.opaqueSteps = tr.opaque[u.unit]; } // the unit's opaque steps, their spans and its opaque fraction (A5: the census reads them per unit)
       catch (e) {
         const message = String(e?.message ?? e);
         if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }

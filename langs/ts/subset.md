@@ -202,6 +202,19 @@ toward an integer constant or an unchanged array/string length. Calls, nested lo
 continue, additional counter writes and other shapes keep the opaque reading.
 An unconditional loop without a break can only complete through its return channel.
 
+Since lane w1b (2026-11-01, [design](design/w1b-opaque-statements.md)) a finding of a statement-family rule in
+"What is refused" (`destructuring`, `param-form`, `uninitialised`, `record-rest`, `bare-return`, `update-expression`,
+`assignment-expression`, `spread`, `for-in`, `for-of-non-array`, `collection-iterator`, `reference-key`, `template`,
+`label`, `math-empty`, `division`, `string-order`, `mixed-types`, `loose-equality`, `unary-coercion`, `bitwise`,
+`number-special`, `string-code-unit`; the column is `translate/opaque.mjs` `OPAQUE`) under `--core` makes the innermost
+statement of its unit that holds it one such block, keyed by its tokens, the same-file declarations it names and the
+same-file units it reaches; a site no statement holds (a parameter, a concise body) makes its unit one opaque function.
+A construct whose value can leave the model (an astral string, NaN, an infinity, a fraction in an integer file, a key
+compared by reference, a used-up iterator) may write only the world in its block; else its unit and the same-file units
+that reach it are opaque functions. A block that changes or compares an object by identity keeps the rule's refusal when
+a statement before it may share an object. The certificate lists each block (`opaque`: rule, span, the findings' spans,
+the unit's opaque fraction, reads, writes). `break-continue` and `loop-form` stay refusals by design.
+
 ## Units outside every function
 
 | Unit | Inputs, outputs | Reading |
