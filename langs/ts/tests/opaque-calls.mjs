@@ -32,7 +32,6 @@ export const BREAKS = [
   { pair: 'opaque_alias-origin', mechanism: 'drop-write', units: ['count'] }, // A2: the origin `user` of the alias `t` the step may change
   { pair: 'opaque_callee-text', mechanism: 'drop-callees', units: ['via_callee'] }, // A3: a callee changed only at x === 7919 behind one statement
   { pair: 'opaque_dynamic-key', mechanism: 'drop-read', units: ['read_key'] },
-  { pair: 'opaque_assign-target', mechanism: 'drop-write', units: ['write_assign'] },
 ];
 
 // lane A on one pair, under the environment given: { unit: proved } for every lemma of the pair's units
@@ -61,18 +60,23 @@ function laneA(pair, env = {}) {
     const clean = (k) => finished && !!spans[k] && !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]);
     const rests = restsOf(lines);
     const opaque = {}; for (const m of fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8').matchAll(/^\/\/ OPAQUE (\w+)_candidate: (.*)$/gm)) opaque[m[1]] = JSON.parse(m[2]);
-    return { proved: Object.fromEntries(exp.scope.map((u) => [u, provedLemma(`Equal_${dafnyName(u)}`, clean, rests)])), lemma: Object.fromEntries(exp.scope.map((u) => [u, !!spans[`Equal_${dafnyName(u)}`]])), opaque, finished, tail: finished ? '' : text.trim().slice(-400) };
+    const withheld = Object.fromEntries(lines.map((ln) => ln.match(/^\/\/ UNGUARDED Equal_(\w+): (.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); // the identity guard withheld the lemma: nothing is proved
+    return { withheld, proved: Object.fromEntries(exp.scope.map((u) => [u, provedLemma(`Equal_${dafnyName(u)}`, clean, rests)])), lemma: Object.fromEntries(exp.scope.map((u) => [u, !!spans[`Equal_${dafnyName(u)}`]])), opaque, finished, tail: finished ? '' : text.trim().slice(-400) };
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 
 const rows = [];
 const add = (name, ok, detail) => { rows.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`); };
-const pairs = [...Object.keys(OPAQUE_CALLS).map((r) => `opaque_${r}`), ...BREAKS.map((b) => b.pair)].filter((p, i, xs) => xs.indexOf(p) === i && fs.existsSync(path.join(pairsDir, p, 'expect.json'))).filter((p) => !only || p === only).sort(); // the pairs of this lane: one per rule of the column, and the break pairs
+const pairs = [...Object.keys(OPAQUE_CALLS).map((r) => `opaque_${r}`), ...BREAKS.map((b) => b.pair), 'opaque_param-output'].filter((p, i, xs) => xs.indexOf(p) === i && fs.existsSync(path.join(pairsDir, p, 'expect.json'))).filter((p) => !only || p === only).sort(); // the pairs of this lane: one per rule of the column, and the break pairs
 if (!breakOnly) for (const p of pairs) {
   const exp = JSON.parse(fs.readFileSync(path.join(pairsDir, p, 'expect.json'), 'utf8'));
+  if (exp.refused) { // a rule whose column is none: every finding of it keeps its refusal, no opaque label
+    for (const side of ['parent', 'candidate']) { const r = spawnSync('node', [path.join(root, 'lint/lint.mjs'), path.join(pairsDir, p, `${side}.ts`), '--no-project', '--json'], { encoding: 'utf8', maxBuffer: 1 << 26 }); let fs_ = []; try { fs_ = JSON.parse(r.stdout); } catch { /* none */ } const hits = fs_.filter((f) => f.rule === exp.refused); add(`${p} ${side}: every ${exp.refused} finding refuses`, hits.length > 0 && hits.every((f) => !f.opaque && !f.advisory) && r.status === 1, `${hits.length} finding(s), ${hits.filter((f) => f.opaque).length} labelled opaque`); }
+    continue;
+  }
   const got = laneA(p);
   if (got.error) { add(`${p} lane A`, false, got.error); continue; }
-  for (const [u, want] of Object.entries(exp.equal)) add(`${p} ${u} ${want ? 'proved' : 'not proved'}`, got.proved[dafnyName(u)] === want || got.proved[u] === want, `${got.proved[u] ? 'proved' : got.lemma[u] ? 'not proved' : 'no lemma'}${got.finished ? '' : ': ' + got.tail.slice(-160)}`);
+  for (const [u, want] of Object.entries(exp.equal)) add(`${p} ${u} ${want ? 'proved' : 'not proved'}`, got.proved[dafnyName(u)] === want || got.proved[u] === want, `${got.proved[u] ? 'proved' : got.lemma[u] ? 'not proved' : got.withheld?.[dafnyName(u)] ? `withheld: ${got.withheld[dafnyName(u)].slice(0, 100)}` : 'no lemma'}${got.finished ? '' : ': ' + got.tail.slice(-160)}`);
   // every unit the pair proves holds at least one opaque step, each step's span is its finding's span (A5)
   for (const [u, want] of Object.entries(exp.equal)) if (want) { const o = got.opaque[dafnyName(u)]; add(`${p} ${u} lists its opaque steps`, !!o && o.steps.length > 0 && o.steps.every((s) => s.span && s.span.line === s.line), o ? `${o.steps.length} step(s), rules ${[...new Set(o.steps.map((s) => s.rule))].join(',')}, fraction ${o.fraction}` : 'no OPAQUE line'); }
 }

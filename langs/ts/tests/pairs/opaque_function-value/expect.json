@@ -4,7 +4,9 @@
   "inside_fv",
   "read_fv",
   "callee_fv",
-  "planted_fv"
+  "planted_fv",
+  "twice",
+  "thrice"
  ],
  "equal": {
   "outside_fv": true,

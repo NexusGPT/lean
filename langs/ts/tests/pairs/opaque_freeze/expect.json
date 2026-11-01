@@ -11,5 +11,6 @@
   "read_freeze": false,
   "planted_freeze": false
  },
- "why": "design/w1c-opaque-calls.md, rule freeze: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+ "why": "design/w1c-opaque-calls.md, rule freeze (amendment A4): Object.freeze changes every LATER write to the object, anywhere, outside any step at the freeze site, so its column is none and the refusal stands; every unit of the pair stays refused by the lint (`refused`), none is read.",
+ "refused": "freeze"
 }

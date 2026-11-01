@@ -3,7 +3,9 @@
   "outside_exc",
   "inside_exc",
   "read_exc",
-  "planted_exc"
+  "planted_exc",
+  "bang",
+  "boom"
  ],
  "equal": {
   "outside_exc": true,

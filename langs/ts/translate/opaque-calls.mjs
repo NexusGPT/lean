@@ -89,11 +89,14 @@ export function reachWrites(checker, s, fn) {
   return out;
 }
 
-// The declarations a boundary step makes handles (common.mjs holdOpaque): every name it may write, over-approximated
-// without the translator's state: the names it declares, the root of every target it assigns, updates or deletes, the
-// root of every receiver it calls a method on and of every argument it hands a call, and every name reachWrites holds.
-// Each is read at the opaque Any at every read of the unit, before and after the step: the construct may have made a
-// value outside the declared type, so no exact reading takes it at that type.
+// The declarations a boundary step makes handles (common.mjs holdOpaque): the names whose value the construct itself
+// makes: the names the statement declares, the root of every target it assigns, updates or deletes (a field written
+// with the construct's value leaves its object outside the type as much as a name does). Each is read at the opaque Any
+// at every read of the unit, before and after the step: the construct may have made a value outside the declared type
+// (a prototype function read by a computed key, an undefined match item), so no exact reading takes it at that type.
+// An object the step may only change through a typed call (reachWrites: a receiver, an argument, an alias origin) keeps
+// its type: such a call keeps the values it writes in their types as any typed code does (subset.md, "Modelling
+// axioms"); it is written, never held.
 export function heldDecls(checker, s, fn) {
   const ids = [];
   const root = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e))) e = e.expression; if (e && ts.isIdentifier(e)) ids.push(e); };
@@ -102,12 +105,12 @@ export function heldDecls(checker, s, fn) {
     if (ts.isBinaryExpression(x) && ASSIGN(x.operatorToken.kind)) { if (ts.isObjectLiteralExpression(x.left) || ts.isArrayLiteralExpression(x.left)) ts.forEachChild(x.left, function w(k) { if (ts.isIdentifier(k)) ids.push(k); else ts.forEachChild(k, w); }); else root(x.left); }
     if ((ts.isPrefixUnaryExpression(x) || ts.isPostfixUnaryExpression(x)) && (x.operator === K.PlusPlusToken || x.operator === K.MinusMinusToken)) root(x.operand);
     if (ts.isDeleteExpression(x)) root(x.expression);
-    if (ts.isCallExpression(x) || ts.isNewExpression(x)) { if (ts.isPropertyAccessExpression(x.expression) || ts.isElementAccessExpression(x.expression)) root(x.expression.expression); for (const a of x.arguments ?? []) root(ts.isSpreadElement(a) ? a.expression : a); }
+    if ((ts.isForOfStatement(x) || ts.isForInStatement(x)) && !ts.isVariableDeclarationList(x.initializer)) root(x.initializer);
     ts.forEachChild(x, walk);
   };
   walk(s);
   const out = new Set();
-  for (const id of [...ids, ...reachWrites(checker, s, fn)]) {
+  for (const id of ids) {
     const d = checker.getSymbolAtLocation(id)?.valueDeclaration;
     if (d && fn.pos <= d.pos && d.end <= fn.end) out.add(d); // a name of the unit: a module binding is a world field already
   }

@@ -1,26 +1,33 @@
-// The opacity ladder (design/w1c-opaque-calls.md), rule `dynamic-key`: a computed key on a record that holds a method. The statement holding it is one opaque
-// step keyed by its text, reading every name it mentions, writing every name it assigns and every object in scope.
+// The opacity ladder (design/w1c-opaque-calls.md), rule `dynamic-key`: a computed key on a record that holds a method (the
+// key may name the method, or a name of Object.prototype). The statement holding it is one opaque step keyed by its text,
+// reading every name it mentions, writing every name it assigns and every reference in scope; a boundary rule, so every
+// name the step may write is read at Any.
 type Rec = { a: number; b: number; run(): number };
 
-export function outside_key(r: Rec, k: keyof Rec): number {
-  const n = r.a + 1;
-  const v = typeof r[k] === 'number' ? 1 : 0;
-  return v + n;
+export function outside_key(k: "a" | "b" | "run", x: number): number {
+  const y = x + 1;
+  const r: Rec = { a: x, b: 2, run: () => 3 };
+  const v = y + (typeof r[k] === "number" ? 1 : 0);
+  return 2 * v;
 }
 
-export function inside_key(r: Rec, k: keyof Rec): number {
-  const n = r.a + 1;
-  const v = typeof r[k] === 'number' ? 2 : 0;
-  return n + v;
-}
-
-export function read_key(r: Rec, k: keyof Rec, x: number): number {
-  const y = x + 2;
-  const v = typeof r[k] === 'number' ? y : 0;
+export function inside_key(k: "a" | "b" | "run", x: number): number {
+  const y = x + 1;
+  const r: Rec = { a: x, b: 2, run: () => 3 };
+  const v = y + (typeof r[k] === "function" ? 1 : 0);
   return v;
 }
 
-export function planted_key(r: Rec, k: keyof Rec): number {
-  const v = typeof r[k] !== 'number' ? 1 : 0;
+export function read_key(k: "a" | "b" | "run", x: number): number {
+  const y = x + 2;
+  const r: Rec = { a: x, b: 2, run: () => 3 };
+  const v = y + (typeof r[k] === "number" ? 1 : 0);
+  return v;
+}
+
+export function planted_key(k: "a" | "b" | "run", x: number): number {
+  const y = x + 1;
+  const r: Rec = { a: x, b: 2, run: () => 3 };
+  const v = y + (typeof r[k] === "bigint" ? 1 : 0);
   return v;
 }

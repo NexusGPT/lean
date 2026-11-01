@@ -1,8 +1,8 @@
 {
  "planted_key": {
   "index": 0,
-  "kind": "operator",
-  "was": "===",
-  "text": "!=="
+  "kind": "string",
+  "was": "\"number\"",
+  "text": "\"bigint\""
  }
 }
