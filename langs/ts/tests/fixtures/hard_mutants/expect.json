@@ -1,0 +1,1 @@
+{ "why": "The hard kinds fixture (tests/hard-mutants-fixture.mjs): every hard site exec/mutate.mjs --hard lists in these units is planted and caught as a WITNESS by lean." }

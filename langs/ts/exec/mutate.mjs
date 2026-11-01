@@ -10,9 +10,12 @@
 //   dropped effect       a call statement is removed
 //   changed return       a returned expression is wrapped: boolean -> negated, number -> + 1, string -> + "x", else unchanged
 // --list prints the sites. The mutation is a text edit; the rest of the file is untouched.
+// --hard (opts.hard): the hard kinds of exec/mutate-hard.mjs are listed too, after every site above, so the sites above
+// keep their indices; without it the list is the one above, unchanged.
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
+import { hardSites } from './mutate-hard.mjs';
 
 const K = ts.SyntaxKind;
 const FLIP = { [K.LessThanToken]: '<=', [K.LessThanEqualsToken]: '<', [K.GreaterThanToken]: '>=', [K.GreaterThanEqualsToken]: '>', [K.EqualsEqualsEqualsToken]: '!==', [K.ExclamationEqualsEqualsToken]: '===', [K.PlusToken]: '-', [K.MinusToken]: '+', [K.AmpersandAmpersandToken]: '||', [K.BarBarToken]: '&&', [K.AsteriskToken]: '+' };
@@ -54,6 +57,7 @@ export function sitesOf(file, unitName, opts = {}) {
   };
   walk(u.body);
   sites.sort((a, b) => a.start - b.start);
+  if (opts.hard) sites.push(...hardSites(sf, checker, u));
   return { sites, text, unit: u };
 }
 
@@ -86,8 +90,9 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const file = a[0], unit = opt('--unit'), index = Number(opt('--index', 0));
   const project = a.includes('--no-project') ? false : opt('--project', true);
-  if (a.includes('--list')) { const { sites } = sitesOf(file, unit, { project }); console.log(JSON.stringify(sites.map((s, i) => ({ i, kind: s.kind, was: s.was, text: s.text })), null, 1)); process.exit(0); }
-  const m = mutate(file, unit, index, { project });
+  const hard = a.includes('--hard');
+  if (a.includes('--list')) { const { sites } = sitesOf(file, unit, { project, hard }); console.log(JSON.stringify(sites.map((s, i) => ({ i, kind: s.kind, was: s.was, text: s.text, ...(s.lines ? { lines: s.lines } : {}) })), null, 1)); process.exit(0); }
+  const m = mutate(file, unit, index, { project, hard });
   if (!m) { console.error('no mutation site'); process.exit(1); }
   const out = opt('--out', null);
   if (out) { fs.writeFileSync(out, m.source); console.log(JSON.stringify({ site: m.site, count: m.count })); } else process.stdout.write(m.source);

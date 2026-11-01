@@ -199,6 +199,12 @@ export async function check(opts) {
     return finish(iface || adapter ? 'ASK' : (rung()), cert, iface ? {} : unreached({}));
   }
   const withheldLine = (fs.readFileSync(path.join(tmp, 'theorem.dfy'), 'utf8').match(new RegExp(`^// UNGUARDED Equal_${dafnyName(unit)}: (interface differs: .*)$`, 'm')) || [])[1] ?? null;
+  // a signature that differs only in parameter defaults takes the same inputs on both sides (the same positions, types,
+  // optionality and rest): a same-input difference is the call that omits the argument behaving otherwise, a behaviour
+  // the caller sees, so lane B's WITNESS answers it. LEAN_BREAK=default-witness: ASK:interface as for any signature
+  const defaultsOnly = !!withheldLine && !(process.env.LEAN_BREAK ?? '').split(',').includes('default-witness')
+    && withheldLine.replace(/^interface differs: /, '').split('; ').filter((x) => !x.startsWith('no adapter declared')).every((x) => /^parameter \d+ default /.test(x));
+  if (withheldLine && !adapter && defaultsOnly && witnessed) { cert.lanes.A = { verdict: 'ASK:interface', identity: withheldLine, dir: tmp }; return witnessOut(); }
   if (withheldLine && !adapter) { // a changed signature without an adapter: ASK:interface naming the door, whatever lane B found
     cert.lanes.A = { verdict: 'ASK:interface', identity: withheldLine, dir: tmp };
     if (b.verdict === 'WITNESS') cert.lanes.B.consulted = false; // ran and recorded; not the answer to an ill-posed comparison
