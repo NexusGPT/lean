@@ -94,6 +94,12 @@ Rerun after the fixes: 0 `new:test`, and 0 failures among the 999 root tests the
 - Tests: 1,304 of 2,335 root tests touched the world (mostly fixtures read through lean's fake `fs`, and package
   calls), 80 use what the runner model does not hold (module mocks, `Response`). Real installed packages for tests,
   instead of fakes, would be the W6 environment's to give.
-- `tests/break.mjs` (A6) does not exist yet; the switches here are read by name and can move into it unchanged.
+- `tests/break.mjs` (A6) is now on `lane/w1a-opaque-mutation` (not on lead-vm, so not in this tree). Its convention is
+  the one used here (`LEAN_BREAK=<name>`); at merge, the nine sites that read `process.env.LEAN_BREAK === '<name>'`
+  (exec/declared.mjs 146, 192; exec/new-tests.mjs 187, 238; exec/new-unit.mjs 286, 289, 302, 303, 313, 425) become
+  `broken('<name>')`, and the nine names join its `MECHANISMS`: declared-edges, declared-throws, admitted-input,
+  closed-call, declared-shape, shape-drives, pr-tests, closed-test, platform-gap. Its `breakRows` checks lemma flips
+  (`equal`); a break here flips a record (`records`/`absent`), so tests/w1h-new-units.mjs --break stays the row runner
+  for these pairs until break.mjs gains a records form.
 - The 44 AACR instances were not read; the 98 notes on new files are this lane's first reading, measured by W5.
 - Scratch removed: the red-first worktree, /tmp/w1h, and the node_modules installed under /root/census-installs/w1h.
