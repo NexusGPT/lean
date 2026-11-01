@@ -78,7 +78,7 @@ import { absenceCarried, absenceHome, payloadRead, payloadStatement } from '../c
 import { copySourceWhy, copySource } from '../common.mjs'; // a copy of a record's own keys: one test with the lint and the heap core
 import { sealedMember } from '../common.mjs';
 import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the heap core // `this.m()` is the class's own m only when no subclass can hold another: one test with the heap core
-import { typeAssertion, assertionHeld, erasedReferenceSlot, readAfterCall, heldRecord, heldField, heldCall, withHeldParams } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint; the read-after-call decision shared with the lint
+import { typeAssertion, outsideSlot, assertionHeld, erasedReferenceSlot, readAfterCall, heldRecord, heldField, heldCall, withHeldParams } from '../common.mjs'; // a value whose type nothing checked: read with its real type, one test with the lint; the read-after-call decision shared with the lint
 const PROMISE_COMBINATORS = new Set(['Promise.resolve', 'Promise.reject', 'Promise.all', 'Promise.allSettled', 'Promise.race', 'Promise.any']), EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect', 'useInsertionEffect']); // read-after-call: calls that run no outside code while the unit runs, and hooks whose callback runs after the render // a value whose type nothing checked: read with its real type, one test with the lint
 import { callbackEnvironment, callbackUntypedJsUnit, findingUnit, parseUnitList, formatUnitList } from '../common.mjs'; // a callback unit's captured inputs and its contextual types; a finding's unit; the one unit-list parser and its inverse
 const snake = (n) => n.replace(/([a-z0-9])([A-Z])/g, '$1_$2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2').toLowerCase();
@@ -108,7 +108,7 @@ function translateGraded(file, fnName, opts = {}) {
   for (let round = 0; ; round++) {
     try { return translateSites(file, fnName, { ...opts, opaqueSites: sites }); } // each round through the calls column's own loop (translateSites, below)
     catch (e) {
-      const rule = e instanceof Unsupported && opts.core && e.at ? gradedRule(e.message) : null;
+      const graded = e instanceof Unsupported && opts.core && e.at ? gradedRule(e.message) : null, rule = graded && opaqueGrade(graded) === 'block' ? graded : null; // an expression row grades its own slots; what it still refuses stays refused
       if (!rule || round >= 64 || sites.some((x) => x.pos === e.at.pos)) throw e;
       sites = [...sites, { ...e.at, rule, msg: String(e.message).split('\n')[0].replace(/^(?:(?!: )[^\n])*?\.(?:[cm]?[jt]sx?):\d+: /, '') }];
     }
@@ -287,7 +287,7 @@ function translateOnce(file, fnName, opts = {}) {
   const gradableUnit = (u) => core && !!u?.body && !u.fn?.asteriskToken && (!u.accessor || accessorOpaque.has(u.name)); // a unit read whole as one opaque transition keyed by the file's text (accessorOpaque) holds its sites in that one step
   const addSite = (name, pos, rule, line, msg, span = null) => { const l = opaqueSites.get(name) ?? []; if (l.some((x) => x.pos === pos)) return false; l.push({ pos, rule, line, msg, span }); opaqueSites.set(name, l); tails.delete(name); return true; };
   gate0 = gate0.filter((g) => {
-    if (opaqueGrade(g.rule) === 'none') return true;
+    if (opaqueGrade(g.rule) !== 'block') return true; // an expression row's finding is a refusal its reading did not grade
     const name = unitOfFinding(g), u = name && fns.get(name);
     if (!gradableUnit(u)) return true;
     const at = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1);
@@ -865,7 +865,8 @@ function translateOnce(file, fnName, opts = {}) {
   // a lib or runtime global read as a value (not a callee, not the receiver of a called method, not a type): a world read
   const libValueRead = (x) => { if (!ts.isIdentifier(x) || !x.parent || ts.isTypeNode(x.parent) || ts.isQualifiedName(x.parent)) return false; const p = x.parent; if ((ts.isCallExpression(p) || ts.isNewExpression(p)) && p.expression === x) return false; if (ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p) return false; if (ts.isBinaryExpression(p) && p.right === x && p.operatorToken.kind === K.InstanceOfKeyword) return false; return libGlobalRoot(checker, x, sf, currentUnit?.node ?? null); };
   const libWorldRead = (n) => { if (!n || !(ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n))) return false; let root = n; while (ts.isPropertyAccessExpression(root) || ts.isElementAccessExpression(root) || ts.isParenthesizedExpression(root) || ts.isAsExpression(root) || ts.isNonNullExpression(root)) root = root.expression; return libGlobalRoot(checker, root, sf, currentUnit?.node ?? null); };
-  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (faithfulOp(x)) { for (const a of x.arguments) w(a); return; } if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || staticCell(x) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isMetaProperty(x) && x.keywordToken === K.ImportKeyword) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
+  // (a read after a call that may change what it reads, recorded in worldAfter, reads the world: a loop holding one takes it)
+  const containsEffect = (node) => { let f = false; const w = (x) => { if (f) return; if (faithfulOp(x)) { for (const a of x.arguments) w(a); return; } if ((ts.isArrowFunction(x) || ts.isFunctionExpression(x) || ts.isMethodDeclaration(x) || ts.isGetAccessorDeclaration(x) || ts.isSetAccessorDeclaration(x)) && !isLoopCallback(x)) return; if (isEffectCall(x) || worldAfter?.has(x) || isOpaqueStmt(x) || isWorldField(x) || isInstanceWorldField(x) || moduleState(checker, x, sf) || staticCell(x) || (outsideRoot(checker, x, sf, currentUnit?.node) && x.text !== 'require') || worldRead(checker, x, sf, currentUnit?.node) || libValueRead(x) || (ts.isMetaProperty(x) && x.keywordToken === K.ImportKeyword) || (ts.isTryStatement(x) && exactTry(x))) { f = true; return; } ts.forEachChild(x, w); }; w(node); return f; };
   const unitEffectful = () => !!currentUnit && effectfulUnits.has(currentUnit.name);
   // ----- references, layer 1: a parameter the function mutates is an OUTPUT of the function -----
   // A parameter whose field, slot or contents the function assigns (p.f = v, p[i] = v, p.push(x), p.f.g = v) is read as a
@@ -1990,12 +1991,28 @@ function translateOnce(file, fnName, opts = {}) {
     if (d.startsWith('Option<') && d.endsWith('>')) { const inner = d.slice(7, -1); return `(if ${code}.Some? then Some(${external('now', ['World', inner], inner)}(${WORLD}, ${code}.value)) else None)`; } // an absent value stays absent
     return `${external('now', ['World', d], d)}(${WORLD}, ${code})`;
   }
+  // A new object a name of the unit holds (design/w1g-opaque-handed.md, 2026-11-01): `const xs = []`, `new C()`, bound once
+  // to a site that runs once per run of the unit (in no loop of it), is named by that site, as handed_fresh_<T>(v, k)
+  // names one handed to a call: k is the site's order among the sites the unit names. Its state after a call that may
+  // reach it is a function of the world, its value when the call ran (every write after the call is refused) and k.
+  const siteOnce = (site) => {
+    const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
+    for (let p = site.parent; p && p !== body; p = p.parent) {
+      if (ts.isFunctionLike(p)) break;
+      const within = (y) => !!y && y.pos <= site.pos && site.end <= y.end;
+      if (ts.isIterationStatement(p, false) && (within(p.statement) || (ts.isForStatement(p) && (within(p.condition) || within(p.incrementor))) || ((ts.isWhileStatement(p) || ts.isDoStatement(p)) && within(p.expression)))) return false;
+    }
+    return true;
+  };
+  const namedSite = (x) => { const id = ts.isIdentifier(x) ? identityOf(x) : null; return id?.kind === 'fresh' && siteOnce(id.site) ? id.site : null; };
   function nowOf(x) { // the object x names, as the world holds it now, bound to a fresh name in the run's order
     let name, d;
     if (x.kind === K.ThisKeyword) { name = SELF; d = selfType(currentUnit); }
     else { const sym = checker.getSymbolAtLocation(x); name = dn(x.text); d = letTypeOf(sym) ?? dtype(symType(sym, x), x); }
     const t = `nw${tempCount++}_`;
-    return { name, t, line: `var ${t} := ${worldNow(name, d)};` };
+    const site = namedSite(x);
+    if (site && !broken('fresh-site')) { if (!handedSites.has(site)) handedSites.set(site, handedSites.size); addPrelude('World', 'type World'); return { name, t, d, line: `var ${t} := ${external('now_fresh', ['World', d, 'int'], d)}(${WORLD}, ${name}, ${handedSites.get(site)});` }; }
+    return { name, t, d, line: `var ${t} := ${worldNow(name, d)};` };
   }
   const renameIn = (code, from, to) => code.replace(new RegExp(`(?<![\\w.'?])${from.replace(/[$]/g, '\\$&')}(?![\\w'?])`, 'g'), to);
   const worldBase = (n) => { let e = n.expression; while (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression; return e; };
@@ -2010,12 +2027,13 @@ function translateOnce(file, fnName, opts = {}) {
     if (ts.isCallExpression(e)) {
       const f = e.expression, text = f.getText(sf);
       if (FRESH_CALLS.has(text) || (text === 'Object.assign' && e.arguments[0] && ts.isObjectLiteralExpression(e.arguments[0]) && !e.arguments[0].properties.length)) return { kind: 'fresh', site: e };
+      if (ts.isPropertyAccessExpression(f) && f.name.text === 'get' && !isAny(typeOf(f.expression)) && nonNull(typeOf(f.expression)).every((y) => isMapT(y))) return { kind: 'existing' }; // an element a Map holds (or undefined), as `find` and `at` of an array
       if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && isArrayLike(checker, baseOf(typeOf(f.expression)))) {
         if (FRESH_METHODS.has(f.name.text)) return { kind: 'fresh', site: e };
         if (EXISTING_METHODS.has(f.name.text)) return { kind: 'existing' };
       }
       const sameFile = (ts.isIdentifier(f) && originOf(checker, f, sf, currentUnit?.node ?? null).kind === 'unit') || (ts.isPropertyAccessExpression(f) && f.expression.kind === K.ThisKeyword && !!currentUnit && !!ownUnit(currentUnit, f.name.text));
-      if (sameFile) return { kind: 'unknown', why: `the result of the same-file call \`${text.slice(0, 40)}\`, which may be a new object or one the caller holds` };
+      if (sameFile) return { kind: 'unknown', why: `the result of the same-file call \`${text.slice(0, 40)}\`, which may be a new object or one the caller holds`, call: e };
       if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && !isEffectCall(e)) return { kind: 'unknown', why: `the result of \`${text.slice(0, 40)}\`, a built-in that may return a new object or one it was given` };
       return { kind: 'existing' }; // an outside call's answer: the object the outside gave
     }
@@ -2028,6 +2046,7 @@ function translateOnce(file, fnName, opts = {}) {
       seen.add(d);
       const ws = []; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === sym) ws.push(x.right); ts.forEachChild(x, w); }; w(body);
       if (ts.isForOfStatement(d.parent?.parent) || ts.isForInStatement(d.parent?.parent)) return { kind: 'existing' };
+      if (!d.initializer && ws.length === 1) return identityOf(ws[0], seen); // `let x; ... x = v` once: the identity v names (a new object there is its site's, which namedSite takes only outside a loop)
       if (!d.initializer) return ws.length ? { kind: 'unknown', why: `\`${e.text}\`, a name written later` } : { kind: 'existing' };
       if (ws.length) return { kind: 'unknown', why: `\`${e.text}\`, a name written more than once` };
       return identityOf(d.initializer, seen);
@@ -2055,13 +2074,103 @@ function translateOnce(file, fnName, opts = {}) {
     if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => !ts.isSpreadElement(x) && !ts.isOmittedExpression(x) && part(x));
     return false;
   };
+  // A new object holding objects the caller already holds (design/w1g-opaque-handed.md, 2026-11-01): `g({ data: r.data,
+  // at: new Date(), tags: [] })`. The skeleton is the literal's shape with each part written by its kind, and with the
+  // handed value it names every identity of the handed graph (which object is new, which is whose), so a new part and an
+  // existing part of equal value are two terms, and one object in two slots is the value convention's, as for two
+  // arguments. A part is:
+  //   V        a leaf: a primitive, a function, an any value, a promise (no identity of its own, or its own handle);
+  //   E        an existing object (identityOf: a parameter, a member read, an outside answer, `this`, an alias of one),
+  //            named by its value as when it is handed alone;
+  //   { ... }  a literal written in place, read part by part;
+  //   new(t)   a new object made in place whose inner identities its text and its value fix: an element-keeping copy
+  //            (`slice`, `filter`, `concat`, ...: its elements are the source's), `map` or `flatMap` with an inline
+  //            callback that calls nothing, `JSON.parse`, `structuredClone`, `Object.entries` and the rest of the fresh
+  //            calls, `new` of a library class; t is its text (a same-file callee inside could change what it makes);
+  //   site(k)  a name bound once to a new object made in no loop (namedSite), numbered as handed_fresh numbers sites, whose
+  //            own interior holds no named part (so two named parts are one object exactly when they are one site).
+  // Every part sits at a key the text fixes (no computed or repeated key, no hole), so the value holds it at its path. A
+  // spread copies its source's fields, each an existing object or a leaf (its source is existing or holds no object):
+  // allowed before every new part, which then keeps its key (a later key wins) or its place counted from the end; a
+  // spread after a new part may replace it, refused. null when a part is none of these, `bad` naming it
+  const FIXED_COPIES = new Set(['slice', 'filter', 'concat', 'flat', 'toSorted', 'toReversed', 'toSpliced', 'with', 'split']);
+  const callsNothing = (f) => { let hit = false; const w = (x) => { if (hit) return; if (ts.isCallExpression(x) || ts.isNewExpression(x) || ts.isTaggedTemplateExpression(x)) { hit = true; return; } ts.forEachChild(x, w); }; w(f.body); return !hit; };
+  const fixedFresh = (x) => {
+    if (ts.isNewExpression(x)) { let d = null; try { d = checker.getResolvedSignature(x)?.declaration ?? null; } catch { /* none */ } const dsf = d?.getSourceFile?.(); return !!dsf && dsf.hasNoDefaultLib; } // a library class
+    if (!ts.isCallExpression(x)) return false;
+    const f = x.expression, text = f.getText(sf);
+    if (FRESH_CALLS.has(text)) return !(text === 'Array.from' && x.arguments.length > 1);
+    if (!ts.isPropertyAccessExpression(f)) return false;
+    if (FIXED_COPIES.has(f.name.text)) return true;
+    if (['map', 'flatMap'].includes(f.name.text)) { const cb = x.arguments[0]; return !!cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb)) && callsNothing(cb); }
+    return false;
+  };
+  const mixedTree = (e, bad = {}, inner = false) => {
+    while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression;
+    if (!ts.isObjectLiteralExpression(e) && !ts.isArrayLiteralExpression(e)) { if (fixedFresh(e)) return `new(${e.getText(sf)})`; bad.part = e; bad.why = 'a new object whose inner identities this reading does not fix'; return null; }
+    const keys = new Set(); let hasNew = false; const spreads = [];
+    const part = (v) => {
+      let x = v; while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x) || ts.isNonNullExpression(x)) x = x.expression;
+      if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x)) { hasNew = true; return mixedTree(x, bad, inner); }
+      const t = typeOf(x);
+      if (!t || primT(t) || isAny(t) || (isCallable(t) && !isAny(t)) || nonNull(t).every((y) => isPromiseT(y))) return 'V'; // its value is the handed value's at this path
+      const id = identityOf(x);
+      if (id.kind === 'existing') return 'E';
+      if (id.kind === 'fresh' && id.site === x) { if (fixedFresh(x)) { hasNew = true; return `new(${x.getText(sf)})`; } bad.part = x; bad.why = `\`${x.getText(sf).slice(0, 40)}\`, a new object whose inner identities this reading does not fix`; return null; }
+      if (id.kind === 'fresh' && !inner && namedSite(x)) { // a name of the unit holding a new object: its site
+        const site = namedSite(x);
+        if (!(partsPrim(madeT(site)) || freshTree(site) || mixedTree(site, bad, true) !== null)) { bad.part = x; bad.why ??= `\`${x.getText(sf).slice(0, 40)}\`, a new object holding a named one`; return null; }
+        if (!handedSites.has(site)) handedSites.set(site, handedSites.size);
+        hasNew = true; return `site(${handedSites.get(site)})`;
+      }
+      bad.part = x; bad.why = id.kind === 'fresh' ? `\`${x.getText(sf).slice(0, 40)}\`, a new object a name holds` : id.why;
+      return null;
+    };
+    const out = [];
+    if (ts.isObjectLiteralExpression(e)) {
+      for (const m of e.properties) {
+        if (ts.isSpreadAssignment(m)) { if (hasNew) { bad.part = m.expression; bad.why = 'a spread after a new part (it may replace it)'; return null; } spreads.push(m.expression); out.push('...E'); continue; }
+        const key = (ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m)) && !ts.isComputedPropertyName(m.name) ? m.name.getText(sf) : null;
+        if (key === null || keys.has(key)) { bad.part = m; bad.why = 'a computed or repeated key, or an accessor'; return null; }
+        keys.add(key);
+        const s = part(ts.isPropertyAssignment(m) ? m.initializer : m.name);
+        if (s === null) return null;
+        out.push(`${key}: ${s}`);
+      }
+    } else {
+      for (const x of e.elements) {
+        if (ts.isSpreadElement(x)) { if (hasNew) { bad.part = x.expression; bad.why = 'a spread after a new part (its place is not fixed)'; return null; } spreads.push(x.expression); out.push('...E'); continue; }
+        if (ts.isOmittedExpression(x)) { bad.part = x; bad.why = 'a hole'; return null; }
+        const s = part(x);
+        if (s === null) return null;
+        out.push(s);
+      }
+    }
+    if (spreads.length) { // a spread's fields are existing objects or leaves; every new part comes after the last spread (a later key wins; a later element sits at a place counted from the end)
+      for (const sp of spreads) { const id = identityOf(sp); if (!(id.kind === 'existing' || partsPrim(typeOf(sp)))) { bad.part = sp; bad.why = `a spread of \`${sp.getText(sf).slice(0, 40)}\`, which may hold new objects`; return null; } }
+    }
+    return ts.isObjectLiteralExpression(e) ? `{ ${out.join(', ')} }` : `[ ${out.join(', ')} ]`;
+  };
   function handedArg(a, code, d) {
     const t = typeOf(a);
     if (!t || primT(t) || (isCallable(t) && !isAny(t)) || isAny(t) || nonNull(t).every((y) => isPromiseT(y))) return code; // no identity, a function value (its code and cells), an opaque value or a promise (its own handle)
     const id = identityOf(a);
     if (id.kind === 'existing') return code;
+    // a same-file call's result: which object it is (new, or one of the caller's) is fixed by the code the callee reaches
+    // and its arguments, so it is handed keyed by that code and named by its call site (design/w1g-opaque-handed.md;
+    // amendment A3: a changed callee is another term)
+    if (id.kind === 'unknown' && id.call) {
+      let decl = null; try { decl = checker.getResolvedSignature(id.call)?.declaration ?? null; } catch { decl = null; }
+      if (decl && decl.getSourceFile() === sf && siteOnce(id.call)) {
+        if (!handedSites.has(id.call)) handedSites.set(id.call, handedSites.size);
+        gradedStep('copied-argument', a, 'handed_call', [code.slice(0, 80)]);
+        return `${external(`handed_call_${broken('handed-call') ? 'unkeyed' : createHash('sha1').update(reachOf.keyText(decl)).digest('hex').slice(0, 16)}_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.call)})`;
+      }
+    }
     if (id.kind === 'unknown') fail(a, `copied-argument: this call may write or keep the object it is handed, and its argument is ${id.why}; bind it to a name of one kind (a parameter, or a new literal or copy) first`);
-    if (!partsPrim(madeT(id.site)) && !freshTree(id.site)) fail(a, 'copied-argument: a new object holding objects is handed to a call that may write or keep it; this reading does not hold the identities inside it: hand its primitive fields, or the objects themselves');
+    const bad = {};
+    const skeleton = partsPrim(madeT(id.site)) || freshTree(id.site) ? null : mixedTree(id.site, bad);
+    if (!partsPrim(madeT(id.site)) && !freshTree(id.site) && skeleton === null) fail(a, `copied-argument: a new object holding objects is handed to a call that may write or keep it, and ${bad.why ? `its part ${bad.part && ts.isExpression(bad.part) ? `\`${bad.part.getText(sf).slice(0, 40)}\` is ` : 'is '}${bad.why}` : 'this reading does not hold the identities inside it'}: hand the objects themselves, or a literal of them`);
     const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
     for (let p = id.site.parent; p && p !== body; p = p.parent) {
       if (ts.isFunctionLike(p)) break;
@@ -2069,7 +2178,9 @@ function translateOnce(file, fnName, opts = {}) {
       if (ts.isIterationStatement(p, false) && (within(p.statement) || (ts.isForStatement(p) && (within(p.condition) || within(p.incrementor))) || ((ts.isWhileStatement(p) || ts.isDoStatement(p)) && within(p.expression)))) fail(a, 'copied-argument: a new object made in a loop is handed to a call that may keep it; every pass makes another object, which this reading does not count: make it outside the loop, or hand its primitive fields');
     }
     if (!handedSites.has(id.site)) handedSites.set(id.site, handedSites.size);
-    return `${external(`handed_fresh_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.site)})`;
+    if (skeleton !== null) gradedStep('copied-argument', a, `handed_fresh_${skeleton}`, [code.slice(0, 80)]);
+    const shape = skeleton !== null && !broken('handed-skeleton') ? `_${createHash('sha1').update(skeleton).digest('hex').slice(0, 16)}` : ''; // which parts are new and which existing: one more handed function per skeleton (tests/break.mjs handed-skeleton drops it)
+    return `${external(`handed_fresh${shape}_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.site)})`;
   }
   function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
     const isEff = eff ?? isEffectCall(n);
@@ -2573,6 +2684,8 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   function convertToD(code, from, td, node) {
     const fd = dtype(from, node);
     if (node && fd !== td) { const why = typeAssertion(checker, node); if (why) fail(node, `type-assertion: ${why}`); } // a value whose type nothing checked, converted where its reading does not carry it: the lint's test on the same node
+    if (node && fd !== td && (assertionHeld(checker, node) || isAny(from)) && outsideSlot(checker, node)) gradedStep('type-assertion', node, `as_${fd}_${td}`, [code.slice(0, 80)]); // handed to the outside as it is (common.mjs outsideSlot)
+    if (node && fd !== td && broken('assertion-read') && (assertionHeld(checker, node) || isAny(from)) && outsideSlot(checker, node)) return `${external(`as_${mangle(td)}_unread`, [], td)}()`; // tests/break.mjs assertion-read: the handed conversion stops reading its value
     if (node && optionalD(fd) && !optionalD(td) && td !== 'Any') { let c = node; while (ts.isParenthesizedExpression(c)) c = c.expression; if (maybeCapture(c)) fail(node, 'a capture of a group that may not take part (undefined when it does not, whatever TypeScript says) is read where a string is expected; read it as present or absent (`?? d`, a test)'); } // common.mjs matchCapture, matchGroupRead
     if (isNullish(from)) {
       if (optionalD(td)) return missingD(td, from.flags & TF.Null ? 'Null' : 'Undef');
@@ -2884,7 +2997,31 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const vo = originOf(vc, n, sf, currentUnit?.node ?? null);
     return vo.kind === 'local' ? vo : o;
   }
+  // the certificate row of a slot an expression row grades (lint.mjs OPAQUE_ROWS; amendment A5): its span is the
+  // occurrence's own, and it covers the statements wholly inside that span (opaque.mjs statementCount): an opaque value
+  // inside a statement leaves the statement's own reading exact
+  const gradedSeen = new Set();
+  function gradedStep(rule, node, id, reads) {
+    const u = currentUnit; if (!u || !node?.getStart) return;
+    const k = `${u.name}:${rule}:${node.getStart(sf)}:${node.getEnd()}`; if (gradedSeen.has(k)) return; gradedSeen.add(k);
+    const a = sf.getLineAndCharacterOfPosition(node.getStart(sf)), z = sf.getLineAndCharacterOfPosition(node.getEnd());
+    const rows = opaqueRows.get(u.name) ?? []; rows.push(opaqueEntry({ rule, line: a.line + 1, id, reads, writes: [], construct: 'expression', span: [a.line + 1, a.character + 1, z.line + 1, z.character + 1], statements: statementCount([node]) })); opaqueRows.set(u.name, rows);
+  }
+  // any other read of an object after a call that may change it (common.mjs worldForm 'value', design/w1g-opaque-handed.md):
+  // the object as the world holds it now, read exactly from there (a copy, an element, a library read, the result)
+  function handleNow(n, read) {
+    worldUsed.add(n);
+    if (broken('handle-value')) { n.__worldNow = true; try { return read(); } finally { n.__worldNow = false; } } // tests/break.mjs handle-value: the read takes the object as it was before the call
+    const now = nowOf(n);
+    n.__worldNow = true; let parts; try { parts = captureParts(read); } finally { n.__worldNow = false; }
+    const lines = parts.lines.map((l) => renameIn(l, now.name, now.t)), text = renameIn(parts.text, now.name, now.t);
+    if (![...lines, text].some((x) => x.includes(now.t))) fail(n, `read-after-call: \`${n.getText(sf).slice(0, 60)}\` is read after a call that may change it, and this reading holds the object under another name here, so it cannot read it as the world holds it`);
+    pending.push(now.line, ...lines);
+    gradedStep('read-after-call', n, now.line.match(/:= (\w+)\(/)?.[1] ?? 'now', ['world', now.name]);
+    return text;
+  }
   function ident(n) {
+    if (worldAfter?.get(n) === 'value' && !n.__worldNow) return handleNow(n, () => ident(n));
     if (n.text === 'undefined') return absentValue(typeOf(n));
     { let u = n; while (ts.isParenthesizedExpression(u.parent)) u = u.parent; const lit = !(ts.isPropertyAccessExpression(u.parent) && u.parent.name.text === 'lastIndex') && n.getSourceFile() === sf ? heldRegexLiteral(n, checker) : null; if (lit) return expr(lit); } // a pattern held in a const nothing changes, run by a call that ignores lastIndex: its literal (common.mjs heldRegexLiteral)
     const o = readOrigin(n);
@@ -2962,7 +3099,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       case K.TrueKeyword: return 'true';
       case K.FalseKeyword: return 'false';
       case K.NullKeyword: return absentValue(typeOf(n));
-      case K.ThisKeyword: if (thisParamOf(currentUnit)) return dn('this'); if (!classOf(currentUnit) && !literalOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF; // a free function's declared `this` parameter is its receiver operand, an ordinary first parameter
+      case K.ThisKeyword: if (worldAfter?.get(n) === 'value' && !n.__worldNow) return handleNow(n, () => rawExpr(n, expected)); if (thisParamOf(currentUnit)) return dn('this'); if (!classOf(currentUnit) && !literalOf(currentUnit)) fail(n, '`this` outside a class method'); return SELF; // a free function's declared `this` parameter is its receiver operand, an ordinary first parameter
       case K.SatisfiesExpression: return expr(n.expression, expected);
       case K.AsExpression: case K.TypeAssertionExpression: {
         // identity at run time; the types may differ, so the value is converted (opaque when they do)
@@ -5568,6 +5705,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         const sym = ts.isIdentifier(root) ? checker.getSymbolAtLocation(root) : null;
         const declD = sym && !ownThis ? (letTypeOf(sym) ?? dtype(symType(sym, root), root)) : '';
         if (declD.startsWith('Option<') && !isOptional(typeOf(root)) && !isAny(typeOf(root))) return [rootName, `Some(${leaf(`${dn(rootName)}.value`, null, typeOf(root))})`, root];
+        // a mutating operation on a collection no call is handed, after a call that may reach what it holds (common.mjs
+        // worldForm 'value', unhandedCollection): from the collection as the world holds it now; nothing outside holds it
+        if (ts.isIdentifier(root) && worldAfter?.get(root) === 'value' && !root.__worldNow) { worldUsed.add(root); const now = nowOf(root); pending.push(now.line); gradedStep('read-after-call', root, 'now', ['world', now.name]); return [rootName, leaf(now.t, null, typeOf(root)), root]; }
         return [rootName, leaf(dn(rootName), null, typeOf(root)), root];
       }
       const build = (i, recvCode, recvT) => {
@@ -5588,8 +5728,12 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if (opaqueRec) return `${external(`${RD}_set_${fname_}`, [RD, FD], RD)}(${recvCode}, ${inner})`;
         return `${recvCode}.(${dn(fname_)} := ${inner})`;
       };
-      const value = build(0, rootCode, rootT);
+      let value = build(0, rootCode, rootT);
       if (nowRoot) pending.push(nowRoot.line);
+      // the write to a handle is a transition (design/w1g-opaque-handed.md, 2026-11-01): the world is told the object's new
+      // state, so a later call that kept the object reads it (before, the world never saw the write, and a call after it
+      // answered as if it had not happened)
+      if (nowRoot && !broken('handle-write')) { const pv = `pw${tempCount++}_`; pending.push(`var ${pv}: ${nowRoot.d} := ${value};`, `var ${WORLD} := ${external('put', ['World', nowRoot.d], 'World')}(${WORLD}, ${pv});`); value = pv; }
       if (field) { const d = dtype(rootT, field); hoist(`${worldFieldAccessor(field, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit'); return null; }
       return [rootName, value, root];
     }
@@ -6318,6 +6462,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   };
   function opaqueStep(s, u) {
     if (!unitEffectful()) fail(s, 'internal: an opaque block in a unit not marked effectful');
+    // a read after a call inside the step is the step's: it takes the world and the names it reads, so the object's state
+    // there is a function of its inputs (design/w1g-opaque-handed.md)
+    if (worldAfter) for (const [x] of worldAfter) if (s.pos <= x.pos && x.end <= s.end) worldUsed.add(x);
     const returns = containsReturn(s);
     const jumps = escapingLabels(s);
     const loop = ts.isLabeledStatement(s) ? s.statement : s;
@@ -7306,7 +7453,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), rebinds: (st) => siteHere(st), opaque: (st) => siteHere(st) || (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), rebinds: (st) => siteHere(st), opaque: (st) => siteHere(st) || !!tailOf(u)?.stmts?.includes(st) || (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing' || !!namedSite(x), outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
         body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
         if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
       }

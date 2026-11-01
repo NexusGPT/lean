@@ -104,8 +104,9 @@ if (!breakOnly) for (const p of pairs) {
   const got = laneA(p);
   if (got.error) { add(`${p} lane A`, false, got.error); continue; }
   for (const [u, want] of Object.entries(exp.equal)) add(`${p} ${u} ${want === 'real-only' ? 'real lemma proved' : want ? 'proved' : 'not proved'}`, (got.proved[dafnyName(u)] ?? got.proved[u]) === (want === 'real-only' ? true : want), `${got.proved[u] ? 'proved' : got.lemma[u] ? 'not proved' : got.withheld?.[dafnyName(u)] ? `withheld: ${got.withheld[dafnyName(u)].slice(0, 100)}` : 'no lemma'}${got.finished ? '' : ': ' + got.tail.slice(-160)}`);
-  // every unit the pair proves holds at least one opaque step, each step's span is its finding's span (A5)
-  for (const [u, want] of Object.entries(exp.equal)) if (want === true) { const o = got.opaque[dafnyName(u)]; add(`${p} ${u} lists its opaque steps`, !!o && o.steps.length > 0 && o.steps.every((s) => s.span && s.findings?.length && s.findings.every((f) => f[0] >= s.span[0] && f[2] <= s.span[2])), o ? `${o.steps.length} step(s), rules ${[...new Set(o.steps.map((s) => s.rule))].join(',')}, fraction ${o.fraction}` : 'no OPAQUE line'); }
+  // every unit the pair proves holds at least one opaque statement step, each finding it holds inside its span (A5); a
+  // step of another column the unit also holds (w1g's expression step of a value held at Any) is that column's to check
+  for (const [u, want] of Object.entries(exp.equal)) if (want === true) { const o = got.opaque[dafnyName(u)], own = (o?.steps ?? []).filter((s) => s.construct === 'statement'); add(`${p} ${u} lists its opaque steps`, own.length > 0 && own.every((s) => s.span && s.findings?.length && s.findings.every((f) => f[0] >= s.span[0] && f[2] <= s.span[2])), o ? `${o.steps.length} step(s), rules ${[...new Set(o.steps.map((s) => s.rule))].join(',')}, fraction ${o.fraction}` : 'no OPAQUE line'); }
 }
 for (const b of BREAKS.filter((x) => !only || x.pair === only)) {
   if (!fs.existsSync(pairDir(b.pair))) { add(`break ${b.mechanism} on ${b.pair}`, false, 'no such pair'); continue; }
