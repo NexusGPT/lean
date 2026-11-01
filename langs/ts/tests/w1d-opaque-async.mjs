@@ -26,7 +26,7 @@ const jobs = String(Math.min(4, Number(arg('--jobs')) || 2));
 const only = arg('--only')?.split(',') ?? null;
 const want = (k) => !only || only.includes(k);
 // the load discipline: a pair starts only while the one-minute load is at most 40 (else it waits)
-const loadGate = async () => { while (Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) > 40) await new Promise((r) => setTimeout(r, 30000)); };
+const loadGate = async () => { while (Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) > 40) await new Promise((r) => setTimeout(r, 5000)); };
 // each pair through `run.mjs --pair <name>` (its own table), at most `jobs` at once
 const run = async (names, env) => {
   const one = (name) => new Promise((resolve) => {
@@ -39,7 +39,7 @@ const run = async (names, env) => {
     });
   });
   const all = []; const queue = [...names];
-  await Promise.all(Array.from({ length: Number(jobs) }, async () => { while (queue.length) { await loadGate(); all.push(...await one(queue.shift())); } }));
+  await Promise.all(Array.from({ length: Number(jobs) }, async () => { while (queue.length) { const name = queue.shift(); await loadGate(); all.push(...await one(name)); } }));
   return all;
 };
 let bad = 0;

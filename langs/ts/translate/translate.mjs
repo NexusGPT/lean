@@ -278,7 +278,7 @@ function translateOnce(file, fnName, opts = {}) {
       const a = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1), z = normalised.sf.getPositionOfLineAndCharacter((g.endLine ?? g.line) - 1, (g.endCol ?? g.col) - 1);
       const a2 = faithful.mapOffset ? faithful.mapOffset(a) : a, z2 = faithful.mapOffset ? faithful.mapOffset(z) : z;
       if (!(a2 >= 0 && z2 >= 0)) return true;
-      expressionSites.set(`${a2}:${z2}`, { rule: g.rule, span: [g.line, g.col, g.endLine ?? g.line, g.endCol ?? g.col] }); expressionUnits.add(name);
+      { const k = `${a2}:${z2}`, had = expressionSites.get(k); if (had) { if (!had.rules.includes(g.rule)) had.rules.push(g.rule); } else expressionSites.set(k, { rules: [g.rule], span: [g.line, g.col, g.endLine ?? g.line, g.endCol ?? g.col] }); } expressionUnits.add(name); // two rules may name one construct (async and promise): one step, both rules
       return false;
     }
     const at = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1);
@@ -2734,7 +2734,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   }
   const templateStrings = new Map(); // a tagged template's literal node -> the code of its strings object, its tag's first argument
   function expr(n, expected) {
-    if (asyncOpaqueAt(n)) return opaqueExpression(n); // the async family's opaque step (opaque-async.mjs)
+    if (asyncOpaqueAt(n)) return opaqueExpression(n, expected); // the async family's opaque step (opaque-async.mjs)
     if (templateStrings.has(n)) return templateStrings.get(n);
     { const er = erasedReferenceSlot(checker, n); if (er) fail(n, `${er.rule}: ${er.message}`); } // a reference whose type an assertion erased, where it is compared by identity: one test with the lint
     const start = !valueOperands && containsValueStep(n);
@@ -6343,7 +6343,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   // the world, writes every reference it may change and every name sharing an object with one (stepWrites), and its
   // value is its result. The statement around it takes the fault check an await gets (awaitsHere).
   const expressionCovered = new Map(); // unit name -> the statements its steps sit in (the opaque fraction counts each once)
-  function opaqueExpression(n) {
+  function opaqueExpression(n, expected = null) {
     const site = expressionSites.get(`${n.getStart(sf)}:${n.getEnd()}`);
     if (!unitEffectful()) fail(n, 'internal: an opaque step in a unit not marked effectful');
     addPrelude('World', 'type World');
@@ -6351,14 +6351,16 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     let reads = freeVars(n, null).map(typed);
     if (broken('async-drop-reads')) reads = reads.filter((v) => !ts.isVariableDeclaration(v.sym?.valueDeclaration ?? {})); // the --break: the step no longer reads the unit's locals
     const sw = stepWrites(checker, n, currentUnit.node); stepWritesMemo.set(n, sw.writes ?? []);
-    if (sw.why) fail(n, `opaque: the ${site.rule} step's writes cannot be named: ${sw.why}`); // the lint refused that site already (asyncOpaqueSite); the translator's own guard
+    if (sw.why) fail(n, `opaque: the ${site.rules.join(', ')} step's writes cannot be named: ${sw.why}`); // the lint refused that site already (asyncOpaqueSite); the translator's own guard
     const writes = sw.writes.map((d) => typed({ name: d.name.text, sym: checker.getSymbolAtLocation(d.name), node: d.name }));
     const cells = new Set();
     const w = (x) => { const b = moduleState(checker, x, sf); if (b) cells.add(opaqueText([b], sf)); { const sb = staticCell(x); if (sb) cells.add(opaqueText([sb.decl], sf)); } ts.forEachChild(x, w); };
     w(n);
     const text = opaqueText([n], sf);
     const key = opaqueKey([text, ...reachedFunctions(checker, n).map((f) => opaqueText([f], sf)), ...[...cells].sort()]);
-    let rd; try { rd = dtype(typeOf(n), n); } catch { rd = anyType(); }
+    // its value at the type the place reading it expects (an argument, a declared local): an uninterpreted result is some
+    // value of that type, as the real one is (it is assignable there); else at the construct's own type
+    let rd; try { rd = dtype(expected ?? typeOf(n), n); } catch { rd = anyType(); }
     const t = valueOperands ? valueName() : `t${tempCount++}_`;
     const step = opaqueForm({ id: `step_${key.slice(0, 16)}`, external, world: WORLD, inputs: reads.map((v) => ({ code: dn(v.name), d: v.d })), outputs: writes.map((v) => ({ name: dn(v.name), d: v.d })), ret: { name: t, d: rd, terminal: true } });
     pending.push(step.line);
@@ -6368,7 +6370,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const seen = expressionCovered.get(currentUnit.name) ?? new Set(); const fresh = !!st && !seen.has(st); if (st) seen.add(st); expressionCovered.set(currentUnit.name, seen);
     const a0 = n.getStart(sf);
     const rows = opaqueRows.get(currentUnit.name) ?? [];
-    rows.push(opaqueEntry({ rule: site.rule, line: lineOf(sf, a0), id: step.name, reads: reads.map((v) => dn(v.name)), writes: ['world', ...writes.map((v) => dn(v.name)), 'result'], construct: 'expression', span: site.span, findings: [site.span], statements: fresh ? 1 : 0 }));
+    rows.push(opaqueEntry({ rule: site.rules.join(','), line: lineOf(sf, a0), id: step.name, reads: reads.map((v) => dn(v.name)), writes: ['world', ...writes.map((v) => dn(v.name)), 'result'], construct: 'expression', span: site.span, findings: [site.span], statements: fresh ? 1 : 0 }));
     opaqueRows.set(currentUnit.name, rows);
     return t;
   }

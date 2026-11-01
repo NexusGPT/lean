@@ -3,21 +3,21 @@ export interface Svc { put(n: number): Promise<void>; get(n: number): Promise<nu
 export async function outside(svc: Svc, n: number): Promise<number> {
   const k = n + 1;
   await new Promise<void>((resolve) => { const done = resolve; svc.put(k * 3); done(); });
-  const out = k * 2;
+  const out = n * 2;
   return out;
 }
 export async function inside(svc: Svc, n: number): Promise<number> {
   const k = n + 1;
   await new Promise<void>((resolve) => { const done = resolve; svc.put(k * 5); done(); });
-  return k * 2;
+  return n * 2;
 }
 export async function upstream(svc: Svc, n: number): Promise<number> {
   const k = n + 2;
   await new Promise<void>((resolve) => { const done = resolve; svc.put(k * 3); done(); });
-  return k * 2;
+  return n * 2;
 }
 export async function planted(svc: Svc, n: number): Promise<number> {
   const k = n + 1;
   await new Promise<void>((resolve) => { const done = resolve; svc.put(k * 4); done(); });
-  return k * 2;
+  return n * 2;
 }

@@ -5,21 +5,21 @@ function sum(xs: Iterable<number>): number { let s = 0; for (const x of xs) s +=
 export function outside(n: number): number {
   const k = n + 1;
   const s = sum(gen(k * 3));
-  const out = s + k * 2;
+  const out = s + n * 2;
   return out;
 }
 export function inside(n: number): number {
   const k = n + 1;
   const s = sum(gen(k * 5));
-  return s + k * 2;
+  return s + n * 2;
 }
 export function upstream(n: number): number {
   const k = n + 2;
   const s = sum(gen(k * 3));
-  return s + k * 2;
+  return s + n * 2;
 }
 export function planted(n: number): number {
   const k = n + 1;
   const s = sum(gen(k * 4));
-  return s + k * 2;
+  return s + n * 2;
 }

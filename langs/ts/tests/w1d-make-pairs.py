@@ -4,7 +4,8 @@
 # inside it and nowhere else in the unit):
 #   outside  C unchanged, a refactor outside it (a new local)       -> PASS-proved, one opaque step
 #   inside   C's text changed (3 -> 5)                             -> not proved; lane B WITNESS
-#   upstream C unchanged, a local it reads changed before it       -> not proved; lane B WITNESS; under LEAN_BREAK=async-drop-reads
+#   upstream C unchanged, a local it reads changed before it (only C reads that local: everything outside C reads n)
+#                                                                 -> not proved; lane B WITNESS; under LEAN_BREAK=async-drop-reads
 #            (tests/break.mjs) it proves, a false PASS-proved the runner's break row expects (a change outside the construct, A1)
 #   planted  exec/mutate.mjs applied at the boundary site 3 -> 4   -> not proved; lane B WITNESS
 # plus the units a spec adds (capture: pending work reads a local written after the step; reorder: two steps swapped).
@@ -15,20 +16,20 @@ SVC = 'export interface Svc { put(n: number): Promise<void>; get(n: number): Pro
 def unit(name, sig, pre, construct, post, ret):
     return f'export {sig.replace("NAME", name)} {{\n  const k = {pre};\n  {construct}\n{post}  return {ret};\n}}\n'
 SPECS = {
-  'async': dict(helpers='async function load(svc: Svc, n: number): Promise<number> { const v = await svc.get(n); await svc.put(v + 1); return v; }\n', sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='load(svc, k * 3);', ret='k * 2', post='', why='an async unit called without await',
+  'async': dict(helpers='async function load(svc: Svc, n: number): Promise<number> { const v = await svc.get(n); await svc.put(v + 1); return v; }\n', sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='load(svc, k * 3);', ret='n * 2', post='', why='an async unit called without await',
       extra={'reorder': ('async function reorder(svc: Svc, a: number, b: number): Promise<number> {\n  const x = await load(svc, a);\n  load(svc, x);\n  load(svc, b);\n  return x;\n}\n', None, None)}),
   'promise': dict(helpers='async function load(svc: Svc, n: number): Promise<number> { const v = await svc.get(n); await svc.put(v + 1); return v; }\n', sig='function NAME(svc: Svc, n: number): Promise<number>', construct='return load(svc, k * 3);', ret=None, post='', why='a non-async unit returns a same-file async call (no handle)'),
-  'promise-pending': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='new Promise<void>((resolve) => { svc.put(k * 3); resolve(); });', ret='k * 2', post='', why='an unconsumed new Promise'),
-  'promise-unsettled': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='await new Promise<void>((resolve) => { resolve(); svc.put(k * 3); });', ret='k * 2', post='', why='statements after settlement'),
-  'promise-executor': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='const v = await new Promise<number>(async (resolve) => { const r = await svc.get(k * 3); resolve(r); });', ret='v + k * 2', post='', why='an async executor'),
-  'promise-executor-escape': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='await new Promise<void>((resolve) => { const done = resolve; svc.put(k * 3); done(); });', ret='k * 2', post='', why='a stored resolver'),
-  'async-callback': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='xs.map(async (x) => { await svc.put(x + k * 3); });', ret='k * 2', post='', why='map with an async callback, not awaited',
+  'promise-pending': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='new Promise<void>((resolve) => { svc.put(k * 3); resolve(); });', ret='n * 2', post='', why='an unconsumed new Promise'),
+  'promise-unsettled': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='await new Promise<void>((resolve) => { resolve(); svc.put(k * 3); });', ret='n * 2', post='', why='statements after settlement'),
+  'promise-executor': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='const v = await new Promise<number>(async (resolve) => { const r = await svc.get(k * 3); resolve(r); });', ret='v + n * 2', post='', why='an async executor'),
+  'promise-executor-escape': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='await new Promise<void>((resolve) => { const done = resolve; svc.put(k * 3); done(); });', ret='n * 2', post='', why='a stored resolver'),
+  'async-callback': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='xs.map(async (x) => { await svc.put(x + k * 3); });', ret='n * 2', post='', why='map with an async callback, not awaited',
 ),
-  'async-predicate': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='const ys = xs.filter(async (x) => await svc.ok(x + k * 3));', ret='ys.length + k * 2', post='', why='filter with an async predicate'),
-  'async-reduce': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='const t = await xs.reduce(async (acc, x) => (await acc) + (await svc.get(x + k * 3)), Promise.resolve(0));', ret='t + k * 2', post='', why='reduce with an async accumulator'),
-  'generator-use': dict(helpers='function* gen(n: number) { yield n; yield n + 1; }\nfunction sum(xs: Iterable<number>): number { let s = 0; for (const x of xs) s += x; return s; }\n', sig='function NAME(n: number): number', construct='const s = sum(gen(k * 3));', ret='s + k * 2', post='', why='a pure generator handed to a function'),
+  'async-predicate': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='const ys = xs.filter(async (x) => await svc.ok(x + k * 3));', ret='ys.length + n * 2', post='', why='filter with an async predicate'),
+  'async-reduce': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='const t = await xs.reduce(async (acc, x) => (await acc) + (await svc.get(x + k * 3)), Promise.resolve(0));', ret='t + n * 2', post='', why='reduce with an async accumulator'),
+  'generator-use': dict(helpers='function* gen(n: number) { yield n; yield n + 1; }\nfunction sum(xs: Iterable<number>): number { let s = 0; for (const x of xs) s += x; return s; }\n', sig='function NAME(n: number): number', construct='const s = sum(gen(k * 3));', ret='s + n * 2', post='', why='a pure generator handed to a function'),
 }
-EQUIV = {'k * 2': 'k + k', 'v + k * 2': 'v + (k + k)', 'ys.length + k * 2': 'ys.length + (k + k)', 't + k * 2': 't + (k + k)', 'r.length + k * 2': 'r.length + (k + k)', 's + k * 2': 's + (k + k)'}
+EQUIV = {'n * 2': 'n + n', 'v + n * 2': 'v + (n + n)', 'ys.length + n * 2': 'ys.length + (n + n)', 't + n * 2': 't + (n + n)', 'r.length + n * 2': 'r.length + (n + n)', 's + n * 2': 's + (n + n)'}
 def build(rule, sp):
     d = os.path.join(pairs, 'opaque_' + rule.replace('-', '_')); os.makedirs(d, exist_ok=True)
     head = f'// opaque_{rule.replace("-", "_")}: rule `{rule}` ({sp["why"]}): the construct is one opaque step (design/w1d-opaque-async.md)\n' + SVC + sp.get('helpers', '')
