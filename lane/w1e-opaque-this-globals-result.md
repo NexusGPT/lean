@@ -86,7 +86,13 @@ standalone `lower.mjs` run (open).
 | root | entered base → after | environment-blocked base → after | language-refused base → after |
 | --- | --- | --- | --- |
 | nexus-landing | 1,503 → 1,503 | 0 → 0 | 732 → 732 |
-| nexus | NEXUS_INST |
+| nexus (partial: through 9,400 of 12,733 files, both runs stopped at the budget) | 17,808 → 18,957 (+1,149) | not reached | not reached |
+
+At the same 9,400 files, without the install: 17,808 → 18,955 (+1,147): the copies differ only by the install step,
+which reused the stamp the source copy already carried. Partial counts: lane/w1e-census/nexus-inst-partial.txt.
+
+The census summaries (per-file records dropped), the reports and the comparison script are in lane/w1e-census/
+(`node lane/w1e-census/compare.mjs <base.json> <after.json>` prints the tables above).
 
 ## Open
 
@@ -98,4 +104,5 @@ standalone `lower.mjs` run (open).
   base and after alike).
 - The two stack-overflow crashes above.
 - A5's mutant study (w3b) on the units this lane lets enter is w3b's.
+- nexus with the install did not finish inside the budget (each run about 8,600 s for 9,400 files at load 45-70).
 - Load discipline: the census driver started at a one-minute load of 45 (above 40) at 05:56 and was not restarted.
