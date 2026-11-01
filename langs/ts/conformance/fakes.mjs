@@ -848,7 +848,7 @@ async function testDir(dir, kind, seed) {
       continue;
     }
     if (hooks.includes(f)) {
-      const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'w2e-sandbox-'));
+      const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'w2e-sandbox-')); scratch.push(tmpRoot);
       const isLib = typeof mod.libraryFake === 'function', ask = isLib ? mod.libraryFake : mod.lookup;
       const probe = new rt.Env(seed); if (isLib) rt.sandbox(probe, tmpRoot);
       const candidates = new Set(FAMILIES.flatMap((x) => x.specifiers));
@@ -874,6 +874,8 @@ async function testDir(dir, kind, seed) {
 const failing = (r) => (r.clauses ?? []).filter((c) => c.first);
 const harnessDefects = (r) => (r.clauses ?? []).filter((c) => c.harness);
 
+const scratch = []; // the sandbox folders made for the hooks, removed when the run ends
+process.on('exit', () => { for (const d of scratch) fs.rmSync(d, { recursive: true, force: true }); });
 // ----- the run -----
 const groups = [...DIRS.map((d) => ({ kind: 'fake', dir: d })), { kind: 'good', dir: GOOD }, { kind: 'wrong', dir: WRONG }];
 const results = [];
