@@ -59,6 +59,9 @@ Each claim is sound only if every link holds. The links, and the mechanism that 
 2. **The value returned is outside the type.** A shape needs `no`, the other side of the same three values: an
    `unknown` claims nothing. The awaited value is read against `Promise<T>`'s T only when the unit returned a promise and
    the declaration says Promise; a rendered JSX element (lean's representation, not React's value) is never read.
+   Nor is a value read after lane B's observer drove the functions the unit handed out (run.mjs driveWindow calls them
+   after the return, and they may write into the value: `LEAN_BREAK=shape-drives`). Each shape names where the value
+   leaves its type (`mismatch: { at, wanted, got }`).
    `LEAN_BREAK=declared-shape` removes the check.
 3. **The call asked the world nothing.** lean's fakes answer every outside request with a handle, and a handle can be
    tested without a trap (`if (flag)`, `typeof window`), so an empty trace alone is not enough. A call is closed when
@@ -73,7 +76,8 @@ Each claim is sound only if every link holds. The links, and the mechanism that 
    `LEAN_BREAK=closed-call` removes the check. (b) came from the census: on nexus-tokens a test's fixture computed at
    load through `culori` gave a `new:test` that was the fake's answer; the pair rows `ready` and `fixture.test.ts` hold it.
 4. **The throw is the unit's.** A throw the declaration names is its declared behaviour (`LEAN_BREAK=declared-throws`
-   reads the tags no more). A `ReferenceError` for a global Node holds and the sandbox does not is lean's gap: coverage.
+   reads the tags no more). A `ReferenceError` for a global Node holds and the sandbox does not (`Response`,
+   found on status) is lean's gap: coverage, in a draw and in a test (`LEAN_BREAK=platform-gap`).
    A timeout, a budget, a stack overflow is the harness's: the unit's result is ASK with what was found before it.
 5. **A test's failure is the code's.** The test file is loaded by the unit's own loader in the same sandbox, with lean's
    runner model for `vitest`, `@jest/globals`, `bun:test`, `node:test` and `node:assert` (exec/new-tests.mjs). A file that
@@ -111,7 +115,7 @@ whose bytes are not the candidate's names no unit. The rows' cache key includes 
 
 `tests/pairs/new_unit_fault`, `new_unit_shape`, `new_unit_test` (candidate-only rows with `records` and `absent` in
 expect.json, read by tests/run.mjs), and `tests/w1h-new-units.mjs [--break]`: every pair green; under `--break` each of
-the seven mechanisms turns its pair red. Each pair was red before the mechanism existed (the result file). A break is a
+the nine mechanisms turns its pair red. Each pair was red before the mechanism existed (the result file). A break is a
 change outside the mechanism's own input: the pair's unit and its input stay the same, the switched-off reading of the
 declaration is the only difference (A1, A6).
 
