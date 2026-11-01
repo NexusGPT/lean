@@ -274,7 +274,7 @@ function leafValues(s, v, defs, lits, aware = true) {
   return out;
 }
 const copyOf = (x, d = 0) => { if (d > 8) throw new Error('deep'); if (x === null || typeof x !== 'object') { if (typeof x === 'function') throw new Error('function'); return x; } if (x.__isFake) throw new Error('fake'); if (Array.isArray(x)) return x.map((y) => copyOf(y, d + 1)); if (!isPlain(x)) throw new Error('instance'); const o = Object.create(Object.getPrototypeOf(x)); for (const k of Object.keys(x)) o[k] = copyOf(x[k], d + 1); return o; };
-export function changesOf(inputs, params, defs, lits, { maxDepth = 5, aware = true } = {}) {
+export function changesOf(inputs, params, defs, lits, { maxDepth = 5, aware = true, lists = false } = {}) { // lists (design/w9i-reach.md): an absent list may be made one element long, an empty one gains a literal of a target condition
   const out = [];
   if (!aware) lits = { strings: [], numbers: [] };
   const valuesOf = (s, v, d, l) => leafValues(s, v, d, l, aware);
@@ -285,6 +285,8 @@ export function changesOf(inputs, params, defs, lits, { maxDepth = 5, aware = tr
     if (v === null || v === undefined) { // an absent dictionary the type admits present: one entry keyed by a literal of the unit, its value one the value type admits
       const dict = opts.find((o) => o.kind === 'dict'), val = dict && valuesOf(dict.value, undefined, defs, lits)[0];
       if (val) for (const k of lits.strings) { const o = {}; o[k] = val.value; if (fits(s, o, defs)) out.push({ at, op: 'set', value: o, tier: lits.near?.strings.includes(k) ? 1 : 2 }); }
+      const list = lists && opts.find((o) => o.kind === 'array');
+      if (list) for (const c of valuesOf(list.of, undefined, defs, lits).filter((c) => c.tier <= 1)) if (fits(s, [c.value], defs)) out.push({ at, op: 'set', value: [c.value], tier: c.tier + 1 });
       return;
     }
     if (typeof v !== 'object' || v.__isFake) return;
@@ -294,7 +296,7 @@ export function changesOf(inputs, params, defs, lits, { maxDepth = 5, aware = tr
       if (!arr) return;
       v.slice(0, 3).forEach((x, i) => walk(x, arr.of, [...at, i], d + 1));
       if (v.length) { out.push({ at, op: 'pop', tier: 4 }, { at, op: 'shift', tier: 4 }); try { copyOf(v[v.length - 1]); out.push({ at, op: 'dup', tier: 4 }); } catch { /* an element lean cannot copy (a function, a fake) */ } }
-      else { const first = valuesOf(arr.of, undefined, defs, lits)[0]; if (first) out.push({ at, op: 'push', value: first.value, tier: 4 }); }
+      else { const vals = valuesOf(arr.of, undefined, defs, lits), first = vals[0]; if (first) out.push({ at, op: 'push', value: first.value, tier: 4 }); if (lists) for (const c of vals.filter((c) => c.tier === 0 && c !== first)) out.push({ at, op: 'push', value: c.value, tier: 1 }); }
       return;
     }
     if (!isPlain(v)) return;
@@ -346,6 +348,8 @@ const recipeKey = (r) => `${r.from}|${r.changes.map(changeText).join(';')}`;
 const extend = (r, c) => { const k = JSON.stringify(c.at); const keep = r.changes.filter((x) => !(JSON.stringify(x.at) === k && ['set', 'delete'].includes(x.op) && ['set', 'delete'].includes(c.op))); return { from: r.from, changes: [...keep, c] }; };
 
 // ----- the search -----
+export const SEARCH_SHARE = 0.25; // the share of the unit's seconds the search may take (design/w3c-search-inputs.md, design/constants.md)
+export const REACH_CEILING = 0.75; // past a witness the search ends by this share of the unit's seconds since the unit began (design/w9i-reach.md)
 // start: the drawn inputs that ran on both sides, [{ input, hits }]; run(recipe) mounts both sides on the recipe's input,
 // calls them and returns { status: 'equal' | 'diff' | 'skip', hits, ... }; changes(recipe) mounts one side and lists the
 // changes of its input as drawn. Deterministic for a seed: the order of the entries, their changes and the tie-breaks
@@ -363,7 +367,11 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
   const rng = makeRng((seed ^ 0x51ed270b) >>> 0);
   const gain = (hits) => [...hits].filter((h) => T.has(h)).length;
   const hitKey = (hits) => [...hits].sort().join(',');
-  const order = start.map((s, j) => ({ s, j, g: gain(s.hits) })).sort((a, b) => b.g - a.g || a.j - b.j).map((x) => ({ recipe: { from: x.s.input, changes: [] }, base: hitKey(x.s.hits), ops: null }));
+  // with onDiff (design/w9i-reach.md) the drawn inputs at the frontier go first: those that took the other outcome of a
+  // target branch not yet reached (they evaluated its condition), the most such branches first
+  const other = (t) => (/[TF]$/.test(t) ? t.slice(0, -1) + (t.endsWith('T') ? 'F' : 'T') : null);
+  const frontier = (hits) => (onDiff ? [...T].filter((t) => !reached.has(t) && hits.has(other(t))).length : 0);
+  const order = start.map((s, j) => ({ s, j, f: frontier(s.hits), g: gain(s.hits) })).sort((a, b) => b.f - a.f || b.g - a.g || a.j - b.j).map((x) => ({ recipe: { from: x.s.input, changes: [] }, base: hitKey(x.s.hits), ops: null }));
   const stack = order.reverse(); // the best drawn input on top; a kept input goes on top of everything
   const seen = new Set(stack.map((e) => recipeKey(e.recipe)));
   const t0 = now();
@@ -381,12 +389,21 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
   // a leaf whose changes moved no branch outcome of the entry (every probe, either side) twice is inert: its other changes
   // wait until every live leaf's are tried
   const pick = (e) => { let fallback = null; for (const o of e.ops) { if (o.done) continue; if (!e.inert.has(o.leaf)) return o; fallback ??= o; } return fallback; };
+  // with onDiff (design/w9i-reach.md) a leaf found inert on one input is inert on every entry, and when the top entry
+  // has live changes no more, the next entry down with a live change goes first (its fallbacks wait too)
+  const shared = onDiff ? { inert: new Set(), still: new Map() } : null;
+  const open = async (e) => { if (!e.ops) { e.ops = await listFor(e); e.inert = shared?.inert ?? new Set(); e.still = shared?.still ?? new Map(); } };
+  const live = (e) => e.ops.find((o) => !o.done && !e.inert.has(o.leaf)) ?? null;
   while (stack.length) {
     if (tried >= maxInputs) return summary('input bound');
     if (now() - t0 > maxMs) return summary('wall-time bound');
-    const e = stack[stack.length - 1];
-    if (!e.ops) { e.ops = await listFor(e); e.inert = new Set(); e.still = new Map(); }
-    const o = pick(e);
+    let e = stack[stack.length - 1];
+    await open(e);
+    let o = shared ? live(e) : pick(e);
+    if (shared && !o) {
+      for (let j = stack.length - 2; j >= 0 && !o; j--) { await open(stack[j]); const x = live(stack[j]); if (x) { e = stack[j]; o = x; } }
+      if (!o) o = pick(e = stack[stack.length - 1]);
+    }
     if (!o) { stack.pop(); continue; }
     o.done = true;
     const recipe = extend(e.recipe, o.c);

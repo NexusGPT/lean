@@ -40,7 +40,7 @@ import { contextRow } from '../hooks.mjs';
 import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
-import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText } from './search.mjs';
+import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText, SEARCH_SHARE, REACH_CEILING } from './search.mjs';
 import { keepDifference, WITNESS_SITES, WITNESS_SHARE } from './sites.mjs';
 
 const require = createRequire(import.meta.url);
@@ -1618,7 +1618,7 @@ async function runPairOnce(opts) {
   // with reach (design/w9i-reach.md) the search runs past the draws' witnesses too, for the changed statements and
   // branches no draw reached, each divergence one more candidate site; past a witness within what is left of three
   // quarters of the unit's seconds, so the unit's bound never turns the WITNESS into an ASK
-  const unitMs = unitSecondsValue(opts.unitSeconds) * 1000, searchMs = !diffs.length ? unitMs / 4 : Math.min(unitMs / 4, unitMs * 0.75 - (Date.now() - unitStart));
+  const unitMs = unitSecondsValue(opts.unitSeconds) * 1000, searchMs = !diffs.length ? unitMs * SEARCH_SHARE : Math.min(unitMs * SEARCH_SHARE, unitMs * REACH_CEILING - (Date.now() - unitStart));
   if (sPlan && !sPlan.error && (!diffs.length || reach) && !extra.full && searchMs > 0 && !harnessAsk && !sawJsx) {
     const pairOf = async (recipe) => { step('search', recipe.from); const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } const [oP, oC] = await observeBoth(sides, false); return { sides, oP, oC }; };
     const statusOf = ({ sides, oP, oC }) => { if (oP.harness || oC.harness || oP.impure || oC.impure) return 'skip'; if (JSON.stringify(oP) === JSON.stringify(oC)) return 'equal'; return undecidedDrives(oP, oC) || unloadableOnly(oP, oC, sides) ? 'equal' : 'diff'; };
@@ -1631,7 +1631,7 @@ async function runPairOnce(opts) {
       if (!b || JSON.stringify(b.oP) !== JSON.stringify(a.oP) || JSON.stringify(b.oC) !== JSON.stringify(a.oC)) { unconfirmed++; return { status: 'skip', hits }; }
       return { status, hits, ...a };
     };
-    const changes = async (recipe) => { const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, sPlan.literals, { aware: !/\bvalues\b/.test(process.env.LEAN_SEARCH_BREAK ?? '') }); }; // LEAN_SEARCH_BREAK: tests/search-inputs.mjs --break removes a mechanism (values: the literal and boundary values; keep: the kept inputs)
+    const changes = async (recipe) => { const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, sPlan.literals, { aware: !/\bvalues\b/.test(process.env.LEAN_SEARCH_BREAK ?? ''), lists: reach }); }; // LEAN_SEARCH_BREAK: tests/search-inputs.mjs --break removes a mechanism (values: the literal and boundary values; keep: the kept inputs)
     const onDiff = reach ? (r, recipe) => { // a divergence the search found: a site per differing field, as a draw's (keepDifference)
       const base = { input: { source: 'search', ...recipeText(recipe) }, ...drawnOf(r.sides), parent: r.oP, candidate: r.oC, source: 'search', replayed: true, reached: reachedOf(r.hits) };
       if (base.record) base.record.search = recipeText(recipe); // the record's input is draw `from` with these changes, not the plain draw

@@ -1,0 +1,10 @@
+{
+ "why": "The witness lane B leads with (design/w9i-reach.md): `openStore` changes the logged line (line 2) and the file name (line 3). The first draw (no dir) throws at line 3 on both sides and differs on the log only: it completed line 2 alone. The next draw (dir \"\") completes both and differs at the return (line 4). The row's witness is the one that completed the most changed statements: line 4. LEAN_BREAK=w9i-reach leads with the first found: line 3, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "openStore", "verdict": "WITNESS", "leadLine": 4 }
+  ],
+  "unassigned": false
+ }
+}
