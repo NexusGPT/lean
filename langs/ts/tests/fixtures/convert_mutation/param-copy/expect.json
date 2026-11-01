@@ -1,0 +1,1 @@
+{"rule": "param-assign", "why": "the default of another parameter names `v`"}

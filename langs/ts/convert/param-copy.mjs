@@ -18,6 +18,9 @@
 // What lane B cannot see: a function whose source text is read (`f.toString()`), which names the new parameter.
 import { ts, K, src, freshName, indentAt, contains } from './util.mjs';
 
+// the expression is the name or holds it (contains() looks below its root only)
+const names = (x, name) => (ts.isIdentifier(x) && x.text === name) || contains(x, (y) => ts.isIdentifier(y) && y.text === name, true);
+
 export default {
   name: 'param-copy',
   rules: ['param-assign'],
@@ -39,7 +42,7 @@ export default {
     if (!ts.isArrowFunction(fn) && contains(fn.body, (x) => ts.isIdentifier(x) && x.text === 'arguments')) return { list: 'the function reads `arguments`' };
     if (contains(fn.body, (x) => ts.isIdentifier(x) && x.text === 'eval', true)) return { list: 'the function calls eval' };
     const name = p.name.text;
-    for (const q of fn.parameters) if (q !== p && q.initializer && contains(q.initializer, (x) => ts.isIdentifier(x) && x.text === name, true)) return { list: `the default of another parameter names \`${name}\`` };
+    for (const q of fn.parameters) if (q !== p && q.initializer && names(q.initializer, name)) return { list: `the default of another parameter names \`${name}\`` };
     const fresh = freshName(sf, `${name}Arg`);
     const edits = [{ start: p.name.getStart(sf), end: p.name.end, text: fresh }];
     const ind = indentAt(sf, fn.getStart(sf));
