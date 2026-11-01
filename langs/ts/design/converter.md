@@ -114,3 +114,20 @@ changes behaviour) is a WITNESS.
   `external/` (an awaited list with a declared array type) rewritten, its pair PASS-bounded. The readers stop at the
   file: a cast in another module (pyka's `db.ts`) is not seen, the rewrite is made, and the proof step's WITNESS
   reverts the file, as it did on pyka.
+
+## 2026-11-01: the mutation family (w4a), five transforms behind --narrowed
+
+Appended to the table above (which is not rewritten); the listings above for closure-mutation, param-mutation,
+in-place-mutation, update-expression, assignment-expression and bare-return now hold only outside these shapes. The
+argument for each, the guards and the measurement: design/w4a-convert-mutation.md.
+
+| entry | label | file | the rewrite | the guard that keeps behaviour |
+|---|---|---|---|---|
+| captured-mutable, closure-mutation (`--narrowed`) | migration | closure-counter.mjs | a forEach whose callback writes one local `n` becomes `n = xs.reduce<T>((acc, x) => { let n = acc; ...; return n; }, n);` | the callback writes no other outer binding and no closure inside it names `n`; every other reference to `n` is in the declaring function or an inline array callback around the loop; no try around the loop; an array receiver with no type assertion on its path; a synchronous arrow with at most one plain parameter, returning no value |
+| update-expression, assignment-expression, operator-value-context, in-place-mutation (`--narrowed`) | migration | hoist-update.mjs | a step used as a value becomes a statement before its statement and its value is the target read back (`T \|\| (T = V)` as `T \|\|= V`, on a field `if (!T) { T = V; }`); a conditional holding a step becomes an if statement assigning a fresh local; `R.sort(f)` / `R.reverse()` used as a value become the statement and `R` | the step (or the conditional) runs on every path of its statement; what the statement evaluates before it is inert under the types and names neither the target's root nor a field of its name; a declaration list is split before the step's declarator |
+| param-mutation (`--narrowed`) | migration | rebuild-by-spread.mjs | a push into an array under a key of a container the function makes (`C[k].push(v)`, `C[k]?.push(v)`, `(C[k] = C[k] \|\| []).push(v)`) becomes `C[k] = [...C[k], v]`; a sort or push used as a value is hoist-update's | the container is a local made here of fresh arrays, every value put in is fresh or the key's own, none of its arrays is ever held, handed on or captured, no try around the push, a pure key |
+| param-assign (`--narrowed`) | conditional (decided by the transform) | param-copy.mjs | a rebound parameter `p` becomes `pArg` and `let p = pArg;` opens the body | no `arguments`, no other parameter's default names `p`, a plain name (no pattern, `this`, parameter property or decorator) |
+| bare-return (`--narrowed`) | migration, proved by erasure | explicit-return.mjs | the declared result `T` of a unit with a bare `return;` becomes `T \| undefined` (`Promise<T \| undefined>` when async) | the emitted JavaScript is unchanged (erased); no caller in another module (not exported, not a public member of an exported class); a written result type; undone on a new type error in the file |
+
+A copy of a parameter's value at entry (`p = { ...p }`) is not among them: lane B observes the arguments after the call,
+and a copy hides a change the caller sees, so it changes behaviour wherever the change runs.

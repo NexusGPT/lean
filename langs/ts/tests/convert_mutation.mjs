@@ -27,6 +27,10 @@ let fail = 0;
 const say = (ok, what, saw) => { console.log(`${ok ? 'ok  ' : 'FAIL'} ${what}${saw ? ': ' + saw : ''}`); if (!ok) fail++; };
 
 const transforms = await loadTransforms();
+// the file a loaded transform came from: each file's default export, compared by identity with the rule table's
+const files = new Map();
+for (const f of fs.readdirSync(path.join(here, '..', 'convert')).filter((x) => x.endsWith('.mjs') && x !== 'util.mjs')) files.set((await import(path.join(here, '..', 'convert', f))).default, path.basename(f, '.mjs'));
+const fileOf = (t) => files.get(t);
 if (BREAK) for (const [rule, t] of [...transforms]) if (MINE.includes(t.name)) transforms.delete(rule);
 
 // a scratch repository holding `text` as unit.ts, committed
@@ -50,6 +54,14 @@ const covered = (rows) => { const out = rows.map((r) => ({ ...r })); for (const 
 const count = (rs) => Object.entries(rs.reduce((c, r) => ({ ...c, [r.verdict ?? 'none']: (c[r.verdict ?? 'none'] ?? 0) + 1 }), {})).map(([k, v]) => `${v} ${k}`).join(', ');
 // the strict family's edits are proved by erasure in convert.mjs; pr.mjs answers PASS for an unchanged emit as well
 const passed = (v) => v === 'PASS-proved' || v === 'PASS-bounded' || v === 'PASS-erased';
+
+// part 0: the advice table names, for each entry a transform rewrites, the file whose rules hold that entry
+{
+  const { ADVICE } = await import('../lint/advice.mjs');
+  const byFile = new Map([...(await loadTransforms())].map(([rule, t]) => [rule, t]));
+  const bad = Object.entries(ADVICE).filter(([rule, a]) => a.transform && !(byFile.get(rule) && path.basename(a.transform, '.mjs') === fileOf(byFile.get(rule))));
+  say(bad.length === 0, 'advice: every entry marked with a transform is that transform\'s rule', bad.map(([r, a]) => `${r} -> ${a.transform}`).join(', ') || `${Object.values(ADVICE).filter((a) => a.transform).length} entries`);
+}
 
 // part 1: the fixtures
 for (const name of MINE) {
