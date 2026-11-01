@@ -1002,6 +1002,9 @@ function translateOnce(file, fnName, opts = {}) {
     const decl = moduleState(checker, n, sf);
     addPrelude('World', 'type World');
     const tag = hash(reachOf.keyText(decl.parent.parent)); // the declaration and the code its initializer reaches (design/reach-keys.md): `const CFG = make(1)` is another cell when `make` changes
+    // LEAN_BREAK=cell-key drops the declaration from the cell's name (tests/w1e-opaque-this-globals.mjs --break: a unit
+    // reading a cell whose initializer changed, its own text unchanged, must then be proved falsely)
+    if (broken('cell-key')) return external(`Module_file_${kind}_${n.text}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
     return external(`Module_file_${kind}_${n.text}_${tag}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
   }
   function globalRead(n) {
@@ -1743,7 +1746,9 @@ function translateOnce(file, fnName, opts = {}) {
   function heldKey(t) {
     if (isOptional(t)) t = baseOf(t);
     const cs = [...classDecls.values()].filter((c) => { try { return checker.isTypeAssignableTo(checker.getTypeAtLocation(c.name), t); } catch { return false; } });
-    return cs.length ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
+    // LEAN_BREAK=held-key drops the classes' code from the request's name (tests/w1e-opaque-this-globals.mjs --break: a
+    // callback whose text is unchanged, calling a method changed only at one input, must then be proved falsely)
+    return cs.length && !broken('held-key') ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
   }
   function instanceDecision(t, target, n, made = false) {
     if (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined)) return 'false';
@@ -2284,7 +2289,7 @@ function translateOnce(file, fnName, opts = {}) {
     const spread = args.some(ts.isSpreadElement);
     if (spread && recvCode !== null) { const v = `sr${tempCount++}_`; pending.push(`var ${v}: ${recvType} := ${recvCode};`); recvCode = v; }
     // an outside method is looked up before its arguments; a throwing argument still observes that lookup
-    if (faultMode && isEff && ts.isPropertyAccessExpression(n.expression)) {
+    if (faultMode && isEff && ts.isPropertyAccessExpression(ts.isTaggedTemplateExpression(n) ? n.tag : n.expression)) { // a tagged template is the call of its tag (common.mjs templateRaws)
       const ps = ['World', ...(recvCode !== null ? [recvType] : [])];
       const args = [WORLD, ...(recvCode !== null ? [recvCode] : [])];
       const lookup = `${external(`lookup_${calleeName}`, ps, '(World, Unit)')}(${args.join(', ')})`;

@@ -69,9 +69,10 @@ function withIncludes(files) {
 let hits = 0, misses = 0, stored = 0;
 export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, dir: CACHE_DIR });
 // the switches a step inherits from the suite's own environment that change what a producer does: LEAN_BREAK (amendment
-// A6: a --break run removes the mechanism it names) and LEAN_LIBRARY_FAKES (lane B's library fakes off). A step under
-// one of them is another step (tests/step-cache-break.mjs); LEAN_STEP_CACHE_INHERITED=off is that test's --break
-const PRODUCER_SWITCHES = ['LEAN_BREAK', 'LEAN_LIBRARY_FAKES'];
+// A6: a --break run removes the mechanism it names), LEAN_LIBRARY_FAKES (lane B's library fakes off) and LEAN_WITHDRAW
+// (a reading withdrawn by name). A step under one of them is another step (tests/step-cache-break.mjs);
+// LEAN_STEP_CACHE_INHERITED=off is that test's --break
+const PRODUCER_SWITCHES = ['LEAN_BREAK', 'LEAN_LIBRARY_FAKES', 'LEAN_WITHDRAW'];
 // the key of one command, and the stored entry when there is one (a hit); shared by the sync and the async runner
 // the environment variables that change what a command answers, inherited from the suite's own environment: part of
 // the key, so a run with the input search (LEAN_SEARCH, exec/search.mjs) never replays one without it

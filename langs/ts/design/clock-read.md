@@ -58,8 +58,9 @@ transitions make order changes unprovable even when a sampled result coincides.
 The fake trace catches an extra read even when the return value ignores it.
 Recognizing built-in methods checks global origin; local objects retain their
 existing method reading. No method, alias or Date mutation gains a new purity claim.
-Effectful module let initializers remain refused by toplevel-effect; the
-clock_initializer escape exercises performance.now there. Other unrelated lint
+Effectful module let initializers were refused by toplevel-effect until 2026-11-01: a unit
+reading the field now reads the world's value, never the initializer's (design/w1e-opaque-this-globals.md); the
+clock_initializer escape keeps the pattern-bound form refused. Other unrelated lint
 boundaries, including reference identity, remain in force.
 
 ## Real instances inspected

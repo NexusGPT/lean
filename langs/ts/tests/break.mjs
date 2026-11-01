@@ -49,6 +49,13 @@ export const MECHANISMS = {
   'cex-replay-by-index': 'solve/counterexample.mjs: lane B\'s draw at the replay\'s index is replayed instead of the model\'s value (lane w3a)',
   'package-rows': 'library-rows.mjs: every package call keeps the outside call\'s reading (lane w2d)',
   'library-fakes': 'exec/fakes/lib/index.mjs libraryFakesOn: every library fake is off, the recording proxy answers (lane w2d)',
+  'lexical-this': 'lint/lint.mjs callback loop: an arrow callback under an instance member does not read the member\'s receiver (lane w1e; tests/w1e-opaque-this-globals.mjs)',
+  'held-key': 'translate/translate.mjs: the classes\' code leaves the name of a request on a held receiver (lane w1e)',
+  'unresolved-global': 'lint/lint.mjs unresolvedGlobal: a global nothing declares is not read as the world value keyed by its name (lane w1e)',
+  'environment-handle': 'lint/lint.mjs environmentHandle: an unresolved name read as an opaque handle sets its unit aside again (lane w1e)',
+  'incomplete-member': 'lint/lint.mjs: a member of a type that reaches the error type keeps its ts-strict refusal (lane w1e)',
+  'effectful-cell': 'lint/lint.mjs: a module let/var with an effectful initializer keeps its toplevel-effect refusal (lane w1e)',
+  'cell-key': 'translate/translate.mjs: the declaration leaves a module cell\'s name (lane w1e)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/

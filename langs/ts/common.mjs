@@ -3264,7 +3264,14 @@ const unitSourceOrigin = new WeakMap();
 // the class's accessor); a callback unit under one therefore carries the member's class context (cls, className,
 // isStatic), so the translator reads `this.x` in it as in the member. A function expression binds its own `this`: no
 // class context. Type parameters are lexical for every unit: enclosingTypeParameters below.
+// The receiver is lexical through every arrow between the callback and the member (`xs.map((x) => ys.map((y) =>
+// this.f(x, y)))`): the nearest enclosing function that is not an arrow names it (w1e, design/w1e-opaque-this-globals.md).
+export const receiverScope = (scope) => {
+  while (scope && ts.isArrowFunction(scope)) { let p = scope.parent; while (p && !ts.isFunctionLike(p) && !ts.isClassStaticBlockDeclaration(p) && !ts.isPropertyDeclaration(p) && !ts.isSourceFile(p)) p = p.parent; scope = p && !ts.isSourceFile(p) ? p : null; }
+  return scope;
+};
 const lexicalClass = (fn, scope) => {
+  if (ts.isArrowFunction(fn)) scope = receiverScope(scope);
   if (!ts.isArrowFunction(fn) || !scope || !scope.parent || !ts.isClassLike(scope.parent) || !scope.parent.name) return {};
   if (!(ts.isMethodDeclaration(scope) || ts.isGetAccessorDeclaration(scope) || ts.isSetAccessorDeclaration(scope) || ts.isConstructorDeclaration(scope) || ts.isPropertyDeclaration(scope))) return {};
   return { cls: scope.parent, className: scope.parent.name.text, isStatic: !!scope.modifiers?.some((x) => x.kind === ts.SyntaxKind.StaticKeyword) };
