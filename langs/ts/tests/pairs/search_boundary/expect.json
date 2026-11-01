@@ -1,0 +1,8 @@
+{
+  "why": "The branch-guided input search (exec/search.mjs, design/w3c-search-inputs.md). refKey differs only on an integer id past the safe integers (Number.isInteger against Number.isSafeInteger), behind a lower-cased kind equal to \"user\". The drawn inputs reach the outer branch but no unsafe integer (PASS-bounded without the search, also on 200 inputs and seeds 1 to 3); the search sets the id to the boundary just off the largest safe integer, 2^53, and the sides differ (source: search).",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "refKey": "WITNESS" },
+  "search": { "refKey": { "off": "PASS-bounded", "on": "WITNESS" } }
+}

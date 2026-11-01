@@ -69,13 +69,17 @@ function withIncludes(files) {
 let hits = 0, misses = 0, stored = 0;
 export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, dir: CACHE_DIR });
 // the key of one command, and the stored entry when there is one (a hit); shared by the sync and the async runner
+// the environment variables that change what a command answers, inherited from the suite's own environment: part of
+// the key, so a run with the input search (LEAN_SEARCH, exec/search.mjs) never replays one without it
+const ANSWER_ENV = ['LEAN_SEARCH', 'LEAN_SEARCH_BREAK'];
+const answerEnv = () => Object.fromEntries(ANSWER_ENV.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
 function lookup(cmd, args, { root, files = [], outs = [], env = null, normalise = [] }) {
   const norm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(from).join(to) : t), String(s));
   const denorm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(to).join(from) : t), String(s)); // a stored output names this run's paths again: a result replayed in another checkout or temp folder must point at that checkout (the witness-lines check compares the site's file to the pair's)
   const inputs = withIncludes(files).map((f) => { try { return [norm(f), sha(fs.readFileSync(f))]; } catch { return [norm(f), null]; } });
   if (env) for (const v of Object.values(env)) { if (typeof v === 'string' && fs.existsSync(v) && fs.statSync(v).isFile()) inputs.push([norm(v), sha(fs.readFileSync(v))]); } // a table or fixture named by the environment
   const kind = producerKind(cmd, args);
-  const keyObj = { v: 2, cmd, args: args.map(norm), env: env ?? {}, inputs, kind, producer: kind === 'dafny' ? `${dafnyVersionString()} with ${z3Binary().version ?? z3Binary().source}` : producerHash(root, kind) }; // v2: outputs stored normalised
+  const keyObj = { v: 2, cmd, args: args.map(norm), env: { ...answerEnv(), ...(env ?? {}) }, inputs, kind, producer: kind === 'dafny' ? `${dafnyVersionString()} with ${z3Binary().version ?? z3Binary().source}` : producerHash(root, kind) }; // v2: outputs stored normalised
   const key = sha(JSON.stringify(keyObj)), file = path.join(CACHE_DIR, key.slice(0, 2), key + '.json');
   const step = { norm, denorm, keyObj, key, file, outs };
   try {

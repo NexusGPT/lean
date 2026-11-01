@@ -40,6 +40,7 @@ import { contextRow } from '../hooks.mjs';
 import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
+import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText } from './search.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -89,10 +90,14 @@ const siteCompiles = new Map();
 // its project's, the run's --project, or lean's single-file options under --no-project
 let fieldsProject = true;
 export const setFieldsProject = (p) => { fieldsProject = p; }; // a caller that loads files itself (conformance/node-side.mjs): the run's project, as runPair sets it
+// the branch probes of the input search (search.mjs branchMarks): the files of the pair under search, by absolute path,
+// each with its branch table and its side's tag; null when no search runs (LEAN_SEARCH, --search), and then nothing changes
+let probes = null;
 function compileWithSites(src, tsName, abs) {
   const define = fileClassFieldsDefine(abs, fieldsProject);
+  const probe = probes?.get(abs) ?? null;
   const old = siteCompiles.get(abs);
-  if (old?.src === src && old.define === define) return old;
+  if (old?.src === src && old.define === define && old.probe === probe) return old;
   const sites = [];
   let stateName = '__lean_site';
   while (src.includes(stateName)) stateName += '_';
@@ -133,7 +138,7 @@ function compileWithSites(src, tsName, abs) {
   const bindingsShim = `\nfunction ${bindingsName}() { return { ${bound.map((n) => `${JSON.stringify(n)}: function () { return ${n}; }`).join(', ')} }; }\n`;
   const emit = (before) => ts.transpileModule(src, { compilerOptions: { ...COMPILE, useDefineForClassFields: define }, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
-  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs)]);
+  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe ? [branchMarks(probe.table, abs, stateName)] : [])]);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -142,7 +147,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, define, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) + bindingsShim };
+  const compiled = { src, define, probe, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) + bindingsShim };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -479,7 +484,8 @@ function routeCall(env, Cls, member, args, spec, run) {
 export function sandbox(env, root) {
   captureEnvironment(env);
   const cache = new Map();
-  env.siteState = { current: null, completed: null, fault: null, files: Object.create(null) };
+  env.siteState = { current: null, completed: null, fault: null, files: Object.create(null), hits: null };
+  env.siteState.b = (file, k, v) => { const p = probes?.get(file); if (p && env.siteState.hits) env.siteState.hits.add(`${p.tag}:${k}${outcomeOf(p.table[k], v)}`); return v; }; // a branch probe (search.mjs): the outcome is recorded while the unit runs, the value goes back unchanged
   const react = reactRuntime(env);
   const epoch = CLOCK_EPOCH;
   const dateNow = (...args) => epoch + env.clock('Date.now', args);
@@ -1487,6 +1493,10 @@ async function runPairOnce(opts) {
   let plan; step('inputs');
   try { plan = inputPlan(parent, candidate, unit, { project, seed, values: opts.values }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const { spec, heaps } = plan;
+  const searchOn = opts.search ?? process.env.LEAN_SEARCH === '1'; // the branch-guided input search (search.mjs), behind its flag
+  let sPlan = null; probes = null;
+  if (searchOn) { try { sPlan = searchPlan(parent, candidate, unit, (f) => fs.readFileSync(f, 'utf8')); probes = new Map(Object.entries(sPlan.files)); } catch (e) { sPlan = { error: String(e && e.message).slice(0, 160) }; } }
+  const drawHits = []; // per input that ran on both sides: the target branches it reached (the search's start)
   const unitRecord = opts.unitRecord;
   unitRecord.drawDomain = { status: 'recorded', parameters: spec.params.map(p => ({ name: p.name, spec: p.spec, optional: !!p.optional, count: 0, families: {} })), requested: n, seed, heaps: heaps.builders.length, known: knownLength(spec), boundaryWalk: spec.shaped ? walkLength(spec) : 0 };
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
@@ -1498,7 +1508,7 @@ async function runPairOnce(opts) {
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
   const knownRun = spec.known ? { inputs: 0, body: 0 } : null; // the inputs of the known phase (the project's listed values) and how many of them reached the body
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
-  const mountSides = async (i) => { // a fresh environment per side for input i, the unit picked, the inputs drawn
+  const mountSides = async (i, recipe = null) => { // a fresh environment per side for input i, the unit picked, the inputs drawn; a search recipe's changes applied to the drawn input (search.mjs)
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
       const env = new Environment(seed * 7919 + i);
@@ -1509,9 +1519,11 @@ async function runPairOnce(opts) {
       if (!u) { harnessAsk = env.callbackRefusal ?? `${name}: unit ${unit} not exported`; break; }
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
+      if (probes) env.siteState.hits = new Set(); // the branches the call reaches, not the load
       let inputs;
       captureActive(env, false);
-      try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
+      try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; }
+      if (recipe && !applyRecipe(inputs, recipe)) { harnessAsk = `search: a change of input ${i} did not apply`; break; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
       sides[name] = { env, unit: u, state: exportsObj.__lean_state, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
@@ -1558,6 +1570,7 @@ async function runPairOnce(opts) {
     const stopped = atGuard(oP, sides.parent) && atGuard(oC, sides.candidate);
     if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
+    if (probes) drawHits.push({ input: i, hits: new Set([...sides.parent.env.siteState.hits, ...sides.candidate.env.siteState.hits]) });
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
       const undecided = undecidedDrives(oP, oC); // the sides differ only from a drive that could not run on: undecided, never a difference (design/callbacks.md)
@@ -1567,6 +1580,32 @@ async function runPairOnce(opts) {
       else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
     } else { const u = undrivenOf(oP) ?? undrivenOf(oC); if (u) (diffs.undriven ??= []).push({ input: i, reasons: [u] }); } // equal, with a callback lean could not drive: the gap is carried
   }
+  // the branch-guided input search (search.mjs, design/w3c-search-inputs.md): the draws agreed and reached the body; a
+  // changed input runs both sides as a draw does, and a difference is a WITNESS only when a second run on fresh
+  // environments gives the same two observations
+  let searchSummary = null;
+  if (sPlan && !sPlan.error && !diffs.length && !harnessAsk && !sawJsx) {
+    const pairOf = async (recipe) => { step('search', recipe.from); const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } const [oP, oC] = await observeBoth(sides, false); return { sides, oP, oC }; };
+    const statusOf = ({ sides, oP, oC }) => { if (oP.harness || oC.harness || oP.impure || oC.impure) return 'skip'; if (JSON.stringify(oP) === JSON.stringify(oC)) return 'equal'; return undecidedDrives(oP, oC) || unloadableOnly(oP, oC, sides) ? 'equal' : 'diff'; };
+    let unconfirmed = 0;
+    const run = async (recipe) => {
+      const a = await pairOf(recipe); if (!a) return { status: 'skip' };
+      const status = statusOf(a), hits = new Set([...a.sides.parent.env.siteState.hits, ...a.sides.candidate.env.siteState.hits]);
+      if (status !== 'diff') return { status, hits };
+      const b = await pairOf(recipe); // the replay: the same recipe on fresh environments must give the same two observations
+      if (!b || JSON.stringify(b.oP) !== JSON.stringify(a.oP) || JSON.stringify(b.oC) !== JSON.stringify(a.oC)) { unconfirmed++; return { status: 'skip', hits }; }
+      return { status, hits, ...a };
+    };
+    const changes = async (recipe) => { const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, sPlan.literals, { aware: !/\bvalues\b/.test(process.env.LEAN_SEARCH_BREAK ?? '') }); }; // LEAN_SEARCH_BREAK: tests/search-inputs.mjs --break removes a mechanism (values: the literal and boundary values; keep: the kept inputs)
+    const r = await searchInputs({ seed, targets: sPlan.targets, start: drawHits, run, changes, maxInputs: n, maxMs: unitSecondsValue(opts.unitSeconds) * 1000 / 4, keep: !/\bkeep\b/.test(process.env.LEAN_SEARCH_BREAK ?? '') });
+    const { witness, recipe, ...rest } = r;
+    searchSummary = { ...rest, unconfirmed, changedLines: sPlan.changed, unreached: rest.unreached.map(sPlan.describe) };
+    if (witness) {
+      const w = { input: { source: 'search', ...recipeText(recipe) }, ...drawnOf(witness.sides), parent: witness.oP, candidate: witness.oC, where: { ...firstDifference(witness.oP, witness.oC), source: 'search' }, source: 'search', replayed: true };
+      if (w.record) w.record.search = recipeText(recipe); // the record's input is draw `from` with these changes, not the plain draw
+      diffs.push(w);
+    }
+  } else if (sPlan) searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length ? 'the draws differ' : harnessAsk ? 'harness stop' : 'rendered unit', targets: sPlan.targets?.length ?? 0 };
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run
@@ -1574,6 +1613,7 @@ async function runPairOnce(opts) {
   for (const x of states) if (Object.hasOwn(x, 'tree')) addTargets(renderRow.targets, treeTargets(x.tree, true));
   const walkedInto = (i, r) => { if (!r) return; for (const labels of r.walked ?? []) if (!renderRow.sequences.some((x) => x.input === i && JSON.stringify(x.labels) === JSON.stringify(labels))) renderRow.sequences.push({ input: i, labels }); addTargets(renderRow.targets, r.targets ?? []); };
   const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
+  if (searchSummary) bound.search = searchSummary;
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
@@ -1786,7 +1826,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const guard = verdictGuard(opt('--out', null));
-  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
+  const res = await runPair({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), ms: Number(opt('--ms', 2000)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)), project: a.includes('--no-project') ? false : opt('--project', true), sequenceDepth: Number(opt('--sequence-depth', 2)), sequenceBreadth: Number(opt('--sequence-breadth', 4)), sequenceInputs: Number(opt('--sequence-inputs', 2)), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined), ...(a.includes('--search') ? { search: true } : a.includes('--no-search') ? { search: false } : {}) }).catch((e) => ({ verdict: 'ASK', reason: `harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}` })); // an error that escapes the harness is ASK, never a crash and never a silent exit
   const out = opt('--out', null);
   guard.settle();
   const text = JSON.stringify(res, null, 1);
