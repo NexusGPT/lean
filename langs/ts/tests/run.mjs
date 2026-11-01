@@ -730,6 +730,10 @@ async function adviceLabels(add) {
     // seeded clock values retain their native shapes and ordered observations
     ['clock-read', scriptRow('runtime', 'clock-read', 'seeded recording fakes', [path.join(here, 'clock-read.mjs')], (r) => (r.stdout + r.stderr).trim())],
     // the purity check's second render starts from the state the first started from: the world's writes to handed objects are journaled, undone and replayed (R8's BoardRow and its four mutants)
+    // the opacity ladder's shared helper (translate/opaque.mjs): the key is the construct's tokens, the step's shape, the
+    // column, the reference test; with its mechanism removed (--break, LEAN_BREAK=opaque-drop-read) the test must go red
+    ['opaque-unit', scriptRow('runtime', 'opaque-unit', 'the opaque step helper', [path.join(here, 'opaque-unit.mjs')], lastLine)],
+    ['opaque-unit-break', async (R, add) => { const r = await R.run('node', [path.join(here, 'opaque-unit.mjs'), '--break']); add('runtime', 'opaque-unit --break', 'red without the mechanism', r.status !== 0, (r.stdout + r.stderr).trim().split('\n')[0]); }],
     ['render-handed', scriptRow('runtime', 'render-handed', 'world writes to handed objects in the purity check', [path.join(here, 'render-handed.mjs')], lastLine)],
     ['rest_param-paths', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, 'pairs/rest_param/paths.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'rest_param/paths.test.mjs', 'drawn rest slot spread at every call boundary', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     // a run never ends without a verdict: a drained loop and a budget stop are ASK, exit 2; a wide record, a deep nesting and an `@/` alias get verdicts
