@@ -1,4 +1,5 @@
 import { keys } from 'lodash';
+import { log } from 'dep';
 export type Pt = { a: number; b: string };
 
 // An outside call reads the keys of what it is handed in property order: JSON.stringify writes them so, lodash's keys
@@ -13,3 +14,5 @@ export function ownParam(p: Pt): string { return JSON.stringify(p); }
 export function litVsParam(p: Pt): string { return JSON.stringify({ a: p.a, b: p.b }); }
 export function ownElem(ps: Pt[]): string { return ps.length ? JSON.stringify(ps[0]) : ""; }
 export function libKeys(x: number, y: string): string { return keys({ a: x, b: y }).join(','); }
+// the heap core would take this unit (a parameter written); it holds no key order, so it leaves the unit to the value reading
+export function heapHand(p: Pt): void { p.a = 1; log({ a: p.a, b: p.b }); }

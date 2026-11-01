@@ -10,7 +10,8 @@
     "own_param",
     "lit_vs_param",
     "own_elem",
-    "lib_keys"
+    "lib_keys",
+    "heap_hand"
   ],
   "equal": {
     "enc": false,
@@ -22,7 +23,8 @@
     "own_param": true,
     "lit_vs_param": false,
     "own_elem": true,
-    "lib_keys": false
+    "lib_keys": false,
+    "heap_hand": false
   },
   "b": {
     "enc": "WITNESS",
@@ -33,7 +35,8 @@
     "indexKeys": "PASS-bounded",
     "ownParam": "PASS-bounded",
     "ownElem": "PASS-bounded",
-    "libKeys": "WITNESS"
+    "libKeys": "WITNESS",
+    "heapHand": "PASS-bounded"
   },
-  "why": "a record handed to an outside call is read with its key order (translate.mjs orderedArg, design/handed-key-order.md): two literals in two orders are two arguments (enc, encPt, nested, spreadCopy, libKeys: not proved, lane B WITNESS); a literal and its const local, index keys reordered alike, an object the unit did not build handed as itself are one (same, indexKeys, ownParam, ownElem: proved); a literal against a parameter is not one (litVsParam: the parameter carries its own order and keys); the refusals (a record pushed into an array the unit hands, and the like) are tests/handed-key-order.mjs. litVsParam has no lane B row: the generator builds the parameter in its declared order, so lane B cannot tell them apart. Red under LEAN_BREAK=handed-key-order"
+  "why": "a record handed to an outside call is read with its key order (translate.mjs orderedArg, design/handed-key-order.md): two literals in two orders are two arguments (enc, encPt, nested, spreadCopy, libKeys: not proved, lane B WITNESS); a literal and its const local, index keys reordered alike, an object the unit did not build handed as itself are one (same, indexKeys, ownParam, ownElem: proved); a literal against a parameter is not one (litVsParam: the parameter carries its own order and keys); the refusals (a record pushed into an array the unit hands, and the like) are tests/handed-key-order.mjs. heapHand, a unit the heap core would take, leaves it (the heap core holds no key order) and is not proved, where lane B is PASS-bounded: the recording proxy's trace does not tell the two argument orders apart, so lane A alone stands between this pair and a false proof (at 844ddac2 the heap core proved it); litVsParam has no lane B row: the generator builds the parameter in its declared order, so lane B cannot tell them apart. Red under LEAN_BREAK=handed-key-order"
 }

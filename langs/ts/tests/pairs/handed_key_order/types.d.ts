@@ -2,3 +2,6 @@
 declare module 'lodash' {
   export function keys(o: object): string[];
 }
+declare module 'dep' {
+  export function log(o: object): void;
+}
