@@ -672,7 +672,7 @@ async function prWorker(opts) {
       try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, adapters, identity: rows.identity, values: valuesFile, ...newUnitOpts(entry) }); }
       catch (e) { res = { verdict: 'ASK', certificate: basicCertificate({ B: { verdict: 'ASK:harness', reason: `harness: ${String(e.message).slice(0, 300)}` } }) }; }
       const lanes = res.certificate?.lanes ?? {};
-      const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { ...(res.witness.record ? { record: res.witness.record } : {}), input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}), ...(res.certificate?.newUnit ? { records: res.certificate.newUnit.records } : {}) };
+      const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { ...(res.witness.record ? { record: res.witness.record } : {}), input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}), ...(res.certificate?.newUnit ? { records: res.certificate.newUnit.records } : {}), ...(lanes.A?.opaque?.steps?.length ? { opaque: lanes.A.opaque.steps.length } : {}) }; // opaque: the unit's opaque steps (design/w1a-opaque-mutation.md)
       if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
         try { const f = lintFile(headFile, [[u.start, u.end]], entry.keyReading?.checker ? { loaded: entry.keyReading } : { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
       }
@@ -788,7 +788,7 @@ export function markdown(allRows, base, head) {
       }
     }
     // Rendering never mutates the durable result.
-    lines.push(`| ${r.file} | ${unitCell(r.unit)} (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''} | ${note} |`);  }
+    lines.push(`| ${r.file} | ${unitCell(r.unit)} (${r.lines[0]}-${r.lines[1]}) | **${r.verdict ?? ''}** | ${r.coverage ?? ''} | ${r.laneB ?? ''} | ${r.laneA ?? ''}${r.opaque ? ` (opaque ${r.opaque})` : ''} | ${note} |`);  }
   const patched = rows.filter((r) => r.verdict === 'WITNESS' && r.witness?.patch?.length); // a front-end WITNESS: the first three ops of its patch, one per line
   if (patched.length) {
     lines.push('', '## What changed on the page', '');

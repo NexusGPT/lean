@@ -877,7 +877,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
     !process.env.LEAN_DECORATOR_TABLE && !process.env.LEAN_DECORATOR_FIXTURES;
   const key = cacheable ? sha(JSON.stringify({ file, abs, text: sha(given.sf.text),
     project: opts.project ?? true, ranges, advisory: !!opts.advisory, anyType: !!opts.anyType,
-    emission: opts.emission !== false, withdrawals: withdrawalKey(),
+    emission: opts.emission !== false, withdrawals: withdrawalKey(), breaks: process.env.LEAN_BREAK ?? '',
     versions: READINGS.map((r) => [r.id, currentVersion(r)]), producer: producers(),
     program: programHash(given.program), diagnostics: given.diagnostics.map((d) =>
       ({ code: d.code, start: d.start, length: d.length, messageText: d.messageText })),
@@ -892,8 +892,11 @@ export function lowerFile(file, ranges = null, opts = {}) {
   const L = normaliseApplyCalls(given);
   const findings = admitUnits(file, ranges, { ...opts, loaded: given }, L);
   const inventory = topLevelFunctions(L.sf); // the unit a finding belongs to: the lint's named unit, else the innermost containing one
+  // a finding the opaque column grades (lint/lint.mjs OPAQUE_ROWS) stops no unit here when the translator runs: the
+  // translator emits it as an opaque step, or refuses the unit with it (phase 4); without emission it refuses as before
+  const deferred = (x) => !!x.opaque && opts.emission !== false;
   const units = admitted.get(findings).map((r) => {
-    const f = findings.find((x) => refusing(x) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit
+    const f = findings.find((x) => refusing(x) && !deferred(x) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit
     return { ...r, refusal: f ? { id: f.reading?.id ?? 'uncatalogued', version: f.reading?.version ?? null, rule: f.rule, reason: f.msg, line: f.line, by: ['no-reading', 'withdrawn'].includes(f.rule) ? 'catalogue' : 'lint' } : null };
   });
   // phase 4: the translator reads each unit phases 1-3 admitted exactly as the proof lane runs it (check.mjs: --core --heap
@@ -924,13 +927,30 @@ export function lowerFile(file, ranges = null, opts = {}) {
     }
     findings.sort((x, y) => x.line - y.line || x.col - y.col);
   }
-  const rec = { file, units, findings };
+  // the graded findings: a unit the translator read holds them as its opaque sites (the reading `opaque`), and they stop
+  // nothing; a unit it refused keeps the one its refusal names (the column could not grade it), the others are not why
+  // (`graded`: each such finding whole, its label and advice kept, for the advisory listing: lintFindings)
+  const graded = [];
+  { const keep = [];
+    for (const f of findings) {
+      if (!deferred(f)) { keep.push(f); continue; }
+      const u = units.find((x) => x.unit === findingUnit(L.sf, inventory, f)?.name);
+      if (u && u.refusal && !(u.refusal.rule === f.rule && u.refusal.line === f.line)) { (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, grade: f.opaque, graded: false }); graded.push({ ...f, graded: false }); continue; }
+      if (!u || u.refusal) { keep.push(f); continue; }
+      (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, grade: f.opaque, graded: true }); graded.push({ ...f, graded: true });
+      if (!u.readings.some((x) => x.id === 'opaque')) { u.readings.push({ id: 'opaque', version: currentVersion(readingById('opaque')) }); u.readings.sort((a, b) => a.id.localeCompare(b.id)); }
+    }
+    findings.length = 0; findings.push(...keep); }
+  const rec = { file, units, findings, graded };
   const json = JSON.stringify(rec); // the public and retained record is plain data
   if (key) { remember(key, json); measureLowering('disk cache write', () => cacheWrite(cacheFile, key, json)); }
   return JSON.parse(json);
 }
 // the lint's findings read off the record: the lint never admits a unit the translator refuses
-export const lintFindings = (file, ranges = null, opts = {}) => lowerFile(file, ranges, opts).findings.map((f) => ({ ...f }));
+// with the advice (advisory) the findings the opaque column graded follow, each with `graded` (true: the unit is read
+// with an opaque step; false: it stops on another refusal), label and advice kept: a rewrite of one still makes the
+// unit's reading exact (convert.mjs applies it as before); they refuse nothing (design/w1a-opaque-mutation.md)
+export const lintFindings = (file, ranges = null, opts = {}) => { const r = lowerFile(file, ranges, opts); return [...r.findings, ...(opts.advisory ? r.graded ?? [] : [])].map((f) => ({ ...f })).sort((x, y) => x.line - y.line || x.col - y.col); };
 
 export function auditTable(sites) {
   const rows = sites.map((s) => `| ${s.file.replace('langs/ts/', '')}:${s.line} | ${s.kind} | ${s.rule ?? ''} | ${s.reading ?? '**uncatalogued**'} | ${s.decided}${s.by?.length ? ` (${s.by.join(', ')})` : ''} | ${String(s.message ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ').slice(0, 100)} |`);

@@ -10,7 +10,10 @@ and the runner are tested without a language.
 Per language:
   shared   fixtures/shared/<name>/<lang>.<ext>: lint passes; the translation
            verifies with the theorem on the "Theorem" line of the fixture README.
-  escapes  every file under fixtures/escapes: lint exits 1.
+  escapes  every file under fixtures/escapes: lint exits 1 (the command
+           "escape_lint" when conformance.json gives one: a lint that also
+           exits 1 on a construct it reads with an opaque step instead of
+           refusing it, so every escape is still named).
   cleans   fixtures/cleans/<lang>/**/ (parent, candidate, scope.json, edit.json):
            lint passes on both, every lemma proved.
   bugs     fixtures/bugs/<lang>/**/ (the same plus expected.json): the per-lemma
@@ -49,12 +52,14 @@ class Lang:
         conf = conf or {}
         self.pairs = conf.get('pairs', [])
         self.pair_translate_cmd, self.exec_cmd = conf.get('pair_translate'), conf.get('exec')
+        self.escape_lint_cmd = conf.get('escape_lint', lint)
 
-    def lint(self, src):
+    def lint(self, src, cmd=None):
         """Return exit code of the lint (0 pass, 1 refused, other = broken)."""
-        if self.lint_cmd is None:
+        cmd = cmd or self.lint_cmd
+        if cmd is None:
             return 0
-        r = subprocess.run(sub(self.lint_cmd, src=src, root=ROOT, lang=self.name),
+        r = subprocess.run(sub(cmd, src=src, root=ROOT, lang=self.name),
                            cwd=ROOT, capture_output=True, text=True)
         return r.returncode if r.returncode in (0, 1) else 100 + r.returncode
 
@@ -159,7 +164,7 @@ def escapes(lang):
         files += [os.path.join(dp, f) for f in sorted(fs) if f.endswith('.' + lang.ext)]
     for f in files:
         rel = os.path.relpath(f, base)
-        rc = lang.lint(f)
+        rc = lang.lint(f, lang.escape_lint_cmd)
         record(lang.name, 'escape', rel, rc == 1, '' if rc == 1 else f'lint exit {rc}, wanted 1')
 
 
