@@ -239,6 +239,11 @@ export const OPAQUE_ROWS = {
   'property-assign': 'block',
   'receiver-mutation': 'block',
   'receiver-write': 'block',
+  // w1g-opaque-handed (design/w1g-opaque-handed.md): each graded slot is one opaque value at the finding's own span, read
+  // by the translator; the slots these rules still find are refusals (an expression row makes no block site)
+  'read-after-call': 'expression', // a handed object read after the call: ext_now_<T>(wld, x), the handle as the world holds it
+  'copied-argument': 'expression', // a new object of existing parts handed to the outside: handed_fresh_<skeleton>_<T>(v, k)
+  'type-assertion': 'expression', // a value whose type nothing checked, handed to the outside as it is: ext_<from>_as_<to>(v)
 };
 export const OPAQUE_GRADES = new Set(['block', 'statement', 'expression', 'none']);
 for (const [rule, g] of Object.entries(OPAQUE_ROWS)) if (!OPAQUE_GRADES.has(g)) throw new Error(`lint: opaque row ${rule}: ${g} is not a grade`);

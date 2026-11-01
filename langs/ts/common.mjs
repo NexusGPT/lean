@@ -1,6 +1,7 @@
 // Shared helpers for lean-ts: load the vendored TypeScript compiler, build a program (project-aware when a
 // tsconfig is found above the file, strict single-file otherwise), and read the proof hints (@decreases,
 // @invariant) that a source may carry in comments.
+import { broken } from './tests/break.mjs'; // the one --break convention (A6)
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -2469,7 +2470,7 @@ export function heldCall(checker, call, seen = new Map()) { // seen: the caller'
 // no statement of the unit reads it as its declared type. A same-file callee with a body, a library operation, a literal
 // bound to a name, a field write, an element store or a callback result reads it as declared: those stay refused.
 export function outsideSlot(checker, n) {
-  const broken = process.env.LEAN_BREAK === 'outside-slot'; // tests/w1g-opaque-handed.mjs: every callee taken for the outside (the driver's refusal check must go red)
+  const everyCallee = broken('outside-slot'); // tests/break.mjs: every callee taken for the outside (tests/w1g-opaque-handed.mjs: the refusal check must go red)
   let x = n;
   for (;;) {
     const p = x.parent;
@@ -2482,7 +2483,7 @@ export function outsideSlot(checker, n) {
       let sig = null; try { sig = checker.getResolvedSignature(p); } catch { return false; }
       const d = sig?.declaration;
       if (!d) return false;
-      if (broken) return true;
+      if (everyCallee) return true;
       const dsf = d.getSourceFile();
       if (dsf.hasNoDefaultLib || /[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/.test(dsf.fileName)) return false; // a library operation: read exactly
       if (dsf === n.getSourceFile() && ts.isFunctionLike(d) && d.body) return false; // a unit of this file reads its parameter
@@ -2714,7 +2715,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     return c;
   };
   const share = (h, o) => {
-    if (process.env.LEAN_BREAK === 'reach-closure') return false; // tests/break.mjs: the read through a holder is missed
+    if (broken('reach-closure')) return false; // tests/break.mjs: the read through a holder is missed
     const a = closure(h), b = closure(o);
     if (a.open || b.open) return true;
     for (const x of a.types) for (const y of b.types) if (x === y || checker.isTypeAssignableTo(x, y) || checker.isTypeAssignableTo(y, x)) return true;

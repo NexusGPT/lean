@@ -15,6 +15,11 @@ export const MECHANISMS = {
   'opaque-drop-read': 'translate/opaque.mjs opaqueForm: the first read of an opaque step is dropped (lane w1a)',
   'opaque-drop-write': 'translate/opaque.mjs opaqueForm: the first written output of an opaque step is dropped (lane w1a)',
   'opaque-drop-callees': 'translate/translate.mjs opaqueTail: the same-file callee texts leave the step\'s key (lane w1a)',
+  'handle-value': 'translate/translate.mjs handleNow: a read of a handed object after the call takes it as it was before the call, not ext_now (lane w1g)',
+  'reach-closure': 'common.mjs readAfterCall share: a read through a holder of what the call was handed is not counted as reached (lane w1g)',
+  'handed-skeleton': 'translate/translate.mjs handedArg: which parts of a handed literal are new leaves the handed term\'s name (lane w1g)',
+  'assertion-read': 'translate/translate.mjs convertToD: the outside slot\'s conversion of a value whose type nothing checked stops reading the value (lane w1g)',
+  'outside-slot': 'common.mjs outsideSlot: every callee taken for the outside, a same-file callee with a body included (lane w1g; tests/w1g-opaque-handed.mjs)',
 };
 export const BREAK_ENV = 'LEAN_BREAK';
 export const broken = (name) => String(process.env[BREAK_ENV] ?? '').split(',').map((x) => x.trim()).includes(name);

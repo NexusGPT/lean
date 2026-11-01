@@ -106,7 +106,7 @@ function translateGraded(file, fnName, opts = {}) {
   for (let round = 0; ; round++) {
     try { return translateOnce(file, fnName, { ...opts, opaqueSites: sites }); }
     catch (e) {
-      const rule = e instanceof Unsupported && opts.core && e.at ? gradedRule(e.message) : null;
+      const graded = e instanceof Unsupported && opts.core && e.at ? gradedRule(e.message) : null, rule = graded && opaqueGrade(graded) === 'block' ? graded : null; // an expression row grades its own slots; what it still refuses stays refused
       if (!rule || round >= 64 || sites.some((x) => x.pos === e.at.pos)) throw e;
       sites = [...sites, { ...e.at, rule, msg: String(e.message).split('\n')[0].replace(/^(?:(?!: )[^\n])*?\.(?:[cm]?[jt]sx?):\d+: /, '') }];
     }
@@ -266,7 +266,7 @@ function translateOnce(file, fnName, opts = {}) {
   const gradableUnit = (u) => core && !!u?.body && !u.fn?.asteriskToken && !u.accessor && !accessorOpaque.has(u.name);
   const addSite = (name, pos, rule, line, msg, span = null) => { const l = opaqueSites.get(name) ?? []; if (l.some((x) => x.pos === pos)) return false; l.push({ pos, rule, line, msg, span }); opaqueSites.set(name, l); tails.delete(name); return true; };
   gate0 = gate0.filter((g) => {
-    if (opaqueGrade(g.rule) === 'none') return true;
+    if (opaqueGrade(g.rule) !== 'block') return true; // an expression row's finding is a refusal its reading did not grade
     const name = unitOfFinding(g), u = name && fns.get(name);
     if (!gradableUnit(u)) return true;
     let pos = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1);
@@ -2035,7 +2035,8 @@ function translateOnce(file, fnName, opts = {}) {
       if (ts.isIterationStatement(p, false) && (within(p.statement) || (ts.isForStatement(p) && (within(p.condition) || within(p.incrementor))) || ((ts.isWhileStatement(p) || ts.isDoStatement(p)) && within(p.expression)))) fail(a, 'copied-argument: a new object made in a loop is handed to a call that may keep it; every pass makes another object, which this reading does not count: make it outside the loop, or hand its primitive fields');
     }
     if (!handedSites.has(id.site)) handedSites.set(id.site, handedSites.size);
-    const shape = skeleton !== null && process.env.LEAN_BREAK !== 'handed-skeleton' ? `_${createHash('sha1').update(skeleton).digest('hex').slice(0, 16)}` : ''; // which parts are new and which existing: one more handed function per skeleton (LEAN_BREAK=handed-skeleton drops it, tests/break.mjs)
+    if (skeleton !== null) gradedStep('copied-argument', a, `handed_fresh_${skeleton}`, [code.slice(0, 80)]);
+    const shape = skeleton !== null && !broken('handed-skeleton') ? `_${createHash('sha1').update(skeleton).digest('hex').slice(0, 16)}` : ''; // which parts are new and which existing: one more handed function per skeleton (tests/break.mjs handed-skeleton drops it)
     return `${external(`handed_fresh${shape}_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.site)})`;
   }
   function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
@@ -2540,7 +2541,8 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   function convertToD(code, from, td, node) {
     const fd = dtype(from, node);
     if (node && fd !== td) { const why = typeAssertion(checker, node); if (why) fail(node, `type-assertion: ${why}`); } // a value whose type nothing checked, converted where its reading does not carry it: the lint's test on the same node
-    if (node && fd !== td && process.env.LEAN_BREAK === 'assertion-read' && (assertionHeld(checker, node) || isAny(from)) && outsideSlot(checker, node)) return `${external(`as_${mangle(td)}_unread`, [], td)}()`; // tests/w1g-opaque-handed.mjs --break: the handed conversion stops reading its value
+    if (node && fd !== td && (assertionHeld(checker, node) || isAny(from)) && outsideSlot(checker, node)) gradedStep('type-assertion', node, `as_${fd}_${td}`, [code.slice(0, 80)]); // handed to the outside as it is (common.mjs outsideSlot)
+    if (node && fd !== td && broken('assertion-read') && (assertionHeld(checker, node) || isAny(from)) && outsideSlot(checker, node)) return `${external(`as_${mangle(td)}_unread`, [], td)}()`; // tests/break.mjs assertion-read: the handed conversion stops reading its value
     if (node && optionalD(fd) && !optionalD(td) && td !== 'Any') { let c = node; while (ts.isParenthesizedExpression(c)) c = c.expression; if (maybeCapture(c)) fail(node, 'a capture of a group that may not take part (undefined when it does not, whatever TypeScript says) is read where a string is expected; read it as present or absent (`?? d`, a test)'); } // common.mjs matchCapture, matchGroupRead
     if (isNullish(from)) {
       if (optionalD(td)) return missingD(td, from.flags & TF.Null ? 'Null' : 'Undef');
@@ -2852,16 +2854,28 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     const vo = originOf(vc, n, sf, currentUnit?.node ?? null);
     return vo.kind === 'local' ? vo : o;
   }
+  // the certificate row of a slot an expression row grades (lint.mjs OPAQUE_ROWS; amendment A5): its span is the
+  // occurrence's own, and it covers its enclosing statement once (the opaque fraction counts that statement, never less)
+  const gradedSeen = new Set(), gradedStatements = new Set();
+  function gradedStep(rule, node, id, reads) {
+    const u = currentUnit; if (!u || !node?.getStart) return;
+    const k = `${u.name}:${rule}:${node.getStart(sf)}:${node.getEnd()}`; if (gradedSeen.has(k)) return; gradedSeen.add(k);
+    let st = node; while (st.parent && !ts.isStatement(st)) st = st.parent;
+    const sk = `${u.name}:${st.getStart(sf)}`, first = !gradedStatements.has(sk); gradedStatements.add(sk);
+    const a = sf.getLineAndCharacterOfPosition(node.getStart(sf)), z = sf.getLineAndCharacterOfPosition(node.getEnd());
+    const rows = opaqueRows.get(u.name) ?? []; rows.push(opaqueEntry({ rule, line: a.line + 1, id, reads, writes: [], construct: 'expression', span: [a.line + 1, a.character + 1, z.line + 1, z.character + 1], statements: first ? 1 : 0 })); opaqueRows.set(u.name, rows);
+  }
   // any other read of an object after a call that may change it (common.mjs worldForm 'value', design/w1g-opaque-handed.md):
   // the object as the world holds it now, read exactly from there (a copy, an element, a library read, the result)
   function handleNow(n, read) {
     worldUsed.add(n);
-    if (process.env.LEAN_BREAK === 'handle-value') { n.__worldNow = true; try { return read(); } finally { n.__worldNow = false; } } // tests/w1g-opaque-handed.mjs --break: the read takes the object as it was before the call
+    if (broken('handle-value')) { n.__worldNow = true; try { return read(); } finally { n.__worldNow = false; } } // tests/break.mjs handle-value: the read takes the object as it was before the call
     const now = nowOf(n);
     n.__worldNow = true; let parts; try { parts = captureParts(read); } finally { n.__worldNow = false; }
     const lines = parts.lines.map((l) => renameIn(l, now.name, now.t)), text = renameIn(parts.text, now.name, now.t);
     if (![...lines, text].some((x) => x.includes(now.t))) fail(n, `read-after-call: \`${n.getText(sf).slice(0, 60)}\` is read after a call that may change it, and this reading holds the object under another name here, so it cannot read it as the world holds it`);
     pending.push(now.line, ...lines);
+    gradedStep('read-after-call', n, now.line.match(/:= (\w+)\(/)?.[1] ?? 'now', ['world', now.name]);
     return text;
   }
   function ident(n) {
