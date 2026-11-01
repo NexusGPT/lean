@@ -161,12 +161,17 @@ export function pendingWork(checker, node, fn) {
 // value computed from `xs` shares with `xs`; the classes are closed in both directions, so a name an alias came from and
 // another alias of it are written too. Parameters are two by two distinct trees (the value reading's axiom) and a call's
 // result is fresh, so nothing else shares. A binding declared after the step is not in scope there and is not written.
+// A binding the construct itself rebinds (`load(svc, k++)`, an assignment in an argument), of any type, is written too
+// (a rebinding inside a function nested in it is pendingWork's refusal).
 // Returns { writes: [declaration] } or { why } when a value shares with `this` (a receiver the step cannot name).
 export function stepWrites(checker, node, fn) {
   const mentioned = new Set();
   const mention = (x) => { if (ts.isIdentifier(x)) { const d = declOf(checker, x); if (bindingOfUnit(d, fn) && !inside(d, node) && isReference(typeOfDecl(checker, d))) mentioned.add(d); } ts.forEachChild(x, mention); };
   mention(node);
-  if (broken('async-drop-origins')) return { writes: [...mentioned].filter((d) => inScopeAt(d, node, fn)) };
+  if (broken('async-drop-origins')) return { writes: [...mentioned].filter((d) => inScopeAt(d, node, fn)) }; // the --break: the references mentioned only (no sharing, no rebinding)
+  const nestedIn = (x) => { for (let p = x.parent; p && p !== node; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
+  const rebound = new Set();
+  for (const { id, heap } of writtenRoots(node)) { if (!id || heap || nestedIn(id)) continue; const d = declOf(checker, id); if (bindingOfUnit(d, fn) && !inside(d, node)) rebound.add(d); }
   // the unit's reference bindings and the values each receives
   const sources = new Map(); // declaration -> [expression]
   const add = (d, e) => { if (!d || !e) return; if (!sources.has(d)) sources.set(d, []); sources.get(d).push(e); };
@@ -197,7 +202,7 @@ export function stepWrites(checker, node, fn) {
   const closed = new Set(mentioned); const todo = [...mentioned];
   while (todo.length) { const d = todo.pop(); for (const o of edges.get(d) ?? []) if (!closed.has(o)) { closed.add(o); todo.push(o); } }
   if (why && [...closed].some((d) => (sources.get(d) ?? []).some((e) => { let t = false; const s = (x) => { if (x.kind === K.ThisKeyword) t = true; else if (!ts.isFunctionLike(x)) ts.forEachChild(x, s); }; s(e); return t; }))) return { why };
-  return { writes: [...closed].filter((d) => inScopeAt(d, node, fn)) };
+  return { writes: [...new Set([...closed, ...rebound])].filter((d) => inScopeAt(d, node, fn)) };
 }
 // the declaration `d` is a name in scope at `node`: a parameter of the unit, or a local whose block holds node and that
 // is declared before it

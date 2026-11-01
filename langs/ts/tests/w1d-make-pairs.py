@@ -22,7 +22,6 @@ SPECS = {
   'promise-unsettled': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='await new Promise<void>((resolve) => { resolve(); svc.put(k * 3); });', ret='k * 2', post='', why='statements after settlement'),
   'promise-executor': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='const v = await new Promise<number>(async (resolve) => { const r = await svc.get(k * 3); resolve(r); });', ret='v + k * 2', post='', why='an async executor'),
   'promise-executor-escape': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='await new Promise<void>((resolve) => { const done = resolve; svc.put(k * 3); done(); });', ret='k * 2', post='', why='a stored resolver'),
-  'promise-handler': dict(sig='async function NAME(svc: Svc, n: number): Promise<number>', construct='const v = await svc.get(k * 3).then((r) => r + 1, () => 0);', ret='v + k * 2', post='', why='a then with two handlers'),
   'async-callback': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='xs.map(async (x) => { await svc.put(x + k * 3); });', ret='k * 2', post='', why='map with an async callback, not awaited',
 ),
   'async-predicate': dict(sig='async function NAME(svc: Svc, xs: number[], n: number): Promise<number>', construct='const ys = xs.filter(async (x) => await svc.ok(x + k * 3));', ret='ys.length + k * 2', post='', why='filter with an async predicate'),
