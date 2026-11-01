@@ -133,4 +133,18 @@ without it. The pairs also run in the suite (`LEAN_PAIRS=... node tests/run.mjs`
 
 ## Measurement
 
-Filled from `lane/w1c-opaque-calls-result.md`.
+All commands are in `lane/w1c-opaque-calls-result.md`.
+
+- Census on the lane's roots (A8: nexus-agent-api, snitch, pipedream; 1,908 units), base 4747022f against the lane's
+  head: units the lane's rules stop 41 → 6; entered 593 → 596. Per rule: unsupported-member 15 → 0, dynamic-key 8 → 3,
+  unsupported-call 5 → 2, unsupported-syntax 4 → 1, function-value 4 → 0, five more 1 → 0. The 6 left are callback
+  units with a concise body (no statement: the unit is never the step) and a site another reading takes whole. 32 of
+  the 35 freed units stop on their next finding of another rule.
+- A5: the 7 units whose lowering no longer refuses have an opaque fraction median 0.333 (mean 0.262, max 0.5, none at
+  1.0): the threshold 0.25 is not met on this sample of short units.
+- The census itself counted an opaque site's finding as a stop; it now stops a unit on what the lowering refuses on.
+- Lane driver 109/109 rows; audit 620 rows, 0 uncatalogued; `conformance/run.py ts` 252/252.
+
+Cost seen on the pairs: a number-bearing unit holding a site is not PASS-proved by the official reading (the faithful
+placement reads the step's text, and a held `Any` meets a faithful operation's number slot): `real-only` on seven
+`outside_` units. A gap, never a false proof.
