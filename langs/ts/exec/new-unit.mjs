@@ -14,6 +14,7 @@ import { runTests, TEST_MODULES } from './new-tests.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
 import { netMode, denyNetwork, networkDenied, sandboxEntry } from './net-deny.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 const here = fileURLToPath(import.meta.url);
 const compile = { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020, experimentalDecorators: true, emitDecoratorMetadata: false, importHelpers: false, jsx: ts.JsxEmit.ReactJSX };
@@ -283,10 +284,10 @@ export async function runNew(opts) {
     // the declaration's reading of this input (design/w1h-new-units.md): a record is a fact only about a call the
     // declaration admits and the world did not answer
     reach.inputs++;
-    const ok = !declared ? 'unknown' : process.env.LEAN_BREAK === 'admitted-input' ? 'yes' : admitted(declared, inputs, { nullable, exactOptional });
+    const ok = !declared ? 'unknown' : broken('admitted-input') ? 'yes' : admitted(declared, inputs, { nullable, exactOptional });
     if (ok !== 'yes') { reach.notAdmitted++; continue; }
     reach.admitted++;
-    const world = process.env.LEAN_BREAK === 'closed-call' ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
+    const world = broken('closed-call') ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
     if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); continue; }
     reach.closed++;
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
@@ -299,8 +300,8 @@ export async function runNew(opts) {
       book.add({ kind: 'new:fault', ...named, ...(wide ? { wide: true } : {}), error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(withoutInputs(rawMessage(observation.raw?.threw) ?? error.message ?? JSON.stringify(error), inputs))}`); // one record per error and message template: a message that quotes the input is one outcome
       continue;
     }
-    if (process.env.LEAN_BREAK === 'declared-shape' || !decl || decl.inferred || decl.voidLike || !declared?.returns) continue;
-    if (observation.drives?.length && process.env.LEAN_BREAK !== 'shape-drives') continue; // the observer drove functions the unit handed out (run.mjs driveWindow), after the return: they may have written into the value
+    if (broken('declared-shape') || !decl || decl.inferred || decl.voidLike || !declared?.returns) continue;
+    if (observation.drives?.length && !broken('shape-drives')) continue; // the observer drove functions the unit handed out (run.mjs driveWindow), after the return: they may have written into the value
     const promised = /^Promise(?:Like)?</.test(decl.returns.replace(/\s+/g, '')) || spec.isAsync;
     if (promised !== thenable) continue; // the awaited value is what the declaration's argument types; a promise the type does not name is not read
     const value = observation.raw?.returned;
@@ -310,7 +311,7 @@ export async function runNew(opts) {
   }
   // the PR's own tests that call the unit (new-tests.mjs): each is run against the candidate under the same sandbox
   let tests = null;
-  if (opts.tests?.length && process.env.LEAN_BREAK !== 'pr-tests') {
+  if (opts.tests?.length && !broken('pr-tests')) {
     // a test read at its checkout path imports the unit's file there: that file is the candidate when its bytes are the candidate's
     const aliases = opts.candidateAlias && path.resolve(opts.candidateAlias) !== abs && (() => { try { return fs.readFileSync(opts.candidateAlias).equals(fs.readFileSync(abs)); } catch { return false; } })() ? [path.resolve(opts.candidateAlias)] : [];
     tests = await runTests({ candidate: abs, aliases, unit, testFiles: opts.tests.map((t) => path.resolve(t)), ms, seed, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), graphWorld: (loaded) => graphWorld(loaded, sources, TEST_MODULES), options });
@@ -422,7 +423,7 @@ function thrownText(raw, rendered) {
 }
 // a ReferenceError naming a global Node holds: the sandbox lacks it (a gap of lean's world, never the unit's fault)
 function platformGap(thrown) {
-  if (process.env.LEAN_BREAK === 'platform-gap') return null;
+  if (broken('platform-gap')) return null;
   try { const m = thrown && thrown.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(thrown.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; }
 }
 const holdsElement = (v, d = 0) => { if (!v || typeof v !== 'object' || d > 3) return false; try { if (Object.hasOwn(v, '$el')) return true; return Array.isArray(v) ? v.some((x) => holdsElement(x, d + 1)) : false; } catch { return true; } };

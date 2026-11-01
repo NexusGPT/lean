@@ -1,0 +1,12 @@
+{
+ "launcher": {
+  "verdict": "PASS-proved",
+  "laneB": "PASS-bounded",
+  "laneA": "PASS-proved"
+ },
+ "selector": {
+  "verdict": "PASS-bounded",
+  "laneB": "PASS-bounded",
+  "laneA": "ASK:identity"
+ }
+}

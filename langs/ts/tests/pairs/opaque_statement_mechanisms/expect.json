@@ -1,0 +1,25 @@
+{
+  "scope": [
+    "stale"
+  ],
+  "equal": {
+    "stale": false
+  },
+  "opaque": {
+    "stale": [
+      "for-in"
+    ]
+  },
+  "b": {
+    "stale": "WITNESS"
+  },
+  "why": "The mechanisms of the statement family's opaque step (design/w1b-opaque-statements.md), each a change OUTSIDE the step whose effect flows through what the step reads, writes or reaches (A1). stale: the candidate returns the value of n from before the step; the step writes n, so the two differ and nothing is proved (LEAN_BREAK=opaque-drop-write keeps n's old value after the step and this unit proves falsely).",
+  "break": [
+    {
+      "mechanism": "opaque-drop-write",
+      "equal": {
+        "stale": true
+      }
+    }
+  ]
+}

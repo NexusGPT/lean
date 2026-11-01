@@ -14,12 +14,13 @@
 // one --break convention LEAN_BREAK=library-fakes (amendment A6), turns every library fake off (the measurement
 // without them, and each test's --break).
 import { requireVendored, manifestOf } from './load.mjs';
+import { broken } from '../../../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { lodashFor } from './lodash.mjs';
 import { uuidModule } from './uuid.mjs';
 import { axiosModule } from './axios.mjs';
 import { expressModule, expressTypeFake } from './express.mjs';
 
-export const libraryFakesOn = () => process.env.LEAN_LIBRARY_FAKES !== '0' && !(process.env.LEAN_BREAK ?? '').split(',').includes('library-fakes');
+export const libraryFakesOn = () => process.env.LEAN_LIBRARY_FAKES !== '0' && !broken('library-fakes');
 const esModule = (members, dflt) => new Proxy(members, { get: (t, p) => (p === '__esModule' ? true : p === 'default' ? dflt : Reflect.get(t, p)) });
 const lodashMember = (env, name) => { const _ = lodashFor(env); return typeof _[name] === 'function' ? _[name] : null; };
 // `lodash.isequal` (a per-method package) names its member in lower case

@@ -45,6 +45,10 @@ const provable = {
             context.report({ loc, message: `lean (any-type): ${f.msg}; ${advice}`, suggest });
             continue;
           }
+          if (f.graded !== undefined) { // graded by the opaque column (design/w1a-opaque-mutation.md): no refusal, the unit is read with an opaque step
+            context.report({ loc, message: `lean opaque (${f.rule}): ${f.msg}${f.graded ? '; the unit is read with an opaque step there' : ''}; ${advice}`, suggest });
+            continue;
+          }
           if (f.advisory) {
             context.report({ loc, message: `lean advice (${f.rule}): ${f.msg}; ${advice}`, suggest });
             continue;

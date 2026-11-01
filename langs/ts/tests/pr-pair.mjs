@@ -6,9 +6,13 @@
 // other file but expect.json is on both. `pr.project` names the pair's tsconfig (copied with the rest; pr.mjs finds it),
 // else the run is --no-project.
 //
-//   pr: { project?, rows: [{ file, unit, verdict?, notVerdict?, coverage?, reason? }], absent: [{ file, unit }],
+//   pr: { project?, rows: [{ file, unit, verdict?, notVerdict?, coverage?, reason?, sites? }], absent: [{ file, unit }],
 //         directives: [{ file, directive, change, line?, suppresses?: [code], exposes?: [code] }] (exactly these),
-//         unassigned: false (no row of the ledger is unassigned:*, an inert comment row excepted) }
+//         unassigned: false (no row of the ledger is unassigned:*, an inert comment row excepted),
+//         units: [{ units: 'index.ts::f,g', rows, absent }] (each a second run of pr.mjs with --units, its rows and absences) }
+//
+// `sites: n` (design/w7a-lean-witnesses.md): the row's `witnesses` holds n entries at n different candidate lines, and
+// its `witness` is the first of them (the record aside).
 //
 // prPair(dir, { tmp, env }) -> [{ check, ok, detail }]; tests/run.mjs adds them to the pair's rows, and
 // tests/w1f-module-units.mjs runs them under each --break.
@@ -54,24 +58,45 @@ export async function prPair(dir, { tmp, env = {} } = {}) {
   if (!exp) return [];
   const work = path.join(tmp, `pr_${path.basename(dir)}${env.LEAN_BREAK ? '_break_' + env.LEAN_BREAK : ''}`);
   fs.rmSync(work, { recursive: true, force: true });
-  const repo = path.join(work, 'repo'), out = path.join(work, 'report.json');
+  const repo = path.join(work, 'repo');
   const { base, head } = pairRepo(dir, repo);
-  const r = await spawnCollect(process.execPath, [prTool, '--repo', repo, '--base', base, '--head', head, '--json', out, '--out', path.join(work, 'report.md'),
-    '--runs-dir', path.join(work, 'runs'), '--cache-dir', path.join(work, 'cache'), '--fresh', '--n', '30', '--dafny-seconds', '30', ...(exp.project ? [] : ['--no-project'])],
-  { cwd: work, env: { ...process.env, ...env }, maxBuffer: 1 << 26, dir: work });
-  let report = null; try { report = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* the rows below fail */ }
+  const runPr = async (tag, extra = []) => {
+    const out = path.join(work, `report${tag}.json`);
+    const r = await spawnCollect(process.execPath, [prTool, '--repo', repo, '--base', base, '--head', head, '--json', out, '--out', path.join(work, `report${tag}.md`),
+      '--runs-dir', path.join(work, 'runs'), '--cache-dir', path.join(work, 'cache'), '--fresh', '--n', '30', '--dafny-seconds', '30', ...(exp.project ? [] : ['--no-project']), ...extra],
+    { cwd: work, env: { ...process.env, ...env }, maxBuffer: 1 << 26, dir: work });
+    let report = null; try { report = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* the rows below fail */ }
+    return { r, report };
+  };
+  const { r, report } = await runPr('');
   const name = (x) => `${x.file} ${x.unit}`;
   const results = [];
   if (!report) return [{ check: 'pr report', ok: false, detail: `pr.mjs exit ${r.status}: ${(r.stderr ?? '').trim().split('\n').slice(-3).join(' | ').slice(0, 300)}` }];
+  const lineOf = (w) => w?.where?.lines?.candidate?.start ?? w?.where?.lines?.candidate?.line ?? null;
+  const unrecorded = (w) => { if (!w) return w; const { record, ...rest } = w; return rest; };
+  const rowChecks = (rows, spec, label = '') => {
+    for (const want of spec.rows ?? []) {
+      const got = rows.find((x) => x.file === want.file && x.unit === want.unit);
+      const ok = !!got && (!want.verdict || got.verdict === want.verdict) && (!want.notVerdict || got.verdict !== want.notVerdict) && (!want.coverage || got.coverage === want.coverage) && (!want.reason || String(got.reason ?? '').includes(want.reason));
+      results.push({ check: `pr${label} ${name(want)} ${want.verdict ?? 'not ' + want.notVerdict}${want.coverage ? ' ' + want.coverage : ''}`, ok, detail: got ? `${got.verdict} | ${got.coverage} | ${String(got.reason ?? '').slice(0, 160)}` : `no row (rows: ${rows.map((x) => `${x.file}:${x.unit}`).join(', ').slice(0, 300)})` });
+      if (want.sites !== undefined) {
+        const ws = got?.witnesses ?? [], lines = new Set(ws.map(lineOf));
+        const first = !!ws.length && JSON.stringify(ws[0]) === JSON.stringify(unrecorded(got.witness));
+        results.push({ check: `pr${label} ${name(want)} witnesses at ${want.sites} site(s), witness the first`, ok: ws.length === want.sites && lines.size === want.sites && !lines.has(null) && first, detail: `${ws.length} witness(es) at candidate line(s) ${[...lines].join(', ') || 'none'}; witness ${first ? 'is' : 'is not'} witnesses[0]` });
+      }
+    }
+    for (const want of spec.absent ?? []) {
+      const got = rows.find((x) => x.file === want.file && x.unit === want.unit);
+      results.push({ check: `pr${label} ${name(want)} absent`, ok: !got, detail: got ? `${got.verdict} | ${got.coverage}` : 'absent' });
+    }
+  };
   const rows = report.rows ?? [];
-  for (const want of exp.rows ?? []) {
-    const got = rows.find((x) => x.file === want.file && x.unit === want.unit);
-    const ok = !!got && (!want.verdict || got.verdict === want.verdict) && (!want.notVerdict || got.verdict !== want.notVerdict) && (!want.coverage || got.coverage === want.coverage) && (!want.reason || String(got.reason ?? '').includes(want.reason));
-    results.push({ check: `pr ${name(want)} ${want.verdict ?? 'not ' + want.notVerdict}${want.coverage ? ' ' + want.coverage : ''}`, ok, detail: got ? `${got.verdict} | ${got.coverage} | ${String(got.reason ?? '').slice(0, 160)}` : `no row (rows: ${rows.map((x) => `${x.file}:${x.unit}`).join(', ').slice(0, 300)})` });
-  }
-  for (const want of exp.absent ?? []) {
-    const got = rows.find((x) => x.file === want.file && x.unit === want.unit);
-    results.push({ check: `pr ${name(want)} absent`, ok: !got, detail: got ? `${got.verdict} | ${got.coverage}` : 'absent' });
+  rowChecks(rows, exp);
+  for (const [i, run] of (exp.units ?? []).entries()) {
+    const label = ` --units ${run.units}`;
+    const got = await runPr(`_units${i}`, ['--units', run.units]);
+    if (!got.report) { results.push({ check: `pr${label} report`, ok: false, detail: `pr.mjs exit ${got.r.status}: ${(got.r.stderr ?? '').trim().split('\n').slice(-3).join(' | ').slice(0, 300)}` }); continue; }
+    rowChecks(got.report.rows ?? [], run, label);
   }
   if (exp.unassigned === false) {
     const bad = rows.filter((x) => /^unassigned:/.test(x.coverage ?? '') && !x.inert);

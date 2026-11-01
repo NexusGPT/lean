@@ -253,9 +253,10 @@ export function faithfulNumbers(loaded) {
 
   // ----- placement: a number the model does not hold must reach only places the rewrite makes opaque -----
   const unplaced = new Map(); // node of the top-level unit -> [reasons]
+  const unplacedSpans = new Map(); // unit name -> [{ start, end, reason }]: where each reason was found
   const unitNodes = [...topLevelFunctions(sf).values()];
   const unitOfNode = (x) => unitNodes.find((u) => x.pos >= u.node.pos && x.end <= u.node.end) ?? null;
-  const refuse = (x, why) => { const u = unitOfNode(x); if (!u) return; const k = u.name; if (!unplaced.has(k)) unplaced.set(k, []); const line = sf.getLineAndCharacterOfPosition(x.getStart(sf)).line + 1; const r = `${why}: \`${x.getText(sf).slice(0, 60)}\` (line ${line})`; if (!unplaced.get(k).includes(r)) unplaced.get(k).push(r); };
+  const refuse = (x, why) => { const u = unitOfNode(x); if (!u) return; const k = u.name; if (!unplaced.has(k)) unplaced.set(k, []); const line = sf.getLineAndCharacterOfPosition(x.getStart(sf)).line + 1; const r = `${why}: \`${x.getText(sf).slice(0, 60)}\` (line ${line})`; if (!unplaced.get(k).includes(r)) unplaced.get(k).push(r); if (!unplacedSpans.has(k)) unplacedSpans.set(k, []); unplacedSpans.get(k).push({ start: x.getStart(sf), end: x.getEnd(), reason: r }); }; // the span: a reason inside an opaque step the translator wrote is no reason (translate.mjs, design/w1b-opaque-statements.md)
   const resolved = (id) => { let s = symOf(id); if (s && (s.flags & ts.SymbolFlags.Alias)) { try { s = checker.getAliasedSymbol(s); } catch { /* keep */ } } return s; };
   const sameFileUnit = (call) => { const d = resolved(call.expression)?.valueDeclaration; return !!d && d.getSourceFile() === sf && ts.isFunctionLike(d.initializer ?? d); };
   const externalCall = (call) => { const s = resolved(ts.isPropertyAccessExpression(call.expression) ? call.expression.name : call.expression); const d = s?.valueDeclaration ?? s?.declarations?.[0]; if (!d) return false; const f = d.getSourceFile(); return f !== sf && !program.isSourceFileDefaultLibrary(f) && !/[\\/]typescript[\\/]lib[\\/]/.test(f.fileName); };
@@ -420,7 +421,8 @@ export function faithfulNumbers(loaded) {
   for (const u of unitNodes) {
     const names = [u.name, ...calleesOf(sf, checker, u.name).map((c) => c.callee)];
     const reasons = names.flatMap((x) => (unplaced.get(x) ?? []).map((r) => (x === u.name ? r : `${x}: ${r}`)));
-    units.set(u.name, { placed: reasons.length === 0, congruence: names.some((x) => opaqueIn.has(x)), reasons });
+    const spans = names.flatMap((x) => (unplacedSpans.get(x) ?? []).map((sp) => ({ ...sp, reason: x === u.name ? sp.reason : `${x}: ${sp.reason}` })));
+    units.set(u.name, { placed: reasons.length === 0, congruence: names.some((x) => opaqueIn.has(x)), reasons, spans });
   }
   if (out === sf.text) return { loaded, units, ops: [], mapOffset: (o) => o };
   if (out.split('\n').length !== sf.text.split('\n').length) throw new Error('faithful numbers: the rewrite changed the line count');

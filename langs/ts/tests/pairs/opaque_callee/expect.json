@@ -1,0 +1,23 @@
+{
+  "scope": [
+    "pick",
+    "bonus",
+    "via_callee"
+  ],
+  "theoremRefusal": "an opaque block calls bonus, which differs between parent and candidate",
+  "equal": {
+    "via_callee": false
+  },
+  "break": [
+    {
+      "mechanism": "opaque-drop-callees",
+      "equal": {
+        "via_callee": true
+      }
+    }
+  ],
+  "b": {
+    "viaCallee": "WITNESS"
+  },
+  "why": "amendment A3: viaCallee holds the same block text on both sides; its callee bonus differs only at x === 7919. The step names bonus (CALLS) and hashes its code (reach keyText), so the theorem refuses (ASK:interface in check.mjs), never PASS-proved. LEAN_BREAK=opaque-drop-callees removes the reached code from the key and the CALLS line: the theorem is generated and Equal_via_callee proves, a false PASS-proved. Lane B reaches x === 7919 (WITNESS)."
+}

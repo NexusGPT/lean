@@ -34,6 +34,7 @@ import { builtRecord } from '../common.mjs'; // the record-node build takes a sp
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
 import { sealedMember } from '../common.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (tests/break.mjs registers its names)
 import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the value reading // `this.m()` is the class's own m only when no subclass can hold another: one test with the value reading
 import { elementWritePath, voidReturn } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 import { carriedAliases } from '../lower.mjs'; // a second name of a parameter the value reading carries: no copy write (one test with the translator) // a field write through a parameter's element path: one test with the lint
@@ -994,8 +995,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     w(u.body);
     return why;
   }
-  function plan(order, only) {
+  function plan(order, only, opaque = new Set()) {
     const own = new Set(order.filter((u) => coreUnit(u) && (!only || only.includes(u.name))).map((u) => u.name));
+    // a unit with an opaque site (design/w1b-opaque-statements.md) is read by the value reading, whose opaque step stands
+    // for the construct the core has no reading of: out of the core, and the plan below moves its callers and callees too
+    for (const name of opaque) if (own.has(name)) { own.delete(name); whyNot.get(name)?.add('an opaque site: its statement is an opaque step of the value reading'); }
     // a unit named as a VALUE anywhere (`.then(bump)`, a callback argument, a stored function) keeps its layer-1 signature: out of the core
     const asValue = new Set();
     for (const u of order) { const w = (n) => { if (ts.isPropertyAccessExpression(n) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression))[0]); const name = cd && `${cd.name.text}.${n.name.text}`; if (name && fns.has(name)) asValue.add(name); } if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && (ts.isFunctionDeclaration(n.parent) || ts.isVariableDeclaration(n.parent)) && n.parent.name === n)) asValue.add(n.text); ts.forEachChild(n, w); }; w(u.body); }
@@ -1017,7 +1021,7 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     // would allocate one cell. An argument is the unit's own object only when it is a parameter or `this`, or a path
     // below one, in a unit that writes no record literal; any other record-bearing argument takes the value reading,
     // which hands the order beside it
-    if (!(process.env.LEAN_BREAK ?? '').split(',').includes('handed-key-order')) for (const u of order) {
+    if (!broken('handed-key-order')) for (const u of order) {
       if (!own.has(u.name)) continue;
       const why = handsBuiltRecord(u);
       if (why) { own.delete(u.name); whyNot.get(u.name)?.add(why); }
@@ -1429,7 +1433,7 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
       }
-      if (outsideCall(e)) { const oc = outsideCall(e); const recvA = oc.recv ? [expr(oc.recv)] : []; const args = [...recvA, ...e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a))))]; const orders = (process.env.LEAN_BREAK ?? '').split(',').includes('handed-key-order') || !keyOrder ? [] : e.arguments.map((a, j) => (holdsRecord(typeOf(a)) ? keyOrder(a, u) : null)).map((o, j) => (o === null ? null : `${j}${o}`)).filter((x) => x !== null); const key = orders.length ? `${oc.key}_ko` : oc.key; callUsed.set(key, [orders.length ? [...oc.ds, 'string'] : oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${key}(${[HW, ...args, ...(orders.length ? [JSON.stringify(orders.join('|'))] : [])].join(', ')});`); return r; } // the arguments in order, then the transition; a record the unit built is handed with its key order (design/handed-key-order.md), one text after them
+      if (outsideCall(e)) { const oc = outsideCall(e); const recvA = oc.recv ? [expr(oc.recv)] : []; const args = [...recvA, ...e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a))))]; const orders = broken('handed-key-order') || !keyOrder ? [] : e.arguments.map((a, j) => (holdsRecord(typeOf(a)) ? keyOrder(a, u) : null)).map((o, j) => (o === null ? null : `${j}${o}`)).filter((x) => x !== null); const key = orders.length ? `${oc.key}_ko` : oc.key; callUsed.set(key, [orders.length ? [...oc.ds, 'string'] : oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${key}(${[HW, ...args, ...(orders.length ? [JSON.stringify(orders.join('|'))] : [])].join(', ')});`); return r; } // the arguments in order, then the transition; a record the unit built is handed with its key order (design/handed-key-order.md), one text after them
       if (globalCall(e)) { // a pure global: its arguments in order, then the operation
         const g = globalCall(e); const a = e.arguments;
         if (g === 'String') return toStr(a[0]);
@@ -1761,9 +1765,15 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
     for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) for (const { name, depth: d } of boundNames(p.name)) aliases.set(name.text, d);
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
     const effDepth = (x) => { const r = rootOf(x); return depth(x) + (ts.isIdentifier(r) && aliases.has(r.text) ? aliases.get(r.text) : 0); }; // the depth of a write below its input root, aliases unfolded
+    // an operator whose result is a primitive whatever its operands: arithmetic, shifts, bitwise, comparison, equality,
+    // `in`, `instanceof`, the unary operators, typeof, void, delete, an update (ECMA-262 13.4-13.12: each yields a Number,
+    // a BigInt, a String or a Boolean, its operands converted by ToPrimitive, which returns a primitive or throws)
+    const PRIMITIVE_BINARY = new Set([K.PlusToken, K.MinusToken, K.AsteriskToken, K.SlashToken, K.PercentToken, K.AsteriskAsteriskToken, K.LessThanLessThanToken, K.GreaterThanGreaterThanToken, K.GreaterThanGreaterThanGreaterThanToken, K.AmpersandToken, K.BarToken, K.CaretToken, K.LessThanToken, K.GreaterThanToken, K.LessThanEqualsToken, K.GreaterThanEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.InKeyword, K.InstanceOfKeyword]);
+    const primitiveOperator = (e) => (ts.isBinaryExpression(e) && PRIMITIVE_BINARY.has(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e) || ts.isTypeOfExpression(e) || ts.isVoidExpression(e) || ts.isDeleteExpression(e);
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
       e = unparen(e);
       if (!isRefType(typeOf(e))) return true;
+      if (primitiveOperator(e)) return true; // its result is a primitive whatever its operands (a held Any among them, design/w1c-opaque-calls.md)
       if (ts.isObjectLiteralExpression(e)) return e.properties.every((p) => (ts.isPropertyAssignment(p) ? fresh(p.initializer) : ts.isShorthandPropertyAssignment(p) ? fresh(p.name) : ts.isSpreadAssignment(p) ? spreadFresh(p.expression) : false));
       if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => (ts.isSpreadElement(x) ? spreadFresh(x.expression) : fresh(x)));
       if (ts.isConditionalExpression(e)) return fresh(e.whenTrue) && fresh(e.whenFalse);

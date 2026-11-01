@@ -24,5 +24,14 @@
     "readBack": "PASS-bounded",
     "handedThenWritten": "WITNESS"
   },
-  "why": "a write through an object the world may hold is a transition of the world (common.mjs readAfterCall write points, translate.mjs newValue, design/world-write.md): lodash's get answers the argument's own object and identity its argument, so the parent's write through the answer (poke, twoAnswers, thenCall) or through an object handed before (handedThenWritten) reaches what the world reads after it: not proved, lane B WITNESS (the vendored package). The same write on both sides (pokeBoth) and the written name read back (readBack) stay proved. At the base (844ddac2) and under LEAN_BREAK=world-write (the write a local copy again) poke, twoAnswers and thenCall are proved: a false proof; handedThenWritten was unproved there too, kept as the handed-object form of the rule"
+  "why": "a write through an object the world may hold is a transition of the world (common.mjs readAfterCall write points, translate.mjs newValue, design/world-write.md): lodash's get answers the argument's own object and identity its argument, so the parent's write through the answer (poke, twoAnswers, thenCall) or through an object handed before (handedThenWritten) reaches what the world reads after it: not proved, lane B WITNESS (the vendored package). The same write on both sides (pokeBoth) and the written name read back (readBack) stay proved. At the base (844ddac2) and under LEAN_BREAK=world-write (the write a local copy again) poke, twoAnswers and thenCall are proved: a false proof; handedThenWritten was unproved there too, kept as the handed-object form of the rule. Since lead-v4 0b260f05 (lane w1g's handle-write, translate.mjs pathUpdate: a one-level write to a call's answer is told to the world) twoAnswers is kept by either mechanism alone: it proves only under LEAN_BREAK=world-write,handle-write, so the world-write break row lists poke and thenCall",
+  "break": [
+    {
+      "mechanism": "world-write",
+      "equal": {
+        "poke": true,
+        "then_call": true
+      }
+    }
+  ]
 }

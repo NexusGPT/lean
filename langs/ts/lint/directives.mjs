@@ -12,6 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ts, topLevelFunctions, COMPILER_OPTIONS, projectless, parseProjectConfig } from '../common.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 // the directives read, each with its scope: `next` the line after the comment, `line` the comment's own line, `block`
 // to the matching enable (or the end of the file), `file` the whole file
@@ -27,7 +28,6 @@ const KINDS = [
 ];
 // LEAN_BREAK=w1f-directive (tests/w1f-module-units.mjs --break w1f-directive): directives matched by their line number, so
 // a directive an edit only moved reads as removed and added
-const BREAK = process.env.LEAN_BREAK ?? '';
 
 // every comment of a file, read from the tree (each token's leading and trailing trivia), never from a scanner started
 // at a line: a `//` inside a string or a template is text
@@ -72,7 +72,7 @@ export function directivesOf(sf) {
   return out;
 }
 
-const keyOf = (d) => BREAK === 'w1f-directive' ? `${d.directive}|${d.rules.join(',')}|${d.line}` : `${d.directive}|${d.rules.join(',')}|${d.anchor}`;
+const keyOf = (d) => broken('w1f-directive') ? `${d.directive}|${d.rules.join(',')}|${d.line}` : `${d.directive}|${d.rules.join(',')}|${d.anchor}`;
 // the directives one side has and the other lacks, as a multiset over the key
 function difference(a, b) {
   const left = new Map();

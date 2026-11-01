@@ -10,6 +10,7 @@ import path from 'node:path';
 import { ts } from '../common.mjs';
 import { Environment, BudgetError, render } from './fake.mjs';
 import { guardedCall } from './run.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 // the specifiers the runner answers itself: the test frameworks' own modules
 export const TEST_MODULES = new Set(['vitest', '@jest/globals', 'bun:test', 'node:test', 'node:assert', 'assert', 'node:assert/strict', 'assert/strict']);
@@ -184,7 +185,7 @@ function selection(testFile, text, candidates, unit, options) {
   return { names, mock: MOCKS.exec(text)?.[0] ?? null };
 }
 // a ReferenceError naming a global Node holds: the sandbox lacks it (new-unit.mjs platformGap, the same reading)
-const platformGlobal = (e) => { if (process.env.LEAN_BREAK === 'platform-gap') return null; try { const m = e && e.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(e.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; } };
+const platformGlobal = (e) => { if (broken('platform-gap')) return null; try { const m = e && e.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(e.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; } };
 const namesIn = (fn, names) => { let src; try { src = Function.prototype.toString.call(fn.source ?? fn); } catch { return true; } return [...names].some((n) => new RegExp(`(?<![\\w$.])${n.replace(/\$/g, '\\$')}(?![\\w$])`).test(src)); };
 
 // run every test file's tests in their order (a file's tests share its module state, as the runners run them), report
@@ -235,7 +236,7 @@ export async function runTests({ candidate, aliases = [], unit, testFiles, ms = 
         else if (platformGlobal(e)) outcome = { gap: `the global \`${platformGlobal(e)}\`, which Node holds and lean's sandbox does not` }; // lean's sandbox, not the code
         else outcome = { failed: e };
       }
-      const world = process.env.LEAN_BREAK === 'closed-test' ? null : tainted ?? (env.trace.length ? env.trace.slice(0, 3).map(({ op, path: p }) => `${op} ${p}`).join('; ') : null);
+      const world = broken('closed-test') ? null : tainted ?? (env.trace.length ? env.trace.slice(0, 3).map(({ op, path: p }) => `${op} ${p}`).join('; ') : null);
       if (env.trace.length && !tainted) tainted = `an earlier test or hook reached the world (${env.trace[0].op} ${env.trace[0].path})`;
       if (!named) continue;
       if (world && !outcome.passed) { summary.world++; selected.push({ test: t.name, world }); continue; }

@@ -1,0 +1,51 @@
+{
+ "scope": [
+  "report",
+  "swapped",
+  "planted",
+  "shared",
+  "via_callee",
+  "principal_of"
+ ],
+ "equal": {
+  "report": true,
+  "swapped": false,
+  "planted": false,
+  "shared": false,
+  "via_callee": false,
+  "principal_of": false
+ },
+ "opaque": {
+  "report": [
+   "copied-argument"
+  ],
+  "shared": [
+   "copied-argument"
+  ],
+  "via_callee": [
+   "copied-argument"
+  ]
+ },
+ "break": [
+  {
+   "mechanism": "handed-skeleton",
+   "equal": {
+    "shared": true
+   }
+  },
+  {
+   "mechanism": "handed-call",
+   "equal": {
+    "via_callee": true
+   }
+  }
+ ],
+ "why": "A new object holding objects the caller holds, handed to a call that may write or keep it (design/w1g-opaque-handed.md; translate.mjs mixedTree). Every part sits at a key the text fixes (no spread, no computed or repeated key), so the handed value holds each part's value at its path; an existing part (a member read, a parameter, an outside answer) is named by its value, as when it is handed alone, and a new part written in place (a literal, a copy call, new) is held by no other name. The handed term is handed_fresh_<skeleton>_<T>(v, k): the skeleton is the literal's shape with each existing part written E, so a new part and an existing part of equal value are two terms. Before, every unit here was refused copied-argument (a new object holding objects). (a) report: the literal unchanged, the count computed another way outside it: proved, listed as an opaque step. (b) swapped: the two existing parts swapped: not proved, witnessed. (c) planted: a boundary constant inside (1 to 2): not proved, witnessed. (d) shared: one array in two slots against the array and structuredClone of it (equal values, a callee can tell them apart by identity): not proved, witnessed; LEAN_BREAK=handed-skeleton drops the skeleton from the term and proves it (a false proof). (e) viaCallee: a same-file call's result handed to the outside is handed_call_<code the callee reaches>_<T>(v, k), k its call site (translate.mjs handedArg; before: refused copied-argument, the result of a same-file call); the callee returning the caller's object against a copy of it (equal values) is not proved, witnessed (g writes the copy, the caller's object stays); LEAN_BREAK=handed-call drops the callee's code from the key and proves it.",
+ "b": {
+  "report": "PASS-bounded",
+  "swapped": "WITNESS",
+  "planted": "WITNESS",
+  "shared": "WITNESS",
+  "viaCallee": "WITNESS"
+ }
+}

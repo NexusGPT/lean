@@ -1,5 +1,6 @@
 {
   "ext": "ts",
   "lint": ["node", "langs/ts/lint/lint.mjs", "{src}"],
+  "escape_lint": ["node", "langs/ts/lint/lint.mjs", "{src}", "--opaque-refuses"],
   "translate": ["node", "langs/ts/translate/translate.mjs", "{src}", "--core", "--exact-numbers", "--suffix", "{suffix}", "--out", "{out}"]
 }

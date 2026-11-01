@@ -3,6 +3,44 @@
 Base `lead-v4` 844ddac2. Branch `lane/w8c-soundness-values`. Design notes: `langs/ts/design/handed-key-order.md`,
 `langs/ts/design/world-write.md`.
 
+## Resume: merged onto lead-v4 0b260f05
+
+`lead-v4` 0b260f05 (w7a, w8g and the four-lane opacity merge) was merged into this branch (a merge, not a rebase: the
+lane's seven commits keep the hashes the lead verified). There were three conflicts, each resolved by keeping both
+lanes' lines:
+- `common.mjs` `readAfterCall`: my shared `typeReaches` stays beside the opacity lanes' `h.rebinds`. `between` keeps
+  my `writeBetween(...) ||` in front of their `stmtRebinds` check.
+- `translate/heap.mjs`: `holdsRecord` and `handsBuiltRecord` stay, with their `plan(order, only, opaque)`.
+- `translate/translate.mjs`, the `readAfterCall` call: their `rebinds`, `siteHere` and `tailOf` opaque steps and
+  `namedSite` identity, plus my `worldWrites`.
+
+lead-v4 brought the break convention (every `LEAN_BREAK` read goes through `langs/ts/break.mjs` `broken`, and every
+name is in `tests/break.mjs` MECHANISMS). The five direct reads of my two switches now go through `broken`. Both names
+are registered, and both pairs' `expect.json` now carry `break` rows, so `run.mjs` checks the red itself.
+
+One change of reading from the merge: lane w1g's `handle-write` (translate.mjs `pathUpdate`) also tells the world
+about the one-level write in `lib_lodash_get` `twoAnswers`. Each of the two mechanisms keeps that unit unproved on its
+own, so `twoAnswers` no longer flips under `LEAN_BREAK=world-write` alone (the first run's row: `break world-write:
+Equal_two_answers flips to proved ... | FAIL | still not proved under the break: the mechanism is not what refuses
+it`). Under `LEAN_BREAK=world-write,handle-write` the write is a local copy again and `Equal_two_answers` is proved
+(`dafny verify ... Dafny program verifier finished with 1 verified, 0 errors`, /tmp/w8c-rb/both). The break row now
+lists poke and then_call, which my mechanism alone keeps.
+
+Validators after the merge (logs under `/root/da-bench/w8c-soundness-values/rebase/`):
+
+    handed-key-order exit=0 :: | HANDED KEY ORDER | 14 rows | ALL PASS |
+    handed-key-order --break exit=1 :: | HANDED KEY ORDER --break | 14 rows | 7 FAILED |
+    withdrawal exit=0 :: withdrawal: logic-values v1 refused identically by the lint, the translator and the record; check PASS-bounded (lane A ASK) under the withdrawal, PASS-proved without; audit 664 site rows, 0 uncatalogued
+    LEAN_PAIRS=handed_key_order run.mjs exit=0 :: | TOTAL | 909 checks | ALL PASS |   (5 break handed-key-order rows flip: enc, enc_pt, spread_copy, lib_keys, heap_hand)
+    LEAN_PAIRS=lib_lodash_get run.mjs exit=0 :: | TOTAL | 893 checks | ALL PASS |   (2 break world-write rows flip: poke, then_call)
+    opaque-calls exit=0 :: 114/114 rows hold
+    w1g-opaque-handed exit=0 :: 2 ok (a held value handed to a same-file callee with a body: refused type-assertion; a collection a call was handed, changed after the call: refused read-after-call)
+    w1g-opaque-handed --break exit=1 :: 2 FAIL (outside-slot, unhanded-collection: red)
+    lower.mjs --audit exit=0 :: sites 664; by kind {"lint-refuse":381,"lint-advice":5,"translate-throw":4,"translate-refuse":274}; uncatalogued 0
+
+Not rerun after the merge: the 30-pair regression, the census diff, repo conformance and the proof hunt. Their
+numbers below are from 08acb72e on 844ddac2.
+
 ## What landed
 
 1. **A record handed to an outside call carries its key order** (w2b's hole). A record datatype holds fields, not key
@@ -129,5 +167,5 @@ through an outside answer (0 stores).
 
 ## Commits
 
-On `lane/w8c-soundness-values` from 844ddac2. Run files under `/root/lanes/w8c-soundness-values/census/`: the
+On `lane/w8c-soundness-values` from 844ddac2, with lead-v4 0b260f05 merged in (the merge commit after 08acb72e). Run files under `/root/lanes/w8c-soundness-values/census/`: the
 censuses, diff, regression log, conformance logs, breaks and base runs.

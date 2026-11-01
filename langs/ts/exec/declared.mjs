@@ -8,6 +8,7 @@
 // that cannot be wrong: a fault needs every argument 'yes' (an input the declaration admits), a shape needs the returned
 // value 'no' (a value outside the declared type). An 'unknown' makes neither claim.
 import { ts, topLevelFunctions } from '../common.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 const tag = (v) => Object.prototype.toString.call(v);
 const isFake = (v) => { try { return !!v && (typeof v === 'object' || typeof v === 'function') && v.__isFake === true; } catch { return false; } };
@@ -143,7 +144,7 @@ export function edgeValues(spec, defs = {}, depth = 0) {
 // first), the others keep the generator's draw; the parameters take turns, so every parameter meets its first edges
 // within the first inputs. LEAN_BREAK=declared-edges switches them off (tests/w1h-new-units.mjs)
 export function edgePlan(declared) {
-  if (process.env.LEAN_BREAK === 'declared-edges') return [];
+  if (broken('declared-edges')) return [];
   const lists = declared.params.map((p) => p.rest ? [] : [...(p.optional && !edgeValues(p.spec, declared.defs).includes(undefined) ? [undefined] : []), ...edgeValues(p.spec, declared.defs)]);
   const plan = [];
   for (let j = 0; lists.some((xs) => j < xs.length); j++) lists.forEach((xs, k) => { if (j < xs.length) plan.push({ param: k, value: xs[j] }); });
@@ -189,7 +190,7 @@ export function declaration(sf, unitName, checker) {
 // whether a thrown value is one the declaration names: a `@throws {T}` names T and every class extending it, read off
 // the value's prototype chain by constructor name (the realm of the unit is not lean's, so instanceof cannot tell)
 export function declaredThrow(decl, thrown) {
-  if (!decl || process.env.LEAN_BREAK === 'declared-throws') return false;
+  if (!decl || broken('declared-throws')) return false;
   if (decl.throws === 'any') return true;
   if (!decl.throws.length) return false;
   const names = new Set();

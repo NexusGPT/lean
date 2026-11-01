@@ -49,8 +49,9 @@ test('the normalised text keeps the length, the line breaks, and every character
 test('a finding at a rewritten site quotes the owner\'s text at the owner\'s line and column', () => {
   const src = `export function n(b: string[]): number {\n  const a: string[] = [];\n  const m = a.push.apply(a, b);\n  return m;\n}\n`;
   const f = write(src);
-  const hit = lintFile(f, null, { project: false }).find((x) => x.rule === 'param-mutation');
-  assert.ok(hit, 'the direct form\'s own rule refuses push used as a value');
+  // advisory: param-mutation is graded by the opaque column (design/w1a-opaque-mutation.md), listed with the advice
+  const hit = lintFile(f, null, { project: false, advisory: true }).find((x) => x.rule === 'param-mutation');
+  assert.ok(hit, 'the direct form\'s own rule names push used as a value');
   const at = src.indexOf('a.push.apply');
   assert.equal(hit.line, 3);
   assert.equal(hit.col, at - src.lastIndexOf('\n', at));
