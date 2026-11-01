@@ -4,7 +4,7 @@
 // (what DA reads) are counted by site, and a site reports the mutation when its candidate statement overlaps the
 // mutation's lines (truth[0].line_from..line_to).
 //   node slice-sites.mjs --witnessed witnessed.json --root /root/da-bench/w8n-all-sites --before <lean> --after <lean>
-//        --out table.json [--jobs 4] [--n 30] [--only id,id]
+//        --out table.json [--jobs 4] [--n 30] [--only id,id] [--sides before,after]
 // witnessed.json: [{ id, unit, path, line_from, line_to, base }] (the mutants whose record's row of the truth unit has
 // lane B WITNESS; base: the record's merge base); under root: <pr>/head (materialise.py --restore, at a mutant commit
 // whose parent is the PR head) and mutants/<id>/candidate.<ext> (the materialiser's edited file). The mutants of one PR
@@ -18,7 +18,7 @@ const argv = process.argv.slice(2);
 const opt = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
 const W = JSON.parse(fs.readFileSync(opt('--witnessed'), 'utf8')).filter((w) => !opt('--only') || opt('--only').split(',').includes(w.id));
 const root = opt('--root'), out = opt('--out'), n = opt('--n', '30'), jobs = Math.min(4, Number(opt('--jobs', 4)));
-const trees = { before: opt('--before'), after: opt('--after') };
+const trees = { before: opt('--before'), after: opt('--after') }, sides = opt('--sides', 'before,after').split(','); // --sides after: the after tree only (a later revision measured against before rows already held)
 const { siteKey } = await import(path.join(trees.after, 'langs/ts/exec/sites.mjs'));
 const LOAD_MAX = 64;
 const done = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, 'utf8')) : {};
@@ -58,12 +58,12 @@ async function slot() {
     const [pr, ws] = next, head = path.join(root, pr, 'head');
     const prHead = git(head, 'log', '-1', '--format=%s').startsWith('DA-Bench mutant') ? git(head, 'rev-parse', 'HEAD^') : git(head, 'rev-parse', 'HEAD'); // the PR head: the mutant commit's parent, or HEAD once a run left it there
     for (const w of ws) {
-      if (done[w.id]?.before && done[w.id]?.after) continue;
+      if (sides.every((k) => done[w.id]?.[k])) continue;
       git(head, '-c', 'advice.detachedHead=false', 'checkout', '-q', '--force', '--detach', prHead);
       fs.copyFileSync(path.join(root, 'mutants', w.id, 'candidate' + path.extname(w.path)), path.join(head, w.path));
       const dir = path.join(root, 'runs', w.id); fs.mkdirSync(dir, { recursive: true });
       const row = { id: w.id, unit: w.unit, path: w.path, lines: [w.line_from, w.line_to] };
-      for (const side of ['before', 'after']) {
+      for (const side of sides) {
         await calm();
         const f = path.join(dir, `${side}.json`), work = path.join(dir, side); fs.rmSync(work, { recursive: true, force: true });
         const args = ['--repo', head, '--base', w.base, '--head', 'WORKTREE', '--units', `${w.path}::${w.unit}`, '--n', n, '--dafny-seconds', '30', '--fresh', '--cache-dir', path.join(work, 'cache'), '--runs-dir', path.join(work, 'runs'), '--json', f, '--out', path.join(dir, `${side}.md`)];
