@@ -125,7 +125,7 @@ function pairUnits(pairsDir, only, work) {
   return jobs;
 }
 // the census frame: the written units a census run entered (no finding stopped it, census.mjs `stop`: a finding that
-// is not an environment note, or an unresolved type, names it), every unit of every root in one list, ordered by the
+// is not an environment note, an unresolved module or an unresolved type names it), every unit of every root in one list, ordered by the
 // hash of the seed and its key; the first --sample are the sample
 function censusUnits(files, sample, seed) {
   const frame = [];
@@ -134,7 +134,7 @@ function censusUnits(files, sample, seed) {
     const root = res.root, name = path.basename(root);
     for (const r of res.records ?? []) {
       if (!r.units || r.stratum !== 'written') continue;
-      const stopped = new Set([...(r.findings ?? []).filter((x) => x.unit && !x.env).map((x) => x.unit), ...(r.unresolvedTypes ?? []).map((x) => x.unit)]);
+      const stopped = new Set([...(r.findings ?? []).filter((x) => x.unit && (!x.env || x.rule === 'unresolved-module')).map((x) => x.unit), ...(r.unresolvedTypes ?? []).map((x) => x.unit)]);
       // a unit inside another unit's lines (a callback) is covered by that unit (census.mjs `covered-by`, check.mjs): not a unit of its own
       const inside = (u) => r.units.some((y) => y !== u && y.lines[0] <= u.lines[0] && u.lines[1] <= y.lines[1] && (y.lines[0] < u.lines[0] || u.lines[1] < y.lines[1]));
       for (const u of r.units) if (!stopped.has(u.name) && !inside(u)) frame.push({ root, name, file: r.file, unit: u.name });
@@ -240,8 +240,27 @@ async function main() {
   console.error(`${rows.filter((r) => outcomeOf(r.verdict) !== 'not-planted' && r.kind).length} mutants planted; ${rows.filter((r) => r.verdict === 'WITNESS').length} caught; ${Math.round((Date.now() - t0) / 1000)} s`);
 }
 
+// --merge a.json b.json ...: one study of several runs on one head and one set of options (the pairs and the census
+// sample run apart), the rows in the study's order, the report rendered from them
+export function merge(studies) {
+  const [m0] = studies.map((s) => s.meta);
+  // the head of each run is kept (the runner's own commits move it; the lean code under test is the reader's to compare)
+  for (const s of studies) for (const k of ['seed', 'n', 'dafnySeconds']) if (s.meta[k] !== m0[k]) throw new Error(`--merge: the runs differ in ${k} (${m0[k]} and ${s.meta[k]})`);
+  const cmp = (p, q) => (p < q ? -1 : p > q ? 1 : 0);
+  const rows = studies.flatMap((s) => s.rows).sort((p, q) => cmp(p.source, q.source) || cmp(p.where, q.where) || cmp(String(p.unit), String(q.unit)) || (p.index ?? -1) - (q.index ?? -1));
+  const sum = (f) => studies.reduce((t, s) => t + f(s.meta), 0);
+  const meta = { ...m0, head: [...new Set(studies.map((s) => s.meta.head))].sort().join(' '), pairs: sum((m) => m.pairs), units: { pairs: sum((m) => m.units.pairs), census: sum((m) => m.units.census) }, census: studies.map((s) => s.meta.census).find(Boolean) ?? null, unitsWithoutSites: sum((m) => m.unitsWithoutSites), noUnit: sum((m) => m.noUnit) };
+  return { meta, rows };
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  if (opt('--job', null)) {
+  if (a.includes('--merge')) {
+    const files = a.slice(a.indexOf('--merge') + 1).filter((x, i, xs) => !x.startsWith('--') && !(i > 0 && xs[i - 1].startsWith('--')));
+    const study = merge(files.map((f) => JSON.parse(fs.readFileSync(f, 'utf8'))));
+    if (opt('--out', null)) fs.writeFileSync(opt('--out'), JSON.stringify(study, null, 1) + '\n');
+    const md = report(study);
+    if (opt('--report', null)) fs.writeFileSync(opt('--report'), md + '\n'); else console.log(md);
+  } else if (opt('--job', null)) {
     const job = JSON.parse(fs.readFileSync(opt('--job'), 'utf8'));
     const res = await unitJob(job);
     fs.writeFileSync(opt('--job-out'), JSON.stringify(res));
