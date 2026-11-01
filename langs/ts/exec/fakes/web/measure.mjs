@@ -2,6 +2,7 @@
 // The web fakes' measurement on real code (design/w2c-web-fakes.md, the measurement): lane B on the units of a
 // repository that reach the web platform, with the behavioural fakes and with the recording proxy (LEAN_FAKES=recording).
 //   node exec/fakes/web/measure.mjs --root <copy of a repository> --name <label> [--units N] [--sites K] [--jobs J] --out <json>
+//   node exec/fakes/web/measure.mjs --root <repository> --units Infinity --count    the selection only (read-only: no file written)
 // The root must be a scratch copy: each planted change is written beside its file (as `<file>.lean-mut<k>.ts`) so its
 // relative imports resolve, and removed after its runs. A unit is selected when its own text names a web global the
 // fakes answer (WEB below), in sorted (file, unit) order, the first N. Per unit: a self-pair (the file against itself:
@@ -9,6 +10,7 @@
 // 0, 1, ... in source order: one behaviour-changing edit each), each run in both modes. A planted change is detected
 // when its verdict is WITNESS. Nothing here reads a verdict to choose a unit, a site or a seed.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -43,6 +45,7 @@ for (const f of files(root).sort()) {
   if (selected.length >= N) break;
 }
 selected.length = Math.min(selected.length, N);
+if (a.includes('--count')) { console.log(JSON.stringify({ name, files: new Set(selected.map((s) => s.file)).size, units: selected.length })); process.exit(0); } // the selection alone: how many units the fakes reach
 
 const runOne = (parent, candidate, unit, mode) => new Promise((resolve) => {
   const tmpOut = `${candidate}.${mode}.${process.pid}.json`;
@@ -58,8 +61,14 @@ for (const s of selected) {
 }
 const results = [];
 let next = 0;
+// the machine is shared: no task starts while the one-minute load is above LOAD_CAP (a run under a far higher load would
+// spend its time budgets waiting, and an ASK of contention is no verdict of the fakes)
+const LOAD_CAP = 40;
+const calm = async () => { while (os.loadavg()[0] > LOAD_CAP) await new Promise((r) => setTimeout(r, 30000)); };
 async function worker() {
   while (next < tasks.length) {
+    await calm();
+    if (next >= tasks.length) break;
     const t = tasks[next++];
     let candidate = t.candidate, site = null, mutFile = null;
     if (t.kind === 'planted') {
