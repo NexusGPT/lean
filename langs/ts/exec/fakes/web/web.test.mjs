@@ -66,11 +66,26 @@ test('fetch: a body is read once; a null-body status reads as the empty text and
     if (r.e) continue; // the world's fault draw
     const res = r.v;
     if (res.status === 204) { assert.equal(await res.clone().text(), ''); assert.ok((await settle(res.json())).e instanceof SyntaxError); checked204 = true; continue; }
-    await res.json();
+    await settle(res.json()); // the parse of the drawn text: a text that is no JSON rejects, and the body is read either way
     assert.equal(res.bodyUsed, true);
     assert.ok((await settle(res.text())).e instanceof TypeError);
   }
   assert.ok(checked204);
+});
+
+test('fetch: json() is the parse of text(), one body, as on every real Response', async () => {
+  let parsed = 0, refused = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const { g } = world(seed);
+    const r = await settle(g.fetch('https://x.test/same', { method: 'POST', body: String(seed) }));
+    if (r.e) continue; // the world's fault draw
+    const text = await r.v.clone().text();
+    assert.equal(typeof text, 'string');
+    let want; try { want = { v: JSON.parse(text) }; } catch (e) { want = { e: e.name }; }
+    const got = await settle(r.v.json());
+    if (want.e) { assert.equal(got.e?.name, want.e); refused++; } else { assert.deepEqual(got.v, want.v); parsed++; }
+  }
+  assert.ok(parsed > 0 && refused > 0, `both a JSON text and a text that is none met (${parsed}, ${refused})`);
 });
 
 test('fetch: an aborted signal rejects with its reason; the network fails on the fault draw', async () => {

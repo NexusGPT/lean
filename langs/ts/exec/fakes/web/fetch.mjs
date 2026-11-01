@@ -9,10 +9,10 @@
 //   seeded generator, by the input's seed and the key only (never by call order), and every later request with the key
 //   answers the same row, so both sides of an input are served alike and a refactor that reorders its requests sees the
 //   same server. A row is a status (rotated through STATUSES by the seed, so every status meets every request within
-//   STATUSES.length inputs), the standard's status text, a content type, and a body: `json()` resolves to lean's varied
-//   answer at the row's own path (a fake, or null, an empty list, ...: what the recording proxy answered, now named by
-//   the request instead of the call count), `text()` to a drawn text (draw.mjs drawText). A null-body status (204)
-//   answers the empty text and a `json()` that rejects with the engine's SyntaxError, as the standard's does.
+//   STATUSES.length inputs), the standard's status text, a content type, and a body: a drawn text (draw.mjs drawText).
+//   The body is one: `text()` is that text and `json()` is the standard's own, the parse of the same text (a text that
+//   is no JSON rejects with the engine's SyntaxError), as on every real Response. A null-body status (204) answers the
+//   empty text, so its `json()` rejects with the SyntaxError too.
 // Every fetch is recorded on the trace as `call global:fetch` with the request as the standard reads it: method, URL,
 // headers in the standard's order, the body text, and the request's mode, credentials, cache and redirect. A request
 // that is not a valid Request rejects with the TypeError the standard raises; an aborted signal rejects with its
@@ -64,7 +64,14 @@ Object.defineProperty(Request, 'name', { value: 'Request' });
 
 export class Response extends HostResponse {
   constructor(body, init) { super(body, init); bodies.set(this, bodyText(body)); }
-  static json(data, init = {}) { const h = new HostHeaders(init.headers); if (!h.has('content-type')) h.set('content-type', 'application/json'); return new this(JSON.stringify(data), { ...init, headers: h }); }
+  // the standard's static (Fetch, Response.json): the data serialised to JSON, a value with no JSON text (undefined, a
+  // function, a symbol) the TypeError undici raises, then the init read as the constructor reads it
+  static json(data, init = {}) {
+    const text = JSON.stringify(data);
+    if (text === undefined) { const e = new TypeError('Value is not JSON serializable'); programBuilt.add(e); throw e; }
+    const h = new HostHeaders(init.headers); if (!h.has('content-type')) h.set('content-type', 'application/json');
+    return new this(text, { ...init, headers: h });
+  }
   clone() { const c = super.clone(); Object.setPrototypeOf(c, Object.getPrototypeOf(this)); bodies.set(c, bodies.get(this) ?? null); return c; }
 }
 Object.defineProperty(Response, 'name', { value: 'Response' });
@@ -82,10 +89,6 @@ class FetchResponse extends Response {
   }
   get url() { return rows.get(this)?.row.url ?? ''; }
   get redirected() { return false; }
-  json() {
-    const { env, row } = rows.get(this);
-    return super.text().then(() => (row.nullBody ? JSON.parse('') : env.answer(`${row.path}.json()`)));
-  }
   clone() { if (this.bodyUsed) throw new TypeError('Response.clone: Body has already been consumed.'); const { env, row } = rows.get(this); return new FetchResponse(env, row); }
 }
 Object.defineProperty(FetchResponse, 'name', { value: 'Response' });
