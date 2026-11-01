@@ -6,29 +6,11 @@
 import { BigNumber, canon } from './model.mjs';
 import { NoBridge, OutOfDomain, Opaque, show, argRendering } from './bridge.mjs';
 import { render } from '../exec/fake.mjs';
-import { splitTop } from './dafny-text.mjs';
+import { splitTop, legendOf } from './dafny-text.mjs';
+export { legendOf }; // the `// SHAPES` legend reader lives with the other pure text readers (dafny-text.mjs): check.mjs reads it without loading the model runner
 
 // the legend: shape key -> {kind, elem | k, v | fields}; an element key is a primitive (int, real, string, bool), an
 // absent-able primitive (Ou_int: T | undefined, On_int: T | null) or a shape key
-export function legendOf(text) {
-  const line = (text.match(/^\/\/ SHAPES: (.*)$/m) ?? [])[1] ?? '';
-  const shapes = new Map();
-  for (const part of splitTop(line, ';')) {
-    const m = part.match(/^([A-Za-z0-9_]+) = (.*)$/); if (!m) continue;
-    const [, key, body] = m;
-    let s;
-    if (body.startsWith('[')) s = { kind: 'arr', elem: body.slice(1, -1) };
-    else if (body.startsWith('Set<')) s = { kind: 'set', elem: body.slice(4, -1) };
-    else if (body.startsWith('Record<string, ')) s = { kind: 'dict', v: body.slice(15, -1) === 'undefined' && key.startsWith('Dk_') ? key.slice(3) : body.slice(15, -1) }; // the legend prints a dictionary of objects as Record<string, undefined>: its key Dk_<value shape> names the value
-    else if (body.startsWith('Map<')) { const [k, v] = splitTop(body.slice(4, -1)); s = { kind: 'map', k, v }; }
-    else if (body === 'Date') s = { kind: 'date' };
-    else if (body.startsWith('{')) s = { kind: 'rec', fields: body.slice(1, -1).trim() === '' ? [] : splitTop(body.slice(1, -1)).map((f) => { const i = f.indexOf(':'); return { name: f.slice(0, i).trim(), key: f.slice(i + 1).trim() }; }) };
-    else s = { kind: 'unknown', body };
-    if (s.kind === 'rec' && s.fields.length && s.fields.every((f, i) => f.name === `_${i}`)) s.tuple = true; // a tuple of mixed shapes: a record of its positions (translate/heap.mjs)
-    shapes.set(key, s);
-  }
-  return shapes;
-}
 const PRIMS = new Set(['int', 'real', 'string', 'bool']);
 const optOf = (k) => { const m = k.match(/^O([un])_(int|real|string|bool)$/); return m ? { absent: m[1], inner: m[2] } : null; };
 

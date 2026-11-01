@@ -26,8 +26,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnCollect } from '../exec/capped.mjs';
 import { dafnyVerifyArgs, outOfResourceLines } from '../exec/dafny-args.mjs';
-import { declarations, parseType, splitTop } from '../conformance/dafny-text.mjs';
-import { legendOf } from '../conformance/heap.mjs';
+import { declarations, parseType, splitTop, legendOf } from '../conformance/dafny-text.mjs';
 import { dn } from '../common.mjs';
 
 // the longest sequence whose elements are named in the second extraction

@@ -108,3 +108,25 @@ export function compilable(mainText, preludeText, units) {
 
 // Dafny's JavaScript names: every underscore doubled
 export const jsName = (n) => n.replace(/_/g, '__');
+
+// the `// SHAPES` legend of a theorem: each heap shape key to its kind (a record's fields in order, an array's element,
+// a set's, a dictionary's value, a Map's key and value, a Date), as translate/heap.mjs writes it
+export function legendOf(text) {
+  const line = (text.match(/^\/\/ SHAPES: (.*)$/m) ?? [])[1] ?? '';
+  const shapes = new Map();
+  for (const part of splitTop(line, ';')) {
+    const m = part.match(/^([A-Za-z0-9_]+) = (.*)$/); if (!m) continue;
+    const [, key, body] = m;
+    let s;
+    if (body.startsWith('[')) s = { kind: 'arr', elem: body.slice(1, -1) };
+    else if (body.startsWith('Set<')) s = { kind: 'set', elem: body.slice(4, -1) };
+    else if (body.startsWith('Record<string, ')) s = { kind: 'dict', v: body.slice(15, -1) === 'undefined' && key.startsWith('Dk_') ? key.slice(3) : body.slice(15, -1) }; // the legend prints a dictionary of objects as Record<string, undefined>: its key Dk_<value shape> names the value
+    else if (body.startsWith('Map<')) { const [k, v] = splitTop(body.slice(4, -1)); s = { kind: 'map', k, v }; }
+    else if (body === 'Date') s = { kind: 'date' };
+    else if (body.startsWith('{')) s = { kind: 'rec', fields: body.slice(1, -1).trim() === '' ? [] : splitTop(body.slice(1, -1)).map((f) => { const i = f.indexOf(':'); return { name: f.slice(0, i).trim(), key: f.slice(i + 1).trim() }; }) };
+    else s = { kind: 'unknown', body };
+    if (s.kind === 'rec' && s.fields.length && s.fields.every((f, i) => f.name === `_${i}`)) s.tuple = true; // a tuple of mixed shapes: a record of its positions (translate/heap.mjs)
+    shapes.set(key, s);
+  }
+  return shapes;
+}
