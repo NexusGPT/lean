@@ -2596,6 +2596,24 @@ export function rawTag(checker, n, sf) {
 // decider that reads the object as the world holds it at that point passes `h.after` (a Map the forms are put in,
 // occurrence -> 'read' | 'write') and `h.identity(occurrence)` (whether it names the object, else the form is refused);
 // `h.outputs` and `h.afterEnd` the same for the output parameters at the unit's end. Without `h.after` the forms are kept.
+// may a value of type h reach (be, or hold through its fields) an object of type o? any, unknown, a function's
+// arguments aside, or an unread depth: yes. One test for the read after a call (readAfterCall) and the key order of a
+// handed record (translate.mjs orderedArg)
+export function typeReaches(checker, h, o, at, depth = 0, seen = new Set()) {
+  const TF = ts.TypeFlags;
+  const isAny = (t) => !!t && !!(t.flags & (TF.Any | TF.Unknown));
+  const prim = (t) => !!t && (t.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.Undefined | TF.Null | TF.Void | TF.Never | TF.ESSymbolLike)) && !(t.flags & TF.Union && t.types.some((x) => !prim(x)));
+  if (h === null || !h || isAny(h)) return true;
+  if (h.flags & TF.Union) return h.types.some((x) => typeReaches(checker, x, o, at, depth, seen));
+  if (prim(h) || primitiveBrand(h)) return false;
+  if (checker.getSignaturesOfType(h, ts.SignatureKind.Call).length) return false; // a function value reaches what it is handed, its arguments (hash-keys.md)
+  if (checker.isTypeAssignableTo(o, h) || checker.isTypeAssignableTo(h, o)) return true;
+  if (depth >= 4) return true;
+  if (seen.has(h)) return false; seen.add(h);
+  const inner = [...(checker.getTypeArguments?.(h) ?? []), ...checker.getPropertiesOfType(h).map((s) => { try { return checker.getTypeOfSymbolAtLocation(s, at); } catch { return undefined; } }).filter((x) => x !== undefined)];
+  const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
+  return [...inner, ...(idx ? [idx] : [])].some((x) => typeReaches(checker, x, o, at, depth + 1, seen));
+}
 export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
 const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (TF.Any | TF.Unknown)), typeOf = (n) => h.typeOf(n);
   const body = u.fn?.body ?? u.node?.body;
@@ -2626,18 +2644,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   if (!points.length) return null;
   // may a value of type h reach (be, or hold through its fields) an object of type o? any, unknown, a function or an unread depth: yes
   const prim = (t) => !!t && (t.flags & (TF.NumberLike | TF.StringLike | TF.BooleanLike | TF.BigIntLike | TF.EnumLike | TF.Undefined | TF.Null | TF.Void | TF.Never | TF.ESSymbolLike)) && !(t.flags & TF.Union && t.types.some((x) => !prim(x)));
-  const reaches = (h, o, depth = 0, seen = new Set()) => {
-    if (h === null || !h || isAny(h)) return true;
-    if (h.flags & TF.Union) return h.types.some((x) => reaches(x, o, depth, seen));
-    if (prim(h) || primitiveBrand(h)) return false;
-    if (checker.getSignaturesOfType(h, ts.SignatureKind.Call).length) return false; // a function value reaches what it is handed, its arguments (hash-keys.md)
-    if (checker.isTypeAssignableTo(o, h) || checker.isTypeAssignableTo(h, o)) return true;
-    if (depth >= 4) return true;
-    if (seen.has(h)) return false; seen.add(h);
-    const inner = [...(checker.getTypeArguments?.(h) ?? []), ...checker.getPropertiesOfType(h).map((s) => { try { return checker.getTypeOfSymbolAtLocation(s, body); } catch { return undefined; } }).filter((x) => x !== undefined)];
-    const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
-    return [...inner, ...(idx ? [idx] : [])].some((x) => reaches(x, o, depth + 1, seen));
-  };
+  const reaches = (h, o) => typeReaches(checker, h, o, body);
   // a call on a path that leaves the function before x runs: c sits in a block that, from c's statement on, reaches a
   // return or a throw of its own with no break or continue before it, x lies outside that block in the same function,
   // and no try or label encloses the block (a catch or a finally runs after the throw or the return; a labeled break
@@ -2671,7 +2678,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   // where a call counts: a call inside a callback runs during the call it is handed to (unless that call defers it, an
   // effect hook); inside a function the unit makes and keeps, it runs when that function runs, so only for reads inside it
   const anchorOf = (c) => { let x = c; for (;;) { const f = fnOf(x); if (!f) return x; const q = f.parent; if (q && (ts.isCallExpression(q) || ts.isNewExpression(q)) && (q.arguments ?? []).includes(f) && !h.deferred?.(q)) { x = q; continue; } return null; } };
-  const between = (start, occ, t) => points.some((c0) => {
+  const between = (start, occ, t) => writeBetween(start, occ, t) || points.some((c0) => {
     const cf = fnOf(c0), a = anchorOf(c0); if (!a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end)) return false;
     const c = a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end) ? a : c0;
     const hit = reached(t, c); if (!hit) return false;
@@ -2723,6 +2730,73 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     if (ts.isCallExpression(q) && q.expression === y) { if (top === p) return null; const m = ts.isPropertyAccessExpression(top) ? top.name.text : null; if (!effect(q) && (!m || MUTATING.has(m))) return null; } // x.m() is the receiver handed; x.f.push(v) changes what it reads
     return 'read';
   };
+  // A write through an object the world may hold (design/world-write.md): the answer of a call that runs outside code
+  // (or a name bound to it, or a part of one), or an object a call before it was handed. JavaScript writes the object
+  // itself, which the world may share with what it was handed (lodash's get answers the argument's own object), so the
+  // write is a point of its own: a later read of another object that may hold the written one, and that the world may
+  // hold, reads it as the world holds it after the write, and the decider threads the world through the write
+  // (`h.worldWrites`, the write expressions). A write inside a function the unit makes is refused by the decider.
+  const strip = (x) => { while (x && (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x))) x = x.expression; return x; };
+  const rootOfW = (x) => { x = strip(x); while (ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) x = strip(x.expression); return x; };
+  const answerBound = (s, seenA = new Set()) => { // a local bound, once, to the answer of a call that runs outside code, or to a part or an alias of one
+    const d = declOfSym(s);
+    if (!d || seenA.has(d) || d.getSourceFile() !== sf || !(d.pos >= body.pos && d.end <= body.end)) return null;
+    seenA.add(d);
+    let v = d; while (v && ts.isBindingElement(v)) { v = v.parent; while (v && !ts.isVariableDeclaration(v) && !ts.isBindingElement(v)) v = v.parent; }
+    if (!v || !ts.isVariableDeclaration(v) || !v.initializer) return null;
+    if (ts.isIdentifier(v.name) && writes(s).length) return null;
+    let e = v.initializer; while (e && (ts.isParenthesizedExpression(e) || ts.isAwaitExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e))) e = e.expression;
+    const r = rootOfW(e);
+    if ((ts.isCallExpression(r) || ts.isNewExpression(r)) && !clock(r) && !h.quiet?.(r) && effect(r)) return v;
+    if (ts.isIdentifier(r)) { const rs = checker.getSymbolAtLocation(r); return rs && rs !== s ? (answerBound(rs, seenA) ? v : null) : null; }
+    return null;
+  };
+  const writeTargetOf = (n) => { // the object a write expression changes, or null
+    if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) { const l = strip(n.left); return ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l) ? strip(l.expression) : null; }
+    if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && (n.operator === K.PlusPlusToken || n.operator === K.MinusMinusToken)) { const l = strip(n.operand); return ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l) ? strip(l.expression) : null; }
+    if (ts.isDeleteExpression(n)) { const l = strip(n.expression); return ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l) ? strip(l.expression) : null; }
+    if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && MUTATING.has(n.expression.name.text) && !effect(n)) return strip(n.expression.expression);
+    if (ts.isCallExpression(n) && n.expression.getText(sf) === 'Object.assign' && n.arguments.length && !effect(n)) return strip(n.arguments[0]);
+    return null;
+  };
+  const writePoints = [];
+  if (!(process.env.LEAN_BREAK ?? '').split(',').includes('world-write')) { const w = (n) => { // --break: the write a local copy again, as before
+    const target = writeTargetOf(n);
+    if (target) {
+      const r = rootOfW(target);
+      const s = ts.isIdentifier(r) ? checker.getSymbolAtLocation(r) : null;
+      if (s || r.kind === K.ThisKeyword) {
+        const t = typeOf(target);
+        const held = (s && answerBound(s)) || (() => { const d = s ? declOfSym(s) : null; const st = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end ? d.getEnd() : body.getStart(sf); return points.some((c) => { if (!reached(typeOf(r), c)) return false; return c.getStart(sf) >= st && c.getEnd() <= n.getStart(sf) && !exitsBefore(c, n); }); })();
+        if (held && objectLike(t)) writePoints.push({ node: n, root: r, sym: s, t, inFn: !!fnOf(n) });
+      }
+    }
+    ts.forEachChild(n, w);
+  }; w(body); }
+  if (h.worldWrites) for (const wp of writePoints) h.worldWrites.add(wp.node);
+  // an occurrence the world may hold at a write: a name bound to an answer before it, or an object a call before it was handed
+  const heldAtWrite = (occ, t, wp) => {
+    const s = ts.isIdentifier(occ) ? checker.getSymbolAtLocation(occ) : null;
+    const a = s && answerBound(s);
+    if (a && a.getEnd() <= wp.node.getStart(sf)) return true;
+    return handed.some((x) => ranBy(x.at, wp.node) && reaches(x.t, t));
+  };
+  function writeBetween(start, occ, t) {
+    for (const wp of writePoints) {
+      const s = ts.isIdentifier(occ) ? checker.getSymbolAtLocation(occ) : null;
+      if ((s && s === wp.sym) || (!s && !wp.sym && occ.kind === K.ThisKeyword)) continue; // the written name reads its own value after the write
+      if (!reaches(t, wp.t)) continue; // the occurrence cannot hold the written object
+      const inside = wp.node.pos <= occ.pos && occ.end <= wp.node.end;
+      if (inside) continue;
+      const after = wp.node.getStart(sf) >= start && wp.node.getEnd() <= occ.getStart(sf) && !exitsBefore(wp.node, occ);
+      const lw = loops(wp.node); const looped = wp.node.getStart(sf) >= start && loops(occ).some((l) => lw.includes(l));
+      if (!(after || looped)) continue;
+      if (!heldAtWrite(occ, t, wp)) continue;
+      why = { call: wp.node, handed: wp.root };
+      return true;
+    }
+    return false;
+  }
   let found = null, unnamed = false;
   const visit = (n) => {
     if (found) return;

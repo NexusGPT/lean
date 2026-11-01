@@ -1,0 +1,39 @@
+{
+  "project": "tsconfig.json",
+  "scope": [
+    "enc",
+    "enc_pt",
+    "same",
+    "nested",
+    "spread_copy",
+    "index_keys",
+    "own_param",
+    "lit_vs_param",
+    "own_elem",
+    "lib_keys"
+  ],
+  "equal": {
+    "enc": false,
+    "enc_pt": false,
+    "same": true,
+    "nested": false,
+    "spread_copy": false,
+    "index_keys": true,
+    "own_param": true,
+    "lit_vs_param": false,
+    "own_elem": true,
+    "lib_keys": false
+  },
+  "b": {
+    "enc": "WITNESS",
+    "encPt": "WITNESS",
+    "same": "PASS-bounded",
+    "nested": "WITNESS",
+    "spreadCopy": "WITNESS",
+    "indexKeys": "PASS-bounded",
+    "ownParam": "PASS-bounded",
+    "ownElem": "PASS-bounded",
+    "libKeys": "WITNESS"
+  },
+  "why": "a record handed to an outside call is read with its key order (translate.mjs orderedArg, design/handed-key-order.md): two literals in two orders are two arguments (enc, encPt, nested, spreadCopy, libKeys: not proved, lane B WITNESS); a literal and its const local, index keys reordered alike, an object the unit did not build handed as itself are one (same, indexKeys, ownParam, ownElem: proved); a literal against a parameter is not one (litVsParam: the parameter carries its own order and keys); the refusals (a record pushed into an array the unit hands, and the like) are tests/handed-key-order.mjs. litVsParam has no lane B row: the generator builds the parameter in its declared order, so lane B cannot tell them apart. Red under LEAN_BREAK=handed-key-order"
+}

@@ -44,7 +44,7 @@ import { importIdentity } from '../common.mjs'; // an imported name is the bindi
 import { openRecordType, OPEN_RECORD_WHY, openRecordIn, openRecordReadWhy } from '../common.mjs';
 import { infinitySign } from '../common.mjs';
 import { namedPromiseHandler } from '../common.mjs'; // a named then, catch or finally handler: one decision with the lint
-import { forInKeyOrder } from '../common.mjs'; // the key order of a for-in: one test with the lint
+import { forInKeyOrder, typeReaches } from '../common.mjs'; // the key order of a for-in: one test with the lint
 import { spreadReadWhy } from '../common.mjs'; // the spreads of a record literal the value reading carries: one test with the lint (open-datatype)
 import { syncLoopCall, voidReturn } from '../common.mjs'; // a throwing unit named as an array-method callback (loopFaults)
 import { admissionFindings, exceptionUnitsOf, mayFaultPure, opaqueExceptionTry, libGlobalRoot } from '../lint/lint.mjs';
@@ -1877,7 +1877,7 @@ function translateOnce(file, fnName, opts = {}) {
   // order (pending); a write `x.f = v` rebuilds that object with the new field; an output parameter a call may reach
   // leaves as the world holds it (worldEnd). x names the object: a parameter, `this`, an alias of one, the answer of an
   // outside call, as identityOf names an existing object handed to a call. Every recorded form is read here (worldUsed)
-  let worldAfter = null, worldEnd = null, worldUsed = null;
+  let worldAfter = null, worldEnd = null, worldUsed = null, worldWrites = null; // worldWrites: the writes through an object the world may hold (common.mjs readAfterCall), each a transition
   function worldNow(code, d) {
     addPrelude('World', 'type World');
     if (d.startsWith('Option<') && d.endsWith('>')) { const inner = d.slice(7, -1); return `(if ${code}.Some? then Some(${external('now', ['World', inner], inner)}(${WORLD}, ${code}.value)) else None)`; } // an absent value stays absent
@@ -1964,6 +1964,229 @@ function translateOnce(file, fnName, opts = {}) {
     if (!handedSites.has(id.site)) handedSites.set(id.site, handedSites.size);
     return `${external(`handed_fresh_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.site)})`;
   }
+  // The key order of a record handed to an outside call (design/handed-key-order.md). The outside reads an object's own
+  // keys in property order (ECMA-262 10.1.11: array indexes ascending, then creation order): JSON.stringify writes them in
+  // it, a library walks them. A record datatype forgets that order, so `g({ a: x, b: y })` and `g({ b: y, a: x })` handed
+  // the outside one term. A handed value holding a record is now read with its order beside it:
+  // - an object the unit did not build (a parameter, a field, an outside call's answer, a module value) is handed as
+  //   itself: its order is its own, the same object on both sides (`own`);
+  // - a tree the unit builds where it hands it (literals, a const local a literal initialises whose every use keeps its
+  //   keys) is handed as `key_order_<T>(v, sig)`, sig its keys in property order, nested parts included;
+  // - anything else (a record a same-file call or a class of the file builds, a choice of two orders, an object a write
+  //   reordered) is refused (key-order): two orders would read alike.
+  // An `own` object stays own only while no code of the unit (or of a same-file function it calls) stores a record it
+  // built, adds a key (an optional field written) or deletes one in an object of a type the handed value can reach.
+  const orderRecord = (t) => !!(t.flags & (TF.Object | TF.Intersection)) && !isAny(t) && !isArrayLike(checker, t) && !isCallable(t) && !isMapT(t) && !isSetT(t) && !isPromiseT(t) && checker.getPropertiesOfType(t).some((p) => !(p.flags & (ts.SymbolFlags.Method | ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor)));
+  const orderBearing = (t, depth = 0, seen = new Set()) => { // may a value of type t hold a record (through arrays, tuples, Map and Set items, dictionary values, fields)?
+    if (!t || isAny(t) || depth > 6 || seen.has(t)) return false;
+    seen.add(t);
+    if (t.flags & TF.Union) return t.types.some((x) => orderBearing(x, depth, seen));
+    if (primT(t) || isCallable(t) || isPromiseT(t)) return false;
+    if (orderRecord(t)) return true;
+    const inner = [...(checker.getTypeArguments?.(t) ?? []), ...[ts.IndexKind.String, ts.IndexKind.Number].map((k) => checker.getIndexTypeOfType(t, k)).filter(Boolean)];
+    return inner.some((x) => orderBearing(x, depth + 1, seen));
+  };
+  const literalKey = (m) => { // a member's own key as ToPropertyKey gives it, or null (a computed or private name)
+    const nm = m.name;
+    if (ts.isIdentifier(nm) || ts.isStringLiteral(nm) || ts.isNoSubstitutionTemplateLiteral(nm)) return nm.text;
+    if (ts.isNumericLiteral(nm) && !Number.isNaN(Number(nm.text))) return String(Number(nm.text));
+    return null;
+  };
+  const isIndexKey = (k) => /^(0|[1-9][0-9]*)$/.test(k) && Number(k) < 4294967295;
+  const OWN = { k: 'own' }, NONE = { k: 'none' };
+  const orderWhy = (why) => ({ k: 'why', why });
+  const unwrapE = (e) => { while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isNonNullExpression(e) || ts.isSatisfiesExpression(e) || ts.isTypeAssertionExpression(e)) e = e.expression; return e; };
+  const assignOp = (k) => k >= K.FirstAssignment && k <= K.LastAssignment;
+  // a const local a literal tree initialises keeps its keys when every use reads it, writes a field of a primitive value the
+  // literal made, hands it to an outside call, enumerates or spreads it, or returns it; a delete, a store into another
+  // object, an alias or a same-file call may reorder or rebuild it
+  function keptKeys(sym, d, literal, body) {
+    const madeKeys = (lit) => { const ks = new Set(); for (const m of lit.properties) { const k = (ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m)) ? literalKey(m) : null; if (k !== null) ks.add(k); } return ks; };
+    const subLiteral = (lit, path) => { let cur = lit; for (const k of path) { if (!cur || !ts.isObjectLiteralExpression(cur)) return null; const m = cur.properties.find((q) => (ts.isPropertyAssignment(q) || ts.isShorthandPropertyAssignment(q)) && literalKey(q) === k); cur = m && ts.isPropertyAssignment(m) ? unwrapE(m.initializer) : null; } return cur; };
+    let ok = true;
+    const use = (x) => {
+      let top = x; const path = [];
+      for (;;) { const p = top.parent; if (p && (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p))) { top = p; continue; } if (p && ts.isPropertyAccessExpression(p) && p.expression === top && !ts.isPrivateIdentifier(p.name)) { path.push(p.name.text); top = p; continue; } if (p && ts.isElementAccessExpression(p) && p.expression === top) { const a = unwrapE(p.argumentExpression); path.push(ts.isStringLiteralLike(a) || ts.isNumericLiteral(a) ? String(ts.isNumericLiteral(a) ? Number(a.text) : a.text) : null); top = p; continue; } break; }
+      const p = top.parent;
+      if (!p) return false;
+      if (path.length) {
+        if (ts.isDeleteExpression(p)) return false;
+        if ((ts.isBinaryExpression(p) && p.left === top && assignOp(p.operatorToken.kind)) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator))) { // a write: of a key the literal made, holding a primitive, keeps its place
+          if (path.includes(null)) return false;
+          const owner = subLiteral(literal, path.slice(0, -1));
+          return !!owner && ts.isObjectLiteralExpression(owner) && madeKeys(owner).has(path[path.length - 1]) && primT(typeOf(top));
+        }
+        if (ts.isCallExpression(p) && p.expression === top) return false; // a method runs with `this` the object
+        if (!primT(typeOf(top)) && !keptPart(top)) return false; // a part of it, an object, handed on: the same test for the part
+        return true;
+      }
+      return keptPart(top);
+    };
+    const keptPart = (x) => { // x is the local or a part of it: kept by a read, a test, an outside call, a spread copy, an enumeration, a return
+      const p = x.parent;
+      if (!p) return false;
+      if (ts.isPropertyAccessExpression(p) || ts.isElementAccessExpression(p)) return true;
+      if (ts.isReturnStatement(p) || (ts.isArrowFunction(p) && p.body === x) || ts.isTypeOfExpression(p) || ts.isTypeQueryNode(p) || (ts.isPrefixUnaryExpression(p) && p.operator === K.ExclamationToken)) return true;
+      if ((ts.isIfStatement(p) || ts.isConditionalExpression(p)) && (p.expression ?? p.condition) === x) return true;
+      if (ts.isBinaryExpression(p) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(p.operatorToken.kind)) return true;
+      if (ts.isForInStatement(p) && p.expression === x) return true;
+      if (ts.isSpreadAssignment(p)) return true; // `{ ...r }` copies its keys in its order: the copy's own order is read where it is handed
+      if (ts.isCallExpression(p) && p.arguments.includes(x)) {
+        const f = p.expression;
+        if (ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) && f.expression.text === 'Object' && ['keys', 'values', 'entries'].includes(f.name.text) && originOf(checker, f.expression, sf, currentUnit?.node ?? null).kind === 'global') return true;
+        if (sameFileCallUnit(p)) return false; // a same-file function may store it or add a key
+        if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && (isArrayLike(checker, baseOf(typeOf(f.expression))) || isMapT(baseOf(typeOf(f.expression))) || isSetT(baseOf(typeOf(f.expression))))) return false; // stored into a container the unit holds
+        if (ts.isIdentifier(f) && f.text === 'structuredClone') return true;
+        return true; // an outside call: the order it is handed is read there; what the outside does with it is the world's
+      }
+      return false;
+    };
+    const walk = (x) => { if (!ok) return; if (ts.isIdentifier(x) && x !== d.name && checker.getSymbolAtLocation(x) === sym && !(x.parent && ts.isShorthandPropertyAssignment(x.parent) && x.parent.name === x && false) && !use(x)) ok = false; ts.forEachChild(x, walk); };
+    walk(body);
+    return ok;
+  }
+  function keyOrderOf(e, opts = {}, seen = new Set()) {
+    e = unwrapE(e);
+    if (ts.isAwaitExpression(e)) { const x = unwrapE(e.expression); return ts.isCallExpression(x) && !sameFileCallUnit(x) ? OWN : keyOrderOf(x, opts, seen); }
+    const t = typeOf(e);
+    if (!t || isAny(t) || !orderBearing(t)) return NONE;
+    if (ts.isObjectLiteralExpression(e)) {
+      const keys = [], subs = new Map();
+      for (const m of e.properties) {
+        if (ts.isSpreadAssignment(m)) {
+          const src = keyOrderOf(m.expression, opts, seen);
+          if (src.k === 'why') return src;
+          if (src.k !== 'obj') return orderWhy(`a spread of \`${m.expression.getText(sf).slice(0, 40)}\`, whose keys this reading does not know`);
+          for (const [k, s] of src.keys) { if (!subs.has(k)) keys.push(k); subs.set(k, s); }
+          continue;
+        }
+        if (!(ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m))) return orderWhy('a literal with a method or an accessor member');
+        const k = literalKey(m);
+        if (k === null) return orderWhy('a literal with a computed key');
+        if (k === '__proto__' && ts.isPropertyAssignment(m)) return orderWhy('a literal that sets its prototype');
+        const v = ts.isPropertyAssignment(m) ? m.initializer : m.name;
+        const s = keyOrderOf(v, opts, seen);
+        if (s.k === 'why') return s;
+        if (!subs.has(k)) keys.push(k); // a repeated key keeps its first place (10.1.9) and takes the last value
+        subs.set(k, s);
+      }
+      const ordered = [...keys.filter(isIndexKey).sort((a, b) => Number(a) - Number(b)), ...keys.filter((k) => !isIndexKey(k))];
+      return { k: 'obj', keys: ordered.map((k) => [k, subs.get(k)]) };
+    }
+    if (ts.isArrayLiteralExpression(e)) {
+      const items = [];
+      for (const x of e.elements) {
+        if (ts.isOmittedExpression(x)) { items.push(NONE); continue; }
+        const s = keyOrderOf(ts.isSpreadElement(x) ? x.expression : x, opts, seen);
+        if (s.k === 'why') return s;
+        if (ts.isSpreadElement(x)) { if (s.k === 'arr') items.push(...s.items); else items.push({ k: 'spread', of: s }); } else items.push(s);
+      }
+      return { k: 'arr', items };
+    }
+    if (e.kind === K.ThisKeyword) return own(e, opts);
+    if (ts.isIdentifier(e)) {
+      const sym = checker.getSymbolAtLocation(e), d = sym?.valueDeclaration ?? sym?.declarations?.[0];
+      if (!d) return own(e, opts);
+      const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
+      const local = body && d.getSourceFile() === sf && d.pos >= body.pos && d.end <= body.end;
+      if (!local || ts.isParameter(d) || ts.isBindingElement(d) || !ts.isVariableDeclaration(d) || ts.isForOfStatement(d.parent?.parent) || ts.isForInStatement(d.parent?.parent)) return own(e, opts);
+      if (seen.has(d)) return orderWhy(`\`${e.text}\`, a name read while it is being read`);
+      seen.add(d);
+      let written = false; const w = (x) => { if (ts.isBinaryExpression(x) && assignOp(x.operatorToken.kind) && ts.isIdentifier(unwrapE(x.left)) && checker.getSymbolAtLocation(unwrapE(x.left)) === sym) written = true; ts.forEachChild(x, w); }; w(body);
+      if (written || !d.initializer) return orderWhy(`\`${e.text}\`, a name written after its declaration`);
+      const s = keyOrderOf(d.initializer, opts, seen);
+      if (s.k === 'obj' || s.k === 'arr') return keptKeys(sym, d, unwrapE(d.initializer), body) ? s : orderWhy(`\`${e.text}\`, a record the unit builds and then passes, stores, aliases or reorders`);
+      return s;
+    }
+    if (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) {
+      const base = keyOrderOf(e.expression, opts, seen);
+      if (base.k === 'own' || base.k === 'why') return base;
+      if (base.k === 'obj') { const k = ts.isPropertyAccessExpression(e) ? e.name.text : (ts.isStringLiteralLike(unwrapE(e.argumentExpression)) ? unwrapE(e.argumentExpression).text : null); const hit = k !== null && base.keys.find(([n]) => n === k); return hit ? hit[1] : orderWhy('a part of a built record read by a key this reading does not name'); }
+      if (base.k === 'arr') { const plain = base.items.filter((x) => x.k !== 'spread'); return base.items.every((x) => x.k !== 'spread') && plain.length && plain.every((x) => sigText(x) === sigText(plain[0])) ? plain[0] : orderWhy('an element of a built array whose records differ in key order'); }
+      return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, a part of a value this reading cannot name`);
+    }
+    if (ts.isConditionalExpression(e) || (ts.isBinaryExpression(e) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(e.operatorToken.kind))) {
+      const a = keyOrderOf(ts.isConditionalExpression(e) ? e.whenTrue : e.left, opts, seen), b = keyOrderOf(ts.isConditionalExpression(e) ? e.whenFalse : e.right, opts, seen);
+      if (a.k === 'why') return a; if (b.k === 'why') return b;
+      if (a.k === 'none') return b; if (b.k === 'none') return a;
+      return sigText(a) === sigText(b) ? a : orderWhy('a choice between records of different key orders');
+    }
+    if (ts.isCallExpression(e)) {
+      const f = e.expression, text = f.getText(sf);
+      if (sameFileCallUnit(e) || (ts.isIdentifier(f) && originOf(checker, f, sf, currentUnit?.node ?? null).kind === 'unit')) return orderWhy(`the result of the same-file call \`${text.slice(0, 40)}\`, a record it builds in an order this reading does not hold`);
+      if (text === 'structuredClone' && e.arguments.length >= 1) return keyOrderOf(e.arguments[0], opts, seen); // a copy keeps the source's order
+      if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && isArrayLike(checker, baseOf(typeOf(f.expression)))) {
+        const m = f.name.text;
+        if (['slice', 'filter', 'concat', 'toSorted', 'toReversed', 'find', 'findLast', 'at', 'pop', 'shift', 'reverse', 'sort'].includes(m) && e.arguments.every((a) => !orderBearing(typeOf(a)))) { const r = keyOrderOf(f.expression, opts, seen); return r.k === 'own' || r.k === 'why' ? r : orderWhy(`\`${text.slice(0, 40)}\` of a built array`); } // its elements are the receiver's own
+        return orderWhy(`the result of \`${text.slice(0, 40)}\`, which may build records`);
+      }
+      if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && (isMapT(baseOf(typeOf(f.expression))) || isSetT(baseOf(typeOf(f.expression))) || primT(typeOf(f.expression)))) { const r = keyOrderOf(f.expression, opts, seen); return r.k === 'own' ? r : orderWhy(`the result of \`${text.slice(0, 40)}\` on a built value`); }
+      return own(e, opts); // an outside call's answer: the object the outside gave, in its own order
+    }
+    if (ts.isNewExpression(e)) {
+      const c = e.expression; const decl = ts.isIdentifier(c) ? (checker.getSymbolAtLocation(c)?.valueDeclaration ?? checker.getSymbolAtLocation(c)?.declarations?.[0]) : null;
+      if (decl && decl.getSourceFile() === sf) return orderWhy(`a \`new ${c.getText(sf).slice(0, 30)}\`, whose constructor makes its keys in an order this reading does not hold`);
+      return own(e, opts); // an outside class: the instance the outside's constructor made
+    }
+    return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, a value whose records this reading cannot name`);
+  }
+  const sigText = (s) => s.k === 'none' ? '' : s.k === 'own' ? '*' : s.k === 'spread' ? `...${sigText(s.of)}` : s.k === 'obj' ? `{${s.keys.map(([k, x]) => JSON.stringify(k) + (x.k === 'none' ? '' : `:${sigText(x)}`)).join(',')}}` : s.k === 'arr' ? `[${s.items.map(sigText).join(',')}]` : '?';
+  // the record types the code of fn (and of the same-file functions it calls) may reorder: a record it built stored into
+  // another object, an optional key written, a key deleted, an object handed to Object.assign
+  const reorderMemo = new Map();
+  function reorderedTypes(fnNode, visiting = new Set()) {
+    if (!fnNode) return [];
+    if (reorderMemo.has(fnNode)) return reorderMemo.get(fnNode);
+    if (visiting.has(fnNode)) return [];
+    visiting.add(fnNode);
+    const out = [];
+    const built = (v) => { const o = keyOrderOf(v, { bare: true }); return o.k !== 'none' && o.k !== 'own'; };
+    const optionalKey = (pa) => { const bt = typeOf(pa.expression); if (!bt || isAny(bt)) return false; return nonNull(bt).some((x) => orderRecord(x) && (() => { const p = checker.getPropertyOfType(x, pa.name.text); return !p || !!(p.flags & ts.SymbolFlags.Optional); })()); };
+    const w = (n) => {
+      if (ts.isBinaryExpression(n) && assignOp(n.operatorToken.kind)) {
+        const l = unwrapE(n.left);
+        if ((ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l)) && orderBearing(typeOf(n.right)) && built(n.right)) out.push(typeOf(n.right));
+        if (ts.isPropertyAccessExpression(l) && optionalKey(l)) out.push(typeOf(l.expression));
+        if (ts.isElementAccessExpression(l) && nonNull(typeOf(l.expression)).some(orderRecord)) out.push(typeOf(l.expression));
+      }
+      if (ts.isDeleteExpression(n)) { const x = unwrapE(n.expression); if ((ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) && nonNull(typeOf(x.expression)).some(orderRecord)) out.push(typeOf(x.expression)); }
+      if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
+        const f = n.expression;
+        const callee = ts.isCallExpression(n) ? sameFileCallUnit(n) : null;
+        if (callee) { const cf = callee.fn ?? callee.node; out.push(...reorderedTypes(cf, visiting)); for (const a of n.arguments ?? []) if (orderBearing(typeOf(a)) && built(a)) out.push(typeOf(a)); }
+        else if (ts.isNewExpression(n) && ts.isIdentifier(f) && (checker.getSymbolAtLocation(f)?.valueDeclaration?.getSourceFile?.() === sf)) { for (const a of n.arguments ?? []) if (orderBearing(typeOf(a)) && built(a)) out.push(typeOf(a)); }
+        else if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && (isArrayLike(checker, baseOf(typeOf(f.expression))) || isMapT(baseOf(typeOf(f.expression))) || isSetT(baseOf(typeOf(f.expression))))) { for (const a of n.arguments ?? []) if (!ts.isFunctionLike(a) && orderBearing(typeOf(ts.isSpreadElement(a) ? a.expression : a)) && built(ts.isSpreadElement(a) ? a.expression : a)) out.push(typeOf(ts.isSpreadElement(a) ? a.expression : a)); }
+        else if (f.getText(sf) === 'Object.assign' && n.arguments?.length) { const tgt = n.arguments[0]; if (nonNull(typeOf(tgt)).some(orderRecord)) out.push(typeOf(tgt)); }
+      }
+      ts.forEachChild(n, w);
+    };
+    w(fnNode.body ?? fnNode);
+    visiting.delete(fnNode);
+    reorderMemo.set(fnNode, out);
+    return out;
+  }
+  const typeReachesT = (h, o) => typeReaches(checker, h, o, currentUnit?.fn?.body ?? currentUnit?.node?.body ?? sf);
+  function own(e, opts) {
+    if (opts.bare) return OWN;
+    const unitFn = currentUnit?.fn ?? currentUnit?.node ?? null;
+    const t = typeOf(e);
+    const hit = reorderedTypes(unitFn).find((s) => typeReachesT(t, s));
+    if (hit) return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, an object of a type (${checker.typeToString(hit).slice(0, 40)}) whose keys this unit may reorder (a record it built stored in it, a key written or deleted)`);
+    return OWN;
+  }
+  // the argument as handed: an own object or no record as it is; a built tree with its key order beside it
+  function orderedArg(a, code, d) {
+    if ((process.env.LEAN_BREAK ?? '').split(',').includes('handed-key-order')) return code;
+    if (a.__tupleElem || ts.isArrowFunction(a) || ts.isFunctionExpression(a)) return code;
+    const x = ts.isSpreadElement(a) ? a.expression : a;
+    const t = typeOf(x);
+    if (!t || isAny(t) || !orderBearing(t)) return code;
+    const o = keyOrderOf(x);
+    if (o.k === 'none' || o.k === 'own') return code;
+    if (o.k === 'why') fail(a, `key-order: a record handed to an outside call is read with its key order, which the outside may observe (JSON.stringify writes the keys in it); here it is ${o.why}: hand a literal the call itself holds, a const local a literal initialises, or an object the unit did not build`);
+    if (ts.isSpreadElement(a)) fail(a, 'key-order: a spread of records the unit builds, handed to an outside call: their key order is not read in a spread; hand the array itself');
+    return `${external(`key_order_${mangle(d)}`, [d, 'string'], d)}(${code}, ${strEsc(sigText(o))})`;
+  }
   function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
     const isEff = eff ?? isEffectCall(n);
     if (isEff && !unitEffectful()) fail(n, `internal: an effect in a unit not marked effectful (${calleeName})`);
@@ -1999,6 +2222,7 @@ function translateOnce(file, fnName, opts = {}) {
       const lookup = `${external(`lookup_${calleeName}`, ps, '(World, Unit)')}(${args.join(', ')})`;
       hoist(cond ? `(if ${cond} then ${lookup} else (${WORLD}, Unit))` : lookup, 'Unit');
     }
+    if (spread) for (const a of args) if (!a.__tupleElem) { const x = ts.isSpreadElement(a) ? a.expression : a; const t = typeOf(x); if (t && !isAny(t) && orderBearing(t) && !(process.env.LEAN_BREAK ?? '').split(',').includes('handed-key-order')) { const o = keyOrderOf(x); if (o.k !== 'none' && o.k !== 'own') fail(a, `key-order: a record handed to an outside call through a spread call is read without its key order; here it is ${o.k === 'why' ? o.why : 'a record the unit builds'}: hand the records as their own arguments, or objects the unit did not build`); } } // a spread call's arguments are one sequence: no order beside a built record
     const sequence = spread ? callSequence(args) : null;
     const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a.__tupleElem ? a.node : a) : dtype(a.__tupleElem ? a.type : typeOf(a), a.__tupleElem ? a.node : a); });
     let rt = n.__plainReturn ?? (sig && !isAny(typeOf(n)) ? sig.getReturnType() : typeOf(n)); // an optional call's present branch returns what the callee returns; a call typeOf holds at Any (on a held receiver) returns Any, as its uses read it
@@ -2009,7 +2233,7 @@ function translateOnce(file, fnName, opts = {}) {
     calleeName = `${spread ? 'call_seq' : 'call_args'}_${calleeName}`; // disjoint call forms: f(...xs) never collides with a function named f_seq(xs)
     if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && calleeName.endsWith(`_${n.expression.text}`) && reachOf.reachesFile(n.expression)) calleeName += `_${hash(reachOf.keyText(n.expression))}`; // a binding of this file called by name (a constant holding a function value) is named by the code it reaches (design/reach-keys.md)
     const throwingUnitValue = (a) => ts.isIdentifier(a) && originOf(checker, a, sf, currentUnit?.node ?? null).kind === 'unit' && (exceptionUnits.has(a.text) || effectfulUnits.has(a.text)); // stage 5 rank 20: handed to an outside call, an opaque value named by its text
-    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? (cellWriter(a) && reactHandler(a)) || opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : isEff && !quietCall(n) ? handedArg(a, expr(a, ptype(a, i)), pts[i]) : expr(a, ptype(a, i)));
+    const codes = spread ? [sequence.code] : args.map((a, i) => a.__tupleElem ? convertToD(a.code, a.type, pts[i], a.node) : throwingUnitValue(a) ? opaqueFn(fns.get(a.text)?.fn ?? a) : (reactHook(checker, n) === 'useEffect' && i === 0 && ts.isArrowFunction(a)) ? (cellWriter(a) && reactHandler(a)) || opaqueFn(a) : (ts.isArrowFunction(a) || ts.isFunctionExpression(a)) ? (ts.isArrowFunction(a) ? lambda(a, a.parameters.length, [], true) : opaqueFn(a)) : (ts.isIdentifier(a) && a.text === 'undefined' && pts[i] === 'Unit') ? 'Unit' : isEff && !quietCall(n) ? handedArg(a, orderedArg(a, expr(a, ptype(a, i)), pts[i]), pts[i]) : orderedArg(a, expr(a, ptype(a, i)), pts[i]));
     if (!isEff) {
       let code;
       if (recvCode !== null) { const id = external(calleeName, [recvType, ...pts], rd); code = `${id}(${[recvCode, ...codes].join(', ')})`; }
@@ -5518,7 +5742,28 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       };
       return [root.text, build(0, dn(root.text), typeOf(root)), root];
     }
+  // a write through an object the world may hold (an outside call's answer, an object handed to one): JavaScript writes
+  // the object itself, which the world may share (design/world-write.md), so after the value is rebuilt the world takes
+  // it, `store_<T>(wld, v)`, one transition: a later read of the world, or of an object it holds, is read after the write
   function newValue(e) {
+    let x = e; while (ts.isParenthesizedExpression(x)) x = x.expression;
+    if (ts.isVoidExpression(x)) { x = x.expression; while (ts.isParenthesizedExpression(x)) x = x.expression; }
+    if (!worldWrites?.has(x)) return newValue0(e);
+    if (callbackBody) fail(x, 'read-after-call: a write through an object the world may hold (an outside call\'s answer, or an object handed to one) inside a callback: the world takes the write where it runs, which this reading does not thread through a callback; write it in the function\'s own statements');
+    if (!unitEffectful()) fail(x, 'internal: a world write in a unit not marked effectful');
+    const nv = newValue0(e);
+    if (!nv) return nv;
+    const [name, value, root] = nv;
+    if (!root || !ts.isIdentifier(root)) fail(x, 'read-after-call: a write through an object the world may hold, rooted at a value this reading does not name; bind the object to a name first');
+    const sym = checker.getSymbolAtLocation(root);
+    const D = letTypeOf(sym) ?? dtype(symType(sym, root), root);
+    const v = `ww${tempCount++}_`;
+    pending.push(`var ${v}: ${D} := ${outerParens(value)};`);
+    addPrelude('World', 'type World');
+    hoist(`${external(`store_${mangle(D)}`, ['World', D], '(World, Unit)')}(${WORLD}, ${v})`, 'Unit');
+    return [name, v, root];
+  }
+  function newValue0(e) {
     while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (ts.isVoidExpression(e)) { e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression; } // `void f()` is the call f()
     if (ts.isCallExpression(e) && ts.isPropertyAccessExpression(e.expression) && moduleState(checker, e.expression.expression, sf)) {
@@ -6997,7 +7242,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   function emitUnit(u) {
     currentUnit = u;
     handedSites = new Map(); // the fresh objects a unit hands are numbered from its own start
-    worldAfter = null; worldEnd = null; worldUsed = null;
+    worldAfter = null; worldEnd = null; worldUsed = null; worldWrites = null;
     { const why = callbackUntypedJsUnit(sf, u, checker); if (why) fail(u.params.find((p) => !p.type && !ts.getJSDocType(p)) ?? u.node, `untyped-js: ${why}`); } // a JavaScript unit's untyped input: not read by the proof lane (the lint's test, common.mjs)
     if (!u.cls && thisParamOf(u)) selfType(u); // a free function's declared `this` parameter: its type is the receiver type, refused by name (this-param) when it names none, the lint's test
     { const lw = firstElementMutation(checker, u, { isLoopCallback, heapSelected: false, sf, current: u.node }); if (lw) fail(lw.node, `alias-mutation: \`${lw.name}\` is the element a loop or an array callback walks; this reading copies it, so the write would be lost, and the heap core does not read this unit: write the element through its array in an index loop, \`xs[i].f = v\` (escape element_write_loop_callback)`); } // a dropped write is never silent
@@ -7040,7 +7285,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); worldWrites = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, worldWrites: worldWrites ?? undefined, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
         body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
         if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
       }
