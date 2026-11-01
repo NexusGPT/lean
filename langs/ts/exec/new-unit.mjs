@@ -290,12 +290,13 @@ export async function runNew(opts) {
     if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); continue; }
     reach.closed++;
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
+    const wide = declared.params.some((p, k) => p.spec?.all && !(p.optional && inputs[k] === undefined)); // admitted only because a parameter's type is any or unknown, which admit every value: a validator's own rejection reads so
     if (threw) {
       if (declaredThrow(decl, observation.raw?.threw)) continue; // a throw the declaration names (`@throws {T}`, `asserts`, `never`) is the declared behaviour
       const missing = platformGap(observation.raw?.threw);
       if (missing) { book.add(coverage('draw', `the unit reads the global \`${missing}\`, which Node holds and lean's sandbox does not`), `coverage global ${missing}`); continue; } // lean's sandbox, not the unit
       const error = thrownText(observation.raw?.threw, observation.outcome.threw);
-      book.add({ kind: 'new:fault', ...named, error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(error.message ?? JSON.stringify(error))}`); // one record per error and message template: a message that quotes the input is one outcome
+      book.add({ kind: 'new:fault', ...named, ...(wide ? { wide: true } : {}), error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(error.message ?? JSON.stringify(error))}`); // one record per error and message template: a message that quotes the input is one outcome
       continue;
     }
     if (process.env.LEAN_BREAK === 'declared-shape' || !decl || decl.inferred || decl.voidLike || !declared?.returns) continue;

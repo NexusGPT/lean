@@ -28,7 +28,8 @@ wrote down about it, in a form a program can check.
 | `new:coverage` | the unit could not be loaded, drawn or tested so as to make the claims above, and why | anything about the unit's behaviour |
 
 Each record names its input (`args`, rendered before the call may write into it), the parameter whose edge value it
-took (`edge`), and the count of inputs that showed the same outcome. Faults are one record per error name and message
+took (`edge`), `wide: true` on a fault whose input is admitted only because a parameter is `any` or `unknown` (true,
+and often a validator's intended rejection), and the count of inputs that showed the same outcome. Faults are one record per error name and message
 template (the message with what it quotes and its numbers taken out); shapes one record per kind of value returned
 outside the type; at most five records per kind, the rest counted. The records ride in the certificate as
 `newUnit: { declaration, records, tests }` (check.mjs), in the `pr.mjs` row as `records`, and in the markdown report as
