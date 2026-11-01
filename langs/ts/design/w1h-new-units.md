@@ -62,11 +62,16 @@ Each claim is sound only if every link holds. The links, and the mechanism that 
    `LEAN_BREAK=declared-shape` removes the check.
 3. **The call asked the world nothing.** lean's fakes answer every outside request with a handle, and a handle can be
    tested without a trap (`if (flag)`, `typeof window`), so an empty trace alone is not enough. A call is closed when
-   (a) the module graph links no package lean fakes, (b) its loading asked nothing (its trace is empty), (c) the call's
-   own trace is empty (every fake read, call, clock read and random read is a trace entry), and (d) no module of the
-   graph names a global the sandbox answers with a handle (`window`, `globalThis`, `process`, `fetch`, `document`, ...).
-   A record of a call that is not closed would rest on lean's world model, not on the declaration. `LEAN_BREAK=closed-call`
-   removes the check.
+   (a) its own trace is empty (every fake read, call, clock read and random read is a trace entry); (b) loading asked
+   nothing but the linker's reads (one `get` per imported name): a value the world answered at load, even through a
+   helper (`const BLACK = srgb('#000')` whose helper calls the package), may be kept where no trap guards it;
+   (c) every binding a package lean fakes reaches (its imports, and the module constants initialised from them) is used
+   only where reading it traps (a callee, the object of a member read, `new`, a tag), is never exported, re-exported
+   or named by a top-level statement other than a declaration, and the package is never imported dynamically; and (d)
+   no module of the graph names a global the sandbox answers with a handle (`window`, `globalThis`, `process`, `fetch`,
+   `document`, ...). A record of a call that is not closed would rest on lean's world model, not on the declaration.
+   `LEAN_BREAK=closed-call` removes the check. (b) came from the census: on nexus-tokens a test's fixture computed at
+   load through `culori` gave a `new:test` that was the fake's answer; the pair rows `ready` and `fixture.test.ts` hold it.
 4. **The throw is the unit's.** A throw the declaration names is its declared behaviour (`LEAN_BREAK=declared-throws`
    reads the tags no more). A `ReferenceError` for a global Node holds and the sandbox does not is lean's gap: coverage.
    A timeout, a budget, a stack overflow is the harness's: the unit's result is ASK with what was found before it.
@@ -114,8 +119,8 @@ declaration is the only difference (A1, A6).
 
 - A record is about the declaration, not about callers: a declaration may admit inputs no caller passes. DA's requester
   renders the claim beside the record.
-- The closed-call rule is coarse: a file that imports any package lean fakes gets no record, though a unit may never
-  touch the import. A static reach (the unit's free names, through the file's functions, to the imports) would widen it.
+- The closed-call rule is syntactic and conservative: a package binding read once without a trap anywhere in the graph,
+  or one call of the package at load, makes every unit of the graph world, though a unit may never reach it.
 - The runner model holds the matchers the census roots' tests use (toBe, toEqual, toContain, toBeGreaterThan, toBeNull,
   toHaveLength, toBeCloseTo, toMatch, toThrow, ...), not snapshots, spies or mocks: those are coverage.
 - A unit's own JSDoc prose (`@param x must be non-empty`) is not read: only types and `@throws` types are.

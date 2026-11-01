@@ -371,6 +371,12 @@ function graphWorld(loaded, sources, runner = new Set()) {
     }
     const mentions = (node) => { let hit = false; const w = (n) => { if (hit) return; if (ts.isIdentifier(n) && tainted.has(n.text)) hit = true; else ts.forEachChild(n, w); }; if (node) w(node); return hit; };
     if (tainted.size) for (let grew = true; grew;) { grew = false; for (const st of sf.statements) if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && !tainted.has(d.name.text) && mentions(d.initializer)) { tainted.add(d.name.text); grew = true; } }
+    // a binding the package reaches, exported, is read by its importers, whose uses this file's walk does not see
+    if (tainted.size) for (const st of sf.statements) {
+      const exported = !!st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+      if (exported && ts.isVariableStatement(st) && st.declarationList.declarations.some((d) => ts.isIdentifier(d.name) && tainted.has(d.name.text))) out.push(`exports a package binding (${where})`);
+      if ((ts.isExportDeclaration(st) && !st.moduleSpecifier && st.exportClause && ts.isNamedExports(st.exportClause) && st.exportClause.elements.some((el) => tainted.has((el.propertyName ?? el.name).text))) || (ts.isExportAssignment(st) && mentions(st.expression))) out.push(`exports a package binding (${where})`);
+    }
     if (tainted.size) for (const st of sf.statements) {
       if (ts.isImportDeclaration(st) || ts.isFunctionDeclaration(st) || ts.isVariableStatement(st) || ts.isInterfaceDeclaration(st) || ts.isTypeAliasDeclaration(st)) continue;
       if (ts.isClassDeclaration(st) && !st.heritageClauses?.some((h) => mentions(h))) continue; // a class body runs when called; its heritage when it loads
