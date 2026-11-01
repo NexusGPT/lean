@@ -71,6 +71,14 @@ for (const p of pairs) {
     say(mine.length > 0 && mine.every((f) => !f.opaque && !f.advisory && f.opaqueWhy === ASYNC_OPAQUE[rule].why), `lint fixture ${rule}: ${mine.length} finding(s) keep their refusal with the reason`);
   }
 }
+// what pending work may touch (tests/w1d-fixtures/pending.ts): each unit graded or refused as its comment says
+{
+  const fx = admissionFindings(path.join(here, 'w1d-fixtures/pending.ts')).filter((f) => f.rule === 'promise-pending');
+  for (const [unit, graded] of [['deep', false], ['own', true], ['cell', true], ['later', false], ['before', true]]) {
+    const mine = fx.filter((f) => f.unit === unit);
+    say(mine.length === 1 && (graded ? mine[0].opaque === 'expression' : !mine[0].opaque && !!mine[0].opaqueWhy), `lint fixture pending ${unit}: ${graded ? 'graded' : 'refused'} (${mine.map((f) => f.opaque ?? f.opaqueWhy).join('; ')})`);
+  }
+}
 if (want('plain')) {
   const plain = await run(pairs, {});
   say(plain.length > 0 && plain.every((r) => r.ok), `as written: ${plain.filter((r) => r.ok).length} of ${plain.length} rows pass over ${pairs.length} pairs`);

@@ -117,7 +117,11 @@ starts changes the unit's state after the step outside the world:
   alone, which `pendingWork` requires of every function nested in the step: it rebinds no binding of the unit, and reads
   none the unit rebinds after the step, inside a loop around it, or from another nested function (the step's outputs are
   taken when it ends); it writes into no object it did not make itself (a callback's parameter is an element of the
-  unit's value); and it hands no reference the unit uses outside the step (other than as a call's receiver) to a call.
+  unit's value), except a module cell (a field of the world: its reads and writes elsewhere are transitions) and an
+  object it made (a literal, a `new`) written at its own level (`r.onload = ...`; a deeper path `o.a.n` may reach an
+  object the literal was handed); and it hands no reference to a call that the unit uses after the step (later, in a
+  loop around it, or from another nested function) other than as a call's receiver: a use before the step sees the
+  value before any pending work runs. `tests/w1d-fixtures/pending.ts` holds one unit per case.
   Pair `opaque_capture`: `xs.map(async (x) => { await svc.get(x); await svc.put(m); }); m = m + 1;` against `m + 2`;
   the put reads `m` after the step ended. Refused; lane B finds the changed put. With `LEAN_BREAK=async-drop-pending` lane A
   proves it (falsely).

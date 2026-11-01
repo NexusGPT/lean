@@ -100,11 +100,13 @@ const nestedFunctions = (node) => { const out = []; const w = (x) => { if (ts.is
 // callback; any of them may run after the step ends)
 //   - rebinds a binding of the unit, or reads one the unit rebinds outside the step (after it, in a loop around it, or
 //     from another nested function): the step's outputs are taken when it ends;
-//   - writes into an object, unless the object is a fresh literal the nested function made itself, or a module cell
+//   - writes into an object, unless the object is one the nested function made itself (a literal, a `new`), written at
+//     its own level (a deeper path may reach an object it was handed), or a module cell
 //     (a field of the world, whose changes are transitions): a callback's parameter is an element of the unit's
 //     value, a captured name is the unit's or an enclosing function's;
-//   - hands a reference the unit holds to a call, or calls a method on one, when the unit uses that reference outside
-//     the step other than as the receiver of a call (the pending call may change what the unit reads later).
+//   - hands a reference the unit holds to a call, or calls a method on one, when the unit uses that reference after
+//     the step (later in the text, in a loop around it, or from another nested function) other than as the receiver of a
+//     call (the pending call may change what the unit reads later).
 // null when it holds, else the reason
 export function pendingWork(checker, node, fn) {
   if (broken('async-drop-pending')) return null;
@@ -115,7 +117,10 @@ export function pendingWork(checker, node, fn) {
     for (const { id, heap, at } of writtenRoots(f)) {
       const d = id ? declOf(checker, id) : null;
       if (!heap) { if (bindingOfUnit(d, fn)) return `\`${id.text}\` is rebound by a function the step leaves pending`; continue; }
-      const fresh = d && inside(d, f) && ts.isVariableDeclaration(d) && d.initializer && [K.ObjectLiteralExpression, K.ArrayLiteralExpression].includes(unparen(d.initializer).kind) && !writtenRoots(f).some((w) => !w.heap && w.id && declOf(checker, w.id) === d);
+      // an object the nested function made itself (a literal, a `new`), never rebound, written at its own level only (its
+      // field, or itself through a mutator): a deeper path may reach an object the literal or the constructor was handed
+      const ownLevel = !!at && (ts.isIdentifier(unparen(at)) || ((ts.isPropertyAccessExpression(unparen(at)) || ts.isElementAccessExpression(unparen(at))) && ts.isIdentifier(unparen(unparen(at).expression))));
+      const fresh = ownLevel && d && inside(d, f) && ts.isVariableDeclaration(d) && d.initializer && [K.ObjectLiteralExpression, K.ArrayLiteralExpression, K.NewExpression].includes(unparen(d.initializer).kind) && !writtenRoots(f).some((w) => !w.heap && w.id && declOf(checker, w.id) === d);
       if (!fresh && !moduleCell(d)) return `a function the step leaves pending writes into \`${(at ?? id)?.getText().slice(0, 40) ?? 'an object'}\`, which it did not make`;
     }
     const reads = (x) => {
@@ -149,7 +154,8 @@ export function pendingWork(checker, node, fn) {
       if (ts.isIdentifier(x) && handed.has(declOf(checker, x)) && !(ts.isParameter(x.parent) || (ts.isVariableDeclaration(x.parent) && x.parent.name === x))) {
         const p = x.parent;
         const asRecv = p && ts.isPropertyAccessExpression(p) && p.expression === x && p.parent && ts.isCallExpression(p.parent) && p.parent.expression === p;
-        if (!asRecv) use = x.text;
+        let inFn = false; for (let q = x.parent; q && q !== fn; q = q.parent) if (ts.isFunctionLike(q)) inFn = true;
+        if (!asRecv && (x.pos >= node.end || inFn || loops.some((l) => inside(x, l)))) use = x.text; // a use before the step sees the value before any pending work runs
       }
       ts.forEachChild(x, w);
     };
