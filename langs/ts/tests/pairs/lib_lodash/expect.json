@@ -14,7 +14,7 @@
     "sizes": true,
     "settle": false
   },
-  "why": "lodash's pure exports are read by the package rows (library.json packages) as functions of their arguments: two calls reordered prove (spread, sizes); another export (groupBy against uniq), another comparison or a timer stays unproved. Lane B runs the vendored package on lean's world: sum is computed (total: the sides differ on a sum of 0), the number of groups is the number of distinct kinds (kinds), and debounce fires once with the last argument on the virtual clock (settle: two calls at one instant are the last alone)",
+  "why": "lodash's pure exports are read by the package rows (library.json packages) as functions of their arguments: two calls reordered prove (spread, sizes); another export (groupBy against uniq), another comparison or a timer stays unproved. Lane B runs the vendored package on lean's world: sum is the fold of the items (total, against a constant 0), the number of groups is the number of distinct kinds (kinds), and debounce fires once with the last argument on the virtual clock (settle: two calls at one instant are the last alone)",
   "b": {
     "total": "WITNESS",
     "spread": "PASS-bounded",
