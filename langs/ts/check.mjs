@@ -242,12 +242,13 @@ export async function check(opts) {
   // lemma that failed on the resource limit has no model and is not asked. Under an adapter the claim is not the
   // same-input comparison the replay makes, so the step does not run
   const counterexampleStep = async () => {
-    if (!m || lemmas[main] || !ownErrs.length || resourceOut || unguarded || adapter) return null;
+    if (!m || lemmas[main] || !ownErrs.length || unguarded || adapter) return null;
+    if (resourceOut) { cert.lanes.A.counterexample = { status: 'none', reason: 'not asked: the lemma ran out of its resource limit, the solver holds no model' }; return null; }
     const cx = await timed('counterexample', () => counterexample({ dir: tmp, unit, lemma: main, unitFn: `${dafnyName(unit)}_candidate`, parent, candidate, project, seconds: dafnySeconds }));
     cert.lanes.A.counterexample = { status: cx.status, ...(cx.input !== undefined ? { input: cx.input } : {}), ...(cx.reason ? { reason: cx.reason } : {}), ...(cx.model ? { model: cx.model } : {}) };
     if (cx.status === 'witness') {
       cert.lanes.A.verdict = 'WITNESS';
-      return { verdict: finish('WITNESS', cert, { witness: { input: 'counterexample', source: 'counterexample', args: cx.args, parent: cx.parent, candidate: cx.candidate, replayed: cx.replayed, where: { ...(cx.where ?? {}), lane: 'A', reading: `the solver's counterexample to ${main}, replayed in lane B` } } }) };
+      return { verdict: finish('WITNESS', cert, { witness: { input: 'counterexample', source: 'counterexample', args: cx.args, value: cx.value, parent: cx.parent, candidate: cx.candidate, replayed: cx.replayed, where: { ...(cx.where ?? {}), lane: 'A', reading: `the solver's counterexample to ${main}, replayed in lane B` } } }) };
     }
     return cx.status === 'unconfirmed' ? { unconfirmed: { input: cx.input, reason: cx.reason } } : null;
   };

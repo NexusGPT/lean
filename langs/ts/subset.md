@@ -29,6 +29,12 @@ rules per package).
 | `REFUSE` | a local source link failed; `kind: load` names the file and real loader error |
 | `NEW` | the candidate-only unit loaded and ran; input count, seed, fakes, faults and trace shapes are recorded |
 
+A `WITNESS`'s recorded input is one of lane B's draws or an input a solver proposed and lane B then replayed on both
+sides: the doubles reading's model, or the model of a failed equality lemma (`witness.source: counterexample`, the
+input carried by value in `witness.value`; [the design](design/w3a-counterexample.md)). A proposed input that does not
+replay to a difference is never a `WITNESS`: it is recorded as `unconfirmed: {input, reason}` beside the verdict the
+unit already had.
+
 `check.mjs`, `exec/run.mjs` and `lint/lint.mjs` accept `--candidate file --unit name`
 without `--parent`. A parent file that lacks the unit has the same reading. The harness leaves a missing
 candidate undecided. `NEW` never means equality, correctness or absence of faults.

@@ -1,0 +1,32 @@
+{
+ "scope": [
+  "flag",
+  "cube"
+ ],
+ "equal": {
+  "flag": false,
+  "cube": false
+ },
+ "why": "Two units the counterexample step does not make a WITNESS (design/w3a-counterexample.md). flag differs (a = 'feature-x', b = '') but Dafny's model of the failed lemma is not a model of the program: its sequence axioms leave the concatenation free, and the strings it names agree on both sides when replayed; the input is recorded as unconfirmed with the reason and the unit stays PASS-bounded (lane A ASK:unproved). LEAN_BREAK=cex-replay takes that model's word and makes it a WITNESS the row refuses. cube is equal (no positive cubes sum to a cube) and its lemma runs out of the resource limit: no model, the step is not asked, lane A ASK:resource-limit with the reason.",
+ "b": {
+  "flag": "PASS-bounded",
+  "cube": "PASS-bounded"
+ },
+ "counterexample": {
+  "flag": {
+   "verdict": "PASS-bounded",
+   "laneA": "ASK:unproved",
+   "status": "unconfirmed",
+   "reason": "the replay agrees",
+   "breaks": [
+    "cex-replay"
+   ]
+  },
+  "cube": {
+   "verdict": "PASS-bounded",
+   "laneA": "ASK:resource-limit",
+   "status": "none",
+   "reason": "resource limit"
+  }
+ }
+}

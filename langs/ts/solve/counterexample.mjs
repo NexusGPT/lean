@@ -1,8 +1,9 @@
 // The solver's counterexample to a failed equality lemma, replayed as a witness (design/w3a-counterexample.md,
 // 2026-11-01, lane w3a-counterexample).
 //
-//   counterexample({ dir, unit, parent, candidate, project, seconds, failedLine }) ->
-//     { status: 'witness', input, args, parent, candidate, where, model }      the replay in lane B differs: a WITNESS
+//   counterexample({ dir, unit, lemma, unitFn, parent, candidate, project, seconds }) ->
+//     { status: 'witness', input, value, args, parent, candidate, where, replayed, model }
+//                                                                               the replay in lane B differs: a WITNESS
 //     { status: 'unconfirmed', input, reason, model }                           an input the model proposes that the replay does not separate
 //     { status: 'none', reason }                                                no model: the solver gave none, or the lemma failed for a resource reason
 //
@@ -18,7 +19,9 @@
 // sandbox, the fakes, the environment, the unit picked, observe), and judged as lane B judges: a difference that is
 // only an undriven callback, only a module lean could not load, or only function text is no difference. Only a
 // replayed difference is a WITNESS; the model alone never is (Dafny's own warning: a counterexample "may be
-// inconsistent or invalid").
+// inconsistent or invalid"). The input travels by value: the certificate carries it encoded (witness.value,
+// encodeValue) beside its rendering (witness.args), and the replay decodes that value for each side, never a seed and
+// an index, so a reader replays the WITNESS from the certificate alone (replayWitness).
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnCollect } from '../exec/capped.mjs';
@@ -29,8 +32,10 @@ import { dn } from '../common.mjs';
 
 // the longest sequence whose elements are named in the second extraction
 export const CEX_ELEMENTS = 64;
-// the replay, replaceable by a test (tests/counterexample.mjs --break removes it)
-export const hooks = { replay: null };
+// LEAN_BREAK=<mechanism,...> switches a named mechanism off, for the suite row that shows its pair goes red without it
+// (tests/run.mjs `counterexample`): `cex-replay` takes the model's input as the WITNESS without running it,
+// `cex-replay-by-index` replays lane B's draw at the replay's index instead of the model's value
+const breaks = () => new Set(String(process.env.LEAN_BREAK ?? '').split(',').map((x) => x.trim()).filter(Boolean));
 
 // ---------------------------------------------------------------------------------------------------------------
 // reading Dafny's counterexample text
@@ -286,13 +291,13 @@ export function argsFromModel(text, lemma, facts, unitFn, spec) {
     }
     return args;
   };
-  return make; // a fresh copy per side: a call that writes its arguments writes its own
+  return make;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
 // the replay: lane B's run of one input on both sides (exec/run.mjs mountSides, observeBoth, the comparison)
 
-export async function replayInput({ parent, candidate, unit, project, make, seed = 1, ms = 2000 }) {
+export async function replayInput({ parent, candidate, unit, project, value, seed = 1, ms = 2000, byIndex = false }) {
   const R = await import('../exec/run.mjs');
   const { Environment, renderDrawn, undecidedDrives, restsOnFunctionText } = await import('../exec/fake.mjs');
   const { enterWorld } = await import('../exec/fake.mjs');
@@ -306,7 +311,9 @@ export async function replayInput({ parent, candidate, unit, project, make, seed
     if (!u) return { harness: env.callbackRefusal ?? `${name}: unit ${unit} not exported` };
     await new Promise((r) => setImmediate(r));
     env.trace.length = 0; env.pending.length = 0; env.calls.clear();
-    const inputs = make(); enterWorld(env, plan.spec, i, inputs);
+    let inputs;
+    if (byIndex) inputs = plan.draw(i, env); // the break: the seeded draw at the index, not the model's value
+    else { inputs = decodeValue(value); enterWorld(env, plan.spec, i, inputs); } // a fresh copy per side: a call that writes its arguments writes its own
     sides[name] = { env, unit: u, state: exportsObj.__lean_state, inputs, drawn: renderDrawn(inputs) };
   }
   const oP = await R.observe(sides.parent, plan.spec, sides.parent.inputs, ms);
@@ -318,6 +325,62 @@ export async function replayInput({ parent, candidate, unit, project, make, seed
   const via = R.unloadableOnly(oP, oC, sides); if (via) return { ...base, differs: false, why: `the sides differ only in requests to ${via.module}, a module lean could not load` };
   if (restsOnFunctionText(oP, oC)) return { ...base, differs: false, why: 'the sides differ only in function text' };
   return { ...base, differs: true, where: R.firstDifference(oP, oC) };
+}
+
+// a reader's replay of a counterexample WITNESS from its certificate alone: the value it carries run on both sides
+// again, fresh sandboxes; the WITNESS stands when the replay differs and observes what the certificate says each side
+// observed. Anything else (no value, no recorded observations, a replay that agrees or observes otherwise) is refused
+export async function replayWitness({ parent, candidate, unit, project = false, witness }) {
+  if (witness?.source !== 'counterexample') return { ok: false, why: 'not a counterexample witness' };
+  if (!Array.isArray(witness.value)) return { ok: false, why: 'the witness carries no input value' };
+  if (witness.replayed !== true || !witness.parent || !witness.candidate) return { ok: false, why: 'the witness was not replayed: it records no observation of either side' };
+  const rp = await replayInput({ parent, candidate, unit, project, value: witness.value });
+  if (!rp.differs) return { ok: false, why: `the replay of the carried value agrees: ${rp.why ?? rp.harness}` };
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  if (!same(rp.args, witness.args)) return { ok: false, why: 'the carried value renders otherwise than the witness args' };
+  if (!same(rp.parent, witness.parent) || !same(rp.candidate, witness.candidate)) return { ok: false, why: 'the replay observes otherwise than the certificate records' };
+  return { ok: true, where: rp.where };
+}
+
+// the input by value, as the certificate carries it (witness.value) and the replay reads it: JSON with the values JSON
+// has no word for tagged (undefined, a bigint, a number JSON loses, a Map, a Set, a Date) and an object seen twice
+// (a heap the model shares or closes into a cycle) written once with an id and then referred to
+export function encodeValue(args) {
+  const ids = new Map(), seen = new Set(), twice = new Set();
+  const walk = (v) => { if (!v || typeof v !== 'object') return; if (seen.has(v)) { twice.add(v); return; } seen.add(v); if (v instanceof Map) for (const [a, b] of v) { walk(a); walk(b); } else if (v instanceof Set) for (const a of v) walk(a); else if (!(v instanceof Date)) for (const k of Object.keys(v)) walk(v[k]); };
+  walk(args);
+  const enc = (v) => {
+    if (v === undefined) return { $u: 1 };
+    if (typeof v === 'bigint') return { $bigint: String(v) };
+    if (typeof v === 'number') return Number.isFinite(v) && !Object.is(v, -0) ? v : { $num: Object.is(v, -0) ? '-0' : String(v) };
+    if (v === null || typeof v !== 'object') return v;
+    if (ids.has(v)) return { $ref: ids.get(v) };
+    const id = twice.has(v) ? ids.size : null; if (id !== null) ids.set(v, id);
+    const tag = id !== null ? { $id: id } : {};
+    if (v instanceof Date) return { ...tag, $date: v.getTime() };
+    if (v instanceof Map) return { ...tag, $map: [...v].map(([a, b]) => [enc(a), enc(b)]) };
+    if (v instanceof Set) return { ...tag, $set: [...v].map(enc) };
+    if (Array.isArray(v)) return { ...tag, $arr: v.map(enc) };
+    return { ...tag, $obj: Object.keys(v).map((k) => [k, enc(v[k])]) };
+  };
+  return args.map(enc);
+}
+export function decodeValue(enc) {
+  const ids = new Map();
+  const dec = (x) => {
+    if (x === null || typeof x !== 'object') return x;
+    if ('$u' in x) return undefined;
+    if ('$bigint' in x) return BigInt(x.$bigint);
+    if ('$num' in x) return x.$num === '-0' ? -0 : Number(x.$num);
+    if ('$ref' in x) return ids.get(x.$ref);
+    const keep = (o) => { if (x.$id !== undefined) ids.set(x.$id, o); return o; };
+    if ('$date' in x) return keep(new Date(x.$date));
+    if ('$map' in x) { const m = keep(new Map()); for (const [a, b] of x.$map) m.set(dec(a), dec(b)); return m; }
+    if ('$set' in x) { const s = keep(new Set()); for (const a of x.$set) s.add(dec(a)); return s; }
+    if ('$arr' in x) { const a = keep([]); for (const e of x.$arr) a.push(dec(e)); return a; }
+    const o = keep({}); for (const [k, v] of x.$obj ?? []) o[k] = dec(v); return o;
+  };
+  return enc.map(dec);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -369,15 +432,17 @@ export async function counterexample({ dir, unit, lemma, unitFn, parent, candida
   }
   // the model's input, as JavaScript values of the unit's parameters
   const R = await import('../exec/run.mjs');
-  let make, input;
+  let value, input;
   try {
     const plan = R.inputPlan(parent, candidate, unit, { project, seed: 1, values: null });
-    make = argsFromModel(text, lemma, facts, unitFn, plan.spec);
-    input = (await import('../exec/fake.mjs')).renderDrawn(make());
+    value = encodeValue(argsFromModel(text, lemma, facts, unitFn, plan.spec)());
+    input = (await import('../exec/fake.mjs')).renderDrawn(decodeValue(value));
   } catch (e) { return done({ status: 'unconfirmed', input: null, reason: `the model's input is not bridged: ${e instanceof NotBridged ? e.why : String(e.message).slice(0, 200)}` }); }
+  const off = breaks();
+  if (off.has('cex-replay')) return done({ status: 'witness', input, value, args: input, where: null, replayed: false }); // the break: the model's word taken for the difference
   let rp;
-  try { rp = await (hooks.replay ?? replayInput)({ parent, candidate, unit, project, make }); } catch (e) { return done({ status: 'unconfirmed', input, reason: `the replay did not run: ${String(e && e.message).slice(0, 200)}` }); }
+  try { rp = await replayInput({ parent, candidate, unit, project, value, byIndex: off.has('cex-replay-by-index') }); } catch (e) { return done({ status: 'unconfirmed', input, reason: `the replay did not run: ${String(e && e.message).slice(0, 200)}` }); }
   if (rp.harness) return done({ status: 'unconfirmed', input, reason: `the replay did not run: ${rp.harness}` });
   if (!rp.differs) return done({ status: 'unconfirmed', input, reason: `the replay agrees: ${rp.why}` });
-  return done({ status: 'witness', input, args: rp.args, parent: rp.parent, candidate: rp.candidate, where: rp.where ?? null, replayed: !!(rp.parent && rp.candidate) });
+  return done({ status: 'witness', input, value, args: rp.args, parent: rp.parent, candidate: rp.candidate, where: rp.where ?? null, replayed: true });
 }
