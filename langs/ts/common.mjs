@@ -2647,7 +2647,7 @@ export function rawTag(checker, n, sf) {
 // decider that reads the object as the world holds it at that point passes `h.after` (a Map the forms are put in,
 // occurrence -> 'read' | 'write') and `h.identity(occurrence)` (whether it names the object, else the form is refused);
 // `h.outputs` and `h.afterEnd` the same for the output parameters at the unit's end. Without `h.after` the forms are kept.
-export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), rebinds(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
+export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), fact(call), factUsed(fact), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), rebinds(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
 const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (TF.Any | TF.Unknown)), typeOf = (n) => h.typeOf(n);
   const body = u.fn?.body ?? u.node?.body;
   if (!body) return null;
@@ -2666,9 +2666,10 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
       points.push(n);
       if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n)) { // a tagged template is the call of its tag on its holes
-        for (const a of ts.isTaggedTemplateExpression(n) ? templateHoles(n.template) : n.arguments ?? []) { if (!ts.isSpreadElement(a) && ((inline(a) && h.freshAlone(a)) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts reaches only itself
+        const fact = ts.isCallExpression(n) ? h.fact?.(n) ?? null : null; // the callee writes none of what it is handed (callee-facts.mjs): what it is handed is no change at this call, only at the calls after it (the callee may keep it)
+        for (const a of ts.isTaggedTemplateExpression(n) ? templateHoles(n.template) : n.arguments ?? []) { if (!ts.isSpreadElement(a) && ((inline(a) && h.freshAlone(a)) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a, fact }); } // a new object of primitive parts reaches only itself
         const f = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression;
-        if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression });
+        if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression, fact });
       } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression), node: n.expression });
     }
     ts.forEachChild(n, walk);
@@ -2749,7 +2750,8 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     for (const x of a.types) for (const y of b.types) if (x === y || checker.isTypeAssignableTo(x, y) || checker.isTypeAssignableTo(y, x)) return true;
     return false;
   };
-  const reached = (o, c) => handed.find((x) => ranBy(x.at, c) && (reaches(x.t, o) || share(x.t, o))) ?? null;
+  // a handed value reaches o at c; one handed to c itself under a fact is no change at c (the fact is noted as used)
+  const reached = (o, c, covered = false) => handed.find((x) => ranBy(x.at, c) && !!(x.fact && x.at === c) === covered && (reaches(x.t, o) || share(x.t, o))) ?? null; // covered: the values handed to c itself under a fact, no change at c
   const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
   const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
   const inFn = (x, top) => { for (let p = x.parent; p && p !== top; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
@@ -2764,12 +2766,12 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     const cf = fnOf(c0), a = anchorOf(c0); if (!a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end)) return false;
     { const rs = a && stmtRebinds(a); if (rs && !(rs.pos <= occ.pos && occ.end <= rs.end)) return false; }
     const c = a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end) ? a : c0;
-    const hit = reached(t, c); if (!hit) return false;
-    why = { call: c, handed: hit.node };
     const inside = c.pos <= occ.pos && occ.end <= c.end;
-    if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
-    if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf) && !exitsBefore(c, occ)) return true;
-    const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside;
+    const after = () => { if (inside && !inFn(occ, c)) return false; /* evaluated before the call runs */ if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf) && !exitsBefore(c, occ)) return true; const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside; };
+    const hit = reached(t, c);
+    if (!hit) { const f = h.factUsed && reached(t, c, true); if (f && after()) h.factUsed(f.fact); return false; } // what only the fact keeps unchanged: the fact is used here
+    why = { call: c, handed: hit.node };
+    return after();
   });
   const declOfSym = (s) => s?.valueDeclaration ?? s?.declarations?.[0];
   const writes = (s) => { const out = []; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };

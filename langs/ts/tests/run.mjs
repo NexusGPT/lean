@@ -903,6 +903,8 @@ async function adviceLabels(add) {
     // the mutation family's transforms: the advice table names each transform; each guard refuses its near shape, whose unguarded rewrite is a WITNESS (w4a, 2026-11-01)
     ['convert-mutation', scriptRow('runtime', 'convert-mutation', 'closure-counter, hoist-update, rebuild-by-spread, param-copy, explicit-return: each guard refuses its near shape, whose unguarded rewrite is a WITNESS (the fixtures run in the convert section)', [path.join(here, 'convert_mutation.mjs'), '--no-fixtures'], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
+    // a proof under a callee fact lane B's record confirms names it; a fact lane B saw broken is never read (callee-facts.mjs, design/w8e-callee-facts.md)
+    ['callee-fact', scriptRow('runtime', 'callee-fact', 'tags PASS-proved under the confirmed fact "isPlainObject writes none of its arguments", named in lanes.A.assumptions; tagsWriter WITNESS; sameWriter not proved, lane A refused read-after-call (isTagged writes)', [path.join(here, 'callee-fact.mjs')], lastLine)],
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
     // the certificate records the seconds of each lane that ran, a lane that did not run absent (check.mjs certificate.timing)
     ['certificate-timing', scriptRow('runtime', 'certificate-timing', 'certificate.timing holds positive seconds per lane that ran on numbers::average, readme_ledger::applyAll and component::Counter', [path.join(here, 'certificate-timing.mjs')], lastLine)],

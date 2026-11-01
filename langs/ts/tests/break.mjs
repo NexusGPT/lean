@@ -56,6 +56,8 @@ export const MECHANISMS = {
   'incomplete-member': 'lint/lint.mjs: a member of a type that reaches the error type keeps its ts-strict refusal (lane w1e)',
   'effectful-cell': 'lint/lint.mjs: a module let/var with an effectful initializer keeps its toplevel-effect refusal (lane w1e)',
   'cell-key': 'translate/translate.mjs: the declaration leaves a module cell\'s name (lane w1e)',
+  'callee-fact': 'callee-facts.mjs factDecider: under check.mjs every eligible callee fact is read as confirmed, lane B\'s record unread (lane w8e)',
+  'callee-fact-trace': 'exec/callee-trace.mjs factCall: lane B\'s record of a call sees no write and no shared answer (lane w8e)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
   'async-drop-reads': 'translate/translate.mjs opaqueExpression: an async-family step no longer reads the unit\'s locals (lane w1d)',
   'async-drop-origins': 'opaque-async.mjs stepWrites: a step writes the names it mentions only, not the names they share an object with (lane w1d)',

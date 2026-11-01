@@ -40,6 +40,7 @@ import { contextRow } from '../hooks.mjs';
 import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
+import { factMarks, factHook } from './callee-trace.mjs'; // the per-callee fact's record: every call site of the pair's files (lane w8e, callee-facts.mjs)
 import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText } from './search.mjs';
 
 const require = createRequire(import.meta.url);
@@ -93,11 +94,14 @@ export const setFieldsProject = (p) => { fieldsProject = p; }; // a caller that 
 // the branch probes of the input search (search.mjs branchMarks): the files of the pair under search, by absolute path,
 // each with its branch table and its side's tag; null when no search runs (LEAN_SEARCH, --search), and then nothing changes
 let probes = null;
+// the files whose call sites lane B records for the callee facts (callee-trace.mjs): the pair's two files while runPair runs
+let factFiles = new Set();
 function compileWithSites(src, tsName, abs) {
   const define = fileClassFieldsDefine(abs, fieldsProject);
   const probe = probes?.get(abs) ?? null;
+  const fact = factFiles.has(abs); // a file of the pair under check: its call sites are recorded (callee-trace.mjs factMarks)
   const old = siteCompiles.get(abs);
-  if (old?.src === src && old.define === define && old.probe === probe) return old;
+  if (old?.src === src && old.define === define && old.probe === probe && old.fact === fact) return old;
   const sites = [];
   let stateName = '__lean_site';
   while (src.includes(stateName)) stateName += '_';
@@ -138,7 +142,7 @@ function compileWithSites(src, tsName, abs) {
   const bindingsShim = `\nfunction ${bindingsName}() { return { ${bound.map((n) => `${JSON.stringify(n)}: function () { return ${n}; }`).join(', ')} }; }\n`;
   const emit = (before) => ts.transpileModule(src, { compilerOptions: { ...COMPILE, useDefineForClassFields: define }, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
-  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe ? [branchMarks(probe.table, abs, stateName)] : [])]);
+  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe ? [branchMarks(probe.table, abs, stateName)] : []), ...(fact ? [factMarks(stateName)] : [])]);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -147,7 +151,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, define, probe, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) + bindingsShim };
+  const compiled = { src, define, probe, fact, sites, stateName, callbackName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName) + bindingsShim };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -485,6 +489,7 @@ export function sandbox(env, root) {
   captureEnvironment(env);
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null), hits: null };
+  env.siteState.f = factHook(env); // a marked call site (callee-trace.mjs): recorded when env.factLog is set, else the call as written
   env.siteState.b = (file, k, v) => { const p = probes?.get(file); if (p && env.siteState.hits) env.siteState.hits.add(`${p.tag}:${k}${outcomeOf(p.table[k], v)}`); return v; }; // a branch probe (search.mjs): the outcome is recorded while the unit runs, the value goes back unchanged
   const react = reactRuntime(env);
   const epoch = CLOCK_EPOCH;
@@ -1505,6 +1510,8 @@ async function runPairOnce(opts) {
   unitRecord.drawDomain = { status: 'recorded', parameters: spec.params.map(p => ({ name: p.name, spec: p.spec, optional: !!p.optional, count: 0, families: {} })), requested: n, seed, heaps: heaps.builders.length, known: knownLength(spec), boundaryWalk: spec.shaped ? walkLength(spec) : 0 };
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
   setRoots(sideLocations(parent, candidate, roots)); // the directories lean loaded the two copies from render as one token (fake.mjs setRoots)
+  factFiles = new Set([path.resolve(parent), path.resolve(candidate)]); // the callee facts' record: each side's own file (callee-trace.mjs)
+  const factSides = { parent: {}, candidate: {} }; // per side, per call site of its file: what lane B saw the calls do (bound.calleeFacts)
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   const bridgeSeen = { calls: new Set(), callbacks: new Set() }; // the bridge calls the fake for an unset global answered on the parent's mounts, and the callbacks it fired, by path (exec/bridge.mjs)
   const states = []; // every state lane B reached: the input as drawn and, for a rendered unit, the tree it rendered (bound.states)
@@ -1528,6 +1535,7 @@ async function runPairOnce(opts) {
       captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; }
       if (recipe && !applyRecipe(inputs, recipe)) { harnessAsk = `search: a change of input ${i} did not apply`; break; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
+      env.factLog = factSides[name]; // from here the side's call sites are recorded (callee-trace.mjs): the unit's run, never its load or its draw
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
       sides[name] = { env, unit: u, state: exportsObj.__lean_state, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }
@@ -1618,6 +1626,7 @@ async function runPairOnce(opts) {
   const walkedInto = (i, r) => { if (!r) return; for (const labels of r.walked ?? []) if (!renderRow.sequences.some((x) => x.input === i && JSON.stringify(x.labels) === JSON.stringify(labels))) renderRow.sequences.push({ input: i, labels }); addTargets(renderRow.targets, r.targets ?? []); };
   const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (searchSummary) bound.search = searchSummary;
+  bound.calleeFacts = factSides; // per side, per call site (its start in the side's file): calls, checked, wrote, shared, outside, unrecorded, async (callee-trace.mjs; read by check.mjs through callee-facts.mjs confirmedFacts)
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
