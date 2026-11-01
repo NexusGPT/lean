@@ -22,6 +22,7 @@ adds a seeded local search over the same typed input space, after the ordinary d
    input `from` on fresh environments as every draw does, then apply the changes, so both start from the same value and
    a replay rebuilds it. The changes of an input (`changesOf`), walked with the declared types (references, unions,
    records, arrays, tuples, dictionaries) and kept only where `spec.mjs fits` admits the new value:
+   - tier 0: a literal of a target condition (below);
    - tier 1: a string leaf to each string literal of the unit's text (both versions); a number leaf to each number
      literal; a literal-typed leaf to each member; a boolean flipped; a dictionary given a key that is a string literal;
    - tier 2: the type's boundaries: `''`; 0, -0, 1, -1, the largest and smallest safe integers and the values just off
@@ -33,7 +34,11 @@ adds a seeded local search over the same typed input space, after the ordinary d
    A change on a leaf the recipe already changed replaces that change. Entries are explored from a stack: the drawn
    inputs ordered by the target branches they reached (most first, then by index), and an input that reaches a target
    branch not reached before goes on top, so the next changes start from it. Within an entry the changes go by tier,
-   then by leaf, the leaf order rotated by the seed.
+   and within a tier one change per leaf in turn (the leaf order rotated by the seed), so no leaf spends the budget
+   before every other leaf had its first value; a leaf whose changes twice leave every branch outcome of the entry as
+   it was waits behind the live leaves. A literal that appears inside a target condition is tier 0. (A first version
+   walked one leaf's whole tier before the next leaf: on `absent_number readMechanic` it spent all 30 tries on a string
+   no condition reads; the interleaving took the ten pairs from 100 to 102 of 128 diff branches.)
 4. **Stop.** Every target branch reached; no entry has a change left; the input bound (the run's `--n`, the same
    budget the draws have); the wall bound (a quarter of the unit's `--unit-seconds`, so the search never pushes a unit
    to its kill bound). The summary names the bound that stopped it.
