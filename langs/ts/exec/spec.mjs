@@ -43,6 +43,10 @@ export function specOf(file, unitName, opts = {}) {
   // the known values of a type name in the project's values file (readValues): a field or a parameter whose declared type
   // names it draws them first (gen.mjs); null when the file names no types
   const vtypes = opts.values?.data?.types; const byType = vtypes && Object.keys(vtypes).length ? (node, t) => { const name = node && ts.isTypeReferenceNode(node) ? node.typeName.getText() : t?.aliasSymbol?.name; return name && Object.hasOwn(vtypes, name) && Array.isArray(vtypes[name]) ? { from: `types.${name}`, values: vtypes[name] } : null; } : null;
+  // a primitive spec whose declared type holds only some of the primitive's values (a brand, a template literal type): lane
+  // B draws it as the primitive, and the declaration reading (exec/declared.mjs) knows no drawn value is one of it. Not
+  // enumerable, so the spec's serialised form is unchanged
+  const narrowed = (x) => Object.defineProperty(x, 'narrowed', { value: true });
   let budget = 20000; // shape nodes; a type with a very large closure (a database client) ends in opaque leaves
   function spec(t, depth = 0) {
     const f = t.flags;
@@ -50,7 +54,7 @@ export function specOf(file, unitName, opts = {}) {
     if (f & TF.Null) return { kind: 'null' };
     if (f & (TF.Undefined | TF.Void)) return { kind: 'undefined' };
     if (depth > 5 || budget-- <= 0) return { kind: 'opaque' };
-    { const p = primitiveBrand(t); if (p) return spec(p, depth); } // a branded primitive (`number & { [brand]: true }`) is drawn as its primitive: no value of it is an object
+    { const p = primitiveBrand(t); if (p) return narrowed(spec(p, depth)); } // a branded primitive (`number & { [brand]: true }`) is drawn as its primitive: no value of it is an object
     if (f & TF.TypeParameter) { // stage 5 rank 17: a type parameter is drawn as its declared constraint (every value of T has the constraint's members); unconstrained (or constrained to unknown, any, {} or object, which name no member) it stays opaque, so equal draws may coincide as before
       const c = checker.getBaseConstraintOfType(t);
       const bare = !c || (c.flags & (TF.Any | TF.Unknown)) || ((c.flags & TF.Object) && !checker.getPropertiesOfType(c).length && !checker.getIndexInfoOfType(c, ts.IndexKind.String) && !checker.isArrayType(c) && !checker.isTupleType(c)) || (c.flags & TF.NonPrimitive);
@@ -59,7 +63,7 @@ export function specOf(file, unitName, opts = {}) {
     if (f & TF.StringLiteral) return { kind: 'literal', values: [t.value] };
     if (f & TF.NumberLiteral) return { kind: 'literal', values: [t.value] };
     if (f & TF.BooleanLiteral) return { kind: 'literal', values: [t.intrinsicName === 'true'] };
-    if (f & TF.StringLike) return { kind: 'string' };
+    if (f & TF.StringLike) return f & (TF.TemplateLiteral | TF.StringMapping) ? narrowed({ kind: 'string' }) : { kind: 'string' }; // a template literal type or Uppercase<string> holds some strings only
     if (f & TF.NumberLike) return { kind: 'number' };
     if (f & TF.BigIntLike) return { kind: 'bigint' };
     if (f & TF.ESSymbolLike) return symbolSpec(t);
@@ -166,6 +170,10 @@ export function specOf(file, unitName, opts = {}) {
   const listShaped = (s, d = 0) => !!s && d < 8 && (s.kind === 'array' || s.kind === 'tuple' || (s.kind === 'ref' && listShaped(defs[s.key], d + 1)) || (s.kind === 'union' && s.options.every((o) => listShaped(o, d + 1))));
   const restSpec = (s) => (listShaped(s) ? s : { kind: 'array', of: s });
   const params = u.params.map((p) => { const s = spec(checker.getTypeAtLocation(p.name)); return { name: ts.isIdentifier(p.name) ? p.name.text : p.name.getText(sf), optional: !!p.questionToken || !!p.initializer, ...(p.dotDotDotToken ? { rest: true } : {}), spec: p.dotDotDotToken ? restSpec(s) : s }; });
+  // the declaration as written, before lane B widens the draw (an Error option, a key list, the reads' shapes): what a
+  // unit no parent holds is checked against (exec/declared.mjs, design/w1h-new-units.md). `all`: the declared type is
+  // any or unknown, every value is one of it (the checker's error type of an unresolved name is not: it names nothing)
+  const declaredParams = params.map((p, i) => { const t = checker.getTypeAtLocation(u.params[i].name); const all = !!(t.flags & TF.Unknown) || (!!(t.flags & TF.Any) && t.intrinsicName !== 'error'); return { name: p.name, optional: p.optional, ...(p.rest ? { rest: true } : {}), spec: all && !p.rest ? Object.defineProperty({ ...p.spec }, 'all', { value: true }) : p.spec }; }); // `all` on a copy: lane B's spec is unchanged
   // the known values of each parameter: the values file's entry for this unit and parameter, else for its declared type's name
   const vfn = opts.values ? unitValues(opts.values.data, file, unitName) : null;
   if (vfn || byType) params.forEach((p, i) => { const list = vfn && Object.hasOwn(vfn.params, p.name) && Array.isArray(vfn.params[p.name]) ? { from: `functions.${vfn.key}.${p.name}`, values: vfn.params[p.name] } : byType ? byType(u.params[i].type, checker.getTypeAtLocation(u.params[i].name)) : null; if (list) p.known = list; });
@@ -377,7 +385,7 @@ export function specOf(file, unitName, opts = {}) {
   // of it), and carries its leaf's spec, so a copied value is written only where the type admits it (gen.mjs)
   if (changed) changed = changed.map((tg) => { const leaf = tg.at.length ? null : specAtPath(params[tg.at.param], tg.at.chain, usedDefs); if (!tg.at.length && !leaf) return null; if (tg.values) { const vs = tg.at.length ? tg.values : tg.values.filter((v) => (v && typeof v === 'object' && v.t === 'undefined' ? leaf.optional || admitsUndefined(leaf.spec, usedDefs) : fits(leaf.spec, v, usedDefs))); return vs.length ? { ...tg, values: vs } : null; } return { ...tg, ...(leaf ? { leaf: leaf.spec } : {}) }; }).filter(Boolean);
   const timers = /\b(setTimeout|setInterval|setImmediate|requestAnimationFrame|requestIdleCallback)\b/.test(sf.text); // the file arms timers: the timer-order family has ties to reorder
-  return { unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}), ...(branded ? { branded } : {}) };
+  return Object.defineProperty({ unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}), ...(branded ? { branded } : {}) }, 'declared', { value: { params: declaredParams, returns, defs } }); // not enumerable: a spec's serialised form (records, caches) is unchanged
 }
 
 // ---- inputs shaped by usage ------------------------------------------------------------------------------------

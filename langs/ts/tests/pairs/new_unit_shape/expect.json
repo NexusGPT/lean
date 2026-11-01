@@ -1,0 +1,91 @@
+{
+  "candidateOnly": [
+    {
+      "file": "candidate.ts",
+      "unit": "label",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0,
+      "records": [
+        {
+          "kind": "new:shape",
+          "declared": "string",
+          "mismatch": {
+            "at": "returned",
+            "wanted": "string"
+          }
+        }
+      ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "labelOk",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:shape",
+        "new:fault"
+      ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "inferred",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:shape"
+      ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "notify",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:shape"
+      ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "later",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:shape",
+          "declared": "Promise<string>"
+        }
+      ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "point",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:shape"
+        }
+      ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "maybe",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:shape"
+      ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "recorder",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:shape"
+      ]
+    }
+  ],
+  "why": "new:shape: on an input the declaration admits, in a call that asked nothing of the world, the unit returned a value that is not one of its declared return type (exec/declared.mjs member: 'no', never on 'unknown'). (a) label returns the number where the signature says string; (b) labelOk keeps it; (c) inferred has no declared return type, so nothing is claimed; (d) a void result is ignored; (e) later's awaited value is a number for Promise<string>; (f) point lacks the required y; (g) maybe returns both of its options. LEAN_BREAK=declared-shape removes the check and (a), (e), (f) go red. (h) recorder returns a closure the observer drives after the return, writing into the value: no shape is read off a value the drives may have changed."
+}

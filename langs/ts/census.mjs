@@ -2,7 +2,7 @@
 // lean census: every TypeScript function of a repository through the gate, the blockers counted.
 //   node census.mjs <repo-root> [--out census.json] [--report census.md] [--readings-report readings.md] [--depth N] [--limit N] [--include <prefix>] [--js]
 //   node census.mjs --diff <before.json> <after.json>     gains and losses per reading between two runs
-//   [--install-under <dir>] [--npm-cache <dir>] [--clean-after]
+//   [--install-under <dir>] [--npm-cache <dir>] [--clean-after] [--new-units <files>]
 // The walk runs in a child under a supervisor (walk-supervisor.mjs): an end without the journal's `complete` record writes
 // `partial: true`, `filesNotWalked` and `notWalked` into the --out JSON, names the files not walked on stderr and exits
 // non-zero (design/2026-10-31-census-partial.md).
@@ -24,6 +24,7 @@ import { walkerJournal, superviseWalk, assertSupervised, walkEnd, exitAfter } fr
 import { lowerFile, startLoweringProfile, measureLowering, loweringProfile, loweringProfileTable } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
 import { ts, loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
 import { classifier, ensureInstalled, cleanInstall, GENERATED } from './census-env.mjs';
+import { newUnitCensus, newUnitReport } from './exec/new-census.mjs'; // --new-units: units read as new against their declarations
 // The stratum of a file: machine-written code is counted beside written code, never mixed into one share (research 24;
 // the nexus census held 1,675 units of seven generated minified Prisma clients). The rule, stated once here:
 //   generated  the path is under a generated folder (census-env GENERATED), or the file's first 2,000 characters carry a
@@ -400,7 +401,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const a = process.argv.slice(2);
   const USAGE = [
     'usage: node census.mjs <repo-root> [--out census.json] [--report census.md] [--readings-report readings.md] [--depth N] [--limit N] [--include <prefix>] [--js] [--profile]',
-    '                       [--install-under <dir>] [--npm-cache <dir>] [--clean-after]',
+    '                       [--install-under <dir>] [--npm-cache <dir>] [--clean-after] [--new-units <files>]',
     '       node census.mjs --diff <before.json> <after.json>',
   ].join('\n');
   if (a.includes('--help') || a.includes('-h')) { console.log(USAGE); process.exit(0); }
@@ -451,12 +452,15 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   const res = census(root, { ...walkOpts, depth: Number(opt('--depth', 2)), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m),
     alive: assertSupervised, onChunk: (chunk) => fs.appendFileSync(journal, JSON.stringify(chunk) + '\n') });
   if (a.includes('--profile')) { res.profile = loweringProfile(); console.error(loweringProfileTable(res.profile)); }
+  // --new-units <files>: the first <files> written source files' units read as units no parent holds, checked against their
+  // declarations (exec/new-census.mjs, design/w1h-new-units.md), after the install and before --clean-after
+  if (opt('--new-units', null) !== null) res.newUnits = await newUnitCensus(root, censusFiles(root, walkOpts), { maxFiles: Number(opt('--new-units')), log: (m) => console.error(m) });
   // --clean-after: the disk budget keeps one installed root at a time; the root's node_modules go once it is read
   if (a.includes('--clean-after')) { const removed = cleanInstall(root, opt('--install-under', null)); res.environment.cleaned = removed.length; }
   const report = opt('--report', null);
   if (out) writeSummary(res);
   fs.appendFileSync(journal, JSON.stringify({ kind: 'complete', complete: true, files: res.files, units: res.units, entered: res.entered, oversizedClosures: res.oversizedClosures }) + '\n');
-  if (report) fs.writeFileSync(report, censusReport(res));
+  if (report) fs.writeFileSync(report, censusReport(res) + (res.newUnits ? '\n' + newUnitReport(res.newUnits).join('\n') : ''));
   const readingsReport = opt('--readings-report', null);
   if (readingsReport) fs.writeFileSync(readingsReport, censusReadingsReport(res) + '\n');
   console.log(`${path.basename(root)}: ${res.files} files, ${res.units} units, ${res.entered} inside the subset (${res.share} percent), ${res.environmentBlocked} environment-blocked (${res.environment.unresolvedTypes.units} on an unresolved type), ${res.languageRefused} language-refused, ${res.failedFiles} files unreadable, ${res.oversizedClosures} oversized closures, ${res.seconds} s`);

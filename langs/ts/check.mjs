@@ -10,6 +10,11 @@
 // it, or with no file at that commit, the sandbox is the default. Every name the list refuses is a row of the
 // certificate's `sandbox.refused` (`sandbox: refused <kind> <name> by <rule>`).
 //
+// --tests <a.test.ts,b.test.ts> names the test files a PR adds or changes: for a unit the parent does not hold, the tests in
+// them that name the unit run against the candidate (exec/new-tests.mjs); a failing one is a `new:test` record. Every unit
+// no parent holds carries its records in the certificate's `newUnit` (design/w1h-new-units.md): `new:fault`, `new:shape`,
+// `new:test`, `new:coverage`, each with the claim it makes.
+//
 // --values names the project's values file (exec/spec.mjs: per unit and parameter or per type name, values the inputs
 // are known to take); without it lane B reads the nearest `.lean/values.json` above the candidate, `none` reads none.
 // Lane B draws the listed values first; the certificate's `values` names the file and its hash, and the verdict means
@@ -102,7 +107,7 @@ export async function check(opts) {
   const cert = { tool: 'lean-ts v3', ...(opts.identity === undefined ? {} : { identity: opts.identity }), unit, parent: { file: parent, sha256: sha(parent) }, candidate: { file: candidate, sha256: sha(candidate) }, lanes: {}, tools: { node: process.version }, timing: {} };
   const timed = timer(cert.timing); // seconds per lane: B, correspondence, doubles, translate, theorem, dafny
   // ---- lane B ----
-  const b = await timed('B', () => runPair({ parent, candidate, unit, n, seed, project, deep, values: opts.values, unitSeconds: opts.unitSeconds }));
+  const b = await timed('B', () => runPair({ parent, candidate, unit, n, seed, project, deep, values: opts.values, unitSeconds: opts.unitSeconds, ...(opts.tests?.length ? { tests: opts.tests, ...(opts.candidateAlias ? { candidateAlias: opts.candidateAlias } : {}) } : {}) }));
   if (b.bound?.values) cert.values = { file: b.bound.values.file, sha256: b.bound.values.sha256, phase: b.bound.values.phase, inputs: b.bound.values.inputs, reachedBody: b.bound.values.reachedBody }; // the values file lane B drew from, by hash
   if (b.witnesses?.some((w) => w.where?.lines?.candidate)) {
     const findings = lintFile(candidate, null, { project });
@@ -119,6 +124,7 @@ export async function check(opts) {
   try { cert.unitTextEqual = b.unitTextEqual ?? unitTextEqual(parent, candidate, unit); } catch { cert.unitTextEqual = null; } // the unit's own text, comments and whitespace dropped, equal on both sides or not: beside the file hashes, it says whether a difference came through this function's text or through what it calls
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
   if (b.bound?.frontEnd?.layers) { const L = b.bound.frontEnd.layers; cert.layers = { tree: { ...L.tree, proof: 'lane A reads the unit alone: a component tag is a name and useContext a world read keyed by the context, so a proof covers the unit\'s own tree of names' }, styles: L.styles, notObserved: L.notObserved }; } // a rendered unit: each layer its own result with its assumptions (design/ui-layers.md)
+  if (b.candidateOnly && b.records) cert.newUnit = { declaration: b.declaration ?? null, records: b.records, ...(b.tests ? { tests: b.tests } : {}) }; // a unit no parent holds, checked against its declaration (exec/new-unit.mjs, design/w1h-new-units.md): the records DA's requester renders
   if (b.verdict === 'NEW' || b.verdict === 'REFUSE' || b.candidateOnly) { cert.lanes.B = b; return finish(b.verdict, cert, b); }
   if (adapter) cert.adapter = adapter;
   // a WITNESS ends the question, except on a unit whose signature changed with no adapter: the two sides take different
@@ -392,7 +398,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const files = { parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit') };
   const guard = verdictGuard(opt('--out', null), (r) => harnessAsk(r.reason, files));
   if (opt('--sandbox-base', null)) useSandboxList(loadSandboxList(treeOf(files.candidate), opt('--sandbox-base')));
-  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), dafnyWallSeconds: opt('--dafny-wall-seconds', null) === null ? null : Number(opt('--dafny-wall-seconds')), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), unitSeconds: opt('--unit-seconds', undefined), fpSeconds: Number(opt('--fp-seconds', FP_SECONDS)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
+  const res = await check({ parent: opt('--parent'), candidate: opt('--candidate'), unit: opt('--unit'), n: Number(opt('--n', 200)), seed: Number(opt('--seed', 1)), project: a.includes('--no-project') ? false : opt('--project', true), dafnySeconds: Number(opt('--dafny-seconds', 60)), dafnyWallSeconds: opt('--dafny-wall-seconds', null) === null ? null : Number(opt('--dafny-wall-seconds')), scope: opt('--scope', null), values: valuesOpt(opt('--values', undefined)), ...(opt('--tests', null) ? { tests: opt('--tests').split(',').filter(Boolean) } : {}), unitSeconds: opt('--unit-seconds', undefined), fpSeconds: Number(opt('--fp-seconds', FP_SECONDS)), deep: deepDepth((a.find((x) => x === '--deep' || x.startsWith('--deep=')) ?? '--deep=0') === '--deep' ? 1 : (a.find((x) => x.startsWith('--deep=')) ?? '--deep=0').slice(7)) }).catch((e) => harnessAsk(`harness: ${crumbText()}: ${String(e && e.message || e).slice(0, 300)}`, files));
   guard.settle();
   const out = opt('--out', null);
   const text = JSON.stringify(res, null, 1);

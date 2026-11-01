@@ -72,7 +72,7 @@ lines, no lane, no verdict); an added file's is checked, and lane B (`exec/run.m
 as every module unit) evaluates it alone n times, each seeded as the compared ones are: NEW, recording per input the
 outcome (evaluated, or what it threw and the statement entered last), the shape of the requests and of the armed work;
 no equality claim (`check.mjs` returns lane B's NEW, as for a function the parent does not hold). A harness stop is ASK.
-Unchanged: a function of an added file keeps its row (ASK, `new file: no parent to compare with`), not run by lane B.
+A function of an added file is run by lane B candidate-only and read against its declaration (`NEW` with its records, design/w1h-new-units.md, 2026-11-01); before, it kept a row ASK `new file: no parent to compare with`, not run.
 Tests: `ci/ledger.test.mjs` (an added file's statements are its module unit's, side `new`; a deleted file's, side
 `old`, its function still its own; no unassigned row in either; red before at the first), the pr-intake fixture (an
 added `added.ts`, two top-level lines: one `(module)` row, NEW, both edits on it; 8 rows; 5 units spent).

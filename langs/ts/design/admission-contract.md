@@ -924,3 +924,27 @@ admits a reading, by one predicate the three share, `pureLibraryCall` in `librar
 | library-rows.mjs `pureLibraryCall` | a call of a listed package export is a function of its arguments: the row lists it under `pure`, every function argument is an arrow literal, no spread, and the result type cannot share an object the unit holds (the row's shape) | `calls` (an outside call): uninterpreted function instead of transition | `LEAN_BREAK=package-rows` |
 | translate/translate.mjs `isEffectCall` | such a call makes no transition when each arrow it hands the package is quiet (`quietCallback`: not async, no effect, no cell write, no throw, try, await or call of a unit that throws) | `calls` | `LEAN_BREAK=package-rows` |
 | translate/heap.mjs eligibility (`no(...)`) | a unit holding such a call is not the heap core's: the heap core reads an imported call only as a transition of the whole world; the value lane reads it | `calls` | `LEAN_BREAK=package-rows` |
+
+## 2026-11-01: decision sites of a unit no parent holds (w1h, design/w1h-new-units.md)
+
+These sites decide no refusal of the lint or the translator, so `lower.mjs --audit` does not list them: they decide what
+lane B claims about a unit with no parent. Each claims a record or withholds it, and each mechanism has its switch
+(`LEAN_BREAK`, tests/w1h-new-units.mjs --break) under which its pair goes red.
+
+| site | decides | condition | outcome | switch |
+| --- | --- | --- | --- | --- |
+| exec/spec.mjs specOf `declaredParams` | the declaration's parameter specs | captured before lane B widens the draw (an Error option, a key list, the reads' shapes); `all` for a top-level any or unknown, never the checker's error type | `spec.declared` (not enumerable) | |
+| exec/spec.mjs spec `narrowed` | a primitive that holds some of its values only | a brand (`primitiveBrand`), a template literal type, a string mapping type | `member` answers `unknown`, never `yes` | |
+| exec/declared.mjs member | whether a value is one of a declared type | per kind; `unknown` for opaque, a type parameter, an off-length tuple, an accessor, a service; `nullable` from the project's strictNullChecks, `exactOptional` from exactOptionalPropertyTypes | `yes` / `no` / `unknown` | |
+| exec/declared.mjs edgeValues, edgePlan | the edge inputs | absent, empty, zero, special numbers, malformed text, records at their edges; kept when `member` is `yes`; first, at most half the inputs | one parameter at a time takes an edge value | `declared-edges` |
+| exec/declared.mjs declaration | what the declaration states | annotation, JSDoc `@returns`, a typed variable; `@throws {T}` or untyped, `asserts`, `never`; overload signatures | `returns`, `inferred`, `voidLike`, `throws`, `overloaded` | |
+| exec/declared.mjs declaredThrow | a throw the declaration names | a constructor name on the thrown value's prototype chain is a `@throws` type, or the declaration throws any | no record | `declared-throws` |
+| exec/new-unit.mjs runNew `admitted` | the input is the declaration's | every argument `yes` (an optional one may be undefined); an overloaded unit has no declared reading | else no record, counted `notAdmitted` | `admitted-input` |
+| exec/new-unit.mjs graphWorld, the call's trace | the call asked the world nothing | no package fake linked, an empty load trace, an empty call trace, no world global named in the graph | else no record, counted `world` | `closed-call` |
+| exec/new-unit.mjs platformGap | the sandbox lacks a global Node holds | a ReferenceError naming a host global | `new:coverage`, never `new:fault` | |
+| exec/new-unit.mjs the shape check | a returned value outside the declared return type | a declared, non-void return; the promise the declaration names and the unit returned agree; no JSX element; `member` is `no` | `new:shape` | `declared-shape` |
+| exec/new-unit.mjs the end of the draw | nothing could be claimed | no input both admitted and closed, a load failure, a spec failure, a harness stop | `new:coverage` with the reason | |
+| exec/new-tests.mjs selection | a test names the unit | the file imports the unit's binding from the candidate (or a byte-equal checkout path); the test, a hook around it, or a helper it reaches names it | the test is reported | `pr-tests` (new-unit.mjs) |
+| exec/new-tests.mjs MOCKS, Gap, unsettled | the runner model holds the test | no module, global or clock replaced; every matcher and runner feature modelled; settled within the bound | else `new:coverage` | |
+| exec/new-tests.mjs the world taint | the test's failure is the code's | the file's load, its hooks and earlier tests, and the test asked the world nothing | else `new:coverage` | `closed-test` |
+| pr.mjs the added-file branch | a unit of an added file is read | not deleted, not the module unit | `check()` with no parent: `NEW` with its records (was ASK `new file: no parent to compare with`) | |

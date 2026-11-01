@@ -123,7 +123,7 @@ test('a file absent at base is read as absent whatever language git speaks', { t
     const run = spawnSync(process.execPath, [pr, '--repo', repo, '--base', 'HEAD~1', '--head', 'HEAD', '--dafny-seconds', '1', '--runs-dir', path.join(tmp, 'runs'), '--json', json], { encoding: 'utf8', env: french });
     assert.equal(run.status, 0, run.stderr);
     const [row] = JSON.parse(fs.readFileSync(json, 'utf8')).rows;
-    assert.deepEqual([row.unit, row.coverage, row.verdict], ['fresh', 'checked', 'ASK']);
+    assert.deepEqual([row.unit, row.coverage, row.verdict], ['fresh', 'checked', 'NEW']); // read against its declaration, no parent (design/w1h-new-units.md)
     assert.match(row.reason, /^new file/);
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 });

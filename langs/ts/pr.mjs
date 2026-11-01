@@ -37,6 +37,7 @@ import { runPair, setUnitSeconds, UNIT_SECONDS } from './exec/run.mjs';
 import { loadSandboxList, useSandboxList } from './exec/sandbox-list.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
 import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
+const TEST_FILE = /(?:^|[/\\])__tests__(?:[/\\]|$)|\.(?:spec|test)\.[cm]?[jt]sx?$/; // the test modules new-unit.mjs excludes from a unit's own load
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // every git runs in the C locale, so a message never depends on the machine's language
@@ -479,6 +480,14 @@ async function prWorker(opts) {
     rows.ledger = routeChanges(buildChangeManifest(opts));
     if (rows.ledger.id !== opts.expectedLedgerId) throw new Error('change frame moved before dispatch');
     const files = changedFiles(opts, temps, rows.ledger);
+    // the test files the PR adds or changes (a unit no parent holds is checked against its declaration, and a test the PR
+    // adds that names it is part of that declaration: exec/new-tests.mjs, design/w1h-new-units.md); each by its head text,
+    // read at its checkout path when that path holds the head's bytes (its relative imports resolve beside it)
+    const sameBytes = (a, b) => { try { return fs.readFileSync(a).equals(fs.readFileSync(b)); } catch { return false; } };
+    const atCheckout = (entry) => { const real = path.join(opts.filesRoot ?? repo, entry.file); return entry.headFile && real !== entry.headFile && sameBytes(real, entry.headFile) ? real : entry.headFile; };
+    const prTests = files.filter((e) => e.headFile && !e.deleted && TEST_FILE.test(e.file)).map(atCheckout);
+    const testsKey = prTests.length ? hash(prTests.map((t) => fs.readFileSync(t, 'utf8')).join('\0')) : null; // a row of a unit no parent holds rests on these tests too (its cache key)
+    const newUnitOpts = (entry) => (prTests.length ? { tests: prTests, candidateAlias: atCheckout(entry) } : {});
     const unitRoutes = rows.ledger.edits.filter(e => e.primary.kind === 'unit');
     const selected = selectUnits(files, opts).filter(x => unitRoutes.some(e => e.file === x.unit.file && e.links.some(u => u.unit === x.unit.name)));
     // Artifact rows were committed by the supervisor before dispatch.
@@ -572,7 +581,7 @@ async function prWorker(opts) {
             fileContext: { parent: parent.fileContext, candidate: candidate.fileContext },
             imports: { parent: parent.imports, candidate: candidate.imports }, tsconfig: { parent: parent.tsconfig, candidate: candidate.tsconfig },
             flags: { n, seed, dafnySeconds, project, deep, scope: scope.has(u.name) || scope.has(`${rel}:${u.name}`), adapters, values: valuesHash(headFile ?? baseFile),
-              file: rel, unit: u.name, caller: !!caller } });
+              file: rel, unit: u.name, caller: !!caller, ...(prTests.length ? { prTests: testsKey } : {}) } });
           cacheFile = path.join(cacheDir, key + '.json');
         } catch (e) { console.error('Cache key unavailable: ' + (e.code ?? e.name)); }
       }
@@ -596,8 +605,19 @@ async function prWorker(opts) {
       }
       // an added file's module unit is its evaluation alone: lane B runs it candidate-only (NEW, no equality claim), as a
       // function the parent does not hold is run (exec/run.mjs runModuleUnit)
-      if ((!baseFile && u.name !== MODULE_UNIT) || entry.deleted) {
-        save({ file: rel, unit: u.name, verdict: 'ASK', coverage: u.findings?.length ? `refused:${u.findings[0].rule}` : 'checked', certificate: basicCertificate(), reason: entry.deleted ? 'deleted unit: no candidate to compare with' : 'new file: no parent to compare with', lines: [u.start, u.end] });
+      if (entry.deleted) {
+        save({ file: rel, unit: u.name, verdict: 'ASK', coverage: u.findings?.length ? `refused:${u.findings[0].rule}` : 'checked', certificate: basicCertificate(), reason: 'deleted unit: no candidate to compare with', lines: [u.start, u.end] });
+        continue;
+      }
+      // a unit of an added file has no parent: its parent is its declaration (its signature, its JSDoc, the PR's tests
+      // that name it), read by lane B candidate-only (exec/new-unit.mjs: NEW with its records); the lint's findings, an
+      // equality question, do not refuse it
+      if (!baseFile && u.name !== MODULE_UNIT) {
+        let res;
+        try { res = await check({ parent: null, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, identity: rows.identity, values: valuesFile, ...newUnitOpts(entry) }); }
+        catch (e) { res = { verdict: 'ASK', certificate: basicCertificate({ B: { verdict: 'ASK:harness', reason: `harness: ${String(e.message).slice(0, 300)}` } }) }; }
+        const lanes = res.certificate?.lanes ?? {};
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: null, witness: null, reason: lanes.B?.reason ?? 'new file: no parent to compare with', advice: [], ...(res.certificate?.newUnit ? { records: res.certificate.newUnit.records } : {}) });
         continue;
       }
       const correspondence = u.findings?.length ? certifyCorrespondence({ parent: baseFile, candidate: headFile, unit: u.name, project, adapters }) : null;
@@ -617,10 +637,10 @@ async function prWorker(opts) {
         continue;
       }
       let res;
-      try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, adapters, identity: rows.identity, values: valuesFile }); }
+      try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, adapters, identity: rows.identity, values: valuesFile, ...newUnitOpts(entry) }); }
       catch (e) { res = { verdict: 'ASK', certificate: basicCertificate({ B: { verdict: 'ASK:harness', reason: `harness: ${String(e.message).slice(0, 300)}` } }) }; }
       const lanes = res.certificate?.lanes ?? {};
-      const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { ...(res.witness.record ? { record: res.witness.record } : {}), input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}) };
+      const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { ...(res.witness.record ? { record: res.witness.record } : {}), input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}), ...(res.certificate?.newUnit ? { records: res.certificate.newUnit.records } : {}) };
       if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
         try { const f = lintFile(headFile, [[u.start, u.end]], entry.keyReading?.checker ? { loaded: entry.keyReading } : { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
       }
@@ -741,6 +761,12 @@ export function markdown(allRows, base, head) {
   if (patched.length) {
     lines.push('', '## What changed on the page', '');
     for (const r of patched) { lines.push(`### ${r.file} · ${unitCell(r.unit)}: ${r.witness.patchSummary}`, ''); for (const op of r.witness.patch.slice(0, 3)) lines.push(`- \`${displayOp(op).replace(/`/g, "'")}\``); if (r.witness.patch.length > 3) lines.push(`- and ${r.witness.patch.length - 3} more op(s) in the certificate`); lines.push(''); }  }
+  // a unit no parent holds, read against its declaration (design/w1h-new-units.md): each record with the claim it makes
+  const declared = rows.filter((r) => r.records?.some((x) => x.kind !== 'new:coverage'));
+  if (declared.length) {
+    lines.push('', '## New units against their declarations', '');
+    for (const r of declared) { lines.push(`### ${r.file} · ${unitCell(r.unit)}`, ''); for (const x of r.records.filter((y) => y.kind !== 'new:coverage' && !y.more)) lines.push(`- \`${x.kind}\` ${newRecordText(x)}`.replace(/\n/g, ' ')); lines.push(''); }
+  }
   const asks = rows.filter((r) => r.advice && r.advice.length);
   if (asks.length) {
     lines.push('', '## What would make the asks provable', '');
@@ -751,6 +777,16 @@ export function markdown(allRows, base, head) {
   if (allRows.ledger) lines.push('', ledgerMarkdown(allRows.ledger));
   if (allRows.reconciliation) lines.push('', `Task reconciliation: expected ${allRows.reconciliation.expected.length}; terminal ${allRows.reconciliation.terminal.length}; missing ${allRows.reconciliation.missing.length}; unexpected ${allRows.reconciliation.unexpected.length}; identities ${allRows.reconciliation.complete ? 'complete' : 'INCOMPLETE'}.`, `Durable ledger: ${allRows.terminalFile}`);
   return lines.join('\n');
+}
+
+// one line per record: what was run and what came back, never more than the record claims
+const shortValue = (v) => { const t = JSON.stringify(v) ?? 'undefined'; return t.length > 120 ? t.slice(0, 117) + '...' : t; };
+function newRecordText(x) {
+  const args = Array.isArray(x.args) ? `(${x.args.map(shortValue).join(', ')})` : '';
+  if (x.kind === 'new:fault') return `input ${x.input}${args}${x.edge ? `, \`${x.edge}\` at an edge value its type admits` : ''}: ${x.how === 'rejected' ? 'the promise rejected with' : 'threw'} ${x.error?.name ?? ''}${x.error?.message ? ': ' + shortValue(x.error.message) : x.error?.value ? ' ' + shortValue(x.error.value) : ''} (${x.inputs} input(s))`;
+  if (x.kind === 'new:shape') return `input ${x.input}${args}: returned ${shortValue(x.returned)}, not a value of the declared \`${x.declared}\` (${x.inputs} input(s))`;
+  if (x.kind === 'new:test') return `${x.file} \`${x.test}\` fails: ${x.error?.assertion ?? shortValue(x.error)}`;
+  return x.reason ?? '';
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {

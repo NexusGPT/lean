@@ -27,7 +27,7 @@ rules per package).
 | `PASS-bounded` | paired observations agreed on the drawn inputs |
 | `ASK` | the requested check remains undecided; `ASK:interface` when the TypeScript signature as written (parameter types, decorators, the return type) differs between the two sides, whatever the Dafny signature says |
 | `REFUSE` | a local source link failed; `kind: load` names the file and real loader error |
-| `NEW` | the candidate-only unit loaded and ran; input count, seed, fakes, faults and trace shapes are recorded |
+| `NEW` | the candidate-only unit loaded and ran; input count, seed, fakes, faults and trace shapes are recorded, and its records against its declaration (`new:fault`, `new:shape`, `new:test`, `new:coverage`) |
 
 A `WITNESS`'s recorded input is one of lane B's draws or an input a solver proposed and lane B then replayed on both
 sides: the doubles reading's model, or the model of a failed equality lemma (`witness.source: counterexample`, the
@@ -47,6 +47,23 @@ and aliased source imports use TypeScript resolution and Node's module linker. U
 packages use Node resolution; missing external packages, generated output and build assets are ASK. A literal dynamic import is resolved before input generation,
 even on a branch not drawn. Computed imports resolve only when executed. These assumptions
 are carried by every candidate-only result. See [the design](design/new-units.md).
+
+A unit without a parent is read against its declaration ([design/w1h-new-units.md](design/w1h-new-units.md)): its
+declared parameter types, its declared return type, its JSDoc `@throws`, an `asserts` or `never` return, and the tests
+the pull request adds that name it (`check.mjs --tests`). Lane B draws the generator's inputs plus the edge values the
+declared types admit (absent, empty, zero, the special numbers, malformed text), the edge inputs first, at most half of
+them. The records, in the certificate's `newUnit`, each claim one fact and nothing more:
+
+| Record | The fact |
+|---|---|
+| `new:fault` | on this input, which every declared parameter type admits, the unit threw or its promise rejected, the throw not one the declaration names, in a call that asked nothing of lean's world |
+| `new:shape` | on this input (admitted, the call closed) the unit returned a value that is not one of its declared return type; never claimed for an inferred return type, `void`, or a type lean reads as opaque |
+| `new:test` | a test the pull request adds that names the unit fails against the candidate under lean's model of the vitest/jest API, the run asking nothing of the world |
+| `new:coverage` | the unit could not be loaded, drawn or tested so as to make the claims above, with the reason |
+
+A call is closed when its module graph links no package lean fakes, its loading and the call asked the world nothing
+(an empty trace), and the graph's code names no global the sandbox answers with a handle. A record is never a claim
+that the unit is wrong: a declaration may admit inputs no caller passes.
 
 ## What is exact
 

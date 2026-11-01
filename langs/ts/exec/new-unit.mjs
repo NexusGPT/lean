@@ -5,10 +5,12 @@ import vm from 'node:vm';
 import { createRequire, isBuiltin } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { ts, loadProgramOptions, topLevelFunctions } from '../common.mjs';
+import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFunctions } from '../common.mjs';
 import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
 import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
-import { Environment, BudgetError } from './fake.mjs';
+import { Environment, BudgetError, render } from './fake.mjs';
+import { admitted, member, mismatch, declaration, declaredThrow, edgePlan, edgeInput } from './declared.mjs';
+import { runTests, TEST_MODULES } from './new-tests.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
 import { netMode, denyNetwork, networkDenied, sandboxEntry } from './net-deny.mjs';
@@ -67,8 +69,11 @@ function resolveModule(specifier, from, options) {
   }
 }
 
-async function loadCandidate(file, env, options, ms, sources = new Map()) {
+// `extra`: a test file read as the unit's PR-added test (new-tests.mjs): `allow` the test modules it may load, `globals`
+// the runner's globals (describe, it, expect) set on the context, `modules` the runner's own modules ('vitest' and its kin)
+export async function loadCandidate(file, env, options, ms, sources = new Map(), extra = {}) {
   const host = sandbox(env, path.dirname(file));
+  if (extra.globals) { const g = vm.runInContext('globalThis', host.ctx); for (const [k, v] of Object.entries(extra.globals)) g[k] = v; }
   const cache = new Map(), fakeNames = new Set(), edges = [];
   // external modules keep the recording fakes and React protocol of paired execution
   function fake(specifier, names) {
@@ -79,7 +84,7 @@ async function loadCandidate(file, env, options, ms, sources = new Map()) {
   }
   function moduleFor(abs) {
     abs = path.resolve(abs);
-    if (testModule(abs)) throw new LoadFailure(new Error(`test module: ${abs}`), { phase: 'scope', environmentClass: 'test module' });
+    if (testModule(abs) && !extra.allow?.has(abs)) throw new LoadFailure(new Error(`test module: ${abs}`), { phase: 'scope', environmentClass: 'test module' });
     if (cache.has(abs)) return cache.get(abs);
     if (/\.json$/.test(abs)) {
       const value = JSON.parse(fs.readFileSync(abs, 'utf8'));
@@ -128,6 +133,7 @@ async function loadCandidate(file, env, options, ms, sources = new Map()) {
     cache.set(abs, mod); return mod;
   }
   async function link(specifier, referencing) {
+    if (extra.modules && Object.hasOwn(extra.modules, specifier)) { const value = extra.modules[specifier]; const keys = [...new Set(['default', ...Object.keys(value)])]; return new vm.SyntheticModule(keys, function () { for (const key of keys) this.setExport(key, key === 'default' ? value.default ?? value : value[key]); }, { context: host.ctx, identifier: `runner:${specifier}` }); }
     const resolved = resolveModule(specifier, referencing.identifier, options);
     if (resolved.file && !assetModule(resolved.file)) {
       const dependency = moduleFor(resolved.file);
@@ -158,7 +164,7 @@ async function loadCandidate(file, env, options, ms, sources = new Map()) {
     await mod.link(link); // the Node linker checks actual local exports, including re-export chains and cycles
     phase = 'evaluation';
     await mod.evaluate({ timeout: ms });
-    return { exports: { ...mod.namespace, __lean_units: mod.namespace[mod.leanUnitSlot] }, fakes: [...fakeNames] };
+    return { exports: { ...mod.namespace, __lean_units: mod.namespace[mod.leanUnitSlot] }, fakes: [...fakeNames], loadTrace: env.trace.slice(), graph: [...cache.keys()] };
   } catch (error) {
     if (phase === 'evaluation') {
       const original = error instanceof LoadFailure ? error.original : error;
@@ -226,32 +232,227 @@ export async function runNew(opts) {
       }
     }
     await loadCandidate(abs, new Environment(seed * 7919), options, ms, sources);
-  } catch (e) { return loadFailure(base, e, 0, bound); }
-  let spec;
-  try { spec = specOf(candidate, unit, { project, loaded: typeof opts.loaded === 'function' ? opts.loaded() : opts.loaded }); }
-  catch (e) { return { ...base, verdict: 'ASK', reason: `spec: ${e.message}`, loaded: true, inputs: 0, bound }; }
+  } catch (e) { const r = loadFailure(base, e, 0, bound); return { ...r, records: [coverage('load', r.reason)] }; }
+  let spec, reading, decl, nullable = false, exactOptional = false;
+  try {
+    reading = typeof opts.loaded === 'function' ? opts.loaded() : opts.loaded ?? loadProgram(candidate, { project });
+    spec = specOf(candidate, unit, { project, loaded: reading });
+  } catch (e) { return { ...base, verdict: 'ASK', reason: `spec: ${e.message}`, loaded: true, inputs: 0, bound, records: [coverage('spec', `the declaration could not be read: ${e.message}`)] }; }
+  try {
+    decl = declaration(reading.sf, unit, reading.checker);
+    // the project's own null discipline: without strictNullChecks null and undefined are values of every declared type
+    const own = reading.projectFile ? parseProjectConfig(reading.projectFile)?.options : null;
+    nullable = !!own && !(own.strictNullChecks ?? own.strict ?? false);
+    exactOptional = !!own?.exactOptionalPropertyTypes;
+  } catch { decl = null; }
+  const declared = decl?.overloaded ? null : spec.declared; // an overloaded unit is admitted through its overloads, which this reading does not take one by one
+  const plan = declared ? edgePlan(declared) : [];
+  const edges = Math.min(plan.length, Math.floor(n / 2)); // the edge inputs come first, at most half the inputs: the generator's draws keep the rest
   let faults = 0;
   const shapes = new Map(), fakes = new Set(), faultExamples = [];
+  const book = recordBook();
+  const reach = { inputs: 0, admitted: 0, closed: 0, notAdmitted: 0, world: 0, worldOps: new Map(), graphWorld: null };
+  const stop = (extra) => ({ ...base, verdict: 'ASK', loaded: true, faults, bound, ...extra, records: [...book.list(), coverage('draw', extra.reason)], declaration: declarationRecord(decl, reach, nullable, edges) });
   for (let i = 0; i < n; i++) {
     const env = new Environment(seed * 7919 + i); env.shapes = spec;
     let loaded;
     try { loaded = await loadCandidate(path.resolve(candidate), env, options, ms, sources); }
-    catch (e) { return loadFailure(base, e, i, bound); }
+    catch (e) { const r = loadFailure(base, e, i, bound); return { ...r, records: [...book.list(), coverage('load', r.reason)] }; }
     for (const f of loaded.fakes) fakes.add(f);
-    const picked = pickUnit(loaded.exports, spec, env);
-    if (!picked) return { ...base, verdict: 'ASK', loaded: true, inputs: i, reason: `unit ${unit} not callable`, bound };
+    // the module graph holds world values when it links a package lean fakes, its evaluation asked the world, or its code
+    // names a global the sandbox answers with a handle (a test of a handle's truth or type runs no trap, so no trace sees it)
+    if (reach.graphWorld === null) reach.graphWorld = graphWorld(loaded, sources);
+    const picked0 = pickUnit(loaded.exports, spec, env);
+    if (!picked0) return { ...base, verdict: 'ASK', loaded: true, inputs: i, reason: `unit ${unit} not callable`, bound, records: [...book.list(), coverage('draw', `unit ${unit} not callable`)] };
+    let sync = false, thenable = false; // a throw before the call returned, or a promise it returned: a rejection is a fault too
+    const picked = { ...picked0, call: (args) => { let r; try { r = picked0.call(args); } catch (e) { sync = true; throw e; } try { thenable = !!r && (typeof r === 'object' || typeof r === 'function') && typeof r.then === 'function'; } catch { /* a value that refuses its members */ } return r; } };
     await new Promise(r => setImmediate(r));
     env.trace.length = 0; env.pending.length = 0; env.calls.clear();
-    const inputs = inputsFor(spec, seed, i, env);
+    const step = i < edges ? plan[i] : null;
+    const drawn = inputsFor(spec, seed, i, env);
+    const inputs = step ? edgeInput(drawn, step) : drawn;
     env.argPool = inputs.filter(x => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
+    const shown = inputs.map((x) => render(x)); // the input as the record names it, before the call may write into it
     const observation = await observe({ env, unit: picked }, spec, inputs, ms);
-    if (observation.harness) return { ...base, verdict: 'ASK', loaded: true, inputs: i, faults, reason: `input ${i}: ${observation.harness}`, bound };
-    if (Object.hasOwn(observation.outcome, 'threw')) { faults++; if (faultExamples.length < 3) faultExamples.push({ input: i, error: observation.outcome.threw }); }
+    if (observation.harness) return stop({ inputs: i, reason: `input ${i}: ${observation.harness}` });
+    const threw = Object.hasOwn(observation.outcome, 'threw');
+    if (threw) { faults++; if (faultExamples.length < 3) faultExamples.push({ input: i, error: observation.outcome.threw }); }
     for (const [key, value] of env.cache) if (value && value.__isFake) fakes.add(key);
-    const shape = { outcome: Object.hasOwn(observation.outcome, 'threw') ? 'threw' : 'returned', trace: observation.trace.map(({ op, path }) => ({ op, path })), pending: observation.pending.map(x => x.op) };
+    const shape = { outcome: threw ? 'threw' : 'returned', trace: observation.trace.map(({ op, path }) => ({ op, path })), pending: observation.pending.map(x => x.op) };
     const key = JSON.stringify(shape); const entry = shapes.get(key) ?? { ...shape, inputs: 0 }; entry.inputs++; shapes.set(key, entry);
+    // the declaration's reading of this input (design/w1h-new-units.md): a record is a fact only about a call the
+    // declaration admits and the world did not answer
+    reach.inputs++;
+    const ok = !declared ? 'unknown' : process.env.LEAN_BREAK === 'admitted-input' ? 'yes' : admitted(declared, inputs, { nullable, exactOptional });
+    if (ok !== 'yes') { reach.notAdmitted++; continue; }
+    reach.admitted++;
+    const world = process.env.LEAN_BREAK === 'closed-call' ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
+    if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); continue; }
+    reach.closed++;
+    const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
+    const wide = declared.params.some((p, k) => p.spec?.all && !(p.optional && inputs[k] === undefined)); // admitted only because a parameter's type is any or unknown, which admit every value: a validator's own rejection reads so
+    if (threw) {
+      if (declaredThrow(decl, observation.raw?.threw)) continue; // a throw the declaration names (`@throws {T}`, `asserts`, `never`) is the declared behaviour
+      const missing = platformGap(observation.raw?.threw);
+      if (missing) { book.add(coverage('draw', `the unit reads the global \`${missing}\`, which Node holds and lean's sandbox does not`), `coverage global ${missing}`); continue; } // lean's sandbox, not the unit
+      const error = thrownText(observation.raw?.threw, observation.outcome.threw);
+      book.add({ kind: 'new:fault', ...named, ...(wide ? { wide: true } : {}), error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(withoutInputs(rawMessage(observation.raw?.threw) ?? error.message ?? JSON.stringify(error), inputs))}`); // one record per error and message template: a message that quotes the input is one outcome
+      continue;
+    }
+    if (process.env.LEAN_BREAK === 'declared-shape' || !decl || decl.inferred || decl.voidLike || !declared?.returns) continue;
+    if (observation.drives?.length && process.env.LEAN_BREAK !== 'shape-drives') continue; // the observer drove functions the unit handed out (run.mjs driveWindow), after the return: they may have written into the value
+    const promised = /^Promise(?:Like)?</.test(decl.returns.replace(/\s+/g, '')) || spec.isAsync;
+    if (promised !== thenable) continue; // the awaited value is what the declaration's argument types; a promise the type does not name is not read
+    const value = observation.raw?.returned;
+    if (holdsElement(value)) continue; // a rendered element is lean's own representation of JSX, not the value React would return
+    if (member(declared.returns, value, declared.defs, { nullable, side: 'output' }) !== 'no') continue;
+    book.add({ kind: 'new:shape', ...named, returned: render(value), declared: decl.returns, mismatch: mismatch(declared.returns, value, declared.defs, { nullable, side: 'output' }), claim: 'on this input the unit returned a value that is not one of its declared return type' }, `shape ${value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value}`); // one record per kind of value returned outside the type, its first input named
   }
-  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, ...(networkDenied() ? { sandbox: sandboxEntry() } : {}), ...(opts.sandboxSpawn ? { sandboxSpawned: spawnRefusals() } : {}) };
+  // the PR's own tests that call the unit (new-tests.mjs): each is run against the candidate under the same sandbox
+  let tests = null;
+  if (opts.tests?.length && process.env.LEAN_BREAK !== 'pr-tests') {
+    // a test read at its checkout path imports the unit's file there: that file is the candidate when its bytes are the candidate's
+    const aliases = opts.candidateAlias && path.resolve(opts.candidateAlias) !== abs && (() => { try { return fs.readFileSync(opts.candidateAlias).equals(fs.readFileSync(abs)); } catch { return false; } })() ? [path.resolve(opts.candidateAlias)] : [];
+    tests = await runTests({ candidate: abs, aliases, unit, testFiles: opts.tests.map((t) => path.resolve(t)), ms, seed, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), graphWorld: (loaded) => graphWorld(loaded, sources, TEST_MODULES), options });
+    for (const r of tests.records) book.add(r, `${r.kind} ${r.file}:${r.test}`);
+  }
+  if (!reach.closed) book.add(coverage('draw', decl?.overloaded ? 'the unit is overloaded: its callers are admitted by its overload signatures, which this reading does not take one by one' : !declared ? 'the declaration was not read' : reach.admitted === 0 ? `no drawn input is one the declared types say they admit (${reach.notAdmitted} of ${reach.inputs}: a parameter type lean reads as opaque, a type parameter, or a draw wider than the declaration)` : `every admitted input reached the world (${reach.world} of ${reach.admitted}): ${[...reach.worldOps.keys()].slice(0, 4).join('; ')}`), 'coverage draw');
+  return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, records: book.list(), declaration: declarationRecord(decl, reach, nullable, edges), ...(tests ? { tests: tests.summary } : {}), ...(networkDenied() ? { sandbox: sandboxEntry() } : {}), ...(opts.sandboxSpawn ? { sandboxSpawned: spawnRefusals() } : {}) };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === here) { scrubEnv(); absentOutsideReads(); console.log(JSON.stringify(await runNew(JSON.parse(process.argv[2])))); }
+// the records of a unit no parent holds (design/w1h-new-units.md): `new:fault`, `new:shape`, `new:test`, `new:coverage`.
+// One record per distinct outcome (the error, the returned shape, the test), with the first input that showed it and the
+// count of inputs that did; at most RECORDS per kind, the rest counted
+const RECORDS = 5;
+function recordBook() {
+  const byKey = new Map(), list = [], over = {};
+  return {
+    add(r, key) { const had = byKey.get(key); if (had) { had.inputs = (had.inputs ?? 1) + 1; return; } if (list.filter((x) => x.kind === r.kind).length >= RECORDS) { over[r.kind] = (over[r.kind] ?? 0) + 1; return; } const rec = { ...r, inputs: 1 }; byKey.set(key, rec); list.push(rec); },
+    list: () => [...list, ...Object.entries(over).map(([kind, more]) => ({ kind, more, note: `${more} further distinct outcome(s) of this kind, not listed` }))],
+  };
+}
+const coverage = (phase, reason) => ({ kind: 'new:coverage', phase, reason });
+function declarationRecord(decl, reach, nullable, edges) {
+  return { returns: decl?.returns ?? null, inferred: decl ? decl.inferred : null, throws: decl?.throws ?? null, jsdoc: decl?.jsdoc ?? null, strictNullChecks: !nullable, edgeInputs: edges,
+    inputs: { drawn: reach.inputs, admitted: reach.admitted, closed: reach.closed, notAdmitted: reach.notAdmitted, world: reach.world } };
+}
+// the globals the sandbox answers with a handle (run.mjs sandbox): a program that names one can branch on it with no trap
+const WORLD_GLOBALS = new Set(['window', 'globalThis', 'global', 'self', 'document', 'navigator', 'location', 'localStorage', 'sessionStorage', 'process', 'fetch', 'crypto', 'performance', 'Buffer', 'require', 'module', 'exports']);
+// whether the module graph holds a world value a program could read without a trap. A package lean fakes is linked as a
+// handle, and a handle's truth, type or identity is read with no trap, so no trace sees it. The link is harmless when
+// every use of every binding the package reaches traps: its imports, and the module constants initialised from them
+// (the bindings it taints), are used only as a callee, the object of a member read, the target of `new` or a tag, each
+// a trace entry when it runs. Any other use, a re-export of one, a top-level statement other than a declaration that
+// names one, or a dynamic import of the package keeps the graph a world graph. Loading asks nothing but the linker's reads:
+// a value the world answered at load (through a helper, a clock read, a random read) may be kept where no trap guards it.
+// LEAN_BREAK=closed-call switches the whole check off (new-unit.mjs)
+function graphWorld(loaded, sources, runner = new Set()) {
+  const faked = new Set(loaded.fakes.filter((f) => !runner.has(f)));
+  const out = [];
+  // the linker reads each name it binds once (`get module:<package>.<name>`); a second read, a call or anything else at load
+  // is the program asking the world, and what it answers may be kept anywhere (a constant built through a helper)
+  const linkReads = new Set();
+  for (const { op, path: p } of loaded.loadTrace ?? []) {
+    const link = op === 'get' && [...faked].some((f) => p.startsWith(`module:${f}.`) && !p.slice(`module:${f}.`.length).includes('.'));
+    if (link && !linkReads.has(p)) { linkReads.add(p); continue; }
+    out.push(`loading: ${op} ${p}`); if (out.length >= 3) break;
+  }
+  for (const abs of loaded.graph ?? []) {
+    const sf = sources.get(abs)?.sf; if (!sf) continue;
+    const where = path.basename(abs);
+    const declared = new Set(), named = new Set();
+    const tainted = new Set();
+    const fakedSpecifier = (n) => n && ts.isStringLiteralLike(n) && faked.has(n.text);
+    for (const st of sf.statements) {
+      if (ts.isImportDeclaration(st) && fakedSpecifier(st.moduleSpecifier) && st.importClause) {
+        const c = st.importClause; if (c.name) tainted.add(c.name.text);
+        const nb = c.namedBindings; if (nb && ts.isNamespaceImport(nb)) tainted.add(nb.name.text); if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) tainted.add(el.name.text);
+      }
+      if (ts.isExportDeclaration(st) && fakedSpecifier(st.moduleSpecifier)) out.push(`re-exports ${st.moduleSpecifier.text} (${where})`);
+    }
+    const mentions = (node) => { let hit = false; const w = (n) => { if (hit) return; if (ts.isIdentifier(n) && tainted.has(n.text)) hit = true; else ts.forEachChild(n, w); }; if (node) w(node); return hit; };
+    if (tainted.size) for (let grew = true; grew;) { grew = false; for (const st of sf.statements) if (ts.isVariableStatement(st)) for (const d of st.declarationList.declarations) if (ts.isIdentifier(d.name) && !tainted.has(d.name.text) && mentions(d.initializer)) { tainted.add(d.name.text); grew = true; } }
+    // a binding the package reaches, exported, is read by its importers, whose uses this file's walk does not see
+    if (tainted.size) for (const st of sf.statements) {
+      const exported = !!st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+      if (exported && ts.isVariableStatement(st) && st.declarationList.declarations.some((d) => ts.isIdentifier(d.name) && tainted.has(d.name.text))) out.push(`exports a package binding (${where})`);
+      if ((ts.isExportDeclaration(st) && !st.moduleSpecifier && st.exportClause && ts.isNamedExports(st.exportClause) && st.exportClause.elements.some((el) => tainted.has((el.propertyName ?? el.name).text))) || (ts.isExportAssignment(st) && mentions(st.expression))) out.push(`exports a package binding (${where})`);
+    }
+    if (tainted.size) for (const st of sf.statements) {
+      if (ts.isImportDeclaration(st) || ts.isFunctionDeclaration(st) || ts.isVariableStatement(st) || ts.isInterfaceDeclaration(st) || ts.isTypeAliasDeclaration(st)) continue;
+      if (ts.isClassDeclaration(st) && !st.heritageClauses?.some((h) => mentions(h))) continue; // a class body runs when called; its heritage when it loads
+      if (mentions(st)) out.push(`a top-level statement names a package binding (${where}:${sf.getLineAndCharacterOfPosition(st.getStart(sf)).line + 1})`);
+    }
+    const walk = (n) => {
+      if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.ImportKeyword && (!n.arguments.length || !ts.isStringLiteralLike(n.arguments[0]) || faked.has(n.arguments[0].text))) out.push(`imports a package dynamically (${where})`);
+      if (ts.isIdentifier(n)) {
+        const p = n.parent;
+        const isName = p && ((ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n) || ts.isPropertyDeclaration(p) || ts.isMethodDeclaration(p) || ts.isImportSpecifier(p) || ts.isImportClause(p) || ts.isNamespaceImport(p) || (ts.isExportSpecifier(p) && p.propertyName === n && false));
+        const binds = p && (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isFunctionDeclaration(p) || ts.isClassDeclaration(p) || ts.isBindingElement(p)) && p.name === n;
+        if (binds) declared.add(n.text);
+        else if (!isName && WORLD_GLOBALS.has(n.text)) named.add(n.text);
+        if (!isName && !binds && tainted.has(n.text)) {
+          const traps = (ts.isCallExpression(p) && p.expression === n) || (ts.isPropertyAccessExpression(p) && p.expression === n) || (ts.isElementAccessExpression(p) && p.expression === n) || (ts.isNewExpression(p) && p.expression === n) || (ts.isTaggedTemplateExpression(p) && p.tag === n);
+          const initialiser = ts.isVariableDeclaration(p) && p.initializer === n && ts.isVariableStatement(p.parent?.parent) && p.parent.parent.parent === sf; // a module constant that is the binding itself: tainted in turn, its own uses read
+          if (!traps && !initialiser) out.push(`a package binding \`${n.text}\` is read without a trap (${where}:${sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1})`);
+        }
+      }
+      ts.forEachChild(n, walk);
+    };
+    walk(sf);
+    for (const g of named) if (!declared.has(g)) out.push(`names ${g} (${where})`);
+  }
+  return [...new Set(out)];
+}
+// a message with what it quotes and its numbers taken out: `Unexpected token 'x', "x..." is not valid JSON` is one template
+const template = (m) => String(m).replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`[^`]*`/g, '<q>').replace(/-?\d+(?:\.\d+)?/g, '<n>');
+// a message with the input's own text taken out (`cannot plan this statement: <the input>` is one outcome over its inputs)
+function withoutInputs(m, inputs) {
+  let out = String(m); const seen = new Set();
+  const strings = (v, d = 0) => { if (typeof v === 'string') { if (v.trim().length >= 1) seen.add(v); } else if (v && typeof v === 'object' && d < 3 && !v.__isFake) { try { for (const x of Array.isArray(v) ? v.slice(0, 20) : Object.values(v).slice(0, 20)) strings(x, d + 1); } catch { /* none */ } } };
+  for (const x of inputs) strings(x);
+  for (const x of [...seen].sort((a, b) => b.length - a.length)) out = out.replace(new RegExp(`(?<![\\w$])${x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w$])`, 'g'), '<in>'); // where it stands as a token
+  return out.replace(/:\s*$/, ': <in>');
+}
+const rawMessage = (e) => { try { return e && typeof e === 'object' && typeof e.message === 'string' ? e.message : null; } catch { return null; } };
+// a thrown value as a record names it: an error by its name and message (lean's own paths rendered as tokens), else rendered
+function thrownText(raw, rendered) {
+  try { if (raw && typeof raw === 'object' && typeof raw.message === 'string') return { name: String(raw.name ?? 'Error'), message: render(raw.message.slice(0, 300)) }; } catch { /* a value that refuses its members */ }
+  return { value: rendered };
+}
+// a ReferenceError naming a global Node holds: the sandbox lacks it (a gap of lean's world, never the unit's fault)
+function platformGap(thrown) {
+  if (process.env.LEAN_BREAK === 'platform-gap') return null;
+  try { const m = thrown && thrown.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(thrown.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; }
+}
+const holdsElement = (v, d = 0) => { if (!v || typeof v !== 'object' || d > 3) return false; try { if (Object.hasOwn(v, '$el')) return true; return Array.isArray(v) ? v.some((x) => holdsElement(x, d + 1)) : false; } catch { return true; } };
+
+// every unit of one file in one child (the census's new-unit pass, exec/new-census.mjs): the file's program is read once,
+// and each unit's result is a line of its own as it ends, so a child stopped at its bound keeps the units it finished
+export function runNewFile(opts) {
+  const { candidate, units, seconds = 300 } = opts;
+  const box = workerSandbox(opts);
+  const done = new Map();
+  // a child that dies (out of memory on a drawn size, past its bound) is resumed past the unit it was running: that unit
+  // is harness coverage with the child's end, the units after it run in a fresh child
+  for (let left = units.filter((u) => !done.has(u)); left.length; left = units.filter((u) => !done.has(u))) {
+    const child = spawnSync(process.execPath, [...workerFlagsFrom(box.flags), '--experimental-vm-modules', here, JSON.stringify({ ...opts, units: left, sandboxList: undefined, batch: true, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) })], { encoding: 'utf8', env: workerEnv(), timeout: seconds * 1000, maxBuffer: 64 * 1024 * 1024 });
+    for (const line of (child.stdout ?? '').split('\n')) { if (!line.trim()) continue; try { const r = JSON.parse(line); if (r && r.unit && left.includes(r.unit)) done.set(r.unit, r); } catch { /* a line the stop cut */ } }
+    const next = left.find((u) => !done.has(u));
+    if (!next) break;
+    const tail = (child.stderr ?? '').split('\n').filter((l) => l.trim() && !/ExperimentalWarning|trace-warnings/.test(l));
+    const why = child.error?.code === 'ETIMEDOUT' ? `the file's child passed its bound of ${seconds} s` : `the file's child ended (${child.status ?? child.signal})${tail.find((l) => /FATAL ERROR/.test(l)) ? ': ' + tail.find((l) => /FATAL ERROR/.test(l)).trim() : ''}`;
+    done.set(next, { candidateOnly: true, unit: next, file: candidate, verdict: 'ASK', loaded: false, inputs: 0, reason: `harness: ${why}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: why }] });
+  }
+  return units.map((unit) => done.get(unit));
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === here) {
+  scrubEnv(); absentOutsideReads();
+  const opts = JSON.parse(process.argv[2]);
+  if (!opts.batch) console.log(JSON.stringify(await runNew(opts)));
+  else {
+    let loaded = null; try { loaded = loadProgram(opts.candidate, { project: opts.project ?? true }); } catch { /* each unit says so */ }
+    for (const unit of opts.units) { let r; try { r = await runNew({ ...opts, unit, units: undefined, batch: undefined, ...(loaded ? { loaded } : {}) }); } catch (e) { r = { candidateOnly: true, unit, file: opts.candidate, verdict: 'ASK', reason: `harness: ${String(e?.message ?? e).slice(0, 200)}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: String(e?.message ?? e).slice(0, 200) }] }; } process.stdout.write(JSON.stringify({ ...r, unit }) + '\n'); }
+  }
+}
