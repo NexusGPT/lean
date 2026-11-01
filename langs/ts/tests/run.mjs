@@ -726,6 +726,10 @@ async function adviceLabels(add) {
     ['no-silent-exit-importers', scriptRow('runtime', 'no-silent-exit-importers', 'exit 1 outside a unit run; late error recorded inside; pr.mjs lean unknown', [path.join(here, 'no-silent-exit-importers.mjs')], lastLine)],
     ['lowering-cache', scriptRow('runtime', 'lowering-cache', 'shared file analyses and content/source-keyed lowering', [path.join(here, 'lowering-cache.mjs')], (r) => (r.stdout + r.stderr).trim())],
     // the admission contract: a reading withdrawn by name is refused alike by the lint, the translator and the record, and proves nothing (design/admission-contract.md)
+    // a unit no parent holds is read against its declaration (design/w1h-new-units.md): each w1h pair goes red with each of
+    // its mechanisms switched off (LEAN_BREAK), and pr.mjs reads an added file's units and its added test
+    ['w1h-breaks', scriptRow('runtime', 'w1h-breaks', 'every w1h pair goes red with each of its mechanisms switched off', [path.join(here, 'w1h-new-units.mjs'), '--break'], lastLine)],
+    ['w1h-pr-new-file', scriptRow('runtime', 'w1h-pr-new-file', 'an added file\'s units are NEW with their records; its added test is run; the report shows them', [path.join(here, 'w1h-new-units.mjs'), '--pr'], lastLine)],
     ['withdrawal', scriptRow('runtime', 'withdrawal', 'a withdrawn reading refused identically; no proof; every decision site catalogued', [path.join(here, 'withdrawal.mjs')], lastLine)],
     ['translator-crashes', scriptRow('runtime', 'translator-crashes', 'node shapes read without translator crashes', [path.join(here, 'translator-crashes.mjs')], (r) => `exit ${r.status}: ${r.stdout.trim()}`, { echoStderr: true })],
     // a module literal's member is named by the path code reaches it by; a same-named class keeps its own units (design/exported-units.md)
