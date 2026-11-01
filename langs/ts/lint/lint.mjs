@@ -98,7 +98,9 @@ const globalDecl = (d) => globalScope(ts.isVariableDeclaration(d) ? d.parent?.pa
 export function unresolvedGlobal(checker, n) {
   if (!n || !ts.isIdentifier(n) || breaks.has('unresolved-global') || ['require', 'undefined', 'arguments', 'NaN', 'Infinity'].includes(n.text) || Object.hasOwn(EFFECT_GLOBALS, n.text)) return false;
   const p = n.parent;
-  if (!p || ts.isTypeNode(p) || ts.isQualifiedName(p) || ts.isHeritageClause(p) || ts.isExpressionWithTypeArguments(p) || (ts.isPropertyAccessExpression(p) && p.name === n) || ts.isPropertyAssignment(p) && p.name === n || ts.isBindingElement(p) || ts.isDeclaration(p) && p.name === n) return false;
+  // a value read only: an expression the program evaluates (never a label, a type, a member or property name, a JSX
+  // attribute name, a binding or a declared name), and a shorthand property's value
+  if (!p || !(ts.isExpressionNode(n) || ts.isShorthandPropertyAssignment(p)) || ts.isPartOfTypeNode(n) || ts.isLabeledStatement(p) || ts.isBreakOrContinueStatement(p) || ts.isJsxAttribute(p) || ts.isQualifiedName(p) || ts.isHeritageClause(p) || ts.isExpressionWithTypeArguments(p) || (ts.isPropertyAccessExpression(p) && p.name === n) || ts.isPropertyAssignment(p) && p.name === n || ts.isBindingElement(p) || ts.isDeclaration(p) && p.name === n) return false;
   if (ts.isShorthandPropertyAssignment(p) ? checker.getShorthandAssignmentValueSymbol(p) : checker.getSymbolAtLocation(n)) return false;
   const t = checker.getTypeAtLocation(n);
   return !!(t.flags & ts.TypeFlags.Any) && t.intrinsicName === 'error';
@@ -535,7 +537,11 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
     if (moduleState(checker, id, sf)) {
-      if (!(ts.getCombinedNodeFlags(o.decl) & ts.NodeFlags.Const) && !inertModuleInit(o.decl.initializer)) v(id, 'toplevel-effect', 'move the effectful module initializer into a function');
+      // a module let/var is a world field whose value at entry is the world's, never its initializer's (module-forms.md:
+      // the starting world is quantified, with no initial-state axiom), and the field is keyed by its declaration text, so
+      // a changed initializer is another field: an effectful initializer is the module's load-time effect (the module
+      // unit's, w1f), and the unit reads and writes the field as any module let (w1e, design/w1e-opaque-this-globals.md)
+      if (breaks.has('effectful-cell') && !(ts.getCombinedNodeFlags(o.decl) & ts.NodeFlags.Const) && !inertModuleInit(o.decl.initializer)) v(id, 'toplevel-effect', 'move the effectful module initializer into a function');
       return;
     }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);

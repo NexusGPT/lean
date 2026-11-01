@@ -1,0 +1,5 @@
+{
+ "scope": ["packs_constructor", "packs_empty", "packs_owner", "packs_label"],
+ "equal": {"packs_constructor": true, "packs_empty": true, "packs_owner": false, "packs_label": false},
+ "why": "A class whose base comes from a module the checkout does not resolve has members the checker cannot list: TS2339 on a member it does not find is the environment's (the member is unknown, not absent), and a read of it is the accessor of the opaque value, the reading unsupported-member already gives a type whose declaration reaches the error type (library-rows.mjs incompleteType; w1e, design/w1e-opaque-this-globals.md). Before, the lint refused every such unit ts-strict. (a) empty: the read is unchanged, the local is inlined: proved; (b) owner: another member of the opaque value: not proved; (c) label: mutate.mjs's string change in the read's call: not proved. A write through such a member stays refused (escape incomplete_base_write). LEAN_BREAK=incomplete-member (tests/w1e-opaque-this-globals.mjs --break) refuses the reads again and the proved row goes red."
+}

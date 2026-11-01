@@ -1,0 +1,41 @@
+{
+ "scope": [
+  "pricer_constructor",
+  "pricer_unit",
+  "pricer_totals",
+  "pricer_totals_xs_map___0",
+  "pricer_shifted",
+  "pricer_shifted_xs_map___0",
+  "pricer_planted",
+  "pricer_planted_xs_map___0",
+  "pricer_table",
+  "pricer_table_xs_map___0",
+  "pricer_table_xs_map___0_ys_map___0",
+  "pricer_fees",
+  "pricer_fees_xs_map___0"
+ ],
+ "equal": {
+  "pricer_constructor": true,
+  "pricer_unit": true,
+  "pricer_totals": false,
+  "pricer_totals_xs_map___0": true,
+  "pricer_shifted": false,
+  "pricer_shifted_xs_map___0": false,
+  "pricer_planted": false,
+  "pricer_planted_xs_map___0": false,
+  "pricer_table": false,
+  "pricer_table_xs_map___0": true,
+  "pricer_table_xs_map___0_ys_map___0": true,
+  "pricer_fees": false,
+  "pricer_fees_xs_map___0": false
+ },
+ "why": "An arrow has no `this` of its own: under an instance method of a class (through any arrows between) it reads the method's receiver, a binding that never changes, so a callback unit there takes the receiver as a captured input (common.mjs lexicalClass, receiverScope; lint.mjs reads `this` against that class) and is graded; before, the lint refused it `this` outside a class method while the translator already gave it the method's `self`. The callbacks read fields of the receiver: a call `this.m()` on an exported class is a world request keyed by the whole class's code (a subclass in another file may replace m; translate.mjs thisRequest, heldKey), so any edit of the class changes it. (a) totals: the callback is unchanged and the method slices its result: the callback's lemma proves over its inputs (the receiver, x), the method's does not; (b) shifted: the callback itself changes, not proved, witnessed; (c) planted: mutate.mjs's boundary change inside the callback (2 to 3), not proved, witnessed; (d) table: both nested callbacks are unchanged and read the receiver through an arrow between, proved; (e) fees: the candidate reads another field of the same receiver, not proved, witnessed. LEAN_BREAK=lexical-this (tests/w1e-opaque-this-globals.mjs --break) refuses the callbacks again and the three proved callback rows go red (lemma missing).",
+ "heap": false,
+ "b": {
+  "Pricer.totals": "WITNESS",
+  "Pricer.shifted": "WITNESS",
+  "Pricer.planted": "WITNESS",
+  "Pricer.table": "WITNESS",
+  "Pricer.fees": "WITNESS"
+ }
+}
