@@ -21,5 +21,11 @@
     "kinds": "PASS-bounded",
     "sizes": "PASS-bounded",
     "settle": "PASS-bounded"
+  },
+  "break": {
+    "library-fakes": {
+      "total": "PASS-bounded",
+      "settle": "WITNESS"
+    }
   }
 }

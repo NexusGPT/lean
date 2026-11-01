@@ -1,7 +1,16 @@
 {
   "project": "tsconfig.json",
   "laneBOnly": true,
-  "scope": ["poke"],
+  "scope": [
+    "poke"
+  ],
   "why": "lodash's get returns the argument's own object, so the parent's write through its result is a write to the argument: lane B runs the vendored package and the sides differ (WITNESS); the recording proxy returns a handle of its own and the write reaches nothing the result reads (PASS-bounded). Lane B only: the value lane (as of 4747022f) applies a field write through an outside call's result to a local copy and proves the two equal, an aliasing gap reported in lane/w2d-library-rows-result.md, outside this lane's files",
-  "b": { "poke": "WITNESS" }
+  "b": {
+    "poke": "WITNESS"
+  },
+  "break": {
+    "library-fakes": {
+      "poke": "PASS-bounded"
+    }
+  }
 }

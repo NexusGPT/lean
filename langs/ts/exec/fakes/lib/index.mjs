@@ -49,12 +49,15 @@ export const LIBRARY_FAKE_ROWS = ROWS.map(({ pkg, kind }) => ({ pkg, kind }));
 
 // date-fns: the vendored functions one by one (its main entry requires every function and every locale); a member
 // that is not vendored is the recording proxy's
+// the vendored file of a date-fns export: its subpath, else the file of its own name (date-fns 3 puts each export in
+// `<export>.js`, so an export vendored as another one's dependency, addMilliseconds under addHours, is answered too)
+export const dateFnsFile = (m, name) => m.subpaths[`date-fns/${name}`] ?? (/^[A-Za-z]+$/.test(name) && Object.hasOwn(m.files, `${name}.js`) ? `${name}.js` : null);
 function dateFns(env) {
   const m = manifestOf('date-fns'); if (!m) return null;
   const rec = env.fake('module:date-fns');
   return new Proxy({}, { get(t, p) {
     if (p === '__esModule') return true;
-    const rel = typeof p === 'string' ? m.subpaths[`date-fns/${p}`] : null;
+    const rel = typeof p === 'string' ? dateFnsFile(m, p) : null;
     if (rel) { const mod = requireVendored(env, 'date-fns', rel); return mod[p] ?? mod.default; }
     return rec[p];
   } });

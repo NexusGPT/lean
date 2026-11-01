@@ -297,6 +297,22 @@ function leavesPrimitive(checker, t, levels) {
   if (levels === 'one' && props.length && !ix) return props.every((p) => leavesPrimitive(checker, checker.getTypeOfSymbol(p), 'none'));
   return false;
 }
+// a type some value of which holds a function, at any depth: lodash's deep copies (cloneDeep) copy every object but keep a
+// function by reference, so a result holding one in a field may share it with an argument
+// a member the default library declares (lib.*.d.ts, marked no-default-lib): the built-in's own (Date's getVarDate of
+// lib.scripthost), not a field a copy holds
+const builtInMember = (p) => (p.declarations ?? []).length > 0 && p.declarations.every((d) => d.getSourceFile().hasNoDefaultLib);
+function holdsFunction(checker, t, seen) {
+  if (seen.has(t)) return false; seen.add(t);
+  const F = ts.TypeFlags;
+  if (t.flags & (F.Union | F.Intersection)) return t.types.some((x) => holdsFunction(checker, x, seen));
+  if (t.flags & (F.Any | F.Unknown | F.TypeParameter)) return true;
+  if (!(t.flags & F.Object)) return false;
+  if (checker.getSignaturesOfType(t, ts.SignatureKind.Call).length || checker.getSignaturesOfType(t, ts.SignatureKind.Construct).length) return true;
+  if (checker.isArrayType(t) || checker.isTupleType(t)) return checker.getTypeArguments(t).some((x) => holdsFunction(checker, x, seen));
+  const ix = checker.getIndexInfoOfType(t, ts.IndexKind.String) ?? checker.getIndexInfoOfType(t, ts.IndexKind.Number);
+  return (ix ? holdsFunction(checker, ix.type, seen) : false) || checker.getPropertiesOfType(t).some((p) => !(p.flags & (ts.SymbolFlags.Method | ts.SymbolFlags.Accessor)) && !builtInMember(p) && holdsFunction(checker, checker.getTypeOfSymbol(p), seen)); // a method is the prototype's, not a field the copy holds
+}
 // the pure reading of a package call holds: the row lists it under `pure`; every function argument is an arrow literal
 // (the translator reads it as a lambda and refuses one with an effect, so the callback the package calls makes no
 // transition); and the result cannot share an object the unit holds, by the row's shape and the result's type
@@ -313,6 +329,6 @@ export function pureLibraryCall(checker, n) {
   }
   const rt = checker.getTypeAtLocation(n);
   if (rt.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return null;
-  const ok = call.shape === 'deep-fresh' ? true : call.shape === 'fresh-array' ? leavesPrimitive(checker, rt, 'all') : call.shape === 'fresh-record' ? leavesPrimitive(checker, rt, 'one') : primitiveOnly(rt);
+  const ok = call.shape === 'deep-fresh' ? !holdsFunction(checker, rt, new Set()) : call.shape === 'fresh-array' ? leavesPrimitive(checker, rt, 'all') : call.shape === 'fresh-record' ? leavesPrimitive(checker, rt, 'one') : primitiveOnly(rt);
   return ok ? call : null;
 }

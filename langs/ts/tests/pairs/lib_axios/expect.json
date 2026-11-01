@@ -1,0 +1,16 @@
+{
+  "project": "tsconfig.json",
+  "laneBOnly": true,
+  "scope": [
+    "own"
+  ],
+  "why": "axios answers a response that carries the request's own configuration: the vendored axios over lean's adapter (the world's table) meets the url (WITNESS against a constant 0); the recording proxy's response is a handle of its own (PASS-bounded under LEAN_BREAK=library-fakes)",
+  "b": {
+    "own": "WITNESS"
+  },
+  "break": {
+    "library-fakes": {
+      "own": "PASS-bounded"
+    }
+  }
+}

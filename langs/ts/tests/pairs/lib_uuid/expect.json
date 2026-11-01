@@ -1,0 +1,16 @@
+{
+  "project": "tsconfig.json",
+  "laneBOnly": true,
+  "scope": [
+    "shaped"
+  ],
+  "why": "uuid's v4 on the side's seeded generator is 36 characters with the version digit 4 at index 14: the vendored uuid meets the shape (WITNESS against a constant 0); the recording proxy's string does not (PASS-bounded under LEAN_BREAK=library-fakes)",
+  "b": {
+    "shaped": "WITNESS"
+  },
+  "break": {
+    "library-fakes": {
+      "shaped": "PASS-bounded"
+    }
+  }
+}

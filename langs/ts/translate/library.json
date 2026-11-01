@@ -845,8 +845,6 @@
      "addSeconds",
      "addMinutes",
      "addHours",
-     "subMilliseconds",
-     "subSeconds",
      "subMinutes",
      "subHours",
      "fromUnixTime",
