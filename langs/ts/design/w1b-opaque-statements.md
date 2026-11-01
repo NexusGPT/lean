@@ -184,6 +184,20 @@ Each rule's pair `opaque_<rule>` (written by `tests/opaque-statements-pairs.mjs`
 A rule the translator already reads whole-unit (`number-special`, `unary-coercion`, `division`) has `unchanged`,
 `escapes` and `caller` instead.
 
-## The measurement
+## The measurement (2026-11-01; every command and number in `lane/w1b-opaque-statements-result.md`)
 
-See `lane/w1b-opaque-statements-result.md`.
+The census ran on A8's roots (nexus-ui, blocks, driftbench), at the base 4747022f against this lane at `1ef542a7c5`,
+which also includes w1a's cherry-picked block grading.
+
+- Entered: 2,275 -> 2,433 of 6,624 units.
+- The family's first-refusal stops: 164 -> 56. 55 of the 56 are `reference-key` on a collection type the model cannot
+  hold.
+- Units the family newly lets in: 29 by first finding, 23 of them with a step of the family.
+- Their opaque fraction: median 1 (11 statement steps: median 0.333). A5's threshold of at most 0.25 is not met.
+  - The 1s are concise callbacks whose construct is their whole body, w1a's blocks, and `reference-key` units read
+    whole.
+  - Every statement step is wider than its expression finding, so no step's span equals its finding's.
+- The next narrowing is an expression-level step.
+
+The pairs: 19 pairs, 243 rows, all pass. Removing a read, a write or the callee texts each turns its guarded change
+outside the step red. Removing the sharing test does not, because the heap identity guard refuses the same cases.
