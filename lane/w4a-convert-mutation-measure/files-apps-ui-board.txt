@@ -1,0 +1,1 @@
+src/blocks/board/BoardCanvas.tsx

@@ -796,6 +796,8 @@ async function adviceLabels(add) {
     ['counterexample-reading', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, 'counterexample.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'counterexample-reading', "Dafny's counterexample text read into the unit's values, the elements read after the reads, the input by value round-tripped", r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     ['refusal-path-space', scriptRow('runtime', 'refusal-path-space', 'a translator refusal in a path with a space keeps its rule', [path.join(here, 'refusal-path-space.mjs')], lastLine)],
     ['convert-async-foreach', scriptRow('runtime', 'convert-async-foreach', 'a forEach over a list whose array type rests on a cast is listed, never rewritten', [path.join(here, 'convert_async_foreach.mjs')], lastLine)],
+    // the mutation family's transforms: the advice table names each transform; each guard refuses its near shape, whose unguarded rewrite is a WITNESS (w4a, 2026-11-01)
+    ['convert-mutation', scriptRow('runtime', 'convert-mutation', 'closure-counter, hoist-update, rebuild-by-spread, param-copy, explicit-return: each guard refuses its near shape, whose unguarded rewrite is a WITNESS (the fixtures run in the convert section)', [path.join(here, 'convert_mutation.mjs'), '--no-fixtures'], lastLine)],
     // a proof under a declared fact (a @sealed receiver) names it in the certificate (design/conformance-readings.md)
     ['sealed-assumption', scriptRow('runtime', 'sealed-assumption', 'a proof under a @sealed receiver names the assumption in the certificate and its reason', [path.join(here, 'sealed-assumption.mjs')], lastLine)],
     // the certificate records the seconds of each lane that ran, a lane that did not run absent (check.mjs certificate.timing)
@@ -1073,7 +1075,7 @@ async function convert(add) {
     const want_ = fs.existsSync(path.join(d, 'expect.json')) ? JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8')) : null;
     const nApplied = file?.applied?.length ?? 0;
     const counted = want_ && 'applied' in want_ ? nApplied === want_.applied && (file?.listed?.length ?? 0) === want_.listed && (nApplied === 0 || rs.length > 0) : nApplied > 0 && rs.length > 0;
-    const ok = c.status === 0 && counted && !file?.reverted && rs.every((r) => r.verdict === 'PASS-proved' || r.verdict === 'PASS-bounded');
+    const ok = c.status === 0 && counted && !file?.reverted && rs.every((r) => r.verdict === 'PASS-proved' || r.verdict === 'PASS-bounded' || r.verdict === 'PASS-erased'); // PASS-erased: the emitted JavaScript is the parent's (convert.mjs erasureRows)
     add('convert', name, 'applied and proved, no WITNESS', ok, rep ? `${file?.applied?.length ?? 0} applied, ${file?.listed?.length ?? 0} listed; ${count(rs)}${file?.reverted ? '; reverted: ' + file.reverted : ''}` : (c.stderr || c.stdout).trim().slice(-160));
     fs.writeFileSync(unit, fs.readFileSync(path.join(d, 'wrong.ts'), 'utf8'));
     const wj = path.join(tmp, `convert-${name}-wrong.json`);

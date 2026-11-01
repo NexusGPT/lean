@@ -1,0 +1,2183 @@
+{
+ "summary": {
+  "root": "/root/census-installs/w4a/apps-ui",
+  "base": "6c6ae2e5d0c064e704f8639b2523bb1f93a6753c",
+  "dry": false,
+  "n": 30,
+  "dafnySeconds": 30,
+  "files": 48,
+  "converted": 5,
+  "reverted": 1,
+  "erasedOnly": 0,
+  "seconds": 1735,
+  "per": {
+   "closure-counter": {
+    "applied": 7,
+    "files": 2,
+    "kept": 1,
+    "reverted": 1,
+    "listed": 171
+   },
+   "hoist-update": {
+    "applied": 4,
+    "files": 4,
+    "kept": 4,
+    "reverted": 0,
+    "listed": 3
+   },
+   "rebuild-by-spread": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 118
+   },
+   "param-copy": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   },
+   "explicit-return": {
+    "applied": 0,
+    "files": 0,
+    "kept": 0,
+    "reverted": 0,
+    "listed": 0
+   }
+  }
+ },
+ "results": [
+  {
+   "file": "demo/src/App.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 393,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "demo/src/Section.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 109,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 109,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 109,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 109,
+     "why": "delete does not return its receiver or its length"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "demo/src/sections/cards.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 183,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 183,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "demo/src/sections/flows.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 249,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 250,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 264,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 279,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/ai/CodeBlock.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 108,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/ai/Orb.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 90,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 91,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 92,
+     "why": "the callback is not the one argument of a call"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/ai/PromptEditor.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "operator-value-context",
+     "line": 145,
+     "why": "the step is under a JsxExpression, which does not evaluate it once on every path"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "applied": [
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 347,
+     "unit": "BoardCanvas/React.useCallback()#0@5/order.forEach()#0@1"
+    }
+   ],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 287,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 287,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 295,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 295,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 316,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 316,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 378,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 424,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 424,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 433,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 433,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 441,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 441,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 443,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 443,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 452,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 452,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 471,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 471,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": "ASK on BoardCanvas/React.useCallback()#0@5/order.reduce()#0: lane B ASK that the parent against itself does not share (ASK: spec: no unit BoardCanvas/React.useCallback()#0@5/order.reduce()#0): callback-undriven: on 1 input(s) a function the unit handed out could not be driven (drive budget spent (64 drives in on"
+  },
+  {
+   "file": "src/blocks/cards/Callout.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 160,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 160,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 161,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 161,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 165,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 214,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 217,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 218,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 218,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 223,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 229,
+     "why": "the call is already a statement"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/charts/EChartsBox.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 55,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/composer/PaneComposer.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 123,
+     "why": "splice does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 203,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 218,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 219,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 223,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 314,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 448,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 449,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 450,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 457,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 465,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 473,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/copilot/CopilotPanel.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 228,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 231,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 253,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/flow/FlowGraph.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 201,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 217,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 236,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 239,
+     "why": "the call is already a statement"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/form/FormulaEditor.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 318,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 318,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 412,
+     "why": "the callback is not handed to forEach"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/fx/LiquidGroup.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 418,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 427,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 427,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/fx/SelectionMerge.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 243,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 243,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 246,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 246,
+     "why": "the callback is not the one argument of a call"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/fx/useGlideBlocks.ts",
+   "applied": [
+    {
+     "transform": "hoist-update",
+     "rule": "operator-value-context",
+     "line": 77,
+     "unit": "useStableRuns"
+    }
+   ],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 81,
+     "why": "the callback is not handed to forEach"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 113,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 116,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 116,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 134,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 134,
+     "why": "delete does not return its receiver or its length"
+    }
+   ],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  },
+  {
+   "file": "src/blocks/fx/useSelectionRects.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 87,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 111,
+     "why": "set does not return its receiver or its length"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/insights/StatTiles.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 258,
+     "why": "the callback is not handed to forEach"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/mobile/ShortcutsOverlay.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 62,
+     "why": "the callback is not handed to forEach"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 62,
+     "why": "the callback is not handed to forEach"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/nav/CommandSearch.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 297,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 297,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 299,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 311,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 363,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/nav/SidebarNav.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 203,
+     "why": "set does not return its receiver or its length"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/blocks/tables/FilterTable.tsx",
+   "applied": [
+    {
+     "transform": "hoist-update",
+     "rule": "operator-value-context",
+     "line": 101,
+     "unit": "FilterTable"
+    }
+   ],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 103,
+     "why": "the callback is not handed to forEach"
+    }
+   ],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  },
+  {
+   "file": "src/hooks/useAsyncOp.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 48,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 48,
+     "why": "the callback is not the one argument of a call"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/hooks/useDebouncedSave.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 21,
+     "why": "the name is not used in an arrow callback"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 25,
+     "why": "the name is not used in an arrow callback"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/hooks/useFlip.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 85,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/hooks/useFlipScan.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 82,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 156,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 163,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/hooks/useHoverIntent.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 73,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 77,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 79,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 81,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 83,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 90,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 93,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 100,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 101,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/hooks/useMovingIndicator.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 120,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 120,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 121,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 121,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 123,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 165,
+     "why": "the callback is not handed to forEach"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 167,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 167,
+     "why": "the callback is not the one argument of a call"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/hooks/usePollRev.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 20,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 27,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 27,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 35,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 35,
+     "why": "the callback is not the one argument of a call"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/hooks/useProximityRects.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 147,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 195,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 225,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 230,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 246,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 320,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 348,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/lib/dragVerbs.ts",
+   "applied": [
+    {
+     "transform": "hoist-update",
+     "rule": "operator-value-context",
+     "line": 51,
+     "unit": "unlockSelection"
+    }
+   ],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 150,
+     "why": "the name is not used in an arrow callback"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 184,
+     "why": "the name is not used in an arrow callback"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 185,
+     "why": "the name is not used in an arrow callback"
+    }
+   ],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "applied": [
+    {
+     "transform": "hoist-update",
+     "rule": "in-place-mutation",
+     "line": 1665,
+     "unit": "buildFlowLayout"
+    },
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 2206,
+     "unit": "flowMetrics/segsOf(E[i]).forEach()#0"
+    },
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 2225,
+     "unit": "flowMetrics/E.forEach()#0@2"
+    },
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 2240,
+     "unit": "flowMetrics/cents.forEach()#0"
+    },
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 2200,
+     "unit": "flowMetrics/segsOf(E[i]).forEach()#0"
+    },
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 2220,
+     "unit": "flowMetrics/E.forEach()#0@2"
+    },
+    {
+     "transform": "closure-counter",
+     "rule": "captured-mutable",
+     "line": 2217,
+     "unit": "flowMetrics/E.forEach()#0@2"
+    }
+   ],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 621,
+     "why": "the container is handed on or held at line 623"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 621,
+     "why": "the container is handed on or held at line 623"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 704,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 705,
+     "why": "the container is handed on or held at line 699"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 753,
+     "why": "a function that someone may call later names the container at line 851"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 753,
+     "why": "a function that someone may call later names the container at line 851"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 754,
+     "why": "a function that someone may call later names the container at line 851"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 754,
+     "why": "a function that someone may call later names the container at line 851"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 798,
+     "why": "the container is handed on or held at line 790"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 798,
+     "why": "the container is handed on or held at line 790"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 823,
+     "why": "a function that someone may call later names the container at line 826"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 823,
+     "why": "a function that someone may call later names the container at line 826"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 867,
+     "why": "the step is under a WhileStatement, which does not evaluate it once on every path"
+    },
+    {
+     "rule": "operator-value-context",
+     "line": 904,
+     "why": "the step is under a WhileStatement, which does not evaluate it once on every path"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 975,
+     "why": "the step is in a function's expression body or a parameter default"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 992,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1002,
+     "why": "an array of the container is read into an expression at line 1064"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1002,
+     "why": "an array of the container is read into an expression at line 1064"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1003,
+     "why": "an array of the container is read into an expression at line 1064"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1003,
+     "why": "an array of the container is read into an expression at line 1064"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1058,
+     "why": "another function names `centroid` at line 1068; it could run while the loop runs"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1068,
+     "why": "the callback does not write `centroid`"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1117,
+     "why": "the container is handed on or held at line 1128"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1117,
+     "why": "the container is handed on or held at line 1128"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1117,
+     "why": "the container is handed on or held at line 1128"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1123,
+     "why": "an array of the container is read into an expression at line 1141"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1123,
+     "why": "an array of the container is read into an expression at line 1141"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1137,
+     "why": "the callback writes 2 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1138,
+     "why": "the callback writes 2 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1163,
+     "why": "the forEach call is used as a value"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1163,
+     "why": "the forEach call is used as a value"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1164,
+     "why": "the forEach call is used as a value"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1164,
+     "why": "the forEach call is used as a value"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1215,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1215,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1216,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1216,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1218,
+     "why": "the container is handed on or held at line 1322"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1218,
+     "why": "the container is handed on or held at line 1322"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1219,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1219,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1221,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1221,
+     "why": "the container is handed on or held at line 1321"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1222,
+     "why": "the container is handed on or held at line 1322"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1222,
+     "why": "the container is handed on or held at line 1322"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1241,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1244,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1261,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1262,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1281,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1316,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1330,
+     "why": "the key is not a name, a literal or a pure path; it is read twice"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1330,
+     "why": "the key is not a name, a literal or a pure path; it is read twice"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1330,
+     "why": "the key is not a name, a literal or a pure path; it is read twice"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1330,
+     "why": "the key is not a name, a literal or a pure path; it is read twice"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1368,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1418,
+     "why": "the container is handed on or held at line 1420"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1421,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1449,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1507,
+     "why": "the callback writes 3 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1508,
+     "why": "the callback writes 3 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1509,
+     "why": "the callback writes 3 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1537,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1537,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1537,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1614,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1614,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1617,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1617,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1619,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1619,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1620,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1620,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1625,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1625,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1627,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1627,
+     "why": "the call is already a statement"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1628,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1628,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1635,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 1641,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1652,
+     "why": "the callback writes 2 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 1654,
+     "why": "the callback writes 2 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1737,
+     "why": "the container is handed on or held at line 1739"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1737,
+     "why": "the container is handed on or held at line 1739"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1743,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 1743,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 2187,
+     "why": "the callback writes 3 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 2188,
+     "why": "the callback writes 3 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 2190,
+     "why": "the callback writes 3 bindings declared outside it; one carried value is rewritten"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 2201,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 2242,
+     "why": "the key is not a name, a literal or a pure path; it is read twice"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 2242,
+     "why": "the key is not a name, a literal or a pure path; it is read twice"
+    }
+   ],
+   "changed": true,
+   "erasedOnly": false,
+   "reverted": null
+  },
+  {
+   "file": "src/lib/formulaMath.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 332,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 333,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/lib/paneTree.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 75,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 102,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 135,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 137,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 141,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 143,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 147,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 150,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 170,
+     "why": "the forEach statement is inside a function someone else may call"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 175,
+     "why": "the callback is not handed to forEach"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 194,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 228,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/DataTable.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 571,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 588,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 588,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 589,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 589,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 698,
+     "why": "clear does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 899,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 900,
+     "why": "delete does not return its receiver or its length"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/KanbanBoard.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 273,
+     "why": "an array of the container is held or handed on at line 273"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 273,
+     "why": "an array of the container is held or handed on at line 273"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 332,
+     "why": "a value that is not a fresh array is put into the container at line 326"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 332,
+     "why": "a value that is not a fresh array is put into the container at line 326"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 332,
+     "why": "a value that is not a fresh array is put into the container at line 326"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 335,
+     "why": "a value that is not a fresh array is put into the container at line 326"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 335,
+     "why": "a value that is not a fresh array is put into the container at line 326"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 335,
+     "why": "a value that is not a fresh array is put into the container at line 326"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 487,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 546,
+     "why": "add does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 559,
+     "why": "clear does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 559,
+     "why": "clear does not return its receiver or its length"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/NotionEditor.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 126,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 126,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 130,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 131,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 133,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 134,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 135,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 136,
+     "why": "the receiver is not typed as an array (a Map, a Set or a NodeList has forEach and no reduce)"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 258,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 569,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/RecordPage.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 1166,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/fields/whiteboard/Thumbnail.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 57,
+     "why": "the callback is not handed to forEach"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 62,
+     "why": "the callback is not the one argument of a call"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 62,
+     "why": "the callback is not the one argument of a call"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/fields/whiteboard/WhiteboardField.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 75,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 83,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/useSuggestions.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 30,
+     "why": "the callback is not handed to forEach"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/views/calendar/events.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 165,
+     "why": "set does not return its receiver or its length"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/views/flow/layout.ts",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 53,
+     "why": "add does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 54,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 93,
+     "why": "the receiver is not a name or a path of plain fields"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 100,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/views/form/FormView.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "param-mutation",
+     "line": 143,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 143,
+     "why": "set does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 143,
+     "why": "delete does not return its receiver or its length"
+    },
+    {
+     "rule": "param-mutation",
+     "line": 143,
+     "why": "delete does not return its receiver or its length"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/views/gallery/GalleryView.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 159,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/views/grid/SpreadsheetView.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "captured-mutable",
+     "line": 262,
+     "why": "the callback takes an index or the array: a reduce callback here takes the accumulator and the element"
+    },
+    {
+     "rule": "captured-mutable",
+     "line": 264,
+     "why": "the callback is not handed to forEach"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  },
+  {
+   "file": "src/record-core/views/grid/editors.tsx",
+   "applied": [],
+   "listed": [
+    {
+     "rule": "closure-mutation",
+     "line": 37,
+     "why": "the finding is not on a name"
+    },
+    {
+     "rule": "closure-mutation",
+     "line": 121,
+     "why": "the finding is not on a name"
+    }
+   ],
+   "changed": false,
+   "erasedOnly": false
+  }
+ ],
+ "rows": [
+  {
+   "file": "src/blocks/fx/useGlideBlocks.ts",
+   "unit": "useStableRuns",
+   "verdict": "PASS-bounded",
+   "reason": "translate: outside the subset:\n  /root/census-installs/w4a/apps-ui/.lean/runs/run-dSj0bn/sources/src/blocks/fx/.lean_base_1821627_useGlideBlocks.ts:77:29  operator-value-context  move this value step into an explicit statement and conditional branch",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/blocks/fx/useGlideBlocks.ts",
+   "unit": "useStableRuns/plain.map()#0@2",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: useStableRuns",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/blocks/tables/FilterTable.tsx",
+   "unit": "FilterTable",
+   "verdict": "PASS-bounded",
+   "reason": "`chipTone(s.color)` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/blocks/tables/FilterTable.tsx",
+   "unit": "FilterTable/rows.map()#0",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: FilterTable",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/dragVerbs.ts",
+   "unit": "unlockSelection",
+   "verdict": "PASS-bounded",
+   "reason": "`s` is another name for a value this function was handed; change it through that name, or copy it first",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout",
+   "verdict": "PASS-bounded",
+   "reason": "write a record field by name, or use a local Record<string, T> dictionary",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout/Object.keys(lanes).forEach()#0@1",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: buildFlowLayout",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout/Object.keys(lanes).forEach()#0@1/srcSeq.concat(snkSeq.reverse()).forEach()#0",
+   "verdict": null,
+   "reason": "present at the parent, absent at the head",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "buildFlowLayout/Object.keys(lanes).forEach()#0@1/srcSeq.concat(snkSeq).forEach()#0",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: buildFlowLayout/Object.keys(lanes).forEach()#0@1",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics",
+   "verdict": "PASS-bounded",
+   "reason": "`e.points[i] as Pt` holds a value whose type nothing checked (an `as` that narrows, or an any or unknown value), and this slot reads it as its declared type; test it first (`typeof x === \"number\"`, a field test), or keep it in a local, an operation or the result",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).forEach()#0",
+   "verdict": null,
+   "reason": "present at the parent, absent at the head",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).forEach()#0/segsOf(E[j]).forEach()#0",
+   "verdict": null,
+   "reason": "present at the parent, absent at the head",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).reduce()#0",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: flowMetrics",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/segsOf(E[i]).reduce()#0/segsOf(E[j]).reduce()#0",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: flowMetrics/segsOf(E[i]).reduce()#0",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.forEach()#0@2",
+   "verdict": null,
+   "reason": "present at the parent, absent at the head",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.forEach()#0@2/segsOf(e).forEach()#0",
+   "verdict": null,
+   "reason": "present at the parent, absent at the head",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.reduce()#0",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: flowMetrics",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.reduce()#0/segsOf(e).reduce()#0",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: flowMetrics/E.reduce()#0",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.forEach()#0@2/segsOf(e).forEach()#0/rects.forEach()#0",
+   "verdict": null,
+   "reason": "present at the parent, absent at the head",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/E.reduce()#0/segsOf(e).reduce()#0/rects.reduce()#0",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: flowMetrics/E.reduce()#0/segsOf(e).reduce()#0",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/cents.forEach()#0",
+   "verdict": null,
+   "reason": "present at the parent, absent at the head",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/lib/flowLayout.ts",
+   "unit": "flowMetrics/cents.reduce()#0@2",
+   "verdict": "PASS-bounded",
+   "reason": "covered-by: flowMetrics",
+   "reverted": false,
+   "control": null
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas",
+   "verdict": "ASK",
+   "reason": "callback-undriven: on 1 input(s) a function the unit handed out could not be driven (drive budget spent (64 drives in one observation), first at input 4); an undriven callback is undecided, never a difference",
+   "reverted": true,
+   "control": "lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas/React.useCallback()#0@5",
+   "verdict": "ASK",
+   "reason": "covered-by: BoardCanvas",
+   "reverted": true,
+   "control": "lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas/React.useCallback()#0@5/order.forEach()#0@1",
+   "verdict": "ASK",
+   "reason": "covered-by: BoardCanvas/React.useCallback()#0@5",
+   "reverted": true,
+   "control": "lean's own: lane A not run, lane B ASK, the same on the parent against itself"
+  },
+  {
+   "file": "src/blocks/board/BoardCanvas.tsx",
+   "unit": "BoardCanvas/React.useCallback()#0@5/order.reduce()#0",
+   "verdict": "ASK",
+   "reason": "covered-by: BoardCanvas/React.useCallback()#0@5",
+   "reverted": true,
+   "control": null
+  }
+ ]
+}

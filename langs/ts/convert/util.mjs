@@ -1,7 +1,7 @@
 // Shared syntax-tree helpers for the converter's transforms. Every edit is a span of the source file taken from a
 // node of the TypeScript syntax tree and the text that replaces it; the replacement is built from the source text of
 // other nodes, never from a pattern over the text.
-import { ts } from '../common.mjs';
+import { ts, assertionHeld, typeAssertion } from '../common.mjs';
 
 const K = ts.SyntaxKind;
 
@@ -165,6 +165,44 @@ export function typeText(checker, t, at) {
   const s = checker.typeToString(t, at, ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope | ts.TypeFormatFlags.WriteArrowStyleSignature);
   if (/\bimport\(|\bany\b|\.\.\.|typeof /.test(s) || s.length > 160) return null;
   return s;
+}
+
+// the expression on a list's path whose type rests on a type assertion, or null: the value itself (an `as`, or a local
+// an `as` writes: common.mjs assertionHeld), a call of a same-file unit returning an asserted value (typeAssertion), and,
+// walking back, the root of a field path and the initializer of the binding it comes from, through await. foreach.mjs
+// keeps its own reader (it also follows a `Promise.all` pattern element); this one serves the transforms after it
+export function castOnPath(checker, e, depth = 0) {
+  if (!e || depth > 12) return null;
+  e = unparen(e);
+  while (ts.isAwaitExpression(e) || ts.isNonNullExpression(e) || ts.isSatisfiesExpression(e)) e = unparen(e.expression);
+  if (assertionHeld(checker, e)) return e;
+  if (ts.isCallExpression(e) && typeAssertion(checker, e)) return e;
+  if (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) return castOnPath(checker, e.expression, depth + 1);
+  if (!ts.isIdentifier(e)) return null;
+  const d = symbolOf(checker, e)?.valueDeclaration;
+  if (!d) return null;
+  if (ts.isVariableDeclaration(d)) return d.initializer ? castOnPath(checker, d.initializer, depth + 1) : null;
+  if (ts.isBindingElement(d)) { let vd = d.parent; while (vd && !ts.isVariableDeclaration(vd)) vd = vd.parent; return vd?.initializer ? castOnPath(checker, vd.initializer, depth + 1) : null; }
+  return null;
+}
+
+// the synchronous array methods whose inline callback runs only inside the call (lint.mjs reads them as loop bodies)
+export const ARRAY_CALLBACK_METHODS = new Set(['forEach', 'map', 'filter', 'reduce', 'reduceRight', 'some', 'every', 'find', 'findIndex', 'findLast', 'findLastIndex', 'flatMap']);
+
+// an inline arrow or function expression handed to a synchronous array method: nobody holds it after the call, so
+// nothing can call it again while a step of an inner loop runs
+export function inlineArrayCallback(fn) {
+  if (!fn || !(ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) || fn.name) return false;
+  if (fn.modifiers?.some((m) => m.kind === K.AsyncKeyword) || fn.asteriskToken) return false;
+  let top = fn; while (top.parent && ts.isParenthesizedExpression(top.parent)) top = top.parent;
+  const call = top.parent;
+  return !!call && ts.isCallExpression(call) && call.arguments.includes(top) && ts.isPropertyAccessExpression(call.expression) && ARRAY_CALLBACK_METHODS.has(call.expression.name.text);
+}
+
+// the first statement between a node and the function `fn` around it that is a try statement, or null
+export function tryBetween(n, fn) {
+  for (let p = n.parent; p && p !== fn; p = p.parent) if (ts.isTryStatement(p)) return p;
+  return null;
 }
 
 export { ts, K };

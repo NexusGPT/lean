@@ -1,0 +1,1 @@
+{"rule": "operator-value-context", "why": "reads a field `n` before the step"}
