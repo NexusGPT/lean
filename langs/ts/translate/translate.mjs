@@ -1976,7 +1976,8 @@ function translateOnce(file, fnName, opts = {}) {
   //   reordered) is refused (key-order): two orders would read alike.
   // An `own` object stays own only while no code of the unit (or of a same-file function it calls) stores a record it
   // built, adds a key (an optional field written) or deletes one in an object of a type the handed value can reach.
-  const orderRecord = (t) => !!(t.flags & (TF.Object | TF.Intersection)) && !isAny(t) && !isArrayLike(checker, t) && !isCallable(t) && !isMapT(t) && !isSetT(t) && !isPromiseT(t) && checker.getPropertiesOfType(t).some((p) => !(p.flags & (ts.SymbolFlags.Method | ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor)));
+  const libraryOwned = (t) => { const sym = t.getSymbol?.(); const ds = sym?.declarations ?? []; return !!sym && !!(sym.flags & (ts.SymbolFlags.Interface | ts.SymbolFlags.Class)) && ds.length > 0 && ds.every((d) => d.getSourceFile().hasNoDefaultLib); }; // a built-in (RegExp, Date, Error, URL): the engine makes its own keys, in its order
+  const orderRecord = (t) => !libraryOwned(t) && !!(t.flags & (TF.Object | TF.Intersection)) && !isAny(t) && !isArrayLike(checker, t) && !isCallable(t) && !isMapT(t) && !isSetT(t) && !isPromiseT(t) && checker.getPropertiesOfType(t).some((p) => !(p.flags & (ts.SymbolFlags.Method | ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor)));
   const orderBearing = (t, depth = 0, seen = new Set()) => { // may a value of type t hold a record (through arrays, tuples, Map and Set items, dictionary values, fields)?
     if (!t || isAny(t) || depth > 6 || seen.has(t)) return false;
     seen.add(t);

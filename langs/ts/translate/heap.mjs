@@ -969,6 +969,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
     if (t.flags & ts.TypeFlags.Union) return t.types.some((x) => holdsRecord(x, depth, seen));
     if (!(t.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection)) || checker.getSignaturesOfType(t, ts.SignatureKind.Call).length) return false;
     const name = t.symbol?.name ?? '';
+    const decls = t.symbol && (t.symbol.flags & (ts.SymbolFlags.Interface | ts.SymbolFlags.Class)) ? t.symbol.declarations ?? [] : [];
+    if (decls.length && decls.every((d) => d.getSourceFile().hasNoDefaultLib) && !checker.isArrayType(t) && !checker.isTupleType(t) && !['Map', 'Set', 'ReadonlyMap', 'ReadonlySet', 'ReadonlyArray', 'Promise'].includes(name)) return false; // a built-in: the engine makes its keys
     const inner = [...(checker.getTypeArguments?.(t) ?? []), ...[ts.IndexKind.String, ts.IndexKind.Number].map((k) => checker.getIndexTypeOfType(t, k)).filter(Boolean)];
     if (checker.isArrayType(t) || checker.isTupleType(t) || ['Map', 'Set', 'ReadonlyMap', 'ReadonlySet', 'ReadonlyArray', 'Promise', 'Date'].includes(name)) return inner.some((x) => holdsRecord(x, depth + 1, seen));
     return checker.getPropertiesOfType(t).some((p) => !(p.flags & (ts.SymbolFlags.Method | ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor))) || inner.some((x) => holdsRecord(x, depth + 1, seen));
