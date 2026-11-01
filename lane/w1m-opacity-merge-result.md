@@ -319,7 +319,7 @@ sealedCollection: sealed-collection, unhanded-collection).
 
 ### Open (these two merges)
 
-- **w1d's break rows on opaque_async_origin: two mechanisms guard the same units (reported, not patched).** On the
+- **Closed in Resume 2 (below).** w1d's break rows on opaque_async_origin: two mechanisms guard the same units. On the
   merged tree, `async-drop-origins` leaves `count` and `share` unproved, and `async-drop-carry` leaves `branch`
   unproved (3 of w1d's 176 rows, 3 suite rows). The merge is sound: they are still not proved. The rows fail because
   w1d's mechanism is no longer the only one that refuses them:
@@ -353,3 +353,30 @@ sealedCollection: sealed-collection, unhanded-collection).
   these merges.
 - Dated sections of admission-contract.md keep each lane's own counts as written (w1d's "605 sites"). The table is this
   branch's: 658 sites, 0 uncatalogued.
+
+## Resume 2: the three opaque_async_origin break rows (the lead's one open item)
+
+The lead's rule: fix the test and leave the mechanisms alone. When a second mechanism also guards a break row's unit,
+the row breaks both. `LEAN_BREAK` already takes a list (break.mjs `breakList`), so no combined name is registered.
+- tests/break.mjs `breakRows`: a row's `mechanism` may list names (`"a,b"`). Every name must be registered. The header
+  comment covers the two-guards case.
+- pairs/opaque_async_origin/expect.json: `async-drop-origins` now covers `bump` only, `async-drop-origins,reach-closure`
+  covers `count` and `share`, and `async-drop-carry,reach-closure` covers `branch`. The pair's `why` names both guards.
+- design/w1d-opaque-async.md, "Each pair's breaks": the rows as above, plus a paragraph on two guards (w1g's world
+  read through the holder `user` refuses count, share and branch on its own, and bump has only w1d's guard).
+- No mechanism changed. No other test changed.
+
+Validators (output lines verbatim, load about 70-90, `LEAN_LOAD_GATE` set above it):
+- `node langs/ts/tests/run.mjs --pair opaque_async_origin`: `| TOTAL | 14 checks | ALL PASS |`. Its break rows are
+  `break async-drop-origins: Equal_bump`, `break async-drop-origins,reach-closure: Equal_count`, `… Equal_share`
+  and `break async-drop-carry,reach-closure: Equal_branch`, each `PASS` with `proved under LEAN_BREAK=<names>: the
+  mechanism is what refuses it`. These are the three suite rows that failed before, now passing.
+- Either guard on keeps the units unproved. With w1d's guards off alone this held already (the three rows above, before
+  this fix). With `reach-closure` off alone, a temporary copy of the pair (removed afterwards) whose break row named
+  only `reach-closure` gave `still not proved under the break` for count, share and branch (`3 FAILED`).
+- `LEAN_LOAD_GATE=90 node langs/ts/tests/w1d-opaque-async.mjs --jobs 2`: `PASS  as written: 176 of 176 rows pass over
+  15 pairs`, then both pending lines `PASS`, then `ALL PASS`, exit 0.
+- The driver has no `--break` option. Its break convention is the pairs' own `break` rows, which run inside the
+  `as written` line and pass only when the broken run proves falsely. Each of those rows is red as a break, as shown
+  above.
+

@@ -155,10 +155,19 @@ counting, nested callbacks included (stricter: a large async callback inside a s
 
 Every break is a pair's own `break` row (tests/break.mjs, run by tests/run.mjs): the per-rule pairs' `upstream` unit
 under `async-drop-reads` (a local the step reads, changed before the step: a change outside the construct), the
-`opaque_async_origin` units count, share and bump under `async-drop-origins` and its branch unit under
-`async-drop-carry`, `opaque_async_callee`'s run under `async-drop-callees`; each must
+`opaque_async_origin` unit bump under `async-drop-origins`, its count and share units under
+`async-drop-origins,reach-closure` and its branch unit under `async-drop-carry,reach-closure`, `opaque_async_callee`'s
+run under `async-drop-callees`; each must
 prove under the break (a false PASS-proved) and not without it. `opaque_capture` is lane B's (its site is refused, so it
 has no lemma): the driver runs its check row under `async-drop-pending` and asserts it fails.
+
+Two guards on one unit. Since w1g's merge, `user.tags.length` after `fill(st, t, k)` is read through `user`, a holder
+of what the call was handed, as the world holds it after the step (common.mjs readAfterCall `share`, guarded by
+`reach-closure`). That read refuses count, share and branch with w1d's write closure off. A break row whose unit
+a second mechanism also guards breaks both: its `mechanism` lists them (`LEAN_BREAK` is a list, tests/break.mjs
+checks that each name is registered). With every guard off the false proof shows, and with either guard on the unit stays
+unproved. bump has one guard (`k++` rebinds a local, which the world read does not cover), so its row names
+`async-drop-origins` alone.
 
 ## Shapes that would read a step as a loop
 
