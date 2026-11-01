@@ -6,7 +6,8 @@
 //    the runner counts (mutants.mjs KINDS) has a site in the fixture.
 // 2. Every row is planted and its verdict is WITNESS, found by lane B with a named source; the table's `all` line says so.
 // 3. The study's JSON holds no seconds and no path of its work folder, so two runs can compare byte for byte.
-// 4. An equivalent mutant is not a site: `s ?? ""` on a string has no coalesce site (new_kinds orEmpty).
+// 4. An equivalent mutant is not a site: `s ?? ""` on a string and `xs ?? []` on an array have no coalesce site
+//    (new_kinds orEmpty, sizeOf).
 // 5. A site of a later kind is the file's own text: `was` is the text in [start, end), and the mutant mutate.mjs plants is
 //    text[:start] + text + text[end:].
 // --break [kind]: the runner drops mutate.mjs's sites of that kind (--without-kind; dropped-effect by default); part 1 fails.
@@ -56,6 +57,7 @@ try {
   for (const k of KINDS) assert.ok(kinds.has(k), `the fixture has a ${k} site`);
   // an equivalent coalesce is not a site: new_kinds orEmpty is s ?? "" on a string
   assert.ok(!listed.some((x) => x.startsWith('new_kinds orEmpty ') && x.includes(' coalesce ')), 'orEmpty (s ?? "" on a string) has no coalesce site');
+  assert.ok(!listed.some((x) => x.startsWith('new_kinds sizeOf ') && x.includes(' coalesce ')), 'sizeOf (xs ?? [] on an array) has no coalesce site');
   const rows = study.rows.map((x) => `${x.where} ${x.unit} ${x.index} ${x.kind} ${x.lines.join('-')}`);
   assert.deepEqual(rows, listed, 'every site mutate.mjs lists is a row of the study, in its order');
   // 2. all planted, all caught by lane B

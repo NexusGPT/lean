@@ -18,7 +18,7 @@
 //   compound             += -= *= /= %= **= <<= >>= >>>= &= |= ^= &&= ||= ??= flipped
 //   arithmetic           / % ** become *
 //   equality             == <-> !=
-//   coalesce             ?? becomes || (not s ?? "" on a string nor b ?? false on a boolean: equal to the parent)
+//   coalesce             ?? becomes || (not where they are equal: an object on the left, s ?? "" on a string, b ?? false)
 //   bitwise              & <-> |, ^ -> &, << <-> >>, >>> -> >>
 //   unary                a prefix ! - ~ is removed
 //   template             a template literal gets a suffix
@@ -98,12 +98,14 @@ export function sitesOf(file, unitName, opts = {}) {
     return null;
   };
   const nullish = (e) => { const rep = e && !ts.isSpreadElement(e) ? nullOf(e) : null; if (rep) put('nullish', e.getStart(sf), e.getEnd(), rep); };
-  // s ?? "" with s a string, b ?? false with b a boolean: the one falsy value || also replaces is the default itself, so
-  // the coalesce mutant is equivalent to its parent (x ?? 0 is not: NaN and -0)
+  // the coalesce mutant is equivalent to its parent where || replaces no value ?? keeps: the left side, null and undefined
+  // aside, is an object (never falsy), or its one falsy value is the default itself (s ?? "" with s a string, b ?? false
+  // with b a boolean). x ?? 0 on a number is a site: NaN and -0
   const falsyDefault = (n) => {
     if (n.operatorToken.kind !== K.QuestionQuestionToken) return false;
     const r = ts.skipParentheses(n.right);
     const t = checker.getNonNullableType(checker.getTypeAtLocation(n.left)), ms = t.isUnion() ? t.types : [t];
+    if (ms.every((m) => (m.flags & (ts.TypeFlags.Object | ts.TypeFlags.NonPrimitive)) && !(m.flags & PRIMITIVE))) return true;
     if ((ts.isStringLiteral(r) || ts.isNoSubstitutionTemplateLiteral(r)) && r.text === '') return ms.every((m) => m.flags & ts.TypeFlags.StringLike);
     if (r.kind === K.FalseKeyword) return ms.every((m) => m.flags & ts.TypeFlags.BooleanLike);
     return false;

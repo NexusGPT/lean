@@ -56,3 +56,8 @@ export function tail(xs: number[]): number[] {
 export function orEmpty(s: string | undefined): string {
   return s ?? "";
 }
+
+// no coalesce site: an array is never falsy, so xs ?? [] and xs || [] are equal (mutate.mjs falsyDefault)
+export function sizeOf(xs: number[] | undefined): number {
+  return (xs ?? []).length;
+}
