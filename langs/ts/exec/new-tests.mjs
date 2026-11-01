@@ -135,7 +135,7 @@ function makeRunner(state) {
   const fullName = (s, name) => { const parts = []; for (let x = s; x && x.name !== null; x = x.parent) parts.unshift(x.name); return [...parts, name].join(' > '); };
   const format = (name, row, i) => { const args = Array.isArray(row) ? row : [row]; let k = 0; let out = String(name).replace(/%[sdifjop#%]/g, (m) => (m === '%%' ? '%' : m === '%#' ? String(i) : show(args[k++]).replace(/^"|"$/g, ''))); if (row && typeof row === 'object' && !Array.isArray(row)) out = out.replace(/\$([\w.]+)/g, (m, key) => show(key.split('.').reduce((o, p) => o?.[p], row)).replace(/^"|"$/g, '')); return out; };
   const add = (name, fn, opts = {}) => { state.tests.push({ name: fullName(scope, String(name)), fn, scope, ...opts }); };
-  const each = (register) => (table) => (name, fn) => { if (!Array.isArray(table)) throw new Gap('a tagged-template .each table'); table.forEach((row, i) => register(format(name, row, i), function () { return fn.apply(this, Array.isArray(row) ? row : [row]); })); };
+  const each = (register) => (table) => (name, fn) => { if (!Array.isArray(table)) throw new Gap('a tagged-template .each table'); table.forEach((row, i) => register(format(name, row, i), Object.assign(function () { return fn.apply(this, Array.isArray(row) ? row : [row]); }, { source: fn }))); }; // a row's test is read by the text of the callback it runs
   const test = (name, fn) => { if (typeof fn !== 'function') { if (fn && typeof fn === 'object') throw new Gap('test options'); add(name, null, { skipped: 'todo' }); return; } add(name, fn); };
   test.skip = (name) => add(name, null, { skipped: 'skip' }); test.todo = (name) => add(name, null, { skipped: 'todo' });
   test.only = test; test.concurrent = test; test.sequential = test;
@@ -159,14 +159,14 @@ function makeRunner(state) {
 // the test files' tests that name the unit: the file imports the unit's binding from the candidate (a named import, the
 // default when the unit is the default export, or a namespace's member); a test names it when its body, a hook of a
 // describe around it, or a top-level helper of the file such a body names, names it (the helpers to a fixed point)
-function selection(testFile, text, candidate, unit, options) {
+function selection(testFile, text, candidates, unit, options) {
   const sf = ts.createSourceFile(testFile, text, ts.ScriptTarget.Latest, true);
   const exportName = unit.includes('.') ? unit.split('.')[0] : unit;
   const names = new Set();
   for (const st of sf.statements) {
     if (!ts.isImportDeclaration(st) || !st.importClause || st.importClause.isTypeOnly || !ts.isStringLiteral(st.moduleSpecifier)) continue;
     const found = ts.resolveModuleName(st.moduleSpecifier.text, testFile, options ?? {}, ts.sys).resolvedModule?.resolvedFileName;
-    if (!found || path.resolve(found) !== candidate) continue;
+    if (!found || !candidates.includes(path.resolve(found))) continue;
     const nb = st.importClause.namedBindings;
     if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) if ((el.propertyName ?? el.name).text === exportName && !el.isTypeOnly) names.add(el.name.text);
     if (nb && ts.isNamespaceImport(nb)) names.add(nb.name.text);
@@ -183,16 +183,16 @@ function selection(testFile, text, candidate, unit, options) {
   for (let grew = true; grew;) { grew = false; for (const [name, node] of helpers) if (!names.has(name) && mentions(node, names)) { names.add(name); grew = true; } }
   return { names, mock: MOCKS.exec(text)?.[0] ?? null };
 }
-const namesIn = (fn, names) => { let src; try { src = Function.prototype.toString.call(fn); } catch { return true; } return [...names].some((n) => new RegExp(`(?<![\\w$.])${n.replace(/\$/g, '\\$')}(?![\\w$])`).test(src)); };
+const namesIn = (fn, names) => { let src; try { src = Function.prototype.toString.call(fn.source ?? fn); } catch { return true; } return [...names].some((n) => new RegExp(`(?<![\\w$.])${n.replace(/\$/g, '\\$')}(?![\\w$])`).test(src)); };
 
 // run every test file's tests in their order (a file's tests share its module state, as the runners run them), report
 // the ones that name the unit
-export async function runTests({ candidate, unit, testFiles, ms = 2000, seed = 1, load, graphWorld, options }) {
+export async function runTests({ candidate, aliases = [], unit, testFiles, ms = 2000, seed = 1, load, graphWorld, options }) {
   const records = [], summary = { files: 0, selected: 0, passed: 0, failed: 0, notModelled: 0, world: 0, unsettled: 0, skipped: 0 };
   const cover = (file, reason, tests) => records.push({ kind: 'new:coverage', phase: 'test', file: path.basename(file), reason, ...(tests ? { tests } : {}) });
   for (const file of testFiles) {
     let text; try { text = (await import('node:fs')).readFileSync(file, 'utf8'); } catch (e) { cover(file, `unreadable: ${e.message}`); continue; }
-    const sel = selection(file, text, candidate, unit, options);
+    const sel = selection(file, text, [candidate, ...aliases], unit, options);
     if (!sel) continue; // the file does not import the unit
     summary.files++;
     if (sel.mock) { cover(file, `the file replaces a module, a global or the clock (${sel.mock}): its tests are not the unit's behaviour alone`); summary.notModelled++; continue; }

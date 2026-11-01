@@ -306,7 +306,9 @@ export async function runNew(opts) {
   // the PR's own tests that call the unit (new-tests.mjs): each is run against the candidate under the same sandbox
   let tests = null;
   if (opts.tests?.length && process.env.LEAN_BREAK !== 'pr-tests') {
-    tests = await runTests({ candidate: abs, unit, testFiles: opts.tests.map((t) => path.resolve(t)), ms, seed, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), graphWorld: (loaded) => graphWorld(loaded, sources, TEST_MODULES), options });
+    // a test read at its checkout path imports the unit's file there: that file is the candidate when its bytes are the candidate's
+    const aliases = opts.candidateAlias && path.resolve(opts.candidateAlias) !== abs && (() => { try { return fs.readFileSync(opts.candidateAlias).equals(fs.readFileSync(abs)); } catch { return false; } })() ? [path.resolve(opts.candidateAlias)] : [];
+    tests = await runTests({ candidate: abs, aliases, unit, testFiles: opts.tests.map((t) => path.resolve(t)), ms, seed, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), graphWorld: (loaded) => graphWorld(loaded, sources, TEST_MODULES), options });
     for (const r of tests.records) book.add(r, `${r.kind} ${r.file}:${r.test}`);
   }
   if (!reach.closed) book.add(coverage('draw', !declared ? 'the declaration was not read' : reach.admitted === 0 ? `no drawn input is one the declared types say they admit (${reach.notAdmitted} of ${reach.inputs}: a parameter type lean reads as opaque, a type parameter, or a draw wider than the declaration)` : `every admitted input reached the world (${reach.world} of ${reach.admitted}): ${[...reach.worldOps.keys()].slice(0, 4).join('; ')}`), 'coverage draw');

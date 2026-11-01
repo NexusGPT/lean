@@ -104,10 +104,20 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   if (exp.candidateOnly) {
     for (const [i, want] of exp.candidateOnly.entries()) {
       const out = path.join(tmpd, `new_${i}.json`);
-      await crunCheck([...(want.parent ? ['--parent', path.join(d, want.parent)] : []), '--candidate', path.join(d, want.file), '--unit', want.unit, '--n', '30', ...(want.project ? [] : ['--no-project']), '--out', out], { files: [...(want.parent ? [path.join(d, want.parent)] : []), path.join(d, want.file)], outs: [out] });
+      const testFiles = (want.tests ?? []).map((t) => path.join(d, t)); // the PR's tests of a unit no parent holds (check.mjs --tests)
+      await crunCheck([...(want.parent ? ['--parent', path.join(d, want.parent)] : []), '--candidate', path.join(d, want.file), '--unit', want.unit, '--n', '30', ...(want.project ? [] : ['--no-project']), ...(testFiles.length ? ['--tests', testFiles.join(',')] : []), '--out', out], { files: [...(want.parent ? [path.join(d, want.parent)] : []), path.join(d, want.file), ...testFiles], outs: [out], ...(process.env.LEAN_BREAK ? { env: { LEAN_BREAK: process.env.LEAN_BREAK } } : {}) });
       let got = {}; try { got = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { /* missing output fails */ }
       const ok = got.verdict === want.verdict && (!want.kind || got.kind === want.kind) && (!want.environmentClass || got.environmentClass === want.environmentClass) && (!want.phase || got.phase === want.phase) && (!want.linkKind || got.link?.kind === want.linkKind) && (!want.reason || got.reason?.includes(want.reason)) && (!want.laneA || JSON.stringify(got.certificate?.lanes?.A ?? null).includes(want.laneA)) && (want.inputs === undefined || got.inputs === want.inputs) && (want.faults === undefined || got.faults === want.faults) && (got.verdict !== 'NEW' || (got.loaded === true && got.seed === 1 && Array.isArray(got.fakes) && got.traceShape?.reduce((n, s) => n + s.inputs, 0) === got.inputs && !got.certificate?.lanes?.A));
       add('pair', name, `${want.file} ${want.unit} ${want.verdict}${want.laneA ? ' (lane A ' + want.laneA + ')' : ''}`, ok, JSON.stringify({ verdict: got.verdict, inputs: got.inputs, faults: got.faults, reason: got.reason, ...(want.laneA ? { laneA: String(got.certificate?.lanes?.A?.detail ?? got.certificate?.lanes?.A?.verdict ?? '').slice(-160) } : {}) }));
+      // the records of a unit checked against its declaration (design/w1h-new-units.md): `records` each match one record
+      // of the certificate's newUnit (every key listed, by value), `absent` names kinds no record may have
+      if (want.records || want.absent) {
+        const recs = got.certificate?.newUnit?.records ?? [];
+        const like = (w, r) => Object.entries(w).every(([k, v]) => JSON.stringify(r[k]) === JSON.stringify(v) || (typeof v === 'string' && typeof r[k] === 'string' && r[k].includes(v)) || (v && typeof v === 'object' && !Array.isArray(v) && r[k] && typeof r[k] === 'object' && like(v, r[k])));
+        const missing = (want.records ?? []).filter((w) => !recs.some((r) => like(w, r)));
+        const present = (want.absent ?? []).filter((k) => recs.some((r) => r.kind === k));
+        add('pair', name, `${want.file} ${want.unit} records${(want.records ?? []).map((w) => ' ' + w.kind).join('')}${(want.absent ?? []).map((k) => ' no ' + k).join('')}`, !!got.certificate?.newUnit && !missing.length && !present.length, JSON.stringify({ missing, present, records: recs.map((r) => ({ kind: r.kind, input: r.input, edge: r.edge, test: r.test, reason: r.reason })) }).slice(0, 600));
+      }
     }
     return;
   }
