@@ -233,7 +233,7 @@ export function census(root, opts = {}) {
       // resolved types is stopped by that finding, its reading
       origins = new Map(); const stopsOf = new Map();
       const originOf = (f) => { try { return environmentOf(L.checker, sf, f); } catch (e) { log(`! ${path.relative(root, file)}:${f.line}: the origin of the finding's values was not read (${String(e.message).slice(0, 120)}); the finding keeps its reading`); return null; } };
-      for (const f of findings) if (f.unit && !f.env && !envBlocked.has(f.unit)) { const o = originOf(f); if (o) origins.set(f, o); if (!stopsOf.has(f.unit)) stopsOf.set(f.unit, []); stopsOf.get(f.unit).push(f); }
+      for (const f of findings) if (f.unit && !f.env && !f.opaque && !envBlocked.has(f.unit)) { const o = originOf(f); if (o) origins.set(f, o); if (!stopsOf.has(f.unit)) stopsOf.set(f.unit, []); stopsOf.get(f.unit).push(f); }
       typeEnv = new Map([...stopsOf].filter(([, fs_]) => fs_.every((f) => origins.has(f))).map(([unit, fs_]) => [unit, fs_[0]]));
       const kindOf = (o) => {
         if (install.status === 'install-failed') return 'install-failed';
@@ -297,7 +297,7 @@ export function census(root, opts = {}) {
     }
     for (const f of findings) {
       const unit = f.unit;
-      if (unit && !f.env && !blocked.has(unit) && !origins.has(f)) { // a finding judged on an unknown type stops no unit by its reading
+      if (unit && !f.env && !f.opaque && !blocked.has(unit) && !origins.has(f)) { // a finding judged on an unknown type stops no unit by its reading; an opaque site's finding stops none (design/w1c-opaque-calls.md: the lowering's refusing())
         // Count each stopped unit under its first refusal. Environment findings do not stop a unit.
         stop(unit, f, f.rule); languageRefused++;
       }
