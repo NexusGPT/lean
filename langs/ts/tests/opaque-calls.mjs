@@ -62,7 +62,7 @@ function laneA(pair, env = {}) {
     const opaque = {}; for (const m of fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8').matchAll(/^\/\/ OPAQUE (\w+)_candidate: (.*)$/gm)) opaque[m[1]] = JSON.parse(m[2]);
     const withheld = Object.fromEntries(lines.map((ln) => ln.match(/^\/\/ UNGUARDED Equal_(\w+): (.*)$/)).filter(Boolean).map((m) => [m[1], m[2]])); // the identity guard withheld the lemma: nothing is proved
     return { withheld, proved: Object.fromEntries(exp.scope.map((u) => [u, provedLemma(`Equal_${dafnyName(u)}`, clean, rests)])), lemma: Object.fromEntries(exp.scope.map((u) => [u, !!spans[`Equal_${dafnyName(u)}`]])), opaque, finished, tail: finished ? '' : text.trim().slice(-400) };
-  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+  } finally { if (process.env.W1C_KEEP) console.error(`kept ${tmp}`); else fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 
 const rows = [];

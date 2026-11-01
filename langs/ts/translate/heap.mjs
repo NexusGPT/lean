@@ -1718,9 +1718,15 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
     for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) for (const { name, depth: d } of boundNames(p.name)) aliases.set(name.text, d);
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
     const effDepth = (x) => { const r = rootOf(x); return depth(x) + (ts.isIdentifier(r) && aliases.has(r.text) ? aliases.get(r.text) : 0); }; // the depth of a write below its input root, aliases unfolded
+    // an operator whose result is a primitive whatever its operands: arithmetic, shifts, bitwise, comparison, equality,
+    // `in`, `instanceof`, the unary operators, typeof, void, delete, an update (ECMA-262 13.4-13.12: each yields a Number,
+    // a BigInt, a String or a Boolean, its operands converted by ToPrimitive, which returns a primitive or throws)
+    const PRIMITIVE_BINARY = new Set([K.PlusToken, K.MinusToken, K.AsteriskToken, K.SlashToken, K.PercentToken, K.AsteriskAsteriskToken, K.LessThanLessThanToken, K.GreaterThanGreaterThanToken, K.GreaterThanGreaterThanGreaterThanToken, K.AmpersandToken, K.BarToken, K.CaretToken, K.LessThanToken, K.GreaterThanToken, K.LessThanEqualsToken, K.GreaterThanEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.InKeyword, K.InstanceOfKeyword]);
+    const primitiveOperator = (e) => (ts.isBinaryExpression(e) && PRIMITIVE_BINARY.has(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e) || ts.isTypeOfExpression(e) || ts.isVoidExpression(e) || ts.isDeleteExpression(e);
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
       e = unparen(e);
       if (!isRefType(typeOf(e))) return true;
+      if (primitiveOperator(e)) return true; // its result is a primitive whatever its operands (a held Any among them, design/w1c-opaque-calls.md)
       if (ts.isObjectLiteralExpression(e)) return e.properties.every((p) => (ts.isPropertyAssignment(p) ? fresh(p.initializer) : ts.isShorthandPropertyAssignment(p) ? fresh(p.name) : ts.isSpreadAssignment(p) ? spreadFresh(p.expression) : false));
       if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => (ts.isSpreadElement(x) ? spreadFresh(x.expression) : fresh(x)));
       if (ts.isConditionalExpression(e)) return fresh(e.whenTrue) && fresh(e.whenFalse);

@@ -3,17 +3,14 @@
   "outside_fv",
   "inside_fv",
   "read_fv",
-  "callee_fv",
   "planted_fv",
-  "twice",
-  "thrice"
+  "twice"
  ],
  "equal": {
   "outside_fv": true,
   "inside_fv": false,
   "read_fv": false,
-  "callee_fv": false,
   "planted_fv": false
  },
- "why": "design/w1c-opaque-calls.md, rule function-value: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json)."
+ "why": "design/w1c-opaque-calls.md, rule function-value: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). A callee changed behind an unchanged statement is amendment A3's pair (opaque_callee-text)."
 }

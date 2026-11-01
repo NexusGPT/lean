@@ -4,7 +4,7 @@
 export function outside_er(xs: number[], x: number): number {
   const n = x + 1;
   const r = ((): number[] => { try { return xs; } finally { xs.push(n); } })();
-  return r.length + n;
+  return r.length + n * 2;
 }
 
 export function inside_er(xs: number[]): number[] {

@@ -4,7 +4,7 @@
 export function outside_syntax(x: number): number {
   const y = x + 1;
   const z = (import.meta as any).env.LIMIT === "1" ? 1 : 0;
-  return y + z;
+  return z + y * 2;
 }
 
 export function inside_syntax(x: number): number {

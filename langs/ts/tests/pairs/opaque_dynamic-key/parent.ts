@@ -8,7 +8,7 @@ export function outside_key(k: "a" | "b" | "run", x: number): number {
   const y = x + 1;
   const r: Rec = { a: x, b: 2, run: () => 3 };
   const v = y + (typeof r[k] === "number" ? 1 : 0);
-  return v * 2;
+  return v + y * 2;
 }
 
 export function inside_key(k: "a" | "b" | "run", x: number): number {

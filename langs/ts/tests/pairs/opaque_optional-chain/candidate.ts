@@ -5,7 +5,7 @@ class Box { cb?: (x: number) => number; }
 export function outside_oc(b: Box, x: number): number {
   const t = x + 1;
   const r = b.cb?.(t) ?? 0;
-  return t + r;
+  return r + 2 * t;
 }
 
 export function inside_oc(b: Box, x: number): number {

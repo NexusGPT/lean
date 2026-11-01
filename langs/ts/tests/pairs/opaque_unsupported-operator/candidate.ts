@@ -4,7 +4,7 @@
 export function outside_operator(x: number): number {
   let a = x + 1;
   a **= 2;
-  return 1 + a;
+  return a + 2 * x;
 }
 
 export function inside_operator(x: number): number {

@@ -4,7 +4,7 @@
 export function outside_member(s: string, re: RegExp): number {
   const n = s.length + 1;
   const g = s.match(re)?.[1] ?? "";
-  return n + g.length;
+  return g.length + 2 * n;
 }
 
 export function inside_member(s: string, re: RegExp): number {

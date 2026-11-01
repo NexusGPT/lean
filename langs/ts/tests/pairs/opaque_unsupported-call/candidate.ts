@@ -6,7 +6,7 @@ type Sinks = { [k: string]: (xs: number[]) => void };
 export function outside_call(h: Handlers, k: string, x: number): number {
   const y = x + 1;
   const r = h[k](y);
-  return 2 + r;
+  return r + 2 * y;
 }
 
 export function inside_call(h: Handlers, k: string, x: number): number {
