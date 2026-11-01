@@ -1,0 +1,1 @@
+import type { Input } from "pkg"; import type { Input as S } from "./node_modules/pkg/string"; import type { Input as M } from "./node_modules/pkg/map"; export function value(x: Input) { return x.value; }

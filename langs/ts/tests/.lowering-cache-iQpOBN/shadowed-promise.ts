@@ -1,0 +1,1 @@
+export class Promise { constructor(public value: number) {} }
