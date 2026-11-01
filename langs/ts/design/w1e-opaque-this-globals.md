@@ -115,4 +115,10 @@ every read and on the member's name in its accessor, both core to every reading,
 
 ## Measurement
 
-See lane/w1e-opaque-this-globals-result.md for every number and its command.
+Census without the install, base (4747022f) → this lane: nexus entered 22,896 → 24,058 of 43,949 units (52.1% →
+54.7%), `ts-strict` stopping 2,199 → 178, `this` 268 → 1, `toplevel-effect` 12 → 0; nexus-landing entered 989 → 1,047
+of 2,746, environment-blocked 400 → 343 (every unit reading an undeclared global left that bucket). On nexus the
+environment-blocked count rises 283 → 320: units `ts-strict` stopped now stop on a refusal judged on a value whose
+import does not resolve, which the census files under environment; they were refused before and are now. With the
+install nexus-landing is unchanged (1,503 → 1,503): every name resolves there, and nothing this lane reads differently
+is left. See lane/w1e-opaque-this-globals-result.md for every number and its command.
