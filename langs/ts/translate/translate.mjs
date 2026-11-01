@@ -1952,7 +1952,7 @@ function translateOnce(file, fnName, opts = {}) {
         if (EXISTING_METHODS.has(f.name.text)) return { kind: 'existing' };
       }
       const sameFile = (ts.isIdentifier(f) && originOf(checker, f, sf, currentUnit?.node ?? null).kind === 'unit') || (ts.isPropertyAccessExpression(f) && f.expression.kind === K.ThisKeyword && !!currentUnit && !!ownUnit(currentUnit, f.name.text));
-      if (sameFile) return { kind: 'unknown', why: `the result of the same-file call \`${text.slice(0, 40)}\`, which may be a new object or one the caller holds` };
+      if (sameFile) return { kind: 'unknown', why: `the result of the same-file call \`${text.slice(0, 40)}\`, which may be a new object or one the caller holds`, call: e };
       if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && !isEffectCall(e)) return { kind: 'unknown', why: `the result of \`${text.slice(0, 40)}\`, a built-in that may return a new object or one it was given` };
       return { kind: 'existing' }; // an outside call's answer: the object the outside gave
     }
@@ -2075,6 +2075,17 @@ function translateOnce(file, fnName, opts = {}) {
     if (!t || primT(t) || (isCallable(t) && !isAny(t)) || isAny(t) || nonNull(t).every((y) => isPromiseT(y))) return code; // no identity, a function value (its code and cells), an opaque value or a promise (its own handle)
     const id = identityOf(a);
     if (id.kind === 'existing') return code;
+    // a same-file call's result: which object it is (new, or one of the caller's) is fixed by the code the callee reaches
+    // and its arguments, so it is handed keyed by that code and named by its call site (design/w1g-opaque-handed.md;
+    // amendment A3: a changed callee is another term)
+    if (id.kind === 'unknown' && id.call) {
+      let decl = null; try { decl = checker.getResolvedSignature(id.call)?.declaration ?? null; } catch { decl = null; }
+      if (decl && decl.getSourceFile() === sf && siteOnce(id.call)) {
+        if (!handedSites.has(id.call)) handedSites.set(id.call, handedSites.size);
+        gradedStep('copied-argument', a, 'handed_call', [code.slice(0, 80)]);
+        return `${external(`handed_call_${broken('handed-call') ? 'unkeyed' : createHash('sha1').update(reachOf.keyText(decl)).digest('hex').slice(0, 16)}_${mangle(d)}`, [d, 'int'], d)}(${code}, ${handedSites.get(id.call)})`;
+      }
+    }
     if (id.kind === 'unknown') fail(a, `copied-argument: this call may write or keep the object it is handed, and its argument is ${id.why}; bind it to a name of one kind (a parameter, or a new literal or copy) first`);
     const bad = {};
     const skeleton = partsPrim(madeT(id.site)) || freshTree(id.site) ? null : mixedTree(id.site, bad);
@@ -6368,6 +6379,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   };
   function opaqueStep(s, u) {
     if (!unitEffectful()) fail(s, 'internal: an opaque block in a unit not marked effectful');
+    // a read after a call inside the step is the step's: it takes the world and the names it reads, so the object's state
+    // there is a function of its inputs (design/w1g-opaque-handed.md)
+    if (worldAfter) for (const [x] of worldAfter) if (s.pos <= x.pos && x.end <= s.end) worldUsed.add(x);
     const returns = containsReturn(s);
     const jumps = escapingLabels(s);
     const loop = ts.isLabeledStatement(s) ? s.statement : s;

@@ -29,3 +29,15 @@ export function shared(r: Row, g: Pair): number {
   g({ x: r.tags, y: structuredClone(r.tags) });
   return r.tags.length;
 }
+
+// (e) a same-file call's result handed to the outside: keyed by the code the callee reaches (amendment A3), so the
+// callee returning the caller's own object against returning a copy of it is a change (LEAN_BREAK=handed-call drops
+// the key and the pair must go red)
+export type Person = { id: string; n: number };
+function principalOf(p: Person): Person {
+  return { ...p };
+}
+export function viaCallee(p: Person, g: (x: Person) => void): string {
+  g(principalOf(p));
+  return p.id;
+}
