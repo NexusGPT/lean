@@ -45,7 +45,10 @@ w1f-closure` names the two false PASS-typed rows it causes, the decorator-metada
 dependency guard now reads the importing file's four function rows; the edited import's type-only edit is its own
 types-unit row).
 
-SUITE
+`JOBS=4 LEAN_PAIRS=module_unit,module_unit_same,type_only,directive,js_unit node langs/ts/tests/run.mjs` (at 07:28,
+one-minute load 38.8): `TOTAL | 889 checks | ALL PASS`, `WALL | 668 s | JOBS 4`; the suite's `w1f-module-units` row
+runs every break red; proof hunt `NO HIDDEN FALSE PROOF`; self-pair `NO WITNESS`. The run before the conformance fix
+was 889 checks, 1 FAILED (the model-conformance row, the HARNESS below).
 
 `LEAN_PAIRS=module_unit,module_unit_same,type_only,directive,js_unit node langs/ts/conformance/run.mjs --jobs 2`:
 `0 units in 0 pairs (5 skipped) ... NO NEW FINDING`, exit 0. Before the fix in `conformance/pair.mjs` it was 1 HARNESS:
@@ -84,7 +87,10 @@ A5 (opaque fraction): not applicable; this lane adds no opaque step and touches 
 
 ## Commits
 
-COMMITS
+On `lane/w1f-module-units` since 4747022f: 6ef4734fb1 (typed reading, types unit, directive records, JavaScript module
+unit route), 72c76cf7d5 (per-unit typed reading, pull-request pair harness, the four pairs, the break test, census
+columns, contract rows, subset.md), d04295074d (`LEAN_BREAK`, the A9 const enum pair, js_unit split), a4422e7fc2
+(pr-intake guard), 412116f87f (conformance skips `prOnly`), then the commit holding this file.
 
 ## Open
 
