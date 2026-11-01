@@ -169,7 +169,7 @@ export function report(study) {
   const asks = rows.filter((r) => outcomeOf(r.verdict) === 'ask');
   return [
     `# The mutant study (tests/mutants.mjs)`, '',
-    `lean head ${meta.head}; options: check.mjs --n ${meta.n} --dafny-seconds ${meta.dafnySeconds}, each pair's project or --no-project (the suite's options); seed ${meta.seed}.`,
+    `lean head ${meta.head}; options: check.mjs --n ${meta.n} --dafny-seconds ${meta.dafnySeconds}, each pair's project or --no-project (the suite's options); seed ${meta.seed}; environment ${Object.entries(meta.env ?? {}).map(([k, v]) => `${k}=${v}`).join(' ') || 'no LEAN_ variable'}.`,
     `Units: ${meta.units.pairs} pair units (${meta.pairs} pairs)${meta.census ? `; census sample ${meta.census.picked} of ${meta.census.frame} written entered units from ${meta.census.roots.join(', ')}` : ''}. Units without a site: ${meta.unitsWithoutSites}; units mutate.mjs could not find: ${meta.noUnit}.`,
     `The seconds per mutant and the 20 slowest: the timing file (not part of this report, so two runs compare byte for byte).`, '',
     ...groups.flatMap(([name, g]) => table(g, name)),
@@ -223,7 +223,8 @@ async function main() {
   const rows = results.flatMap((r) => r.rows).sort((p, q) => cmp(p.source, q.source) || cmp(p.where, q.where) || cmp(String(p.unit), String(q.unit)) || (p.index ?? -1) - (q.index ?? -1));
   const times = results.flatMap((r) => r.times);
   const head = spawnSync('git', ['-C', ts, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim();
-  const meta = { head, seed, n, dafnySeconds, pairs: new Set(units.filter((u) => u.key.source === 'pairs').map((u) => u.key.where)).size, units: { pairs: units.filter((u) => u.key.source === 'pairs').length, census: units.filter((u) => u.key.source !== 'pairs').length }, census, unitsWithoutSites: results.filter((r) => r.rows.length === 0).length, noUnit: rows.filter((r) => r.verdict === 'no-unit').length, ...(opt('--without-kind', null) ? { withoutKind: opt('--without-kind') } : {}) };
+  const env = Object.fromEntries(Object.keys(process.env).filter((k) => k.startsWith('LEAN_')).sort().map((k) => [k, process.env[k]])); // a lane's switch (LEAN_SEARCH, ...) the checks ran under
+  const meta = { head, seed, n, dafnySeconds, env, pairs: new Set(units.filter((u) => u.key.source === 'pairs').map((u) => u.key.where)).size, units: { pairs: units.filter((u) => u.key.source === 'pairs').length, census: units.filter((u) => u.key.source !== 'pairs').length }, census, unitsWithoutSites: results.filter((r) => r.rows.length === 0).length, noUnit: rows.filter((r) => r.verdict === 'no-unit').length, ...(opt('--without-kind', null) ? { withoutKind: opt('--without-kind') } : {}) };
   // a unit with no site has no row; it is counted in meta, and listed so the denominators can be read
   const study = { meta, rows };
   const outFile = opt('--out', null);
