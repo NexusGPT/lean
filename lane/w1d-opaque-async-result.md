@@ -39,6 +39,13 @@ heap and handed-reference tests and add a lint fixture, rerun below when it land
 Other checks at 9e6c3772b5: `node langs/ts/tests/opaque-unit.mjs` passes; `node langs/ts/tests/withdrawal.mjs` passes;
 `node langs/ts/lower.mjs --audit`: 605 sites, 0 uncatalogued (the table in admission-contract.md regenerated).
 
+## Conformance on the pairs
+
+`LEAN_PAIRS=<the 15 w1d pairs> node langs/ts/conformance/run.mjs --jobs 2` at c1c2f382bb (started at load 33):
+**NO NEW FINDING**: 54 units in 12 pairs, 0 agree, 0 disagree, 54 not executable (each reaches an extern: the opaque
+steps and the outside calls are parts with no body, as w1-opacity.md design point 4 says), 0 coupling findings; the 3
+lane-B-only pairs skipped.
+
 ## Census (A8 roots)
 
 `node langs/ts/census.mjs /root/da/census/repos/<root> --install-under /root/census-installs/w1d --out <json> --report <md>`;
