@@ -26,8 +26,13 @@ items, dictionary values and fields). `keyOrderOf` gives the argument's order:
   it is the same object on both sides. Dictionaries, Maps and Sets need nothing: their carriers keep their order.
 - **a signature**: a tree the unit builds where it hands it: object and array literals (spreads of a tree it built
   included, a repeated key keeping its first place, index keys first), a `const` local such a tree initialises whose every
-  use keeps its keys (`keptKeys`: a read, a write of a primitive field the literal made, a test, an outside call, a spread
-  copy, an enumeration, a return), `structuredClone` of either. The argument is handed as
+  use keeps its keys (`keptKeys`: a read, a write of a primitive field the tree made, a test, an outside call, a spread
+  copy, an enumeration, a return, a call of a method of its own class that reorders nothing), `structuredClone` of
+  either. `{ ...p }` of an own `p` alone is own (every own key of p, in p's order); a literal mixing an own spread with
+  other members is described member by member in source order (`~{...*,"c"}`), the order a function of that text and of
+  the own object. A `new C(...)` of a class of this file has its keys when the class text fixes them (`classKeyOrder`:
+  no base class, no field holding a record, the parameter properties and initialised fields in the order the file's emit
+  stores them, then each unconditional `this.f = v` at the top of the constructor's body). The argument is handed as
   `key_order_<T>(v, "{\"a\",\"b\"}")`, an uninterpreted function of the value and the text of its keys in property
   order, nested parts in braces and brackets and an own part as `*`. Equal texts mean equal orders, and an own object
   never equals a built one (the wrapper is uninterpreted).
@@ -38,7 +43,15 @@ items, dictionary values and fields). `keyOrderOf` gives the argument's order:
   optional key written (it may be added at the end), a key deleted, `Object.assign` onto it. Each of these can hold one
   datatype value in two key orders.
 
-`LEAN_BREAK=handed-key-order` turns the reading off (the argument handed bare, as before).
+**The heap core** (`heap.mjs`) holds a record as a cell, its fields and never its key order, so it had the same hole
+(`log({ a, b })` against `log({ b, a })` in a unit that writes a parameter: proved at 844ddac2). Its outside call is now
+handed, after its arguments, one text naming each record argument's order (`Call_<f>_ko(hw, r, "0{\"a\",\"b\"}")`),
+asked of the translator's `keyOrderOf` when the call is emitted (`heapKeyOrder`); an own object adds nothing. Its plan
+keeps such a unit only when each record argument is a tree it makes (a literal, a `new`, a const local bound to one) or
+an own path in a unit that writes no record literal; any other leaves the core for the value reading, which decides the
+same way.
+
+`LEAN_BREAK=handed-key-order` turns the reading off in both cores (the argument handed bare, as before).
 
 ## Soundness
 
@@ -54,11 +67,13 @@ then taken as the order of its value), as two such objects are already one argum
   order, design/heap-stage5.md), observed by lane B (`return { a, b }` against `return { b, a }`: lane A proves it at
   844ddac2 and after, lane B WITNESS). The boundary here is the outside call alone.
 - A receiver: `({ a, b }).toString()` style calls hand the receiver bare.
+- Lane B's trace renders an argument's keys sorted (`exec/fake.mjs` render), so it does not see two orders handed to
+  the recording proxy (`heapHand`: lane B PASS-bounded); JSON.stringify and the vendored packages run for real and do.
 - The lint does not take this decision: the translator refuses alone (the audit's one-decider).
 
 ## Tests
 
 | test | as is | --break |
 | --- | --- | --- |
-| `node langs/ts/tests/run.mjs --pair handed_key_order` | 20 checks ALL PASS | `LEAN_BREAK=handed-key-order`: enc, enc_pt, spread_copy, lib_keys proved (red) |
-| `node langs/ts/tests/handed-key-order.mjs` | 11 rows ALL PASS (7 refusals, 4 readings) | `--break`: 7 FAILED |
+| `node langs/ts/tests/run.mjs --pair handed_key_order` | 22 checks ALL PASS | `LEAN_BREAK=handed-key-order`: enc, enc_pt, spread_copy, lib_keys, heap_hand proved (red) |
+| `node langs/ts/tests/handed-key-order.mjs` | 13 rows ALL PASS (7 refusals, 6 readings) | `--break`: 7 FAILED |

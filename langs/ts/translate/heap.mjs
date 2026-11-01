@@ -50,7 +50,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 export const HW = 'hw_';
 const OBJECT_PROTO = Object.getOwnPropertyNames(Object.prototype).sort(); // the keys `in` finds on an ordinary object it does not own
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null, defineFields = false }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null, defineFields = false, keyOrder = null }) { // keyOrder(argument, unit): the translator's key order of a record handed to an outside call (translate.mjs keyOrderOf): null (an own object), a text, or it refuses
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -984,7 +984,8 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
         if (!holdsRecord(typeOf(a))) continue;
         let r = unparen(a); while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r)) r = unparen(r.expression);
         const ownRoot = r.kind === K.ThisKeyword || (ts.isIdentifier(r) && params.has(r.text));
-        if (!ownRoot || literal) { why = `hands the outside a record it may build (\`${a.getText(sf).slice(0, 40)}\`): a cell holds no key order`; return; }
+        const made = (x) => { x = unparen(x); if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x) || ts.isNewExpression(x)) return true; if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isVariableDeclaration(d) && !!d.initializer && !!(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && d.pos >= u.body.pos && d.end <= u.body.end && made(d.initializer); }; // a tree it makes, handed with its order (emit)
+        if (!keyOrder || !(made(a) || (ownRoot && !literal))) { why = `hands the outside a record it may build (\`${a.getText(sf).slice(0, 40)}\`) in an order no text names: a cell holds no key order`; return; }
       }
       ts.forEachChild(n, w);
     };
@@ -1426,7 +1427,7 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
       }
-      if (outsideCall(e)) { const oc = outsideCall(e); const recvA = oc.recv ? [expr(oc.recv)] : []; const args = [...recvA, ...e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a))))]; callUsed.set(oc.key, [oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${oc.key}(${[HW, ...args].join(', ')});`); return r; } // the arguments in order, then the transition
+      if (outsideCall(e)) { const oc = outsideCall(e); const recvA = oc.recv ? [expr(oc.recv)] : []; const args = [...recvA, ...e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a))))]; const orders = (process.env.LEAN_BREAK ?? '').split(',').includes('handed-key-order') || !keyOrder ? [] : e.arguments.map((a, j) => (holdsRecord(typeOf(a)) ? keyOrder(a, u) : null)).map((o, j) => (o === null ? null : `${j}${o}`)).filter((x) => x !== null); const key = orders.length ? `${oc.key}_ko` : oc.key; callUsed.set(key, [orders.length ? [...oc.ds, 'string'] : oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${key}(${[HW, ...args, ...(orders.length ? [JSON.stringify(orders.join('|'))] : [])].join(', ')});`); return r; } // the arguments in order, then the transition; a record the unit built is handed with its key order (design/handed-key-order.md), one text after them
       if (globalCall(e)) { // a pure global: its arguments in order, then the operation
         const g = globalCall(e); const a = e.arguments;
         if (g === 'String') return toStr(a[0]);

@@ -14,5 +14,5 @@ export function ownParam(p: Pt): string { const q = p; return JSON.stringify(q);
 export function litVsParam(p: Pt): string { return JSON.stringify(p); }
 export function ownElem(ps: Pt[]): string { if (!ps.length) return ""; const first = ps[0]; return JSON.stringify(first); }
 export function libKeys(x: number, y: string): string { return keys({ b: y, a: x }).join(','); }
-// the heap core would take this unit (a parameter written); it holds no key order, so it leaves the unit to the value reading
+// the heap core's unit (a parameter written): its cells hold no key order, so the outside call is handed the order text beside the cell
 export function heapHand(p: Pt): void { p.a = 1; log({ b: p.b, a: p.a }); }

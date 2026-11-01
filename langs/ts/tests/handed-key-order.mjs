@@ -18,20 +18,23 @@ fs.writeFileSync(path.join(tmp, 'unit.ts'), `export type Pt = { a: number; b: st
 export type Opt = { a: number; c?: number };
 function mk(x: number, y: string): Pt { return { a: x, b: y }; }
 class Made { a = 1; b = 'b'; }
+class Cond { a?: number; b = 1; constructor(f: boolean) { if (f) this.a = 1; } }
 export function pushed(x: number, y: string): string { const out: Pt[] = []; out.push({ a: x, b: y }); return JSON.stringify(out); }
 export function sameFileResult(x: number, y: string): string { return JSON.stringify(mk(x, y)); }
 export function choice(c: boolean, x: number, y: string): string { return JSON.stringify(c ? { a: x, b: y } : { b: y, a: x }); }
 export function keyAdded(p: Opt): string { p.c = 1; return JSON.stringify(p); }
 export function storedInParam(ps: Pt[], x: number, y: string): string { ps.push({ a: x, b: y }); return JSON.stringify(ps); }
 export function madeByClass(): string { return JSON.stringify(new Made()); }
+export function condClass(f: boolean): string { return JSON.stringify(new Cond(f)); }
+export function ownSpread(p: Pt, x: number): string { return JSON.stringify({ ...p, c: x }); }
 export function aliasedLocal(x: number, y: string): string { const r = { a: x, b: y }; const s = r; return JSON.stringify(s); }
 export function literal(x: number, y: string): string { return JSON.stringify({ b: y, a: x }); }
 export function constLocal(x: number, y: string): string { const r = { a: x, b: y }; r.a = 2; return JSON.stringify(r); }
 export function param(p: Pt): string { return JSON.stringify(p); }
 export function paramUntouched(p: Opt, q: Pt): string { q.a = 1; return JSON.stringify(p); }
 `);
-const refused = ['pushed', 'sameFileResult', 'choice', 'keyAdded', 'storedInParam', 'madeByClass', 'aliasedLocal'];
-const read = ['literal', 'constLocal', 'param', 'paramUntouched'];
+const refused = ['pushed', 'sameFileResult', 'choice', 'keyAdded', 'storedInParam', 'condClass', 'aliasedLocal'];
+const read = ['literal', 'constLocal', 'madeByClass', 'ownSpread', 'param', 'paramUntouched'];
 let bad = 0, rows = 0;
 const row = (ok, text) => { rows++; if (!ok) bad++; console.log(`| ${ok ? 'PASS' : 'FAIL'} | ${text}`); };
 for (const fn of [...refused, ...read]) {
@@ -42,7 +45,7 @@ for (const fn of [...refused, ...read]) {
   else {
     const dfy = r.status === 0 ? fs.readFileSync(path.join(tmp, `${fn}.dfy`), 'utf8') : '';
     const ordered = /ext_key_order_/.test(dfy);
-    const wantOrdered = ['literal', 'constLocal'].includes(fn); // a built tree is handed with its order; an own object as itself
+    const wantOrdered = ['literal', 'constLocal', 'madeByClass', 'ownSpread'].includes(fn); // a built tree is handed with its order; an own object as itself
     row(r.status === 0 && (BREAK || ordered === wantOrdered), `${fn}: read${wantOrdered ? ', with its key order' : ', as itself'} -- exit ${r.status}${r.status === 0 ? `, key order ${ordered ? 'beside it' : 'none'}` : `: ${text.split('\n').pop().slice(0, 200)}`}`);
   }
 }

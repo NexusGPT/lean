@@ -259,7 +259,7 @@ function translateOnce(file, fnName, opts = {}) {
   }
   // ----- references, layer 2: the heap core (heap.mjs) is planned over the final order; its units are emitted there -----
   const reachOf = analyze('reach', () => makeReach(checker, sf));
-  const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex), external: (n, ps, r) => external(n, ps, r), defineFields: classFieldsDefine(given.program.getCompilerOptions()) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
+  const heapT = core ? makeHeap({ ts, checker, sf, fns, dn, fname: (n) => fname(n), isReal: real, recursive: recursiveUnits, typeOf: (n) => typeOf(n), suffix: sfx, helper: (k, t) => helper(k, t), bitwise: (n, ex) => bitwiseOf(n, ex), external: (n, ps, r) => external(n, ps, r), defineFields: classFieldsDefine(given.program.getCompilerOptions()), keyOrder: (a, u) => heapKeyOrder(a, u) }) : null; // every unit's identity guard (layer 1) is read through the heap translator; its core is planned only under --heap
   const heapHyps = [];
   const superObligations = new Set(); // `<unit>\u0000<method>`: a `super.m()` whose base code may change the receiver behind its transition: an obligation (design/inherited-method.md)
   const inheritedReads = new Set(); // `<unit>\u0000<method>`: an inherited method the unit reads through its keyed transition (design/inherited-method.md)
@@ -2000,9 +2000,9 @@ function translateOnce(file, fnName, opts = {}) {
   // a const local a literal tree initialises keeps its keys when every use reads it, writes a field of a primitive value the
   // literal made, hands it to an outside call, enumerates or spreads it, or returns it; a delete, a store into another
   // object, an alias or a same-file call may reorder or rebuild it
-  function keptKeys(sym, d, literal, body) {
-    const madeKeys = (lit) => { const ks = new Set(); for (const m of lit.properties) { const k = (ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m)) ? literalKey(m) : null; if (k !== null) ks.add(k); } return ks; };
-    const subLiteral = (lit, path) => { let cur = lit; for (const k of path) { if (!cur || !ts.isObjectLiteralExpression(cur)) return null; const m = cur.properties.find((q) => (ts.isPropertyAssignment(q) || ts.isShorthandPropertyAssignment(q)) && literalKey(q) === k); cur = m && ts.isPropertyAssignment(m) ? unwrapE(m.initializer) : null; } return cur; };
+  function keptKeys(sym, d, tree, body) {
+    const subTree = (path) => { let cur = tree; for (const k of path) { if (!cur || cur.k !== 'obj') return null; const hit = cur.keys.find(([n]) => n === k); cur = hit ? hit[1] : null; } return cur; };
+    const cls = sameFileClassOf(typeOf(d.name));
     let ok = true;
     const use = (x) => {
       let top = x; const path = [];
@@ -2011,12 +2011,16 @@ function translateOnce(file, fnName, opts = {}) {
       if (!p) return false;
       if (path.length) {
         if (ts.isDeleteExpression(p)) return false;
-        if ((ts.isBinaryExpression(p) && p.left === top && assignOp(p.operatorToken.kind)) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator))) { // a write: of a key the literal made, holding a primitive, keeps its place
+        if ((ts.isBinaryExpression(p) && p.left === top && assignOp(p.operatorToken.kind)) || ((ts.isPrefixUnaryExpression(p) || ts.isPostfixUnaryExpression(p)) && [K.PlusPlusToken, K.MinusMinusToken].includes(p.operator))) { // a write: of a key the tree made, holding a primitive, keeps its place
           if (path.includes(null)) return false;
-          const owner = subLiteral(literal, path.slice(0, -1));
-          return !!owner && ts.isObjectLiteralExpression(owner) && madeKeys(owner).has(path[path.length - 1]) && primT(typeOf(top));
+          const owner = subTree(path.slice(0, -1));
+          return !!owner && owner.k === 'obj' && owner.keys.some(([n]) => n === path[path.length - 1]) && primT(typeOf(top));
         }
-        if (ts.isCallExpression(p) && p.expression === top) return false; // a method runs with `this` the object
+        if (ts.isCallExpression(p) && p.expression === top) { // a method runs with `this` the object: one of its own class that reorders nothing keeps the keys
+          if (!(cls && path.length === 1 && path[0] !== null)) return false;
+          const m = fns.get(`${cls.name?.text}.${path[0]}`);
+          return !!m && !reorderedTypes(m.fn ?? m.node).some((t) => typeReachesT(typeOf(d.name), t));
+        }
         if (!primT(typeOf(top)) && !keptPart(top)) return false; // a part of it, an object, handed on: the same test for the part
         return true;
       }
@@ -2051,13 +2055,15 @@ function translateOnce(file, fnName, opts = {}) {
     const t = typeOf(e);
     if (!t || isAny(t) || !orderBearing(t)) return NONE;
     if (ts.isObjectLiteralExpression(e)) {
-      const keys = [], subs = new Map();
+      const keys = [], subs = new Map(); let described = false, spreads = 0;
       for (const m of e.properties) {
         if (ts.isSpreadAssignment(m)) {
           const src = keyOrderOf(m.expression, opts, seen);
           if (src.k === 'why') return src;
+          if (src.k === 'own' && e.properties.length === 1) return src; // `{ ...p }`: every own key of p in p's order, p's own order
+          if (src.k === 'own') { described = true; keys.push(`...${spreads}`); subs.set(`...${spreads++}`, OWN); continue; } // the keys of an own object: the members are described in their order, the order a function of them
           if (src.k !== 'obj') return orderWhy(`a spread of \`${m.expression.getText(sf).slice(0, 40)}\`, whose keys this reading does not know`);
-          for (const [k, s] of src.keys) { if (!subs.has(k)) keys.push(k); subs.set(k, s); }
+          for (const [k, s] of src.keys) { if (!subs.has(k) || described) keys.push(k); subs.set(k, s); }
           continue;
         }
         if (!(ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m))) return orderWhy('a literal with a method or an accessor member');
@@ -2067,9 +2073,10 @@ function translateOnce(file, fnName, opts = {}) {
         const v = ts.isPropertyAssignment(m) ? m.initializer : m.name;
         const s = keyOrderOf(v, opts, seen);
         if (s.k === 'why') return s;
-        if (!subs.has(k)) keys.push(k); // a repeated key keeps its first place (10.1.9) and takes the last value
+        if (!subs.has(k) || described) keys.push(k); // a repeated key keeps its first place (10.1.9) and takes the last value
         subs.set(k, s);
       }
+      if (described) return { k: 'obj', described: true, keys: keys.map((k) => [k, subs.get(k)]) }; // the members in source order with an own object's keys among them: the order is a function of that text and the object
       const ordered = [...keys.filter(isIndexKey).sort((a, b) => Number(a) - Number(b)), ...keys.filter((k) => !isIndexKey(k))];
       return { k: 'obj', keys: ordered.map((k) => [k, subs.get(k)]) };
     }
@@ -2095,7 +2102,7 @@ function translateOnce(file, fnName, opts = {}) {
       let written = false; const w = (x) => { if (ts.isBinaryExpression(x) && assignOp(x.operatorToken.kind) && ts.isIdentifier(unwrapE(x.left)) && checker.getSymbolAtLocation(unwrapE(x.left)) === sym) written = true; ts.forEachChild(x, w); }; w(body);
       if (written || !d.initializer) return orderWhy(`\`${e.text}\`, a name written after its declaration`);
       const s = keyOrderOf(d.initializer, opts, seen);
-      if (s.k === 'obj' || s.k === 'arr') return keptKeys(sym, d, unwrapE(d.initializer), body) ? s : orderWhy(`\`${e.text}\`, a record the unit builds and then passes, stores, aliases or reorders`);
+      if (s.k === 'obj' || s.k === 'arr') return keptKeys(sym, d, s, body) ? s : orderWhy(`\`${e.text}\`, a record the unit builds and then passes, stores, aliases or reorders`);
       return s;
     }
     if (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) {
@@ -2125,12 +2132,37 @@ function translateOnce(file, fnName, opts = {}) {
     }
     if (ts.isNewExpression(e)) {
       const c = e.expression; const decl = ts.isIdentifier(c) ? (checker.getSymbolAtLocation(c)?.valueDeclaration ?? checker.getSymbolAtLocation(c)?.declarations?.[0]) : null;
-      if (decl && decl.getSourceFile() === sf) return orderWhy(`a \`new ${c.getText(sf).slice(0, 30)}\`, whose constructor makes its keys in an order this reading does not hold`);
+      if (decl && decl.getSourceFile() === sf) { const keys = ts.isClassDeclaration(decl) || ts.isClassExpression(decl) ? classKeyOrder(decl) : null; return keys ? { k: 'obj', keys: keys.map((k) => [k, NONE]) } : orderWhy(`a \`new ${c.getText(sf).slice(0, 30)}\`, whose constructor makes its keys in an order this reading does not hold`); }
       return own(e, opts); // an outside class: the instance the outside's constructor made
     }
     return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, a value whose records this reading cannot name`);
   }
-  const sigText = (s) => s.k === 'none' ? '' : s.k === 'own' ? '*' : s.k === 'spread' ? `...${sigText(s.of)}` : s.k === 'obj' ? `{${s.keys.map(([k, x]) => JSON.stringify(k) + (x.k === 'none' ? '' : `:${sigText(x)}`)).join(',')}}` : s.k === 'arr' ? `[${s.items.map(sigText).join(',')}]` : '?';
+  // the own keys a `new C(...)` of a class of this file makes, in creation order, when its text fixes them: no base class,
+  // fields of primitive types, the parameter properties and the initialised fields in the order the file's emit stores
+  // them (common.mjs classFieldsDefine: under define every declared field first, then the parameter properties; else the
+  // parameter properties, then the initialised fields), then each unconditional `this.f = v` statement at the top of the
+  // constructor's body; any other write of a key the instance has not made yet, or a body that hands `this` on, is null
+  function classKeyOrder(decl) {
+    if (decl.heritageClauses?.some((h) => h.token === K.ExtendsKeyword)) return null;
+    const define = classFieldsDefine(given.program.getCompilerOptions());
+    const ctor = decl.members.find((m) => ts.isConstructorDeclaration(m) && m.body);
+    const paramProps = (ctor?.parameters ?? []).filter((q) => ts.getModifiers?.(q)?.some((md) => [K.PublicKeyword, K.PrivateKeyword, K.ProtectedKeyword, K.ReadonlyKeyword].includes(md.kind)) && ts.isIdentifier(q.name)).map((q) => q.name.text);
+    const fields = decl.members.filter((m) => ts.isPropertyDeclaration(m) && !ts.getModifiers?.(m)?.some((md) => md.kind === K.StaticKeyword || md.kind === K.DeclareKeyword) && ts.isIdentifier(m.name));
+    if (fields.some((m) => orderBearing(typeOf(m.name))) || (ctor?.parameters ?? []).some((q) => ts.isIdentifier(q.name) && paramProps.includes(q.name.text) && orderBearing(typeOf(q.name)))) return null; // a field holding a record: its own order is another's
+    const keys = define ? [...fields.map((m) => m.name.text), ...paramProps] : [...paramProps, ...fields.filter((m) => m.initializer).map((m) => m.name.text)];
+    const made = (k) => { if (!keys.includes(k)) keys.push(k); };
+    let ok = true;
+    const thisWrites = (n, top) => { if (!ok) return; if (ts.isBinaryExpression(n) && assignOp(n.operatorToken.kind) && ts.isPropertyAccessExpression(unwrapE(n.left)) && unwrapE(n.left).expression.kind === K.ThisKeyword && !keys.includes(unwrapE(n.left).name.text)) { if (top) made(unwrapE(n.left).name.text); else ok = false; } if (n.kind === K.ThisKeyword && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.expression === n)) ok = false; if (ts.isElementAccessExpression(n) && n.expression.kind === K.ThisKeyword) ok = false; if (ts.isDeleteExpression(n)) ok = false; ts.forEachChild(n, (c) => thisWrites(c, false)); };
+    for (const st of ctor?.body?.statements ?? []) {
+      const top = ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && st.expression.operatorToken.kind === K.EqualsToken;
+      if (top) { thisWrites(st.expression.right, false); const l = unwrapE(st.expression.left); if (ts.isPropertyAccessExpression(l) && l.expression.kind === K.ThisKeyword) made(l.name.text); else thisWrites(st.expression.left, false); }
+      else thisWrites(st, false);
+      if (!ok) return null;
+      if (ts.isExpressionStatement(st) && ts.isCallExpression(st.expression) && st.expression.expression.kind === K.SuperKeyword) return null;
+    }
+    return keys;
+  }
+  const sigText = (s) => s.k === 'none' ? '' : s.k === 'own' ? '*' : s.k === 'spread' ? `...${sigText(s.of)}` : s.k === 'obj' ? `${s.described ? '~' : ''}{${s.keys.map(([k, x]) => (s.described && /^\.\.\.\d+$/.test(k) ? '...*' : JSON.stringify(k) + (x.k === 'none' ? '' : `:${sigText(x)}`))).join(',')}}` : s.k === 'arr' ? `[${s.items.map(sigText).join(',')}]` : '?';
   // the record types the code of fn (and of the same-file functions it calls) may reorder: a record it built stored into
   // another object, an optional key written, a key deleted, an object handed to Object.assign
   const reorderMemo = new Map();
@@ -2173,6 +2205,17 @@ function translateOnce(file, fnName, opts = {}) {
     const hit = reorderedTypes(unitFn).find((s) => typeReachesT(t, s));
     if (hit) return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, an object of a type (${checker.typeToString(hit).slice(0, 40)}) whose keys this unit may reorder (a record it built stored in it, a key written or deleted)`);
     return OWN;
+  }
+  // the heap core's question at an outside call it emits: the order text of a record the unit built, null for an own
+  // object, a refusal where no text names it (the same reading as orderedArg)
+  function heapKeyOrder(a, u) {
+    const saved = currentUnit; currentUnit = u;
+    try {
+      const o = keyOrderOf(a);
+      if (o.k === 'none' || o.k === 'own') return null;
+      if (o.k === 'why') fail(a, `key-order: a record handed to an outside call is read with its key order, which the outside may observe (JSON.stringify writes the keys in it); here it is ${o.why}: hand a literal the call itself holds, a const local a literal initialises, or an object the unit did not build`);
+      return sigText(o);
+    } finally { currentUnit = saved; }
   }
   // the argument as handed: an own object or no record as it is; a built tree with its key order beside it
   function orderedArg(a, code, d) {
