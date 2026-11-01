@@ -165,6 +165,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     add('pair', name, `planted ${unit} is mutate.mjs index ${index}`, !!a && a === b, r.status !== 0 ? (r.stderr || r.stdout).trim().slice(-160) : a === b ? 'same text' : 'differs');
   }
   if (th.status !== 0 && !refusedAsExpected) return;
+  let doublesFor = null; // the doubles reading of a lemma's unit (below), which the break rows read too
   if (!refusedAsExpected) {
   // lane A is bounded by the solver's resource count (exec/dafny-args.mjs), the same whatever the load; the cores
   // split across the pairs running at once only changes how long it takes
@@ -182,7 +183,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // the real lemma alone proves it no longer; `witness` in expect.json: the solver's counterexample, replayed in Node
   const unitByLemma = (() => { try { return new Map([...unitsOfFile(loadForUnits(pairFile(d, 'candidate'), { project: false }).sf).keys()].map((u) => [dafnyName(u), u])); } catch { return new Map(); } })();
   const doublesOf = new Map();
-  const doubles = async (f) => { if (!doublesOf.has(f)) { const u = unitByLemma.get(f); doublesOf.set(f, u ? await solveUnit({ parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate'), unit: u, project: exp.project ? path.join(d, exp.project) : false, keep: tmpd }) : { bearing: null }); } return doublesOf.get(f); };
+  const doubles = doublesFor = async (f) => { if (!doublesOf.has(f)) { const u = unitByLemma.get(f); doublesOf.set(f, u ? await solveUnit({ parent: pairFile(d, 'parent'), candidate: pairFile(d, 'candidate'), unit: u, project: exp.project ? path.join(d, exp.project) : false, keep: tmpd }) : { bearing: null }); } return doublesOf.get(f); };
   for (const [f, want] of Object.entries(exp.equal)) {
     const sp = spans[`Equal_${f}`];
     const viaRests = provedLemma(`Equal_${f}`, spanClean, rests);
@@ -226,7 +227,11 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
       const bs = {}; let bc = null; bl.forEach((ln, i) => { const m = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon|Direct)?_\w+)(?:<[^>]*>)?\(/); if (m) { bc = m[1]; bs[bc] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon|Direct)?_/.test(ln) && bc) bs[bc][1] = i + 1; });
       const be = [...bt.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
       const bfin = /finished with \d+ verified/.test(bt);
-      provedUnder = bfin && provedLemma(`Equal_${unit}`, (k) => bfin && !!bs[k] && !be.some((L) => bs[k][0] <= L && L <= bs[k][1]), restsOf(bl));
+      const realUnder = bfin && provedLemma(`Equal_${unit}`, (k) => bfin && !!bs[k] && !be.some((L) => bs[k][0] <= L && L <= bs[k][1]), restsOf(bl));
+      // lane A's decision as above: a number-bearing unit proves by the doubles reading, or, where that is unknown, by the
+      // real lemma read faithfully (its NUMBERS placement in the broken translation)
+      const fp = doublesFor ? await doublesFor(unit) : { bearing: null };
+      provedUnder = fp.bearing ? bfin && !!bs[`Equal_${unit}`] && (fp.verdict === 'proved' || (fp.verdict === 'unknown' && faithfulPlacement(bd, unit).placed && realUnder)) : realUnder;
       got = provedUnder ? `proved under LEAN_BREAK=${mechanism}${proves ? ': the mechanism is what refuses it' : ': the mechanism is not what proves it'}` : !bs[`Equal_${unit}`] ? 'lemma missing under the break' : !bfin ? `not proved under LEAN_BREAK=${mechanism}: ${(bt.match(/theorem\.dfy\(\d+,\d+\): Error: [^\n]*/) ?? ['the theorem does not resolve'])[0].replace(/^.*?Error: /, '').slice(0, 120)}` : `not proved under LEAN_BREAK=${mechanism}${proves ? ': the mechanism is not what refuses it' : ': the mechanism is what proves it'}`;
     }
     ok = proves ? provedUnder : !provedUnder && bth.status === 0; // a lost proof counts only where the broken reading still yields a theorem (a crash is not the mechanism's work)

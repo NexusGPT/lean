@@ -53,6 +53,7 @@ export const MECHANISMS = {
   'package-rows': 'library-rows.mjs: every package call keeps the outside call\'s reading (lane w2d)',
   'library-fakes': 'exec/fakes/lib/index.mjs libraryFakesOn: every library fake is off, the recording proxy answers (lane w2d)',
   'async-branch-exit': 'translate/translate.mjs awaitExits: an await inside an if of an async unit no longer leaves the unit: the branches merge as values before what follows and an awaited condition is not tested for a fault (the rejection read as a branch\'s state; lane w8d, pairs async_branch_exit, async_branch_exit_arms)',
+  'faithful-steps': 'translate/translate.mjs early (site-steps) and translate/faithful.mjs steps: the faithful rewrite reads the statements the lint reads as opaque steps too, rewriting their numbers and finding reasons inside them (lane w8d, pairs opaque_iterator-protocol, opaque_operator-value-context)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
