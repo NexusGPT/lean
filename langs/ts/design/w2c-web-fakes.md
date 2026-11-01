@@ -29,8 +29,9 @@ The lane adds:
    this is the `--break` of every pair and test below. (The name was proposed to w2b-node-fakes on the group at the
    lane's start; w2b's wiring had not landed in its tree, so the hook is this lane's minimal one.)
 2. **fetch as a table** (`fetch.mjs`). A request is built with the platform's own `Request` (Node's undici, the Fetch
-   standard), so a URL object, a Request, a Headers object, a relative URL (resolved against the virtual origin
-   `http://localhost/`), an invalid request (the standard's TypeError) all read as the standard reads them. The trace
+   standard), so a URL object, a Request, a Headers object, a relative URL (Node's TypeError, as Node's own Request and
+   fetch raise it: no document to resolve against; w2f), an invalid request (the standard's TypeError) all read as
+   Node reads them. The trace
    records `call global:fetch` with the request as the server receives it: method, URL, headers in the standard's
    order, the body text, mode, credentials, cache, redirect. The answer is a row of a table keyed by
    (method, url, body): drawn on first use from the input's seed and the key only, the same row ever after. A row is

@@ -4,8 +4,8 @@
 //    (exec/run.mjs sandbox, the environment lane B runs a unit in), must give the outputs the real package gave
 //    (vectors/<lib>.json, recorded by vectors.mjs from the published package, its version named);
 // 2. world clauses: what each fake takes from lean's world is lean's world: a clock read is the side's recorded clock,
-//    randomness the seeded draw, a timer the virtual clock, a request a trace record; the vscode model's documented
-//    contract;
+//    randomness the seeded draw, a timer the virtual clock, a request a trace record; vscode is no library fake (no
+//    oracle on this machine: index.mjs), so its import is the recording proxy;
 // 3. the vendored files are the manifest's (load.mjs refuses an edited file; checked here for every file).
 // Runs under TZ=UTC (the date clauses read local time); a run in another zone starts itself again under UTC.
 // --break: LEAN_LIBRARY_FAKES=0, every import the recording proxy as before the lane: the clauses fail (red).
@@ -24,7 +24,7 @@ if (process.env.TZ !== 'UTC' || (BREAK && process.env.LEAN_LIBRARY_FAKES !== '0'
 const { Environment } = await import('../../fake.mjs');
 const { sandbox } = await import('../../run.mjs');
 const { LIBS, runLib, responseObservations, VECTOR_CLAUSES } = await import('./protocol.mjs');
-const { libraryTypeFake } = await import('./index.mjs');
+const { libraryFake, libraryTypeFake } = await import('./index.mjs');
 const { settle, VALIDATE } = await import('./axios.mjs');
 const { manifestOf, vendoredText } = await import('./load.mjs');
 const { CLOCK_EPOCH } = await import('../../record.mjs');
@@ -103,22 +103,8 @@ w('express Request: get(name) is headers[lower case], one read', () => {
   const b1 = env.trace.length; const v2 = rq.headers['x-id']; const t2 = env.trace.slice(b1).map((x) => x.path);
   assert.equal(v1, v2); assert.deepEqual(t1, t2);
 });
-w('vscode: a message answers one of the items offered, or undefined', async () => {
-  const seen = new Set();
-  for (let s = 1; s <= 30; s++) { const env = side(s); const v = env.module('vscode'); const before = env.trace.length; seen.add(await v.window.showInformationMessage('Save?', 'Yes', 'No')); assert.equal(env.trace.slice(before).filter((t) => t.path === 'module:vscode.window.showInformationMessage').length, 1); }
-  assert.deepEqual([...seen].sort(), ['No', 'Yes', undefined].sort());
-});
-w('vscode: getConfiguration get(key, default), update then get', async () => {
-  const vals = new Set();
-  for (let s = 1; s <= 20; s++) { const v = side(s).module('vscode'); const c = v.workspace.getConfiguration('ext'); const x = c.get('width', 80); vals.add(x === 80 ? 'default' : 'world'); assert.equal(c.has('width'), x !== 80 || c.has('width')); await c.update('width', 99); assert.equal(c.get('width', 80), 99); assert.equal(v.workspace.getConfiguration('ext').get('width'), 99); }
-  assert.deepEqual([...vals].sort(), ['default', 'world']);
-});
-w('vscode: EventEmitter, Disposable, a registered command runs', async () => {
-  const v = side(1).module('vscode'); const got = [];
-  const em = new v.EventEmitter(); const d1 = em.event((x) => got.push(`a${x}`)); em.event((x) => got.push(`b${x}`)); em.fire(1); d1.dispose(); em.fire(2);
-  assert.deepEqual(got, ['a1', 'b1', 'b2']);
-  let n = 0; const d = new v.Disposable(() => n++); d.dispose(); d.dispose(); assert.equal(n, 1);
-  v.commands.registerCommand('ext.go', (x) => x * 2); assert.equal(await v.commands.executeCommand('ext.go', 21), 42);
+w('vscode: no library fake (no oracle to record its vectors from): the import is the recording proxy', () => {
+  const env = side(1); assert.equal(libraryFake(env, 'vscode'), null); assert.equal(env.module('vscode').__isFake, true);
 });
 for (const [name, f] of world) await clause(name, f);
 

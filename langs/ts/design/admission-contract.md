@@ -1022,6 +1022,16 @@ table above (`lower.mjs --audit`) is unchanged; they are listed here in its colu
 | pr.mjs prWorker (types unit, no equal emit) | verdict | ASK | typed | one-decider (typed.mjs typedReason) | the emitted JavaScript differs in <files> |
 | lint/directives.mjs directiveRecords | rule-record | directive:<kind> | directives | one-decider (directivesOf) | added/removed `<directive>` over <scope>: hides / no longer hides <errors> |
 
+## 2026-11-01: every witness of a row, and `--units` (lane w7a-lean-witnesses)
+
+No decision site is added or moved. A `pr.mjs` row whose lane B verdict is `WITNESS` now carries `witnesses` beside
+`witness`: lane B's witnesses of the unit (the ones it already found and the certificate already summarises), one per
+site (`where.field`, the two sides' operations, the candidate line), in lane B's order, each without its `record`.
+`witness` is still the first, the verdict and the certificate are unchanged. `pr.mjs --units` narrows which changed
+units get a task; it decides no verdict and refuses nothing (a unit left out has no row). The lint's `v`, `refuse` and
+`note`, the translator's `fail` and `Unsupported` are untouched, so `lower.mjs --audit` reads the same sites
+(design/w7a-lean-witnesses.md).
+
 ## 2026-11-01 (lane w1c-opaque-calls): an opaque site keeps its finding's refusal only where no step reaches it
 
 The calls, members, syntax and callbacks rules (lint/opaque-calls.mjs, the column OPAQUE_CALLS) are decided once,

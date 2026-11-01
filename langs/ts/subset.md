@@ -36,6 +36,14 @@ input carried by value in `witness.value`; [the design](design/w3a-counterexampl
 replay to a difference is never a `WITNESS`: it is recorded as `unconfirmed: {input, reason}` beside the verdict the
 unit already had.
 
+A `pr.mjs` row whose lane B verdict is `WITNESS` (a checked row, an `IN-SCOPE` row, a caller's row) carries `witness`,
+lane B's first witness, and `witnesses`, every witness lane B found for the unit, one per site and in lane B's order,
+each without its `record`. Two witnesses are one site when they differ on the same `where.field`, between the same two
+operations (`where.parent.op`, `where.candidate.op`) and at the same candidate line (`where.lines.candidate.start`, else
+`.line`). So a change at two statements reached by different inputs has two entries, and `witness` is the first of
+them, its record aside. `pr.mjs --units path::unit,unit` checks only the listed changed units and their callers; the
+other units get no row ([the design](design/w7a-lean-witnesses.md)).
+
 `check.mjs`, `exec/run.mjs` and `lint/lint.mjs` accept `--candidate file --unit name`
 without `--parent`. A parent file that lacks the unit has the same reading. The harness leaves a missing
 candidate undecided. `NEW` never means equality, correctness or absence of faults.

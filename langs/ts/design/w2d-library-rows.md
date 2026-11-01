@@ -28,7 +28,7 @@ Two readings of the calls a unit makes into an ecosystem library, one per lane.
 | luxon | 3.7.2 | vendored | none (its zone is the host's) | `lib_luxon` |
 | axios | 1.21.0 | vendored browser build, lean's adapter | none (a request is the world's) | `lib_axios` |
 | express | 4.22.3 | model of `req`/`res` | none | `lib_express` |
-| vscode | (the API) | model of the documented contract | none | `lib_vscode` |
+| vscode | (the API) | none: the recording proxy (w2f, decision C: no oracle on this machine to record vectors from; the model `vscode.mjs` stays, unregistered) | none | `lib_vscode` (PASS-bounded) |
 
 ## Why it is sound
 

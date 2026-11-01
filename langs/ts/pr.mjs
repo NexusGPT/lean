@@ -6,7 +6,9 @@
 //
 //   node pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--preview] [--out report.md] [--json report.json]
 //               [--time-budget seconds] [--unit-budget n] [--unit-seconds s] [--reuse] [--fresh] [--cache-dir <dir>] [--runs-dir <dir>]
-//               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project] [--adapters scope.json]
+//               [--n 100] [--dafny-seconds 30] [--project <tsconfig>|--no-project] [--adapters scope.json] [--units path::unit,unit]
+//
+// `--units` checks only the listed changed units (and their callers), each `path::unit` or a bare name; the others get no row.
 //
 // A changed signature proves only through an adapter the developer declares: the scope door (`--adapters`, a scope
 // file whose "adapters" maps a Dafny function name to {from, to, map}) or the comment door (`// lean-adapter {...}`
@@ -181,11 +183,36 @@ export function secretPath(file) {
   return sensitivePath(file);
 }
 
+// `--units` (design/w7a-lean-witnesses.md): the units a run checks, each `path::unit` (the path relative to the repo) or a
+// bare unit name; null checks every changed unit. A unit not listed gets no task and no row: the run answers a narrower
+// question, and the ledger still lists every edit. LEAN_BREAK=w7a-units ignores the list.
+export function unitFilter(list) {
+  if (!list?.length || process.env.LEAN_BREAK === 'w7a-units') return null;
+  const names = new Set(list.map((t) => String(t).replace(/^\.\//, '')));
+  return (file, unit) => names.has(unit) || names.has(`${file}::${unit}`);
+}
+
+// lane B's witnesses of a WITNESS row, one per site and in lane B's order (design/w7a-lean-witnesses.md): two witnesses
+// are one site when they differ on the same field, between the same two operations, at the same candidate line. Each is
+// the row's witness form without its record. LEAN_BREAK=w7a-witnesses keeps the first only.
+const witnessForm = (w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}), ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) });
+export function siteWitnesses(witnesses) {
+  const seen = new Set(), out = [];
+  for (const w of witnesses ?? []) {
+    const where = w?.where ?? {}, site = where.lines?.candidate;
+    const key = JSON.stringify([where.field ?? null, where.parent?.op ?? null, where.candidate?.op ?? null, site?.start ?? site?.line ?? null]);
+    if (!seen.has(key)) { seen.add(key); out.push(witnessForm(w)); }
+  }
+  return process.env.LEAN_BREAK === 'w7a-witnesses' ? out.slice(0, 1) : out;
+}
+
 // The caller supplies file metadata, units and lint findings.
 // This function performs no IO and never runs a lane.
 export function selectUnits(changedFiles, opts = {}) {
+  const listed = unitFilter(opts.units);
   return changedFiles.flatMap((file) => {
     if (opts.paths && !opts.paths(file.file)) return [];
+    if (listed) return selectUnits([file], { ...opts, units: null }).filter((x) => listed(file.file, x.unit.name));
     const stub = { file: file.file, name: '(file)', start: 1, end: 1 };
     const skipped = (reason) => [{ unit: stub, decision: 'skipped', reason }];
     if (secretPath(file.file)) return skipped('secret-path');
@@ -399,8 +426,9 @@ export function writeRefusals(rows, dir, opts = {}) {
 export async function prReport(opts) {
   const ledger = routeChanges(buildChangeManifest(opts));
   const artifactRows = ledgerRows(ledger);
-  const taskMap = new Map();
+  const taskMap = new Map(), listed = unitFilter(opts.units);
   for (const e of ledger.edits) if (e.primary.kind === 'unit') for (const link of e.links) {
+    if (listed && !listed(link.file, link.unit)) continue;
     const id = taskId(link.file, link.unit);
     const t = taskMap.get(id) ?? { id, file: link.file, unit: link.unit, lines: [link.start, link.end], lanes: ['B', 'A'], editIds: [] };
     if (!t.editIds.includes(e.id)) t.editIds.push(e.id);
@@ -541,6 +569,7 @@ async function prWorker(opts) {
       if (typed.get(rel)?.equal) continue;
       const changedNames = new Set(units.map((u) => u.name).filter((n) => n !== MODULE_UNIT && n !== TYPES_UNIT));
       if (!changedNames.size) continue;
+      const changedAll = new Set(unitFilter(opts.units) ? (entry.units ?? []).map((u) => u.name) : []); // a changed unit --units left out is no unchanged caller
       let loaded;
       try { loaded = loadProgram(entry.headFile, { project: false }); } catch { continue; }
       const { sf, checker } = loaded;
@@ -548,7 +577,7 @@ async function prWorker(opts) {
       let names = [];
       try { names = callersOf(sf, checker, [...changedNames]); } catch { /* No caller runs. */ }
       for (const name of names) {
-        if (changedNames.has(name) || scope.has(name) || scope.has(`${rel}:${name}`)) continue;
+        if (changedNames.has(name) || changedAll.has(name) || scope.has(name) || scope.has(`${rel}:${name}`)) continue;
         const unit = all.get(name);
         if (!unit) continue;
         const start = sf.getLineAndCharacterOfPosition(unit.node.getStart(sf)).line + 1;
@@ -632,7 +661,7 @@ async function prWorker(opts) {
         try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, values: valuesFile }); } catch { /* No witness row. */ }
         const w = b?.verdict === 'WITNESS' ? b.witnesses?.[0] : null;
         if (!w || w.where?.cause !== 'callee') { commitArtifact(opts._runDir, attempt, { file: rel, unit: u.name, lines: [u.start, u.end], caller: true, verdict: b?.verdict ?? 'ASK', coverage: b ? 'checked' : 'failed:harness', reason: b?.reason ?? 'no caller witness', omitFromReport: true, laneB: b?.verdict }); continue; }
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'WITNESS', coverage: 'checked', laneB: 'WITNESS', laneA: null, caller: true, certificate: basicCertificate({ B: b }), witness: { ...(w.record ? { record: w.record } : {}), input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, reason: null, advice: [] });
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'WITNESS', coverage: 'checked', laneB: 'WITNESS', laneA: null, caller: true, certificate: basicCertificate({ B: b }), witness: { ...(w.record ? { record: w.record } : {}), input: w.input, args: w.args, where: w.where, through: w.through, ...(Array.isArray(w.patch) ? { patch: w.patch, patchSummary: w.patchSummary } : {}) }, witnesses: siteWitnesses(b.witnesses), reason: null, advice: [] });
         continue;
       }
       // an added file's module unit is its evaluation alone: lane B runs it candidate-only (NEW, no equality claim), as a
@@ -658,21 +687,21 @@ async function prWorker(opts) {
         try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project }); }
         catch (e) { b = { verdict: 'ASK', reason: `harness: ${String(e.message).slice(0, 300)}` }; }
         const proof = correspondence?.status === 'decided-equal' && !['WITNESS', 'NEW', 'REFUSE'].includes(b.verdict) && !b.bound?.library?.defects?.length && !b.bound?.frontEnd?.handlers?.defects?.length;
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: proof ? 'checked' : `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : proof ? 'PASS-proved' : b.verdict, ...(proof ? { certificate: { ...correspondence.certificate, identity: rows.identity, lanes: { ...correspondence.certificate.lanes, B: b } } } : {}), ...(proof ? {} : { certificate: basicCertificate({ B: { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, ...(b.record ? { record: b.record } : {}) } }) }), laneB: b.verdict, laneA: proof ? 'PASS-proved' : null, witness: b.witnesses?.[0] ?? null, reason: proof ? null : b.reason ?? u.findings[0].msg, advice: proof ? [] : u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: proof ? 'checked' : `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : proof ? 'PASS-proved' : b.verdict, ...(proof ? { certificate: { ...correspondence.certificate, identity: rows.identity, lanes: { ...correspondence.certificate.lanes, B: b } } } : {}), ...(proof ? {} : { certificate: basicCertificate({ B: { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, ...(b.record ? { record: b.record } : {}) } }) }), laneB: b.verdict, laneA: proof ? 'PASS-proved' : null, witness: b.witnesses?.[0] ?? null, ...(b.verdict === 'WITNESS' ? { witnesses: siteWitnesses(b.witnesses) } : {}), reason: proof ? null : b.reason ?? u.findings[0].msg, advice: proof ? [] : u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
         continue;
       }
       if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
         // declared in scope: this function was meant to change; its difference is information, not a refusal
-        let result = null; try { result = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds: 1, identity: rows.identity, values: valuesFile }); } catch { /* keep */ }
+        let result = null; try { result = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds: 1, identity: rows.identity, values: valuesFile, witnesses: true }); } catch { /* keep */ }
         const b = result?.certificate?.lanes?.B ?? null;
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'IN-SCOPE', coverage: 'checked', certificate: result?.certificate ?? basicCertificate(), laneB: b?.verdict ?? null, laneA: null, witness: b?.witnesses?.[0] ?? null, reason: b?.verdict === 'WITNESS' ? 'changed as asked: the two versions differ' : b?.verdict === 'PASS-bounded' ? 'declared in scope but no difference found within the bound' : (b?.reason ?? null), advice: [] });
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: 'IN-SCOPE', coverage: 'checked', certificate: result?.certificate ?? basicCertificate(), laneB: b?.verdict ?? null, laneA: null, witness: b?.witnesses?.[0] ?? null, ...(b?.verdict === 'WITNESS' ? { witnesses: siteWitnesses(result.witnesses ?? b.witnesses) } : {}), reason: b?.verdict === 'WITNESS' ? 'changed as asked: the two versions differ' : b?.verdict === 'PASS-bounded' ? 'declared in scope but no difference found within the bound' : (b?.reason ?? null), advice: [] });
         continue;
       }
       let res;
-      try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, adapters, identity: rows.identity, values: valuesFile, ...newUnitOpts(entry) }); }
+      try { res = await check({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project, dafnySeconds, adapters, identity: rows.identity, values: valuesFile, witnesses: true, ...newUnitOpts(entry) }); }
       catch (e) { res = { verdict: 'ASK', certificate: basicCertificate({ B: { verdict: 'ASK:harness', reason: `harness: ${String(e.message).slice(0, 300)}` } }) }; }
       const lanes = res.certificate?.lanes ?? {};
-      const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { ...(res.witness.record ? { record: res.witness.record } : {}), input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}), ...(res.certificate?.newUnit ? { records: res.certificate.newUnit.records } : {}), ...(lanes.A?.opaque?.steps?.length ? { opaque: lanes.A.opaque.steps.length } : {}) }; // opaque: the unit's opaque steps (design/w1a-opaque-mutation.md)
+      const row = { file: rel, unit: u.name, lines: [u.start, u.end], verdict: res.verdict, coverage: coverageOf(res), certificate: res.certificate, laneB: lanes.B?.verdict ?? null, laneA: lanes.A?.verdict ?? null, witness: res.witness ? { ...(res.witness.record ? { record: res.witness.record } : {}), input: res.witness.input, args: res.witness.args, where: res.witness.where, ...(res.witness.through ? { through: res.witness.through } : {}), ...(Array.isArray(res.witness.patch) ? { patch: res.witness.patch, patchSummary: res.witness.patchSummary } : {}) } : null, ...(lanes.B?.verdict === 'WITNESS' ? { witnesses: siteWitnesses(res.witnesses ?? lanes.B.witnesses) } : {}), reason: lanes.A?.detail ?? lanes.B?.reason ?? null, advice: [], ...(lanes.A?.adapter ? { adapter: lanes.A.adapter.theorem } : {}), ...(lanes.A?.restsOn?.length ? { restsOn: lanes.A.restsOn.map((x) => `${x.callee} ${x.verdict}`) } : {}), ...(res.certificate?.newUnit ? { records: res.certificate.newUnit.records } : {}), ...(lanes.A?.opaque?.steps?.length ? { opaque: lanes.A.opaque.steps.length } : {}) }; // opaque: the unit's opaque steps (design/w1a-opaque-mutation.md)
       if (res.verdict !== 'PASS-proved' && res.verdict !== 'WITNESS') {
         try { const f = lintFile(headFile, [[u.start, u.end]], entry.keyReading?.checker ? { loaded: entry.keyReading } : { project }); row.advice = f.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })); } catch { /* none */ }
       }
@@ -833,9 +862,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');
-  if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
+  if (!base) { console.error('usage: pr.mjs --repo <checkout> --base <ref> [--head <ref|WORKTREE>] [--scope f,Class.m,file.ts:f] [--units path::unit,unit] [--preview] [--out report.md] [--json report.json]'); process.exit(2); }
   const scope = new Set(parseUnitList(opt('--scope', '') || ''));
-  const rows = await prReport({ repo, base, head, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
+  const units = a.includes('--units') ? parseUnitList(opt('--units', '') || '') : null;
+  const rows = await prReport({ repo, base, head, units, n: Number(opt('--n', 100)), dafnySeconds: Number(opt('--dafny-seconds', 30)), project: a.includes('--no-project') ? false : opt('--project', true), scope, timeBudget: budgetValue(opt('--time-budget', null), '--time-budget'), unitBudget: budgetValue(opt('--unit-budget', null), '--unit-budget', true), unitSeconds: opt('--unit-seconds', null) ?? undefined, reuse: !a.includes('--fresh'), fresh: a.includes('--fresh'), cacheDir: opt('--cache-dir', null) ?? undefined, runsDir: opt('--runs-dir', null) ?? undefined, filesRoot: opt('--files-root', null), preview: a.includes('--preview'), adapters: opt('--adapters') ? JSON.parse(fs.readFileSync(opt('--adapters'), 'utf8')).adapters ?? null : null });
   if (opt('--json')) atomicJSON(opt('--json'), a.includes('--preview') ? rows : reportJSON(rows));
   const md = a.includes('--preview') ? intakeMarkdown(rows) : reportMarkdown(rows, base, head);
   if (opt('--out')) { fs.writeFileSync(opt('--out'), md); console.log(`${rows.length} function(s) -> ${opt('--out')}`); } else console.log(md);

@@ -122,6 +122,7 @@ export async function check(opts) {
   crumb.phase = 'lane A'; crumb.input = null;
   if (b.sandboxList) cert.sandbox = b.sandboxList; // the project's list lane B ran under, and every name it refused (exec/sandbox-list.mjs)
   cert.lanes.B = { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, witnesses: b.witnesses ? b.witnesses.map((w) => ({ input: w.input, args: w.args, where: w.where, ...(w.through ? { through: w.through } : {}) })) : null, ...(b.record ? { record: b.record } : {}) }; // record: the witness-record/v2 unit certificate (exec/record.mjs), additive
+  if (opts.witnesses && b.verdict === 'WITNESS' && b.witnesses?.length) laneBWitnesses.set(cert, b.witnesses); // asked for (pr.mjs): every result below carries them
   try { cert.unitTextEqual = b.unitTextEqual ?? unitTextEqual(parent, candidate, unit); } catch { cert.unitTextEqual = null; } // the unit's own text, comments and whitespace dropped, equal on both sides or not: beside the file hashes, it says whether a difference came through this function's text or through what it calls
   cert.observation = b.bound?.frontEnd ? { ...b.bound.frontEnd } : { layer: 'values and the reachable object graph', renders: null, effects: 'the trace of environment requests and pending work', schedule: 'synchronous; pending work recorded, never fired' }; // every verdict names its layer (research 18, 19)
   if (b.bound?.frontEnd?.layers) { const L = b.bound.frontEnd.layers; cert.layers = { tree: { ...L.tree, proof: 'lane A reads the unit alone: a component tag is a name and useContext a world read keyed by the context, so a proof covers the unit\'s own tree of names' }, styles: L.styles, notObserved: L.notObserved }; } // a rendered unit: each layer its own result with its assumptions (design/ui-layers.md)
@@ -298,7 +299,11 @@ export async function check(opts) {
   if (cx?.verdict) return cx.verdict;
   return finish(rung(), cert, unreached({ ...(v.capLine && !m ? { reason: `not proved: ${v.capLine}` } : resourceOut ? { reason: `not proved: ${resourceOut}` } : {}), ...(cx?.unconfirmed ? { unconfirmed: cx.unconfirmed } : {}) }));
 }
-function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
+// lane B's witnesses of a WITNESS run, by the certificate they belong to, when the caller asks (opts.witnesses: pr.mjs
+// keeps one per site, design/w7a-lean-witnesses.md): every result of that check carries them whole beside its
+// certificate, which keeps its own summary; check.mjs's own output is unchanged
+const laneBWitnesses = new WeakMap();
+function finish(verdict, cert, extra) { return { verdict, ...extra, ...(laneBWitnesses.has(cert) ? { witnesses: laneBWitnesses.get(cert) } : {}), certificate: cert }; }
 // lane A's number decision for one unit, as check.mjs takes it (for a reader that runs lane A without lane B, such
 // as harness/proof_hunt.py): a unit with no number operation keeps its lemma's result; a number-bearing unit is proved
 // by the doubles reading (unsat), refuted by it (a replayed counterexample), or, when that reading is unknown, proved
