@@ -102,7 +102,11 @@ later transition is a function of it. Break `handle-write`.
 - `let x; ... x = v` written once names the identity `v` names; `m.get(k)` of a `Map` answers an object the map holds
   (existing), as `find` and `at` of an array already did.
 - An occurrence inside a w1a block is the block's (the translator's `opaque` hook of readAfterCall takes the block's
-  statements): the block reads it with the world.
+  statements), and so is one inside an opaque step the translator emits (a switch, a try, a loop read as one step,
+  translate.mjs `opaqueStep`): the step takes the world and the names it reads, so the object's state there is a
+  function of its inputs.
+- A loop holding a world read takes the world (translate.mjs `containsEffect` reads `worldAfter`): before, a pure loop's
+  helper had no world parameter and the read could not be written.
 
 ## copied-argument: a literal of existing parts
 
@@ -131,12 +135,19 @@ named parts are one object (one site). A new part and an existing part of equal 
 `{ x: r.tags, y: r.tags }` against `{ x: r.tags, y: structuredClone(r.tags) }`, which a callee tells apart by identity).
 The skeleton key is sha1 (a 32-bit hash could merge two skeletons).
 
+A same-file call's result handed to the outside (`g(principalOf(x))`) is `handed_call_<key>_<T>(v, k)`: which object
+it is (a new one, or one of the caller's) is fixed by the callee's code and its arguments, so the key is the code the
+callee reaches (reach.mjs `keyText`, the same key the module constants and w1a's blocks use; amendment A3) and k its
+call site (refused in a loop). Pair unit `viaCallee`: the callee returning the caller's object against a copy of it
+(equal values); break `handed-call` drops the key.
+
 A part made by a same-file callee (`xs.map(toRow)`) is refused, never keyed by its text: the callee could change whether
 it returns new or existing objects behind the same text (amendment A3).
 
-**Stays refused**: a spread after a new part (it may replace it), a choice between identities (`body ?? {}`), a part
-made by a same-file callee or a callback that calls, a named part holding another named part, a same-file call's
-result, a new object made in a loop.
+**Stays refused**: a spread after a new part (it may replace it), a choice between identities (`body ?? {}`: the value
+does not say which branch ran), a part made by a same-file callee or a callback that calls, a named part holding another
+named part, a same-file call's result in a loop, a new object made in a loop (every pass makes another object, which
+one site number cannot tell apart).
 
 ## type-assertion: the outside slot
 
@@ -170,6 +181,7 @@ is outside the graded construct and whose effect flows through what the mechanis
 | opaque_read_after_call | handle-value | moved | the copy moved before the call | the copy reads the object before the call |
 | opaque_read_after_call | reach-closure | holder | the length read moved before the call | the read through the holder is not reached |
 | opaque_copied_argument | handed-skeleton | shared | a copy of the part in the second slot | a new and an existing part of one value merge |
+| opaque_copied_argument | handed-call | viaCallee | the callee returns a copy instead of the object | two callees' results of one value merge |
 | opaque_type_assertion | assertion-read | rebound | the asserted name bound to another input | the handed conversion stops reading its value |
 | opaque_read_after_call | fresh-site | twoNew | the other of two new objects of one value read | the two objects are named by value alone |
 | opaque_read_after_call | handle-write | written | the value written bound another way | the write never reaches the world |
