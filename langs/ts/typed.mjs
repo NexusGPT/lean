@@ -42,22 +42,38 @@ function declaresGlobals(sf) {
   return sf.statements.some((st) => ts.isModuleDeclaration(st) && (st.flags & ts.NodeFlags.GlobalAugmentation || ts.isStringLiteral(st.name)));
 }
 
+// A side's file is the old program's own SourceFile when it would be read from the same text with the same parse
+// settings: TypeScript keeps a file of the old program, parsed and bound, only when the host hands back that same object,
+// and a fresh host parses every file anew (n8n's cli project: 4,835 files parsed and bound again for the parent side and
+// for each unit's reverted head, 14-25 s and 1.5 GB each). The text is compared, so a file reused is byte-equal to the
+// one a fresh host would read. LEAN_BREAK=w9f-typed-reuse reads every file anew (tests/w9f-n8n-gate.mjs).
+const sameParse = (sf, lang) => (typeof lang === 'object' && lang !== null
+  ? sf.languageVersion === lang.languageVersion && sf.impliedNodeFormat === lang.impliedNodeFormat && (sf.jsDocParsingMode ?? ts.JSDocParsingMode.ParseAll) === (lang.jsDocParsingMode ?? ts.JSDocParsingMode.ParseAll)
+  : sf.languageVersion === lang);
+// the files a program with an old program took from it, those it parsed anew, and the files emitted (the suite's check
+// of the reuse and of a unit's first difference, tests/w9f-n8n-gate.mjs)
+export const typedReuse = { reused: 0, parsed: 0, emits: 0 };
 function sideProgram(options, roots, texts, oldProgram) {
   const host = ts.createCompilerHost(options, true);
   const { getSourceFile, fileExists, readFile } = host;
+  const reuse = oldProgram && !broken('w9f-typed-reuse');
   host.fileExists = (f) => (texts.has(path.resolve(f)) ? texts.get(path.resolve(f)) !== null : fileExists.call(host, f));
   host.readFile = (f) => (texts.has(path.resolve(f)) ? texts.get(path.resolve(f)) ?? undefined : readFile.call(host, f));
   host.getSourceFile = (f, lang, onError, fresh) => {
     const abs = path.resolve(f);
-    if (!texts.has(abs)) return getSourceFile.call(host, f, lang, onError, fresh);
-    const text = texts.get(abs);
-    return text === null ? undefined : ts.createSourceFile(f, text, lang, true);
+    const text = texts.has(abs) ? texts.get(abs) : (reuse ? readFile.call(host, f) : undefined);
+    if (text === null) return undefined;
+    const old = reuse && text !== undefined ? oldProgram.getSourceFile(f) : undefined;
+    if (old && !old.redirectInfo && old.text === text && sameParse(old, lang)) { typedReuse.reused++; return old; } // a redirect is the program's, never a host's
+    if (oldProgram) typedReuse.parsed++;
+    return texts.has(abs) ? ts.createSourceFile(f, text, lang, true) : getSourceFile.call(host, f, lang, onError, fresh);
   };
   return ts.createProgram({ rootNames: roots.filter((r) => texts.get(path.resolve(r)) !== null), options, host, oldProgram });
 }
 
 // the JavaScript a program emits for one source file: every output it writes, named relative to the emit folder
 function emitted(program, sf) {
+  typedReuse.emits++;
   const out = [];
   const r = program.emit(sf, (name, text) => { out.push([name, text]); });
   out.sort((a, b) => a[0].localeCompare(b[0]));
@@ -169,8 +185,14 @@ export function typedReading({ root, changes, project = true }) {
             const text = c.head.slice(0, b.node.getStart(hs)) + c.parent.slice(a.node.getStart(ps), a.node.getEnd()) + c.head.slice(b.node.getEnd());
             if (text === c.head) continue;
             const reverted = sideProgram(options, roots, new Map([...texts.head, [c.abs, text]]), head);
-            const unitDiffers = files.filter((f) => emitHash(reverted, f) !== emitHash(head, f));
-            units[name] = { equal: !unitDiffers.length, differs: unitDiffers.map((f) => path.relative(root, f).split(path.sep).join('/')) };
+            // one differing file answers the unit (its change is not erased): the unit's own file is read first, where a
+            // change to what runs shows, and the reading stops there; an erased unit still reads every file of the reach.
+            // LEAN_BREAK=w9f-typed-first reads the whole reach of every unit (tests/w9f-n8n-gate.mjs)
+            const whole = broken('w9f-typed-first');
+            const order = whole ? files : [c.abs, ...files.filter((f) => f !== c.abs)];
+            const unitDiffers = [];
+            for (const f of order) if (emitHash(reverted, f) !== emitHash(head, f)) { unitDiffers.push(f); if (!whole) break; }
+            units[name] = { equal: !unitDiffers.length, differs: unitDiffers.map((f) => path.relative(root, f).split(path.sep).join('/')), ...(!whole && unitDiffers.length ? { first: true } : {}) };
           }
           out.get(c.rel).units = units;
         }
