@@ -12,9 +12,9 @@
 //
 // Mechanisms registered here, one line each, by the lane that owns them:
 export const MECHANISMS = {
-  'opaque-drop-read': 'translate/opaque.mjs opaqueForm: the first read of an opaque step is dropped (lane w1a)',
+  'opaque-drop-read': 'translate/opaque.mjs opaqueForm: the first scalar read of an opaque step is dropped (lane w1a)',
   'opaque-drop-write': 'translate/opaque.mjs opaqueForm: the first written output of an opaque step is dropped (lane w1a)',
-  'opaque-drop-callees': 'translate/translate.mjs opaqueTail: the same-file callee texts leave the step\'s key (lane w1a)',
+  'opaque-drop-callees': 'translate/translate.mjs opaqueTail: the code the step reaches leaves its key and its CALLS line is not written (lane w1a)',
 };
 export const BREAK_ENV = 'LEAN_BREAK';
 export const broken = (name) => String(process.env[BREAK_ENV] ?? '').split(',').map((x) => x.trim()).includes(name);

@@ -1,0 +1,37 @@
+{
+  "scope": [
+    "Outside.bump",
+    "Inside.bump",
+    "Planted.bump",
+    "Flows.bump",
+    "reader"
+  ],
+  "equal": {
+    "outside_bump": true,
+    "inside_bump": false,
+    "planted_bump": false,
+    "flows_bump": false,
+    "reader": false
+  },
+  "opaque": {
+    "outside_bump": [
+      "object-method-mutation"
+    ]
+  },
+  "break": [
+    {
+      "mechanism": "opaque-drop-read",
+      "equal": {
+        "flows_bump": true
+      }
+    }
+  ],
+  "b": {
+    "Outside.bump": "PASS-bounded",
+    "Inside.bump": "WITNESS",
+    "Planted.bump": "WITNESS",
+    "Flows.bump": "WITNESS",
+    "reader": "WITNESS"
+  },
+  "why": "reader: a caller reading the receiver's field after the call against before it: never proved (the step writes the world the field is read from). object-method-mutation graded block (design/w1a-opaque-mutation.md). outside: a statement added before the block, the block and its reads unchanged: proved with the step listed. inside: the block's text changed, another symbol, not proved; lane B differs. planted: exec/mutate.mjs site 2 (changed-return) inside the block, not proved; lane B differs. flows: k * 3 before the block reaches it through its scalar read only: not proved; LEAN_BREAK=opaque-drop-read drops that read and the lemma proves, a false PASS-proved the break row shows."
+}
