@@ -1,0 +1,23 @@
+{
+ "why": "One unit changed at two statements, each reached by its own inputs (design/w7a-lean-witnesses.md): grade returns another word when n > 100 (line 2) and another when s is long (line 3). Lane B finds differing inputs at both completions; the row's `witnesses` holds one per site, in lane B's order (the third differing input completes at line 2 again and is the same site), and `witness` stays the first. LEAN_BREAK=w7a-witnesses keeps the first only: one site, red. half changed too: `--units index.ts::grade` gives grade's row and none for half, `--units half` the reverse (a bare name), and without the flag both; LEAN_BREAK=w7a-units ignores the flag, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "grade", "verdict": "WITNESS", "sites": 2 },
+   { "file": "index.ts", "unit": "half", "verdict": "WITNESS", "sites": 1 }
+  ],
+  "units": [
+   {
+    "units": "index.ts::grade",
+    "rows": [{ "file": "index.ts", "unit": "grade", "verdict": "WITNESS", "sites": 2 }],
+    "absent": [{ "file": "index.ts", "unit": "half" }]
+   },
+   {
+    "units": "half",
+    "rows": [{ "file": "index.ts", "unit": "half", "verdict": "WITNESS" }],
+    "absent": [{ "file": "index.ts", "unit": "grade" }]
+   }
+  ],
+  "unassigned": false
+ }
+}
