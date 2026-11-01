@@ -180,7 +180,11 @@ one symbol, so a changed URL inside an opaque loop could be proved equal. The id
   "Why the opaque step cannot be one statement here"). A step whose span equals the finding's needs a reading in which
   sharing is a value, which the heap core is (references are cells, two parameters may be one object): there an opaque
   statement reading and writing the heap is sound by the effect axiom alone. That second rung is not built in this lane
-  (open, see the result file); the census reports the fraction the block rung gives.
+  (open, see the result file); the census reports the fraction the block rung gives. A unit the translator reads whole
+  (the module reading keyed by the code it reaches, including the fallback after a body refusal, or an accessor or
+  static method keyed by the file's text) lists one step `construct: "unit"` covering its body (fraction 1): before
+  this row such a unit entered with no `// OPAQUE` line, and the census's fraction left it out (24 of 40 newly entered
+  units on pyka, 92 of 196 on nutshell).
 - **A6, one break convention.** `tests/break.mjs`: the code reads `LEAN_BREAK=<mechanism>` through `broken(name)`; a
   pair's `expect.json` lists `"break": [{ "mechanism", "equal": { "<unit>": true } }]`, each unit expected `false` in the
   pair's own `equal`; the runner translates both sides again under the break and requires the lemma to prove (the row
