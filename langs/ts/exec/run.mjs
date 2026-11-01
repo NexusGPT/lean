@@ -672,6 +672,7 @@ function guardedCall(env, fn, ms) {
   catch (e) { if (e && e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') throw new CallTimeout(ms); throw e; }
   finally { delete env.ctx.__leanCall; closeWindow(w); }
 }
+export { guardedCall }; // a PR-added test of a unit no parent holds runs under the same watchdog (new-tests.mjs)
 const callUnit = (env, fn) => { const w = openWindow(env); try { return fn(); } finally { closeWindow(w); } }; // an effect or a cleanup called directly: unit code, inside a window
 async function withTimeout(p, ms) {
   let timer;
@@ -845,7 +846,7 @@ async function observeWindow(side, spec, args, ms) {
   let outcomeSite = null;
   if (env.siteState) { env.siteState.completed = null; env.siteState.fault = null; }
   openEscapes(env); // every function first rendered from here to the drives is driven at the end (driveWindow)
-  let outcome, outcomeValue, hasOutcome = false, returnedPromise = null;
+  let outcome, outcomeValue, hasOutcome = false, returnedPromise = null, thrownValue;
   lateErrors.length = 0;
   try {
     const slotsBefore = (env.hookSlots ?? []).slice(), framesBefore = cloneFrames(env.childFrames), traceBefore = env.trace.length, callsBefore = new Map(env.calls), demandBefore = env.demand; // the environment's answers are seeded by path and call index: with the same counters the second render asks the same questions and gets the same answers; the clock and the random stream are not restored (a read of them in a render is the impurity the check is for)
@@ -890,7 +891,7 @@ async function observeWindow(side, spec, args, ms) {
     if (e instanceof CallTimeout) { callTimedOut(); return { harness: 'timeout' }; }
     if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' }; // whichever realm threw it: the host's (a fake, a patched intrinsic) or the sandbox's (the unit's own recursion)
     outcomeSite = env.siteState?.completed ?? env.siteState?.current?.site ?? null;
-    outcome = { threw: render(e) };
+    outcome = { threw: render(e) }; thrownValue = e;
     if (returnedPromise) outcome.promise = returnedPromise;
   }
   // drain microtasks so pending work settles
@@ -910,6 +911,7 @@ async function observeWindow(side, spec, args, ms) {
   let moduleAfter; try { moduleAfter = moduleState(side); } catch (e) { return { harness: `module state: ${String(e && e.message).slice(0, 120)}` }; }
   const written = moduleChange(stateBefore, moduleAfter); if (written) result.module = written; // what the call left in the module's own bindings
   const drives = await driveWindow(env, ms); if (drives.length) result.drives = drives; // every function the observation shows, driven (design/callbacks.md)
+  Object.defineProperty(result, 'raw', { value: hasOutcome ? { returned: outcomeValue } : { threw: thrownValue } }); // the values themselves, not their renderings: a unit no parent holds is checked against its declared types (new-unit.mjs)
   return Object.defineProperty(result, 'site', { value: outcomeSite });
 }
 
