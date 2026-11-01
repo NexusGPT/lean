@@ -133,19 +133,23 @@ export function fsModel(env) {
       if (t.listing(p).length && !a[1]?.recursive) throw nodeError('ENOTEMPTY', 'rmdir', shown(a[0]));
       removeUnder(p); return undefined;
     },
-    rm(a) {
-      // rm starts with an lstat; `force` forgives ENOENT alone (a file on the way is still ENOTDIR)
+    rm(a, form) {
+      // rm starts with an lstat; `force` forgives ENOENT. A file on the way stays ENOTDIR, except in rmSync with both
+      // `recursive` and `force`: Node 24's rmSync is the binding's remove-all, which takes a path under a file as no entry
+      // (observed: rmSync('/f/x', {recursive, force}) with /f a file returns; fs.rm and fs.promises.rm reject ENOTDIR)
       const p = pathArg(a[0]), o = a[1] && typeof a[1] === 'object' ? a[1] : {}, e = t.walk(p), n = e ? { kind: 'absent' } : t.at(p);
-      if (e === 'ENOTDIR') throw nodeError('ENOTDIR', 'lstat', shown(a[0]));
+      if (e === 'ENOTDIR' && !(form === 'sync' && o.recursive && o.force)) throw nodeError('ENOTDIR', 'lstat', shown(a[0]));
       if (n.kind === 'absent') { if (o.force) return undefined; throw nodeError('ENOENT', 'lstat', shown(a[0])); }
       if (n.kind === 'dir' && !o.recursive) throw worldError(Error, `Path is a directory: rm returned EISDIR (is a directory) ${shown(a[0])}`, { code: 'ERR_FS_EISDIR' });
       removeUnder(p); return undefined;
     },
     rename(a) {
-      // rename(2): both walks, then the traps (a folder into itself EINVAL, onto its own ancestor ENOTEMPTY), then the kinds
-      const from = pathArg(a[0]), to = pathArg(a[1]), sh = [shown(a[0]), shown(a[1])], n = t.reach(from, 'rename', ...sh);
+      // rename(2): both parent walks (the old name's, then the new one's) before the old name itself is looked up, then the
+      // traps (a folder into itself EINVAL, onto its own ancestor ENOTEMPTY), then the kinds
+      const from = pathArg(a[0]), to = pathArg(a[1]), sh = [shown(a[0]), shown(a[1])];
+      for (const q of [from, to]) { const e = t.walk(q); if (e) throw nodeError(e, 'rename', ...sh); }
+      const n = t.at(from), m = t.at(to);
       if (n.kind === 'absent') throw nodeError('ENOENT', 'rename', ...sh);
-      const m = t.reach(to, 'rename', ...sh);
       if (from === to) return undefined;
       if (to.startsWith(from + '/')) throw nodeError('EINVAL', 'rename', ...sh);
       if (from.startsWith(to + '/')) throw nodeError('ENOTEMPTY', 'rename', ...sh);
@@ -178,15 +182,15 @@ export function fsModel(env) {
   function removeUnder(p) { for (const k of [...t.nodes.keys()]) if (k === p || k.startsWith(p + '/')) t.nodes.set(k, { kind: 'absent' }); }
   const calls = {};
   for (const [name, op] of Object.entries(ops)) {
-    calls[`${name}Sync`] = (args) => op(args);
-    calls[`promises.${name}`] = (args, self, k, path) => worldPromise(env, path, k, () => op(args));
+    calls[`${name}Sync`] = (args) => op(args, 'sync');
+    calls[`promises.${name}`] = (args, self, k, path) => worldPromise(env, path, k, () => op(args, 'promise'));
     // the callback form: the last argument is the callback; existsSync's callback form takes (exists) alone
     calls[name] = (args, self, k, path) => {
       const cb = args.length && typeof args[args.length - 1] === 'function' ? args[args.length - 1] : null;
       const rest = cb ? args.slice(0, -1) : args;
       if (!cb) throw worldError(TypeError, 'The "cb" argument must be of type function. Received undefined', { code: 'ERR_INVALID_ARG_TYPE' });
       if (name === 'exists') { const v = op(rest); Promise.resolve().then(() => { try { cb(v); } catch (e) { env.record('callback-throw', path, [String(e && e.message)]); } }); return undefined; }
-      nodeCallback(env, path, cb, () => op(rest));
+      nodeCallback(env, path, cb, () => op(rest, 'callback'));
       return undefined;
     };
   }
