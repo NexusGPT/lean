@@ -8,7 +8,7 @@
 //             async-drop-origins (A2), opaque_async_callee under async-drop-callees (A3), each a false PASS-proved
 //   pending   LEAN_BREAK=async-drop-pending: a step whose pending work reads a local rebound after it is read anyway;
 //             opaque_capture's lane A proves falsely, so its check row must fail (that pair is lane B's: no lemma row)
-// Pairs start only while the one-minute load is at most 40. Exit 0 when every line holds.
+// Pairs start only while the one-minute load is at most 40 (LEAN_LOAD_GATE sets another bound). Exit 0 when every line holds.
 // Usage: node langs/ts/tests/w1d-opaque-async.mjs [--jobs N] [--only plain,pending]
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,8 +27,9 @@ const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.a
 const jobs = String(Math.min(4, Number(arg('--jobs')) || 2));
 const only = arg('--only')?.split(',') ?? null;
 const want = (k) => !only || only.includes(k);
-// the load discipline: a pair starts only while the one-minute load is at most 40 (else it waits)
-const loadGate = async () => { while (Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) > 40) await new Promise((r) => setTimeout(r, 5000)); };
+// the load discipline: a pair starts only while the one-minute load is at most LEAN_LOAD_GATE (40 unless set; else it waits)
+const LOAD_GATE = Number(process.env.LEAN_LOAD_GATE) || 40;
+const loadGate = async () => { while (Number(fs.readFileSync('/proc/loadavg', 'utf8').split(' ')[0]) > LOAD_GATE) await new Promise((r) => setTimeout(r, 5000)); };
 // each pair through `run.mjs --pair <name>` (its own table), at most `jobs` at once
 const run = async (names, env) => {
   const one = (name) => new Promise((resolve) => {
