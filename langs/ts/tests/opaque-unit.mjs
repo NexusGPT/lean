@@ -46,7 +46,7 @@ check(step.line === 'var (wld, retb, u) := ext_block_x(wld, k, u);', `step line 
 check(decl[0].ins.join(',') === 'World,int,U' && decl[0].out === '(World, Option<int>, U)', `step signature ${JSON.stringify(decl[0])}`);
 // the column
 check(opaqueGrade('alias-mutation') === 'block' && opaqueGrade('dynamic-eval') === 'none', 'the opaque column');
-check(gradedRule('a.ts:12: alias-mutation: `t` is ...') === 'alias-mutation' && gradedRule('read-after-call: x') === null, 'a translator refusal\'s graded rule');
+check(gradedRule('a.ts:12: alias-mutation: `t` is ...') === 'alias-mutation' && gradedRule('dynamic-eval: x') === null, 'a translator refusal\'s graded rule');
 // references
 const why = (i) => heapOperation(checker, st[i])?.why ?? null;
 check(why(0) === null && why(1) === null && why(2) === null, `a primitive statement touches no reference: ${why(0)}, ${why(1)}, ${why(2)}`);

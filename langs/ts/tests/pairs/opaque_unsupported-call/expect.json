@@ -7,13 +7,13 @@
   "planted_call"
  ],
  "equal": {
-  "outside_call": "real-only",
+  "outside_call": true,
   "inside_call": false,
   "read_call": false,
   "write_call": false,
   "planted_call": false
  },
- "why": "design/w1c-opaque-calls.md, rule unsupported-call: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_call is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open).",
+ "why": "design/w1c-opaque-calls.md, rule unsupported-call: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_call is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open). Since the merge with w1g (lane w1m): the boundary value the step holds at Any meets the typed slot after it as w1g's one opaque conversion (type-assertion, as_Any_int), so the faithful text translates and places the unit: lane A proves it (it was real-only: the faithful text refused that slot).",
  "b": {
   "outside_call": "PASS-bounded",
   "inside_call": "WITNESS",
