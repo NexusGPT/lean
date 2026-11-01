@@ -6,11 +6,11 @@ const keyOf = (method, url, body) => JSON.stringify([String(method ?? 'GET').toU
 export function create(env, recording = {}) {
   const table = new Map((recording.fetch ?? []).map((e) => [keyOf(e.method, e.url, e.body), e]));
   return async function fetch(input, init = {}) {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    const method = init.method ?? input?.method ?? 'GET';
-    env.record('call', 'fetch', [String(method).toUpperCase(), url, init.body == null ? '' : String(init.body)]);
-    const e = table.get(keyOf(method, url, init.body));
+    const req = new Request(input, init); // the arguments as the standard reads them: a pair it refuses rejects with its error
+    const body = init.body == null ? null : String(init.body);
+    env.record('call', 'fetch', [req.method, req.url, body ?? '']);
+    const e = table.get(keyOf(req.method, req.url, body)) ?? table.get(keyOf(req.method, input, body));
     if (e) return new Response(e.response, { status: e.status ?? 200, headers: e.headers ?? {} });
-    return new Response(env.primitive('string', `fetch(${url})`), { status: 200 });
+    return new Response(env.primitive('string', `fetch(${req.url})`), { status: 200 });
   };
 }

@@ -73,6 +73,7 @@ export function makeFs(env, recording = {}, { previousWrite = false } = {}) {
   const sync = { readFileSync: read, writeFileSync: (p, d, o) => write(p, d, o, false), appendFileSync: (p, d, o) => write(p, d, o, true), existsSync: exists, mkdirSync: mkdir, unlinkSync: unlink, rmdirSync: rmdir, rmSync: rm, readdirSync: readdir, statSync: stat, renameSync: rename };
   const out = {}; for (const [k, f] of Object.entries(sync)) out[k] = rec(k, f);
   const promises = {}; for (const [k, f] of Object.entries(sync)) if (k !== 'existsSync') { const name = k.replace(/Sync$/, ''); promises[name] = rec(`promises.${name}`, async (...a) => f(...a)); }
+  promises.access = rec('promises.access', async (p) => { lookup(p, 'access'); });
   out.promises = promises;
   return out;
 }

@@ -598,6 +598,11 @@ async function proofHunt(add) {
 async function modelConformance(add) {
   const selectTest = runner('conformance/select').run('node', [path.join(here, '../conformance/select.test.mjs')]);
   const causeTest = runner('conformance/cause').run('node', [path.join(here, '../conformance/cause.test.mjs')]);
+  // the protocol test of every behavioural fake against the real module (conformance/fakes.mjs, design/w2e-fake-conformance.md):
+  // green on every fake under exec/fakes and the good fixtures, the wrong fixtures refused; under --break (no comparison) it must go red
+  const fakesFile = path.join(here, '../conformance/fakes.mjs'), fakesJson = path.join(tmp, 'fakes.json');
+  const fakesRun = runner('conformance/fakes').run('node', [fakesFile, '--json', fakesJson]);
+  const fakesBreak = runner('conformance/fakes --break').run('node', [fakesFile, '--break']);
   let sel; try { sel = conformanceSelection({ root, pairsDir: path.join(here, 'pairs'), knownFile: path.join(here, '../conformance/known-findings.json') }); } catch (e) { sel = { error: e.message }; }
   console.log(`conformance: ${sel.error ?? sel.why}`);
   const modelJob = sel.error || (sel.pairs && !sel.pairs.length) ? null : pool.job(`conformance/model ${sel.pairs ? sel.pairs.join(',') : 'every pair'}`);
@@ -606,6 +611,14 @@ async function modelConformance(add) {
   add('conformance', 'select', 'the running rule: a changed pair runs, an unchanged one is skipped (conformance/select.test.mjs)', t.status === 0, (t.stdout ?? '').trim().split('\n').pop() || (t.stderr ?? '').trim().slice(-200));
   const c = await causeTest;
   add('conformance', 'cause', "a disagreement's cause on the bridge's own difference: two exact bigints are a value difference, past 2^53 is a binary64 number (conformance/cause.test.mjs)", c.status === 0, (c.stdout ?? '').trim().split('\n').pop() || (c.stderr ?? '').trim().slice(-200));
+  {
+    const [f, b] = [await fakesRun, await fakesBreak];
+    const total = (r) => ((r.stdout ?? '').trim().split('\n').pop() ?? '').startsWith('| FAKE-CONFORMANCE TOTAL') ? r.stdout.trim().split('\n').pop() : null;
+    let per = []; try { per = JSON.parse(fs.readFileSync(fakesJson, 'utf8')).results.filter((r) => r.kind === 'fake' && !r.skipped).map((r) => `${r.file.replace(/^exec\/fakes\//, '')} ${r.ok ? 'pass' : 'FAIL'}: ${r.clauses.map((c) => `${c.family}/${c.clause} ${c.n}${c.first ? ' FAIL' : ''}`).join(', ')}`); } catch { /* no JSON: the TOTAL line or its absence says why */ }
+    const ok = f.status === 0 && !!total(f) && b.status === 1 && !!total(b) && / 0 of \d+ wrong fixtures refused /.test(total(b));
+    const detail = `${total(f) ?? `exit ${f.status}, no TOTAL line: ${(f.stderr ?? '').trim().slice(-200)}`}; --break: ${total(b) ? `exit ${b.status}, ${(total(b).match(/(\d+ of \d+) wrong fixtures refused/) ?? [])[1] ?? '?'} wrong fixtures refused` : `exit ${b.status}, no TOTAL line`}; ${per.length ? per.join('; ') : 'no fake under exec/fakes yet'}`;
+    add('conformance', 'fakes', 'every fake under exec/fakes and every good fixture keeps its protocol against the real module; each wrong fixture refused on its clause, and admitted under --break (conformance/fakes.mjs)', ok, detail);
+  }
   if (sel.error) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", false, sel.error);
   else if (sel.pairs && !sel.pairs.length) add('conformance', 'model', "each unit's two Dafny models against Node on lane B's inputs (conformance/run.mjs)", true, `not run: ${sel.why}`);
   else {

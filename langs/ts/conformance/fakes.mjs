@@ -28,11 +28,12 @@ import realUrlModule from 'node:url';
 import realCrypto from 'node:crypto';
 import { Buffer as RealBuffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { Environment, makeRng } from '../exec/fake.mjs';
-import { runTimers } from '../exec/run.mjs';
+import { makeRng } from '../exec/fake.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+process.removeAllListeners('warning'); // the real modules warn on what the scripts hand them on purpose (a negative delay, url.parse)
 const argv = process.argv.slice(2);
 const opt = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
 const opts = (k) => argv.flatMap((x, i) => (x === k ? [argv[i + 1]] : []));
@@ -52,20 +53,22 @@ export function canon(v, depth = 0) {
   if (typeof v === 'symbol') return { symbol: String(v) };
   if (typeof v === 'function') return v.__isFake ? { fake: String(v.__fakePath) } : { function: v.name };
   if (v.__isFake) return { fake: String(v.__fakePath) }; // a recording handle where the real module answers a value: never equal to it
-  if (ArrayBuffer.isView(v)) return { [v.constructor.name]: RealBuffer.from(v.buffer, v.byteOffset, v.byteLength).toString('hex') };
-  if (v instanceof ArrayBuffer) return { ArrayBuffer: RealBuffer.from(v).toString('hex') };
-  if (v instanceof URL) return { URL: v.href };
-  if (v instanceof URLSearchParams) return { URLSearchParams: [...v] };
-  if (v instanceof Map) return { Map: [...v].map((e) => canon(e, depth + 1)) };
-  if (v instanceof Set) return { Set: [...v].map((e) => canon(e, depth + 1)) };
-  if (v instanceof Date) return { Date: canon(v.getTime()) };
-  if (v instanceof RegExp) return { RegExp: String(v) };
-  if (v instanceof Error) return { Error: v.name, message: v.message, code: v.code };
+  // built-ins by their tag, never by instanceof: a fake that runs in lane B's sandbox answers values of another realm
+  const tag = Object.prototype.toString.call(v).slice(8, -1);
+  if (ArrayBuffer.isView(v)) return { [tag]: RealBuffer.from(v.buffer, v.byteOffset, v.byteLength).toString('hex') };
+  if (tag === 'ArrayBuffer') return { ArrayBuffer: RealBuffer.from(v).toString('hex') };
+  if (tag === 'URL') return { URL: v.href };
+  if (tag === 'URLSearchParams') return { URLSearchParams: [...v] };
+  if (tag === 'Map') return { Map: [...v].map((e) => canon(e, depth + 1)) };
+  if (tag === 'Set') return { Set: [...v].map((e) => canon(e, depth + 1)) };
+  if (tag === 'Date') return { Date: canon(v.getTime()) };
+  if (tag === 'RegExp') return { RegExp: String(v) };
+  if (tag === 'Error' || tag === 'DOMException') return { Error: v.name, message: v.message, code: v.code };
   if (Array.isArray(v)) return v.map((e) => canon(e, depth + 1));
   if (typeof v.isFile === 'function' && typeof v.isDirectory === 'function') { const f = v.isFile(); return { stat: { isFile: f, isDirectory: v.isDirectory(), size: f ? v.size : null } }; } // a directory's size is the file system's own
-  const proto = Object.getPrototypeOf(v);
+  const proto = Object.getPrototypeOf(v), cname = proto?.constructor?.name;
   const out = {}; for (const k of Object.keys(v).sort()) out[k] = canon(v[k], depth + 1);
-  return proto && proto !== Object.prototype && proto.constructor?.name ? { [proto.constructor.name]: out } : out;
+  return proto && cname && cname !== 'Object' ? { [cname]: out } : out;
 }
 const thrown = (e) => ({ throw: typeof e?.code === 'string' ? e.code : e?.name ?? String(e) });
 const same = (a, b) => BREAK || JSON.stringify(a) === JSON.stringify(b);
@@ -88,9 +91,11 @@ const label = (s) => `${s.new ? 'new ' : ''}${s.at}(${s.args.map((a) => show(can
 
 // ----- the fake under test: a fresh environment, a fresh fake, its calls counted against what it recorded -----
 function fresh(fake, seed, recording = {}) {
-  const env = new Environment(seed);
+  const env = new fake.Env(seed);
+  if (fake.needsCtx) fake.sandbox(env, fake.tmpRoot); // a library fake answers inside lane B's sandbox, as the unit reaches it
   let created = fake.create(env, recording);
-  if (typeof created === 'function') created = { [fake.globalName ?? created.name]: created }; // a global's fake may be the global itself
+  if (fake.wrap) created = { [fake.wrap]: created }; // a hook's global: the value lane B's sandbox holds under its name
+  else if (typeof created === 'function' && !fake.asModule) created = { [fake.globalName ?? created.name]: created }; // a global's fake may be the global itself
   return { env, subject: created };
 }
 const traceMark = (env) => `${env.trace.length}:${env.pending.map((e) => e.id).join(',')}`; // what an observer of the world sees: the trace and the pending list; a call recorded changes it (a clear removes a pending entry)
@@ -189,6 +194,140 @@ function webSteps(seed, names) {
   }
   return steps;
 }
+
+// Request and Response, FormData, Blob, DOMException: the platform's classes; absolute URLs only (a relative URL has no
+// one reference: Node's Request refuses it, a page resolves it against its document)
+function fetchClassSteps(seed, names) {
+  const rng = draws(seed, 7), steps = [];
+  const bodyOf = () => pick(rng, [undefined, null, '', 'text', '{"a":1}', new URLSearchParams('a=1&b=2'), new Uint8Array([104, 105])]);
+  const req = async (r) => [r.method, r.url, [...r.headers], r.mode, r.credentials, r.cache, r.redirect, r.bodyUsed, await r.clone().text(), await r.text(), r.bodyUsed];
+  const res = async (r) => [r.status, r.ok, r.statusText, [...r.headers], r.type, r.redirected, r.bodyUsed, await r.clone().text(), await r.text(), r.bodyUsed];
+  if (names.has('Request')) for (let i = 0; i < CASES * 3; i++) {
+    const u = pick(rng, ['https://a.example/x?y=1#h', 'http://localhost:8080/', 'https://user:pw@a.example/', 'HTTPS://A.EXAMPLE/%7e', 'ftp://a.example/', 'not a url', 'https://a.example/ü']);
+    const init = { method: pick(rng, [undefined, 'GET', 'post', 'PUT', 'patch', 'delete', 'HEAD', 'OPTIONS', 'TRACE']), headers: pick(rng, [undefined, { 'X-A': '1' }, [['a', '1'], ['A', '2']], { 'content-type': 'text/plain' }]), body: bodyOf(), mode: pick(rng, [undefined, 'cors', 'no-cors', 'same-origin', 'navigate']), redirect: pick(rng, [undefined, 'follow', 'manual', 'error']) };
+    for (const k of Object.keys(init)) if (init[k] === undefined) delete init[k];
+    steps.push({ at: 'Request', new: true, args: [u, init], post: req, postName: 'fields, bodies' });
+  }
+  if (names.has('Response')) {
+    for (let i = 0; i < CASES * 3; i++) steps.push({ at: 'Response', new: true, args: [bodyOf(), { status: pick(rng, [undefined, 200, 201, 204, 299, 300, 404, 500, 599, 99, 600]), statusText: pick(rng, [undefined, 'OK', 'Fine', 'bad\ntext']), headers: pick(rng, [undefined, { 'X-A': '1' }, [['set-cookie', 'a'], ['set-cookie', 'b']]]) }], post: res, postName: 'fields, bodies' });
+    for (const d of [1, 'a', null, { a: [1] }, undefined]) steps.push({ at: 'Response.json', args: [d, pick(rng, [undefined, { status: 201 }, { headers: { 'content-type': 'text/x' } }])], post: res, postName: 'fields, bodies' });
+    steps.push({ at: 'Response.error', args: [], post: (r) => [r.type, r.status, r.ok] }, { at: 'Response.redirect', args: ['https://a.example/next', 301], post: (r) => [r.status, r.headers.get('location')] }, { at: 'Response.redirect', args: ['https://a.example/next', 200] });
+  }
+  if (names.has('FormData')) for (let i = 0; i < CASES; i++) {
+    const ops = Array.from({ length: 5 }, () => [pick(rng, ['append', 'set', 'delete']), pick(rng, ['a', 'b']), pick(rng, ['1', '', 'ü'])]);
+    steps.push({ at: 'FormData', new: true, args: [], post: (f) => { for (const [op, k, v] of ops) { if (op === 'delete') f.delete(k); else f[op](k, v); } return [[...f.entries()], f.get('a'), f.getAll('b'), f.has('a')]; }, postName: ops.map((o) => o.join(' ')).join('; ') });
+  }
+  if (names.has('Blob')) for (let i = 0; i < CASES; i++) {
+    const parts = Array.from({ length: Math.floor(rng() * 3) }, () => pick(rng, ['ab', 'ü', new Uint8Array([0, 255])])), type = pick(rng, [undefined, 'text/plain', 'TEXT/HTML', 'bad\u0001']);
+    steps.push({ at: 'Blob', new: true, args: type === undefined ? [parts] : [parts, { type }], post: async (b) => [b.size, b.type, await b.text(), await b.slice(1, 3).text(), new Uint8Array(await b.arrayBuffer())], postName: 'size, type, text' });
+  }
+  if (names.has('DOMException')) for (const a of [[], ['m'], ['m', 'AbortError'], ['m', 'TimeoutError'], ['m', 'NotAName'], ['m', 'DataCloneError']]) steps.push({ at: 'DOMException', new: true, args: a, post: (e) => [e.name, e.message, e.code, e instanceof Error] });
+  return steps;
+}
+// AbortSignal: its statics against the real ones; `timeout(ms)` on lane B's virtual clock, the clause checked on the real
+// event loop first (not aborted before its instant, aborted with a TimeoutError after)
+async function abortSignalFamily(fake, seed) {
+  const steps = [{ at: 'AbortSignal.abort', args: [], post: (s) => [s.aborted, s.reason?.name] }, { at: 'AbortSignal.abort', args: ['why'], post: (s) => [s.aborted, s.reason] },
+    { at: 'AbortSignal.any', args: [[AbortSignal.abort('r1'), new AbortController().signal]], post: (s) => [s.aborted, s.reason] }, { at: 'AbortSignal.any', args: [[]], post: (s) => [s.aborted] }];
+  const a = await differential(fake, { AbortSignal }, steps, seed);
+  const realOk = await new Promise((r) => { const s = AbortSignal.timeout(20); setTimeout(() => { const before = s.aborted; setTimeout(() => r(!before && s.aborted && s.reason?.name === 'TimeoutError'), 80); }, 5); });
+  let first = null, n = 0;
+  for (const ms of [1, 5, 30]) {
+    const { env, subject } = fresh(fake, seed); const T = subject.AbortSignal?.timeout; if (typeof T !== 'function') break;
+    const s = T.call(subject.AbortSignal, ms); n++;
+    await fake.runTimers(env, 1000, 50, { until: ms - 1 }); const before = s.aborted;
+    await fake.runTimers(env, 1000, 50, { until: ms }); const after = s.aborted, name = s.reason?.name;
+    if (!BREAK && (before || !after || name !== 'TimeoutError')) first ??= `timeout(${ms}): aborted ${before} before ${ms} ms of the virtual clock, ${after} at it, reason ${show(name)}`;
+  }
+  return [{ clause: 'agree', n: a.n, first: a.first, absent: a.absent, against: 'the real AbortSignal' }, { clause: 'timeout on the virtual clock', n, first, harness: realOk ? null : 'the real AbortSignal.timeout(20) does not abort between 5 ms and 85 ms' }];
+}
+
+// a vendored library: the package's own files (vendor/<pkg>, each file's sha256 in its manifest) loaded by Node as the
+// package is, beside the same files run inside lane B's sandbox; the same script on both. The reference is found beside
+// the hook that answers the package (exec/fakes/lib/vendor/<pkg>/manifest.json).
+function vendoredReference(fake, pkg) {
+  const dir = path.join(fake.hookDir ?? '', 'vendor', pkg), mf = path.join(dir, 'manifest.json');
+  if (!fs.existsSync(mf)) return { error: `no vendored copy at ${path.relative(path.join(here, '..'), dir)}` };
+  const m = JSON.parse(fs.readFileSync(mf, 'utf8'));
+  for (const [rel, sha] of Object.entries(m.files ?? {})) { const got = realCrypto.createHash('sha256').update(fs.readFileSync(path.join(dir, rel), 'utf8')).digest('hex'); if (got !== sha) return { error: `vendor/${pkg}/${rel} differs from its manifest` }; }
+  return { mod: createRequire(path.join(dir, 'package.json'))(path.join(dir, m.main)), version: m.version };
+}
+function lodashSteps(seed) {
+  const rng = draws(seed, 8), steps = [];
+  const val = (d = 0) => pick(rng, d > 2 ? [1, 'a', null, undefined, 0, ''] : [1, 'a', null, undefined, 0, '', NaN, -0, [1, 2, 2], { a: 1, b: { c: [1, 2] } }, () => val(d + 1)].map((x) => (typeof x === 'function' ? x() : x)));
+  const obj = () => ({ a: val(1), b: { c: [val(2), val(2)], d: val(2) }, 'e.f': val(2) });
+  const key = () => pick(rng, ['a', 'b.c', 'b.c[1]', 'b.c.0', ['b', 'd'], 'e.f', ['e.f'], 'x.y', '', 'constructor']);
+  const list = () => Array.from({ length: Math.floor(rng() * 6) }, () => pick(rng, [{ n: 3, k: 'x' }, { n: 1, k: 'y' }, { n: 2, k: 'x' }, { n: 1, k: 'z' }]));
+  for (let i = 0; i < CASES * 4; i++) {
+    const o = obj();
+    steps.push({ at: 'get', args: [o, key(), pick(rng, [undefined, 'dflt'])] }, { at: 'has', args: [o, key()] }, { at: 'set', args: [structuredClone(o), key(), 9] }, { at: 'pick', args: [o, [key(), key()]] }, { at: 'omit', args: [o, [key()]] },
+      { at: 'groupBy', args: [list(), 'k'] }, { at: 'sortBy', args: [list(), ['n', 'k']] }, { at: 'uniq', args: [[val(), val(), 1, 1, NaN, NaN]] }, { at: 'uniqBy', args: [list(), 'k'] }, { at: 'chunk', args: [list(), Math.floor(rng() * 4)] },
+      { at: 'merge', args: [structuredClone(o), obj()] }, { at: 'cloneDeep', args: [o] }, { at: 'isEqual', args: [o, pick(rng, [o, structuredClone(o), obj()])] }, { at: 'flattenDeep', args: [[1, [2, [3, [4]]]]] }, { at: 'camelCase', args: [pick(rng, ['foo bar', '--foo-bar--', 'FOO_BAR', 'fooBar', 'ü ö'])] },
+      { at: 'kebabCase', args: [pick(rng, ['foo bar', 'fooBar', '__FOO_BAR__'])] }, { at: 'debounce', args: [() => 1, 5], post: (f) => typeof f.cancel === 'function', postName: 'has cancel' }, { at: 'range', args: [Math.floor(rng() * 5), Math.floor(rng() * 9) - 2] }, { at: 'sumBy', args: [list(), 'n'] }, { at: 'keyBy', args: [list(), 'k'] });
+  }
+  return steps;
+}
+function uuidSteps(seed) {
+  const rng = draws(seed, 9), steps = [];
+  const NS = ['6ba7b810-9dad-11d1-80b4-00c04fd430c8', '6ba7b811-9dad-11d1-80b4-00c04fd430c8', 'not-a-uuid'];
+  for (let i = 0; i < CASES * 3; i++) {
+    const name = pick(rng, ['', 'a', 'hello', 'ü', 'www.example.com']), ns = pick(rng, NS), u = pick(rng, ['00000000-0000-0000-0000-000000000000', '6ba7b810-9dad-11d1-80b4-00c04fd430c8', 'c9bf9e57-1685-4c89-bafb-ff5af830be8a', 'C9BF9E57-1685-4C89-BAFB-FF5AF830BE8A', 'xyz', '', 'c9bf9e57-1685-4c89-bafb-ff5af830be8']);
+    steps.push({ at: 'v5', args: [name, ns] }, { at: 'v3', args: [name, ns] }, { at: 'validate', args: [u] }, { at: 'version', args: [u] }, { at: 'parse', args: [u], post: (b) => Array.from(b), postName: 'bytes' }, { at: 'stringify', args: [Array.from({ length: 16 }, () => Math.floor(rng() * 256))] });
+  }
+  steps.push({ at: 'NIL.toString', args: [] });
+  return steps;
+}
+const vendoredFamily = (pkg, steps, effectful) => async (fake, seed) => {
+  const ref = vendoredReference(fake, pkg); if (ref.error) return [{ clause: 'agree', n: 0, first: null, harness: ref.error }];
+  const a = await differential(fake, ref.mod, steps(seed), seed), b = await differential(fake, ref.mod, steps(seed), seed);
+  const out = [{ clause: 'agree', n: a.n, first: a.first, absent: a.absent, against: `${pkg} ${ref.version}, its vendored files loaded by Node` }, { clause: 'determinism', n: a.n, first: BREAK || (same(a.transcript, b.transcript) && a.trace === b.trace) ? null : 'two fakes from one seed answered differently or wrote different traces' }];
+  if (effectful) out.push(...await effectful(fake, seed, ref.mod));
+  return out;
+};
+// uuid's random identifiers: v4's shape, seeded, recorded (randomness is a read of the world); the shape checked on the real package first
+async function uuidDraws(fake, seed, real) {
+  const V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+  const draw = (s) => { const { env, subject } = fresh(fake, s); const u = []; let rec = true; for (let i = 0; i < 20; i++) { const m = traceMark(env); u.push(subject.v4()); rec &&= traceMark(env) !== m; } return { u, rec }; };
+  const x = draw(seed), y = draw(seed), z = draw(seed + 1);
+  return [{ clause: 'v4 shape', n: x.u.length, harness: Array.from({ length: 20 }, () => real.v4()).every((v) => V4.test(v)) ? null : 'the real v4 fails the shape', first: BREAK ? null : x.u.find((v) => !V4.test(v)) ? `not a v4 uuid: ${show(x.u.find((v) => !V4.test(v)))}` : new Set(x.u).size !== x.u.length ? 'a uuid drawn twice in twenty' : null },
+    { clause: 'seeded draws', n: 3, first: BREAK ? null : JSON.stringify(x.u) !== JSON.stringify(y.u) ? 'two fakes from one seed drew differently' : JSON.stringify(x.u) === JSON.stringify(z.u) ? 'two seeds drew the same' : null },
+    { clause: 'recorded', n: x.u.length, first: x.rec ? null : 'a v4 draw added nothing to the trace' }];
+}
+
+// a hook's declared vectors (exec/fakes/lib/protocol.mjs VECTOR_CLAUSES, vectors/<pkg>.json): the outputs the published
+// package gave on the clause's inputs, recorded with its version and time zone; the fake, reached through the hook, must
+// give them. Checked first: the vectors name the version the vendored copy is (a recording of another version is the
+// harness's defect), and the run is under the recorded zone. A clause that needs the lane's own glue (no `run`) is listed
+// as not run.
+async function declaredVectors(fake, seed) {
+  const lib = fake.spec, pf = path.join(fake.hookDir ?? '', 'protocol.mjs'), vf = path.join(fake.hookDir ?? '', 'vectors', `${lib}.json`);
+  if (!fake.ask || !fs.existsSync(pf) || !fs.existsSync(vf)) return [];
+  const P = await guardedImport(pf); if (P.__error || !P.VECTOR_CLAUSES?.[lib] || typeof P.inputsOf !== 'function') return [];
+  const vec = JSON.parse(fs.readFileSync(vf, 'utf8')), mf = path.join(fake.hookDir, 'vendor', lib, 'manifest.json');
+  const vendored = fs.existsSync(mf) ? JSON.parse(fs.readFileSync(mf, 'utf8')).version : null;
+  const harness = vendored && vendored !== vec.version ? `vectors/${lib}.json records ${lib}@${vec.version}, the vendored copy is ${vendored}` : null;
+  const plain = P.plain ?? ((v) => canon(v)), out = [], skipped = [];
+  const tz = process.env.TZ; if (vec.tz) process.env.TZ = vec.tz;
+  try {
+    const { env } = fresh(fake, seed), mod = (sp) => fake.ask(env, sp);
+    for (const c of P.VECTOR_CLAUSES[lib]) {
+      const want = vec.outputs?.[c.clause];
+      if (typeof c.run !== 'function' || !Array.isArray(want)) { skipped.push(c.clause); continue; }
+      let first = null, n = 0;
+      for (const [i, args] of P.inputsOf(lib, c).entries()) {
+        let have; try { have = { value: plain(c.run(mod, args)) }; } catch (e) { have = { threw: plain(e) }; }
+        n++; if (!first && !same(have, want[i])) first = `case ${i} ${show(args.map((a) => canon(a)))}: fake ${show(have)}, ${lib}@${vec.version} ${show(want[i])}`;
+      }
+      out.push({ clause: `vectors: ${c.clause}`, n, first, harness, against: `${lib}@${vec.version} as recorded (${path.relative(path.join(here, '..'), vf).replace(/^.*exec\//, 'exec/')})` });
+    }
+  } finally { if (tz === undefined) delete process.env.TZ; else process.env.TZ = tz; }
+  if (skipped.length) out.push({ clause: 'vectors not run', n: 0, first: null, absent: skipped.map((c) => `${c} (needs the lane's own glue)`) });
+  return out;
+}
+const libraryFamily = (own) => async (fake, seed) => {
+  const rows = [...(own ? await own(fake, seed) : []), ...await declaredVectors(fake, seed)];
+  return rows.some((r) => r.n > 0 || r.harness) ? rows : [...rows, { clause: 'no runnable clause', n: 0, first: `no clause of the protocol runs on ${fake.spec} through the hook alone: neither a family here nor a vector clause with a run` }];
+};
 
 // fs: the same op script on the fake and on the real fs in a fresh temporary folder (absolute paths under it on both
 // sides); directory listings compared as sets (Node fixes no order); a directory's size is the file system's own
@@ -324,7 +463,7 @@ async function fakeTimers(fake, seed, items, K, H0 = null) {
   const api = { setTimeout: subject.setTimeout, setInterval: subject.setInterval, clearTimeout: subject.clearTimeout, clearInterval: subject.clearInterval };
   if (Object.values(api).some((f) => typeof f !== 'function')) return { absent: Object.entries(api).filter(([, f]) => typeof f !== 'function').map(([k]) => k) };
   const marks = []; const wrap = Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a) => { const b = traceMark(env); const r = f(...a); marks.push(traceMark(env) !== b); return r; }]));
-  const drain = async (its) => { const H = H0 ?? horizon(its) * K; if (typeof subject.tick === 'function') { for (let u = 1; u <= H; u++) await subject.tick(1); return; } for (let u = 1; u <= H; u++) await runTimers(env, 1000, 200, { until: u }); };
+  const drain = async (its) => { const H = H0 ?? horizon(its) * K; if (typeof subject.tick === 'function') { for (let u = 1; u <= H; u++) await subject.tick(1); return; } for (let u = 1; u <= H; u++) await fake.runTimers(env, 1000, 200, { until: u }); };
   try { const log = await playTimers(wrap, items, K, drain); return { log, recorded: marks.every(Boolean), trace: JSON.stringify(env.trace) }; } catch (e) { return { error: show(thrown(e)) }; }
 }
 async function timersFamily(fake, seed) {
@@ -356,45 +495,85 @@ async function timersFamily(fake, seed) {
   ];
 }
 
-// fetch: no network, so the reference is the protocol: a seeded (method, url, body) answers its entry, as a real Response
-// built from the entry answers it; a request outside the table answers something else and is recorded
+// fetch: no network, so the reference is the protocol, each clause checked on the real platform's classes first:
+// - `request`: what the fake is asked is what a real Request reads off the same arguments (the trace names its method and
+//   URL; an argument pair a real Request refuses rejects with the same error name);
+// - `a real Response`: the answer behaves as a real Response built from its own status, status text, headers and body;
+// - `json is the parse of text`: json() resolves to JSON.parse of the text() of a clone, or rejects alike;
+// - `repeat`: one (method, url, body) answers the same status, headers and body every time (the table is a function of
+//   its key; a call on the world's fault draw rejects and is counted apart);
+// - `seeded` and `outside the table`, for a fake that takes a recording (recording.fetch): a seeded key answers its entry,
+//   as a real Response built from the entry does; another key answers none of the seeded bodies.
+const isNullBody = (status) => [101, 103, 204, 205, 304].includes(status);
+const readResponse = async (res) => {
+  const c = res.clone(), text = await c.text();
+  let json; try { json = { ok: canon(await res.json()) }; } catch (e) { json = { throw: e?.name }; }
+  return { status: res.status, ok: res.ok, statusText: res.statusText, headers: [...res.headers], text, json };
+};
+const parsed = (text) => { try { return { ok: canon(JSON.parse(text)) }; } catch (e) { return { throw: e.name }; } };
 async function fetchFamily(fake, seed) {
-  const rng = draws(seed, 6), table = [], out = { seeded: { n: 0, first: null }, miss: { n: 0, first: null }, det: [], recorded: null };
+  const rng = draws(seed, 6), table = [];
   for (let i = 0; i < CASES * 2; i++) {
     const json = rng() < 0.5, status = pick(rng, [200, 201, 202, 400, 404, 418, 500]);
-    table.push({ method: pick(rng, ['GET', 'POST', 'PUT', 'DELETE', 'get']), url: `https://api.example.com/${pick(rng, ['users', 'items', 'a/b'])}/${i}${pick(rng, ['', '?q=1'])}`, body: pick(rng, [undefined, '{"a":1}', 'x']), status, headers: { 'content-type': json ? 'application/json' : 'text/plain', 'x-seed': String(i) }, response: json ? JSON.stringify({ seed: i, v: pick(rng, [1, 'a', null, [1]]) }) : `seed body ${i}` });
+    const method = pick(rng, ['GET', 'POST', 'PUT', 'DELETE', 'get']); // a GET carries no body: the standard refuses one
+    table.push({ method, url: `https://api.example.com/${pick(rng, ['users', 'items', 'a/b'])}/${i}${pick(rng, ['', '?q=1'])}`, body: /^get$/i.test(method) ? undefined : pick(rng, [undefined, '{"a":1}', 'x']), status, headers: { 'content-type': json ? 'application/json' : 'text/plain', 'x-seed': String(i) }, response: json ? JSON.stringify({ seed: i, v: pick(rng, [1, 'a', null, [1]]) }) : `seed body ${i}` });
   }
-  const read = async (res, json) => ({ status: res.status, ok: res.ok, type: res.headers.get('content-type'), seed: res.headers.get('x-seed'), body: json ? await res.json() : await res.text() });
+  const BAD = [['https://a.example/x', { method: 'GET', body: 'x' }], ['https://a.example/x', { method: 'HEAD', body: 'x' }], ['https://a.example/x', { method: 'CONNECT' }], ['https://a.example/x', { headers: { 'bad name': 'v' } }], ['http://[bad', {}], ['https://a.example/x', { method: 'b@d' }]];
+  const realRefusal = (args) => { try { new Request(...args); return null; } catch (e) { return e.name; } };
+  const out = { request: { n: 0, first: null, harness: null }, response: { n: 0, first: null }, json: { n: 0, first: null }, repeat: { n: 0, first: null, faults: 0 }, seeded: { n: 0, first: null }, miss: { n: 0, first: null }, recorded: null };
   const play = async () => {
-    const { env, subject } = fresh(fake, seed, { fetch: table }); const f = subject.fetch ?? subject.default; const got = [];
+    const { env, subject } = fresh(fake, seed, { fetch: table }); const f = subject.fetch;
     if (typeof f !== 'function') return { absent: ['fetch'] };
+    const got = [];
+    const call = async (url, init) => {
+      const b = traceMark(env), from = env.trace.length; let r;
+      try { r = await readResponse(await f(url, init)); } catch (x) { r = { throw: x?.name, message: x?.message }; }
+      const shown = JSON.stringify(env.trace.slice(from)); // every record the call added (a fault draw adds one after the request's)
+      return { r, recorded: traceMark(env) !== b, names: shown.includes(new URL(url).host) && shown.toUpperCase().includes(String(init.method ?? 'GET').toUpperCase()) };
+    };
     for (const e of table) {
-      const json = e.headers['content-type'] === 'application/json', b = traceMark(env);
-      let r; try { r = await read(await f(e.url, { method: e.method, ...(e.body === undefined ? {} : { body: e.body }) }), json); } catch (x) { r = thrown(x); }
-      got.push({ e, r: canon(r), recorded: traceMark(env) !== b && JSON.stringify(env.trace.slice(-1)).includes(e.url.replace(/\?.*/, '')) });
-      // the same url with another body, and another method: neither is the entry
-      const other = e.body === 'other' ? 'other2' : 'other', b2 = traceMark(env);
-      let m; try { m = await (await f(e.url, { method: 'PATCH', body: other })).text(); } catch (x) { m = thrown(x); }
-      got.push({ miss: true, e, r: canon(m), recorded: traceMark(env) !== b2 });
+      const init = { method: e.method, ...(e.body === undefined ? {} : { body: e.body }) };
+      got.push({ e, init, first: await call(e.url, init), again: await call(e.url, init), other: await call(e.url, { method: 'PATCH', body: e.body === 'other' ? 'other2' : 'other' }) });
     }
-    return { got, trace: JSON.stringify(env.trace) };
+    const bad = []; for (const [u, init] of BAD) { const b = traceMark(env); let name = null; try { await f(u, init); } catch (x) { name = x?.name ?? String(x); } bad.push({ u, init, name, recorded: traceMark(env) !== b }); }
+    return { got, bad, trace: JSON.stringify(env.trace) };
   };
-  const a = await play(); if (a.absent) return [{ clause: 'seeded', n: 0, first: null, absent: a.absent }];
+  const a = await play(); if (a.absent) return [{ clause: 'request', n: 0, first: null, absent: a.absent }];
+  const takesRecording = fake.create.length >= 2 || !fake.wrap; // a fake module's create(env, recording); a hook is asked with the environment only
+  const fault = (x) => x.r.throw === 'TypeError' && /fetch failed/.test(x.r.message ?? '');
   for (const g of a.got) {
-    if (!g.recorded) out.recorded ??= `${g.e.method} ${g.e.url}${g.miss ? ' (outside the table)' : ''} added nothing naming its url to the trace`;
-    if (g.miss) { out.miss.n++; if (!BREAK && table.some((e) => JSON.stringify(canon(e.response)) === JSON.stringify(g.r))) out.miss.first ??= `PATCH ${g.e.url} with another body answered a seeded entry's body ${show(g.r)}`; continue; }
-    out.seeded.n++;
-    const json = g.e.headers['content-type'] === 'application/json';
-    const want = canon(await read(new Response(g.e.response, { status: g.e.status, headers: g.e.headers }), json));
-    if (!same(g.r, want)) out.seeded.first ??= `${g.e.method} ${g.e.url} body ${show(g.e.body)}: fake ${show(g.r)}, a real Response from the entry ${show(want)}`;
+    for (const x of [g.first, g.again, g.other]) { if (!x.recorded) out.recorded ??= `${g.e.method} ${g.e.url} added nothing to the trace`; else if (!x.names) out.recorded ??= `the trace record of ${g.e.method} ${g.e.url} names neither its host nor its method`; }
+    for (const x of [g.first, g.again, g.other]) {
+      if (x.r.throw) continue;
+      out.response.n++; out.json.n++;
+      const real = await readResponse(new Response(isNullBody(x.r.status) ? null : x.r.text, { status: x.r.status, statusText: x.r.statusText, headers: x.r.headers }));
+      const { json: _j, ...shape } = x.r, { json: _rj, ...realShape } = real;
+      if (!same(canon(shape), canon(realShape))) out.response.first ??= `${g.e.method} ${g.e.url}: fake ${show(shape)}, a real Response from its own parts ${show(realShape)}`;
+      const want = parsed(x.r.text);
+      if (!same(x.r.json, want)) out.json.first ??= `${g.e.method} ${g.e.url}: text() ${show(x.r.text)}, json() ${show(x.r.json)}, JSON.parse(text) ${show(want)}`;
+    }
+    if (fault(g.first) || fault(g.again)) out.repeat.faults++;
+    else { out.repeat.n++; if (!same(canon(g.first.r), canon(g.again.r))) out.repeat.first ??= `${g.e.method} ${g.e.url} twice: ${show(g.first.r)}, then ${show(g.again.r)}`; }
+    if (takesRecording) {
+      if (!fault(g.first)) { out.seeded.n++; const want = await readResponse(new Response(g.e.response, { status: g.e.status, headers: g.e.headers })); const { headers: _h, ...w } = want, { headers: _g, ...gg } = g.first.r; const hdr = (h) => Object.fromEntries(h.filter(([k]) => k in g.e.headers)); if (!same(canon({ ...gg, h: hdr(g.first.r.headers ?? []) }), canon({ ...w, h: hdr(want.headers) }))) out.seeded.first ??= `${g.e.method} ${g.e.url} body ${show(g.e.body)}: fake ${show(g.first.r)}, a real Response from the entry ${show(want)}`; }
+      if (!g.other.r.throw) { out.miss.n++; if (!BREAK && table.some((e) => e.response === g.other.r.text)) out.miss.first ??= `PATCH ${g.e.url} with another body answered a seeded entry's body ${show(g.other.r.text)}`; }
+    }
   }
-  const b = await play(); out.det.push(BREAK || (JSON.stringify(b.got.map((g) => g.r)) === JSON.stringify(a.got.map((g) => g.r)) && b.trace === a.trace));
-  return [
-    { clause: 'seeded', n: out.seeded.n, first: out.seeded.first, against: 'a real Response built from the seeded entry' },
-    { clause: 'outside the table', n: out.miss.n, first: out.miss.first },
-    { clause: 'determinism', n: out.det.length, first: out.det.every(Boolean) ? null : 'two fakes from one seed answered differently or wrote different traces' },
-    { clause: 'recorded', n: a.got.length, first: out.recorded },
+  for (const b of a.bad) {
+    const want = realRefusal([b.u, b.init]); if (want === null) { out.request.harness ??= `a real Request accepts ${show([b.u, b.init])}`; continue; }
+    out.request.n++; if (!same(b.name, want)) out.request.first ??= `fetch(${show(b.u)}, ${show(b.init)}): fake ${b.name === null ? 'resolved' : `rejected ${b.name}`}, a real Request throws ${want}`;
+  }
+  const b = await play(); const det = BREAK || (JSON.stringify(b.got.map((g) => [g.first.r, g.again.r, g.other.r])) === JSON.stringify(a.got.map((g) => [g.first.r, g.again.r, g.other.r])) && b.trace === a.trace);
+  const rows = [
+    { clause: 'request', n: out.request.n, first: out.request.first, harness: out.request.harness, against: 'a real Request on the same arguments' },
+    { clause: 'a real Response', n: out.response.n, first: out.response.first, against: 'a real Response from the answer\'s own parts' },
+    { clause: 'json is the parse of text', n: out.json.n, first: out.json.first },
+    { clause: 'repeat', n: out.repeat.n, first: out.repeat.first, against: `${out.repeat.faults} key(s) on the world's fault draw counted apart` },
   ];
+  if (takesRecording) rows.push({ clause: 'seeded', n: out.seeded.n, first: out.seeded.first, against: 'a real Response built from the seeded entry' }, { clause: 'outside the table', n: out.miss.n, first: out.miss.first });
+  else rows.push({ clause: 'seeded', n: 0, first: null, absent: ['a recording parameter (the hook is asked with the environment only)'] });
+  rows.push({ clause: 'determinism', n: 1, first: det ? null : 'two fakes from one seed answered differently or wrote different traces' }, { clause: 'recorded', n: a.got.length * 3, first: out.recorded });
+  return rows;
 }
 
 // randomness: no real reference can agree with a seeded draw; the clauses are the real one's shape (checked on the real
@@ -413,9 +592,11 @@ async function randomClauses(fake, seed) {
   return out;
 }
 
-// localStorage and sessionStorage: the same op script against Node's own Web Storage, run in a child with the flag
-const STORAGE_OPS = (rng) => Array.from({ length: 30 }, () => pick(rng, [['setItem', pick(rng, ['a', 'b', '', 'ü'])], ['getItem', pick(rng, ['a', 'b', 'zz', ''])], ['removeItem', pick(rng, ['a', 'b'])], ['key', Math.floor(rng() * 3) - 1], ['length'], ['clear'], ['setItem', 'n', pick(rng, [1, null, { o: 1 }, [1, 2], undefined])]]));
-const playStorage = (s, ops) => ops.map(([op, a, b]) => { try { return op === 'length' ? s.length : op === 'setItem' ? s.setItem(a, b === undefined && a !== 'n' ? `v${a}` : b) ?? null : s[op](a) ?? null; } catch (e) { return { throw: e.name }; } });
+// localStorage and sessionStorage: the same op script against Node's own Web Storage, run in a child with the flag. The
+// order key(i) walks is the user agent's (HTML, Web Storage: "the order of keys is user-agent defined"), so the script
+// reads the keys as a set (`keys`: key(0) .. key(length - 1), sorted) and key(i) only out of range, where it is null
+const STORAGE_OPS = (rng) => Array.from({ length: 30 }, () => pick(rng, [['setItem', pick(rng, ['a', 'b', '', 'ü'])], ['getItem', pick(rng, ['a', 'b', 'zz', ''])], ['removeItem', pick(rng, ['a', 'b'])], ['key', pick(rng, [-1, 99])], ['keys'], ['length'], ['clear'], ['setItem', 'n', pick(rng, [1, null, { o: 1 }, [1, 2], undefined])]]));
+const playStorage = (s, ops) => ops.map(([op, a, b]) => { try { return op === 'length' ? s.length : op === 'keys' ? Array.from({ length: s.length }, (_, i) => s.key(i)).sort() : op === 'setItem' ? s.setItem(a, b === undefined && a !== 'n' ? `v${a}` : b) ?? null : s[op](a) ?? null; } catch (e) { return { throw: e.name }; } });
 async function storageFamily(fake, seed, name) {
   const out = []; const scripts = Array.from({ length: CASES }, (_, k) => STORAGE_OPS(draws(seed, 300 + k)));
   const file = path.join(os.tmpdir(), `w2e-storage-${process.pid}-${Date.now()}`);
@@ -458,7 +639,7 @@ async function processFamily(fake, seed) {
 }
 
 // the families, by specifier
-const pureFamily = (real, steps) => async (fake, seed) => { const a = await differential(fake, real, steps(seed), seed); const b = await differential(fake, real, steps(seed), seed); return [{ clause: 'agree', n: a.n, first: a.first, absent: a.absent, against: 'the real module, in this process' }, { clause: 'determinism', n: a.n, first: BREAK || (same(a.transcript, b.transcript) && a.trace === b.trace) ? null : 'two fakes from one seed answered differently or wrote different traces' }, { clause: 'recorded', n: a.n, first: a.unrecorded && `${a.unrecorded} added nothing to the trace` }]; };
+const pureFamily = (real, steps) => async (fake, seed) => { const a = await differential(fake, real, steps(seed), seed); const b = await differential(fake, real, steps(seed), seed); return [{ clause: 'agree', n: a.n, first: a.first, absent: a.absent, against: 'the real module, in this process' }, { clause: 'determinism', n: a.n, first: BREAK || (same(a.transcript, b.transcript) && a.trace === b.trace) ? null : 'two fakes from one seed answered differently or wrote different traces' }]; }; // a pure function asks nothing of the world: its value flows into the unit's outcome, compared there, so no trace is owed
 const globalsReal = { URL, URLSearchParams, Headers, TextEncoder, TextDecoder, structuredClone, AbortController };
 const FAMILIES = [
   { name: 'path', specifiers: ['node:path', 'path', 'node:path/posix', 'path/posix'], run: async (fake, seed) => { const out = await pureFamily(path, (s) => pathSteps(s))(fake, seed); for (const ns of ['posix', 'win32']) { const { subject } = fresh(fake, seed); if (subject[ns]) { const r = await pureFamily(path, (s) => pathSteps(s, ns))(fake, seed); out.push(...r.map((c) => ({ ...c, clause: `${c.clause} (${ns})` }))); } } return out; } },
@@ -470,6 +651,14 @@ const FAMILIES = [
   { name: 'encoding', specifiers: ['global:TextEncoder', 'global:TextDecoder', 'node:util'], run: pureFamily(globalsReal, (s) => webSteps(s, new Set(['TextEncoder', 'TextDecoder']))), once: true },
   { name: 'structuredClone', specifiers: ['global:structuredClone'], run: pureFamily(globalsReal, (s) => webSteps(s, new Set(['structuredClone']))) },
   { name: 'AbortController', specifiers: ['global:AbortController'], run: pureFamily(globalsReal, (s) => webSteps(s, new Set(['AbortController']))) },
+  { name: 'Request/Response', specifiers: ['global:Request', 'global:Response'], run: pureFamily({ Request, Response }, (s) => fetchClassSteps(s, new Set(['Request', 'Response']))) },
+  { name: 'FormData', specifiers: ['global:FormData'], run: pureFamily({ FormData }, (s) => fetchClassSteps(s, new Set(['FormData']))) },
+  { name: 'Blob', specifiers: ['global:Blob'], run: pureFamily({ Blob }, (s) => fetchClassSteps(s, new Set(['Blob']))) },
+  { name: 'DOMException', specifiers: ['global:DOMException'], run: pureFamily({ DOMException }, (s) => fetchClassSteps(s, new Set(['DOMException']))) },
+  { name: 'AbortSignal', specifiers: ['global:AbortSignal'], run: abortSignalFamily },
+  { name: 'lodash', specifiers: ['lodash'], run: libraryFamily(vendoredFamily('lodash', lodashSteps)) },
+  { name: 'uuid', specifiers: ['uuid'], run: libraryFamily(vendoredFamily('uuid', uuidSteps, uuidDraws)) },
+  { name: 'library vectors', specifiers: ['zod', 'dayjs', 'luxon', 'date-fns', 'axios', 'express', 'vscode'], run: libraryFamily(null) },
   { name: 'fs', specifiers: ['node:fs', 'fs'], run: (fake, seed) => fsFamily(fake, seed, { promisesOnly: false }) },
   { name: 'fs/promises', specifiers: ['node:fs/promises', 'fs/promises'], run: (fake, seed) => fsFamily(fake, seed, { promisesOnly: true }) },
   { name: 'timers', specifiers: ['node:timers', 'timers', 'global:setTimeout'], run: timersFamily, once: true },
@@ -481,7 +670,14 @@ const FAMILIES = [
 ];
 export const FAMILY_NAMES = FAMILIES.map((f) => f.name);
 
-// ----- discovery: a fake is a module with `create` or a default function; its specifiers by export or file name -----
+// ----- discovery: the providers of fakes, each tested with its own tree's environment (the exec/fake.mjs and exec/run.mjs
+// beside the folder, else this tree's) -----
+// - a fake module: exports `create(env, recording)` (or a default function); its specifiers by its `specifier` export,
+//   else by its file name (fs.mjs -> node:fs, web/fetch.mjs -> global:fetch, lib/x.mjs -> x);
+// - a hook: a module exporting `lookup(env, specifier)` (exec/fakes/index.mjs, the hook fake.mjs behaviouralFake reads)
+//   or `libraryFake(env, specifier)` (exec/fakes/lib/index.mjs, answered inside lane B's sandbox): every specifier a family
+//   covers, every global its `globalsOf(env)` holds and every package its LIBRARY_FAKE_ROWS name is asked of it, and each
+//   one it answers is a fake, tested as lane B reaches it. The files under a hook's folder are its parts, never fakes alone.
 const WEB = { fetch: ['global:fetch'], url: ['global:URL', 'global:URLSearchParams'], headers: ['global:Headers'], abort: ['global:AbortController'], encoding: ['global:TextEncoder', 'global:TextDecoder'], storage: ['global:localStorage', 'global:sessionStorage'], clone: ['global:structuredClone'] };
 export function specifiersOf(file, base, mod) {
   if (mod.specifier) return [mod.specifier].flat();
@@ -491,23 +687,66 @@ export function specifiersOf(file, base, mod) {
   if (rel[0] === 'lib' && rel.length >= 2) return [rel.slice(1).join('/')];
   return [`node:${rel.join('/')}`];
 }
-const listFakes = (dir) => !fs.existsSync(dir) ? [] : fs.readdirSync(dir, { recursive: true }).map((f) => path.join(dir, String(f))).filter((f) => f.endsWith('.mjs') && !f.endsWith('.test.mjs') && !path.basename(f).startsWith('_') && fs.statSync(f).isFile()).sort();
-async function testFake(file, base, seed) {
-  const rel = path.relative(path.join(here, '..'), file);
-  let mod; try { mod = await import(pathToFileURL(file).href); } catch (e) { return { file: rel, specifiers: [], clauses: [{ family: '-', clause: 'loads', n: 1, first: `import failed: ${e.message}` }] }; }
-  const create = typeof mod.create === 'function' ? mod.create : typeof mod.default === 'function' ? mod.default : null;
-  if (!create) return { file: rel, skipped: 'no `create` export and no default function: not a fake module' };
-  const specifiers = specifiersOf(file, base, mod);
-  const fake = { create, globalName: specifiers.find((s) => s.startsWith('global:'))?.slice(7) };
-  const clauses = []; const ran = new Set();
+const listFakes = (dir) => !fs.existsSync(dir) ? [] : fs.readdirSync(dir, { recursive: true }).map((f) => path.join(dir, String(f))).filter((f) => f.endsWith('.mjs') && !f.endsWith('.test.mjs') && !path.basename(f).startsWith('_') && !f.split(path.sep).includes('vendor') && fs.statSync(f).isFile()).sort();
+const runtimes = new Map();
+async function runtimeOf(dir) { // the environment class, the timer driver and the sandbox of the tree the folder sits in
+  const execDir = path.dirname(path.resolve(dir));
+  const own = fs.existsSync(path.join(execDir, 'fake.mjs')) && fs.existsSync(path.join(execDir, 'run.mjs')) ? execDir : path.join(here, '../exec');
+  if (!runtimes.has(own)) { const F = await import(pathToFileURL(path.join(own, 'fake.mjs')).href), R = await import(pathToFileURL(path.join(own, 'run.mjs')).href); runtimes.set(own, { Env: F.Environment, runTimers: R.runTimers, sandbox: R.sandbox, execDir: own }); }
+  return runtimes.get(own);
+}
+const familyOf = (sp) => FAMILIES.find((f) => f.specifiers.includes(sp)) ?? null;
+async function runFamilies(fake, specifiers, seed) {
+  const clauses = [], ran = new Set();
   for (const sp of specifiers) {
-    const fam = FAMILIES.find((f) => f.specifiers.includes(sp));
+    const fam = familyOf(sp);
     if (!fam) { clauses.push({ family: '-', clause: 'no protocol', n: 0, first: `no protocol family covers ${sp}: a fake is admitted only with its protocol (add the family to conformance/fakes.mjs)` }); continue; }
     if (ran.has(fam.name)) continue; ran.add(fam.name);
-    if (sp.startsWith('global:') && fam.specifiers.every((s) => s.startsWith('global:'))) fake.globalName = sp.slice(7);
-    try { for (const c of await fam.run(fake, seed)) clauses.push({ family: fam.name, ...c }); } catch (e) { clauses.push({ family: fam.name, clause: 'runs', n: 0, first: `the family threw: ${e.stack?.split('\n').slice(0, 2).join(' ') ?? e}` }); }
+    try { for (const c of await fam.run({ ...fake, spec: sp }, seed)) clauses.push({ family: fam.name, ...c }); } catch (e) { clauses.push({ family: fam.name, clause: 'runs', n: 0, first: `the family threw: ${e.stack?.split('\n').slice(0, 2).join(' ') ?? e}` }); }
   }
-  return { file: rel, specifiers, expectRefused: mod.expectRefused ?? null, clauses };
+  return clauses;
+}
+// importing a module runs it: a hook folder's parts (a script among them, which may end the process) are never imported,
+// only its index; every import runs with the process's exit turned into a throw
+async function guardedImport(f) {
+  const exit = process.exit; process.exit = (c) => { throw new Error(`the module called process.exit(${c}) on import`); };
+  try { return await import(pathToFileURL(f).href); } catch (e) { return { __error: e }; } finally { process.exit = exit; }
+}
+async function testDir(dir, kind, seed) {
+  const out = [], all = listFakes(dir), rt = await runtimeOf(dir), mods = new Map();
+  const isHook = (m) => typeof m.lookup === 'function' || typeof m.libraryFake === 'function';
+  const hooks = [];
+  for (const f of all.filter((x) => path.basename(x) === 'index.mjs').sort((a, b) => a.split(path.sep).length - b.split(path.sep).length)) { const m = await guardedImport(f); if (!m.__error && isHook(m)) { hooks.push(f); mods.set(f, m); } }
+  const underHook = (f) => hooks.some((h) => h !== f && f.startsWith(path.dirname(h) + path.sep) && !(path.basename(f) === 'index.mjs' && hooks.includes(f)));
+  const files = all.filter((f) => hooks.includes(f) || !underHook(f));
+  for (const f of files) if (!mods.has(f)) mods.set(f, await guardedImport(f));
+  const rel = (f) => path.relative(path.join(rt.execDir, '..'), f);
+  for (const f of files) {
+    const mod = mods.get(f);
+    if (mod.__error) { out.push({ kind, file: rel(f), specifiers: [], clauses: [{ family: '-', clause: 'loads', n: 1, first: `import failed: ${mod.__error.message}` }] }); continue; }
+    if (hooks.includes(f)) {
+      const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'w2e-sandbox-'));
+      const isLib = typeof mod.libraryFake === 'function', ask = isLib ? mod.libraryFake : mod.lookup;
+      const probe = new rt.Env(seed); if (isLib) rt.sandbox(probe, tmpRoot);
+      const candidates = new Set(FAMILIES.flatMap((x) => x.specifiers));
+      if (typeof mod.globalsOf === 'function') for (const k of Object.keys(mod.globalsOf(probe))) candidates.add(`global:${k}`);
+      for (const r of mod.LIBRARY_FAKE_ROWS ?? []) candidates.add(r.pkg);
+      for (const sp of [...candidates].sort()) {
+        let v; try { v = ask(probe, sp); } catch (e) { out.push({ kind, file: `${rel(f)}#${sp}`, specifiers: [sp], clauses: [{ family: '-', clause: 'loads', n: 1, first: `the hook threw: ${e.message}` }] }); continue; }
+        if (v === null || v === undefined) continue;
+        const name = sp.startsWith('global:') ? sp.slice(7) : null;
+        const fake = { ...rt, tmpRoot, hookDir: path.dirname(f), ask, needsCtx: isLib, wrap: name, asModule: !name, create: (env) => ask(env, sp) };
+        out.push({ kind, file: `${rel(f)}#${sp}`, specifiers: [sp], clauses: await runFamilies(fake, [sp], seed) });
+      }
+      continue; // the sandbox folder is removed when the run ends (a later family may still read it)
+    }
+    const create = typeof mod.create === 'function' ? mod.create : typeof mod.default === 'function' ? mod.default : null;
+    if (!create) { out.push({ kind, file: rel(f), skipped: 'no `create` export and no default function: not a fake module' }); continue; }
+    const specifiers = specifiersOf(f, dir, mod);
+    const fake = { ...rt, create, globalName: specifiers.find((s) => s.startsWith('global:'))?.slice(7) };
+    out.push({ kind, file: rel(f), specifiers, expectRefused: mod.expectRefused ?? null, clauses: await runFamilies(fake, specifiers, seed) });
+  }
+  return out;
 }
 const failing = (r) => (r.clauses ?? []).filter((c) => c.first);
 const harnessDefects = (r) => (r.clauses ?? []).filter((c) => c.harness);
@@ -515,7 +754,7 @@ const harnessDefects = (r) => (r.clauses ?? []).filter((c) => c.harness);
 // ----- the run -----
 const groups = [...DIRS.map((d) => ({ kind: 'fake', dir: d })), { kind: 'good', dir: GOOD }, { kind: 'wrong', dir: WRONG }];
 const results = [];
-for (const g of groups) for (const f of listFakes(g.dir)) results.push({ kind: g.kind, ...(await testFake(f, g.dir, SEED)) });
+for (const g of groups) results.push(...await testDir(g.dir, g.kind, SEED));
 let bad = 0;
 const lines = [];
 for (const r of results) {
