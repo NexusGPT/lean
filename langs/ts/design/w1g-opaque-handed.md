@@ -81,6 +81,29 @@ the identity guard of a record result; with an int result it is pair unit `writt
 write now binds the new value and tells the world, `wld := ext_put_<T>(wld, v)` (translate.mjs `pathUpdate`), so every
 later transition is a function of it. Break `handle-write`.
 
+### Collections the unit made, and three identities
+
+- **Sealed collection** (common.mjs `sealedCollection`): `const parts: string[] = []` then `parts.push(arg.name())` after
+  a call. A collection the unit made (an array literal, `new Map()`, `new Set()` of the library) whose type holds no
+  object, and whose every use keeps it from the outside (a library operation on it with primitive arguments or an
+  inline callback, a member or element read, a spread, a for-of, a template hole, the unit's result; never an
+  argument, an alias, a part of a literal, or a use inside a function the unit keeps or hands to a call that runs
+  outside code), is reached by no call: no outside code has a name of it, and nothing inside it can change. Its reads
+  are the value reading's own. Break `sealed-collection` seals a handed one too (pair unit `accumulated`); pair unit
+  `tally` is the proved case.
+- **Unhanded collection** (`unhandedCollection`): the same uses with objects allowed inside (`seen.set(node.path,
+  node)`). The outside holds no name of it, but may change the objects it holds, so a mutating library operation on it
+  after a reaching call starts from it as the world holds it (`ext_now_fresh`, its site) and is then exact; no world
+  transition is needed, as nothing outside can see the collection. A handed collection stays refused
+  (tests/w1g-opaque-handed.mjs; break `unhanded-collection` admits it and the check goes red); pair unit `distinct` is
+  the proved case.
+- A library collection's type closure is its type arguments (its elements): `Array`'s own `[Symbol.unscopables]` is no
+  object of the program. Other library types keep their fields (an `Error`'s `cause` may hold one).
+- `let x; ... x = v` written once names the identity `v` names; `m.get(k)` of a `Map` answers an object the map holds
+  (existing), as `find` and `at` of an array already did.
+- An occurrence inside a w1a block is the block's (the translator's `opaque` hook of readAfterCall takes the block's
+  statements): the block reads it with the world.
+
 ## copied-argument: a literal of existing parts
 
 Before, a new object holding objects handed to a call that threads the world was refused unless every part was itself a
@@ -127,6 +150,10 @@ lint and the translator). An `as` is erased at run time: the outside is handed t
 is keyed by the value and the two types, not the assertion's text: two assertions of one value hand the outside one
 value, which is what JavaScript does (a text key would only cost proofs).
 
+A held value in a slot whose contextual type is any or unknown (`JSON.stringify(b.rest[k])`) was refused by the lint
+although nothing reads it as a declared type and the translator converts nothing (Any to Any); such a slot is now no
+refusal for a held value either, as it already was for an unchecked one.
+
 **Stays refused**, each a slot the unit itself reads as declared, where an asserted `number` that is a string would let
 a proof use arithmetic JavaScript does not do (`n + 1 - 1` is `n` on integers, `"51" - 1` on a string): a same-file
 callee with a body (tests/w1g-opaque-handed.mjs checks this case by translation), a library operation (`arr.push(x as
@@ -146,6 +173,9 @@ is outside the graded construct and whose effect flows through what the mechanis
 | opaque_type_assertion | assertion-read | rebound | the asserted name bound to another input | the handed conversion stops reading its value |
 | opaque_read_after_call | fresh-site | twoNew | the other of two new objects of one value read | the two objects are named by value alone |
 | opaque_read_after_call | handle-write | written | the value written bound another way | the write never reaches the world |
+| opaque_read_after_call | sealed-collection | accumulated | the length read moved before the call | a handed collection taken for a sealed one |
+| tests/w1g-opaque-handed.mjs | outside-slot | viaCallee | (translation) | a same-file callee taken for the outside |
+| tests/w1g-opaque-handed.mjs | unhanded-collection | grow | (translation) | a handed collection taken for an unhanded one |
 
 ## The measurement
 
