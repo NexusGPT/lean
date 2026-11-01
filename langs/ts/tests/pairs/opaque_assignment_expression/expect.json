@@ -1,0 +1,46 @@
+{
+  "scope": [
+    "outside",
+    "inside",
+    "upstream",
+    "planted"
+  ],
+  "equal": {
+    "outside": true,
+    "inside": false,
+    "upstream": false,
+    "planted": false
+  },
+  "opaque": {
+    "outside": [
+      "assignment-expression"
+    ],
+    "inside": [
+      "assignment-expression"
+    ],
+    "upstream": [
+      "assignment-expression"
+    ],
+    "planted": [
+      "assignment-expression"
+    ]
+  },
+  "planted": {
+    "planted": 2
+  },
+  "b": {
+    "outside": "PASS-bounded",
+    "inside": "WITNESS",
+    "upstream": "WITNESS",
+    "planted": "WITNESS"
+  },
+  "break": [
+    {
+      "mechanism": "opaque-drop-read",
+      "equal": {
+        "upstream": true
+      }
+    }
+  ],
+  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule assignment-expression: a logical assignment used as a value, which the model does not read, so the statement `const w = (z ??= v * 2);` is one opaque step: an uninterpreted transition keyed by its text and the same-file definitions it names, reading every local it mentions, writing every local it assigns. outside: the step unchanged and the return bound to a local, proved modulo the step. inside: `||=` for `??=` is another text, another symbol, not proved; lane B finds the difference. planted: exec/mutate.mjs's site 2 inside the step, not proved, lane B WITNESS. upstream: `y + 2` for `y + 1` changes a value only the step reads; the step takes it, so nothing is proved (LEAN_BREAK=opaque-drop-read drops that read and this unit proves falsely: the pair's break row)."
+}

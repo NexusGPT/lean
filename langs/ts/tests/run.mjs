@@ -20,6 +20,9 @@ import { faithfulPlacement, checkWallCapMs } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
 import { dafnyVerifyArgs } from '../exec/dafny-args.mjs'; // the one bound and the one Z3 (solve/z3.mjs) of every `dafny verify`: the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
+import { breakRows } from './break.mjs';
+import { opaqueGrade } from '../lint/lint.mjs'; import { opaqueCallsForm } from '../lint/opaque-calls.mjs'; // the opaque column: a graded rule's escape is named with its grade // the one --break convention (amendment A6)
+import { opaqueLines } from '../translate/opaque.mjs'; // the opaque steps a translation lists (design/w1a-opaque-mutation.md)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -147,8 +150,22 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   fs.writeFileSync(path.join(tmpd, 'scope.json'), JSON.stringify({ functions: Object.fromEntries(exp.scope.map((f) => [f, { in_scope: 'false' }])), summaries: true, ...(Object.keys(allAdapters).length ? { adapters: allAdapters } : {}) }));
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
   const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] }); // the preludes too: theorem.py reads each side's include, and a prelude can change while the main text does not
-  add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
-  if (th.status !== 0) return;
+  // `theoremRefusal` in expect.json: the theorem must refuse the pair with that text (an opaque step whose callee differs,
+  // design/w1a-opaque-mutation.md A3); lane A then proves nothing, the break rows and lane B still run
+  const thText = (th.stderr || th.stdout || '').trim();
+  const refusedAsExpected = !!exp.theoremRefusal && th.status !== 0 && thText.includes(exp.theoremRefusal);
+  if (exp.theoremRefusal) add('pair', name, `theorem refused: ${exp.theoremRefusal}`, refusedAsExpected, th.status === 0 ? 'generated' : thText.slice(-160));
+  else add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : thText.slice(-160));
+  // `planted` in expect.json: the candidate's unit is exec/mutate.mjs's planted change of the parent's at that index
+  for (const [unit, index] of Object.entries(exp.planted ?? {})) {
+    const out = path.join(tmpd, `planted_${artifactName(unit)}.ts`);
+    const r = run('node', [path.join(here, '../exec/mutate.mjs'), pairFile(d, 'parent'), '--unit', unit, '--index', String(index), '--out', out]);
+    const unitText = (f) => { try { const L = loadForUnits(f, { project: false }); const u = unitsOfFile(L.sf).get(unit); return u ? u.node.getText(L.sf) : null; } catch { return null; } };
+    const a = r.status === 0 ? unitText(out) : null, b = unitText(pairFile(d, 'candidate'));
+    add('pair', name, `planted ${unit} is mutate.mjs index ${index}`, !!a && a === b, r.status !== 0 ? (r.stderr || r.stdout).trim().slice(-160) : a === b ? 'same text' : 'differs');
+  }
+  if (th.status !== 0 && !refusedAsExpected) return;
+  if (!refusedAsExpected) {
   // lane A is bounded by the solver's resource count (exec/dafny-args.mjs), the same whatever the load; the cores
   // split across the pairs running at once only changes how long it takes
   // the one Dafny of the pair runs through the async runner: its wall cap kills Dafny and its solvers (pool.mjs spawnCollect)
@@ -190,6 +207,30 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
   for (const unit of Object.keys(exp.b ?? {})) if (finished && spans[`Equal_${dafnyName(unit)}`]) await doubles(dafnyName(unit)); // the proof-hunt step reads the doubles reading of every unit lane B ran
   huntA.set(name, { adapters: Object.keys(allAdapters), bearing: (f) => !!doublesOf.get(f)?.bearing, proved: (f) => { if (!finished || !spans[`Equal_${f}`]) return null; const fp = doublesOf.get(f); if (fp?.bearing && fp.verdict !== 'unknown') return fp.verdict === 'proved'; if (fp?.bearing && !faithfulPlacement(tmpd, f).placed) return false; const parts = canonPartsOf(Object.keys(spans), f); return provedLemma(`Equal_${f}`, spanClean, rests) || (parts.length > 0 && parts.every((k) => !errs.some((L) => spans[k][0] <= L && L <= spans[k][1]))); } });
+  } // lane A on the generated theorem
+  // `opaque` in expect.json: the opaque steps the candidate's translation lists for a unit (its `// OPAQUE` line, the
+  // certificate's lanes.A.opaque), each listed rule among them (design/w1a-opaque-mutation.md)
+  if (exp.opaque) { const listed = opaqueLines(fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8')); for (const [f, want] of Object.entries(exp.opaque)) { const steps = listed.get(`${f}_candidate`)?.steps ?? []; const rules = new Set(steps.flatMap((x) => String(x.rule).split(','))); add('pair', name, `opaque ${f}: ${want.join(', ')}`, (want.length ? want.every((r) => rules.has(r)) && steps.length > 0 : steps.length === 0), steps.length ? `${steps.length} step(s): ${steps.map((x) => `${x.rule} at line ${x.line}, reads ${x.reads.join(' ')}, writes ${x.writes.join(' ')}`).join('; ')}` : 'no opaque step listed'); } }
+  // `break` in expect.json (tests/break.mjs, the one convention): both sides translated again with LEAN_BREAK=<mechanism>;
+  // each listed lemma, expected not proved above, must prove now: without the mechanism the reading proves a false
+  // equality, so the mechanism is what keeps the pair honest (the row passes when the broken run is wrong)
+  for (const { mechanism, unit } of breakRows(exp)) {
+    const bd = path.join(tmpd, `break_${mechanism}`); fs.mkdirSync(bd, { recursive: true });
+    const env = { LEAN_BREAK: mechanism };
+    for (const which of ['parent', 'candidate']) crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(bd, `${which}.dfy`), '--prelude', path.join(bd, `${which}.pre.dfy`), ...projectArgs, ...(exp.heap !== false ? ['--heap'] : [])], { files: [pairFile(d, which), ...projectFiles], outs: [path.join(bd, `${which}.dfy`), path.join(bd, `${which}.pre.dfy`)], env });
+    const bth = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(bd, 'parent.dfy'), '--candidate', path.join(bd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(bd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy'].map((f) => path.join(bd, f)).concat([path.join(tmpd, 'scope.json')]), outs: [path.join(bd, 'theorem.dfy')] });
+    let ok = false, got = (bth.stderr || bth.stdout || '').trim().slice(-160);
+    if (bth.status === 0) {
+      const bv = await cachedRunAsync((cmd, args, e2) => spawnCollect(cmd, args, { cwd: root, env: e2 ? { ...process.env, ...e2 } : process.env, maxBuffer: 1 << 26, dir: tmp }), 'dafny', ['verify', ...dafnyVerifyArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(bd, 'theorem.dfy')], { root, files: [path.join(bd, 'theorem.dfy')], normalise: NORMALISE });
+      const bt = bv.stdout + bv.stderr, bl = fs.readFileSync(path.join(bd, 'theorem.dfy'), 'utf8').split('\n');
+      const bs = {}; let bc = null; bl.forEach((ln, i) => { const m = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon|Direct)?_\w+)(?:<[^>]*>)?\(/); if (m) { bc = m[1]; bs[bc] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon|Direct)?_/.test(ln) && bc) bs[bc][1] = i + 1; });
+      const be = [...bt.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
+      const bfin = /finished with \d+ verified/.test(bt);
+      ok = bfin && provedLemma(`Equal_${unit}`, (k) => bfin && !!bs[k] && !be.some((L) => bs[k][0] <= L && L <= bs[k][1]), restsOf(bl));
+      got = ok ? `proved under LEAN_BREAK=${mechanism}: the mechanism is what refuses it` : bs[`Equal_${unit}`] ? 'still not proved under the break: the mechanism is not what refuses it' : 'lemma missing under the break';
+    }
+    add('pair', name, `break ${mechanism}: Equal_${unit} flips to proved (a false PASS-proved without the mechanism)`, ok, got);
+  }
   }
   // lane B on the same pair
   for (const [unit, want] of Object.entries(exp.b ?? {})) {
@@ -741,7 +782,13 @@ async function escapes(add) {
     const candidateUnit = (src.match(/^\/\/ candidate-unit:\s*(\S+)/m) ?? [])[1];
     const l = await R.run('node', [lint, ...(candidateUnit ? ['--candidate', file, '--unit', candidateUnit, '--n', '1', '--no-project'] : [file])]);
     const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
-    add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    // a rule the opaque column grades (lint/lint.mjs OPAQUE_ROWS, or the calls column lint/opaque-calls.mjs OPAQUE_CALLS:
+    // design/w1c-opaque-calls.md): the lint names the finding with its grade (the unit is read with an opaque step,
+    // design/w1a-opaque-mutation.md); the proof shape below still refuses it
+    const grade = opaqueGrade(want) !== 'none' ? opaqueGrade(want) : opaqueCallsForm(want)?.form ?? 'none';
+    const graded = grade !== 'none' ? l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s+\\[opaque: `).test(line)) : false;
+    if (grade !== 'none') add('escape', name, 'lint names it, graded opaque or refused', graded || (l.status === 1 && hit), graded ? `graded: ${want} [opaque: ${grade}]` : l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    else add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
     const fn = (src.match(/^export (?:async )?function (\w+)/m) ?? [])[1];
     if (fn && !candidateUnit) {
       const t = await R.run('node', [translate, file, '--fn', fn, '--out', path.join(tmp, `esc_${name}.dfy`)]);
@@ -768,10 +815,14 @@ async function adviceLabels(add) {
     // an any_* fixture runs with --any-type; `// expect-none: <rule>` names a rule that must not fire (an any from an
     // unresolved import is unresolved-module only)
     const none = (src.match(/^\/\/ expect-none:\s*(\S+)/m) ?? [])[1];
+    // a finding the opaque column grades is listed with the advice (`graded`, label and advice kept) and refuses
+    // nothing, so the lint exits 1 exactly when a refusal is listed (design/w1a-opaque-mutation.md)
     const l = await R.run('node', [lint, path.join(advDir, f), '--json', '--advice', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
     let all = [], found = []; try { all = JSON.parse(l.stdout); found = all.filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
     const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
-    const ok = l.status === 1 && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
+    // a finding the opaque column grades is listed with the advice (`graded`, label and advice kept) and refuses
+    // nothing, so the lint exits 1 exactly when a refusal is listed (design/w1a-opaque-mutation.md)
+    const ok = l.status === (all.some((x) => x.graded === undefined) ? 1 : 0) && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
     add('advice', name, `${rule} ${label}${none ? `, no ${none}` : ''}`, ok, found.length ? found.map((x) => `${x.label}${x.labelDecided ? ' (decided at the site)' : ''}`).join(', ') + (none && all.some((x) => x.rule === none) ? `; ${none} fired` : '') : `no ${rule} finding (exit ${l.status})`);
   } }));
   const runtime = [
@@ -782,6 +833,10 @@ async function adviceLabels(add) {
     ['fake-protocols', scriptRow('runtime', 'fake-protocols', 'each Node core fake agrees with the real module on its protocol; each goes red with the recording proxy alone', [path.join(here, '../exec/fakes/protocols.mjs')], lastLine)],
     // the module rows: path.join on strings is one pure function for the lint and the translator; a non-string argument and path.resolve stay transitions
     ['module-rows', scriptRow('runtime', 'module-rows', 'node:path rows read as pure functions by the lint and the translator; the rest of the module stays transitions', [path.join(here, 'module-rows.mjs')], lastLine)],
+    // the opacity ladder's shared helper (translate/opaque.mjs): the key is the construct's tokens, the step's shape, the
+    // column, the reference test; with its mechanism removed (--break, LEAN_BREAK=opaque-drop-read) the test must go red
+    ['opaque-unit', scriptRow('runtime', 'opaque-unit', 'the opaque step helper', [path.join(here, 'opaque-unit.mjs')], lastLine)],
+    ['opaque-unit-break', async (R, add) => { const r = await R.run('node', [path.join(here, 'opaque-unit.mjs'), '--break']); add('runtime', 'opaque-unit --break', 'red without the mechanism', r.status !== 0, (r.stdout + r.stderr).trim().split('\n')[0]); }],
     ['render-handed', scriptRow('runtime', 'render-handed', 'world writes to handed objects in the purity check', [path.join(here, 'render-handed.mjs')], lastLine)],
     ['rest_param-paths', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, 'pairs/rest_param/paths.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'rest_param/paths.test.mjs', 'drawn rest slot spread at every call boundary', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     // a run never ends without a verdict: a drained loop and a budget stop are ASK, exit 2; a wide record, a deep nesting and an `@/` alias get verdicts
@@ -949,8 +1004,11 @@ async function unitReads(add) {
         const header = report.match(/Units: (\d+)\. Inside the subset: (\d+) \(([^)]+) percent\)\. Refused: (\d+)\. Files unreadable: (\d+)\./);
         assert.ok(header, 'report header is present');
         add('census', 'report', 'refused plus inside equal JSON units', Number(header[1]) === result.units && Number(header[2]) === result.entered && Number(header[4]) === result.refused && Number(header[4]) + Number(header[2]) === result.units, `${header[4]} + ${header[2]} = ${result.units}`);
-        assert.deepEqual([result.files, result.units, result.entered, result.failedFiles], [8, 8, 2, 0]);
-        assert.deepEqual(sections.map((s) => [s.rule, s.units]), [['alias-mutation', 2], ['reference-equality', 2], ['var', 2]]);
+        assert.deepEqual([result.files, result.units, result.entered, result.failedFiles], [8, 8, 4, 0]);
+        assert.deepEqual(sections.map((s) => [s.rule, s.units]), [['reference-equality', 2], ['var', 2]]);
+        // the two alias.ts units enter: their alias-mutation finding is graded `opaque: block`, the unit read with the
+        // reading `opaque`, and no finding is counted as a refusal (design/w1a-opaque-mutation.md)
+        assert.deepEqual(result.records.filter((r) => /alias\.ts$/.test(r.file)).flatMap((r) => (r.lowering ?? []).map((l) => [l.refusal, l.readings.includes('opaque'), r.findings.length])), [[null, true, 0], [null, true, 0]]);
         assert.equal(result.rules.find((r) => r.rule === 'reference-equality').units, 3, 'the fixture also has a unit with two rules');
         assert.equal(header[3], String(result.share));
         assert.equal(Number(header[5]), result.failedFiles);

@@ -963,8 +963,11 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   let core = new Set();
   let inrange = new Set(); // core units whose lemma must also show no element access out of range, on either side
   const callsOf = (u) => { const calls = new Set(); const w = (n) => { const c = calleeOf(n, u) ?? (newClass(n) ? ctorUnitOf(newClass(n)) : null); if (c) calls.add(c); else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression.expression))[0]); const name = cd ? `${cd.name.text}.${n.expression.name.text}` : u.literal && !u.isArrow && n.expression.expression.kind === K.ThisKeyword ? `${u.binding}.${n.expression.name.text}` : null; if (name && fns.has(name)) calls.add(name); } ts.forEachChild(n, w); }; w(u.body); return calls; }; // a literal unit's `this.m()` is its sibling unit <binding>.m (design/exported-units.md) // a call of a method on another instance of a same-file class is an edge too: its caller decides its convention
-  function plan(order, only) {
+  function plan(order, only, opaque = new Set()) {
     const own = new Set(order.filter((u) => coreUnit(u) && (!only || only.includes(u.name))).map((u) => u.name));
+    // a unit with an opaque site (design/w1b-opaque-statements.md) is read by the value reading, whose opaque step stands
+    // for the construct the core has no reading of: out of the core, and the plan below moves its callers and callees too
+    for (const name of opaque) if (own.has(name)) { own.delete(name); whyNot.get(name)?.add('an opaque site: its statement is an opaque step of the value reading'); }
     // a unit named as a VALUE anywhere (`.then(bump)`, a callback argument, a stored function) keeps its layer-1 signature: out of the core
     const asValue = new Set();
     for (const u of order) { const w = (n) => { if (ts.isPropertyAccessExpression(n) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression))[0]); const name = cd && `${cd.name.text}.${n.name.text}`; if (name && fns.has(name)) asValue.add(name); } if (ts.isIdentifier(n) && fns.has(n.text) && !(n.parent && ts.isCallExpression(n.parent) && n.parent.expression === n) && !(n.parent && ts.isPropertyAccessExpression(n.parent) && n.parent.name === n) && !(n.parent && (ts.isFunctionDeclaration(n.parent) || ts.isVariableDeclaration(n.parent)) && n.parent.name === n)) asValue.add(n.text); ts.forEachChild(n, w); }; w(u.body); }
@@ -1720,9 +1723,15 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
     for (const p of u.params) if (ts.isObjectBindingPattern(p.name) || ts.isArrayBindingPattern(p.name)) for (const { name, depth: d } of boundNames(p.name)) aliases.set(name.text, d);
     const inputRooted = (x) => { const r = rootOf(x); return (ts.isIdentifier(r) && (params.has(r.text) || aliases.has(r.text))) || r.kind === K.ThisKeyword; };
     const effDepth = (x) => { const r = rootOf(x); return depth(x) + (ts.isIdentifier(r) && aliases.has(r.text) ? aliases.get(r.text) : 0); }; // the depth of a write below its input root, aliases unfolded
+    // an operator whose result is a primitive whatever its operands: arithmetic, shifts, bitwise, comparison, equality,
+    // `in`, `instanceof`, the unary operators, typeof, void, delete, an update (ECMA-262 13.4-13.12: each yields a Number,
+    // a BigInt, a String or a Boolean, its operands converted by ToPrimitive, which returns a primitive or throws)
+    const PRIMITIVE_BINARY = new Set([K.PlusToken, K.MinusToken, K.AsteriskToken, K.SlashToken, K.PercentToken, K.AsteriskAsteriskToken, K.LessThanLessThanToken, K.GreaterThanGreaterThanToken, K.GreaterThanGreaterThanGreaterThanToken, K.AmpersandToken, K.BarToken, K.CaretToken, K.LessThanToken, K.GreaterThanToken, K.LessThanEqualsToken, K.GreaterThanEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken, K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.InKeyword, K.InstanceOfKeyword]);
+    const primitiveOperator = (e) => (ts.isBinaryExpression(e) && PRIMITIVE_BINARY.has(e.operatorToken.kind)) || ts.isPrefixUnaryExpression(e) || ts.isPostfixUnaryExpression(e) || ts.isTypeOfExpression(e) || ts.isVoidExpression(e) || ts.isDeleteExpression(e);
     const fresh = (e) => { // a tree whose reference-typed parts are all literals: no input reference, no shared reference
       e = unparen(e);
       if (!isRefType(typeOf(e))) return true;
+      if (primitiveOperator(e)) return true; // its result is a primitive whatever its operands (a held Any among them, design/w1c-opaque-calls.md)
       if (ts.isObjectLiteralExpression(e)) return e.properties.every((p) => (ts.isPropertyAssignment(p) ? fresh(p.initializer) : ts.isShorthandPropertyAssignment(p) ? fresh(p.name) : ts.isSpreadAssignment(p) ? spreadFresh(p.expression) : false));
       if (ts.isArrayLiteralExpression(e)) return e.elements.every((x) => (ts.isSpreadElement(x) ? spreadFresh(x.expression) : fresh(x)));
       if (ts.isConditionalExpression(e)) return fresh(e.whenTrue) && fresh(e.whenFalse);

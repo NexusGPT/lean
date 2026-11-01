@@ -220,7 +220,7 @@ export function census(root, opts = {}) {
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
-    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv, moduleUnit = false, typesUnit = false;
+    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv, moduleUnit = false, typesUnit = false, opaque = {};
     try {
       const L = loaded.get(path.resolve(file));
       if (!L || L.error) throw new Error(L?.error ?? 'not loaded');
@@ -233,13 +233,15 @@ export function census(root, opts = {}) {
       const rec = lowerFile(file, null, { project: true, loaded: L }); findings = rec.findings;
       for (const f of findings) f.unit = findingUnit(sf, inventory, f)?.name ?? null; // a finding belongs to the unit the lint named, else the innermost containing unit
       lowered = rec.units.map((u) => ({ unit: u.unit, readings: u.readings.map((r) => r.id), refusal: u.refusal ? u.refusal.id : null }));
+      // the opacity ladder (A5): per unit its opaque fraction and each step's rule, construct and spans, as the lowering read them
+      for (const u of rec.units) if (u.opaqueSteps) opaque[u.unit] = { fraction: u.opaqueSteps.fraction, statements: u.opaqueSteps.statements, covered: u.opaqueSteps.covered, steps: u.opaqueSteps.steps.map((x) => ({ rule: x.rule, construct: x.construct, span: x.span, findings: x.findings, statements: x.statements })) };
       envBlocked = new Set(findings.filter((f) => f.rule === 'unresolved-module' && f.unit).map((f) => f.unit)); // judged on unknown types: neither admitted nor refused by a reading
       // a stopping finding that names a value whose type does not resolve was judged on an unknown type (environmentOf); a
       // unit every stopping finding of which is such is environment-blocked by the first; one with a finding judged on
       // resolved types is stopped by that finding, its reading
       origins = new Map(); const stopsOf = new Map();
       const originOf = (f) => { try { return environmentOf(L.checker, sf, f); } catch (e) { log(`! ${path.relative(root, file)}:${f.line}: the origin of the finding's values was not read (${String(e.message).slice(0, 120)}); the finding keeps its reading`); return null; } };
-      for (const f of findings) if (f.unit && !f.env && !envBlocked.has(f.unit)) { const o = originOf(f); if (o) origins.set(f, o); if (!stopsOf.has(f.unit)) stopsOf.set(f.unit, []); stopsOf.get(f.unit).push(f); }
+      for (const f of findings) if (f.unit && !f.env && !f.opaque && !envBlocked.has(f.unit)) { const o = originOf(f); if (o) origins.set(f, o); if (!stopsOf.has(f.unit)) stopsOf.set(f.unit, []); stopsOf.get(f.unit).push(f); }
       typeEnv = new Map([...stopsOf].filter(([, fs_]) => fs_.every((f) => origins.has(f))).map(([unit, fs_]) => [unit, fs_[0]]));
       const kindOf = (o) => {
         if (install.status === 'install-failed') return 'install-failed';
@@ -262,7 +264,7 @@ export function census(root, opts = {}) {
     // an unresolved-module finding names its module (or global) and its kind; the unit it falls in is counted once
     const envSeen = new Set();
     const named = findings.map((f) => {
-      const o = { line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env };
+      const o = { line: f.line, unit: f.unit, rule: f.rule, msg: f.msg, env: !!f.env, ...(f.opaque ? { opaque: f.opaque, opaqueSite: f.opaqueSite } : {}) }; // an opaque site's finding names its statement (design/w1c-opaque-calls.md): the opaque fraction of the units it lets in
       if (f.rule !== 'unresolved-module') return o;
       const c = env.classify(file, f.msg);
       o.kind = install.status === 'install-failed' ? 'install-failed' : c.kind + (c.generated ? ' (generated)' : '');
@@ -275,7 +277,7 @@ export function census(root, opts = {}) {
     { const isJs = JS_EXT.test(file);
       if (moduleUnit) { fileUnits.module.units++; if (isJs) fileUnits.module.js++; if (named.some((o) => o.rule === 'unresolved-module' && !o.unit)) fileUnits.module.environmentBlocked++; }
       if (typesUnit) { fileUnits.types.units++; if (isJs) fileUnits.types.js++; } }
-    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), ...(moduleUnit ? { moduleUnit: true } : {}), ...(typesUnit ? { typesUnit: true } : {}), lowering: lowered, findings: named, ...(unresolvedTypes.length ? { unresolvedTypes } : {}) });
+    records.push({ file: path.relative(root, file), pkg, stratum, ...(closure ? { closure } : {}), units: unitNames.map(([n, a, b]) => ({ name: n, lines: [a, b] })), ...(moduleUnit ? { moduleUnit: true } : {}), ...(typesUnit ? { typesUnit: true } : {}), lowering: lowered, findings: named, ...(unresolvedTypes.length ? { unresolvedTypes } : {}), ...(Object.keys(opaque).length ? { opaque } : {}) });
     const blocked = new Set();
     const stop = (unit, f, rule) => {
       blocked.add(unit);
@@ -306,7 +308,7 @@ export function census(root, opts = {}) {
     }
     for (const f of findings) {
       const unit = f.unit;
-      if (unit && !f.env && !blocked.has(unit) && !origins.has(f)) { // a finding judged on an unknown type stops no unit by its reading
+      if (unit && !f.env && !f.opaque && !blocked.has(unit) && !origins.has(f)) { // a finding judged on an unknown type stops no unit by its reading; an opaque site's finding stops none (design/w1c-opaque-calls.md: the lowering's refusing())
         // Count each stopped unit under its first refusal. Environment findings do not stop a unit.
         stop(unit, f, f.rule); languageRefused++;
       }

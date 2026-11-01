@@ -46,8 +46,9 @@ import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, read
 import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
+import { callsOpaqueSite, opaqueCallsForm, siteKey as callsSiteKey } from './opaque-calls.mjs'; // the opacity ladder for calls, members, syntax and callbacks (design/w1c-opaque-calls.md)
 import { optionalCallShape } from '../lower.mjs';
-import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
+import { lintFindings, lowerFile } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
 
 const K = ts.SyntaxKind;
@@ -214,6 +215,77 @@ function forInDelete(s, checker, sf) {
 
 // the lint's findings: the lowering's record of the file (lower.mjs), whose first phase is admissionFindings below and whose
 // last is the translator's reading of every unit it admitted, so a unit the translator refuses is never advised as admitted
+// ----- the opaque column (W1, the opacity ladder; translate/opaque.mjs, design/w1a-opaque-mutation.md) -----
+// How a finding of a rule is graded instead of refused, one row per rule; a rule with no row is `none`:
+//   block       the unit's body from the first statement that holds the finding or may touch a reference to its end is
+//               one opaque step (opaque.mjs blockStart)
+//   statement   the smallest enclosing statement is one opaque step
+//   expression  the expression is one opaque value
+//   none        a refusal (by design, or until a lane reads it)
+// A graded finding keeps its rule and its message and carries `opaque: <grade>`; the lowering (lower.mjs) lets the
+// translator decide: the unit enters when the translator emits the step, else the finding refuses it as before. Each W1
+// lane fills the rows of its own family only.
+export const OPAQUE_ROWS = {
+  // w1a-opaque-mutation: the mutation family (subset.md "What is refused")
+  'alias-mutation': 'block',
+  'closure-mutation': 'block',
+  'in-place-mutation': 'block',
+  'index-assign': 'block',
+  'mutator-value': 'block',
+  'object-method-capture': 'block',
+  'object-method-mutation': 'block',
+  'opaque-mutation': 'block',
+  'param-assign': 'block',
+  'param-mutation': 'block',
+  'property-assign': 'block',
+  'receiver-mutation': 'block',
+  'receiver-write': 'block',
+  // w1g-opaque-handed (design/w1g-opaque-handed.md): each graded slot is one opaque value at the finding's own span, read
+  // by the translator; the slots these rules still find are refusals (an expression row makes no block site)
+  'read-after-call': 'expression', // a handed object read after the call: ext_now_<T>(wld, x), the handle as the world holds it
+  'copied-argument': 'expression', // a new object of existing parts handed to the outside: handed_fresh_<skeleton>_<T>(v, k)
+  'type-assertion': 'expression', // a value whose type nothing checked, handed to the outside as it is: ext_<from>_as_<to>(v)
+  // w1b-opaque-statements: the statement and expression family (design/w1b-opaque-statements.md); the envelope of each
+  // (whether its value can leave the model) is translate/opaque-statements.mjs ENVELOPE
+  'assignment-expression': 'statement',
+  'bare-return': 'statement',
+  'bitwise': 'statement',
+  'collection-iterator': 'statement',
+  'destructuring': 'statement',
+  'division': 'statement',
+  'for-in': 'statement',
+  'for-of-non-array': 'statement',
+  'label': 'statement',
+  'loose-equality': 'statement',
+  'math-empty': 'statement',
+  'mixed-types': 'statement',
+  'number-special': 'statement',
+  'param-form': 'statement',
+  'record-rest': 'statement',
+  'reference-key': 'statement',
+  'spread': 'statement',
+  'string-code-unit': 'statement',
+  'string-order': 'statement',
+  'template': 'statement',
+  'unary-coercion': 'statement',
+  'uninitialised': 'statement',
+  'update-expression': 'statement',
+  // no rule to grade: comma and switch-fallthrough (no lint rule or translator refusal names them: the comma and the
+  // fall-through are read, subset.md "Operators as values", "Control"). By design none: break-continue (the jump has no
+  // loop or switch around it in its function, so a step has no control result to give it), loop-form (a loop with no
+  // measure: an opaque reading would hide the missing measure)
+};
+export const OPAQUE_GRADES = new Set(['block', 'statement', 'expression', 'none']);
+for (const [rule, g] of Object.entries(OPAQUE_ROWS)) if (!OPAQUE_GRADES.has(g)) throw new Error(`lint: opaque row ${rule}: ${g} is not a grade`);
+export const opaqueGrade = (rule) => OPAQUE_ROWS[rule] ?? 'none';
+// the statement family's envelope (design/w1b-opaque-statements.md), one row per rule it grades `statement`: `value` when
+// every value the construct can make is a value of the model, `boundary` when it can make one outside it (an astral
+// string, NaN or an infinity, a fraction in an integer file, a key compared by reference, a used-up iterator): a
+// boundary step may write only the world, else its unit joins the value boundary (translate.mjs numericOpaque)
+const BOUNDARY_RULES = new Set(['collection-iterator', 'division', 'math-empty', 'number-special', 'reference-key', 'string-code-unit', 'unary-coercion']);
+export const OPAQUE_ENVELOPE = Object.freeze(Object.fromEntries(Object.entries(OPAQUE_ROWS).filter(([, g]) => g === 'statement').map(([r]) => [r, BOUNDARY_RULES.has(r) ? 'boundary' : 'value'])));
+for (const r of BOUNDARY_RULES) if (OPAQUE_ENVELOPE[r] !== 'boundary') throw new Error(`lint: boundary rule ${r} is not graded statement`);
+
 export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
 export function admissionFindings(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
@@ -255,7 +327,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf),
     quiet: (n) => !!reactHook(checker, n) || /^Promise\.(resolve|reject|all|allSettled|race|any)$/.test(n.expression?.getText?.(sf) ?? ''),
     deferred: (q) => /^use(Layout|Insertion)?Effect$/.test(reactHook(checker, q) ?? ''),
-    opaque: (st) => ts.isTryStatement(st) || ts.isSwitchStatement(st) || ts.isLabeledStatement(st) || ts.isIterationStatement(st, false), // weaker than the translator's own test: never more refusals
+    opaque: (st) => ts.isTryStatement(st) || ts.isSwitchStatement(st) || ts.isLabeledStatement(st) || ts.isIterationStatement(st, false) || callsRecs.some((r) => callsSiteOf(r)?.stmt === st), rebinds: (st) => callsRecs.some((r) => callsSiteOf(r)?.stmt === st), // weaker than the translator's own test: never more refusals; an opaque site's statement is one step (lint/opaque-calls.mjs), as the translator reads it
     freshAlone: (a) => { let e = a; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; if (ts.isIdentifier(e)) { const d = checker.getSymbolAtLocation(e)?.valueDeclaration; e = d && ts.isVariableDeclaration(d) && d.initializer ? d.initializer : e; while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e)) e = e.expression; } return ts.isObjectLiteralExpression(e) || ts.isArrayLiteralExpression(e); },
   };
   const readAfter = (u) => { if (!u?.fn?.body) return; const rc = readAfterCall(checker, sf, u, rafHooks); if (rc) v(rc.node, 'read-after-call', rc.message); };
@@ -318,8 +390,16 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}), ...(opaqueGrade(rule) !== 'none' ? { opaque: opaqueGrade(rule) } : {}) });
+    if (opaqueCallsForm(rule)) { const rec = { node, fn: currentFn ?? unitFnOf(node), rule }; callsAt.set(out[out.length - 1], rec); callsRecs.push(rec); } // decided when the walk ends
   };
+  const callsAt = new WeakMap(); // a finding of a rule the calls column grades -> where it was raised (lint/opaque-calls.mjs)
+  const callsRecs = []; // the same records, in order: the site statements so far (callsSiteOf), for the read-after-call reading
+  const callsSiteOf = (rec) => { if (!('site' in rec)) rec.site = callsOpaqueSite(checker, rec.rule, rec.node, rec.fn); return rec.site; };
+  // the function of the unit a node sits in, for a finding raised outside the walk of a unit (the finally gate): the
+  // innermost enclosing function that is a unit's own
+  const unitFns = new Set([...units.values()].map((u) => u.fn).filter(Boolean));
+  const unitFnOf = (n) => { for (let p = n; p; p = p.parent) if (unitFns.has(p)) return p; return null; };
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
   // undefined: the coercion table's identity row, where the translator writes == and === alike
@@ -2412,6 +2492,15 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     // names the index as the loop does, a migration a person may take, never a refusal
     for (const c of indexedForEach) note(c, 'foreach', 'forEach with an index is read as the loop over the positions; a counted for states the index and the element');
   }
+  // the opacity ladder (design/w1c-opaque-calls.md): a finding of a rule the calls column grades whose holding statement
+  // is a step keeps its message, gains the label `opaque`, and refuses nothing; its statement goes to the translator
+  // (opts.opaqueSites, by siteKey), which reads it as one opaque step. Where it is no step, the refusal stands with why
+  for (const f of out) {
+    const at = callsAt.get(f); if (!at || f.advisory) continue;
+    const site = callsSiteOf(at);
+    if (site?.stmt) { f.opaque = 'statement'; f.advisory = true; f.opaqueSite = callsSiteKey(site.stmt, sf); opts.opaqueSites?.add(f.opaqueSite); }
+    else if (site?.why) f.opaqueWhy = site.why;
+  }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
   // the unit each finding sits in, and the advice for its rule
@@ -2467,7 +2556,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   }
 
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--changed' && args[i - 1] !== '--project');
-  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--advice] [--any-type] [--project <tsconfig>|--no-project]'); process.exit(2); }
+  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--advice] [--opaque-refuses] [--any-type] [--project <tsconfig>|--no-project]'); process.exit(2); }
   const ci = args.indexOf('--changed');
   let ranges = null;
   if (ci >= 0) {
@@ -2477,10 +2566,18 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   const pi = args.indexOf('--project');
   const project = args.includes('--no-project') ? false : pi >= 0 ? args[pi + 1] : true;
   const res = lintFile(file, ranges, { project, advisory: args.includes('--advice'), anyType: args.includes('--any-type') });
+  // with --advice the findings the opaque column graded are listed too (`graded`, lintFindings); they never refuse, except
+  // under --opaque-refuses (the reading before the opacity ladder: every graded finding refuses, as the escapes need)
+  const strict = args.includes('--opaque-refuses');
+  if (strict && !args.includes('--advice')) res.push(...(lowerFile(file, ranges, { project, anyType: args.includes('--any-type') }).graded ?? []));
+  const refusals = strict ? res : res.filter((r) => r.graded === undefined);
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
-  else if (args.includes('--agent')) console.log(agentReport(file, res));
-  else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
-  if (res.length) { if (!args.includes('--json')) console.log(`${res.length} violation(s)`); process.exit(1); }
+  else if (args.includes('--agent')) console.log(agentReport(file, refusals));
+  else for (const r of refusals) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
+  // the findings the opaque column graded in units the translator read: each keeps its rule and message, labelled with its
+  // grade; they refuse nothing (design/w1a-opaque-mutation.md)
+  if (!strict && !args.includes('--json') && !args.includes('--agent')) { const all = lowerFile(file, ranges, { project }).units.flatMap((u) => (u.opaque ?? []).map((o) => ({ ...o, unit: u.unit }))); const graded = all.filter((o) => o.graded); for (const o of all) console.log(`${file}:${o.line}:${o.col}  ${o.rule}  [opaque: ${o.grade}${o.graded ? '' : '; the unit stops on another refusal'}] ${o.msg}`); if (graded.length) console.log(`${graded.length} graded opaque (the unit is read with an opaque step)`); }
+  if (refusals.length) { if (!args.includes('--json')) console.log(`${refusals.length} violation(s)`); process.exit(1); }
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);
   process.exit(0);
 }

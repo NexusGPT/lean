@@ -1,0 +1,8 @@
+{
+ "planted_exc": {
+  "index": 0,
+  "kind": "operator",
+  "was": ">",
+  "text": ">="
+ }
+}

@@ -59,6 +59,7 @@ import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, enclosingUnitName, MODULE_UNIT } from './common.mjs';
 import { lintFile } from './lint/lint.mjs';
+import { opaqueLines } from './translate/opaque.mjs'; // the opaque steps a translation lists: the certificate's lanes.A.opaque
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
@@ -262,6 +263,10 @@ export async function check(opts) {
   noteDoubles();
   const cellsLine = cand.match(new RegExp(`^// CELLS ${dafnyName(unit)}_candidate: (.*)$`, 'm')); // the state-completeness audit: every persistent cell the unit touches, each matched to its transition
   if (cellsLine) { try { cert.lanes.A.cells = JSON.parse(cellsLine[1]); } catch { cert.lanes.A.cells = null; } }
+  // the opaque steps of the unit on each side (the translator's `// OPAQUE` lines, translate/opaque.mjs): each step's rule,
+  // symbol, reads, writes, span and the findings it grades, and the unit's opaque fraction (design/w1a-opaque-mutation.md)
+  { const sides = { parent: opaqueLines(fs.readFileSync(path.join(tmp, 'parent.dfy'), 'utf8')).get(`${dafnyName(unit)}_parent`) ?? null, candidate: opaqueLines(cand).get(`${dafnyName(unit)}_candidate`) ?? null };
+    if (sides.parent || sides.candidate) cert.lanes.A.opaque = { steps: sides.candidate?.steps ?? [], fraction: sides.candidate?.fraction ?? null, statements: sides.candidate?.statements ?? null, covered: sides.candidate?.covered ?? null, parent: sides.parent }; }
   if (cert.lanes.A.cells && cert.lanes.A.cells.obligations.length && m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:obligation'; return finish('ASK', cert, { reason: `obligation: ${cert.lanes.A.cells.obligations.join('; ')}` }); } // a cell the unit touches without a transition: the lemma proves nothing about it
   const lib = b.bound?.library; // lane B's record of the unit's built-in calls against the library table: a defect is a wrong row, and the proof read that row
   if (lib && lib.defects.length) { cert.lanes.A.libraryDefects = lib.defects; if (m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:library-model'; return finish('ASK', cert, { reason: `library-model: the engine contradicts the table on ${lib.defects.map((x) => `${x.op} (${x.why}; expected ${x.expected})`).join('; ')}; the proof lane refuses the operation until the row is corrected` }); } }

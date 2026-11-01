@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { ts, topLevelFunctions, MODULE_UNIT, TYPES_UNIT } from '../common.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { spawnSync } from 'node:child_process';
 
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -171,7 +172,7 @@ export function routeChanges(manifest) {
       edit.context = syntax;
       // LEAN_BREAK=w1f-js (tests/w1f-module-units.mjs --break w1f-js): the route before the JavaScript module unit, an edit
       // outside every listed unit of a JavaScript file without JSDoc types left unassigned
-      const untyped = process.env.LEAN_BREAK === 'w1f-js' && /\.[cm]?jsx?$/.test(file.file) && !/@(?:type|param|returns?|typedef)\s*\{/.test(sf?.text ?? '');
+      const untyped = broken('w1f-js') && /\.[cm]?jsx?$/.test(file.file) && !/@(?:type|param|returns?|typedef)\s*\{/.test(sf?.text ?? '');
       // Order: a parser exception (no tree on that side), a diagnostic inside the edit (its own syntax is not trustworthy,
       // nor a unit listed over it), a listed unit (the checker reads it, whatever the path's class or language), an edit
       // outside every unit of an untyped JavaScript file, the artifact class of a file with no touched unit, the named
@@ -193,7 +194,7 @@ export function routeChanges(manifest) {
         edit.primary = { kind: 'unit', id: primary.id, file: file.file, unit: primary.name, side, start: primary.start, end: primary.end };
       } else if (untyped) edit.primary = { kind: 'unassigned', reason: 'untyped JavaScript file', context: syntax.reason, side }; // an edit outside every listed unit of an untyped JavaScript file
       else if (file.class !== 'source') edit.primary = { kind: 'artifact', reason: file.class, class: file.class };
-      else if ((syntax.reason === 'type-only' || syntax.reason === 'directive comment') && process.env.LEAN_BREAK !== 'w1f-types') {
+      else if ((syntax.reason === 'type-only' || syntax.reason === 'directive comment') && !broken('w1f-types')) {
         // The types unit (common.mjs TYPES_UNIT): an edit outside every listed unit of text the compiler reads and the
         // emitted JavaScript does not carry (a type declaration, a type-only import or export, a directive comment) is
         // the types unit's: its reading is the emit of both sides (typed.mjs), PASS-typed when byte-equal. One per file.
@@ -201,7 +202,7 @@ export function routeChanges(manifest) {
         const link = { id: id([file.id, TYPES_UNIT]), file: file.file, unit: TYPES_UNIT, side, start: 1, end: lines };
         edit.links = [link];
         edit.primary = { kind: 'unit', id: link.id, file: file.file, unit: TYPES_UNIT, side, start: 1, end: lines };
-      } else if (syntax.reason !== 'type-only' && evaluated(sf, from, to) && process.env.LEAN_BREAK !== 'w1f-module') { // LEAN_BREAK=w1f-module (tests/w1f-module-units.mjs): the module unit's route removed
+      } else if (syntax.reason !== 'type-only' && evaluated(sf, from, to) && !broken('w1f-module')) { // LEAN_BREAK=w1f-module (tests/w1f-module-units.mjs): the module unit's route removed
         // The module unit (common.mjs MODULE_UNIT): an edit outside every listed unit whose every compiled token is code the
         // module's evaluation runs (outside every function's parameters and body and every class's members, not a type)
         // is the module unit's, whatever narrower context names it (an object literal built at load, an exports write):
