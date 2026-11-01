@@ -101,6 +101,12 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   const d = path.join(pairsDir, name);
   const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
   const tmpd = path.join(tmp, `pair_${name}`); fs.mkdirSync(tmpd, { recursive: true });
+  // the pair read as a pull request (tests/pr-pair.mjs): the rows and directive records pr.mjs gives between its two commits
+  if (exp.pr) {
+    const { prPair } = await import('./pr-pair.mjs');
+    for (const r of await prPair(d, { tmp: tmpd })) add('pair', name, r.check, r.ok, r.detail);
+    if (exp.prOnly) return;
+  }
   if (exp.candidateOnly) {
     for (const [i, want] of exp.candidateOnly.entries()) {
       const out = path.join(tmpd, `new_${i}.json`);

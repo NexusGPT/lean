@@ -135,13 +135,25 @@ try {
   assert.equal(lockRows.length, 1, 'one hunk of one route is one ASK row, not one row per line');
   assert.equal(lockRows[0].coverage, 'artifact:lockfile');
   assert.deepEqual(lockRows.flatMap(r => r.editIds).sort(), locked.edits.filter(e => e.primary.kind !== 'unit').map(e => e.id).sort(), 'every non-unit edit identity is on exactly one row');
-  // One hunk, one route (untyped JavaScript), two syntactic contexts: two rows that must not share a task identity.
+  // One hunk of an untyped JavaScript file, two contexts: the comment is an inert row, the statement the module unit's
+  // (design/w1f-module-units.md: a JavaScript file's top-level code is its module unit, as a TypeScript file's is)
   write('plain.js', '// one\nvar a = 1;\n');
   git('add', '-A'); git('commit', '-qm', 'js base'); const jsBase = git('rev-parse', 'HEAD');
   write('plain.js', '// two\nvar a = 2;\n');
-  const jsRows = ledgerRows(routeChanges(buildChangeManifest({ repo: tmp, base: jsBase, head: 'WORKTREE' })));
-  assert(jsRows.length >= 2, 'a comment and a statement in one hunk keep their own contexts');
+  const jsLedger = routeChanges(buildChangeManifest({ repo: tmp, base: jsBase, head: 'WORKTREE' }));
+  const jsRows = ledgerRows(jsLedger);
+  assert(jsRows.length >= 1 && jsRows.every(r => r.inert), 'the comment lines of the hunk are inert rows');
+  assert(jsLedger.edits.some(e => e.primary.kind === 'unit' && e.primary.unit === '(module)'), 'the statement of an untyped JavaScript file is its module unit\'s');
+  assert(!jsLedger.edits.some(e => e.primary.reason === 'untyped JavaScript file'), 'no edit of a JavaScript file is left unassigned for its language');
   assert.equal(new Set(jsRows.map(r => r.file + '\0' + r.unit)).size, jsRows.length, 'row identities are unique within a change');
+  // the types unit (common.mjs TYPES_UNIT): an interface edit, a type-only import and a directive comment outside every unit
+  write('types.ts', 'import type { A } from "./a";\nexport interface I { x: number }\nexport function f(x: number) { return x; }\n');
+  git('add', '-A'); git('commit', '-qm', 'types base'); const typesBase = git('rev-parse', 'HEAD');
+  write('types.ts', 'import type { A, B } from "./a";\n// @ts-ignore\nexport interface I { x: number; y?: string }\nexport function f(x: number) { return x; }\n');
+  const typesLedger = routeChanges(buildChangeManifest({ repo: tmp, base: typesBase, head: 'WORKTREE' }));
+  const typesEdits = typesLedger.edits.filter(e => e.file === 'types.ts');
+  assert(typesEdits.length >= 3 && typesEdits.every(e => e.primary.kind === 'unit' && e.primary.unit === '(types)'), `type-only and directive edits are the types unit's: ${JSON.stringify(typesEdits.map(e => e.primary))}`);
+  assert.equal(new Set(typesEdits.map(e => e.primary.id)).size, 1, 'one types unit per file');
   // A recoverable diagnostic far from the edit (a legacy octal) must not hide the changed function from the checker.
   write('octal.ts', 'const mode = 0777;\nexport function g(x: number) { return x + 1; }\n');
   git('add', '-A'); git('commit', '-qm', 'octal base'); const octalBase = git('rev-parse', 'HEAD');

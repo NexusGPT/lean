@@ -24,6 +24,7 @@ rules per package).
 | `WITNESS` | a paired execution differs on a recorded input |
 | `PASS-proved` | paired observations are equal under the proof's stated model |
 | `PASS-decided` | a finite component (state and props declared finite by its types) agreed on every event sequence; the product of both state spaces was explored to the end |
+| `PASS-typed` | both sides emit byte-equal JavaScript (the project's options, no comments, no maps) in the changed file and in every file whose emit its types can reach: the change is erased by the compiler, so the same code runs ([design](design/w1f-module-units.md)) |
 | `PASS-bounded` | paired observations agreed on the drawn inputs |
 | `ASK` | the requested check remains undecided; `ASK:interface` when the TypeScript signature as written (parameter types, decorators, the return type) differs between the two sides, whatever the Dafny signature says |
 | `REFUSE` | a local source link failed; `kind: load` names the file and real loader error |
@@ -167,6 +168,18 @@ Bound inference accepts one integer local stepped unconditionally by a positive 
 toward an integer constant or an unchanged array/string length. Calls, nested loops,
 continue, additional counter writes and other shapes keep the opaque reading.
 An unconditional loop without a break can only complete through its return channel.
+
+## Units outside every function
+
+| Unit | Inputs, outputs | Reading |
+|---|---|---|
+| `(module)`: a file's top-level statements in init order | its import environment; its export table, its own bindings and its load-time effects (requests, armed work, the value it throws) | lane B evaluates both sides (WITNESS or PASS-bounded); a file whose emit is byte-equal is PASS-typed. A load-time effect is a world transition like any call's: the module's evaluation is one call of the unit ([design](design/module-unit.md)) |
+| `(types)`: a file's text the emitted JavaScript does not carry, outside every function (types, type-only imports and exports, directive comments, a JavaScript file's JSDoc) | none at run time | the typed reading alone: PASS-typed, else ASK naming the files whose emit differs |
+| a function of a `.js`, `.jsx`, `.mjs` or `.cjs` file | as for TypeScript, through the checker's JavaScript mode (allowJs, checkJs) | a unit like any other; an untyped one is refused by the lint as `untyped-js` and keeps lane B's verdict; its file's top-level code is its module unit |
+
+A directive comment (`@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`, `eslint-disable` and its forms, `biome-ignore`)
+that a change adds or removes is a rule record (`lint/directives.mjs`), not a verdict: the directive, its scope, the unit
+it falls in, and for a type directive the errors it now hides or no longer hides.
 
 ## Module state and loaders
 

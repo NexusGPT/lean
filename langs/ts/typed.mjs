@@ -16,7 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { ts, COMPILER_OPTIONS, projectless, parseProjectConfig } from './common.mjs';
+import { ts, COMPILER_OPTIONS, projectless, parseProjectConfig, topLevelFunctions } from './common.mjs';
 
 const hash = (v) => createHash('sha256').update(v).digest('hex');
 // the files of a program read beyond the changed ones are capped: past it the reading is not made (no PASS-typed)
@@ -64,6 +64,15 @@ function emitted(program, sf) {
   return { text: out.map(([n, t]) => `//# ${path.basename(n)}\n${t}`).join('\n'), skipped: r.emitSkipped };
 }
 
+// the hash of a file's emit in a program, computed once per program
+const emitHashes = new WeakMap();
+function emitHash(program, abs) {
+  if (!emitHashes.has(program)) emitHashes.set(program, new Map());
+  const m = emitHashes.get(program);
+  if (!m.has(abs)) { const sf = program.getSourceFile(abs); m.set(abs, sf && !sf.isDeclarationFile ? hash(emitted(program, sf).text) : null); }
+  return m.get(abs);
+}
+
 // each source file of the program -> the files that import it (by the program's own resolution)
 function importers(program) {
   const options = program.getCompilerOptions(), cache = ts.createModuleResolutionCache(program.getCurrentDirectory(), (x) => x, options);
@@ -83,7 +92,10 @@ function importers(program) {
   return by;
 }
 
-// changes: [{ rel, parent: text|null, head: text|null }] under `root` (the head's tree: the checkout or its snapshot)
+// changes: [{ rel, parent: text|null, head: text|null, units?: [name] }] under `root` (the head's tree: the checkout or its
+// snapshot). A file whose emit differs is read unit by unit for the units named: the head with that one unit's text put
+// back to the parent's (every other file as the head has it) emits byte-equal in every file of the reach exactly when
+// the unit's own change is erased by the compiler: out.get(rel).units[name] = { equal, differs }.
 export function typedReading({ root, changes, project = true }) {
   const out = new Map();
   const started = performance.now();
@@ -140,11 +152,27 @@ export function typedReading({ root, changes, project = true }) {
         out.set(c.rel, {
           equal: !differs.length, emitted: { parent: own.parent, head: own.head }, files: files.length,
           differs: differs.map((f) => path.relative(root, f).split(path.sep).join('/')),
+          // a file no change touched whose emit differs: its behaviour changed through this change's types (a const enum inlined, decorator metadata)
+          unchangedDiffers: differs.filter((f) => !list.some((x) => x.abs === f) && !changes.some((x) => path.resolve(root, x.rel) === f)).map((f) => path.relative(root, f).split(path.sep).join('/')),
           errors: { parent: diag(parent, sides[0]), head: diag(head, sides[1]) },
           project: cfg ? path.relative(root, cfg).split(path.sep).join('/') : null,
           options: { module: options.module ?? null, target: options.target ?? null, emitDecoratorMetadata: !!options.emitDecoratorMetadata, isolatedModules: !!options.isolatedModules, verbatimModuleSyntax: !!options.verbatimModuleSyntax },
           ...(BREAK ? { broken: BREAK } : {}),
         });
+        if (differs.length && c.units?.length && BREAK !== 'emit') {
+          const ps = ts.createSourceFile(c.abs, c.parent, ts.ScriptTarget.Latest, true), hs = ts.createSourceFile(c.abs, c.head, ts.ScriptTarget.Latest, true);
+          const pu = topLevelFunctions(ps), hu = topLevelFunctions(hs), units = {};
+          for (const name of c.units) {
+            const a = pu.get(name), b = hu.get(name);
+            if (!a || !b || a.enclosingUnit || b.enclosingUnit) continue; // a nested unit is its enclosing unit's; a unit one side lacks has no parent text
+            const text = c.head.slice(0, b.node.getStart(hs)) + c.parent.slice(a.node.getStart(ps), a.node.getEnd()) + c.head.slice(b.node.getEnd());
+            if (text === c.head) continue;
+            const reverted = sideProgram(options, roots, new Map([...texts.head, [c.abs, text]]), head);
+            const unitDiffers = files.filter((f) => emitHash(reverted, f) !== emitHash(head, f));
+            units[name] = { equal: !unitDiffers.length, differs: unitDiffers.map((f) => path.relative(root, f).split(path.sep).join('/')) };
+          }
+          out.get(c.rel).units = units;
+        }
       }
     } catch (e) { fail(`emit failed: ${String(e.message).slice(0, 200)}`); }
   }
@@ -152,9 +180,10 @@ export function typedReading({ root, changes, project = true }) {
   return out;
 }
 
-// the sentence of a row the reading decided
-export function typedReason(t) {
+// the sentence of a row the reading decided (a unit of a file whose emit differs: its own reading, `unit`)
+export function typedReason(t, unit = null) {
+  if (unit && t.units?.[unit]?.equal) return `this unit's own change is erased by the compiler: the head emitted with this unit's parent text is byte-equal to the head's (${t.files} file(s) read); the file's emit differs elsewhere (${t.differs.slice(0, 3).join(', ')})`;
   if (t.equal) return `the emitted JavaScript is byte-equal on both sides (${t.files} file(s) read: this file and every file whose emit its types can reach); the change is erased by the compiler${t.errors.head > t.errors.parent ? `; the head has ${t.errors.head - t.errors.parent} more type error(s) in this file` : ''}`;
-  if (t.differs?.length) return `the emitted JavaScript differs in ${t.differs.slice(0, 3).join(', ')}${t.differs.length > 3 ? ` and ${t.differs.length - 3} more` : ''}`;
+  if (t.differs?.length) return `the emitted JavaScript differs in ${t.differs.slice(0, 3).join(', ')}${t.differs.length > 3 ? ` and ${t.differs.length - 3} more` : ''}${t.unchangedDiffers?.length ? `; ${t.unchangedDiffers.slice(0, 3).join(', ')} unchanged: its emit reads this change's types` : ''}`;
   return t.reason ?? 'the typed reading made no decision';
 }

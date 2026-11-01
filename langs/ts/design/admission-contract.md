@@ -857,3 +857,17 @@ intake row of the ledger: an artifact by kind or class (config, test, lockfile, 
 edit by its named reason, the empty diff. It stays in the intake table. A non-inert intake row keeps its ASK in the
 data, so `--block ask` still blocks on it. Both rules are about what the edit is, decided once in the ledger. Neither
 depends on a hash, a file name or the pull request.
+
+## 2026-11-01: units outside every function (lane w1f-module-units)
+
+The decision sites this lane adds. None refuses a construct and none is a site of lint.mjs or translate.mjs, so the audit
+table above (`lower.mjs --audit`) is unchanged; they are listed here in its columns, each decided once
+(design/w1f-module-units.md).
+
+| site | kind | rule | reading | decided | message |
+| --- | --- | --- | --- | --- | --- |
+| ci/ledger.mjs routeChanges (types unit) | route | type-only, directive comment | typed | one-decider (syntaxContext) | an edit outside every listed unit of text the emitted JavaScript does not carry is the types unit's |
+| ci/ledger.mjs routeChanges (module unit) | route | module-level statement | module-unit | one-decider (evaluated) | a JavaScript file's top-level code is its module unit's, as a TypeScript file's is (the untyped-JavaScript route removed) |
+| pr.mjs prWorker (typed verdict) | verdict | PASS-typed | typed | one-decider (typed.mjs typedReading) | the emitted JavaScript is byte-equal on both sides in every file the change's types reach |
+| pr.mjs prWorker (types unit, no equal emit) | verdict | ASK | typed | one-decider (typed.mjs typedReason) | the emitted JavaScript differs in <files> |
+| lint/directives.mjs directiveRecords | rule-record | directive:<kind> | directives | one-decider (directivesOf) | added/removed `<directive>` over <scope>: hides / no longer hides <errors> |

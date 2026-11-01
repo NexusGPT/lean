@@ -201,7 +201,7 @@ export function routeChanges(manifest) {
         const link = { id: id([file.id, TYPES_UNIT]), file: file.file, unit: TYPES_UNIT, side, start: 1, end: lines };
         edit.links = [link];
         edit.primary = { kind: 'unit', id: link.id, file: file.file, unit: TYPES_UNIT, side, start: 1, end: lines };
-      } else if (syntax.reason !== 'type-only' && evaluated(sf, from, to)) {
+      } else if (syntax.reason !== 'type-only' && evaluated(sf, from, to) && process.env.LEAN_W1F_BREAK !== 'module') { // LEAN_W1F_BREAK=module (tests/w1f-module-units.mjs): the module unit's route removed
         // The module unit (common.mjs MODULE_UNIT): an edit outside every listed unit whose every compiled token is code the
         // module's evaluation runs (outside every function's parameters and body and every class's members, not a type)
         // is the module unit's, whatever narrower context names it (an object literal built at load, an exports write):

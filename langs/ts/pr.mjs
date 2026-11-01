@@ -490,7 +490,8 @@ async function prWorker(opts) {
     // byte-equal JavaScript; such a file's rows are PASS-typed before any lane runs. A preview runs no reading.
     const compared = files.filter((e) => e.baseFile && e.headFile && !e.deleted && !e.error && !e.binary);
     const typed = opts.preview || !compared.length ? new Map() : typedReading({ root: opts.filesRoot ?? repo, project,
-      changes: compared.map((e) => ({ rel: e.file, parent: fs.readFileSync(e.baseFile, 'utf8'), head: fs.readFileSync(e.headFile, 'utf8') })) });
+      changes: compared.map((e) => ({ rel: e.file, parent: fs.readFileSync(e.baseFile, 'utf8'), head: fs.readFileSync(e.headFile, 'utf8'),
+        units: (e.units ?? []).map((u) => u.name).filter((name) => name !== MODULE_UNIT && name !== TYPES_UNIT) })) });
     // the directive comments a change adds or removes (lint/directives.mjs): rule records, never a unit's verdict
     rows.directives = files.filter((e) => !e.error && !e.binary && (e.baseFile || e.headFile)).flatMap((e) => {
       try { return directiveRecords({ file: e.file, parent: e.baseFile ? fs.readFileSync(e.baseFile, 'utf8') : null, head: e.deleted || !e.headFile ? null : fs.readFileSync(e.headFile, 'utf8'), headFile: e.deleted ? null : e.headFile, project }); }
@@ -567,6 +568,8 @@ async function prWorker(opts) {
       let key = null, cacheFile = null;
       const save = (row) => {
         if (row.certificate) row.certificate = { ...row.certificate, verdict: row.verdict };
+        // the typed reading of the unit's file rides on every row of it: an importer whose emit the change altered is named even where the lanes decide
+        if (row.certificate && !caller && typed.get(rel) && !row.certificate.typed) row.certificate.typed = typed.get(rel);
         if (row.certificate?.values) { const read = valuesRead(row.certificate.values); row.certificate.values = { ...row.certificate.values, file: read.file, from: read.from }; } // the project's file by its name in the checkout, never the temporary copy of a head ref
         if (!caller) row.editIds = rows[index].editIds;
         commitArtifact(opts._runDir, attempt, row);
@@ -588,11 +591,11 @@ async function prWorker(opts) {
       // the typed reading decides first: a file whose reachable emit is byte-equal runs the same JavaScript, so each of its
       // changed units (the module unit, the types unit, a function whatever the lint said of it) is PASS-typed; the types
       // unit has no other reading, so without that it is ASK naming the files whose emit differs
-      const t = caller ? null : typed.get(rel);
-      if (!caller && (t?.equal || u.name === TYPES_UNIT)) {
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: t?.equal ? 'PASS-typed' : 'ASK', coverage: 'checked', laneB: null, laneA: null, witness: null,
+      const t = caller ? null : typed.get(rel), erased = !!(t?.equal || t?.units?.[u.name]?.equal);
+      if (!caller && (erased || u.name === TYPES_UNIT)) {
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], verdict: erased ? 'PASS-typed' : 'ASK', coverage: 'checked', laneB: null, laneA: null, witness: null,
           certificate: { ...basicCertificate(), typed: t ?? { equal: false, reason: entry.deleted ? 'deleted file' : !baseFile ? 'added file: no parent emit' : 'no typed reading' } },
-          reason: t ? typedReason(t) : entry.deleted ? 'deleted file: no head emit' : !baseFile ? 'new file: no parent emit to compare with' : 'the typed reading made no decision', advice: [] });
+          reason: t ? typedReason(t, u.name) : entry.deleted ? 'deleted file: no head emit' : !baseFile ? 'new file: no parent emit to compare with' : 'the typed reading made no decision', advice: [] });
         continue;
       }
       if (!u.findings?.length) {

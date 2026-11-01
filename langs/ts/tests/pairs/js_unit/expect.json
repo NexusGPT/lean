@@ -1,0 +1,30 @@
+{
+ "why": "JavaScript units through the checker's JavaScript mode (allowJs, checkJs). index.js: the module-level constant is the module unit's (WITNESS: a binding the module holds differs); scale, untyped, is refused by the lint by name (untyped-js) and lane B's WITNESS stays in its row; double is typed by JSDoc and read by both lanes. doc.js changes its JSDoc only: the types unit is PASS-typed, and inc, whose text is unchanged, has no row. No edit of a JavaScript file is left unassigned (--break js restores that route).",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   {
+    "file": "index.js",
+    "unit": "(module)",
+    "verdict": "WITNESS"
+   },
+   {
+    "file": "index.js",
+    "unit": "scale",
+    "verdict": "WITNESS",
+    "coverage": "refused:untyped-js"
+   },
+   {
+    "file": "index.js",
+    "unit": "double",
+    "notVerdict": "WITNESS"
+   },
+   {
+    "file": "doc.js",
+    "unit": "(types)",
+    "verdict": "PASS-typed"
+   }
+  ],
+  "unassigned": false
+ }
+}
