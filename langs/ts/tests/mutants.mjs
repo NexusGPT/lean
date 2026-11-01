@@ -74,11 +74,13 @@ async function unitJob(job) {
   const project = job.project ?? false;
   const rows = [], times = [];
   let sites;
-  try { sites = sitesOf(job.file, job.unit, { project }).sites; } catch (e) { return { rows: [{ ...job.key, index: null, kind: null, verdict: 'no-unit', detail: String(e.message).slice(0, 120) }], times }; }
+  let text = '';
+  try { ({ sites, text } = sitesOf(job.file, job.unit, { project })); } catch (e) { return { rows: [{ ...job.key, index: null, kind: null, verdict: 'no-unit', detail: String(e.message).slice(0, 120) }], times }; }
   const ext = path.extname(job.file), stem = path.basename(job.file, ext);
   for (let k = 0; k < sites.length; k++) {
     const s = sites[k];
-    const row = { ...job.key, index: k, sites: sites.length, kind: s.kind, was: String(s.was).slice(0, 60), text: String(s.text).slice(0, 60) };
+    const lineAt = (pos) => text.slice(0, pos).split('\n').length;
+    const row = { ...job.key, index: k, sites: sites.length, kind: s.kind, lines: [lineAt(s.start), lineAt(s.end)], was: String(s.was).slice(0, 60), text: String(s.text).slice(0, 60) }; // lines: the edited span in the unit's file, DA-Bench's M truth (file, lines, kind)
     if (job.withoutKind && s.kind === job.withoutKind) continue;
     if (job.indices && !job.indices.includes(k)) continue; // --recheck: only the sites the earlier study names
     if (job.indices && job.expect?.[k] && (job.expect[k].kind !== s.kind || job.expect[k].was !== row.was)) { rows.push({ ...row, verdict: 'site-moved', detail: `the earlier study's site ${k} was ${job.expect[k].kind} ${job.expect[k].was}` }); continue; } // the unit's text changed between the two heads: not the same mutant
