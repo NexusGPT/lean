@@ -80,6 +80,8 @@ async function unitJob(job) {
     const s = sites[k];
     const row = { ...job.key, index: k, sites: sites.length, kind: s.kind, was: String(s.was).slice(0, 60), text: String(s.text).slice(0, 60) };
     if (job.withoutKind && s.kind === job.withoutKind) continue;
+    if (job.indices && !job.indices.includes(k)) continue; // --recheck: only the sites the earlier study names
+    if (job.indices && job.expect?.[k] && (job.expect[k].kind !== s.kind || job.expect[k].was !== row.was)) { rows.push({ ...row, verdict: 'site-moved', detail: `the earlier study's site ${k} was ${job.expect[k].kind} ${job.expect[k].was}` }); continue; } // the unit's text changed between the two heads: not the same mutant
     let m = null;
     try { m = mutate(job.file, job.unit, k, { project }); } catch (e) { m = null; }
     if (!m || m.skipped !== 0) { rows.push({ ...row, verdict: 'not-planted', detail: m ? 'the edit does not parse or adds a type error (mutate.mjs skips it)' : 'mutate.mjs returned no mutant' }); continue; }
@@ -197,10 +199,42 @@ async function main() {
   const jobsN = Math.min(4, Number(opt('--jobs', 4)));
   const seed = Number(opt('--seed', 1)), n = Number(opt('--n', 30)), dafnySeconds = Number(opt('--dafny-seconds', 30));
   const only = opt('--pair', null) ? new Set(opt('--pair').split(',')) : null;
-  const units = a.includes('--no-pairs') ? [] : pairUnits(path.resolve(opt('--pairs', path.join(here, 'pairs'))), only, work);
+  const recheck = opt('--recheck', null);
+  const units = a.includes('--no-pairs') || recheck ? [] : pairUnits(path.resolve(opt('--pairs', path.join(here, 'pairs'))), only, work);
   let census = null;
   const censusFiles = opts('--census');
-  if (censusFiles.length) {
+  if (recheck) {
+    // --recheck <study.json>: the sites of an earlier study whose verdict is not WITNESS (or is one of --verdicts), and a
+    // seeded sample of --plus-caught of its WITNESS rows, checked again on this tree: the delta of a lane that changes
+    // what happens after lane B's draws agree, and its regressions on mutants caught before
+    const prior = JSON.parse(fs.readFileSync(recheck, 'utf8'));
+    const want = opt('--verdicts', null) ? new Set(opt('--verdicts').split(',')) : null;
+    const planted = prior.rows.filter((r) => r.kind && r.verdict !== 'not-planted' && r.verdict !== 'no-unit');
+    const open = planted.filter((r) => (want ? want.has(r.verdict) : r.verdict !== 'WITNESS'));
+    const caught = planted.filter((r) => r.verdict === 'WITNESS').map((r) => ({ r, h: sha(`${seed}\0${r.source}\0${r.where}\0${r.unit}\0${r.index}`) })).sort((p, q) => (p.h < q.h ? -1 : p.h > q.h ? 1 : 0)).slice(0, Number(opt('--plus-caught', 0))).map(({ r }) => r);
+    const roots = new Map(censusFiles.map((f) => { const root = JSON.parse(fs.readFileSync(f, 'utf8')).root; return [`census:${path.basename(root)}`, root]; }));
+    const pairsDir = path.resolve(opt('--pairs', path.join(here, 'pairs')));
+    const byUnit = new Map();
+    for (const r of [...open, ...caught]) { const k = `${r.source}\0${r.where}\0${r.unit}`; if (!byUnit.has(k)) byUnit.set(k, []); byUnit.get(k).push(r); }
+    for (const rs of [...byUnit.values()]) {
+      const { source, where, unit } = rs[0];
+      const expect = Object.fromEntries(rs.map((r) => [r.index, { kind: r.kind, was: r.was }]));
+      const key = { source, where, unit }, indices = rs.map((r) => r.index).sort((p, q) => p - q);
+      if (source === 'pairs') {
+        const d = path.join(pairsDir, where);
+        if (!fs.existsSync(d)) { units.push({ key, error: `no pair ${where} on this tree` }); continue; }
+        const copy = path.join(work, 'pairs', where);
+        if (!fs.existsSync(copy)) { fs.mkdirSync(path.dirname(copy), { recursive: true }); fs.cpSync(d, copy, { recursive: true }); }
+        const exp = JSON.parse(fs.readFileSync(path.join(d, 'expect.json'), 'utf8'));
+        units.push({ key, file: pairFile(copy, 'candidate'), unit, project: exp.project ? path.join(copy, exp.project) : false, indices, expect });
+      } else {
+        if (!roots.has(source)) throw new Error(`--recheck: no --census names the root of ${source}`);
+        units.push({ key, file: path.join(roots.get(source), where), unit, project: true, indices, expect });
+      }
+    }
+    census = prior.meta.census ?? null;
+    console.error(`recheck: ${open.length} open and ${caught.length} caught sites of ${byUnit.size} units from ${recheck}`);
+  } else if (censusFiles.length) {
     const c = censusUnits(censusFiles.map((f) => path.resolve(f)), Number(opt('--sample', 300)), seed);
     census = { frame: c.frame, picked: c.picked.length, roots: [...new Set(censusFiles.map((f) => path.basename(JSON.parse(fs.readFileSync(f, 'utf8')).root)))].sort() };
     for (const x of c.picked) {
@@ -226,7 +260,7 @@ async function main() {
   const times = results.flatMap((r) => r.times);
   const head = spawnSync('git', ['-C', ts, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim();
   const env = Object.fromEntries(Object.keys(process.env).filter((k) => k.startsWith('LEAN_')).sort().map((k) => [k, process.env[k]])); // a lane's switch (LEAN_SEARCH, ...) the checks ran under
-  const meta = { head, seed, n, dafnySeconds, env, pairs: new Set(units.filter((u) => u.key.source === 'pairs').map((u) => u.key.where)).size, units: { pairs: units.filter((u) => u.key.source === 'pairs').length, census: units.filter((u) => u.key.source !== 'pairs').length }, census, unitsWithoutSites: results.filter((r) => r.rows.length === 0).length, noUnit: rows.filter((r) => r.verdict === 'no-unit').length, ...(opt('--without-kind', null) ? { withoutKind: opt('--without-kind') } : {}) };
+  const meta = { head, seed, n, dafnySeconds, env, pairs: new Set(units.filter((u) => u.key.source === 'pairs').map((u) => u.key.where)).size, units: { pairs: units.filter((u) => u.key.source === 'pairs').length, census: units.filter((u) => u.key.source !== 'pairs').length }, census, unitsWithoutSites: results.filter((r) => r.rows.length === 0).length, noUnit: rows.filter((r) => r.verdict === 'no-unit').length, ...(opt('--without-kind', null) ? { withoutKind: opt('--without-kind') } : {}), ...(recheck ? { recheck: path.basename(recheck) } : {}) };
   // a unit with no site has no row; it is counted in meta, and listed so the denominators can be read
   const study = { meta, rows };
   const outFile = opt('--out', null);
@@ -256,8 +290,40 @@ export function merge(studies) {
   return { meta, rows };
 }
 
+// --delta <before.json> <after.json>: the sites the after-study checked (a --recheck), matched to the before-study by
+// source, unit, index, kind and text; per kind, how many were caught before and after, the gains (not caught before,
+// WITNESS after) and the regressions (WITNESS before, not after), and the caught share of the whole before-population
+// with the gains added and the regressions taken away
+export function delta(before, after) {
+  const key = (r) => `${r.source}\0${r.where}\0${r.unit}\0${r.index}\0${r.kind}\0${r.was}`;
+  const prior = new Map(before.rows.map((r) => [key(r), r]));
+  const planted = before.rows.filter((r) => r.kind && r.verdict !== 'not-planted' && r.verdict !== 'no-unit');
+  const per = new Map(KINDS.map((k) => [k, { planted: 0, caughtBefore: 0, rechecked: 0, gains: 0, regressions: 0, moved: 0, sources: {} }]));
+  for (const r of planted) { const t = per.get(r.kind); t.planted++; if (r.verdict === 'WITNESS') t.caughtBefore++; }
+  const unmatched = [];
+  for (const r of after.rows) {
+    if (!r.kind) continue;
+    const t = per.get(r.kind), p = prior.get(key(r));
+    if (r.verdict === 'site-moved' || !p) { t.moved++; unmatched.push(r); continue; }
+    t.rechecked++;
+    if (p.verdict !== 'WITNESS' && r.verdict === 'WITNESS') { t.gains++; t.sources[`${r.foundLane} ${r.foundBy}`] = (t.sources[`${r.foundLane} ${r.foundBy}`] ?? 0) + 1; }
+    if (p.verdict === 'WITNESS' && r.verdict !== 'WITNESS') t.regressions++;
+  }
+  const all = { planted: 0, caughtBefore: 0, rechecked: 0, gains: 0, regressions: 0, moved: 0, sources: {} };
+  for (const t of per.values()) { for (const k of ['planted', 'caughtBefore', 'rechecked', 'gains', 'regressions', 'moved']) all[k] += t[k]; for (const [s, n] of Object.entries(t.sources)) all.sources[s] = (all.sources[s] ?? 0) + n; }
+  const line = (k, t) => `| ${k} | ${t.planted} | ${t.caughtBefore} (${pct(t.caughtBefore, t.planted)}) | ${t.rechecked} | ${t.gains} | ${t.regressions} | ${t.caughtBefore + t.gains - t.regressions} (${pct(t.caughtBefore + t.gains - t.regressions, t.planted)}) | ${pct(t.planted - (t.caughtBefore + t.gains - t.regressions), t.planted)} | ${Object.entries(t.sources).sort((p, q) => q[1] - p[1]).map(([s, n]) => `${s} ${n}`).join(', ') || '-'} |`;
+  return [`# Delta: ${after.meta.head} (${Object.entries(after.meta.env ?? {}).map(([k, v]) => `${k}=${v}`).join(' ') || 'no LEAN_ variable'}) against ${before.meta.head}`, '',
+    `Rechecked ${all.rechecked} sites (${after.meta.recheck ?? 'the after-study'}); ${all.moved} not matched (the unit's text moved between the heads).`, '',
+    '| kind | planted | caught before | rechecked | gains | regressions | caught after | not caught after | gains by source |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    ...[...per].map(([k, t]) => line(k, t)), line('**all**', all), ''].join('\n');
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  if (a.includes('--merge')) {
+  if (a.includes('--delta')) {
+    const [b, c] = a.slice(a.indexOf('--delta') + 1, a.indexOf('--delta') + 3).map((f) => JSON.parse(fs.readFileSync(f, 'utf8')));
+    const md = delta(b, c);
+    if (opt('--report', null)) fs.writeFileSync(opt('--report'), md + '\n'); else console.log(md);
+  } else if (a.includes('--merge')) {
     const files = a.slice(a.indexOf('--merge') + 1).filter((x, i, xs) => !x.startsWith('--') && !(i > 0 && xs[i - 1].startsWith('--')));
     const study = merge(files.map((f) => JSON.parse(fs.readFileSync(f, 'utf8'))));
     if (opt('--out', null)) fs.writeFileSync(opt('--out'), JSON.stringify(study, null, 1) + '\n');
