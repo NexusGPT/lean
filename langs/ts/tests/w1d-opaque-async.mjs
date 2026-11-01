@@ -12,7 +12,9 @@
 // Usage: node langs/ts/tests/w1d-opaque-async.mjs [--jobs N] [--only plain,pending]
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import os from 'node:os';
+import { dafnyVerifyArgs } from '../exec/dafny-args.mjs'; // the one bound of every dafny verify
 import { fileURLToPath } from 'node:url';
 import { admissionFindings } from '../lint/lint.mjs';
 import { ASYNC_OPAQUE } from '../opaque-async.mjs';
@@ -83,7 +85,28 @@ const breakRun = async (mechanism, names, mustFail, mayFlip = () => false) => {
   const others = rows.filter((r) => !mustFail(r) && !r.ok && !mayFlip(r));
   say(rows.length > 0 && others.length === 0, `${mechanism}: no other row fails (${others.map((r) => `${r.pair} ${r.check}`).join('; ') || 'none'})`);
 };
-if (want('pending')) await breakRun('async-drop-pending', ['opaque_capture'], (r) => r.check.startsWith('check capture'));
+// pending: lane A on opaque_capture directly (check.mjs stops at lane B's WITNESS, so its row cannot show lane A): as
+// written the translator refuses the unit, naming its rule; under LEAN_BREAK=async-drop-pending it translates and Dafny
+// proves Equal_capture, the false proof the mechanism refuses (the pending put reads m after the step ended)
+if (want('pending')) {
+  await loadGate();
+  const d = path.join(pairsDir, 'opaque_capture'), work = fs.mkdtempSync(path.join(os.tmpdir(), 'w1d-pending-'));
+  const lane = (env) => {
+    const e = { ...process.env, ...env };
+    const tr = ['parent', 'candidate'].map((w) => spawnSync('node', [path.join(here, '../translate/translate.mjs'), path.join(d, `${w}.ts`), '--core', '--suffix', w, '--heap', '--no-project', '--out', path.join(work, `${w}.dfy`), '--prelude', path.join(work, `${w}.pre.dfy`)], { encoding: 'utf8', env: e }));
+    if (tr.some((t) => t.status !== 0)) return { translated: false, text: tr.map((t) => t.stdout + t.stderr).join('\n') };
+    fs.writeFileSync(path.join(work, 'scope.json'), JSON.stringify({ functions: { capture: { in_scope: 'false' } }, summaries: true })); fs.writeFileSync(path.join(work, 'edit.json'), '{}');
+    const th = spawnSync('python3', ['-I', path.join(here, '../../../spec/theorem.py'), '--parent', path.join(work, 'parent.dfy'), '--candidate', path.join(work, 'candidate.dfy'), '--scope', path.join(work, 'scope.json'), '--edit', path.join(work, 'edit.json'), '--out', path.join(work, 'theorem.dfy')], { encoding: 'utf8', env: e });
+    if (th.status !== 0) return { translated: true, proved: false, text: th.stdout + th.stderr };
+    const v = spawnSync('dafny', ['verify', ...dafnyVerifyArgs(), '--cores', '1', path.join(work, 'theorem.dfy')], { encoding: 'utf8', env: e, maxBuffer: 1 << 26 });
+    const out = v.stdout + v.stderr;
+    return { translated: true, proved: v.status === 0 && /finished with \d+ verified, 0 errors/.test(out), text: out.slice(-300) };
+  };
+  const plain = lane({}), broke = lane({ LEAN_BREAK: 'async-drop-pending' });
+  say(!plain.translated && /async-callback/.test(plain.text), `pending: as written lane A refuses capture (${plain.translated ? 'translated' : 'refused, naming async-callback'})`);
+  say(broke.translated && broke.proved, `pending: under LEAN_BREAK=async-drop-pending lane A ${broke.proved ? 'proves Equal_capture (a false proof: the mechanism is what refuses it)' : `does not prove it (${String(broke.text).replace(/\s+/g, ' ').slice(-160)})`}`);
+  fs.rmSync(work, { recursive: true, force: true });
+}
 
 console.log(bad ? `${bad} FAILED` : 'ALL PASS');
 process.exit(bad ? 1 : 0);
