@@ -17,8 +17,9 @@ where a library row lifts one callee at a time.
 
 ## The fact and its check
 
-For a call `C(a, ...)` or `o.C(a, ...)`: C writes no object reachable from its receiver and arguments, and its answer is
-or reaches none of them. It is never assumed:
+For a call `C(a, ...)` or `o.C(a, ...)`: C writes no object reachable from its receiver and arguments, nor from what the
+run handed the recorded calls before it (an earlier callee may have kept one and C may reach it), and its answer is or
+reaches none of its receiver and arguments. It is never assumed:
 
 1. **Eligible** (`factCallee`): a plain call (no `?.`, no spread, no `new`), handed no function value (a callback is the
    unit's own code and may write what the callee was never handed), resolved to a function with a body declared in another
@@ -28,16 +29,16 @@ or reaches none of them. It is never assumed:
 2. **Recorded** (`callee-trace.mjs`): lane B marks every call site of the pair's two files
    (`typeof f === "function" ? S.f(pos, void 0, f, a) : f(a)`, and `(t = o, typeof (g = t.m) === "function" ? S.f(pos,
    t, g, a) : t.m(a))`: the evaluation order unchanged, a non-function called as written so its TypeError is the
-   engine's). Per call, the graph reachable from the receiver, the arguments and what the site was handed earlier in the run
-   (the callee may have kept it) is read before and after (own data properties through Reflect, Map and Set entries, a
+   engine's). Per call, the graph reachable from the receiver, the arguments and what the run handed the recorded calls
+   before it (any site; past 512 such objects no later call confirms) is read before and after (own data properties through Reflect, Map and Set entries, a
    Date's time; never a getter, never a patched method), and the answer is compared against it. A site counts calls,
    checked calls (64 per side), `wrote`, `shared`, `outside` (a fake called), `unrecorded` (an accessor, a proxy, a typed
    array, a WeakMap, a class with private names, more than 5,000 objects) and `async` (a promise answered: the callee's
    work goes on). Built-ins run unrecorded (no fact names them).
 3. **Confirmed** (`confirmedFacts`, in check.mjs on each side's own text): a key holds on a side when no recorded site of
    the key wrote, shared, called a fake, held what the record cannot read or answered a promise, and some site was checked.
-4. **Read** (`readAfterCall`): what a fact call is handed is no change at that call (only at later calls: the callee may
-   keep it). Under check.mjs only confirmed keys are read; each fact used is an `// ASSUME <unit>: callee <key> writes
+4. **Read** (`readAfterCall`): what a fact call is handed is no change at that call nor at a later fact call (both write
+   none of it), only at the other calls after it (the callee may keep it and another callee reach it). Under check.mjs only confirmed keys are read; each fact used is an `// ASSUME <unit>: callee <key> writes
    none of its arguments ... (lane B: n recorded call(s) at k site(s), none wrote or shared)` line, so the certificate's
    `lanes.A.assumptions` names it and the verdict's reason says the proof holds under it. Without a confirming record
    the read stays refused as before.
@@ -57,5 +58,6 @@ certificate; that is the reading of every bounded check (exec/transitions.mjs va
 - `tests/callee-fact.mjs` against the base (5d44ac3360, the pair and the check copied in): tags PASS-bounded (lane A
   ASK), 4 checks fail, exit 1.
 - `LEAN_BREAK=callee-fact` (facts read whatever lane B recorded) and `LEAN_BREAK=callee-fact-trace` (the record sees no
-  write): sameWriter PASS-proved under "isTagged writes none of its arguments", a premise lane B saw broken: 3 checks
-  fail, exit 1.
+  write): sameWriter (and sameKeptWriter) PASS-proved under a premise lane B saw broken: 4 checks fail, exit 1.
+- `LEAN_BREAK=callee-fact-prior` (lane B reads only the call's own receiver and arguments): sameKeptWriter PASS-proved
+  under "touchKept writes none of its arguments", while touchKept clears the tags remember kept: 1 check fails, exit 1.

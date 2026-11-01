@@ -1,7 +1,8 @@
 // Lane B's record of the per-callee fact "writes none of its arguments" (lane w8e, callee-facts.mjs). Every call site of
 // the unit's file (factMarks rewrites `f(a)` and `o.m(a)` into `__lean_site.f(file, pos, receiver, callee, a)`, the
 // order of evaluation unchanged) is recorded while the unit runs: the graph reachable from what the call is handed (its
-// receiver, its arguments, and what this site was handed on the run's earlier calls, which the callee may have kept)
+// receiver, its arguments, and what the run handed the recorded calls before it at any site, which an earlier callee
+// may have kept and this one may reach)
 // before and after the call, compared object by object; and what the call answers, against that graph. Per site:
 //   calls       the calls made while the unit ran
 //   checked     the calls recorded (the first CHECKED_PER_SITE of each side's run; the rest run unrecorded)
@@ -18,7 +19,7 @@ import { types } from 'node:util';
 import { ts } from '../common.mjs';
 import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
-export const CHECKED_PER_SITE = 64, GRAPH_LIMIT = 5000, PRIOR_LIMIT = 32;
+export const CHECKED_PER_SITE = 64, GRAPH_LIMIT = 5000, PRIOR_LIMIT = 512;
 const mapEntries = Map.prototype.entries, setValues = Set.prototype.values, dateTime = Date.prototype.getTime, fnText = Function.prototype.toString;
 const isObj = (x) => x !== null && (typeof x === 'object' || typeof x === 'function');
 const prim = (v) => (typeof v === 'number' ? (Object.is(v, -0) ? 'n:-0' : `n:${v}`) : typeof v === 'string' ? `s:${v}` : typeof v === 'bigint' ? `b:${v}` : typeof v === 'symbol' ? `y:${String(v.description)}` : `${typeof v}:${String(v)}`);
@@ -69,11 +70,11 @@ export function factCall(env, pos, receiver, fn, args) {
   if (fake) { r.outside++; return call(); }
   if (typeof fn !== 'function' || native(fn) || r.checked >= CHECKED_PER_SITE) return call(); // a built-in is no callee the fact names (callee-facts.mjs: a function of the package's files); it runs unrecorded
   r.checked++;
-  const prior = ((env.factPrior ??= new Map()).get(pos) ?? []);
-  const roots = [receiver, ...args, ...prior].filter(isObj);
-  const before = graph(roots);
+  const prior = (env.factPrior ??= []); // what the run handed the recorded calls before this one (any site): the callee may reach what an earlier callee kept
+  const roots = [receiver, ...args, ...(broken('callee-fact-prior') ? [] : prior)].filter(isObj); // tests/break.mjs: only this call's own receiver and arguments read
+  const before = env.factOverflow ? { unreadable: `more than ${PRIOR_LIMIT} objects handed in the run` } : graph(roots);
   if (before.unreadable) { r.unrecorded++; return call(); }
-  const keep = () => { const p = [...prior, ...[receiver, ...args].filter(isObj)]; env.factPrior.set(pos, p.slice(-PRIOR_LIMIT)); };
+  const keep = () => { for (const o of [receiver, ...args]) if (isObj(o) && !prior.includes(o)) prior.push(o); if (prior.length > PRIOR_LIMIT) env.factOverflow = true; }; // past the limit the run's earlier roots are no longer all read: no later call confirms
   const compare = () => {
     if (broken('callee-fact-trace')) return; // tests/break.mjs: the record sees no write
     const after = graph(roots);

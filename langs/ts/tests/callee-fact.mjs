@@ -8,9 +8,12 @@
 //   tagsWriter  the same move across `isTagged(rec)` (writer.ts, which clears the tags): WITNESS.
 //   sameWriter  no move, across isTagged: lane B records it writing, the fact does not hold, lane A stays refused
 //               (read-after-call), the verdict is lane B's PASS-bounded and no assumption names isTagged.
+//   kept / keptWriter / sameKeptWriter  remember (keep.ts) keeps rec, a later call follows: isSmall writes nothing
+//               (PASS-proved under both facts), touchKept clears what remember kept (WITNESS; no move: not proved).
 // The mechanisms broken (LEAN_BREAK=callee-fact: the fact read as confirmed whatever lane B recorded;
-// LEAN_BREAK=callee-fact-trace: lane B's record sees no write) turn sameWriter into a proof under a premise lane B saw
-// broken: this check fails. Exit 1 on any failed check.
+// LEAN_BREAK=callee-fact-trace: lane B's record sees no write; LEAN_BREAK=callee-fact-prior: lane B reads only the
+// call's own arguments) turn sameWriter or sameKeptWriter into a proof under a premise lane B saw broken: this check
+// fails. Exit 1 on any failed check.
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { check } from '../check.mjs';
@@ -36,5 +39,12 @@ say(recorded, 'lane B records isTagged writing what it is handed');
 say(s.verdict !== 'PASS-proved' && !(sa.assumptions ?? []).some((x) => /isTagged/.test(x)), 'sameWriter is not proved under a fact lane B saw broken', `${s.verdict}; assumptions ${JSON.stringify(sa.assumptions ?? null)}`);
 say(/read-after-call/.test(String(sa.detail ?? s.reason ?? '')), 'sameWriter\'s lane A stays refused read-after-call', String(sa.detail ?? '').split('\n').find((x) => /read-after-call/.test(x))?.trim().slice(0, 160));
 
+const k = await run('kept'), ka = k.certificate?.lanes?.A ?? {};
+say(k.verdict === 'PASS-proved' && ['keep.ts remember', 'keep.ts isSmall'].every((key) => (ka.assumptions ?? []).some((x) => x.startsWith(`callee ${key} writes none`))), 'kept (a later fact call after a call that kept rec) is PASS-proved under both facts', `${k.verdict}; ${JSON.stringify(ka.assumptions ?? null)}`);
+const kw = await run('keptWriter');
+say(kw.verdict === 'WITNESS', 'keptWriter (the same move across touchKept, which writes what remember kept) is WITNESS', kw.verdict);
+const sk = await run('sameKeptWriter'), ska = sk.certificate?.lanes?.A ?? {};
+say(sk.verdict !== 'PASS-proved' && !(ska.assumptions ?? []).some((x) => /touchKept/.test(x)), 'sameKeptWriter is not proved under touchKept\'s fact (it writes what the run handed remember)', `${sk.verdict}; assumptions ${JSON.stringify(ska.assumptions ?? null)}`);
+
 if (fail) { console.log(`callee-fact: ${fail} failed`); process.exit(1); }
-console.log(`callee-fact: all hold (tags PASS-proved under ${ta.assumptions.length} assumption(s), tagsWriter WITNESS, sameWriter ${s.verdict} with lane A refused)`);
+console.log(`callee-fact: all hold (tags PASS-proved under ${ta.assumptions.length} assumption(s), tagsWriter WITNESS, sameWriter ${s.verdict} with lane A refused; kept PASS-proved under ${ka.assumptions.length}, keptWriter WITNESS, sameKeptWriter ${sk.verdict})`);
