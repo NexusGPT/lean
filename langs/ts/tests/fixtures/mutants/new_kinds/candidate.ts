@@ -51,3 +51,8 @@ export function pair(a: number): { x: number; y?: number } {
 export function tail(xs: number[]): number[] {
   return xs.slice(1, 3);
 }
+
+// no coalesce site: s ?? "" and s || "" are equal on a string (mutate.mjs falsyDefault)
+export function orEmpty(s: string | undefined): string {
+  return s ?? "";
+}

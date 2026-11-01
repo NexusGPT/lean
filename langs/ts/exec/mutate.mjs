@@ -18,7 +18,7 @@
 //   compound             += -= *= /= %= **= <<= >>= >>>= &= |= ^= &&= ||= ??= flipped
 //   arithmetic           / % ** become *
 //   equality             == <-> !=
-//   coalesce             ?? becomes ||
+//   coalesce             ?? becomes || (not s ?? "" on a string nor b ?? false on a boolean: equal to the parent)
 //   bitwise              & <-> |, ^ -> &, << <-> >>, >>> -> >>
 //   unary                a prefix ! - ~ is removed
 //   template             a template literal gets a suffix
@@ -98,9 +98,19 @@ export function sitesOf(file, unitName, opts = {}) {
     return null;
   };
   const nullish = (e) => { const rep = e && !ts.isSpreadElement(e) ? nullOf(e) : null; if (rep) put('nullish', e.getStart(sf), e.getEnd(), rep); };
+  // s ?? "" with s a string, b ?? false with b a boolean: the one falsy value || also replaces is the default itself, so
+  // the coalesce mutant is equivalent to its parent (x ?? 0 is not: NaN and -0)
+  const falsyDefault = (n) => {
+    if (n.operatorToken.kind !== K.QuestionQuestionToken) return false;
+    const r = ts.skipParentheses(n.right);
+    const t = checker.getNonNullableType(checker.getTypeAtLocation(n.left)), ms = t.isUnion() ? t.types : [t];
+    if ((ts.isStringLiteral(r) || ts.isNoSubstitutionTemplateLiteral(r)) && r.text === '') return ms.every((m) => m.flags & ts.TypeFlags.StringLike);
+    if (r.kind === K.FalseKeyword) return ms.every((m) => m.flags & ts.TypeFlags.BooleanLike);
+    return false;
+  };
   const later = (n) => {
     if ((n.kind === K.TrueKeyword || n.kind === K.FalseKeyword) && !inType(n)) put('boolean', n.getStart(sf), n.getEnd(), n.kind === K.TrueKeyword ? 'false' : 'true');
-    if (ts.isBinaryExpression(n) && FLIP2[n.operatorToken.kind]) { const [kind, rep] = FLIP2[n.operatorToken.kind]; put(kind, n.operatorToken.getStart(sf), n.operatorToken.getEnd(), rep); }
+    if (ts.isBinaryExpression(n) && FLIP2[n.operatorToken.kind] && !falsyDefault(n)) { const [kind, rep] = FLIP2[n.operatorToken.kind]; put(kind, n.operatorToken.getStart(sf), n.operatorToken.getEnd(), rep); }
     // !!x: the inner ! only (removing either gives the same text)
     if (ts.isPrefixUnaryExpression(n) && UNARY.has(n.operator) && !(ts.isPrefixUnaryExpression(n.operand) && n.operand.operator === n.operator) && !inType(n)) put('unary', n.getStart(sf), n.operand.getStart(sf), '');
     if ((ts.isTemplateExpression(n) || ts.isNoSubstitutionTemplateLiteral(n)) && !inType(n) && text[n.getEnd() - 1] === '`') put('template', n.getEnd() - 1, n.getEnd(), 'x`');
