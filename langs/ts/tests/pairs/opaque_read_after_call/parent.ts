@@ -36,3 +36,22 @@ export function holder(r: Row, g: (t: string[]) => void): number {
   g(r.tags);
   return r.tags.length;
 }
+
+// (f) a new object a name holds, read after a call that may reach it by type: named by its site, so two new objects of
+// one value are two (LEAN_BREAK=fresh-site names them by value alone and the pair must go red)
+export function fresh(g: (b: { n: number; tags: string[] }) => void): number {
+  const a = { n: 0, tags: [] as string[] };
+  const b = { n: 0, tags: [] as string[] };
+  g(a);
+  return b.n;
+}
+
+// (g) a write to a handle after the call is a transition: a later call that kept the object sees it; the value written
+// bound another way outside the write (LEAN_BREAK=handle-write keeps the write from the world and the pair must go red)
+export function written(make: () => Box, keep: (o: Box) => void, report: () => number, v: number): number {
+  const w = v;
+  const o = make();
+  keep(o);
+  o.x = w;
+  return report();
+}

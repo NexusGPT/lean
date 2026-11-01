@@ -1909,12 +1909,28 @@ function translateOnce(file, fnName, opts = {}) {
     if (d.startsWith('Option<') && d.endsWith('>')) { const inner = d.slice(7, -1); return `(if ${code}.Some? then Some(${external('now', ['World', inner], inner)}(${WORLD}, ${code}.value)) else None)`; } // an absent value stays absent
     return `${external('now', ['World', d], d)}(${WORLD}, ${code})`;
   }
+  // A new object a name of the unit holds (design/w1g-opaque-handed.md, 2026-11-01): `const xs = []`, `new C()`, bound once
+  // to a site that runs once per run of the unit (in no loop of it), is named by that site, as handed_fresh_<T>(v, k)
+  // names one handed to a call: k is the site's order among the sites the unit names. Its state after a call that may
+  // reach it is a function of the world, its value when the call ran (every write after the call is refused) and k.
+  const siteOnce = (site) => {
+    const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
+    for (let p = site.parent; p && p !== body; p = p.parent) {
+      if (ts.isFunctionLike(p)) break;
+      const within = (y) => !!y && y.pos <= site.pos && site.end <= y.end;
+      if (ts.isIterationStatement(p, false) && (within(p.statement) || (ts.isForStatement(p) && (within(p.condition) || within(p.incrementor))) || ((ts.isWhileStatement(p) || ts.isDoStatement(p)) && within(p.expression)))) return false;
+    }
+    return true;
+  };
+  const namedSite = (x) => { const id = ts.isIdentifier(x) ? identityOf(x) : null; return id?.kind === 'fresh' && siteOnce(id.site) ? id.site : null; };
   function nowOf(x) { // the object x names, as the world holds it now, bound to a fresh name in the run's order
     let name, d;
     if (x.kind === K.ThisKeyword) { name = SELF; d = selfType(currentUnit); }
     else { const sym = checker.getSymbolAtLocation(x); name = dn(x.text); d = letTypeOf(sym) ?? dtype(symType(sym, x), x); }
     const t = `nw${tempCount++}_`;
-    return { name, t, line: `var ${t} := ${worldNow(name, d)};` };
+    const site = namedSite(x);
+    if (site && !broken('fresh-site')) { if (!handedSites.has(site)) handedSites.set(site, handedSites.size); addPrelude('World', 'type World'); return { name, t, d, line: `var ${t} := ${external('now_fresh', ['World', d, 'int'], d)}(${WORLD}, ${name}, ${handedSites.get(site)});` }; }
+    return { name, t, d, line: `var ${t} := ${worldNow(name, d)};` };
   }
   const renameIn = (code, from, to) => code.replace(new RegExp(`(?<![\\w.'?])${from.replace(/[$]/g, '\\$&')}(?![\\w'?])`, 'g'), to);
   const worldBase = (n) => { let e = n.expression; while (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression; return e; };
@@ -1975,52 +1991,81 @@ function translateOnce(file, fnName, opts = {}) {
     return false;
   };
   // A new object holding objects the caller already holds (design/w1g-opaque-handed.md, 2026-11-01): `g({ data: r.data,
-  // at: new Date(), tags: [] })`. Every part is set once at a key the text fixes (no spread, no computed or repeated
-  // key, no hole), so the handed value holds each part's value at its own path. A part is a leaf (a primitive, a
-  // function, an any value, a promise: no identity of its own or its own handle), an existing object (identityOf: a
-  // parameter, a member read, an outside answer, `this`, an alias of one), named by its value as when it is handed alone,
-  // or a new object written in place (a literal, read part by part; `new`, or a call that makes a new object, kept whole
-  // by its text), which no other name holds. The skeleton is the literal's text with each existing part written `E`:
-  // with the value it names every identity of the handed graph (which part is new, which is whose), so a new part and an
-  // existing part of equal value are told apart, and one object in two slots is the value convention's, as for two
-  // arguments. null when a part is none of these (a name bound to a new object: the callee could see it shared), else
-  // { skeleton }; `bad` names the part
-  const mixedTree = (e, bad = {}) => {
+  // at: new Date(), tags: [] })`. The skeleton is the literal's shape with each part written by its kind, and with the
+  // handed value it names every identity of the handed graph (which object is new, which is whose), so a new part and an
+  // existing part of equal value are two terms, and one object in two slots is the value convention's, as for two
+  // arguments. A part is:
+  //   V        a leaf: a primitive, a function, an any value, a promise (no identity of its own, or its own handle);
+  //   E        an existing object (identityOf: a parameter, a member read, an outside answer, `this`, an alias of one),
+  //            named by its value as when it is handed alone;
+  //   { ... }  a literal written in place, read part by part;
+  //   new(t)   a new object made in place whose inner identities its text and its value fix: an element-keeping copy
+  //            (`slice`, `filter`, `concat`, ...: its elements are the source's), `map` or `flatMap` with an inline
+  //            callback that calls nothing, `JSON.parse`, `structuredClone`, `Object.entries` and the rest of the fresh
+  //            calls, `new` of a library class; t is its text (a same-file callee inside could change what it makes);
+  //   site(k)  a name bound once to a new object made in no loop (namedSite), numbered as handed_fresh numbers sites, whose
+  //            own interior holds no named part (so two named parts are one object exactly when they are one site).
+  // Every part sits at a key the text fixes (no computed or repeated key, no hole), so the value holds it at its path. A
+  // spread copies its source's fields, each an existing object or a leaf (its source is existing or holds no object):
+  // allowed before every new part, which then keeps its key (a later key wins) or its place counted from the end; a
+  // spread after a new part may replace it, refused. null when a part is none of these, `bad` naming it
+  const FIXED_COPIES = new Set(['slice', 'filter', 'concat', 'flat', 'toSorted', 'toReversed', 'toSpliced', 'with', 'split']);
+  const callsNothing = (f) => { let hit = false; const w = (x) => { if (hit) return; if (ts.isCallExpression(x) || ts.isNewExpression(x) || ts.isTaggedTemplateExpression(x)) { hit = true; return; } ts.forEachChild(x, w); }; w(f.body); return !hit; };
+  const fixedFresh = (x) => {
+    if (ts.isNewExpression(x)) { let d = null; try { d = checker.getResolvedSignature(x)?.declaration ?? null; } catch { /* none */ } const dsf = d?.getSourceFile?.(); return !!dsf && dsf.hasNoDefaultLib; } // a library class
+    if (!ts.isCallExpression(x)) return false;
+    const f = x.expression, text = f.getText(sf);
+    if (FRESH_CALLS.has(text)) return !(text === 'Array.from' && x.arguments.length > 1);
+    if (!ts.isPropertyAccessExpression(f)) return false;
+    if (FIXED_COPIES.has(f.name.text)) return true;
+    if (['map', 'flatMap'].includes(f.name.text)) { const cb = x.arguments[0]; return !!cb && (ts.isArrowFunction(cb) || ts.isFunctionExpression(cb)) && callsNothing(cb); }
+    return false;
+  };
+  const mixedTree = (e, bad = {}, inner = false) => {
     while (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e)) e = e.expression;
-    const keys = new Set();
+    if (!ts.isObjectLiteralExpression(e) && !ts.isArrayLiteralExpression(e)) { if (fixedFresh(e)) return `new(${e.getText(sf)})`; bad.part = e; bad.why = 'a new object whose inner identities this reading does not fix'; return null; }
+    const keys = new Set(); let hasNew = false; const spreads = [];
     const part = (v) => {
       let x = v; while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x) || ts.isNonNullExpression(x)) x = x.expression;
-      if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x)) return mixedTree(x, bad);
+      if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x)) { hasNew = true; return mixedTree(x, bad, inner); }
       const t = typeOf(x);
       if (!t || primT(t) || isAny(t) || (isCallable(t) && !isAny(t)) || nonNull(t).every((y) => isPromiseT(y))) return 'V'; // its value is the handed value's at this path
       const id = identityOf(x);
       if (id.kind === 'existing') return 'E';
-      if (id.kind === 'fresh' && id.site === x && !ts.isObjectLiteralExpression(x) && !ts.isArrayLiteralExpression(x)) return `new(${x.getText(sf)})`; // made here, held by no name
+      if (id.kind === 'fresh' && id.site === x) { if (fixedFresh(x)) { hasNew = true; return `new(${x.getText(sf)})`; } bad.part = x; bad.why = `\`${x.getText(sf).slice(0, 40)}\`, a new object whose inner identities this reading does not fix`; return null; }
+      if (id.kind === 'fresh' && !inner && namedSite(x)) { // a name of the unit holding a new object: its site
+        const site = namedSite(x);
+        if (!(partsPrim(madeT(site)) || freshTree(site) || mixedTree(site, bad, true) !== null)) { bad.part = x; bad.why ??= `\`${x.getText(sf).slice(0, 40)}\`, a new object holding a named one`; return null; }
+        if (!handedSites.has(site)) handedSites.set(site, handedSites.size);
+        hasNew = true; return `site(${handedSites.get(site)})`;
+      }
       bad.part = x; bad.why = id.kind === 'fresh' ? `\`${x.getText(sf).slice(0, 40)}\`, a new object a name holds` : id.why;
       return null;
     };
     const out = [];
     if (ts.isObjectLiteralExpression(e)) {
       for (const m of e.properties) {
+        if (ts.isSpreadAssignment(m)) { if (hasNew) { bad.part = m.expression; bad.why = 'a spread after a new part (it may replace it)'; return null; } spreads.push(m.expression); out.push('...E'); continue; }
         const key = (ts.isPropertyAssignment(m) || ts.isShorthandPropertyAssignment(m)) && !ts.isComputedPropertyName(m.name) ? m.name.getText(sf) : null;
-        if (key === null || keys.has(key)) { bad.part = m; bad.why = 'a spread, a computed or repeated key, or an accessor'; return null; }
+        if (key === null || keys.has(key)) { bad.part = m; bad.why = 'a computed or repeated key, or an accessor'; return null; }
         keys.add(key);
         const s = part(ts.isPropertyAssignment(m) ? m.initializer : m.name);
         if (s === null) return null;
         out.push(`${key}: ${s}`);
       }
-      return `{ ${out.join(', ')} }`;
-    }
-    if (ts.isArrayLiteralExpression(e)) {
+    } else {
       for (const x of e.elements) {
-        if (ts.isSpreadElement(x) || ts.isOmittedExpression(x)) { bad.part = x; bad.why = 'a spread or a hole'; return null; }
+        if (ts.isSpreadElement(x)) { if (hasNew) { bad.part = x.expression; bad.why = 'a spread after a new part (its place is not fixed)'; return null; } spreads.push(x.expression); out.push('...E'); continue; }
+        if (ts.isOmittedExpression(x)) { bad.part = x; bad.why = 'a hole'; return null; }
         const s = part(x);
         if (s === null) return null;
         out.push(s);
       }
-      return `[ ${out.join(', ')} ]`;
     }
-    return null;
+    if (spreads.length) { // a spread's fields are existing objects or leaves; every new part comes after the last spread (a later key wins; a later element sits at a place counted from the end)
+      for (const sp of spreads) { const id = identityOf(sp); if (!(id.kind === 'existing' || partsPrim(typeOf(sp)))) { bad.part = sp; bad.why = `a spread of \`${sp.getText(sf).slice(0, 40)}\`, which may hold new objects`; return null; } }
+    }
+    return ts.isObjectLiteralExpression(e) ? `{ ${out.join(', ')} }` : `[ ${out.join(', ')} ]`;
   };
   function handedArg(a, code, d) {
     const t = typeOf(a);
@@ -5585,8 +5630,12 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if (opaqueRec) return `${external(`${RD}_set_${fname_}`, [RD, FD], RD)}(${recvCode}, ${inner})`;
         return `${recvCode}.(${dn(fname_)} := ${inner})`;
       };
-      const value = build(0, rootCode, rootT);
+      let value = build(0, rootCode, rootT);
       if (nowRoot) pending.push(nowRoot.line);
+      // the write to a handle is a transition (design/w1g-opaque-handed.md, 2026-11-01): the world is told the object's new
+      // state, so a later call that kept the object reads it (before, the world never saw the write, and a call after it
+      // answered as if it had not happened)
+      if (nowRoot && !broken('handle-write')) { const pv = `pw${tempCount++}_`; pending.push(`var ${pv}: ${nowRoot.d} := ${value};`, `var ${WORLD} := ${external('put', ['World', nowRoot.d], 'World')}(${WORLD}, ${pv});`); value = pv; }
       if (field) { const d = dtype(rootT, field); hoist(`${worldFieldAccessor(field, 'set', [{ d }])}(${WORLD}, ${SELF}, ${value})`, 'Unit'); return null; }
       return [rootName, value, root];
     }
@@ -7254,7 +7303,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       const moduleShape = moduleUnitShape(u);
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
-      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+      try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing' || !!namedSite(x), outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
         body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
         if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
       }
