@@ -88,13 +88,17 @@ export function deleteLeavesType(checker, node) {
   if (!d) return null;
   const t = unparen(d.expression);
   const optional = (sym) => !!sym && (!!(sym.flags & ts.SymbolFlags.Optional) || (sym.declarations ?? []).some((x) => !!x.questionToken));
+  // the receiver as declared: an assertion (`(o as Partial<T>).k`) only changes how this site reads the object, never
+  // the type every other name of it is read at, so the member is judged on the type under the assertion
+  const uncast = (e) => { e = unparen(e); while (ts.isAsExpression(e) || ts.isTypeAssertionExpression?.(e) || ts.isSatisfiesExpression?.(e) || ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e)) e = e.expression; return e; };
   if (ts.isPropertyAccessExpression(t)) {
-    const sym = checker.getSymbolAtLocation(t.name);
+    const under = uncast(t.expression);
+    const sym = under !== unparen(t.expression) ? checker.getTypeAtLocation(under).getProperty(t.name.text) : checker.getSymbolAtLocation(t.name);
     if (!sym) return `\`delete ${t.getText()}\`: the member is not declared, so no type says it may be absent`;
     return optional(sym) ? null : `\`delete ${t.getText()}\` removes a required member: every later read of it, inside the unit or after it returns, sees undefined where the type says present`;
   }
   if (ts.isElementAccessExpression(t)) {
-    const rt = checker.getTypeAtLocation(t.expression);
+    const rt = checker.getTypeAtLocation(uncast(t.expression));
     const kt = checker.getTypeAtLocation(t.argumentExpression);
     const keys = kt.isUnion() ? kt.types : [kt];
     if (keys.every((k) => k.isStringLiteral() || k.isNumberLiteral())) { // each literal names one member: each must be optional or an index entry
