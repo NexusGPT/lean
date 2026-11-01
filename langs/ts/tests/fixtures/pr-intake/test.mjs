@@ -24,7 +24,7 @@ export function testIntake() {
     const want = {
       // non-unit edits come from the change ledger: artifact rows by kind or class, unassigned rows by named reason
       '.env': 'artifact:secret-path', 'image.bin': 'artifact:binary', 'inside.ts': 'checked',
-      'loader.ts': 'failed:loader', 'plain.js': 'refused:untyped-js', 'refused.ts': 'refused:alias-mutation',
+      'loader.ts': 'failed:loader', 'plain.js': 'refused:untyped-js', 'refused.ts': 'refused:var',
       'gone.ts': 'removed', 'added.ts': 'checked',
     };
     console.log('JSON rows: ' + JSON.stringify(rows.map(({ file, unit, coverage }) => ({ file, unit, coverage }))));

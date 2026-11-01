@@ -2496,7 +2496,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   }
 
   const file = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--changed' && args[i - 1] !== '--project');
-  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--advice] [--any-type] [--project <tsconfig>|--no-project]'); process.exit(2); }
+  if (!file) { console.error('usage: lint.mjs <file.ts> [--changed <ranges.json>] [--json | --agent] [--advice] [--opaque-refuses] [--any-type] [--project <tsconfig>|--no-project]'); process.exit(2); }
   const ci = args.indexOf('--changed');
   let ranges = null;
   if (ci >= 0) {
@@ -2506,13 +2506,18 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   const pi = args.indexOf('--project');
   const project = args.includes('--no-project') ? false : pi >= 0 ? args[pi + 1] : true;
   const res = lintFile(file, ranges, { project, advisory: args.includes('--advice'), anyType: args.includes('--any-type') });
+  // with --advice the findings the opaque column graded are listed too (`graded`, lintFindings); they never refuse, except
+  // under --opaque-refuses (the reading before the opacity ladder: every graded finding refuses, as the escapes need)
+  const strict = args.includes('--opaque-refuses');
+  if (strict && !args.includes('--advice')) res.push(...(lowerFile(file, ranges, { project, anyType: args.includes('--any-type') }).graded ?? []));
+  const refusals = strict ? res : res.filter((r) => r.graded === undefined);
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
-  else if (args.includes('--agent')) console.log(agentReport(file, res));
-  else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
+  else if (args.includes('--agent')) console.log(agentReport(file, refusals));
+  else for (const r of refusals) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
   // the findings the opaque column graded in units the translator read: each keeps its rule and message, labelled with its
   // grade; they refuse nothing (design/w1a-opaque-mutation.md)
-  if (!args.includes('--json') && !args.includes('--agent')) { const all = lowerFile(file, ranges, { project }).units.flatMap((u) => (u.opaque ?? []).map((o) => ({ ...o, unit: u.unit }))); const graded = all.filter((o) => o.graded); for (const o of all) console.log(`${file}:${o.line}:${o.col}  ${o.rule}  [opaque: ${o.grade}${o.graded ? '' : '; the unit stops on another refusal'}] ${o.msg}`); if (graded.length) console.log(`${graded.length} graded opaque (the unit is read with an opaque step)`); }
-  if (res.length) { if (!args.includes('--json')) console.log(`${res.length} violation(s)`); process.exit(1); }
+  if (!strict && !args.includes('--json') && !args.includes('--agent')) { const all = lowerFile(file, ranges, { project }).units.flatMap((u) => (u.opaque ?? []).map((o) => ({ ...o, unit: u.unit }))); const graded = all.filter((o) => o.graded); for (const o of all) console.log(`${file}:${o.line}:${o.col}  ${o.rule}  [opaque: ${o.grade}${o.graded ? '' : '; the unit stops on another refusal'}] ${o.msg}`); if (graded.length) console.log(`${graded.length} graded opaque (the unit is read with an opaque step)`); }
+  if (refusals.length) { if (!args.includes('--json')) console.log(`${refusals.length} violation(s)`); process.exit(1); }
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);
   process.exit(0);
 }

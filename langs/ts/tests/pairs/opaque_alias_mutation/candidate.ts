@@ -11,3 +11,4 @@ export function flows(b: Box, k: number): number { const a = k * 3; const t = pi
 export function count(user: { tags: number[] }, k: number): number { const n = user.tags.length; const t = user.tags; if (k === 7919) t.push(k); return n; }
 export function bump(b: Box, k: number): number { const a = k * 2; const t = pick(a, b); t.v = a; return a; }
 export function after(b: Box, k: number): number { const v = b.inner.v; bump(b, k); return v; }
+export class Store { static make(b: Box, k: number): number { const a = k * 2; const t = pick(a, b); t.v = a; return this.name.length + b.inner.v; } }

@@ -87,6 +87,12 @@ returning `(World, result, outputs...)`:
   handed the unit after the call reads the object as the world holds it (read-after-call), and the block's own reads
   after an effect are its own business.
 
+A unit the translator already reads whole as one opaque transition keyed by the file's text (`accessorOpaque`: a
+static method naming `this`, an accessor holding a finding) holds its sites in that one step (`construct: "unit"`,
+reads the world, `this` and its parameters, writes the world and its result): its key is the whole file, so it is
+proved only when the two files are equal, and a finding inside it needs no block of its own. Before, such a unit was
+not gradable and the finding stopped it (the census's residual `alias-mutation` stops: `fromLLM`, `fromTexts`).
+
 The certificate lists each step (`lanes.A.opaque: [{ rule, line, id, reads, writes, construct: "block" }]`, from the
 translator's `// OPAQUE` line of each side); the PR table counts them.
 

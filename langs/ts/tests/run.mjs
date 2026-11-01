@@ -720,10 +720,12 @@ async function adviceLabels(add) {
     // an any_* fixture runs with --any-type; `// expect-none: <rule>` names a rule that must not fire (an any from an
     // unresolved import is unresolved-module only)
     const none = (src.match(/^\/\/ expect-none:\s*(\S+)/m) ?? [])[1];
+    // a finding the opaque column grades is listed with the advice (`graded`, label and advice kept) and refuses
+    // nothing, so the lint exits 1 exactly when a refusal is listed (design/w1a-opaque-mutation.md)
     const l = await R.run('node', [lint, path.join(advDir, f), '--json', '--advice', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
     let all = [], found = []; try { all = JSON.parse(l.stdout); found = all.filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
     const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
-    const ok = l.status === 1 && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
+    const ok = l.status === (all.some((x) => x.graded === undefined) ? 1 : 0) && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
     add('advice', name, `${rule} ${label}${none ? `, no ${none}` : ''}`, ok, found.length ? found.map((x) => `${x.label}${x.labelDecided ? ' (decided at the site)' : ''}`).join(', ') + (none && all.some((x) => x.rule === none) ? `; ${none} fired` : '') : `no ${rule} finding (exit ${l.status})`);
   } }));
   const runtime = [
@@ -887,8 +889,11 @@ async function unitReads(add) {
         const header = report.match(/Units: (\d+)\. Inside the subset: (\d+) \(([^)]+) percent\)\. Refused: (\d+)\. Files unreadable: (\d+)\./);
         assert.ok(header, 'report header is present');
         add('census', 'report', 'refused plus inside equal JSON units', Number(header[1]) === result.units && Number(header[2]) === result.entered && Number(header[4]) === result.refused && Number(header[4]) + Number(header[2]) === result.units, `${header[4]} + ${header[2]} = ${result.units}`);
-        assert.deepEqual([result.files, result.units, result.entered, result.failedFiles], [8, 8, 2, 0]);
-        assert.deepEqual(sections.map((s) => [s.rule, s.units]), [['alias-mutation', 2], ['reference-equality', 2], ['var', 2]]);
+        assert.deepEqual([result.files, result.units, result.entered, result.failedFiles], [8, 8, 4, 0]);
+        assert.deepEqual(sections.map((s) => [s.rule, s.units]), [['reference-equality', 2], ['var', 2]]);
+        // the two alias.ts units enter: their alias-mutation finding is graded `opaque: block`, the unit read with the
+        // reading `opaque`, and no finding is counted as a refusal (design/w1a-opaque-mutation.md)
+        assert.deepEqual(result.records.filter((r) => /alias\.ts$/.test(r.file)).flatMap((r) => (r.lowering ?? []).map((l) => [l.refusal, l.readings.includes('opaque'), r.findings.length])), [[null, true, 0], [null, true, 0]]);
         assert.equal(result.rules.find((r) => r.rule === 'reference-equality').units, 3, 'the fixture also has a unit with two rules');
         assert.equal(header[3], String(result.share));
         assert.equal(Number(header[5]), result.failedFiles);

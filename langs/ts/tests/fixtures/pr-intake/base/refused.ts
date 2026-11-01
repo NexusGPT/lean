@@ -1,1 +1,1 @@
-export function refused(xs: number[]): number { const alias = xs; alias.push(1); return alias.length; }
+export function refused(xs: number[]): number { var n = xs.length + 1; return n; }

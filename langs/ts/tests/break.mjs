@@ -16,8 +16,8 @@ export const MECHANISMS = {
   'opaque-drop-write': 'translate/opaque.mjs opaqueForm and translate.mjs reachesOutside: the writes of an opaque step as its callers see them are dropped, its first written output and its reach to the world (lane w1a)',
   'opaque-drop-callees': 'translate/translate.mjs opaqueTail: the code the step reaches leaves its key and its CALLS line is not written (lane w1a)',
 };
-export const BREAK_ENV = 'LEAN_BREAK';
-export const broken = (name) => String(process.env[BREAK_ENV] ?? '').split(',').map((x) => x.trim()).includes(name);
+// the switch itself is product code (../break.mjs), so the product never imports from tests/
+export { BREAK_ENV, broken } from '../break.mjs';
 // a pair's break rows, checked for shape: a mechanism must be registered, a lemma must flip
 export function breakRows(exp) {
   const rows = [];

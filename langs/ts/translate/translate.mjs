@@ -59,7 +59,7 @@ import { cellWrite, captureKind, heldFunction } from '../react.mjs'; import { me
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
 import { opaqueGrade, gradedRule, opaqueText, opaqueKey, opaqueForm, opaqueEntry, opaqueLine, statementCount, isReference, blockStart, heapOperation } from './opaque.mjs';
-import { broken } from '../tests/break.mjs'; // the opacity ladder (design/w1a-opaque-mutation.md)
+import { broken } from '../break.mjs'; // the opacity ladder (design/w1a-opaque-mutation.md)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
 
@@ -172,7 +172,7 @@ function translateOnce(file, fnName, opts = {}) {
   if (!fnName && !core) throw new Unsupported('--fn is required unless --core is given');
 
   const where = (n) => `${path.basename(file)}:${lineOf(sf, n.getStart(sf))}`;
-  const fail = (n, msg) => { const e = new Unsupported(`${where(n)}: ${msg}`); try { const a = n.getStart(sf), z = n.getEnd(); e.at = { pos: a, end: z, line: lineOf(sf, a), col: colOf(sf, a), endLine: lineOf(sf, z), endCol: colOf(sf, z) }; } catch { /* a synthetic node: no site */ } throw e; }; // where: a refusal the opaque column grades becomes a site of its unit (translateGraded)
+  const fail = (n, msg) => { const e = new Unsupported(`${where(n)}: ${msg}`); try { const a = n.getStart(sf), z = n.getEnd(); e.at = { pos: a, end: z, line: lineOf(sf, a), col: colOf(sf, a), endLine: lineOf(sf, z), endCol: colOf(sf, z), unit: currentUnit?.name ?? null }; } catch { /* a synthetic node: no site */ } throw e; }; // where: a refusal the opaque column grades becomes a site of its unit (translateGraded)
 
   // ----- which units to emit: the target (or all / --only), plus same-file callees, callees first -----
   const classDecls = analyze('classes', () => { const classDecls = new Map(); for (const st of sf.statements) if (ts.isClassDeclaration(st) && st.name) classDecls.set(st.name.text, st); return classDecls; }); // the file's own classes, by name
@@ -263,7 +263,7 @@ function translateOnce(file, fnName, opts = {}) {
   // nothing; it is a site of its unit, whose block (from the first body statement that holds a site or may touch a
   // reference, to the end of the body) is one opaque step. A translator refusal the column grades adds a site at emission.
   const opaqueSites = new Map(), tails = new Map(), opaqueRows = new Map(); // unit name -> [{ pos, rule, line, msg }]; the unit's block; its certificate rows
-  const gradableUnit = (u) => core && !!u?.body && !u.fn?.asteriskToken && !u.accessor && !accessorOpaque.has(u.name);
+  const gradableUnit = (u) => core && !!u?.body && !u.fn?.asteriskToken && (!u.accessor || accessorOpaque.has(u.name)); // a unit read whole as one opaque transition keyed by the file's text (accessorOpaque) holds its sites in that one step
   const addSite = (name, pos, rule, line, msg, span = null) => { const l = opaqueSites.get(name) ?? []; if (l.some((x) => x.pos === pos)) return false; l.push({ pos, rule, line, msg, span }); opaqueSites.set(name, l); tails.delete(name); return true; };
   gate0 = gate0.filter((g) => {
     if (opaqueGrade(g.rule) === 'none') return true;
@@ -273,13 +273,17 @@ function translateOnce(file, fnName, opts = {}) {
     let pos = faithful.mapOffset ? faithful.mapOffset(at) : at;
     // inside text the faithful reading rewrote (`a + f()` becomes a call of its number operation): the site is the start
     // of the nearest enclosing node the rewrite copied; a site only names the statement that holds it (tailOf)
-    if (!(pos >= 0) && faithful.mapOffset) { let n = ts.getTokenAtPosition?.(normalised.sf, at); while (n && !(pos >= 0)) { n = n.parent; if (n && !ts.isSourceFile(n)) pos = faithful.mapOffset(n.getStart(normalised.sf)); else break; } }
+    if (!(pos >= 0) && faithful.mapOffset) { const chain = []; const down = (n) => { chain.push(n); ts.forEachChild(n, (c) => { if (c.getStart(normalised.sf) <= at && at < c.getEnd() && chain[chain.length - 1] === n) down(c); }); }; down(normalised.sf); for (let i = chain.length - 1; i > 0 && !(pos >= 0); i--) pos = faithful.mapOffset(chain[i].getStart(normalised.sf)); } // the nodes holding the site, innermost first
     if (!(pos >= 0)) return true;
     addSite(name, pos, g.rule, g.line, g.msg, [g.line, g.col, g.endLine ?? g.line, g.endCol ?? g.col]); return false;
   });
   // a translator refusal read again as a site (translateGraded): the innermost unit holding its node
   for (const x of opts.opaqueSites ?? []) {
-    let best = null; for (const u of fns.values()) if (u.node && u.node.getStart(sf) <= x.pos && x.end <= u.node.getEnd() && (!best || u.node.getStart(sf) >= best.node.getStart(sf))) best = u;
+    // the unit being emitted when the refusal was raised (its body holds the node, a nested callback's included), else
+    // the innermost unit holding it
+    const holds = (u) => !!u?.node && u.node.getStart(sf) <= x.pos && x.end <= u.node.getEnd();
+    let best = x.unit && holds(fns.get(x.unit)) ? fns.get(x.unit) : null;
+    if (!best) for (const u of fns.values()) if (holds(u) && (!best || u.node.getStart(sf) >= best.node.getStart(sf))) best = u;
     if (gradableUnit(best)) addSite(best.name, x.pos, x.rule, x.line, x.msg, [x.line, x.col, x.endLine, x.endCol]);
   }
   for (const k of lintReadings) { const [a, z] = k.split(':').map(Number); const a2 = faithful.mapOffset ? faithful.mapOffset(a) : a, z2 = faithful.mapOffset ? faithful.mapOffset(z) : z; if (a2 >= 0 && z2 >= 0) promiseReadings.add(`${a2}:${z2}`); }
@@ -7180,6 +7184,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       let body0, usedModuleOpaque = moduleShape.opaque;
       const savedPending = pending, savedHelpers = coreHelpers.length;
       try { if (!moduleShape.opaque && !accessorOpaque.has(u.name)) { worldAfter = new Map(); worldEnd = new Set(); worldUsed = new Set(); const rc = readAfterCall(checker, sf, u, { effect: (n) => { if (!isEffectCall(n)) return false; const cu = sameFileCallUnit(n); return !cu || reachesOutside(cu); }, typeOf, worldRead: (m) => isWorldField(m) || isInstanceWorldField(m) || isEffectCall(m), worldName: (x) => ts.isIdentifier(x) && !!moduleState(checker, x, sf), quiet: quietCall, deferred: (q) => EFFECT_HOOKS.has(reactHook(checker, q) ?? ''), opaque: (st) => (ts.isTryStatement(st) && !exactTry(st)) || ((ts.isSwitchStatement(st) || ts.isIterationStatement(st, false)) && isOpaqueStmt(st)) || (ts.isLabeledStatement(st) && isOpaqueStmt(st.statement)), freshAlone: (a) => { const id = identityOf(a); return id.kind === 'fresh' && (partsPrim(madeT(id.site)) || freshTree(id.site)); }, after: worldAfter, identity: (x) => identityOf(x).kind === 'existing', outputs: u.params.filter((p) => ts.isIdentifier(p.name) && mutatedOf(u).includes(p.name.text)).map((p) => p.name), afterEnd: worldEnd }); if (rc) fail(rc.node, `read-after-call: ${rc.message}`); } // a read the value reading would take from before a call that may change it: one decision with the lint (common.mjs readAfterCall); a unit read whole (an opaque module or accessor body) holds no read of its own, and a refusal here takes the module fallback as any body refusal does
+        if (accessorOpaque.has(u.name) && opaqueSites.has(u.name)) { const sites = opaqueSites.get(u.name), a0 = u.body.getStart(sf), z0 = u.body.getEnd(); opaqueRows.set(u.name, [opaqueEntry({ rule: [...new Set(sites.map((g) => g.rule))].sort().join(','), line: lineOf(sf, a0), id: 'unit (keyed by the file text)', reads: ['world', 'self', ...u.params.map((p) => p.getText(sf))], writes: ['world', 'result'], construct: 'unit', span: [lineOf(sf, a0), colOf(sf, a0), lineOf(sf, z0), colOf(sf, z0)], findings: sites.map((g) => g.span ?? [g.line]), statements: statementCount(ts.isBlock(u.body) ? [...u.body.statements] : [u.body]) })]); } // the unit's own opaque reading holds the sites
         body0 = moduleShape.opaque ? opaqueModuleBody(u) : accessorOpaque.has(u.name) ? opaqueBody() : exceptionUnits.has(u.name) ? (bodyList ? faultTr(bodyList, endVal, u, ctx) : faultEval(() => expr(u.body, retType(u)), wrapRet, ctx)) : (bodyList ? tr(bodyList, endVal, u) : capture(() => wrapRet(expr(u.body, retType(u)))));
         if (worldAfter) for (const [x] of worldAfter) if (!worldUsed.has(x)) fail(x, `read-after-call: \`${x.getText(sf)}\` is read after a call that may change it, and this form of read does not take the object as the world holds it`); // a recorded world form the body read another way: refused, never read as it was before the call
       }

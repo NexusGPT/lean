@@ -15,7 +15,7 @@
 // unit starts from (heapOperation, prefixDeclaration, blockStart).
 import { createHash } from 'node:crypto';
 import { ts } from '../common.mjs';
-import { broken } from '../tests/break.mjs'; // the one --break convention (A6): LEAN_BREAK=<mechanism> removes that mechanism
+import { broken } from '../break.mjs'; // the one --break convention (A6): LEAN_BREAK=<mechanism> removes that mechanism
 
 const K = ts.SyntaxKind, TF = ts.TypeFlags;
 
