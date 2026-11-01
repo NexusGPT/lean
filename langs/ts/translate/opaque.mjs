@@ -15,62 +15,13 @@
 // unit starts from (heapOperation, blockStart).
 import { createHash } from 'node:crypto';
 import { ts } from '../common.mjs';
+import { broken } from '../tests/break.mjs'; // the one --break convention (A6): LEAN_BREAK=<mechanism> removes that mechanism
 
 const K = ts.SyntaxKind, TF = ts.TypeFlags;
 
-// ----- the opaque column: how a finding of a rule is graded instead of refused -----
-// block      the unit's body from the first statement that can touch a reference (or holds the finding) to its end is
-//            one opaque step (blockStart below; design/w1a-opaque-mutation.md)
-// statement  the smallest enclosing statement is one opaque step
-// expression the expression is one opaque value
-// none       a refusal, by design or until a lane reads it
-// One row per rule, each W1 lane adding the rows of its own family.
-export const OPAQUE = {
-  // w1a-opaque-mutation: the mutation family (subset.md "What is refused")
-  'alias-mutation': 'block',
-  'closure-mutation': 'block',
-  'in-place-mutation': 'block',
-  'index-assign': 'block',
-  'mutator-value': 'block',
-  'object-method-capture': 'block',
-  'object-method-mutation': 'block',
-  'opaque-mutation': 'block',
-  'param-assign': 'block',
-  'param-mutation': 'block',
-  'property-assign': 'block',
-  'receiver-mutation': 'block',
-  'receiver-write': 'block',
-  // w1b-opaque-statements: the statement and expression family (design/w1b-opaque-statements.md); the envelope of each
-  // (whether its value can leave the model) is translate/opaque-statements.mjs ENVELOPE
-  'assignment-expression': 'statement',
-  'bare-return': 'statement',
-  'bitwise': 'statement',
-  'collection-iterator': 'statement',
-  'destructuring': 'statement',
-  'division': 'statement',
-  'for-in': 'statement',
-  'for-of-non-array': 'statement',
-  'label': 'statement',
-  'loose-equality': 'statement',
-  'math-empty': 'statement',
-  'mixed-types': 'statement',
-  'number-special': 'statement',
-  'param-form': 'statement',
-  'record-rest': 'statement',
-  'reference-key': 'statement',
-  'spread': 'statement',
-  'string-code-unit': 'statement',
-  'string-order': 'statement',
-  'template': 'statement',
-  'unary-coercion': 'statement',
-  'uninitialised': 'statement',
-  'update-expression': 'statement',
-  // no rule to grade: comma and switch-fallthrough (no lint rule or translator refusal names them: the comma and the
-  // fall-through are read, subset.md "Operators as values", "Control")
-  // by design none: break-continue (the jump has no loop or switch around it in its function, so a step has no control
-  // result to give it), loop-form (a loop with no measure: an opaque reading would hide the missing measure)
-};
-export const opaqueGrade = (rule) => OPAQUE[rule] ?? 'none';
+// ----- the opaque column: the lint's rows (lint/lint.mjs OPAQUE_ROWS), one per rule, each W1 lane filling its own -----
+export { OPAQUE_ROWS as OPAQUE, opaqueGrade } from '../lint/lint.mjs';
+import { opaqueGrade } from '../lint/lint.mjs';
 // the rule a translator refusal names (`<rule>: <why>`), when the column grades it
 export const gradedRule = (message) => { const m = String(message).match(/(?:^|:\d+: )([a-z][a-z-]+): /); return m && opaqueGrade(m[1]) !== 'none' ? m[1] : null; };
 
@@ -95,10 +46,12 @@ export const opaqueKey = (parts) => createHash('sha1').update(parts.join('\n\u00
 // inputs: [{ code, d }] the values read (self first when read), outputs: [{ name, d }] the names written, jump: the
 // name of the loop-control code (0 falls through), ret: { name, d, terminal } the result channel (Option<d> unless the
 // construct cannot fall through). `external` declares the bodiless function in the prelude and returns its name.
-// LEAN_OPAQUE_BREAK=drop-read removes the first read: the mechanism the pair tests break (it must turn a changed read
-// into a false proof the tests refuse); never set outside them.
+// LEAN_BREAK=opaque-drop-read removes the first read and LEAN_BREAK=opaque-drop-write the first written output (the
+// value then flows past the step unchanged): the mechanisms the pair tests break, each must turn a change outside the
+// step into a false proof the tests refuse (tests/break.mjs); never set outside them.
 export function opaqueForm({ id, external, world, inputs, outputs, jump = null, ret = null }) {
-  if (process.env.LEAN_OPAQUE_BREAK === 'drop-read' && inputs.length) inputs = inputs.slice(1);
+  if (broken('opaque-drop-read') && inputs.length) inputs = inputs.slice(1);
+  if (broken('opaque-drop-write') && outputs.length) outputs = outputs.slice(1);
   const inTypes = ['World', ...inputs.map((i) => i.d)];
   const outTypes = ['World', ...(jump ? ['int'] : []), ...(ret ? [ret.terminal ? ret.d : `Option<${ret.d}>`] : []), ...outputs.map((o) => o.d)];
   const name = external(id, inTypes, outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`);
@@ -106,8 +59,25 @@ export function opaqueForm({ id, external, world, inputs, outputs, jump = null, 
   const outs = [world, ...(jump ? [jump] : []), ...(ret ? [ret.name] : []), ...outputs.map((o) => o.name)];
   return { name, line: outs.length === 1 ? `var ${outs[0]} := ${name}(${args.join(', ')});` : `var (${outs.join(', ')}) := ${name}(${args.join(', ')});` };
 }
-// the certificate row of one step (check.mjs lanes.A.opaque)
-export const opaqueEntry = ({ rule, line, id, reads, writes, construct }) => ({ rule, line, id, reads, writes, construct });
+// The certificate row of one step (check.mjs lanes.A.opaque): the rule(s) graded, the line, the symbol, what it reads
+// and writes, the construct (`block`, `statement`, `expression`), its span and the spans of the findings it grades
+// ([startLine, startCol, endLine, endCol], 1-based; A5: a validator compares them), and the statements it covers.
+export const opaqueEntry = ({ rule, line, id, reads, writes, construct, span = null, findings = [], statements = null }) => ({ rule, line, id, reads, writes, construct, span, findings, statements });
+// the line the translator writes per step beside the Dafny text (`// OPAQUE <unit>: <json>`), and its reading
+export const opaqueLine = (unit, entry) => `// OPAQUE ${unit}: ${JSON.stringify(entry)}`;
+export function opaqueLines(text) {
+  const out = new Map();
+  for (const m of String(text).matchAll(/^\/\/ OPAQUE (\S+): (.*)$/gm)) { let e = null; try { e = JSON.parse(m[2]); } catch { continue; } if (!out.has(m[1])) out.set(m[1], []); out.get(m[1]).push(e); }
+  return out;
+}
+// The opaque fraction of a unit (A5): the statements its opaque steps cover over the statements of its body, each
+// counted once at every depth (a block statement and the statements inside it), so a step over the whole body is 1.
+export function statementCount(nodes) {
+  let n = 0;
+  const w = (x) => { if (ts.isFunctionLike(x) || ts.isClassLike(x)) return; if (ts.isStatement(x) && !ts.isBlock(x)) n++; ts.forEachChild(x, w); };
+  for (const x of nodes) { if (ts.isStatement(x) && !ts.isBlock(x)) n++; ts.forEachChild(x, w); }
+  return n;
+}
 
 // ----- references (the mutation family's block) -----
 // A value of a primitive type cannot be shared; any other (an object, an array, a function, any, unknown, a type

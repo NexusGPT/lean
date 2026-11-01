@@ -20,6 +20,8 @@ import { faithfulPlacement, checkWallCapMs } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
 import { dafnyVerifyArgs } from '../exec/dafny-args.mjs'; // the one bound and the one Z3 (solve/z3.mjs) of every `dafny verify`: the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
+import { breakRows } from './break.mjs'; // the one --break convention (amendment A6)
+import { opaqueLines } from '../translate/opaque.mjs'; // the opaque steps a translation lists (design/w1a-opaque-mutation.md)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../../..');
@@ -126,13 +128,6 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   fs.writeFileSync(path.join(tmpd, 'edit.json'), '{}');
   const th = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(tmpd, 'parent.dfy'), '--candidate', path.join(tmpd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(tmpd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy', 'scope.json', 'edit.json'].map((f) => path.join(tmpd, f)), outs: [path.join(tmpd, 'theorem.dfy')] }); // the preludes too: theorem.py reads each side's include, and a prelude can change while the main text does not
   add('pair', name, 'theorem generated', th.status === 0, th.status === 0 ? 'ok' : (th.stderr || th.stdout).trim().slice(-160));
-  // `opaque` in expect.json (design/w1b-opaque-statements.md): per unit, the rules whose sites the candidate's translation read
-  // as opaque steps (its `// OPAQUE` records, the certificate's list); an empty list: no step at all
-  for (const [unit, want] of Object.entries(exp.opaque ?? {})) {
-    const text = fs.existsSync(path.join(tmpd, 'candidate.dfy')) ? fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8') : '';
-    const got = [...new Set([...text.matchAll(new RegExp(`^// OPAQUE ${dafnyName(unit)}_candidate: (\\{.*\\})$`, 'gm'))].flatMap((m) => JSON.parse(m[1]).rules))].sort();
-    add('pair', name, `opaque ${unit} [${want.join(', ')}]`, JSON.stringify(got) === JSON.stringify([...want].sort()), got.length ? got.join(', ') : 'no opaque step');
-  }
   // `planted` in expect.json: the candidate's unit is exec/mutate.mjs's planted change of the parent's at that index
   for (const [unit, index] of Object.entries(exp.planted ?? {})) {
     const out = path.join(tmpd, `planted_${artifactName(unit)}.ts`);
@@ -179,6 +174,29 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
     const ok = want === 'withheld' ? !!withheld : want === 'witness' ? !!sp && fp.verdict === 'witness' : want === 'real-only' ? real && fp.bearing && fp.verdict === 'unknown' && !faithful.placed && !withheld : proved === want && !(want && withheld);
     add('pair', name, `Equal_${f} ${want === 'withheld' ? 'withheld' : want === 'witness' ? 'witness (doubles)' : want === 'real-only' ? 'real only (doubles unknown)' : want ? 'proved' : 'not proved'}`, ok, got);
     if (exp.canon && f in exp.canon) add('pair', name, `EqualCanon_${f} ${exp.canon[f] ? 'proved' : 'not proved'}`, canon === exp.canon[f] && (!exp.canon[f] || !whole), `${parts.length} parts: ${parts.filter((k) => errs.some((L) => spans[k][0] <= L && L <= spans[k][1])).map((k) => k.slice(k.lastIndexOf('_') + 1)).join(', ') || 'all hold'}${whole ? '; whole heap also proved' : ''}`); // "canon": the canonical reading alone proves it (the whole-heap lemma fails)
+  }
+  // `opaque` in expect.json: the opaque steps the candidate's translation lists for a unit (its `// OPAQUE` line, the
+  // certificate's lanes.A.opaque), each listed rule among them (design/w1a-opaque-mutation.md)
+  if (exp.opaque) { const listed = opaqueLines(fs.readFileSync(path.join(tmpd, 'candidate.dfy'), 'utf8')); for (const [f, want] of Object.entries(exp.opaque)) { const steps = listed.get(`${f}_candidate`)?.[0]?.steps ?? []; const rules = new Set(steps.flatMap((x) => String(x.rule).split(','))); add('pair', name, `opaque ${f}: ${want.join(', ')}`, (want.length ? want.every((r) => rules.has(r)) && steps.length > 0 : steps.length === 0), steps.length ? `${steps.length} step(s): ${steps.map((x) => `${x.rule} at line ${x.line}, reads ${x.reads.join(' ')}, writes ${x.writes.join(' ')}`).join('; ')}` : 'no opaque step listed'); } }
+  // `break` in expect.json (tests/break.mjs, the one convention): both sides translated again with LEAN_BREAK=<mechanism>;
+  // each listed lemma, expected not proved above, must prove now: without the mechanism the reading proves a false
+  // equality, so the mechanism is what keeps the pair honest (the row passes when the broken run is wrong)
+  for (const { mechanism, unit } of breakRows(exp)) {
+    const bd = path.join(tmpd, `break_${mechanism}`); fs.mkdirSync(bd, { recursive: true });
+    const env = { LEAN_BREAK: mechanism };
+    for (const which of ['parent', 'candidate']) crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(bd, `${which}.dfy`), '--prelude', path.join(bd, `${which}.pre.dfy`), ...projectArgs, ...(exp.heap !== false ? ['--heap'] : [])], { files: [pairFile(d, which), ...projectFiles], outs: [path.join(bd, `${which}.dfy`), path.join(bd, `${which}.pre.dfy`)], env });
+    const bth = crun('python3', ['-I', path.join(root, 'spec/theorem.py'), '--parent', path.join(bd, 'parent.dfy'), '--candidate', path.join(bd, 'candidate.dfy'), '--scope', path.join(tmpd, 'scope.json'), '--edit', path.join(tmpd, 'edit.json'), '--out', path.join(bd, 'theorem.dfy')], { files: ['parent.dfy', 'candidate.dfy', 'parent.pre.dfy', 'candidate.pre.dfy'].map((f) => path.join(bd, f)).concat([path.join(tmpd, 'scope.json')]), outs: [path.join(bd, 'theorem.dfy')] });
+    let ok = false, got = (bth.stderr || bth.stdout || '').trim().slice(-160);
+    if (bth.status === 0) {
+      const bv = await cachedRunAsync((cmd, args, e2) => spawnCollect(cmd, args, { cwd: root, env: e2 ? { ...process.env, ...e2 } : process.env, maxBuffer: 1 << 26, dir: tmp }), 'dafny', ['verify', ...dafnyVerifyArgs(), '--cores', String(Math.max(1, Math.floor(os.cpus().length / JOBS))), path.join(bd, 'theorem.dfy')], { root, files: [path.join(bd, 'theorem.dfy')], normalise: NORMALISE });
+      const bt = bv.stdout + bv.stderr, bl = fs.readFileSync(path.join(bd, 'theorem.dfy'), 'utf8').split('\n');
+      const bs = {}; let bc = null; bl.forEach((ln, i) => { const m = ln.match(/^lemma (?:\{[^}]*\}\s+)*(Equal(?:Canon|Direct)?_\w+)(?:<[^>]*>)?\(/); if (m) { bc = m[1]; bs[bc] = [i + 1, null]; } if (/^\} \/\/ END Equal(Canon|Direct)?_/.test(ln) && bc) bs[bc][1] = i + 1; });
+      const be = [...bt.matchAll(/theorem\.dfy\((\d+),\d+\): Error/g)].map((m) => Number(m[1]));
+      const bfin = /finished with \d+ verified/.test(bt);
+      ok = bfin && provedLemma(`Equal_${unit}`, (k) => bfin && !!bs[k] && !be.some((L) => bs[k][0] <= L && L <= bs[k][1]), restsOf(bl));
+      got = ok ? `proved under LEAN_BREAK=${mechanism}: the mechanism is what refuses it` : bs[`Equal_${unit}`] ? 'still not proved under the break: the mechanism is not what refuses it' : 'lemma missing under the break';
+    }
+    add('pair', name, `break ${mechanism}: Equal_${unit} flips to proved (a false PASS-proved without the mechanism)`, ok, got);
   }
   // the proof-hunt step reads lane A's result on every lemma of the pair, listed in expect.json or not (below)
   for (const unit of Object.keys(exp.b ?? {})) if (finished && spans[`Equal_${dafnyName(unit)}`]) await doubles(dafnyName(unit)); // the proof-hunt step reads the doubles reading of every unit lane B ran

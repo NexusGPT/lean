@@ -54,6 +54,7 @@ import { formatOp } from './patch.mjs';
 import { unitTextEqual } from './exec/callees.mjs';
 import { ts, loadProgram, topLevelFunctions, dn, parseUnitList, formatUnitList, enclosingUnitName, MODULE_UNIT } from './common.mjs';
 import { lintFile } from './lint/lint.mjs';
+import { opaqueLines } from './translate/opaque.mjs'; // the opaque steps a translation lists: the certificate's lanes.A.opaque
 import { rowById, rowStatus, rowContradicted } from './decorators.mjs';
 import { certifyCorrespondence } from './rungs.mjs';
 import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
@@ -169,11 +170,6 @@ export async function check(opts) {
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
   if (agreed.failed) { if (witnessed) return witnessOut(); cert.lanes.A = { verdict: 'ASK', stage: `translate-${agreed.failed}`, detail: agreed.run.out.trim().slice(-600) }; noteDoubles(); return finish(rung(), cert, unreached({})); }
   const cand = fs.readFileSync(path.join(tmp, 'candidate.dfy'), 'utf8');
-  // the opaque steps each side was read with (design/w1b-opaque-statements.md): the unit's and its same-file callees', each
-  // `{ unit, rules, line, id, reads, writes }`; a PASS-proved holds modulo these uninterpreted transitions
-  { const steps = (text, side) => [...text.matchAll(/^\/\/ OPAQUE (\w+): (\{.*\})$/gm)].map((m) => ({ unit: m[1].replace(new RegExp(`_${side}$`), ''), ...JSON.parse(m[2]) }));
-    const opaque = { parent: steps(fs.readFileSync(path.join(tmp, 'parent.dfy'), 'utf8'), 'parent'), candidate: steps(cand, 'candidate') };
-    if (opaque.parent.length || opaque.candidate.length) cert.opaque = opaque; }
   // The translator states how it keyed this unit's opaque absent result; expose both sides without re-reading reach.
   const absentKey = Object.fromEntries(['parent', 'candidate'].map((side) => {
     const text = side === 'candidate' ? cand : fs.readFileSync(path.join(tmp, 'parent.dfy'), 'utf8');
@@ -243,6 +239,10 @@ export async function check(opts) {
   noteDoubles();
   const cellsLine = cand.match(new RegExp(`^// CELLS ${dafnyName(unit)}_candidate: (.*)$`, 'm')); // the state-completeness audit: every persistent cell the unit touches, each matched to its transition
   if (cellsLine) { try { cert.lanes.A.cells = JSON.parse(cellsLine[1]); } catch { cert.lanes.A.cells = null; } }
+  // the opaque steps of the unit on each side (the translator's `// OPAQUE` lines, translate/opaque.mjs): each step's rule,
+  // symbol, reads, writes, span and the findings it grades, and the unit's opaque fraction (design/w1a-opaque-mutation.md)
+  { const sides = { parent: opaqueLines(fs.readFileSync(path.join(tmp, 'parent.dfy'), 'utf8')).get(`${dafnyName(unit)}_parent`)?.[0] ?? null, candidate: opaqueLines(cand).get(`${dafnyName(unit)}_candidate`)?.[0] ?? null }; // one line per unit (opaqueLines lists each unit's lines)
+    if (sides.parent || sides.candidate) cert.lanes.A.opaque = { steps: sides.candidate?.steps ?? [], fraction: sides.candidate?.fraction ?? null, statements: sides.candidate?.statements ?? null, covered: sides.candidate?.covered ?? null, parent: sides.parent }; }
   if (cert.lanes.A.cells && cert.lanes.A.cells.obligations.length && m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:obligation'; return finish('ASK', cert, { reason: `obligation: ${cert.lanes.A.cells.obligations.join('; ')}` }); } // a cell the unit touches without a transition: the lemma proves nothing about it
   const lib = b.bound?.library; // lane B's record of the unit's built-in calls against the library table: a defect is a wrong row, and the proof read that row
   if (lib && lib.defects.length) { cert.lanes.A.libraryDefects = lib.defects; if (m && lemmas[main] && !unguarded) { cert.lanes.A.verdict = 'ASK:library-model'; return finish('ASK', cert, { reason: `library-model: the engine contradicts the table on ${lib.defects.map((x) => `${x.op} (${x.why}; expected ${x.expected})`).join('; ')}; the proof lane refuses the operation until the row is corrected` }); } }

@@ -32,7 +32,7 @@ import { methodLiteralOf } from './common.mjs';
 import { moduleState } from './module-forms.mjs';
 import { admissionFindings } from './lint/lint.mjs';
 import { translate } from './translate/translate.mjs';
-import { statementSite, ENVELOPE } from './translate/opaque-statements.mjs'; // the statement family's rows of the opaque column (translate/opaque.mjs OPAQUE, design/w1b-opaque-statements.md)
+import { ENVELOPE } from './translate/opaque-statements.mjs'; // the statement family's envelope: the audit's rules of an opaque site's refusal (design/w1b-opaque-statements.md)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -509,6 +509,7 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
     // A unit without a body (an ambient or overload declaration) writes nothing: its record stays empty, and the walk
     // never starts on a missing node (the translator-crash the ambient fixture reproduces).
     if (u.body) walk(u.body, true, !!emission && !asyncGenerator(u));
+    if (emission?.extraOutputs && u.body) for (const x of emission.extraOutputs(u)) if (names.has(x)) rec.valueOutputs.add(x); // the emission's own outputs (an opaque block's reference parameters, translate/opaque.mjs)
     rec.rebound = [...rebounds];
   }
   for (let changed = true; changed;) {
@@ -767,10 +768,7 @@ export function unitReadings(u, sf, checker) {
 const finding = (sf, file, node, rule, msg, extra = {}) => { const pos = node.getStart(sf), end = node.getEnd(); return { file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, text: sf.text.slice(pos, end).slice(0, 200), ...extra }; };
 const unitsIn = (sf, ranges) => [...topLevelFunctions(sf).values()].filter((u) => overlaps(sf, u.node, ranges));
 const spanOf = (sf, u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())];
-const refusing = (f) => !f.env && !f.advisory && !ADVICE_RULES.has(f.rule) && !f.opaque; // an opaque finding is the translator's to read (phase 4) or to refuse
-// the opaque column (design/w1b-opaque-statements.md): a finding whose rule reads as an opaque step carries its form; the
-// translator's phase 4 reads its site as that step, or refuses the unit with the finding's rule
-const tagOpaque = (f) => { const c = !f.env && !f.advisory ? statementSite(f.rule) : null; if (c) f.opaque = c.form; return f; }; // another family's grade is its lane's to tag (w1a: block)
+const refusing = (f) => !f.env && !f.advisory && !ADVICE_RULES.has(f.rule);
 const tagReading = (f) => { if (!f.reading) { const id = refusing(f) ? (readingOfFinding(f.rule, f.msg) ?? 'uncatalogued') : null; if (id) f.reading = { id, version: readingById(id) ? currentVersion(readingById(id)) : null }; } return f; };
 
 // phases 1-3 for the units the ranges reach: the lint's findings, each tagged with its reading, and a finding for each unit
@@ -780,7 +778,7 @@ export function admitUnits(file, ranges, lintOpts = {}, loaded = null) {
   return measureLowering('phases 1-3 (including translation gates)', () => admission(file, ranges, lintOpts, loaded));
 }
 function admission(file, ranges, lintOpts, loaded) {
-  const out = admissionFindings(file, ranges, lintOpts).map(tagReading).map(tagOpaque);
+  const out = admissionFindings(file, ranges, lintOpts).map(tagReading);
   const L = loaded ?? normaliseApplyCalls(lintOpts.loaded ?? loadProgram(file, { project: lintOpts.project ?? true }));
   const { sf, checker } = L;
   const records = [];
@@ -887,7 +885,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
     !process.env.LEAN_DECORATOR_TABLE && !process.env.LEAN_DECORATOR_FIXTURES;
   const key = cacheable ? sha(JSON.stringify({ file, abs, text: sha(given.sf.text),
     project: opts.project ?? true, ranges, advisory: !!opts.advisory, anyType: !!opts.anyType,
-    emission: opts.emission !== false, withdrawals: withdrawalKey(),
+    emission: opts.emission !== false, withdrawals: withdrawalKey(), breaks: process.env.LEAN_BREAK ?? '',
     versions: READINGS.map((r) => [r.id, currentVersion(r)]), producer: producers(),
     program: programHash(given.program), diagnostics: given.diagnostics.map((d) =>
       ({ code: d.code, start: d.start, length: d.length, messageText: d.messageText })),
@@ -902,8 +900,11 @@ export function lowerFile(file, ranges = null, opts = {}) {
   const L = normaliseApplyCalls(given);
   const findings = admitUnits(file, ranges, { ...opts, loaded: given }, L);
   const inventory = topLevelFunctions(L.sf); // the unit a finding belongs to: the lint's named unit, else the innermost containing one
+  // a finding the opaque column grades (lint/lint.mjs OPAQUE_ROWS) stops no unit here when the translator runs: the
+  // translator emits it as an opaque step, or refuses the unit with it (phase 4); without emission it refuses as before
+  const deferred = (x) => !!x.opaque && opts.emission !== false;
   const units = admitted.get(findings).map((r) => {
-    const f = findings.find((x) => (refusing(x) || (x.opaque && opts.emission === false)) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit; with no emission an opaque finding is not read, so it refuses
+    const f = findings.find((x) => refusing(x) && !deferred(x) && findingUnit(L.sf, inventory, x)?.name === r.unit); // a callback's refusal never stops its enclosing unit
     return { ...r, refusal: f ? { id: f.reading?.id ?? 'uncatalogued', version: f.reading?.version ?? null, rule: f.rule, reason: f.msg, line: f.line, by: ['no-reading', 'withdrawn'].includes(f.rule) ? 'catalogue' : 'lint' } : null };
   });
   // phase 4: the translator reads each unit phases 1-3 admitted exactly as the proof lane runs it (check.mjs: --core --heap
@@ -934,6 +935,18 @@ export function lowerFile(file, ranges = null, opts = {}) {
     }
     findings.sort((x, y) => x.line - y.line || x.col - y.col);
   }
+  // the graded findings: a unit the translator read holds them as its opaque sites (the reading `opaque`), and they stop
+  // nothing; a unit it refused keeps the one its refusal names (the column could not grade it), the others are not why
+  { const keep = [];
+    for (const f of findings) {
+      if (!deferred(f)) { keep.push(f); continue; }
+      const u = units.find((x) => x.unit === findingUnit(L.sf, inventory, f)?.name);
+      if (u && u.refusal && !(u.refusal.rule === f.rule && u.refusal.line === f.line)) { (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, graded: false }); continue; }
+      if (!u || u.refusal) { keep.push(f); continue; }
+      (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, grade: f.opaque, graded: true });
+      if (!u.readings.some((x) => x.id === 'opaque')) { u.readings.push({ id: 'opaque', version: currentVersion(readingById('opaque')) }); u.readings.sort((a, b) => a.id.localeCompare(b.id)); }
+    }
+    findings.length = 0; findings.push(...keep); }
   const rec = { file, units, findings };
   const json = JSON.stringify(rec); // the public and retained record is plain data
   if (key) { remember(key, json); measureLowering('disk cache write', () => cacheWrite(cacheFile, key, json)); }

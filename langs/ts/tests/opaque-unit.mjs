@@ -7,7 +7,7 @@ import path from 'node:path';
 import { ts, loadProgram } from '../common.mjs';
 import { opaqueText, opaqueKey, opaqueForm, opaqueGrade, gradedRule, heapOperation, blockStart } from '../translate/opaque.mjs';
 
-if (process.argv.includes('--break')) process.env.LEAN_OPAQUE_BREAK = 'drop-read'; // the mechanism removed: one read dropped, so the step checks below go red
+if (process.argv.includes('--break')) process.env.LEAN_BREAK = 'opaque-drop-read'; // the mechanism removed: one read dropped, so the step checks below go red
 const failures = [];
 const check = (ok, what) => { if (!ok) failures.push(what); };
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opaque-unit-'));
