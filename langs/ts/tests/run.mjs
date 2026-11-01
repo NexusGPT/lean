@@ -656,7 +656,10 @@ async function escapes(add) {
     const candidateUnit = (src.match(/^\/\/ candidate-unit:\s*(\S+)/m) ?? [])[1];
     const l = await R.run('node', [lint, ...(candidateUnit ? ['--candidate', file, '--unit', candidateUnit, '--n', '1', '--no-project'] : [file])]);
     const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
-    add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    // read as an opaque step (design/w1c-opaque-calls.md): the finding of the escape's rule stands, labelled `opaque`, and
+    // the construct is one uninterpreted transition, never read exactly; every other finding of the file still refuses
+    const opaqueHit = l.status === 0 && l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s.*\\[opaque: statement\\]`).test(line));
+    add('escape', name, 'lint refuses or reads it as an opaque step', (l.status === 1 && hit) || opaqueHit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : opaqueHit ? `read as an opaque step: ${want}` : 'ACCEPTED', await R.lsc(file));
     const fn = (src.match(/^export (?:async )?function (\w+)/m) ?? [])[1];
     if (fn && !candidateUnit) {
       const t = await R.run('node', [translate, file, '--fn', fn, '--out', path.join(tmp, `esc_${name}.dfy`)]);
@@ -686,7 +689,7 @@ async function adviceLabels(add) {
     const l = await R.run('node', [lint, path.join(advDir, f), '--json', '--advice', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
     let all = [], found = []; try { all = JSON.parse(l.stdout); found = all.filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
     const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
-    const ok = l.status === 1 && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
+    const ok = (l.status === 1 || (found.length > 0 && found.every((x) => x.opaque))) && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
     add('advice', name, `${rule} ${label}${none ? `, no ${none}` : ''}`, ok, found.length ? found.map((x) => `${x.label}${x.labelDecided ? ' (decided at the site)' : ''}`).join(', ') + (none && all.some((x) => x.rule === none) ? `; ${none} fired` : '') : `no ${rule} finding (exit ${l.status})`);
   } }));
   const runtime = [

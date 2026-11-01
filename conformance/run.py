@@ -10,7 +10,7 @@ and the runner are tested without a language.
 Per language:
   shared   fixtures/shared/<name>/<lang>.<ext>: lint passes; the translation
            verifies with the theorem on the "Theorem" line of the fixture README.
-  escapes  every file under fixtures/escapes: lint exits 1.
+  escapes  every file under fixtures/escapes: lint exits 1, or names its `expect:` rule labelled `[opaque: ...]`.
   cleans   fixtures/cleans/<lang>/**/ (parent, candidate, scope.json, edit.json):
            lint passes on both, every lemma proved.
   bugs     fixtures/bugs/<lang>/**/ (the same plus expected.json): the per-lemma
@@ -57,6 +57,13 @@ class Lang:
         r = subprocess.run(sub(self.lint_cmd, src=src, root=ROOT, lang=self.name),
                            cwd=ROOT, capture_output=True, text=True)
         return r.returncode if r.returncode in (0, 1) else 100 + r.returncode
+
+    def lint_out(self, src):
+        """The lint's printed findings (empty without a lint)."""
+        if self.lint_cmd is None:
+            return ''
+        r = subprocess.run(sub(self.lint_cmd, src=src, root=ROOT, lang=self.name), cwd=ROOT, capture_output=True, text=True)
+        return r.stdout
 
     def translate(self, src, out, suffix):
         if self.translate_cmd is None:  # built-in dfy: identity
@@ -160,7 +167,11 @@ def escapes(lang):
     for f in files:
         rel = os.path.relpath(f, base)
         rc = lang.lint(f)
-        record(lang.name, 'escape', rel, rc == 1, '' if rc == 1 else f'lint exit {rc}, wanted 1')
+        # an escape whose rule now reads the construct as an opaque step (langs/ts/design/w1c-opaque-calls.md): its finding
+        # stands, labelled `[opaque: ...]`, and the construct is one uninterpreted transition, never read exactly
+        want = re.search(r'^\s*(?://|#|--)\s*expect:\s*(\S+)', open(f).read(), re.M)
+        opaque = rc == 0 and want is not None and any(re.search(r'\s' + re.escape(want.group(1)) + r'\s.*\[opaque: ', ln) for ln in lang.lint_out(f).splitlines())
+        record(lang.name, 'escape', rel, rc == 1 or opaque, '' if rc == 1 else f'read as an opaque step: {want.group(1)}' if opaque else f'lint exit {rc}, wanted 1')
 
 
 def pipeline(lang, d):

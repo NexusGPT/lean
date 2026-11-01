@@ -21,7 +21,8 @@ import { OPAQUE_CALLS } from '../lint/opaque-calls.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, '..');
-const pairsDir = path.join(here, 'pairs');
+const pairsDirs = [path.join(here, 'pairs'), path.join(here, 'opaque-calls-pairs')]; // the suite's pairs, and the pairs the suite's pair step cannot state (a theorem refusal)
+const pairDir = (p) => pairsDirs.map((d) => path.join(d, p)).find((d) => fs.existsSync(d)) ?? path.join(pairsDirs[0], p);
 const args = process.argv.slice(2);
 const only = args.includes('--pair') ? args[args.indexOf('--pair') + 1] : null;
 const breakOnly = args.includes('--break');
@@ -36,7 +37,7 @@ export const BREAKS = [
 
 // lane A on one pair, under the environment given: { unit: proved } for every lemma of the pair's units
 function laneA(pair, env = {}) {
-  const d = path.join(pairsDir, pair);
+  const d = pairDir(pair);
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `w1c-${pair}-`));
   try {
     const run = (cmd, a) => spawnSync(cmd, a, { cwd: root, encoding: 'utf8', env: { ...process.env, ...env }, maxBuffer: 1 << 26 });
@@ -67,7 +68,7 @@ function laneA(pair, env = {}) {
 
 const rows = [];
 const add = (name, ok, detail) => { rows.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`); };
-const pairs = [...Object.keys(OPAQUE_CALLS).map((r) => `opaque_${r}`), ...BREAKS.map((b) => b.pair), 'opaque_param-output'].filter((p, i, xs) => xs.indexOf(p) === i && fs.existsSync(path.join(pairsDir, p, 'expect.json'))).filter((p) => !only || p === only).sort(); // the pairs of this lane: one per rule of the column, and the break pairs
+const pairs = [...Object.keys(OPAQUE_CALLS).map((r) => `opaque_${r}`), ...BREAKS.map((b) => b.pair), 'opaque_param-output'].filter((p, i, xs) => xs.indexOf(p) === i && fs.existsSync(path.join(pairDir(p), 'expect.json'))).filter((p) => !only || p === only).sort(); // the pairs of this lane: one per rule of the column, and the break pairs
 // the site decision (lint/opaque-calls.mjs callsOpaqueSite), read off the lint: each snippet's finding of the rule is
 // labelled opaque or keeps its refusal with the reason
 const LINT_ROWS = [
@@ -94,19 +95,19 @@ if (!breakOnly && (!only || only === "lint")) {
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 if (!breakOnly) for (const p of pairs) {
-  const exp = JSON.parse(fs.readFileSync(path.join(pairsDir, p, 'expect.json'), 'utf8'));
+  const exp = JSON.parse(fs.readFileSync(path.join(pairDir(p), 'expect.json'), 'utf8'));
   if (exp.refused) { // a rule whose column is none: every finding of it keeps its refusal, no opaque label
-    for (const side of ['parent', 'candidate']) { const r = spawnSync('node', [path.join(root, 'lint/lint.mjs'), path.join(pairsDir, p, `${side}.ts`), '--no-project', '--json'], { encoding: 'utf8', maxBuffer: 1 << 26 }); let fs_ = []; try { fs_ = JSON.parse(r.stdout); } catch { /* none */ } const hits = fs_.filter((f) => f.rule === exp.refused); add(`${p} ${side}: every ${exp.refused} finding refuses`, hits.length > 0 && hits.every((f) => !f.opaque && !f.advisory) && r.status === 1, `${hits.length} finding(s), ${hits.filter((f) => f.opaque).length} labelled opaque`); }
+    for (const side of ['parent', 'candidate']) { const r = spawnSync('node', [path.join(root, 'lint/lint.mjs'), path.join(pairDir(p), `${side}.ts`), '--no-project', '--json'], { encoding: 'utf8', maxBuffer: 1 << 26 }); let fs_ = []; try { fs_ = JSON.parse(r.stdout); } catch { /* none */ } const hits = fs_.filter((f) => f.rule === exp.refused); add(`${p} ${side}: every ${exp.refused} finding refuses`, hits.length > 0 && hits.every((f) => !f.opaque && !f.advisory) && r.status === 1, `${hits.length} finding(s), ${hits.filter((f) => f.opaque).length} labelled opaque`); }
     continue;
   }
   const got = laneA(p);
   if (got.error) { add(`${p} lane A`, false, got.error); continue; }
-  for (const [u, want] of Object.entries(exp.equal)) add(`${p} ${u} ${want ? 'proved' : 'not proved'}`, got.proved[dafnyName(u)] === want || got.proved[u] === want, `${got.proved[u] ? 'proved' : got.lemma[u] ? 'not proved' : got.withheld?.[dafnyName(u)] ? `withheld: ${got.withheld[dafnyName(u)].slice(0, 100)}` : 'no lemma'}${got.finished ? '' : ': ' + got.tail.slice(-160)}`);
+  for (const [u, want] of Object.entries(exp.equal)) add(`${p} ${u} ${want === 'real-only' ? 'real lemma proved' : want ? 'proved' : 'not proved'}`, (got.proved[dafnyName(u)] ?? got.proved[u]) === (want === 'real-only' ? true : want), `${got.proved[u] ? 'proved' : got.lemma[u] ? 'not proved' : got.withheld?.[dafnyName(u)] ? `withheld: ${got.withheld[dafnyName(u)].slice(0, 100)}` : 'no lemma'}${got.finished ? '' : ': ' + got.tail.slice(-160)}`);
   // every unit the pair proves holds at least one opaque step, each step's span is its finding's span (A5)
-  for (const [u, want] of Object.entries(exp.equal)) if (want) { const o = got.opaque[dafnyName(u)]; add(`${p} ${u} lists its opaque steps`, !!o && o.steps.length > 0 && o.steps.every((s) => s.span && s.span.line === s.line), o ? `${o.steps.length} step(s), rules ${[...new Set(o.steps.map((s) => s.rule))].join(',')}, fraction ${o.fraction}` : 'no OPAQUE line'); }
+  for (const [u, want] of Object.entries(exp.equal)) if (want === true) { const o = got.opaque[dafnyName(u)]; add(`${p} ${u} lists its opaque steps`, !!o && o.steps.length > 0 && o.steps.every((s) => s.span && s.span.line === s.line), o ? `${o.steps.length} step(s), rules ${[...new Set(o.steps.map((s) => s.rule))].join(',')}, fraction ${o.fraction}` : 'no OPAQUE line'); }
 }
 for (const b of BREAKS.filter((x) => !only || x.pair === only)) {
-  if (!fs.existsSync(path.join(pairsDir, b.pair))) { add(`break ${b.mechanism} on ${b.pair}`, false, 'no such pair'); continue; }
+  if (!fs.existsSync(pairDir(b.pair))) { add(`break ${b.mechanism} on ${b.pair}`, false, 'no such pair'); continue; }
   const intact = laneA(b.pair), broken = laneA(b.pair, { LEAN_OPAQUE_BREAK: b.mechanism });
   for (const u of b.units) {
     add(`break ${b.mechanism}: ${b.pair} ${u} not proved with the mechanism`, !intact.error && intact.proved[u] === false && intact.lemma[u], intact.error ?? (intact.proved[u] ? 'PROVED' : intact.lemma[u] ? 'not proved' : 'no lemma'));

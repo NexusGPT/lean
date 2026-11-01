@@ -4,10 +4,10 @@
   "inside_iter"
  ],
  "equal": {
-  "outside_iter": true,
+  "outside_iter": "real-only",
   "inside_iter": false
  },
- "why": "design/w1c-opaque-calls.md, rule iterator-protocol: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json).",
+ "why": "design/w1c-opaque-calls.md, rule iterator-protocol: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_iter is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open).",
  "b": {
   "outside_iter": "PASS-bounded",
   "inside_iter": "PASS-bounded"
