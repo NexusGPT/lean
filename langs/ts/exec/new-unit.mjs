@@ -419,13 +419,21 @@ const holdsElement = (v, d = 0) => { if (!v || typeof v !== 'object' || d > 3) r
 // every unit of one file in one child (the census's new-unit pass, exec/new-census.mjs): the file's program is read once,
 // and each unit's result is a line of its own as it ends, so a child stopped at its bound keeps the units it finished
 export function runNewFile(opts) {
-  const { candidate, units, n = 30, ms = 2000, seconds = 300 } = opts;
+  const { candidate, units, seconds = 300 } = opts;
   const box = workerSandbox(opts);
-  const child = spawnSync(process.execPath, [...workerFlagsFrom(box.flags), '--experimental-vm-modules', here, JSON.stringify({ ...opts, sandboxList: undefined, batch: true, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) })], { encoding: 'utf8', env: workerEnv(), timeout: seconds * 1000, maxBuffer: 64 * 1024 * 1024 });
   const done = new Map();
-  for (const line of (child.stdout ?? '').split('\n')) { if (!line.trim()) continue; try { const r = JSON.parse(line); if (r && r.unit) done.set(r.unit, r); } catch { /* a line the stop cut */ } }
-  const stopped = child.error?.code === 'ETIMEDOUT' ? `the file's child passed its bound of ${seconds} s` : child.status !== 0 ? `the file's child exited ${child.status ?? child.signal}: ${(child.stderr ?? '').trim().split('\n').filter((l) => !/ExperimentalWarning|trace-warnings/.test(l)).slice(-1)[0] ?? ''}` : null;
-  return units.map((unit) => done.get(unit) ?? { candidateOnly: true, unit, file: candidate, verdict: 'ASK', loaded: false, inputs: 0, reason: stopped ?? 'no result', records: [{ kind: 'new:coverage', phase: 'harness', reason: stopped ?? 'no result' }] });
+  // a child that dies (out of memory on a drawn size, past its bound) is resumed past the unit it was running: that unit
+  // is harness coverage with the child's end, the units after it run in a fresh child
+  for (let left = units.filter((u) => !done.has(u)); left.length; left = units.filter((u) => !done.has(u))) {
+    const child = spawnSync(process.execPath, [...workerFlagsFrom(box.flags), '--experimental-vm-modules', here, JSON.stringify({ ...opts, units: left, sandboxList: undefined, batch: true, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) })], { encoding: 'utf8', env: workerEnv(), timeout: seconds * 1000, maxBuffer: 64 * 1024 * 1024 });
+    for (const line of (child.stdout ?? '').split('\n')) { if (!line.trim()) continue; try { const r = JSON.parse(line); if (r && r.unit && left.includes(r.unit)) done.set(r.unit, r); } catch { /* a line the stop cut */ } }
+    const next = left.find((u) => !done.has(u));
+    if (!next) break;
+    const tail = (child.stderr ?? '').split('\n').filter((l) => l.trim() && !/ExperimentalWarning|trace-warnings/.test(l));
+    const why = child.error?.code === 'ETIMEDOUT' ? `the file's child passed its bound of ${seconds} s` : `the file's child ended (${child.status ?? child.signal})${tail.find((l) => /FATAL ERROR/.test(l)) ? ': ' + tail.find((l) => /FATAL ERROR/.test(l)).trim() : ''}`;
+    done.set(next, { candidateOnly: true, unit: next, file: candidate, verdict: 'ASK', loaded: false, inputs: 0, reason: `harness: ${why}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: why }] });
+  }
+  return units.map((unit) => done.get(unit));
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === here) {
