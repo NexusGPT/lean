@@ -1,0 +1,336 @@
+{
+ "head": "5cd25d0d9fc463565f201caa47b2f4534bf1ae1a",
+ "wallSeconds": 15689,
+ "mutants": 1451,
+ "meanSeconds": 33.59,
+ "slowest": [
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 0,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 314.56,
+   "timing": {
+    "B": 276.83553595,
+    "correspondence": 5.802821112000034,
+    "doubles": 3.927353739999991,
+    "translate": 20.480410124000045,
+    "theorem": 0.09639655599999242,
+    "dafny": 2.26201108799997
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 8,
+   "kind": "boundary",
+   "verdict": "PASS-bounded",
+   "seconds": 276.02,
+   "timing": {
+    "B": 228.482200857,
+    "correspondence": 8.330490101000002,
+    "doubles": 5.050671254999994,
+    "translate": 24.233569143,
+    "theorem": 0.15242277600005036,
+    "dafny": 3.0894342049999977
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 3,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 263.92,
+   "timing": {
+    "B": 240.976320634,
+    "correspondence": 3.271278297000012,
+    "doubles": 2.631176256000006,
+    "translate": 11.377592758000013,
+    "theorem": 0.09082965299999342,
+    "dafny": 1.6824556699999957
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 6,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 235.91,
+   "timing": {
+    "B": 211.333621301,
+    "correspondence": 4.896890324000007,
+    "doubles": 2.442954930000007,
+    "translate": 11.235358185999997,
+    "theorem": 0.08286062399999355,
+    "dafny": 1.6368780649999972
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 16,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 208.72,
+   "timing": {
+    "B": 170.723696147,
+    "correspondence": 5.339904217000003,
+    "doubles": 4.9118562830000005,
+    "translate": 19.589607969000006,
+    "theorem": 0.09964176200001384,
+    "dafny": 3.2640576899999867
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 11,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 198.78,
+   "timing": {
+    "B": 171.976263006,
+    "correspondence": 3.508647887999978,
+    "doubles": 2.7341844210000126,
+    "translate": 13.83691597100001,
+    "theorem": 0.09771085199998925,
+    "dafny": 1.8931321180000087
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 5,
+   "kind": "dropped-effect",
+   "verdict": "ASK",
+   "seconds": 195.55,
+   "timing": {
+    "B": 147.866412166,
+    "correspondence": 11.720463713999983,
+    "doubles": 4.903274705000018,
+    "translate": 20.86524299999999,
+    "theorem": 0.11733654099999694,
+    "dafny": 2.3347454000000143
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 13,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 179.64,
+   "timing": {
+    "B": 158.424990813,
+    "correspondence": 4.1944935009999895,
+    "doubles": 2.559268835999974,
+    "translate": 9.26255738100002,
+    "theorem": 0.08869036700000288,
+    "dafny": 1.6759079089999722
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 9,
+   "kind": "operator",
+   "verdict": "PASS-bounded",
+   "seconds": 171.48,
+   "timing": {
+    "B": 135.474477946,
+    "correspondence": 4.538851687999995,
+    "doubles": 3.007219481999986,
+    "translate": 20.983795056,
+    "theorem": 0.09654913100000703,
+    "dafny": 2.416891782999999
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "apps/api/src/admin/admin.controller.ts",
+   "unit": "AdminController.curate",
+   "index": 4,
+   "kind": "string",
+   "verdict": "PASS-bounded",
+   "seconds": 170.78,
+   "timing": {
+    "B": 115.39830093999998,
+    "correspondence": 10.474665374999997,
+    "translate": 20.829749621999973,
+    "theorem": 0.10998692799999844,
+    "dafny": 2.399085416000016
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 10,
+   "kind": "dropped-effect",
+   "verdict": "PASS-bounded",
+   "seconds": 169.33,
+   "timing": {
+    "B": 124.217156701,
+    "correspondence": 8.466172787000003,
+    "doubles": 5.5969917689999855,
+    "translate": 23.157939434,
+    "theorem": 0.10468894799999544,
+    "dafny": 2.217931367000012
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "apps/api/src/admin/admin.controller.ts",
+   "unit": "AdminController.curationHistory",
+   "index": 4,
+   "kind": "string",
+   "verdict": "PASS-bounded",
+   "seconds": 168.51,
+   "timing": {
+    "B": 129.171196208,
+    "correspondence": 5.213255862999999,
+    "translate": 12.967300903000025,
+    "theorem": 0.10129638300000807,
+    "dafny": 1.783905544999987
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "apps/admin/components/evidence/filmstrip.tsx",
+   "unit": "Filmstrip",
+   "index": 0,
+   "kind": "dropped-effect",
+   "verdict": "ASK",
+   "seconds": 162.18,
+   "timing": {
+    "B": 134.76294551799998,
+    "correspondence": 4.225008677000005,
+    "doubles": 3.3090895460000027,
+    "translate": 12.816155472000013,
+    "theorem": 0.10167555000001448,
+    "dafny": 1.8477869960000097
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "apps/api/src/admin/admin.controller.ts",
+   "unit": "AdminController.getSessions",
+   "index": 3,
+   "kind": "string",
+   "verdict": "WITNESS",
+   "seconds": 155.72,
+   "timing": {
+    "B": 104.785028956,
+    "translate": 28.510127051000005,
+    "theorem": 0.10912280099999043
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 7,
+   "kind": "boundary",
+   "verdict": "PASS-bounded",
+   "seconds": 154.72,
+   "timing": {
+    "B": 89.01985339299999,
+    "correspondence": 12.229892550000004,
+    "doubles": 6.620730177000005,
+    "translate": 34.454436361999996,
+    "theorem": 0.13274640899998486,
+    "dafny": 5.390207821999996
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "apps/api/src/admin/admin.controller.ts",
+   "unit": "AdminController.curationHistory",
+   "index": 3,
+   "kind": "swapped-args",
+   "verdict": "WITNESS",
+   "seconds": 150.89,
+   "timing": {
+    "B": 96.186851938,
+    "translate": 32.37962937799998,
+    "theorem": 0.18417466299998342
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "apps/api/src/admin/admin.controller.ts",
+   "unit": "AdminController.getSessions",
+   "index": 0,
+   "kind": "negated-if",
+   "verdict": "WITNESS",
+   "seconds": 150.71,
+   "timing": {
+    "B": 104.58541224999999,
+    "translate": 26.00756842000001,
+    "theorem": 0.10527147900001728
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 4,
+   "kind": "boundary",
+   "verdict": "PASS-bounded",
+   "seconds": 143.99,
+   "timing": {
+    "B": 77.32951135,
+    "correspondence": 9.378875616999998,
+    "doubles": 7.145050105000002,
+    "translate": 38.189602334,
+    "theorem": 0.3727116009999881,
+    "dafny": 4.861307010000019
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "apps/api/src/admin/admin.controller.ts",
+   "unit": "AdminController.getSessions",
+   "index": 6,
+   "kind": "string",
+   "verdict": "PASS-bounded",
+   "seconds": 143.99,
+   "timing": {
+    "B": 101.614378196,
+    "correspondence": 6.0396689509999995,
+    "translate": 18.28144857699999,
+    "theorem": 0.10797493699999176,
+    "dafny": 1.8466025110000046
+   }
+  },
+  {
+   "source": "census:snitch",
+   "where": "infra/gen-events/src/generate.ts",
+   "unit": "workdayUtcMs",
+   "index": 2,
+   "kind": "operator",
+   "verdict": "PASS-bounded",
+   "seconds": 142.09,
+   "timing": {
+    "B": 107.51393195700001,
+    "correspondence": 5.944354308000009,
+    "doubles": 3.8551277709999994,
+    "translate": 17.521953626000002,
+    "theorem": 0.11808530400000745,
+    "dafny": 2.3034851229999913
+   }
+  }
+ ]
+}

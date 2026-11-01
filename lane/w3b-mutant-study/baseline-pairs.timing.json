@@ -1,0 +1,333 @@
+{
+ "head": "5cd25d0d9fc463565f201caa47b2f4534bf1ae1a",
+ "wallSeconds": 12421,
+ "mutants": 5661,
+ "meanSeconds": 7.93,
+ "slowest": [
+  {
+   "source": "pairs",
+   "where": "promise_then",
+   "unit": "bridge",
+   "index": 1,
+   "kind": "dropped-effect",
+   "verdict": "ASK",
+   "seconds": 764.13,
+   "timing": {
+    "B": 758.8046883510001,
+    "correspondence": 0.5349800400000532,
+    "doubles": 0.3163302839999087,
+    "translate": 2.857932550999918
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "promise_then",
+   "unit": "literal",
+   "index": 5,
+   "kind": "dropped-effect",
+   "verdict": "ASK",
+   "seconds": 442.8,
+   "timing": {
+    "B": 435.611203301,
+    "correspondence": 0.9775929589999723,
+    "doubles": 0.5445886310000205,
+    "translate": 3.40384770600003
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "sandbox_boundary",
+   "unit": "reachNet",
+   "index": 10,
+   "kind": "dropped-effect",
+   "verdict": "ASK",
+   "seconds": 270.56,
+   "timing": {
+    "B": 266.39254745500006,
+    "correspondence": 0.7028990040000063,
+    "doubles": 0.3367103200000129,
+    "translate": 1.8736257760000299
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "microtask_worker",
+   "unit": "drain",
+   "index": 5,
+   "kind": "boundary",
+   "verdict": "ASK",
+   "seconds": 251.04,
+   "timing": {
+    "B": 241.66018276399998,
+    "correspondence": 0.7760602110000037,
+    "doubles": 0.37967707899998643,
+    "translate": 3.0990839439999833,
+    "theorem": 0.08278538400001707,
+    "dafny": 3.0387503430000216
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "for_desugar",
+   "unit": "sumPositive",
+   "index": 3,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 237.34,
+   "timing": {
+    "B": 230.300307453,
+    "correspondence": 0.4954916840000078,
+    "doubles": 0.3555452750000113,
+    "translate": 2.4239799910000004,
+    "theorem": 0.07632999800000106,
+    "dafny": 1.7457294479999983
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "for_desugar",
+   "unit": "occurrences",
+   "index": 1,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 229,
+   "timing": {
+    "B": 221.39254573099998,
+    "correspondence": 0.5780870710000163,
+    "doubles": 0.33093191400001526,
+    "translate": 2.550413826999982,
+    "theorem": 0.07102299199998378,
+    "dafny": 1.716267476000008
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "for_desugar",
+   "unit": "occurrences",
+   "index": 2,
+   "kind": "boundary",
+   "verdict": "ASK",
+   "seconds": 220.14,
+   "timing": {
+    "B": 213.55922637599997,
+    "correspondence": 0.5242916710000136,
+    "doubles": 0.2898344020000077,
+    "translate": 2.3986408419999936,
+    "theorem": 0.08035573700000533,
+    "dafny": 1.8651648010000064
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "microtask_worker",
+   "unit": "drain",
+   "index": 0,
+   "kind": "negated-if",
+   "verdict": "ASK",
+   "seconds": 213.96,
+   "timing": {
+    "B": 207.36779035,
+    "correspondence": 0.5914987970000075,
+    "doubles": 0.4006039540000202,
+    "translate": 2.340198743999994,
+    "theorem": 0.08165251600000192,
+    "dafny": 1.702860382999992
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "microtask_worker",
+   "unit": "drain",
+   "index": 4,
+   "kind": "changed-return",
+   "verdict": "ASK",
+   "seconds": 202.59,
+   "timing": {
+    "B": 191.334913217,
+    "correspondence": 0.7298112160000019,
+    "doubles": 0.4250427190000191,
+    "translate": 4.920162624000019,
+    "theorem": 0.2516785229999805,
+    "dafny": 3.4064422049999994
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "sandbox_boundary",
+   "unit": "reachNet",
+   "index": 12,
+   "kind": "string",
+   "verdict": "ASK",
+   "seconds": 197.31,
+   "timing": {
+    "B": 194.164292093,
+    "correspondence": 0.4190239059999876,
+    "doubles": 0.2670231780000031,
+    "translate": 1.2763225280000188
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "promise_then",
+   "unit": "literal",
+   "index": 3,
+   "kind": "dropped-effect",
+   "verdict": "ASK",
+   "seconds": 192.88,
+   "timing": {
+    "B": 189.10010390600002,
+    "correspondence": 0.26923471300001256,
+    "doubles": 0.23555907400001888,
+    "translate": 1.893659566999995
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "promise_then",
+   "unit": "literal",
+   "index": 4,
+   "kind": "dropped-else",
+   "verdict": "ASK",
+   "seconds": 191.51,
+   "timing": {
+    "B": 183.65456005099998,
+    "correspondence": 1.056666641000018,
+    "doubles": 0.717873099999997,
+    "translate": 4.929653056999989
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "heap_shapes",
+   "unit": "drop",
+   "index": 3,
+   "kind": "boundary",
+   "verdict": "PASS-bounded",
+   "seconds": 143.82,
+   "timing": {
+    "B": 1.702865445,
+    "correspondence": 0.536890355,
+    "doubles": 0.5234764479999999,
+    "translate": 2.7240194340000006,
+    "theorem": 0.11091101600000002,
+    "dafny": 136.63010642999998
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "heap_shapes",
+   "unit": "drop",
+   "index": 0,
+   "kind": "dropped-effect",
+   "verdict": "PASS-bounded",
+   "seconds": 140.95,
+   "timing": {
+    "B": 1.5755949740000001,
+    "correspondence": 0.4887822219999998,
+    "doubles": 0.39515907800000016,
+    "translate": 2.8719234029999994,
+    "theorem": 0.10272653400000036,
+    "dafny": 134.140840971
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "heap_shapes",
+   "unit": "drop",
+   "index": 2,
+   "kind": "boundary",
+   "verdict": "PASS-bounded",
+   "seconds": 135.16,
+   "timing": {
+    "B": 1.387044897,
+    "correspondence": 0.396661306,
+    "doubles": 0.23691046799999957,
+    "translate": 2.1115057860000004,
+    "theorem": 0.11039867700000014,
+    "dafny": 129.640730043
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "microtask_worker",
+   "unit": "drain",
+   "index": 3,
+   "kind": "dropped-effect",
+   "verdict": "ASK",
+   "seconds": 134.44,
+   "timing": {
+    "B": 128.784844107,
+    "correspondence": 0.34446521300000316,
+    "doubles": 0.23462536700000056,
+    "translate": 1.9497162709999976,
+    "theorem": 0.07729556400000001,
+    "dafny": 1.8049802299999864
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "microtask_worker",
+   "unit": "drain",
+   "index": 1,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 132.55,
+   "timing": {
+    "B": 126.771391231,
+    "correspondence": 0.3688329800000065,
+    "doubles": 0.2617619129999948,
+    "translate": 2.002760486999992,
+    "theorem": 0.07289266900000803,
+    "dafny": 1.7271530229999916
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "microtask_worker",
+   "unit": "drain",
+   "index": 2,
+   "kind": "boundary",
+   "verdict": "ASK",
+   "seconds": 132.15,
+   "timing": {
+    "B": 125.77217027,
+    "correspondence": 0.500323894000001,
+    "doubles": 0.30278657000001113,
+    "translate": 2.3080603520000005,
+    "theorem": 0.08644096199999331,
+    "dafny": 1.8626428980000056
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "heap_loops",
+   "unit": "raise",
+   "index": 3,
+   "kind": "operator",
+   "verdict": "ASK",
+   "seconds": 125.94,
+   "timing": {
+    "B": 117.96241942900001,
+    "correspondence": 0.6080077210000018,
+    "doubles": 0.30587266300000193,
+    "translate": 3.785322002999994,
+    "theorem": 0.10101999900001102,
+    "dafny": 1.8410444900000003
+   }
+  },
+  {
+   "source": "pairs",
+   "where": "for_desugar",
+   "unit": "chunks",
+   "index": 1,
+   "kind": "operator",
+   "verdict": "WITNESS",
+   "seconds": 108.43,
+   "timing": {
+    "B": 101.76416598,
+    "translate": 3.6974532659999966,
+    "theorem": 0.08847819100000197
+   }
+  }
+ ]
+}
