@@ -70,6 +70,22 @@ export function member(spec, v, defs = {}, opts = {}, depth = 0) {
   }
 }
 
+// where a value leaves its type: the first path at which member() says 'no', with what the type wanted there
+export function mismatch(spec, v, defs = {}, opts = {}, at = 'returned', depth = 0) {
+  if (!spec || depth > 12 || member(spec, v, defs, opts) !== 'no') return null;
+  if (spec.kind === 'ref') return defs[spec.key] ? mismatch(defs[spec.key], v, defs, opts, at, depth + 1) : null;
+  const deeper = (s, x, p) => mismatch(s, x, defs, opts, p, depth + 1);
+  if (spec.kind === 'array' && Array.isArray(v)) { for (let i = 0; i < v.length; i++) { const m = deeper(spec.of, v[i], `${at}[${i}]`); if (m) return m; } }
+  if (spec.kind === 'tuple' && Array.isArray(v)) { for (let i = 0; i < spec.items.length; i++) { const m = deeper(spec.items[i], v[i], `${at}[${i}]`); if (m) return m; } }
+  if (spec.kind === 'record' && v !== null && (typeof v === 'object' || typeof v === 'function')) {
+    for (const [k, f] of Object.entries(spec.fields)) { if (f.extra) continue; const p = own(v, k); if (p.absent && !f.optional) return { at: `${at}.${k}`, wanted: 'a required field', got: 'absent' }; if (p.present && !(f.optional && p.value === undefined)) { const m = deeper(f.spec, p.value, `${at}.${k}`); if (m) return m; } }
+  }
+  if (spec.kind === 'union') { const ms = spec.options.map((o) => deeper(o, v, at)).filter(Boolean); const best = ms.sort((a, b) => b.at.length - a.at.length)[0]; if (best && best.at !== at) return best; } // the option the value comes nearest to: the deepest path it reaches
+  if (spec.kind === 'dict' && v !== null && typeof v === 'object') { for (const k of Object.keys(v)) { const p = own(v, k); if (p.present) { const m = deeper(spec.value, p.value, `${at}.${k}`); if (m) return m; } } }
+  const kindOf = (x) => (x === null ? 'null' : Array.isArray(x) ? 'array' : typeof x);
+  return { at, wanted: spec.kind === 'literal' ? `one of ${JSON.stringify(spec.values).slice(0, 80)}` : spec.kind === 'union' ? spec.options.map((o) => o?.kind === 'literal' ? JSON.stringify(o.values).slice(0, 40) : o?.kind).join(' | ').slice(0, 120) : spec.kind, got: kindOf(v) === 'string' ? JSON.stringify(v).slice(0, 60) : kindOf(v) };
+}
+
 // the edge values a declared type admits (design/w1h-new-units.md, "the draw"): the absent value, the empty one, zero
 // and the special numbers, and malformed text, each kept only when member() says 'yes' for it. Lane B's generator draws
 // boundary values of the unit's own literals first; these are the values of the type itself that a caller can pass

@@ -9,7 +9,7 @@ import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFuncti
 import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
 import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { Environment, BudgetError, render } from './fake.mjs';
-import { admitted, member, declaration, declaredThrow, edgePlan, edgeInput } from './declared.mjs';
+import { admitted, member, mismatch, declaration, declaredThrow, edgePlan, edgeInput } from './declared.mjs';
 import { runTests, TEST_MODULES } from './new-tests.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
@@ -296,16 +296,17 @@ export async function runNew(opts) {
       const missing = platformGap(observation.raw?.threw);
       if (missing) { book.add(coverage('draw', `the unit reads the global \`${missing}\`, which Node holds and lean's sandbox does not`), `coverage global ${missing}`); continue; } // lean's sandbox, not the unit
       const error = thrownText(observation.raw?.threw, observation.outcome.threw);
-      book.add({ kind: 'new:fault', ...named, ...(wide ? { wide: true } : {}), error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(error.message ?? JSON.stringify(error))}`); // one record per error and message template: a message that quotes the input is one outcome
+      book.add({ kind: 'new:fault', ...named, ...(wide ? { wide: true } : {}), error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(withoutInputs(rawMessage(observation.raw?.threw) ?? error.message ?? JSON.stringify(error), inputs))}`); // one record per error and message template: a message that quotes the input is one outcome
       continue;
     }
     if (process.env.LEAN_BREAK === 'declared-shape' || !decl || decl.inferred || decl.voidLike || !declared?.returns) continue;
+    if (observation.drives?.length && process.env.LEAN_BREAK !== 'shape-drives') continue; // the observer drove functions the unit handed out (run.mjs driveWindow), after the return: they may have written into the value
     const promised = /^Promise(?:Like)?</.test(decl.returns.replace(/\s+/g, '')) || spec.isAsync;
     if (promised !== thenable) continue; // the awaited value is what the declaration's argument types; a promise the type does not name is not read
     const value = observation.raw?.returned;
     if (holdsElement(value)) continue; // a rendered element is lean's own representation of JSX, not the value React would return
     if (member(declared.returns, value, declared.defs, { nullable, side: 'output' }) !== 'no') continue;
-    book.add({ kind: 'new:shape', ...named, returned: render(value), declared: decl.returns, claim: 'on this input the unit returned a value that is not one of its declared return type' }, `shape ${value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value}`); // one record per kind of value returned outside the type, its first input named
+    book.add({ kind: 'new:shape', ...named, returned: render(value), declared: decl.returns, mismatch: mismatch(declared.returns, value, declared.defs, { nullable, side: 'output' }), claim: 'on this input the unit returned a value that is not one of its declared return type' }, `shape ${value === null ? 'null' : Array.isArray(value) ? 'array' : typeof value}`); // one record per kind of value returned outside the type, its first input named
   }
   // the PR's own tests that call the unit (new-tests.mjs): each is run against the candidate under the same sandbox
   let tests = null;
@@ -405,6 +406,15 @@ function graphWorld(loaded, sources, runner = new Set()) {
 }
 // a message with what it quotes and its numbers taken out: `Unexpected token 'x', "x..." is not valid JSON` is one template
 const template = (m) => String(m).replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`[^`]*`/g, '<q>').replace(/-?\d+(?:\.\d+)?/g, '<n>');
+// a message with the input's own text taken out (`cannot plan this statement: <the input>` is one outcome over its inputs)
+function withoutInputs(m, inputs) {
+  let out = String(m); const seen = new Set();
+  const strings = (v, d = 0) => { if (typeof v === 'string') { if (v.trim().length >= 1) seen.add(v); } else if (v && typeof v === 'object' && d < 3 && !v.__isFake) { try { for (const x of Array.isArray(v) ? v.slice(0, 20) : Object.values(v).slice(0, 20)) strings(x, d + 1); } catch { /* none */ } } };
+  for (const x of inputs) strings(x);
+  for (const x of [...seen].sort((a, b) => b.length - a.length)) out = out.replace(new RegExp(`(?<![\\w$])${x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w$])`, 'g'), '<in>'); // where it stands as a token
+  return out.replace(/:\s*$/, ': <in>');
+}
+const rawMessage = (e) => { try { return e && typeof e === 'object' && typeof e.message === 'string' ? e.message : null; } catch { return null; } };
 // a thrown value as a record names it: an error by its name and message (lean's own paths rendered as tokens), else rendered
 function thrownText(raw, rendered) {
   try { if (raw && typeof raw === 'object' && typeof raw.message === 'string') return { name: String(raw.name ?? 'Error'), message: render(raw.message.slice(0, 300)) }; } catch { /* a value that refuses its members */ }
@@ -412,6 +422,7 @@ function thrownText(raw, rendered) {
 }
 // a ReferenceError naming a global Node holds: the sandbox lacks it (a gap of lean's world, never the unit's fault)
 function platformGap(thrown) {
+  if (process.env.LEAN_BREAK === 'platform-gap') return null;
   try { const m = thrown && thrown.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(thrown.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; }
 }
 const holdsElement = (v, d = 0) => { if (!v || typeof v !== 'object' || d > 3) return false; try { if (Object.hasOwn(v, '$el')) return true; return Array.isArray(v) ? v.some((x) => holdsElement(x, d + 1)) : false; } catch { return true; } };

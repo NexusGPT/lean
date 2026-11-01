@@ -34,3 +34,10 @@ export function point(n: number): { x: number; y: number } {
 export function maybe(n: number): string | null {
   return n > 0 ? "positive" : null;
 }
+
+// (h) a returned closure that writes into the returned value: lane B's observer drives it after the return with a handle
+// (run.mjs driveWindow), so what the value holds afterwards is not what the unit returned: no record
+export function recorder(): { calls: number[]; api: { push(n: number): void } } {
+  const calls: number[] = [];
+  return { calls, api: { push: (n: number) => { calls.push(String(n) as any); } } };
+}

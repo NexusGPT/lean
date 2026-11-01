@@ -183,6 +183,8 @@ function selection(testFile, text, candidates, unit, options) {
   for (let grew = true; grew;) { grew = false; for (const [name, node] of helpers) if (!names.has(name) && mentions(node, names)) { names.add(name); grew = true; } }
   return { names, mock: MOCKS.exec(text)?.[0] ?? null };
 }
+// a ReferenceError naming a global Node holds: the sandbox lacks it (new-unit.mjs platformGap, the same reading)
+const platformGlobal = (e) => { if (process.env.LEAN_BREAK === 'platform-gap') return null; try { const m = e && e.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(e.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; } };
 const namesIn = (fn, names) => { let src; try { src = Function.prototype.toString.call(fn.source ?? fn); } catch { return true; } return [...names].some((n) => new RegExp(`(?<![\\w$.])${n.replace(/\$/g, '\\$')}(?![\\w$])`).test(src)); };
 
 // run every test file's tests in their order (a file's tests share its module state, as the runners run them), report
@@ -230,6 +232,7 @@ export async function runTests({ candidate, aliases = [], unit, testFiles, ms = 
       } catch (e) {
         if (e instanceof BudgetError || e?.message === '__timeout__' || e?.unsettled) outcome = { unsettled: true };
         else if (e instanceof Gap) outcome = { gap: e.gap };
+        else if (platformGlobal(e)) outcome = { gap: `the global \`${platformGlobal(e)}\`, which Node holds and lean's sandbox does not` }; // lean's sandbox, not the code
         else outcome = { failed: e };
       }
       const world = process.env.LEAN_BREAK === 'closed-test' ? null : tainted ?? (env.trace.length ? env.trace.slice(0, 3).map(({ op, path: p }) => `${op} ${p}`).join('; ') : null);
@@ -241,7 +244,7 @@ export async function runTests({ candidate, aliases = [], unit, testFiles, ms = 
       if (outcome.gap) { summary.notModelled++; selected.push({ test: t.name, gap: outcome.gap }); continue; }
       summary.failed++;
       const e = outcome.failed;
-      records.push({ kind: 'new:test', file: path.basename(file), test: t.name, error: e instanceof Failure ? { assertion: e.message } : render(e), claim: 'this test, which the PR adds and which names the unit, fails when run against the candidate (under lean\'s runner model, the run asking nothing of the world)' });
+      records.push({ kind: 'new:test', file: path.basename(file), test: t.name, error: e instanceof Failure ? { assertion: e.message } : e && typeof e === 'object' && typeof e.message === 'string' ? { name: String(e.name ?? 'Error'), message: render(e.message.slice(0, 300)) } : render(e), claim: 'this test, which the PR adds and which names the unit, fails when run against the candidate (under lean\'s runner model, the run asking nothing of the world)' });
     }
     const gaps = selected.filter((x) => x.gap), worlds = selected.filter((x) => x.world), unsettled = selected.filter((x) => x.unsettled);
     if (gaps.length) cover(file, `not modelled: ${[...new Set(gaps.map((x) => x.gap))].slice(0, 3).join(', ')}`, gaps.length);

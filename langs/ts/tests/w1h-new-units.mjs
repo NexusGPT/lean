@@ -17,8 +17,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PAIRS = {
   new_unit_fault: ['declared-edges', 'declared-throws', 'admitted-input', 'closed-call'],
-  new_unit_shape: ['declared-shape'],
-  new_unit_test: ['pr-tests', 'closed-test'],
+  new_unit_shape: ['declared-shape', 'shape-drives'],
+  new_unit_test: ['pr-tests', 'closed-test', 'platform-gap'],
 };
 if (process.argv.includes('--pr')) process.exit(prCheck());
 const brk = process.argv.includes('--break');

@@ -88,7 +88,26 @@
       "absent": [
         "new:test"
       ]
+    },
+    {
+      "file": "candidate.ts",
+      "unit": "mul",
+      "verdict": "NEW",
+      "inputs": 30,
+      "tests": [
+        "platform.test.ts"
+      ],
+      "records": [
+        {
+          "kind": "new:coverage",
+          "phase": "test",
+          "reason": "Response"
+        }
+      ],
+      "absent": [
+        "new:test"
+      ]
     }
   ],
-  "why": "new:test: a test the PR adds that names the unit fails when run against the candidate (exec/new-tests.mjs: lean's model of the vitest and jest API, under the sandbox the draws run in), in a run that asked nothing of the world. add's own test says add(1, 2) is 3 and it answers -1; mul's tests pass, through a helper of the file and an it.each table; stamp's test reads the clock lean answers, so its failure is coverage; a file that mocks the module is not the unit's behaviour, so it is coverage. LEAN_BREAK=pr-tests stops running the tests (add's record goes); LEAN_BREAK=closed-test drops the world check (stamp's failure becomes a new:test). A fixture computed at load through a helper that asks the package (fixture.test.ts) is a world value its test reads with no trap: coverage, never new:test."
+  "why": "new:test: a test the PR adds that names the unit fails when run against the candidate (exec/new-tests.mjs: lean's model of the vitest and jest API, under the sandbox the draws run in), in a run that asked nothing of the world. add's own test says add(1, 2) is 3 and it answers -1; mul's tests pass, through a helper of the file and an it.each table; stamp's test reads the clock lean answers, so its failure is coverage; a file that mocks the module is not the unit's behaviour, so it is coverage. LEAN_BREAK=pr-tests stops running the tests (add's record goes); LEAN_BREAK=closed-test drops the world check (stamp's failure becomes a new:test). A fixture computed at load through a helper that asks the package (fixture.test.ts) is a world value its test reads with no trap: coverage, never new:test. A test that needs a global Node holds and the sandbox does not (Response, platform.test.ts) is coverage: a ReferenceError there is lean's."
 }
