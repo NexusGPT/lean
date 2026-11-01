@@ -30,9 +30,8 @@ import { READINGS, ADVICE_RULES, STRUCTURAL_KINDS, readingById, readingOfKind, r
 import { memberRow } from './library-rows.mjs';
 import { methodLiteralOf } from './common.mjs';
 import { moduleState } from './module-forms.mjs';
-import { admissionFindings } from './lint/lint.mjs';
+import { admissionFindings, OPAQUE_ENVELOPE as ENVELOPE } from './lint/lint.mjs'; // the envelope: the audit's rules of an opaque site's refusal (design/w1b-opaque-statements.md)
 import { translate } from './translate/translate.mjs';
-import { ENVELOPE } from './translate/opaque-statements.mjs'; // the statement family's envelope: the audit's rules of an opaque site's refusal (design/w1b-opaque-statements.md)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -74,9 +73,10 @@ const DYNAMIC_RULES = {
   rule: ['update-expression', 'assignment-expression'],
   EFFECT_GLOBALS: ['dynamic-eval', 'prototype'],
   // translate.mjs siteFail (design/w1b-opaque-statements.md): an opaque site's refusal names its own rule, one the
-  // statement family grades; a boundary site's, one whose envelope is `boundary`
-  'boundary.rule': Object.keys(ENVELOPE).filter((r) => ENVELOPE[r] === 'boundary'),
-  'site.rule': Object.keys(ENVELOPE),
+  // statement family grades; a boundary site's, one whose envelope is `boundary`; both from the
+  // statement family's envelope: read when the audit runs (opaque-statements.mjs imports the lint, which imports this file)
+  get 'boundary.rule'() { return Object.keys(ENVELOPE).filter((r) => ENVELOPE[r] === 'boundary'); },
+  get 'site.rule'() { return Object.keys(ENVELOPE); },
 };
 const dynamicRules = (expr) => { if (Object.hasOwn(DYNAMIC_RULES, expr)) return DYNAMIC_RULES[expr]; for (const [k, v] of Object.entries(DYNAMIC_RULES)) if (expr === k || expr.includes(k)) return v; const lits = [...expr.matchAll(/'([a-z][a-z0-9-]*)'/g)].map((m) => m[1]); return lits.length ? lits : null; };
 

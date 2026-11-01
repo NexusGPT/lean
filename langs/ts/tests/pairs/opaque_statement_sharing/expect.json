@@ -1,0 +1,34 @@
+{
+  "scope": [
+    "alias_origin",
+    "alias_step",
+    "identity"
+  ],
+  "equal": {
+    "alias_origin": false,
+    "alias_step": false,
+    "identity": false
+  },
+  "opaque": {
+    "alias_step": [
+      "for-in"
+    ],
+    "identity": [
+      "mixed-types"
+    ]
+  },
+  "b": {
+    "alias_origin": "PASS-bounded",
+    "alias_step": "PASS-bounded",
+    "identity": "WITNESS"
+  },
+  "break": [
+    {
+      "mechanism": "opaque-drop-sharing",
+      "equal": {
+        "identity": true
+      }
+    }
+  ],
+  "why": "The statement family's step where values are not state (design/w1b-opaque-statements.md). identity: `x === t` (mixed-types) compares x by identity with t, which the parent makes x itself and the candidate a copy of it when it is a record: equal values, true against false. The step compares an object and `const t = ...` before it binds a reference, so the values the step reads are not its state: the site is read in its unit's block (w1a's form, from the first statement that may share), whose text differs, so nothing is proved (LEAN_BREAK=opaque-drop-sharing admits the statement step, which reads equal values on both sides, and the unit proves falsely). alias_origin, alias_step: A2's pair (a push through t writes user.tags, which the candidate read before the alias), and that pair with the push inside a for-in step: the write's origin is user, the lint's alias-mutation names it, and the unit is w1a's block, never PASS-proved; lane B does not reach 7919."
+}

@@ -2,26 +2,26 @@
 export function outside(m: Map<string, number>, k: number, sink: (it: Iterable<string>, n: number) => void): number {
   const t = k + 1;
   const u = k * 2;
-  sink(m.keys(), u);
+  sink(m.keys(), u + 1);
   const out_ = t;
   return out_;
 }
 export function inside(m: Map<string, number>, k: number, sink: (it: Iterable<string>, n: number) => void): number {
   const t = k + 1;
   const u = k * 2;
-  sink(m.keys(), u + 1);
+  sink(m.keys(), u * 3);
   return t;
 }
 export function planted(m: Map<string, number>, k: number, sink: (it: Iterable<string>, n: number) => void): number {
   const t = k + 1;
   const u = k * 2;
-  
+  sink(m.keys(), u - 1);
   return t;
 }
 export function upstream(m: Map<string, number>, k: number, sink: (it: Iterable<string>, n: number) => void): number {
   const t = k + 1;
   const u = k * 3;
-  sink(m.keys(), u);
+  sink(m.keys(), u + 1);
   return t;
 }
 export function escapes(m: Map<string, number>, k: number): number {

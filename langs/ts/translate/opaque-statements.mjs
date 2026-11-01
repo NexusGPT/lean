@@ -18,10 +18,9 @@ import { opaqueGrade, gradedRule, isReference, heapOperation } from './opaque.mj
 import { calleesOf, unitText } from '../exec/callees.mjs';
 import { topLevelFunctions, originOf } from '../common.mjs';
 
-const BOUNDARY = new Set(['collection-iterator', 'reference-key', 'math-empty', 'division', 'unary-coercion', 'number-special', 'string-code-unit']);
-export const ENVELOPE = Object.freeze(Object.fromEntries(['assignment-expression', 'bare-return', 'bitwise', 'collection-iterator', 'destructuring', 'division', 'for-in', 'for-of-non-array', 'label', 'loose-equality', 'math-empty', 'mixed-types', 'number-special', 'param-form', 'record-rest', 'reference-key', 'spread', 'string-code-unit', 'string-order', 'template', 'unary-coercion', 'uninitialised', 'update-expression'].map((r) => [r, BOUNDARY.has(r) ? 'boundary' : 'value'])));
-// a load-time check: this family's rows of the column and its envelope name one set of rules
-for (const r of Object.keys(ENVELOPE)) if (opaqueGrade(r) !== 'statement') throw new Error(`opaque-statements: ${r} has an envelope but its column is ${opaqueGrade(r)}`);
+// the envelope is the lint's, beside the column (lint/lint.mjs OPAQUE_ENVELOPE), checked there at load
+export { OPAQUE_ENVELOPE as ENVELOPE } from '../lint/lint.mjs';
+import { OPAQUE_ENVELOPE as ENVELOPE } from '../lint/lint.mjs';
 
 // the statement-family reading of a rule, or null when the rule is not graded `statement` (another family's, or none)
 export function statementSite(rule) {
@@ -156,6 +155,9 @@ export function stepHazard(ts, checker, node) {
   const ref = (x) => { let t = null; try { t = checker.getTypeAtLocation(x); } catch { t = null; } return isReference(t); };
   const ASSIGN = (k) => k >= K.FirstAssignment && k <= K.LastAssignment;
   const noConv = NO_CONVERSION(ts), identity = IDENTITY(ts);
+  // the receiver is reached from a name of the unit (a parameter, a local, a captured local) or `this` (opaque.mjs
+  // heapOperation's mentionsBinding: a module binding, an import or a global is a world field, not an object of the unit)
+  const ofUnit = (e) => { let hit = false; const w = (x) => { if (hit) return; if (x.kind === K.ThisKeyword) { hit = true; return; } if (ts.isIdentifier(x)) { let d = null; try { d = checker.getSymbolAtLocation(x)?.valueDeclaration; } catch { d = null; } for (let p = d?.parent; p; p = p.parent) if (ts.isFunctionLike(p)) { hit = true; return; } } ts.forEachChild(x, w); }; w(e); return hit; };
   let hit = null;
   const walk = (x) => {
     if (hit || ts.isTypeNode(x)) return;
@@ -175,7 +177,7 @@ export function stepHazard(ts, checker, node) {
       const callee = ts.isTaggedTemplateExpression(x) ? x.tag : x.expression;
       const args = ts.isTaggedTemplateExpression(x) ? [] : (x.arguments ?? []);
       if (args.some((a) => ref(ts.isSpreadElement(a) ? a.expression : a))) return found('hands an object to a call');
-      if ((ts.isPropertyAccessExpression(callee) || ts.isElementAccessExpression(callee)) && ref(callee.expression) && !(ts.isPropertyAccessExpression(callee) && VALUE_METHODS.has(callee.name.text))) return found('calls a method on an object');
+      if ((ts.isPropertyAccessExpression(callee) || ts.isElementAccessExpression(callee)) && ref(callee.expression) && ofUnit(callee.expression) && !(ts.isPropertyAccessExpression(callee) && VALUE_METHODS.has(callee.name.text))) return found('calls a method on an object'); // a method of a global namespace (`Math.max`, the faithful-numbers helpers) holds no object of the unit
       if (ts.isNewExpression(x) && ts.isIdentifier(callee) && /^(Weak)?(Map|Set)$/.test(callee.text)) return found('builds a collection keyed by identity');
     }
     if ((ts.isForInStatement(x) || ts.isForOfStatement(x)) && !ts.isVariableDeclarationList(x.initializer) && !ts.isIdentifier(x.initializer)) return found('writes a loop target field');

@@ -2,25 +2,25 @@
 export function outside(xs: number[], k: number, sink: (n: number) => void): number {
   const t = k + 1;
   const u = k * 2;
-  sink(Math.max(...xs, u));
+  sink(Math.max(...xs) + u);
   return t;
 }
 export function inside(xs: number[], k: number, sink: (n: number) => void): number {
   const t = k + 1;
   const u = k * 2;
-  sink(Math.max(...xs, u));
+  sink(Math.max(...xs) + u);
   return t;
 }
 export function planted(xs: number[], k: number, sink: (n: number) => void): number {
   const t = k + 1;
   const u = k * 2;
-  sink(Math.max(...xs, u));
+  sink(Math.max(...xs) + u);
   return t;
 }
 export function upstream(xs: number[], k: number, sink: (n: number) => void): number {
   const t = k + 1;
   const u = k * 2;
-  sink(Math.max(...xs, u));
+  sink(Math.max(...xs) + u);
   return t;
 }
 export function escapes(xs: number[], k: number): number {

@@ -15,7 +15,7 @@ export function inside(n: number, sink: (s: string) => void): number {
 export function planted(n: number, sink: (s: string) => void): number {
   const t = n + 1;
   const u = n * 2;
-  
+  sink("😀x" + u);
   return t;
 }
 export function upstream(n: number, sink: (s: string) => void): number {

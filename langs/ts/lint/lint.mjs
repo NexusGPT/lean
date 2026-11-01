@@ -272,6 +272,13 @@ export const OPAQUE_ROWS = {
 export const OPAQUE_GRADES = new Set(['block', 'statement', 'expression', 'none']);
 for (const [rule, g] of Object.entries(OPAQUE_ROWS)) if (!OPAQUE_GRADES.has(g)) throw new Error(`lint: opaque row ${rule}: ${g} is not a grade`);
 export const opaqueGrade = (rule) => OPAQUE_ROWS[rule] ?? 'none';
+// the statement family's envelope (design/w1b-opaque-statements.md), one row per rule it grades `statement`: `value` when
+// every value the construct can make is a value of the model, `boundary` when it can make one outside it (an astral
+// string, NaN or an infinity, a fraction in an integer file, a key compared by reference, a used-up iterator): a
+// boundary step may write only the world, else its unit joins the value boundary (translate.mjs numericOpaque)
+const BOUNDARY_RULES = new Set(['collection-iterator', 'division', 'math-empty', 'number-special', 'reference-key', 'string-code-unit', 'unary-coercion']);
+export const OPAQUE_ENVELOPE = Object.freeze(Object.fromEntries(Object.entries(OPAQUE_ROWS).filter(([, g]) => g === 'statement').map(([r]) => [r, BOUNDARY_RULES.has(r) ? 'boundary' : 'value'])));
+for (const r of BOUNDARY_RULES) if (OPAQUE_ENVELOPE[r] !== 'boundary') throw new Error(`lint: boundary rule ${r} is not graded statement`);
 
 export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
 export function admissionFindings(file, ranges = null, opts = {}) {

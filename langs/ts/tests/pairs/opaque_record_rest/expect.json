@@ -26,6 +26,14 @@
     "inside": "WITNESS",
     "upstream": "WITNESS"
   },
+  "break": [
+    {
+      "mechanism": "opaque-drop-read",
+      "equal": {
+        "upstream": true
+      }
+    }
+  ],
   "noPlanted": "exec/mutate.mjs has no site inside `const { q, ...rest } = d;` (no operator, literal, branch or call)",
-  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule record-rest: a rest pattern of a dictionary has no datatype of remaining fields, which the model does not read, so the statement `const { q, ...rest } = d;` is one opaque step: an uninterpreted transition keyed by its text and the same-file definitions it names, reading every local it mentions, writing every local it assigns. outside: the step unchanged and the return bound to a local, proved modulo the step. inside: `= { ...d, q: 0 };` for `= d;` is another text, another symbol, not proved; lane B finds the difference. planted: none (exec/mutate.mjs has no site inside `const { q, ...rest } = d;` (no operator, literal, branch or call)); the unit is the parent's, unchanged. upstream: `q: x + 2` for `q: x + 1` changes a value only the step reads; the step takes it, so nothing is proved (tests/opaque-statements.mjs --break drops that read and this unit proves falsely)."
+  "why": "The opacity ladder (design/w1b-opaque-statements.md), rule record-rest: a rest pattern of a dictionary has no datatype of remaining fields, which the model does not read, so the statement `const { q, ...rest } = d;` is one opaque step: an uninterpreted transition keyed by its text and the same-file definitions it names, reading every local it mentions, writing every local it assigns. outside: the step unchanged and the return bound to a local, proved modulo the step. inside: `= { ...d, q: 0 };` for `= d;` is another text, another symbol, not proved; lane B finds the difference. planted: none (exec/mutate.mjs has no site inside `const { q, ...rest } = d;` (no operator, literal, branch or call)); the unit is the parent's, unchanged. upstream: `q: x + 2` for `q: x + 1` changes a value only the step reads; the step takes it, so nothing is proved (LEAN_BREAK=opaque-drop-read drops that read and this unit proves falsely: the pair's break row)."
 }
