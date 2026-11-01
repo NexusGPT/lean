@@ -20,6 +20,7 @@ import { faithfulPlacement, checkWallCapMs } from '../check.mjs';
 import { solveUnit } from '../solve/fp.mjs';
 import { dafnyVerifyArgs } from '../exec/dafny-args.mjs'; // the one bound and the one Z3 (solve/z3.mjs) of every `dafny verify`: the Z3 the certificate names is the one the suite's Dafny runs
 import { topLevelFunctions as unitsOfFile, loadProgram as loadForUnits } from '../common.mjs';
+import { opaqueGrade } from '../lint/lint.mjs'; // the opaque column: a graded rule's escape is named with its grade
 import { breakRows } from './break.mjs'; // the one --break convention (amendment A6)
 import { opaqueLines } from '../translate/opaque.mjs'; // the opaque steps a translation lists (design/w1a-opaque-mutation.md)
 
@@ -689,7 +690,11 @@ async function escapes(add) {
     const candidateUnit = (src.match(/^\/\/ candidate-unit:\s*(\S+)/m) ?? [])[1];
     const l = await R.run('node', [lint, ...(candidateUnit ? ['--candidate', file, '--unit', candidateUnit, '--n', '1', '--no-project'] : [file])]);
     const hit = l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s`).test(line));
-    add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    // a rule the opaque column grades (lint/lint.mjs OPAQUE_ROWS): the lint names the finding with its grade (the unit is
+    // read with an opaque step, design/w1a-opaque-mutation.md); the proof shape below still refuses it (w1a's check, taken as it is)
+    const graded = opaqueGrade(want) !== 'none' ? l.stdout.split('\n').some((line) => new RegExp(`\\s${want}\\s+\\[opaque: `).test(line)) : false;
+    if (opaqueGrade(want) !== 'none') add('escape', name, 'lint names it, graded opaque or refused', graded || (l.status === 1 && hit), graded ? `graded: ${want} [opaque: ${opaqueGrade(want)}]` : l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
+    else add('escape', name, 'lint refuses', l.status === 1 && hit, l.status === 1 ? (hit ? `refused: ${want}` : `refused, but not for ${want}`) : 'ACCEPTED', await R.lsc(file));
     const fn = (src.match(/^export (?:async )?function (\w+)/m) ?? [])[1];
     if (fn && !candidateUnit) {
       const t = await R.run('node', [translate, file, '--fn', fn, '--out', path.join(tmp, `esc_${name}.dfy`)]);
@@ -719,13 +724,19 @@ async function adviceLabels(add) {
     const l = await R.run('node', [lint, path.join(advDir, f), '--json', '--advice', ...(f.startsWith('any_') ? ['--any-type'] : [])]);
     let all = [], found = []; try { all = JSON.parse(l.stdout); found = all.filter((x) => x.rule === rule); } catch { /* not JSON: fails below */ }
     const tag = label === 'conditional' ? '[conditional: ' : `[${label}]`;
-    const ok = l.status === 1 && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
+    // a finding the opaque column grades is listed with the advice (`graded`, label and advice kept) and refuses
+    // nothing, so the lint exits 1 exactly when a refusal is listed (design/w1a-opaque-mutation.md)
+    const ok = l.status === (all.some((x) => x.graded === undefined) ? 1 : 0) && found.length > 0 && found.every((x) => x.label === label && (x.advice ?? '').startsWith(tag) && (label !== 'conditional' || !!x.precondition)) && (!none || !all.some((x) => x.rule === none));
     add('advice', name, `${rule} ${label}${none ? `, no ${none}` : ''}`, ok, found.length ? found.map((x) => `${x.label}${x.labelDecided ? ' (decided at the site)' : ''}`).join(', ') + (none && all.some((x) => x.rule === none) ? `; ${none} fired` : '') : `no ${rule} finding (exit ${l.status})`);
   } }));
   const runtime = [
     // seeded clock values retain their native shapes and ordered observations
     ['clock-read', scriptRow('runtime', 'clock-read', 'seeded recording fakes', [path.join(here, 'clock-read.mjs')], (r) => (r.stdout + r.stderr).trim())],
     // the purity check's second render starts from the state the first started from: the world's writes to handed objects are journaled, undone and replayed (R8's BoardRow and its four mutants)
+    // the opacity ladder's shared helper (translate/opaque.mjs): the key is the construct's tokens, the step's shape, the
+    // column, the reference test; with its mechanism removed (--break, LEAN_BREAK=opaque-drop-read) the test must go red
+    ['opaque-unit', scriptRow('runtime', 'opaque-unit', 'the opaque step helper', [path.join(here, 'opaque-unit.mjs')], lastLine)],
+    ['opaque-unit-break', async (R, add) => { const r = await R.run('node', [path.join(here, 'opaque-unit.mjs'), '--break']); add('runtime', 'opaque-unit --break', 'red without the mechanism', r.status !== 0, (r.stdout + r.stderr).trim().split('\n')[0]); }],
     ['render-handed', scriptRow('runtime', 'render-handed', 'world writes to handed objects in the purity check', [path.join(here, 'render-handed.mjs')], lastLine)],
     ['rest_param-paths', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, 'pairs/rest_param/paths.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'rest_param/paths.test.mjs', 'drawn rest slot spread at every call boundary', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     // a run never ends without a verdict: a drained loop and a budget stop are ASK, exit 2; a wide record, a deep nesting and an `@/` alias get verdicts

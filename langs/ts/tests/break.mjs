@@ -17,8 +17,7 @@ export const MECHANISMS = {
   'opaque-drop-callees': 'translate/translate.mjs opaqueTail, opaqueStep: the same-file callee texts leave the step\'s key, and a statement step\'s CALLS line is not written (lanes w1a, w1b)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
 };
-export const BREAK_ENV = 'LEAN_BREAK';
-export const broken = (name) => String(process.env[BREAK_ENV] ?? '').split(',').map((x) => x.trim()).includes(name);
+export { BREAK_ENV, broken } from '../break.mjs'; // the switch lives beside the product (langs/ts/break.mjs, w1a)
 // a pair's break rows, checked for shape: a mechanism must be registered, a lemma must flip
 export function breakRows(exp) {
   const rows = [];

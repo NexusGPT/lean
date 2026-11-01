@@ -59,7 +59,7 @@ import { cellWrite, captureKind, heldFunction } from '../react.mjs'; import { me
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
 import { opaqueGrade, gradedRule, opaqueText, opaqueKey, opaqueForm, opaqueEntry, opaqueLine, statementCount, isReference, blockStart } from './opaque.mjs';
-import { broken } from '../tests/break.mjs'; // the opacity ladder (design/w1a-opaque-mutation.md)
+import { broken } from '../break.mjs'; // the opacity ladder (design/w1a-opaque-mutation.md)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
 import { statementSite, statementRefusalRule, siteStatement, nodeAt, patternTargets, boundNames, namedDefinitions, reachedUnitTexts, stepHazard, sharedBefore } from './opaque-statements.mjs'; // the opacity ladder of the statement and expression rules (design/w1b-opaque-statements.md)
