@@ -64,15 +64,31 @@ the comparison: `node lane/w1a-opaque-mutation-compare.mjs /root/census-installs
 (per rule: the units the rule stopped before and after, by the first rule per unit; the units newly entered; the
 units the rule stopped before that another rule stops now; the opaque fraction of each newly entered unit, read off
 its `// OPAQUE` line, one translation per unit). pyka and nutshell after: 681d3d9ad1 (nutshell with
-`NODE_OPTIONS=--max-old-space-size=8192`); langchainjs after: LANGCHAIN_AFTER.
+`NODE_OPTIONS=--max-old-space-size=8192`); langchainjs after: 0952b040ef (04:33, before the whole-unit rows and the static-method grading; the rerun at 681d3d9ad1 is pending: its 6 residual alias-mutation stops are the static methods 6eb4aa0adf grades).
 
 Per rule, before / after / newly entered:
 
-TABLE
+| rule | pyka | nutshell | langchainjs | total |
+|---|---:|---:|---:|---:|
+| `alias-mutation` | 28 / 0 / 16 | 185 / 0 / 64 | 89 / 6 / 23 | 302 / 6 / 103 |
+| `param-assign` | 0 / 0 / 0 | 0 / 0 / 0 | 3 / 0 / 0 | 3 / 0 / 0 |
+| `param-mutation` | 9 / 0 / 2 | 100 / 0 / 37 | 18 / 0 / 4 | 127 / 0 / 43 |
+| `property-assign` | 8 / 0 / 7 | 10 / 0 / 3 | 32 / 0 / 12 | 50 / 0 / 22 |
+| `index-assign` | 5 / 0 / 2 | 15 / 0 / 6 | 49 / 0 / 21 | 69 / 0 / 29 |
+| `in-place-mutation` | 2 / 0 / 1 | 31 / 0 / 15 | 5 / 0 / 2 | 38 / 0 / 18 |
+| `closure-mutation` | 22 / 0 / 12 | 124 / 0 / 65 | 17 / 0 / 6 | 163 / 0 / 83 |
+| `opaque-mutation` | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
+| `receiver-mutation` | 0 / 0 / 0 | 48 / 0 / 6 | 5 / 0 / 4 | 53 / 0 / 10 |
+| `receiver-write` | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
+| `object-method-capture` | 0 / 0 / 0 | 3 / 0 / 1 | 0 / 0 / 0 | 3 / 0 / 1 |
+| `object-method-mutation` | 0 / 0 / 0 | 0 / 0 / 0 | 2 / 0 / 1 | 2 / 0 / 1 |
+| `mutator-value` | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 |
 
 | root | units | entered before | entered after | delta | family stops before | after | newly entered | now stopped by another rule |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-ROOTS
+| pyka | 2966 | 1324 | 1370 | +46 | 74 | 0 | 40 | 34 |
+| nutshell | 10511 | 6156 | 6430 | +274 | 516 | 0 | 197 | 319 |
+| langchainjs | 6709 | 2954 | 3022 | +68 | 220 | 6 | 73 | 148 |
 
 Every rule of the family stops 0 units on pyka and nutshell. The entered count rises by less than the family
 stopped: of the units the family stopped first, a share (pyka 34 of 74, nutshell 319 of 516, langchainjs 148 of
@@ -89,16 +105,20 @@ it completes (lead-vm and the tree both: 11 units, 8 inside). Open for the censu
 
 ## A5: the opaque fraction (threshold: median at most 0.25) -- NOT MET
 
-| root | newly entered | measured | median | p25 | whole unit (1.0) | at most 0.25 | no step (finding in a nested function) |
+| root | newly entered | measured | median | p25 | whole unit (1.0) | at most 0.25 | translated, no step listed |
 |---|---:|---:|---:|---:|---:|---:|---:|
-FRACTIONS
+| pyka | 40 | 36 | 1 | 1 | 33 | 0 | 4 |
+| nutshell | 197 | 159 | 1 | 0.923 | 118 | 1 | 38 |
+| langchainjs | 73 | not measured | | | | | |
 
 The block rung cannot meet the threshold, and the design note says why ("Why the opaque step cannot be one statement
 here"): the value reading has no term for sharing, so the step must run from the first statement that may touch a
 reference to the end of the unit, and in this family that is nearly every statement. No step's span equals its
 finding's span (0 of all measured). What would meet A5 is a second rung in the heap core, where references are cells
 and an opaque statement reading and writing the heap is sound by the effect axiom alone. That rung is not built (open).
-w3b's mutant study on these units has not run in this lane.
+"Translated, no step listed": the unit's own body holds no site; on pyka all 4 were read by hand and each finding sits
+in a nested function the unit hands on as a value (a JSX `ref` callback, a nested unit with its own step): their
+fraction is 0. nutshell's 38 were not read one by one. w3b's mutant study on these units has not run in this lane.
 
 ## Open
 
