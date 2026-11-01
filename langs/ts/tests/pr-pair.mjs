@@ -52,7 +52,7 @@ export function pairRepo(dir, repo) {
 export async function prPair(dir, { tmp, env = {} } = {}) {
   const exp = JSON.parse(fs.readFileSync(path.join(dir, 'expect.json'), 'utf8')).pr;
   if (!exp) return [];
-  const work = path.join(tmp, `pr_${path.basename(dir)}${env.LEAN_W1F_BREAK ? '_break_' + env.LEAN_W1F_BREAK : ''}`);
+  const work = path.join(tmp, `pr_${path.basename(dir)}${env.LEAN_BREAK ? '_break_' + env.LEAN_BREAK : ''}`);
   fs.rmSync(work, { recursive: true, force: true });
   const repo = path.join(work, 'repo'), out = path.join(work, 'report.json');
   const { base, head } = pairRepo(dir, repo);

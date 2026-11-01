@@ -1,5 +1,5 @@
 {
- "why": "Directive comments: a change adds `@ts-expect-error` above a line the checker rejects (it hides TS2322), adds `@ts-ignore` above a clean line (it hides nothing), adds a block `eslint-disable no-magic-numbers` and removes an `eslint-disable-next-line no-console`. Each is a rule record (lint/directives.mjs) in the report and the refusals file, never a verdict; the units that hold them emit the same JavaScript and are PASS-typed. legacy's `@ts-ignore` only moved down two lines: matched by what it governs, it is no record (--break directive matches by line number and lists it).",
+ "why": "Directive comments: a change adds `@ts-expect-error` above a line the checker rejects (it hides TS2322), adds `@ts-ignore` above a clean line (it hides nothing), adds a block `eslint-disable no-magic-numbers` and removes an `eslint-disable-next-line no-console`. Each is a rule record (lint/directives.mjs) in the report and the refusals file, never a verdict; the units that hold them emit the same JavaScript and are PASS-typed. legacy's `@ts-ignore` only moved down two lines: matched by what it governs, it is no record (--break w1f-directive matches by line number and lists it).",
  "prOnly": true,
  "pr": {
   "rows": [

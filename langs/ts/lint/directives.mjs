@@ -25,9 +25,9 @@ const KINDS = [
   { directive: 'eslint-enable', re: /^(?:\/\/|\/\*+)\s*eslint-enable(?![-\w])/, scope: 'line', rules: true },
   { directive: 'biome-ignore', re: /^(?:\/\/|\/\*+)\s*biome-ignore\b/, scope: 'next', rules: true },
 ];
-// LEAN_W1F_BREAK=directive (tests/w1f-module-units.mjs --break directive): directives matched by their line number, so
+// LEAN_BREAK=w1f-directive (tests/w1f-module-units.mjs --break w1f-directive): directives matched by their line number, so
 // a directive an edit only moved reads as removed and added
-const BREAK = process.env.LEAN_W1F_BREAK ?? '';
+const BREAK = process.env.LEAN_BREAK ?? '';
 
 // every comment of a file, read from the tree (each token's leading and trailing trivia), never from a scanner started
 // at a line: a `//` inside a string or a template is text
@@ -50,7 +50,7 @@ function comments(sf) {
 const rulesOf = (body) => body.replace(/\*\/\s*$/, '').split(/\s--\s|\s--$/)[0].split(',').map((r) => r.trim()).filter(Boolean).sort();
 
 export function directivesOf(sf) {
-  const lines = sf.getLineStarts().length;
+  const lines = sf.getLineAndCharacterOfPosition(Math.max(0, sf.text.length - 1)).line + 1; // the line of the last character
   const lineOf = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
   const lineText = (line) => line >= 1 && line <= lines ? sf.text.slice(sf.getLineStarts()[line - 1], sf.getLineStarts()[line] ?? sf.text.length).trim() : '';
   const out = [];
@@ -72,7 +72,7 @@ export function directivesOf(sf) {
   return out;
 }
 
-const keyOf = (d) => BREAK === 'directive' ? `${d.directive}|${d.rules.join(',')}|${d.line}` : `${d.directive}|${d.rules.join(',')}|${d.anchor}`;
+const keyOf = (d) => BREAK === 'w1f-directive' ? `${d.directive}|${d.rules.join(',')}|${d.line}` : `${d.directive}|${d.rules.join(',')}|${d.anchor}`;
 // the directives one side has and the other lacks, as a multiset over the key
 function difference(a, b) {
   const left = new Map();

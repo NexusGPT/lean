@@ -22,9 +22,9 @@ const hash = (v) => createHash('sha256').update(v).digest('hex');
 // the files of a program read beyond the changed ones are capped: past it the reading is not made (no PASS-typed)
 export const TYPED_FILE_CAP = 3000;
 const TEMPORARY = /(^|[\\/])\.lean_(?:head|base|values)_\d+_/; // pr.mjs's materialised sides, never a file of the project
-// LEAN_W1F_BREAK (tests/w1f-module-units.mjs --break): `emit` compares nothing (the reading never decides), `closure`
+// LEAN_BREAK (the suite's one convention, tests/w1f-module-units.mjs --break): `w1f-emit` compares nothing (the reading never decides), `w1f-closure`
 // reads the changed file's own emit alone (the importers' closure removed: a type read by another file's emit is missed)
-const BREAK = process.env.LEAN_W1F_BREAK ?? '';
+const BREAK = process.env.LEAN_BREAK ?? '';
 
 // the project's options with emit on: JavaScript only, no maps (positions are not behaviour), no comments (a comment is
 // not behaviour: the ledger's inert rule), into a folder no file is read from, whatever the project says of errors
@@ -119,6 +119,7 @@ export function typedReading({ root, changes, project = true }) {
       const texts = { parent: new Map(list.map((c) => [c.abs, c.parent])), head: new Map(list.map((c) => [c.abs, c.head])) };
       const head = sideProgram(options, roots, texts.head, undefined);
       const parent = sideProgram(options, roots, texts.parent, head);
+      head.getTypeChecker(); parent.getTypeChecker(); // binds every file: a CommonJS file is known as a module only once bound
       const sources = (p) => p.getSourceFiles().filter((sf) => !sf.isDeclarationFile && !p.isSourceFileFromExternalLibrary(sf) && !TEMPORARY.test(sf.fileName));
       const all = new Set([...sources(head), ...sources(parent)].map((sf) => path.resolve(sf.fileName)));
       const by = [importers(head), importers(parent)];
@@ -136,7 +137,7 @@ export function typedReading({ root, changes, project = true }) {
         // the files whose emit this file's change can reach
         const sides = [parent.getSourceFile(c.abs), head.getSourceFile(c.abs)];
         let reach;
-        if (BREAK === 'closure') reach = new Set([c.abs]);
+        if (BREAK === 'w1f-closure') reach = new Set([c.abs]);
         else if (sides.some((sf) => !sf || declaresGlobals(sf))) reach = new Set(all);
         else {
           reach = new Set([c.abs]);
@@ -147,7 +148,7 @@ export function typedReading({ root, changes, project = true }) {
         const files = [...reach].filter((f) => all.has(f) || f === c.abs);
         if (files.length > TYPED_FILE_CAP) { out.set(c.rel, { equal: false, reason: `the files its emit can reach (${files.length}) exceed the cap (${TYPED_FILE_CAP})` }); continue; }
         const own = emitOf(c.abs);
-        const differs = BREAK === 'emit' ? [c.abs] : files.filter((f) => !emitOf(f).equal);
+        const differs = BREAK === 'w1f-emit' ? [c.abs] : files.filter((f) => !emitOf(f).equal);
         const diag = (p, sf) => sf ? [...p.getSyntacticDiagnostics(sf), ...p.getSemanticDiagnostics(sf)].filter((d) => d.category === ts.DiagnosticCategory.Error).length : 0;
         out.set(c.rel, {
           equal: !differs.length, emitted: { parent: own.parent, head: own.head }, files: files.length,
@@ -157,9 +158,9 @@ export function typedReading({ root, changes, project = true }) {
           errors: { parent: diag(parent, sides[0]), head: diag(head, sides[1]) },
           project: cfg ? path.relative(root, cfg).split(path.sep).join('/') : null,
           options: { module: options.module ?? null, target: options.target ?? null, emitDecoratorMetadata: !!options.emitDecoratorMetadata, isolatedModules: !!options.isolatedModules, verbatimModuleSyntax: !!options.verbatimModuleSyntax },
-          ...(BREAK ? { broken: BREAK } : {}),
+          ...(BREAK.startsWith('w1f-') ? { broken: BREAK } : {}),
         });
-        if (differs.length && c.units?.length && BREAK !== 'emit') {
+        if (differs.length && c.units?.length && BREAK !== 'w1f-emit') {
           const ps = ts.createSourceFile(c.abs, c.parent, ts.ScriptTarget.Latest, true), hs = ts.createSourceFile(c.abs, c.head, ts.ScriptTarget.Latest, true);
           const pu = topLevelFunctions(ps), hu = topLevelFunctions(hs), units = {};
           for (const name of c.units) {

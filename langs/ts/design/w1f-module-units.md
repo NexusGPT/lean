@@ -69,8 +69,15 @@ leads to F, and F declares no global. Assumptions, stated in the reason and here
 the project's options (a transpiler that erases the same types: Babel, esbuild and swc keep a value import tsc would
 elide only when `isolatedModules` is off and the name is used as a type alone, which tsc reports under isolatedModules);
 a function's source text (`Function.prototype.toString`) and a stack trace mapped through a source map are not
-observations (as for every comment edit). The reading decides per file, never per unit inside a file whose emit
-differs: such a unit keeps the lanes' reading, a conservative loss (an ASK where the unit's own change is type-only).
+observations (as for every comment edit).
+
+Inside a file whose emit differs, each changed function is read alone: the head is emitted once more with that one
+unit's text put back to its parent text (every other byte the head's), over the same reach. When that emit is
+byte-equal to the head's in every file of the reach, the unit's own change is erased by the compiler: the head and the
+head with this unit unchanged run the same code, so the unit is PASS-typed and the file's other differences stay with
+the units that make them (`type_only/mixed.ts`: `label` PASS-typed, `twice` lane B's WITNESS). Otherwise the unit keeps
+the lanes' reading. A nested unit is its enclosing unit's, and a unit one side lacks has no parent text: neither is read
+alone.
 Past `TYPED_FILE_CAP` files in the reach, or a project that emits one bundle (`outFile`), the reading makes no decision.
 
 What it is not: no source text is compared (a type-only change is decided by what the compiler writes, never by a
@@ -116,16 +123,19 @@ translator's sites are unchanged.
 
 The four pairs, each read as a pull request by `tests/pr-pair.mjs` (expect.json's `pr`: rows, absent rows, directive
 records, no undecided unassigned row), run by the suite's pairs section and by `tests/w1f-module-units.mjs`, which also
-runs every `--break` (LEAN_W1F_BREAK): module (the module unit's route), js (the untyped-JavaScript route restored),
-types (the types unit's route), emit (no emit compared), closure (the reach cut to the changed file), directive (matched
-by line number). Each must turn its pair red.
+runs every `--break` through the suite's one convention (`LEAN_BREAK=<mechanism>`, amendment A6): `w1f-module` (the
+module unit's route), `w1f-js` (the untyped-JavaScript route restored), `w1f-types` (the types unit's route), `w1f-emit`
+(no emit compared), `w1f-closure` (the reach cut to the changed file), `w1f-directive` (matched by line number). Each
+must turn its pair red. Each break fixture is a change whose effect reaches outside what changed (amendment A1): the
+closure break's is `type_only/level.ts`, a const enum member `High = 2` to `High = 3` whose own file emits nothing on
+either side while the unchanged `alarm.ts` inlines `2` and then `3` (amendment A9); with the closure cut, the types unit
+of `level.ts` is a false PASS-typed, which the pair refuses.
 
 MEASURED
 
 ## Still out
 
-- Per-unit typed reading inside a file whose emit differs (emit the file with one unit's text reverted and compare):
-  it would turn a type-only unit of a mixed file PASS-typed.
 - A const enum whose value changes emits nothing in its own file; the importer it is inlined into differs, so the
-  types unit is ASK naming it (never PASS), but the module unit's lane B sees no difference there.
+  types unit is ASK naming it (never PASS-typed), but no lane runs the importer's units, whose text is unchanged: a
+  WITNESS there would need the importers' units read as changed units.
 - ESLint is not run: a lint directive's record names its rules, not the reports it hides.

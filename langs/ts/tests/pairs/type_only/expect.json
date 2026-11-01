@@ -1,5 +1,5 @@
 {
- "why": "A type-only change, read through the emitted JavaScript (typed.mjs). index.ts changes an interface, a type alias, a type-only import, a parameter's annotation and adds an assertion: its emit is byte-equal, so its functions and its types unit are PASS-typed. shapes.ts changes a type alias only, but model.ts (unchanged) imports it under emitDecoratorMetadata, so model.ts's emit names Number instead of String: the types unit of shapes.ts is ASK naming model.ts (the importers' closure; --break closure turns it into a false PASS-typed). mixed.ts changes a parameter's type in one function and the result in another: the file's emit differs, so the file is not PASS-typed; read unit by unit, the head with label's parent text emits the same JavaScript (label's own change is erased: PASS-typed), the head with twice's does not (twice: lane B's WITNESS).",
+ "why": "A type-only change, read through the emitted JavaScript (typed.mjs). index.ts changes an interface, a type alias, a type-only import, a parameter's annotation and adds an assertion: its emit is byte-equal, so its functions and its types unit are PASS-typed. shapes.ts changes a type alias only, but model.ts (unchanged) imports it under emitDecoratorMetadata, so model.ts's emit names Number instead of String: the types unit of shapes.ts is ASK naming model.ts (the importers' closure; --break w1f-closure turns it into a false PASS-typed). level.ts changes a const enum member (High = 2 to High = 3), evaluated code, so its module unit: the file emits nothing on either side under the project's options (no isolatedModules), but alarm.ts (unchanged) inlines the value, 2 then 3, so the typed reading names alarm.ts and makes no PASS-typed; lane B, which reads the enum as a per-file transpiler emits it, gives the WITNESS (--break w1f-closure, the changed file's own emit alone, turns it into a false PASS-typed). mixed.ts changes a parameter's type in one function and the result in another: the file's emit differs, so the file is not PASS-typed; read unit by unit, the head with label's parent text emits the same JavaScript (label's own change is erased: PASS-typed), the head with twice's does not (twice: lane B's WITNESS).",
  "prOnly": true,
  "pr": {
   "project": "tsconfig.json",
@@ -26,6 +26,11 @@
     "reason": "model.ts"
    },
    {
+    "file": "level.ts",
+    "unit": "(module)",
+    "verdict": "WITNESS"
+   },
+   {
     "file": "mixed.ts",
     "unit": "label",
     "verdict": "PASS-typed",
@@ -37,6 +42,12 @@
     "verdict": "WITNESS"
    }
   ],
-  "unassigned": false
+  "unassigned": false,
+  "absent": [
+   {
+    "file": "alarm.ts",
+    "unit": "isHigh"
+   }
+  ]
  }
 }
