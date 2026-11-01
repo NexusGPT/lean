@@ -57,20 +57,20 @@ lane A withholds it (nested write through an input), lane B WITNESS.
 
 ## The census (A8 roots: pyka, nutshell, langchainjs)
 
-Before: lead-vm (`/root/lanes/w1a-opaque-mutation/base`); after: the tree. Command per root (load read first, one
+Totals: family stops 810 before, 0 after; entered 10434 before, 10829 after (+395); newly entered units the family
+stopped: 315. Before: lead-vm (`/root/lanes/w1a-opaque-mutation/base`); after: the tree. Command per root (load read first, one
 root at a time):
 `node langs/ts/census.mjs /root/census-installs/w1a/<root> --install-under /root/census-installs/w1a --out <json> --report <md>`;
 the comparison: `node lane/w1a-opaque-mutation-compare.mjs /root/census-installs/w1a/<root> <before.json> <after.json> <abs tree>/langs/ts --fractions <out.json>`
 (per rule: the units the rule stopped before and after, by the first rule per unit; the units newly entered; the
 units the rule stopped before that another rule stops now; the opaque fraction of each newly entered unit, read off
-its `// OPAQUE` line, one translation per unit). pyka and nutshell after: 681d3d9ad1 (nutshell with
-`NODE_OPTIONS=--max-old-space-size=8192`); langchainjs after: 0952b040ef (04:33, before the whole-unit rows and the static-method grading; the rerun at 681d3d9ad1 is pending: its 6 residual alias-mutation stops are the static methods 6eb4aa0adf grades).
+its `// OPAQUE` line, one translation per unit). pyka after: 681d3d9ad1; nutshell and langchainjs after: 681d3d9ad1 with `NODE_OPTIONS=--max-old-space-size=8192` (below).
 
 Per rule, before / after / newly entered:
 
 | rule | pyka | nutshell | langchainjs | total |
 |---|---:|---:|---:|---:|
-| `alias-mutation` | 28 / 0 / 16 | 185 / 0 / 64 | 89 / 6 / 23 | 302 / 6 / 103 |
+| `alias-mutation` | 28 / 0 / 16 | 185 / 0 / 64 | 89 / 0 / 28 | 302 / 0 / 108 |
 | `param-assign` | 0 / 0 / 0 | 0 / 0 / 0 | 3 / 0 / 0 | 3 / 0 / 0 |
 | `param-mutation` | 9 / 0 / 2 | 100 / 0 / 37 | 18 / 0 / 4 | 127 / 0 / 43 |
 | `property-assign` | 8 / 0 / 7 | 10 / 0 / 3 | 32 / 0 / 12 | 50 / 0 / 22 |
@@ -88,14 +88,15 @@ Per rule, before / after / newly entered:
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | pyka | 2966 | 1324 | 1370 | +46 | 74 | 0 | 40 | 34 |
 | nutshell | 10511 | 6156 | 6430 | +274 | 516 | 0 | 197 | 319 |
-| langchainjs | 6709 | 2954 | 3022 | +68 | 220 | 6 | 73 | 148 |
+| langchainjs | 6709 | 2954 | 3029 | +75 | 220 | 0 | 78 | 143 |
 
-Every rule of the family stops 0 units on pyka and nutshell. The entered count rises by less than the family
-stopped: of the units the family stopped first, a share (pyka 34 of 74, nutshell 319 of 516, langchainjs 148 of
+Every rule of the family stops 0 units on all three roots (13 rules, 810 units before). The entered count rises by less than the family
+stopped: of the units the family stopped first, a share (pyka 34 of 74, nutshell 319 of 516, langchainjs 143 of
 220) now stops on the next refusal the unit holds (most: read-after-call, type-assertion, library, promise,
 copied-argument). Those rules are other lanes'. The "entered up by at least what they stopped" criterion therefore
-holds only for the units the family alone stopped (entered delta 46 >= 40 on pyka, 274 >= 197 on nutshell: the rest
-of the delta are callers and callbacks that entered with them).
+holds only for the units the family alone stopped (entered delta 46 >= 40 on pyka, 274 >= 197 on nutshell, 75 < 78 on langchainjs: the rest
+of the delta are callers and callbacks that entered with them; on langchainjs the delta is 3 short of the newly
+entered: a net count, the units that changed the other way are not decomposed here).
 
 langchainjs: one package (`libs/providers/langchain-exa/src/tools.ts`) needs about 6.6 GB of heap in the lowering
 and the walker's default 4 GB limit aborts it (SIGABRT, 318 of 1486 files not walked). The blow-up is not new:
@@ -109,7 +110,7 @@ it completes (lead-vm and the tree both: 11 units, 8 inside). Open for the censu
 |---|---:|---:|---:|---:|---:|---:|---:|
 | pyka | 40 | 36 | 1 | 1 | 33 | 0 | 4 |
 | nutshell | 197 | 159 | 1 | 0.923 | 118 | 1 | 38 |
-| langchainjs | 73 | not measured | | | | | |
+| langchainjs | 78 | 63 | 1 | 0.9 | 46 | 0 | 15 |
 
 The block rung cannot meet the threshold, and the design note says why ("Why the opaque step cannot be one statement
 here"): the value reading has no term for sharing, so the step must run from the first statement that may touch a
