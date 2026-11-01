@@ -39,6 +39,12 @@ export const MECHANISMS = {
   'declared-shape': 'exec/new-unit.mjs: the result is not checked against the declared shape (lane w1h)',
   'shape-drives': 'exec/new-unit.mjs: the shape check runs although the observer drove functions the unit handed out (lane w1h)',
   'pr-tests': 'exec/new-unit.mjs: the tests the change adds are not run (lane w1h)',
+  // lane w9k (tests/w9k-new-code.mjs drives them)
+  'unit-reach': 'exec/new-unit.mjs unitWorld: the world a new unit can read is the whole module graph\'s, not its own reach (lane w9k)',
+  'real-buffer': 'exec/new-unit.mjs worldGlobal: naming `Buffer`, Node\'s own in the sandbox, reads as naming a world handle (lane w9k)',
+  'nan-fact': 'exec/new-unit.mjs: a NaN returned on an input holding none is not recorded (lane w9k)',
+  'ignored-param': 'exec/new-unit.mjs parameterTrials: the parameter trials do not run (lane w9k)',
+  'findings-records': 'pr.mjs: a new unit under a lint finding loses its records (lane w9k)',
   'w1f-module': 'ci/ledger.mjs: the module unit\'s route is removed (lane w1f)',
   'w1f-js': 'ci/ledger.mjs: a JavaScript file takes the route before the JavaScript module unit (lane w1f)',
   'w1f-types': 'ci/ledger.mjs: a type-only or directive edit is not routed to the types unit (lane w1f)',

@@ -41,6 +41,7 @@ import { runPair, setUnitSeconds, UNIT_SECONDS } from './exec/run.mjs';
 import { loadSandboxList, useSandboxList } from './exec/sandbox-list.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
 import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
+import { broken } from './break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 const TEST_FILE = /(?:^|[/\\])__tests__(?:[/\\]|$)|\.(?:spec|test)\.[cm]?[jt]sx?$/; // the test modules new-unit.mjs excludes from a unit's own load
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -687,7 +688,7 @@ async function prWorker(opts) {
         try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project }); }
         catch (e) { b = { verdict: 'ASK', reason: `harness: ${String(e.message).slice(0, 300)}` }; }
         const proof = correspondence?.status === 'decided-equal' && !['WITNESS', 'NEW', 'REFUSE'].includes(b.verdict) && !b.bound?.library?.defects?.length && !b.bound?.frontEnd?.handlers?.defects?.length;
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: proof ? 'checked' : `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : proof ? 'PASS-proved' : b.verdict, ...(proof ? { certificate: { ...correspondence.certificate, identity: rows.identity, lanes: { ...correspondence.certificate.lanes, B: b } } } : {}), ...(proof ? {} : { certificate: basicCertificate({ B: { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, ...(b.record ? { record: b.record } : {}) } }) }), laneB: b.verdict, laneA: proof ? 'PASS-proved' : null, witness: b.witnesses?.[0] ?? null, ...(b.verdict === 'WITNESS' ? { witnesses: siteWitnesses(b.witnesses) } : {}), reason: proof ? null : b.reason ?? u.findings[0].msg, advice: proof ? [] : u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: proof ? 'checked' : `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : proof ? 'PASS-proved' : b.verdict, ...(proof ? { certificate: { ...correspondence.certificate, identity: rows.identity, lanes: { ...correspondence.certificate.lanes, B: b } } } : {}), ...(proof ? {} : { certificate: basicCertificate({ B: { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, ...(b.record ? { record: b.record } : {}) } }) }), laneB: b.verdict, laneA: proof ? 'PASS-proved' : null, witness: b.witnesses?.[0] ?? null, ...(b.verdict === 'WITNESS' ? { witnesses: siteWitnesses(b.witnesses) } : {}), reason: proof ? null : b.reason ?? u.findings[0].msg, advice: proof ? [] : u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })), ...(b.candidateOnly && b.records && !broken('findings-records') ? { records: b.records } : {}) }); // a unit the parent does not hold keeps its records under a lint finding too (lane w9k): the finding is an equality question, the records are not
         continue;
       }
       if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
