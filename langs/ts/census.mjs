@@ -3,6 +3,12 @@
 //   node census.mjs <repo-root> [--out census.json] [--report census.md] [--readings-report readings.md] [--depth N] [--limit N] [--include <prefix>] [--js]
 //   node census.mjs --diff <before.json> <after.json>     gains and losses per reading between two runs
 //   [--install-under <dir>] [--npm-cache <dir>] [--clean-after]
+//   [--callees]                                            per unit its outside callees, the callee-only units, the ranked table
+//   node census.mjs --callee-table <a.json>... [--out t.json] [--report t.md] [--top N] [--origins a,b]   one table over many runs
+// With --callees (callees.mjs, design/w2a-callee-census.md) each record gains `callees` (per unit: module or global, member
+// path, origin, call count) and `calleeBlocked` (per unit whose every refusal names a call outside the file with no row in
+// translate/library.json: those callees), and the JSON and the report gain the ranked table (callee -> units blocked only
+// by it, units calling it).
 // The walk runs in a child under a supervisor (walk-supervisor.mjs): an end without the journal's `complete` record writes
 // `partial: true`, `filesNotWalked` and `notWalked` into the --out JSON, names the files not walked on stderr and exits
 // non-zero (design/2026-10-31-census-partial.md).
@@ -24,6 +30,7 @@ import { walkerJournal, superviseWalk, assertSupervised, walkEnd, exitAfter } fr
 import { lowerFile, startLoweringProfile, measureLowering, loweringProfile, loweringProfileTable } from './lower.mjs'; // the lowering's record: the lint's findings and, per unit, its readings and its refusal (design/admission-contract.md)
 import { ts, loadManyChunks, topLevelFunctions, lineOf, findingUnit } from './common.mjs';
 import { classifier, ensureInstalled, cleanInstall, GENERATED } from './census-env.mjs';
+import { unitCallees, findingCallees, calleeTable, calleeTableReport } from './callees.mjs'; // --callees (design/w2a-callee-census.md)
 // The stratum of a file: machine-written code is counted beside written code, never mixed into one share (research 24;
 // the nexus census held 1,675 units of seven generated minified Prisma clients). The rule, stated once here:
 //   generated  the path is under a generated folder (census-env GENERATED), or the file's first 2,000 characters carry a
@@ -215,7 +222,7 @@ export function census(root, opts = {}) {
     files++;
     const pkg = packageOf(root, file);
     const P = perPackage.get(pkg) ?? { files: 0, units: 0, entered: 0 }; P.files++; perPackage.set(pkg, P);
-    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv;
+    let findings, unitNames, sourceLines, lowered, inventory, envBlocked, stratum = 'written', origins, typeEnv, callees = null, refusalCallees = null;
     try {
       const L = loaded.get(path.resolve(file));
       if (!L || L.error) throw new Error(L?.error ?? 'not loaded');
@@ -251,6 +258,16 @@ export function census(root, opts = {}) {
         return c.kind + (c.generated ? ' (generated)' : '');
       };
       for (const o of origins.values()) o.kind = kindOf(o);
+      // --callees: per unit its outside callees; per refusal (a finding that stops its unit, judged on resolved types) the
+      // unmodelled outside callees the values it names stand for (callees.mjs namedCall); read with this file's checker
+      if (opts.callees) {
+        callees = unitCallees(L.checker, sf, inventory, root);
+        refusalCallees = new Map();
+        for (const f of findings) if (f.unit && !f.env && !envBlocked.has(f.unit) && !typeEnv.has(f.unit) && !origins.has(f)) {
+          let keys; try { keys = findingCallees(L.checker, sf, namedValues(sf, f), root); } catch (e) { log(`! ${path.relative(root, file)}:${f.line}: the callees the finding names were not read (${String(e.message).slice(0, 120)})`); keys = new Map(); }
+          refusalCallees.set(f, keys);
+        }
+      }
       for (const u of rec.units) { if (envBlocked.has(u.unit) || typeEnv.has(u.unit)) continue; if (u.refusal) reading(u.refusal.id).refused++; else for (const r of u.readings) reading(r.id).admitted++; }
     } catch (e) { failedFiles++; records.push({ file: path.relative(root, file), pkg, ...(closure ? { closure } : {}), error: String(e.message).slice(0, 200) }); log(`! ${path.relative(root, file)}: ${String(e.message).slice(0, 120)}`); continue; }
     // an unresolved-module finding names its module (or global) and its kind; the unit it falls in is counted once
@@ -308,6 +325,24 @@ export function census(root, opts = {}) {
     }
     // a nested unit is covered by its enclosing unit (pr.mjs, check.mjs): a stopped enclosing unit stops it too, counted under covered-by
     for (const u of inventory.values()) if (u.enclosingUnit && !blocked.has(u.name)) { let p = u.enclosingUnit; while (p && !blocked.has(p.name)) p = p.enclosingUnit; if (p) { blocked.add(u.name); const r = rules.get('covered-by') ?? { count: 0, units: new Set(), examples: [] }; r.count++; r.units.add(`${file}:${u.name}`); rules.set('covered-by', r); } }
+    // --callees: a blocked unit (own refusals or covered by an enclosing unit) whose every refusal, its own and its enclosing
+    // units', names an unmodelled outside call is blocked only by those calls; one environment-blocked on the chain is not
+    if (callees) {
+      const rec = records[records.length - 1];
+      rec.callees = Object.fromEntries([...callees].map(([u, m]) => [u, [...m.values()].map((e) => [e.callee.module, e.callee.member, e.callee.origin, e.calls])]));
+      const blockedOnly = {};
+      for (const u of inventory.values()) {
+        if (!blocked.has(u.name)) continue;
+        const chain = []; for (let p = u; p; p = p.enclosingUnit) chain.push(p.name);
+        if (chain.some((n) => envBlocked.has(n) || typeEnv.has(n))) continue;
+        const stops = findings.filter((f) => chain.includes(f.unit) && refusalCallees.has(f));
+        if (!stops.length || !stops.every((f) => refusalCallees.get(f).size)) continue;
+        const keys = new Map(); for (const f of stops) for (const [k, c] of refusalCallees.get(f)) keys.set(k, c);
+        const sorted = [...keys.keys()].sort();
+        blockedOnly[u.name] = { keys: sorted, origins: sorted.map((k) => keys.get(k).origin), rules: [...new Set(stops.map((f) => f.rule))].sort() };
+      }
+      if (Object.keys(blockedOnly).length) rec.calleeBlocked = blockedOnly;
+    }
     { const ns = [...inventory.values()].filter((u) => u.enclosingUnit); nested += ns.length; nestedEntered += ns.filter((u) => !blocked.has(u.name)).length; }
     units += unitNames.length; entered += unitNames.length - blocked.size;
     { const St = strata[stratum]; St.files++; St.units += unitNames.length; St.entered += unitNames.length - blocked.size; }
@@ -329,7 +364,9 @@ export function census(root, opts = {}) {
   const blockedKinds = Object.fromEntries([...refusalGroups.values()].filter((r) => r.rule.startsWith('environment: ')).map((r) => [r.rule.slice(13), r.units]).sort((a, b) => b[1] - a[1]));
   const environment = { install, units: [...envUnits.values()].reduce((a, b) => a + b, 0), kinds: Object.fromEntries([...envUnits].sort((a, b) => b[1] - a[1])), blockedKinds, unresolvedTypes: { units: typeBlocked.units, byReading: Object.fromEntries(Object.entries(typeBlocked.byReading).sort((a, b) => b[1] - a[1])) } };
   const shareWritten = strata.written.units ? Math.round((1000 * strata.written.entered) / strata.written.units) / 10 : null;
-  return { complete: true, root, date, depth, oversizedClosures, languages, strata, shareWritten, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, skipped, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  const result = { complete: true, root, date, depth, oversizedClosures, languages, strata, shareWritten, nested: { units: nested, entered: nestedEntered }, independent: { units: units - nested, entered: entered - nestedEntered }, refused: units - entered, environmentBlocked, languageRefused, environment, refusalRules, readings: [...readings.values()].sort((a, b) => a.id.localeCompare(b.id)), files, failedFiles, skipped, units, entered, share: units ? Math.round((1000 * entered) / units) / 10 : null, seconds: Math.round((Date.now() - t0) / 1000), rules: ruleRows, records, packages: [...perPackage.entries()].map(([pkg, p]) => ({ pkg, ...p })).sort((a, b) => b.units - a.units) };
+  if (opts.callees) result.calleeTable = calleeTable([result]);
+  return result;
 }
 
 // Render only the saved census result. No files are read and no units are linted here.
@@ -353,6 +390,7 @@ export function censusReport(res) {
     ...res.refusalRules.slice(0, 5).map((r) => `| ${code(r.rule)} | ${r.units} |`), '',
   ];
   if (!res.refusalRules.length) lines.push('No units were refused.', '');
+  if (res.calleeTable) lines.push(calleeTableReport(res.calleeTable, 'Outside callees (--callees)').replace(/^# /, '## '), '');
   for (const r of res.refusalRules) {
     lines.push(`## Rule: ${code(r.rule)}`, '', `Units stopped: ${r.units}.`, '',
       '| Directory | Units stopped | Example |', '| --- | ---: | --- |');
@@ -402,9 +440,23 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
     'usage: node census.mjs <repo-root> [--out census.json] [--report census.md] [--readings-report readings.md] [--depth N] [--limit N] [--include <prefix>] [--js] [--profile]',
     '                       [--install-under <dir>] [--npm-cache <dir>] [--clean-after]',
     '       node census.mjs --diff <before.json> <after.json>',
+    '       node census.mjs <repo-root> --callees [...]',
+    '       node census.mjs --callee-table <a.json>... [--out t.json] [--report t.md] [--top N] [--origins a,b]',
   ].join('\n');
   if (a.includes('--help') || a.includes('-h')) { console.log(USAGE); process.exit(0); }
-  if (!a.length || (a[0] !== '--diff' && a[0].startsWith('-')) || (a[0] === '--diff' && a.length < 3)) { console.error(USAGE); process.exit(2); }
+  if (!a.length || (a[0] !== '--diff' && a[0] !== '--callee-table' && a[0].startsWith('-')) || (a[0] === '--diff' && a.length < 3) || (a[0] === '--callee-table' && (a.length < 2 || a[1].startsWith('-')))) { console.error(USAGE); process.exit(2); }
+  if (a[0] === '--callee-table') { // one ranked table over the --callees runs named (a population of roots)
+    const flags = new Set(['--out', '--report', '--top', '--origins', '--title']);
+    const files = []; for (let i = 1; i < a.length; i++) { if (flags.has(a[i])) { i++; continue; } files.push(a[i]); }
+    const runs = files.map((f) => { const r = JSON.parse(fs.readFileSync(f, 'utf8')); if (r.complete === false || r.partial) throw new Error(`${f}: an incomplete census has no table`); if (!r.calleeTable) throw new Error(`${f}: not a --callees run`); return r; });
+    const v = (k) => (a.includes(k) ? a[a.indexOf(k) + 1] : null);
+    const t = calleeTable(runs, { top: Number(v('--top') ?? 50), includeOrigins: v('--origins') ? v('--origins').split(',') : null });
+    t.inputs = files.map((f, i) => ({ file: f, root: runs[i].root, units: runs[i].units, entered: runs[i].entered }));
+    if (v('--out')) fs.writeFileSync(v('--out'), JSON.stringify(t, null, 1));
+    const md = calleeTableReport(t, v('--title') ?? 'Callee census');
+    if (v('--report')) fs.writeFileSync(v('--report'), md); else console.log(md);
+    process.exit(0);
+  }
   if (a[0] === '--diff') { // node census.mjs --diff <before.json> <after.json>: gains and losses per reading
     const d = censusDiff(JSON.parse(fs.readFileSync(a[1], 'utf8')), JSON.parse(fs.readFileSync(a[2], 'utf8')));
     console.log(censusDiffReport(d));
@@ -448,7 +500,7 @@ if (process.argv[1] && new URL(import.meta.url).pathname === path.resolve(proces
   }
   console.error(`walker pid ${process.pid}`);
   if (a.includes('--profile')) startLoweringProfile();
-  const res = census(root, { ...walkOpts, depth: Number(opt('--depth', 2)), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), log: (m) => console.error(m),
+  const res = census(root, { ...walkOpts, depth: Number(opt('--depth', 2)), installUnder: opt('--install-under', null), npmCache: opt('--npm-cache', null), callees: a.includes('--callees'), log: (m) => console.error(m),
     alive: assertSupervised, onChunk: (chunk) => fs.appendFileSync(journal, JSON.stringify(chunk) + '\n') });
   if (a.includes('--profile')) { res.profile = loweringProfile(); console.error(loweringProfileTable(res.profile)); }
   // --clean-after: the disk budget keeps one installed root at a time; the root's node_modules go once it is read
