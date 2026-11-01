@@ -159,6 +159,12 @@ use the reading, units the reading refuses) and `records[].lowering` (per unit i
 `--readings-report` writes the table; `census.mjs --diff <before.json> <after.json>` lists per reading the counts on both
 sides and the units gained, lost, newly refused and no longer refused.
 
+`census.mjs --callees` (2026-11-01, design/w2a-callee-census.md) reads the same record: per unit its outside callees, and
+per refused unit whether every refusal it carries names a call outside the file with no row in `translate/library.json`
+(`callees.mjs`). It decides nothing about a unit: no finding is added, removed or reclassed, entered and refused counts are
+unchanged, and `lower.mjs --audit` has no new site (the audit reads lint.mjs and translate.mjs only). The classification is
+a measurement over the lowering's findings, tested by `tests/census_callees.mjs`.
+
 ## Limits
 
 - The lowering translates with the options the proof lane uses alone; check.mjs also forces the units the other side
