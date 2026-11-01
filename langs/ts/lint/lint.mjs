@@ -214,6 +214,36 @@ function forInDelete(s, checker, sf) {
 
 // the lint's findings: the lowering's record of the file (lower.mjs), whose first phase is admissionFindings below and whose
 // last is the translator's reading of every unit it admitted, so a unit the translator refuses is never advised as admitted
+// ----- the opaque column (W1, the opacity ladder; translate/opaque.mjs, design/w1a-opaque-mutation.md) -----
+// How a finding of a rule is graded instead of refused, one row per rule; a rule with no row is `none`:
+//   block       the unit's body from the first statement that holds the finding or may touch a reference to its end is
+//               one opaque step (opaque.mjs blockStart)
+//   statement   the smallest enclosing statement is one opaque step
+//   expression  the expression is one opaque value
+//   none        a refusal (by design, or until a lane reads it)
+// A graded finding keeps its rule and its message and carries `opaque: <grade>`; the lowering (lower.mjs) lets the
+// translator decide: the unit enters when the translator emits the step, else the finding refuses it as before. Each W1
+// lane fills the rows of its own family only.
+export const OPAQUE_ROWS = {
+  // w1a-opaque-mutation: the mutation family (subset.md "What is refused")
+  'alias-mutation': 'block',
+  'closure-mutation': 'block',
+  'in-place-mutation': 'block',
+  'index-assign': 'block',
+  'mutator-value': 'block',
+  'object-method-capture': 'block',
+  'object-method-mutation': 'block',
+  'opaque-mutation': 'block',
+  'param-assign': 'block',
+  'param-mutation': 'block',
+  'property-assign': 'block',
+  'receiver-mutation': 'block',
+  'receiver-write': 'block',
+};
+export const OPAQUE_GRADES = new Set(['block', 'statement', 'expression', 'none']);
+for (const [rule, g] of Object.entries(OPAQUE_ROWS)) if (!OPAQUE_GRADES.has(g)) throw new Error(`lint: opaque row ${rule}: ${g} is not a grade`);
+export const opaqueGrade = (rule) => OPAQUE_ROWS[rule] ?? 'none';
+
 export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
 export function admissionFindings(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
@@ -318,7 +348,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // site: the label of the advised rewrite as decided at this site ({ label, precondition }), for the rules that decide it
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
-    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+    out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}), ...(opaqueGrade(rule) !== 'none' ? { opaque: opaqueGrade(rule) } : {}) });
   };
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
