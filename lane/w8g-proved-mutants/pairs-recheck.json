@@ -1,0 +1,1815 @@
+{
+ "meta": {
+  "head": "844ddac2784f4a6054ed1075c97b4a1c53653b71",
+  "seed": 1,
+  "n": 30,
+  "dafnySeconds": 30,
+  "env": {
+   "LEAN_WORKER_HEAP_MB": "6144"
+  },
+  "pairs": 41,
+  "units": {
+   "pairs": 62,
+   "census": 0
+  },
+  "census": {
+   "frame": 715,
+   "picked": 300,
+   "roots": [
+    "nexus-chat-embed",
+    "nexus-meeting-recorder",
+    "snitch"
+   ]
+  },
+  "unitsWithoutSites": 0,
+  "noUnit": 0,
+  "recheck": "baseline.json"
+ },
+ "rows": [
+  {
+   "source": "pairs",
+   "where": "adapters",
+   "unit": "usePick",
+   "index": 2,
+   "sites": 6,
+   "kind": "operator",
+   "lines": [
+    11,
+    11
+   ],
+   "was": ">",
+   "text": ">=",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "alias_result",
+   "unit": "Box.grown",
+   "index": 0,
+   "sites": 4,
+   "kind": "dropped-effect",
+   "lines": [
+    44,
+    44
+   ],
+   "was": "s.push(x);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "alias_result",
+   "unit": "counts",
+   "index": 0,
+   "sites": 5,
+   "kind": "dropped-effect",
+   "lines": [
+    67,
+    67
+   ],
+   "was": "xs.push(0);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "alias_result",
+   "unit": "counts",
+   "index": 1,
+   "sites": 5,
+   "kind": "boundary",
+   "lines": [
+    67,
+    67
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "array_copies_identity",
+   "unit": "copyPushedA",
+   "index": 0,
+   "sites": 1,
+   "kind": "dropped-effect",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "b.push(x);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "array_copies_identity",
+   "unit": "copyPushedS",
+   "index": 0,
+   "sites": 1,
+   "kind": "dropped-effect",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "b.push(x);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "asany_record_key",
+   "unit": "countByString",
+   "index": 0,
+   "sites": 8,
+   "kind": "dropped-effect",
+   "lines": [
+    17,
+    17
+   ],
+   "was": "m.set(String(r1) as any, 1);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "asany_record_key",
+   "unit": "countByString",
+   "index": 2,
+   "sites": 8,
+   "kind": "boundary",
+   "lines": [
+    17,
+    17
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "asany_record_key",
+   "unit": "countByString",
+   "index": 3,
+   "sites": 8,
+   "kind": "dropped-effect",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "m.set(String(r2) as any, 1);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "asany_record_key",
+   "unit": "countByString",
+   "index": 5,
+   "sites": 8,
+   "kind": "boundary",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "builtin_transitions",
+   "unit": "tallied",
+   "index": 2,
+   "sites": 12,
+   "kind": "boundary",
+   "lines": [
+    11,
+    11
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "comma_operator",
+   "unit": "rootMessage",
+   "index": 0,
+   "sites": 6,
+   "kind": "boundary",
+   "lines": [
+    59,
+    59
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "comma_operator",
+   "unit": "rootMessage",
+   "index": 4,
+   "sites": 6,
+   "kind": "changed-return",
+   "lines": [
+    61,
+    61
+   ],
+   "was": "cur.message",
+   "text": "(cur.message) + \"x\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "conditional_expressions",
+   "unit": "fallback",
+   "index": 1,
+   "sites": 7,
+   "kind": "boundary",
+   "lines": [
+    126,
+    126
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "dynamic_key",
+   "unit": "putChecked",
+   "index": 0,
+   "sites": 10,
+   "kind": "string",
+   "lines": [
+    23,
+    23
+   ],
+   "was": "\"base\"",
+   "text": "\"basex\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "dynamic_key",
+   "unit": "putChecked",
+   "index": 6,
+   "sites": 10,
+   "kind": "boundary",
+   "lines": [
+    25,
+    25
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "dynamic_key",
+   "unit": "putChecked",
+   "index": 8,
+   "sites": 10,
+   "kind": "boundary",
+   "lines": [
+    26,
+    26
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "dynamic_key",
+   "unit": "putItem",
+   "index": 0,
+   "sites": 9,
+   "kind": "string",
+   "lines": [
+    15,
+    15
+   ],
+   "was": "\"base\"",
+   "text": "\"basex\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "dynamic_key",
+   "unit": "putItem",
+   "index": 8,
+   "sites": 9,
+   "kind": "boundary",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "dynamic_key_open",
+   "unit": "agentOf",
+   "index": 0,
+   "sites": 1,
+   "kind": "string",
+   "lines": [
+    7,
+    7
+   ],
+   "was": "\"x-agent-id\"",
+   "text": "\"x-agent-idx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "dynamic_key_open",
+   "unit": "protoText",
+   "index": 2,
+   "sites": 3,
+   "kind": "boundary",
+   "lines": [
+    17,
+    17
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_across",
+   "unit": "moved",
+   "index": 3,
+   "sites": 7,
+   "kind": "string",
+   "lines": [
+    14,
+    14
+   ],
+   "was": "\"bad\"",
+   "text": "\"badx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_across",
+   "unit": "overrideFault",
+   "index": 0,
+   "sites": 2,
+   "kind": "string",
+   "lines": [
+    27,
+    27
+   ],
+   "was": "\"first\"",
+   "text": "\"firstx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_across",
+   "unit": "parseCaller",
+   "index": 1,
+   "sites": 3,
+   "kind": "changed-return",
+   "lines": [
+    60,
+    60
+   ],
+   "was": "0",
+   "text": "(0) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_across",
+   "unit": "parseCaller",
+   "index": 2,
+   "sites": 3,
+   "kind": "boundary",
+   "lines": [
+    60,
+    60
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_scope",
+   "unit": "caller",
+   "index": 1,
+   "sites": 3,
+   "kind": "changed-return",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "-1",
+   "text": "(-1) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_scope",
+   "unit": "caller",
+   "index": 2,
+   "sites": 3,
+   "kind": "boundary",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_scope",
+   "unit": "helper",
+   "index": 1,
+   "sites": 5,
+   "kind": "operator",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "*",
+   "text": "+",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_scope",
+   "unit": "helper",
+   "index": 2,
+   "sites": 5,
+   "kind": "boundary",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "2",
+   "text": "3",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_scope",
+   "unit": "switchFallback",
+   "index": 12,
+   "sites": 14,
+   "kind": "changed-return",
+   "lines": [
+    41,
+    41
+   ],
+   "was": "-1",
+   "text": "(-1) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "exceptions_scope",
+   "unit": "switchFallback",
+   "index": 13,
+   "sites": 14,
+   "kind": "boundary",
+   "lines": [
+    41,
+    41
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "forin_order",
+   "unit": "inHeader",
+   "index": 1,
+   "sites": 3,
+   "kind": "boundary",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "forin_order",
+   "unit": "written",
+   "index": 0,
+   "sites": 6,
+   "kind": "boundary",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "gen_walk",
+   "unit": "clampUnit",
+   "index": 6,
+   "sites": 11,
+   "kind": "operator",
+   "lines": [
+    33,
+    33
+   ],
+   "was": ">",
+   "text": ">=",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "generators",
+   "unit": "counted",
+   "index": 0,
+   "sites": 7,
+   "kind": "boundary",
+   "lines": [
+    30,
+    30
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "heap5_conditional",
+   "unit": "count",
+   "index": 1,
+   "sites": 4,
+   "kind": "operator",
+   "lines": [
+    20,
+    20
+   ],
+   "was": ">",
+   "text": ">=",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lane_b_reach",
+   "unit": "nullPrototype",
+   "index": 3,
+   "sites": 5,
+   "kind": "operator",
+   "lines": [
+    17,
+    17
+   ],
+   "was": "&&",
+   "text": "||",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_cells",
+   "unit": "freshMap",
+   "index": 0,
+   "sites": 9,
+   "kind": "dropped-effect",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "m.set(\"a\", 1);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_cells",
+   "unit": "freshMap",
+   "index": 3,
+   "sites": 9,
+   "kind": "boundary",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_cells",
+   "unit": "freshMap",
+   "index": 4,
+   "sites": 9,
+   "kind": "dropped-effect",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "m.set(\"a\", 1);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_cells",
+   "unit": "freshMap",
+   "index": 7,
+   "sites": 9,
+   "kind": "boundary",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_cells",
+   "unit": "tally",
+   "index": 0,
+   "sites": 5,
+   "kind": "dropped-effect",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "counts.set(key, n);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_cells",
+   "unit": "tally",
+   "index": 2,
+   "sites": 5,
+   "kind": "dropped-effect",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "counts.set(key, n);",
+   "text": "",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_ops",
+   "unit": "dropTwo",
+   "index": 2,
+   "sites": 9,
+   "kind": "boundary",
+   "lines": [
+    7,
+    7
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_rows",
+   "unit": "basename",
+   "index": 3,
+   "sites": 4,
+   "kind": "string",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "\"index\"",
+   "text": "\"indexx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "library_rows",
+   "unit": "cut",
+   "index": 1,
+   "sites": 4,
+   "kind": "swapped-args",
+   "lines": [
+    34,
+    34
+   ],
+   "was": "1, 3",
+   "text": "3, 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 3,
+   "sites": 15,
+   "kind": "swapped-args",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "\"x\", \"a\"",
+   "text": "\"a\", \"x\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 4,
+   "sites": 15,
+   "kind": "string",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "\"x\"",
+   "text": "\"xx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 5,
+   "sites": 15,
+   "kind": "string",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "\"a\"",
+   "text": "\"ax\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 6,
+   "sites": 15,
+   "kind": "string",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "\"\"",
+   "text": "\"x\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 8,
+   "sites": 15,
+   "kind": "swapped-args",
+   "lines": [
+    19,
+    19
+   ],
+   "was": "\"y\", \"b\"",
+   "text": "\"b\", \"y\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 9,
+   "sites": 15,
+   "kind": "string",
+   "lines": [
+    19,
+    19
+   ],
+   "was": "\"y\"",
+   "text": "\"yx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 10,
+   "sites": 15,
+   "kind": "string",
+   "lines": [
+    19,
+    19
+   ],
+   "was": "\"b\"",
+   "text": "\"bx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "assignments",
+   "index": 11,
+   "sites": 15,
+   "kind": "string",
+   "lines": [
+    19,
+    19
+   ],
+   "was": "\"::int\"",
+   "text": "\"::intx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "blockShadow",
+   "index": 2,
+   "sites": 7,
+   "kind": "operator",
+   "lines": [
+    4,
+    4
+   ],
+   "was": ">",
+   "text": ">=",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "blockShadow",
+   "index": 3,
+   "sites": 7,
+   "kind": "boundary",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "5",
+   "text": "6",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "blockShadow",
+   "index": 4,
+   "sites": 7,
+   "kind": "changed-return",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "0",
+   "text": "(0) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "blockShadow",
+   "index": 5,
+   "sites": 7,
+   "kind": "boundary",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "rebound",
+   "index": 0,
+   "sites": 5,
+   "kind": "negated-if",
+   "lines": [
+    41,
+    41
+   ],
+   "was": "g",
+   "text": "!(g)",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "rebound",
+   "index": 2,
+   "sites": 5,
+   "kind": "operator",
+   "lines": [
+    43,
+    43
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "lint_misfires",
+   "unit": "rebound",
+   "index": 3,
+   "sites": 5,
+   "kind": "boundary",
+   "lines": [
+    43,
+    43
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "map_set_copy",
+   "unit": "bumpCopy",
+   "index": 4,
+   "sites": 5,
+   "kind": "boundary",
+   "lines": [
+    42,
+    42
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "mutation",
+   "unit": "countOnly",
+   "index": 0,
+   "sites": 2,
+   "kind": "boundary",
+   "lines": [
+    20,
+    20
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "narrow_in",
+   "unit": "inherited",
+   "index": 2,
+   "sites": 3,
+   "kind": "string",
+   "lines": [
+    23,
+    23
+   ],
+   "was": "'toString'",
+   "text": "\"toStringx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "narrow_in",
+   "unit": "known",
+   "index": 0,
+   "sites": 7,
+   "kind": "boundary",
+   "lines": [
+    21,
+    21
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "narrow_in",
+   "unit": "known",
+   "index": 1,
+   "sites": 7,
+   "kind": "boundary",
+   "lines": [
+    21,
+    21
+   ],
+   "was": "2",
+   "text": "3",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "numbers_bits",
+   "unit": "infinitySign",
+   "index": 0,
+   "sites": 1,
+   "kind": "changed-return",
+   "lines": [
+    9,
+    9
+   ],
+   "was": "Number.NEGATIVE_INFINITY",
+   "text": "(Number.NEGATIVE_INFINITY) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "ChangedFault.read",
+   "index": 0,
+   "sites": 3,
+   "kind": "changed-return",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "this.value + 3",
+   "text": "(this.value + 3) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "ChangedFault.read",
+   "index": 1,
+   "sites": 3,
+   "kind": "operator",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "ChangedFault.read",
+   "index": 2,
+   "sites": 3,
+   "kind": "boundary",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "3",
+   "text": "4",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "Fault.caught",
+   "index": 0,
+   "sites": 3,
+   "kind": "changed-return",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "this.value",
+   "text": "(this.value) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "Fault.read",
+   "index": 0,
+   "sites": 2,
+   "kind": "changed-return",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "2",
+   "text": "(2) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "Fault.read",
+   "index": 1,
+   "sites": 2,
+   "kind": "boundary",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "2",
+   "text": "3",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "Fault.write",
+   "index": 0,
+   "sites": 2,
+   "kind": "changed-return",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "2",
+   "text": "(2) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_accessor_faults",
+   "unit": "Fault.write",
+   "index": 1,
+   "sites": 2,
+   "kind": "boundary",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "2",
+   "text": "3",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_methods",
+   "unit": "strategyRefactor",
+   "index": 0,
+   "sites": 7,
+   "kind": "changed-return",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "this.count + x",
+   "text": "(this.count + x) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_methods",
+   "unit": "strategyRefactor",
+   "index": 1,
+   "sites": 7,
+   "kind": "operator",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_methods",
+   "unit": "strategyRefactor",
+   "index": 2,
+   "sites": 7,
+   "kind": "changed-return",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "this.count * x",
+   "text": "(this.count * x) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "object_methods",
+   "unit": "strategyRefactor",
+   "index": 3,
+   "sites": 7,
+   "kind": "operator",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "*",
+   "text": "+",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "open_datatype",
+   "unit": "agentOf",
+   "index": 0,
+   "sites": 1,
+   "kind": "string",
+   "lines": [
+    16,
+    16
+   ],
+   "was": "\"x-agent-id\"",
+   "text": "\"x-agent-idx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "operators_values",
+   "unit": "argumentsInOrder",
+   "index": 0,
+   "sites": 2,
+   "kind": "boundary",
+   "lines": [
+    57,
+    57
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "operators_values",
+   "unit": "chained",
+   "index": 2,
+   "sites": 4,
+   "kind": "operator",
+   "lines": [
+    31,
+    31
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "operators_values",
+   "unit": "chained",
+   "index": 3,
+   "sites": 4,
+   "kind": "operator",
+   "lines": [
+    31,
+    31
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "operators_values",
+   "unit": "compound",
+   "index": 0,
+   "sites": 4,
+   "kind": "boundary",
+   "lines": [
+    36,
+    36
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "ordered_collections",
+   "unit": "orderOf",
+   "index": 2,
+   "sites": 6,
+   "kind": "boundary",
+   "lines": [
+    7,
+    7
+   ],
+   "was": "2",
+   "text": "3",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "ordered_collections",
+   "unit": "orderOf",
+   "index": 5,
+   "sites": 6,
+   "kind": "boundary",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "promise_integration",
+   "unit": "innerCatch",
+   "index": 2,
+   "sites": 4,
+   "kind": "changed-return",
+   "lines": [
+    13,
+    13
+   ],
+   "was": "9",
+   "text": "(9) + 1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "promise_integration",
+   "unit": "innerCatch",
+   "index": 3,
+   "sites": 4,
+   "kind": "boundary",
+   "lines": [
+    13,
+    13
+   ],
+   "was": "9",
+   "text": "10",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "proto_write",
+   "unit": "mark",
+   "index": 0,
+   "sites": 3,
+   "kind": "boundary",
+   "lines": [
+    15,
+    15
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "proto_write",
+   "unit": "named",
+   "index": 0,
+   "sites": 4,
+   "kind": "string",
+   "lines": [
+    28,
+    28
+   ],
+   "was": "'a'",
+   "text": "\"ax\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "proto_write",
+   "unit": "named",
+   "index": 3,
+   "sites": 4,
+   "kind": "boundary",
+   "lines": [
+    30,
+    30
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "proto_write",
+   "unit": "own",
+   "index": 0,
+   "sites": 4,
+   "kind": "boundary",
+   "lines": [
+    8,
+    8
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "proto_write",
+   "unit": "own",
+   "index": 3,
+   "sites": 4,
+   "kind": "boundary",
+   "lines": [
+    9,
+    9
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "pure_globals",
+   "unit": "chopped",
+   "index": 1,
+   "sites": 3,
+   "kind": "operator",
+   "lines": [
+    30,
+    30
+   ],
+   "was": "<",
+   "text": "<=",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "push_apply",
+   "unit": "local",
+   "index": 0,
+   "sites": 3,
+   "kind": "string",
+   "lines": [
+    46,
+    46
+   ],
+   "was": "\"x\"",
+   "text": "\"xx\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "read_shaped_inputs",
+   "unit": "clampLimit",
+   "index": 1,
+   "sites": 7,
+   "kind": "operator",
+   "lines": [
+    38,
+    38
+   ],
+   "was": ">",
+   "text": ">=",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "signed_zero",
+   "unit": "positive",
+   "index": 1,
+   "sites": 4,
+   "kind": "operator",
+   "lines": [
+    6,
+    6
+   ],
+   "was": ">=",
+   "text": ">",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "splice_negative",
+   "unit": "trimEnd",
+   "index": 3,
+   "sites": 5,
+   "kind": "boundary",
+   "lines": [
+    16,
+    16
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "string_methods",
+   "unit": "ext",
+   "index": 2,
+   "sites": 5,
+   "kind": "operator",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "string_methods",
+   "unit": "ext",
+   "index": 3,
+   "sites": 5,
+   "kind": "boundary",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "string_methods_real",
+   "unit": "tail",
+   "index": 2,
+   "sites": 7,
+   "kind": "operator",
+   "lines": [
+    20,
+    20
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "string_methods_real",
+   "unit": "tail",
+   "index": 3,
+   "sites": 7,
+   "kind": "boundary",
+   "lines": [
+    20,
+    20
+   ],
+   "was": "1",
+   "text": "2",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "string_union_order",
+   "unit": "dropped",
+   "index": 0,
+   "sites": 3,
+   "kind": "boundary",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "ts_strict_values",
+   "unit": "isAdaTag",
+   "index": 0,
+   "sites": 4,
+   "kind": "string",
+   "lines": [
+    17,
+    17
+   ],
+   "was": "\"\"",
+   "text": "\"x\"",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "type_tests",
+   "unit": "refactor",
+   "index": 0,
+   "sites": 9,
+   "kind": "operator",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "===",
+   "text": "!==",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  }
+ ]
+}

@@ -1,0 +1,714 @@
+=== #0 src/theme/launcher.ts launcherAnchor site 0 string 
+export function launcherAnchor(bubblePosition: string | undefined): LauncherAnchor {
+  const value = bubblePosition ?? ⟦"" ⇒ "x"⟧;
+  return {
+    vertical: value.includes("bottom") ? "bottom" : "top",
+    horizontal: value.includes("right") ? "right" : "left"
+  };
+}
+
+=== #1 apps/extension/src/lib/selector.ts isSecureField site 12 string 
+/** Is this element (or a wrapping context) a secure input? */
+export function isSecureField(el: Element | null): boolean {
+  if (!el) return false;
+  const input = el.closest("input");
+  if (input && (input.getAttribute("type") ?? "").toLowerCase() === "password") return true;
+  const auto = el.closest("[autocomplete]")?.getAttribute("autocomplete")?.toLowerCase() ?? ⟦"" ⇒ "x"⟧;
+  return auto.includes("password") || auto === "cc-number" || auto === "cc-csc";
+}
+
+=== #2 adapters usePick site 2 operator 
+// its caller passes the arguments in the new order: proved through the summary of pick under its adapter
+export function usePick(n: number): number {
+  return pick(n, n ⟦> ⇒ >=⟧ 0) + 1;
+}
+
+=== #3 alias_result Box.grown site 0 dropped-effect 
+// refactor: the copy counted before the push, one more after it
+  grown(x: string): number {
+    const s = this.copy();
+    const n = s.length;
+    ⟦s.push(x); ⇒ ⟧
+    return n + 1;
+  }
+
+=== #4 alias_result counts site 0 dropped-effect 
+// refactor: map returns a new array, so the push changes only the copy; counted before the push, one more after it
+export function counts(rs: Row[]): number {
+  const xs = rs.map((r) => r.n);
+  const k = xs.length;
+  ⟦xs.push(0); ⇒ ⟧
+  return k + 1;
+}
+
+=== #5 alias_result counts site 1 boundary 
+// refactor: map returns a new array, so the push changes only the copy; counted before the push, one more after it
+export function counts(rs: Row[]): number {
+  const xs = rs.map((r) => r.n);
+  const k = xs.length;
+  xs.push(⟦0 ⇒ 1⟧);
+  return k + 1;
+}
+
+=== #6 array_copies_identity copyPushedA site 0 dropped-effect 
+// an array copy is a new array (ECMA-262 13.2.4.1 array spread, 23.1.3.1 concat): `===` against its source is false and
+// a push on the copy does not show on the source, nor a push on the source on the copy. The async units are read by the
+// value reading (the heap core takes no async unit), the sync ones by the heap core; the identity guard decides each.
+export async function copyPushedA(a: number[], x: number): Promise<number[]> { const b = a.concat(); ⟦b.push(x); ⇒ ⟧ return a; }
+
+=== #7 array_copies_identity copyPushedS site 0 dropped-effect 
+export function copyPushedS(a: number[], x: number): number[] { const b = a.concat(); ⟦b.push(x); ⇒ ⟧ return a; }
+
+=== #8 asany_record_key countByString site 0 dropped-effect 
+export function countByString(n: number): number {
+  const m: Map<string, number> = new Map();
+  const r1: Rec = { a: n };
+  const r2: Rec = { a: n };
+  ⟦m.set(String(r1) as any, 1); ⇒ ⟧
+  m.set(String(r2) as any, 1);
+  return 1;
+}
+
+=== #9 asany_record_key countByString site 2 boundary 
+export function countByString(n: number): number {
+  const m: Map<string, number> = new Map();
+  const r1: Rec = { a: n };
+  const r2: Rec = { a: n };
+  m.set(String(r1) as any, ⟦1 ⇒ 2⟧);
+  m.set(String(r2) as any, 1);
+  return 1;
+}
+
+=== #10 asany_record_key countByString site 3 dropped-effect 
+export function countByString(n: number): number {
+  const m: Map<string, number> = new Map();
+  const r1: Rec = { a: n };
+  const r2: Rec = { a: n };
+  m.set(String(r1) as any, 1);
+  ⟦m.set(String(r2) as any, 1); ⇒ ⟧
+  return 1;
+}
+
+=== #11 asany_record_key countByString site 5 boundary 
+export function countByString(n: number): number {
+  const m: Map<string, number> = new Map();
+  const r1: Rec = { a: n };
+  const r2: Rec = { a: n };
+  m.set(String(r1) as any, 1);
+  m.set(String(r2) as any, ⟦1 ⇒ 2⟧);
+  return 1;
+}
+
+=== #12 builtin_transitions tallied site 2 boundary 
+export function tallied(counts: Map<string, number>, key: string): number { if (counts.has(key)) { counts.set(key, (counts.get(key) ?? ⟦0 ⇒ 1⟧) + 1); } else { counts.set(key, 1); } counts.delete(""); return counts.size; }
+
+=== #13 comma_operator rootMessage site 0 boundary 
+// the cause is never followed: the first message
+export function rootMessage(e: Error): string {
+  let cur: Error = e;
+  for (let i = ⟦0 ⇒ 1⟧; i < 0; i++) {
+    const next: unknown = cur.cause;
+    if (!(next instanceof Error)) return cur.message;
+    cur = next;
+  }
+  return cur.message;
+}
+
+=== #14 comma_operator rootMessage site 4 changed-return 
+// the cause is never followed: the first message
+export function rootMessage(e: Error): string {
+  let cur: Error = e;
+  for (let i = 0; i < 0; i++) {
+    const next: unknown = cur.cause;
+    if (!(next instanceof Error)) return ⟦cur.message ⇒ (cur.message) + "x"⟧;
+    cur = next;
+  }
+  return cur.message;
+}
+
+=== #15 conditional_expressions fallback site 1 boundary 
+// ??: the right operand runs when the left is absent
+export function fallback(k: number | undefined, by: number): number {
+  const c: Count = { hits: 0 };
+  let n = ⟦0 ⇒ 1⟧;
+  if (k === undefined) n = bump(c, by);
+  else n = k;
+  return n + c.hits;
+}
+
+=== #16 dynamic_key putChecked site 0 string 
+export function putChecked(k: string, n: number): number {
+  const out: Record<string, number | null> = {};
+  out[⟦"base" ⇒ "basex"⟧] = n;
+  if (k === "__proto__") return -1;
+  out[k] = 0;
+  return out[k] === null ? 1 : 0;
+}
+
+=== #17 dynamic_key putChecked site 6 boundary 
+export function putChecked(k: string, n: number): number {
+  const out: Record<string, number | null> = {};
+  out["base"] = n;
+  if (k === "__proto__") return -1;
+  out[k] = ⟦0 ⇒ 1⟧;
+  return out[k] === null ? 1 : 0;
+}
+
+=== #18 dynamic_key putChecked site 8 boundary 
+export function putChecked(k: string, n: number): number {
+  const out: Record<string, number | null> = {};
+  out["base"] = n;
+  if (k === "__proto__") return -1;
+  out[k] = 0;
+  return out[k] === null ? ⟦1 ⇒ 2⟧ : 0;
+}
+
+=== #19 dynamic_key putItem site 0 string 
+export function putItem(k: string, n: number): number {
+  const out: Record<string, number | null> = {};
+  out[⟦"base" ⇒ "basex"⟧] = n;
+  if (k === "__proto__") return -1;
+  out[k] = null;
+  return out[k] === null ? 1 : 0;
+}
+
+=== #20 dynamic_key putItem site 8 boundary 
+export function putItem(k: string, n: number): number {
+  const out: Record<string, number | null> = {};
+  out["base"] = n;
+  if (k === "__proto__") return -1;
+  out[k] = null;
+  return out[k] === null ? 1 : ⟦0 ⇒ 1⟧;
+}
+
+=== #21 dynamic_key_open agentOf site 0 string 
+export function agentOf(h: Headers): string | undefined {
+  const copy: Headers = { accept: h.accept };
+  return copy[⟦"x-agent-id" ⇒ "x-agent-idx"⟧];
+}
+
+=== #22 dynamic_key_open protoText site 2 boundary 
+export function protoText(): string {
+  const d: Record<string, number> = {};
+  return String(d["valueOf"] ?? ⟦0 ⇒ 1⟧);
+}
+
+=== #23 exceptions_across moved site 3 string 
+export function moved(x: number): number {
+  try { if (x < 0) throw ⟦"bad" ⇒ "badx"⟧; return x; } catch (error) { return -2; }
+}
+
+=== #24 exceptions_across overrideFault site 0 string 
+export function overrideFault(x: number): number {
+  try { throw ⟦"first" ⇒ "firstx"⟧; } finally { throw "finish"; }
+}
+
+=== #25 exceptions_across parseCaller site 1 changed-return 
+export function parseCaller(text: string): number {
+  try { return parseText(text); } catch (error) { return ⟦0 ⇒ (0) + 1⟧; }
+}
+
+=== #26 exceptions_across parseCaller site 2 boundary 
+export function parseCaller(text: string): number {
+  try { return parseText(text); } catch (error) { return ⟦0 ⇒ 1⟧; }
+}
+
+=== #27 exceptions_scope caller site 1 changed-return 
+export function caller(xs: number[]): number { try { return helper(xs); } catch { return ⟦-1 ⇒ (-1) + 1⟧; } }
+
+=== #28 exceptions_scope caller site 2 boundary 
+export function caller(xs: number[]): number { try { return helper(xs); } catch { return -⟦1 ⇒ 2⟧; } }
+
+=== #29 exceptions_scope helper site 1 operator 
+export function helper(xs: number[]): number {
+  let total = 0;
+  for (const x of xs) total += x;
+  const doubled = xs.map((x) => x ⟦* ⇒ +⟧ 2);
+  return total + doubled.length;
+}
+
+=== #30 exceptions_scope helper site 2 boundary 
+export function helper(xs: number[]): number {
+  let total = 0;
+  for (const x of xs) total += x;
+  const doubled = xs.map((x) => x * ⟦2 ⇒ 3⟧);
+  return total + doubled.length;
+}
+
+=== #31 exceptions_scope switchFallback site 12 changed-return 
+export function switchFallback(x: number): number {
+  try { if (x === 1) return 1; if (x === 2) return 2; return 3; } catch { return ⟦-1 ⇒ (-1) + 1⟧; }
+}
+
+=== #32 exceptions_scope switchFallback site 13 boundary 
+export function switchFallback(x: number): number {
+  try { if (x === 1) return 1; if (x === 2) return 2; return 3; } catch { return -⟦1 ⇒ 2⟧; }
+}
+
+=== #33 forin_order inHeader site 1 boundary 
+export function inHeader(x: number): string { let s = ""; for (const k in { y: ⟦1 ⇒ 2⟧, z: x }) s += k; return s; }
+
+=== #34 forin_order written site 0 boundary 
+export function written(x: number): string { const o = { b: x, a: ⟦0 ⇒ 1⟧ }; o.a = x + 1; let s = ""; for (const k in o) s += k; return s + o.a; }
+
+=== #35 gen_walk clampUnit site 6 operator 
+// the candidate writes the conditional as two guards: the same comparisons in the same order
+export function clampUnit(t: number): number {
+  if (t < 0) return 0;
+  if (t ⟦> ⇒ >=⟧ 1) return 1;
+  return t;
+}
+
+=== #36 generators counted site 0 boundary 
+export function* counted(n: number): Generator<number, void, unknown> {
+  for (let i = ⟦0 ⇒ 1⟧; i < 3; i++) {
+    if (i > 0) yield n + i;
+  }
+}
+
+=== #37 heap5_conditional count site 1 operator 
+export function count(i: Item): number {
+  return i.tags.length ⟦> ⇒ >=⟧ 0 ? i.tags.length : 0;
+}
+
+=== #38 lane_b_reach nullPrototype site 3 operator 
+// null-prototype: an object with no prototype is no instance of Object
+export function nullPrototype(a: typeof ONE): boolean { return typeof a === 'object' ⟦&& ⇒ ||⟧ a !== null; }
+
+=== #39 library_cells freshMap site 0 dropped-effect 
+export function freshMap(): number { const m = new Map<string, number>(); ⟦m.set("a", 1); ⇒ ⟧ m.set("a", 1); return m.size; }
+
+=== #40 library_cells freshMap site 3 boundary 
+export function freshMap(): number { const m = new Map<string, number>(); m.set("a", ⟦1 ⇒ 2⟧); m.set("a", 1); return m.size; }
+
+=== #41 library_cells freshMap site 4 dropped-effect 
+export function freshMap(): number { const m = new Map<string, number>(); m.set("a", 1); ⟦m.set("a", 1); ⇒ ⟧ return m.size; }
+
+=== #42 library_cells freshMap site 7 boundary 
+export function freshMap(): number { const m = new Map<string, number>(); m.set("a", 1); m.set("a", ⟦1 ⇒ 2⟧); return m.size; }
+
+=== #43 library_cells tally site 0 dropped-effect 
+export function tally(counts: Map<string, number>, key: string, n: number): number { ⟦counts.set(key, n); ⇒ ⟧ counts.set(key, n); return counts.size; }
+
+=== #44 library_cells tally site 2 dropped-effect 
+export function tally(counts: Map<string, number>, key: string, n: number): number { counts.set(key, n); ⟦counts.set(key, n); ⇒ ⟧ return counts.size; }
+
+=== #45 library_ops dropTwo site 2 boundary 
+// two removals in a row
+export function dropTwo(box: Box): number { box.names.splice(⟦0 ⇒ 1⟧, 1); box.names.splice(0, 1); return box.names.length; }
+
+=== #46 library_rows basename site 3 string 
+/// <reference lib="es2023" />
+// The stage 5 library rows (design/library-rows.md): mutators used as values, toString, toLocaleString, substr,
+// findLast, matchAll and fill.
+
+export function basename(path: string): string {
+  return path.split("/").at(-1) ?? ⟦"index" ⇒ "indexx"⟧;
+}
+
+=== #47 library_rows cut site 1 swapped-args 
+export function cut(s: string): string {
+  return s.substring(⟦1, 3 ⇒ 3, 1⟧);
+}
+
+=== #48 lint_misfires assignments site 3 swapped-args 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put(⟦"x", "a" ⇒ "a", "x"⟧, "");
+  put("y", "b", "::int");
+  return sets.length + params.length + cols.length;
+}
+
+=== #49 lint_misfires assignments site 4 string 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put(⟦"x" ⇒ "xx"⟧, "a", "");
+  put("y", "b", "::int");
+  return sets.length + params.length + cols.length;
+}
+
+=== #50 lint_misfires assignments site 5 string 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put("x", ⟦"a" ⇒ "ax"⟧, "");
+  put("y", "b", "::int");
+  return sets.length + params.length + cols.length;
+}
+
+=== #51 lint_misfires assignments site 6 string 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put("x", "a", ⟦"" ⇒ "x"⟧);
+  put("y", "b", "::int");
+  return sets.length + params.length + cols.length;
+}
+
+=== #52 lint_misfires assignments site 8 swapped-args 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put("x", "a", "");
+  put(⟦"y", "b" ⇒ "b", "y"⟧, "::int");
+  return sets.length + params.length + cols.length;
+}
+
+=== #53 lint_misfires assignments site 9 string 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put("x", "a", "");
+  put(⟦"y" ⇒ "yx"⟧, "b", "::int");
+  return sets.length + params.length + cols.length;
+}
+
+=== #54 lint_misfires assignments site 10 string 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put("x", "a", "");
+  put("y", ⟦"b" ⇒ "bx"⟧, "::int");
+  return sets.length + params.length + cols.length;
+}
+
+=== #55 lint_misfires assignments site 11 string 
+export function assignments(cols: string[]): number {
+  const sets: string[] = [];
+  const params: string[] = [];
+  const put = (col: string, value: string, cast: string) => { params.push(value); sets.push(`${col} = $${params.length}${cast}`); };
+  put("x", "a", "");
+  put("y", "b", ⟦"::int" ⇒ "::intx"⟧);
+  return sets.length + params.length + cols.length;
+}
+
+=== #56 lint_misfires blockShadow site 2 operator 
+// Lane lint-misfires: the readings the pyka rewrite needed, and the block-shadowing false proof of the base.
+export function blockShadow(n: number): number {
+  const x = 2;
+  if (x ⟦> ⇒ >=⟧ 5) return 0;
+  return x;
+}
+
+=== #57 lint_misfires blockShadow site 3 boundary 
+// Lane lint-misfires: the readings the pyka rewrite needed, and the block-shadowing false proof of the base.
+export function blockShadow(n: number): number {
+  const x = 2;
+  if (x > ⟦5 ⇒ 6⟧) return 0;
+  return x;
+}
+
+=== #58 lint_misfires blockShadow site 4 changed-return 
+// Lane lint-misfires: the readings the pyka rewrite needed, and the block-shadowing false proof of the base.
+export function blockShadow(n: number): number {
+  const x = 2;
+  if (x > 5) return ⟦0 ⇒ (0) + 1⟧;
+  return x;
+}
+
+=== #59 lint_misfires blockShadow site 5 boundary 
+// Lane lint-misfires: the readings the pyka rewrite needed, and the block-shadowing false proof of the base.
+export function blockShadow(n: number): number {
+  const x = 2;
+  if (x > 5) return ⟦0 ⇒ 1⟧;
+  return x;
+}
+
+=== #60 lint_misfires rebound site 0 negated-if 
+export function rebound(merged: number[], g: boolean): number {
+  let flat = merged;
+  if (⟦g ⇒ !(g)⟧) {
+    flat = [];
+    for (const h of merged) flat.push(h + 1);
+  }
+  return flat.length;
+}
+
+=== #61 lint_misfires rebound site 2 operator 
+export function rebound(merged: number[], g: boolean): number {
+  let flat = merged;
+  if (g) {
+    flat = [];
+    for (const h of merged) flat.push(h ⟦+ ⇒ -⟧ 1);
+  }
+  return flat.length;
+}
+
+=== #62 lint_misfires rebound site 3 boundary 
+export function rebound(merged: number[], g: boolean): number {
+  let flat = merged;
+  if (g) {
+    flat = [];
+    for (const h of merged) flat.push(h + ⟦1 ⇒ 2⟧);
+  }
+  return flat.length;
+}
+
+=== #63 map_set_copy bumpCopy site 4 boundary 
+export function bumpCopy(b: Board, t: Tag): number {
+  const m = new Map(b.byTag);
+  m.set(t, 1);
+  return m.get(t) ?? ⟦0 ⇒ 1⟧;
+}
+
+=== #64 mutation countOnly site 0 boundary 
+export function countOnly(user: User): number {
+  const u = { ...user };
+  u.visits = ⟦0 ⇒ 1⟧;
+  return user.visits;
+}
+
+=== #65 narrow_in inherited site 2 string 
+// the own-key test: false for a name of Object.prototype, where the parent's `in` is true
+export function inherited(n: number): boolean { const r: Bag = { a: n }; return Object.prototype.hasOwnProperty.call(r, ⟦'toString' ⇒ "toStringx"⟧); }
+
+=== #66 narrow_in known site 0 boundary 
+// an unrelated local record: the made objects never reach it, so `in` keeps its reading (the test as an if statement)
+export function known(k: string): number { const r: Bag = { a: ⟦1 ⇒ 2⟧, b: 2 }; if (k in r) return 1; return 0; }
+
+=== #67 narrow_in known site 1 boundary 
+// an unrelated local record: the made objects never reach it, so `in` keeps its reading (the test as an if statement)
+export function known(k: string): number { const r: Bag = { a: 1, b: ⟦2 ⇒ 3⟧ }; if (k in r) return 1; return 0; }
+
+=== #68 numbers_bits infinitySign site 0 changed-return 
+export function infinitySign(): number { return ⟦Number.NEGATIVE_INFINITY ⇒ (Number.NEGATIVE_INFINITY) + 1⟧; }
+
+=== #69 object_accessor_faults ChangedFault.read site 0 changed-return 
+read(): number { return ⟦this.value + 3 ⇒ (this.value + 3) + 1⟧; }
+
+=== #70 object_accessor_faults ChangedFault.read site 1 operator 
+read(): number { return this.value ⟦+ ⇒ -⟧ 3; }
+
+=== #71 object_accessor_faults ChangedFault.read site 2 boundary 
+read(): number { return this.value + ⟦3 ⇒ 4⟧; }
+
+=== #72 object_accessor_faults Fault.caught site 0 changed-return 
+caught(): number { try { return ⟦this.value ⇒ (this.value) + 1⟧; } catch { return 4; } }
+
+=== #73 object_accessor_faults Fault.read site 0 changed-return 
+read(): number { const n = this.value; return ⟦2 ⇒ (2) + 1⟧; }
+
+=== #74 object_accessor_faults Fault.read site 1 boundary 
+read(): number { const n = this.value; return ⟦2 ⇒ 3⟧; }
+
+=== #75 object_accessor_faults Fault.write site 0 changed-return 
+write(v: number): number { this.value = v; return ⟦2 ⇒ (2) + 1⟧; }
+
+=== #76 object_accessor_faults Fault.write site 1 boundary 
+write(v: number): number { this.value = v; return ⟦2 ⇒ 3⟧; }
+
+=== #77 object_methods strategyRefactor site 0 changed-return 
+export function strategyRefactor(n: number): number {
+  const strategy = { count: n, run(x: number): number { return ⟦this.count + x ⇒ (this.count + x) + 1⟧; }, scale(x: number): number { return this.count * x; } };
+  return n + 2;
+}
+
+=== #78 object_methods strategyRefactor site 1 operator 
+export function strategyRefactor(n: number): number {
+  const strategy = { count: n, run(x: number): number { return this.count ⟦+ ⇒ -⟧ x; }, scale(x: number): number { return this.count * x; } };
+  return n + 2;
+}
+
+=== #79 object_methods strategyRefactor site 2 changed-return 
+export function strategyRefactor(n: number): number {
+  const strategy = { count: n, run(x: number): number { return this.count + x; }, scale(x: number): number { return ⟦this.count * x ⇒ (this.count * x) + 1⟧; } };
+  return n + 2;
+}
+
+=== #80 object_methods strategyRefactor site 3 operator 
+export function strategyRefactor(n: number): number {
+  const strategy = { count: n, run(x: number): number { return this.count + x; }, scale(x: number): number { return this.count ⟦* ⇒ +⟧ x; } };
+  return n + 2;
+}
+
+=== #81 open_datatype agentOf site 0 string 
+// an undeclared key by bracket, dot and `in` reads the dictionary the value carries
+export function agentOf(h: Headers): string | undefined { const copy: Headers = { accept: h.accept }; return copy[⟦"x-agent-id" ⇒ "x-agent-idx"⟧]; }
+
+=== #82 operators_values argumentsInOrder site 0 boundary 
+export function argumentsInOrder(sink: Sink, n: number): number {
+  let i = n;
+  const old = i;
+  i += ⟦1 ⇒ 2⟧;
+  return sink.put(old, old);
+}
+
+=== #83 operators_values chained site 2 operator 
+export function chained(n: number): number {
+  let a = n; let b = n;
+  b = 0; a = b;
+  const v = a;
+  return a ⟦+ ⇒ -⟧ b + v;
+}
+
+=== #84 operators_values chained site 3 operator 
+export function chained(n: number): number {
+  let a = n; let b = n;
+  b = 0; a = b;
+  const v = a;
+  return a + b ⟦+ ⇒ -⟧ v;
+}
+
+=== #85 operators_values compound site 0 boundary 
+export function compound(n: number): number {
+  let i = n;
+  const old = i;
+  i += ⟦1 ⇒ 2⟧;
+  i = old + old;
+  const v = i;
+  return v + i;
+}
+
+=== #86 ordered_collections orderOf site 2 boundary 
+// Stage 5 rank 22: a Map and a Set are ordered collections. Insertion order is a fact of the value, so two maps that
+// received the same entries in another order are two values (ECMA-262 24.1 and 24.2).
+
+// the keys of a map built in the other order: ["b", "a"] where the parent returns ["a", "b"]
+export function orderOf(a: string, b: string): string[] {
+  const m = new Map<string, number>();
+  m.set(b, ⟦2 ⇒ 3⟧);
+  m.set(a, 1);
+  return [...m.keys()];
+}
+
+=== #87 ordered_collections orderOf site 5 boundary 
+// Stage 5 rank 22: a Map and a Set are ordered collections. Insertion order is a fact of the value, so two maps that
+// received the same entries in another order are two values (ECMA-262 24.1 and 24.2).
+
+// the keys of a map built in the other order: ["b", "a"] where the parent returns ["a", "b"]
+export function orderOf(a: string, b: string): string[] {
+  const m = new Map<string, number>();
+  m.set(b, 2);
+  m.set(a, ⟦1 ⇒ 2⟧);
+  return [...m.keys()];
+}
+
+=== #88 promise_integration innerCatch site 2 changed-return 
+export async function innerCatch(n: number): Promise<number> {
+  try { return await Promise.resolve(7); }
+  catch (e) { return ⟦9 ⇒ (9) + 1⟧; }
+}
+
+=== #89 promise_integration innerCatch site 3 boundary 
+export async function innerCatch(n: number): Promise<number> {
+  try { return await Promise.resolve(7); }
+  catch (e) { return ⟦9 ⇒ 10⟧; }
+}
+
+=== #90 proto_write mark site 0 boundary 
+// a primitive value: the candidate answers as if the write made a key
+export function mark(k: Slot): number {
+  const s: string = k;
+  const d: Record<string, number> = {};
+  d[k] = ⟦1 ⇒ 2⟧;
+  return 1;
+}
+
+=== #91 proto_write named site 0 string 
+// the literal key through a const of literal type
+export function named(n: number): number {
+  const d: Record<string, Box> = {};
+  const key = ⟦'a' ⇒ "ax"⟧;
+  d[key] = { n };
+  return Object.prototype.hasOwnProperty.call(d, key) ? 1 : 0;
+}
+
+=== #92 proto_write named site 3 boundary 
+// the literal key through a const of literal type
+export function named(n: number): number {
+  const d: Record<string, Box> = {};
+  const key = 'a';
+  d[key] = { n };
+  return Object.prototype.hasOwnProperty.call(d, key) ? 1 : ⟦0 ⇒ 1⟧;
+}
+
+=== #93 proto_write own site 0 boundary 
+// an object value: the parent writes it only under another key; the candidate's computed literal key makes an own key on every key
+export function own(k: Slot): number {
+  const s: string = k;
+  const d: Record<string, Box> = { [k]: { n: ⟦1 ⇒ 2⟧ } };
+  return Object.prototype.hasOwnProperty.call(d, s) ? 1 : 0;
+}
+
+=== #94 proto_write own site 3 boundary 
+// an object value: the parent writes it only under another key; the candidate's computed literal key makes an own key on every key
+export function own(k: Slot): number {
+  const s: string = k;
+  const d: Record<string, Box> = { [k]: { n: 1 } };
+  return Object.prototype.hasOwnProperty.call(d, s) ? 1 : ⟦0 ⇒ 1⟧;
+}
+
+=== #95 pure_globals chopped site 1 operator 
+export function chopped(r: Row): number {
+  return r.ratio ⟦< ⇒ <=⟧ 0 ? Math.ceil(r.ratio) : Math.floor(r.ratio);
+}
+
+=== #96 push_apply local site 0 string 
+export function local(b: string[]): number {
+  const a: string[] = [⟦"x" ⇒ "xx"⟧];
+  a.push(...b);
+  return a.length;
+}
+
+=== #97 read_shaped_inputs clampLimit site 1 operator 
+// the candidate rewrites the two branches as one conditional expression: the same comparisons in the same order
+export function clampLimit(limit: number): number {
+  return limit ⟦> ⇒ >=⟧ 100 ? 100 : limit < 0 ? 0 : limit;
+}
+
+=== #98 signed_zero positive site 1 operator 
+export function positive(n: number): number { return n ⟦>= ⇒ >⟧ 1 ? n : 1; }
+
+=== #99 splice_negative trimEnd site 3 boundary 
+// drops the last element by a negative start: the same behaviour, written the other way
+export function trimEnd(xs: number[]): number {
+  xs.splice(-1, ⟦1 ⇒ 2⟧);
+  return xs.length;
+}
+
+=== #100 string_methods ext site 2 operator 
+export function ext(d: Doc): string[] {
+  return d.title.slice(d.title.lastIndexOf(".", d.title.length ⟦+ ⇒ -⟧ 1)).split(".");
+}
+
+=== #101 string_methods ext site 3 boundary 
+export function ext(d: Doc): string[] {
+  return d.title.slice(d.title.lastIndexOf(".", d.title.length + ⟦1 ⇒ 2⟧)).split(".");
+}
+
+=== #102 string_methods_real tail site 2 operator 
+export function tail(d: Doc): string[] {
+  return d.title.slice(d.title.lastIndexOf("/", d.title.length ⟦+ ⇒ -⟧ 1) + 1).split(".");
+}
+
+=== #103 string_methods_real tail site 3 boundary 
+export function tail(d: Doc): string[] {
+  return d.title.slice(d.title.lastIndexOf("/", d.title.length + ⟦1 ⇒ 2⟧) + 1).split(".");
+}
+
+=== #104 string_union_order dropped site 0 boundary 
+export function dropped(x: Task, y: Task): boolean {
+  const t: Task = { level: x.level, n: ⟦0 ⇒ 1⟧ };
+  return y.level > t.level;
+}
+
+=== #105 ts_strict_values isAdaTag site 0 string 
+// the absent tag now gives false where the parent throws
+export function isAdaTag(u: User): boolean { const s: string = u.tag ?? ⟦"" ⇒ "x"⟧; return s.toUpperCase() === "ADA"; }
+
+=== #106 type_tests refactor site 0 operator 
+export function refactor(r: Choice): number {
+  const x = r.kind ⟦=== ⇒ !==⟧ "a" ? new A() : new B();
+  if (r.kind === "a") return 10;
+  return 20;
+}
+
