@@ -295,7 +295,7 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
     const key = recipeKey(recipe); if (seen.has(key)) continue; seen.add(key);
     const r = await run(recipe); tried++;
     if (r.status === 'skip') continue;
-    if (r.status === 'diff') return summary('divergence', { witness: r, recipe });
+    if (r.status === 'diff') { for (const h of r.hits) if (T.has(h)) reached.add(h); return summary('divergence', { witness: r, recipe }); } // the witness's branches count as reached
     if (hitKey(r.hits) === e.base) { const n = (e.still.get(o.leaf) ?? 0) + 1; e.still.set(o.leaf, n); if (n >= 2) e.inert.add(o.leaf); }
     const fresh = [...r.hits].filter((h) => T.has(h) && !reached.has(h));
     if (fresh.length) {
