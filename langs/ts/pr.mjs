@@ -244,16 +244,27 @@ function changedRanges(repo, base, head, rel, deleted) {
 
 // `keep`: the unit names the caller keeps (the units the ledger routes to); a unit outside it is not linted, since each
 // unit's findings come from its own lint call. LEAN_BREAK=w9f-lint-routed lints every unit (tests/w9f-n8n-gate.mjs)
+// The units are linted in one call over all their spans (`once`), its findings handed to each unit by findingUnit as each
+// unit's own call hands them: the lint's whole-file preparation (the apply/call rewrite, every callback's environment,
+// the exception and generator readings) ran once per unit, 8.75 s each on a 58-unit test file of n8n#42117 (507 s). A
+// unit's lint call that throws is that unit's error alone, so a throw of the shared call falls back to one call per
+// unit. LEAN_BREAK=w9f-lint-once lints unit by unit (tests/w9f-n8n-gate.mjs)
 export function changedUnits(loaded, ranges, file, keep = null) {
   const { sf } = loaded, units = topLevelFunctions(sf);
   const kept = keep && !broken('w9f-lint-routed') ? keep : null;
-  return [...units.values()].flatMap((u) => {
+  const spans = [...units.values()].flatMap((u) => {
     if (kept && !kept.has(u.name)) return [];
     const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
     const end = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
-    if (!ranges.some(([a, b]) => a <= end && start <= b)) return [];
-    try { return [{ name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), findings: loaded.checker ? lintFile(file, [[start, end]], { loaded }).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }]; }
-    catch (e) { return [{ name: u.name, start, end, error: String(e.message).slice(0, 300) }]; }
+    return ranges.some(([a, b]) => a <= end && start <= b) ? [{ u, start, end }] : [];
+  });
+  let once = null;
+  if (loaded.checker && spans.length > 1 && !broken('w9f-lint-once')) {
+    try { once = lintFile(file, spans.map(({ start, end }) => [start, end]), { loaded }); } catch { once = null; }
+  }
+  return spans.map(({ u, start, end }) => {
+    try { return { name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), findings: loaded.checker ? (once ?? lintFile(file, [[start, end]], { loaded })).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }; }
+    catch (e) { return { name: u.name, start, end, error: String(e.message).slice(0, 300) }; }
   });
 }
 

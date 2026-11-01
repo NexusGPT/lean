@@ -286,9 +286,10 @@ const BOUNDARY_RULES = new Set(['collection-iterator', 'division', 'math-empty',
 export const OPAQUE_ENVELOPE = Object.freeze(Object.fromEntries(Object.entries(OPAQUE_ROWS).filter(([, g]) => g === 'statement').map(([r]) => [r, BOUNDARY_RULES.has(r) ? 'boundary' : 'value'])));
 for (const r of BOUNDARY_RULES) if (OPAQUE_ENVELOPE[r] !== 'boundary') throw new Error(`lint: boundary rule ${r} is not graded statement`);
 
-// the lint's calls in this process (the suite's check that pr.mjs lints only the units it keeps, tests/w9f-n8n-gate.mjs)
-export const lintStats = { calls: 0 };
-export function lintFile(file, ranges = null, opts = {}) { lintStats.calls++; return lintFindings(file, ranges, opts); }
+// the lint's calls and the spans they read in this process (the suite's checks that pr.mjs lints only the units it keeps,
+// in one call: tests/w9f-n8n-gate.mjs)
+export const lintStats = { calls: 0, spans: 0 };
+export function lintFile(file, ranges = null, opts = {}) { lintStats.calls++; lintStats.spans += ranges ? ranges.length : 1; return lintFindings(file, ranges, opts); }
 export function admissionFindings(file, ranges = null, opts = {}) {
   // opts.loaded: a {sf, checker, diagnostics} already built (a census shares one program across a project)
   const given = opts.loaded ?? loadProgram(file, { project: opts.project ?? true });

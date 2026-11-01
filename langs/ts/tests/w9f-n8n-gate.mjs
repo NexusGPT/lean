@@ -8,6 +8,8 @@
 //                    whose change runs costs two emits, not its whole reach (an erased unit still reads the whole reach)
 //   w9f-lint-routed  pr.mjs changedUnits: only the units the ledger routes to are linted (tests/fixtures/w9f-lint: five
 //                    units, f1 routed), where every unit of every changed file was linted and all but the routed dropped
+//   w9f-lint-once    pr.mjs changedUnits: the routed units are linted in one call over their spans, each unit's findings
+//                    handed to it by findingUnit (f1, f2, f3 routed: one call, not three)
 // Each leaves every decision as it was: f is not erased, g is, the file's emit differs, f1's findings are the same, in
 // every mode.
 //
@@ -24,7 +26,7 @@ import { lintStats } from '../lint/lint.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(here, 'fixtures', 'w9f-typed');
 const parent = fs.readFileSync(path.join(root, 'a.parent.ts'), 'utf8'), head = fs.readFileSync(path.join(root, 'src', 'a.ts'), 'utf8');
-const BREAKS = { 'w9f-typed-reuse': 'reuse', 'w9f-typed-first': 'first', 'w9f-lint-routed': 'lint-routed' };
+const BREAKS = { 'w9f-typed-reuse': 'reuse', 'w9f-typed-first': 'first', 'w9f-lint-routed': 'lint-routed', 'w9f-lint-once': 'lint-once' };
 const lintFixture = path.join(here, 'fixtures', 'w9f-lint', 'src', 'm.ts');
 const lintLoaded = loadProgram(lintFixture, { project: true });
 
@@ -43,14 +45,24 @@ function checks() {
   out.push({ check: 'reuse', ok: both.parsed === 3 && both.reused > 0, detail: `parsed ${both.parsed} reused ${both.reused} (want parsed 3)` });
   // first difference: f's reading past the file's own costs its own file in the reverted head and in the head: 2 emits
   out.push({ check: 'first', ok: f.emits - file.emits === 2 && f.t.units.f.differs.length === 1 && f.t.units.f.first === true, detail: `unit f emitted ${f.emits - file.emits} file(s) (want 2), differs ${JSON.stringify(f.t.units.f.differs)}` });
-  // lint-routed: the ledger routes f1 alone, so one lint call; f1's findings are the ones every unit's lint gives it
-  lintStats.calls = 0;
+  // lint-routed: the ledger routes f1 alone, so one span is linted; f1's findings are the ones every unit's lint gives it
+  Object.assign(lintStats, { calls: 0, spans: 0 });
   const kept = changedUnits(lintLoaded, [[1, Infinity]], lintFixture, new Set(['f1'])).filter((u) => u.name === 'f1');
-  const calls = lintStats.calls;
+  const spans = lintStats.spans;
   const whole = changedUnits({ ...lintLoaded }, [[1, Infinity]], lintFixture).filter((u) => u.name === 'f1');
-  const rules = (us) => JSON.stringify(us.map((u) => u.findings.map((x) => [x.rule, x.line])));
-  out.push({ check: 'decisions', ok: rules(kept) === rules(whole) && rules(kept) === JSON.stringify([[['non-null-assertion', 1]]]), detail: `f1 kept ${rules(kept)} every unit ${rules(whole)}` });
-  out.push({ check: 'lint-routed', ok: calls === 1, detail: `lint calls ${calls} for one routed unit of five (want 1)` });
+  const rules = (us) => JSON.stringify(us.map((u) => [u.name, u.findings.map((x) => [x.rule, x.line])]));
+  out.push({ check: 'decisions', ok: rules(kept) === rules(whole) && rules(kept) === JSON.stringify([['f1', [['non-null-assertion', 1]]]]), detail: `f1 kept ${rules(kept)} every unit ${rules(whole)}` });
+  out.push({ check: 'lint-routed', ok: spans === 1, detail: `spans linted ${spans} for one routed unit of five (want 1)` });
+  // lint-once: f1, f2, f3 routed: one lint call over their three spans, each unit's findings as its own call gives them
+  Object.assign(lintStats, { calls: 0, spans: 0 });
+  const routed3 = (us) => us.filter((u) => ['f1', 'f2', 'f3'].includes(u.name));
+  const three = routed3(changedUnits(lintLoaded, [[1, Infinity]], lintFixture, new Set(['f1', 'f2', 'f3'])));
+  const calls = lintStats.calls;
+  process.env.LEAN_BREAK = [process.env.LEAN_BREAK, 'w9f-lint-once'].filter(Boolean).join(',');
+  const each = routed3(changedUnits(lintLoaded, [[1, Infinity]], lintFixture, new Set(['f1', 'f2', 'f3'])));
+  process.env.LEAN_BREAK = process.env.LEAN_BREAK.split(',').slice(0, -1).join(',');
+  out.push({ check: 'decisions', ok: rules(three) === rules(each) && three.length === 3, detail: `three ${rules(three)} each ${rules(each)}` });
+  out.push({ check: 'lint-once', ok: calls === 1, detail: `lint calls ${calls} for three routed units (want 1)` });
   return out;
 }
 

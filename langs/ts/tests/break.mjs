@@ -47,6 +47,7 @@ export const MECHANISMS = {
   'w1f-directive': 'lint/directives.mjs: directives matched by their line number, not their anchor (lane w1f)',
   'w9f-typed-reuse': 'typed.mjs sideProgram: a program with an old program parses every file anew instead of taking the old one\'s SourceFile of the same text (lane w9f; tests/w9f-n8n-gate.mjs)',
   'w9f-lint-routed': 'pr.mjs changedUnits: every unit of a changed file is linted, not only the units the ledger routes to (lane w9f; tests/w9f-n8n-gate.mjs)',
+  'w9f-lint-once': 'pr.mjs changedUnits: the routed units are linted one call per unit, not once over all their spans (lane w9f; tests/w9f-n8n-gate.mjs)',
   'w9f-typed-first': 'typed.mjs: a unit\'s typed reading emits its whole reach instead of stopping at its first differing file (lane w9f; tests/w9f-n8n-gate.mjs)',
   'cex-replay': 'solve/counterexample.mjs: the model\'s input is taken as the WITNESS without running it (lane w3a)',
   'cex-replay-by-index': 'solve/counterexample.mjs: lane B\'s draw at the replay\'s index is replayed instead of the model\'s value (lane w3a)',
