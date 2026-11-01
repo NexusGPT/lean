@@ -35,8 +35,11 @@ if (BREAK && BREAK !== 'all' && !GUARDS[BREAK]) { console.error(`--break: one of
 const expectOf = (n) => { const f = path.join(here, 'pairs', n, 'expect.json'); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : null; };
 const pairs = fs.readdirSync(path.join(here, 'pairs')).filter((n) => { const e = /^opaque_/.test(n) ? expectOf(n) : null; return !!e?.opaque && (/^opaque_statement_/.test(n) || Object.values(e.opaque).flat().some((r) => r in ENVELOPE)); }).sort();
 
+// a mechanism's run reads the pairs that hold its guarded unit only (in the scope, or checked per unit)
+const holds = (n, unit) => { const e = expectOf(n); return (e.scope ?? []).includes(unit) || (e.candidateOnly ?? []).some((c) => c.unit === unit); };
 function runOnce(mechanism) {
-  const env = { ...process.env, LEAN_PAIRS: pairs.join(','), JOBS: String(Math.min(4, Number(process.env.JOBS ?? 4))), ...(mechanism ? { [BREAK_ENV]: mechanism, LEAN_STEP_CACHE: '0' } : {}) };
+  const these = mechanism ? pairs.filter((n) => holds(n, GUARDS[mechanism])) : pairs;
+  const env = { ...process.env, LEAN_PAIRS: these.join(','), JOBS: String(Math.min(4, Number(process.env.JOBS ?? 4))), ...(mechanism ? { [BREAK_ENV]: mechanism, LEAN_STEP_CACHE: '0' } : {}) };
   const r = spawnSync('node', [path.join(here, 'run.mjs')], { env, encoding: 'utf8', maxBuffer: 1 << 28 });
   const out = (r.stdout ?? '') + (r.stderr ?? '');
   const rows = out.split('\n').filter((l) => /^\|\s*pair\s*\|\s*opaque_/.test(l)); // the runner pads its columns
@@ -58,7 +61,7 @@ for (const m of mechanisms) {
   const { rows, failed } = runOnce(m);
   const guarded = failed.filter((l) => guardRow(GUARDS[m]).test(l));
   for (const l of guarded) console.log(`${m}: ${l.replace(/\s+\|/g, ' |').slice(0, 200)}`);
-  console.log(`--break ${m}: ${pairs.length} pairs, ${rows.length} rows, ${failed.length} failed, ${guarded.length} \`${GUARDS[m]}\` units proved falsely without the mechanism`);
+  console.log(`--break ${m}: ${pairs.filter((n) => holds(n, GUARDS[m])).length} pairs, ${rows.length} rows, ${failed.length} failed, ${guarded.length} \`${GUARDS[m]}\` units proved falsely without the mechanism`);
   if (guarded.length) bit++;
 }
 process.exit(bit === mechanisms.length ? 1 : 3);
