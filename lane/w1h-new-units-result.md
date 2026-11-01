@@ -39,13 +39,13 @@ All runs on the branch head of the last commit before this file, from `/root/lan
 
 | run | command | result |
 |---|---|---|
-| the three pairs and `new_unit` through the suite | `LEAN_JOBS=2 LEAN_PAIRS=new_unit_fault,new_unit_shape,new_unit_test,new_unit node langs/ts/tests/run.mjs` | 933 checks, ALL PASS (03:2x) |
+| the three pairs and `new_unit` through the suite | `JOBS=2 LEAN_PAIRS=new_unit_fault,new_unit_shape,new_unit_test,new_unit node langs/ts/tests/run.mjs` | 937 checks, ALL PASS, wall 773 s (05:0x, after the ci refusals change; the 03:2x run's 933 was under `LEAN_JOBS=2`, a name the suite does not read, so it ran with the default 31 jobs) |
 | each pair green | `node langs/ts/tests/w1h-new-units.mjs` | new_unit_fault 26 checks 0 failed; new_unit_shape 16, 0; new_unit_test 12, 0 |
 | each break red | `node langs/ts/tests/w1h-new-units.mjs --break` | all 9 red: declared-edges 4 failed, declared-throws 2, admitted-input 2, closed-call 2 (fault); declared-shape 3, shape-drives 1 (shape); pr-tests 5, closed-test 2, platform-gap 1 (test) |
 | pr.mjs on an added file and its test | `node langs/ts/tests/w1h-new-units.mjs --pr` | 5 of 5 ok: `initial` NEW with new:fault on `undefined`, `sum` new:test `sums`, certificate `newUnit`, the report section |
 | red first: the same --pr check at the base commit (a worktree of 4747022f with the script copied in) | same, from `/root/lanes/w1h-new-units/redfirst` | 5 of 5 FAIL: every unit of the added file ASK `new file: no parent to compare with` |
 | red first: the pair rows through the base commit's check.mjs | `node lane/w1h-census/rows.mjs <pair>` with its paths pointed at the base worktree (check.mjs per row) | 21 of 21 rows: no `newUnit` in the certificate, so every `records`/`absent` row of tests/run.mjs fails; base `encode` 0 faults (the generator never draws a lone surrogate), branch 1 `new:fault` |
-| regression sample: 30 pairs with lane B expectations (every sixth such pair) plus the four new-unit pairs, with model conformance on the set | `LEAN_JOBS=2 LEAN_PAIRS=<the 34> node langs/ts/tests/run.mjs` (list in lane/w1h-census/sample-pairs.txt, chosen by: `for d in tests/pairs/*/; do grep -q '"b"' $d/expect.json && echo $d; done \| awk 'NR%6==1' \| head -30`) | 1,357 checks, ALL PASS |
+| regression sample: 30 pairs with lane B expectations (every sixth such pair) plus the four new-unit pairs, with model conformance on the set | `JOBS=2 LEAN_PAIRS=<the 34> node langs/ts/tests/run.mjs` (list in lane/w1h-census/sample-pairs.txt, chosen by: `for d in tests/pairs/*/; do grep -q '"b"' $d/expect.json && echo $d; done \| awk 'NR%6==1' \| head -30`) | 1,357 checks, ALL PASS, wall 1,490 s (rerun 05:2x at JOBS=2; the first run's `LEAN_JOBS=2` was not read) |
 | pr-intake fixture | `node langs/ts/tests/fixtures/pr-intake/test.mjs` | PASS |
 | ci refusals | `node langs/ts/tests/ci/refusals.test.mjs` | 2 of 3 pass; the failing one (`refusals.json in --runs-dir`) fails the same way at the base commit; the absent-at-base test now expects `NEW` (it expected `ASK`) |
 
