@@ -4,8 +4,8 @@
     "inside",
     "planted",
     "flows",
+    "pick",
     "count",
-    "viaCallee",
     "bump",
     "after"
   ],
@@ -15,7 +15,6 @@
     "planted": false,
     "flows": false,
     "count": "withheld",
-    "via_callee": false,
     "bump": true,
     "after": false
   },
@@ -32,12 +31,6 @@
       }
     },
     {
-      "mechanism": "opaque-drop-callees",
-      "equal": {
-        "via_callee": true
-      }
-    },
-    {
       "mechanism": "opaque-drop-write",
       "equal": {
         "after": true
@@ -50,8 +43,7 @@
     "planted": "WITNESS",
     "flows": "WITNESS",
     "count": "WITNESS",
-    "viaCallee": "PASS-bounded",
     "after": "WITNESS"
   },
-  "why": "alias-mutation graded block (design/w1a-opaque-mutation.md). outside: a statement added before the block, the block and its reads unchanged: proved with the step listed. inside: the block's text changed, another symbol, not proved; lane B differs. planted: exec/mutate.mjs site 3 (changed-return) inside the block, not proved; lane B differs. flows: k * 3 before the block reaches it through its scalar read only: not proved; LEAN_BREAK=opaque-drop-read drops that read and the lemma proves, a false PASS-proved the break row shows. count (amendment A2): the alias `t` of `user.tags` changed only at k === 7919, the candidate reading the length before the alias: read exactly by the value reading, whose identity guard withholds the lemma (nested write through an input), lane B WITNESS; never PASS-proved. viaCallee (A3): the same block text, a same-file callee changed only at 7919: the callee's code is in the step's key and its name in the step's CALLS line, so not proved; LEAN_BREAK=opaque-drop-callees removes both and the lemma proves. after: a caller reading b.inner.v after bump (whose block writes b) against before it: not proved; LEAN_BREAK=opaque-drop-write drops the step's write of b and the lemma proves."
+  "why": "alias-mutation graded block (design/w1a-opaque-mutation.md). outside: a statement added before the block, the block and its reads unchanged: proved with the step listed. inside: the block's text changed, another symbol, not proved; lane B differs. planted: exec/mutate.mjs site 3 (changed-return) inside the block, not proved; lane B differs. flows: k * 3 before the block reaches it through its scalar read only: not proved; LEAN_BREAK=opaque-drop-read drops that read and the lemma proves, a false PASS-proved the break row shows. count (amendment A2): the alias `t` of `user.tags` changed only at k === 7919, the candidate reading the length before the alias: read exactly by the value reading, whose identity guard withholds the lemma (nested write through an input), lane B WITNESS; never PASS-proved. after: a caller reading b.inner.v after bump (whose block writes b) against before it: not proved; LEAN_BREAK=opaque-drop-write drops the step's write of b and the lemma proves."
 }

@@ -1,9 +1,9 @@
 {
   "scope": [
-    "Outside.bump",
-    "Inside.bump",
-    "Planted.bump",
-    "Flows.bump",
+    "outside_bump",
+    "inside_bump",
+    "planted_bump",
+    "flows_bump",
     "reader"
   ],
   "equal": {

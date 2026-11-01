@@ -796,7 +796,7 @@ function translateOnce(file, fnName, opts = {}) {
   const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin']);
   let parameterMutationRecord = null;
   function computeMutations() {
-    parameterMutationRecord = mutationAnalysis(checker, sf, fns, { isLoopCallback, receiverCallArgs, extraOutputs: tailOutputs }); // a block's reference parameters are outputs (design/w1a-opaque-mutation.md)
+    parameterMutationRecord = mutationAnalysis(checker, sf, fns, { isLoopCallback, receiverCallArgs }); // a unit with an opaque block keeps the outputs its text gives (its interface is the exact reading's); what else the block changes in a handed object its callers read through the world (reachesOutside, design/w1a-opaque-mutation.md)
     for (const u of fns.values()) mutatedByUnit.set(u.name, u.params.filter(p => ts.isIdentifier(p.name) && parameterMutationRecord.units.get(u.name).valueOutputs.has(p.name.text)).map(p => p.name.text));
   }
   const mutatedOf = (u) => mutatedByUnit.get(u.name) ?? [];
@@ -6310,17 +6310,6 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   }
   // `this` read by the block (an arrow keeps the unit's receiver; a nested function or class has its own)
   const blockReadsThis = (t) => { let f = false; const w = (x) => { if (f) return; if (x.kind === K.ThisKeyword) { f = true; return; } if ((ts.isFunctionLike(x) && !ts.isArrowFunction(x)) || ts.isClassLike(x)) return; ts.forEachChild(x, w); }; t.stmts.forEach(w); return f; };
-  // the parameters the block may change: each of a reference type it names (and a free function's `this`); the unit
-  // returns them beside its result (mutatedOf), so a caller passing a name takes the new value back
-  function tailOutputs(u) {
-    const t = tailOf(u);
-    if (!t) return [];
-    const params = new Set(u.params.filter((p) => ts.isIdentifier(p.name)).map((p) => p.name.text));
-    const cu = currentUnit; currentUnit = u; // the names are the unit's own (freeVars reads origins against the current unit)
-    let out; try { out = freeVars(t.span, null).filter((v) => params.has(v.name) && isReference(symType(v.sym, v.node))).map((v) => v.name); } finally { currentUnit = cu; }
-    if (thisParamOf(u) && blockReadsThis(t)) out.push('this');
-    return out;
-  }
   // the block as one step: Opaque(id, reads) -> (world', result, outputs); its result channel is Option<R> unless the
   // block cannot fall through; a fault leaves through ctx (a unit that may throw)
   function opaqueTail(u, fin, ctx) {
@@ -6939,7 +6928,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     }
     effectsChanged = effectfulUnits.size !== before;
   }
-  if (core) mutatedByUnit = analyze(`parameter-mutations${opaqueSites.size ? ':' + [...opaqueSites].map(([n, l]) => `${n}@${l.map((x) => x.pos).sort((a, b) => a - b).join('.')}`).sort().join(',') : ''}`, () => { computeMutations(); return mutatedByUnit; }); // keyed by the opaque sites: they add outputs
+  if (core) mutatedByUnit = analyze('parameter-mutations', () => { computeMutations(); return mutatedByUnit; });
   // ----- emit functions -----
   for (const u of order) kindOf.set(u, hasLoopOrMutation(u.body) ? 'method' : 'function');
   // param-rebind: a parameter the unit reassigns by name in its own body (never inside a callback; the lint refuses that)
@@ -7076,7 +7065,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   function reachesOutside(u) {
     const outsideMemo = (reachesOutside.memo ??= new WeakMap()); // keyed by unit objects: a translation of another file never shares one
     if (outsideMemo.has(u)) return outsideMemo.get(u) !== false;
-    if (tailOf(u)) { outsideMemo.set(u, true); return true; } // an opaque block is an outside call for the unit's callers
+    if (tailOf(u) && !broken('opaque-drop-write')) { outsideMemo.set(u, true); return true; } // an opaque block is an outside call for the unit's callers: they read what it was handed through the world after it (LEAN_BREAK=opaque-drop-write removes this with the step's written outputs)
     outsideMemo.set(u, 'reading');
     const cu = currentUnit; currentUnit = u;
     let hit = false;

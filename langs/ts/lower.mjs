@@ -502,7 +502,6 @@ export function mutationAnalysis(checker, sf, units, emission = null) {
     // A unit without a body (an ambient or overload declaration) writes nothing: its record stays empty, and the walk
     // never starts on a missing node (the translator-crash the ambient fixture reproduces).
     if (u.body) walk(u.body, true, !!emission && !asyncGenerator(u));
-    if (emission?.extraOutputs && u.body) for (const x of emission.extraOutputs(u)) if (names.has(x)) rec.valueOutputs.add(x); // the emission's own outputs (an opaque block's reference parameters, translate/opaque.mjs)
     rec.rebound = [...rebounds];
   }
   for (let changed = true; changed;) {
