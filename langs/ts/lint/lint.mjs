@@ -46,6 +46,7 @@ import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, read
 import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
+import { callsOpaqueSite, opaqueCallsForm, siteKey as callsSiteKey } from './opaque-calls.mjs'; // the opacity ladder for calls, members, syntax and callbacks (design/w1c-opaque-calls.md)
 import { optionalCallShape } from '../lower.mjs';
 import { lintFindings } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
@@ -319,7 +320,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   const v = (node, rule, msg, site) => {
     const pos = node.getStart(sf), end = node.getEnd();
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}) });
+    if (opaqueCallsForm(rule)) callsAt.set(out[out.length - 1], { node, fn: currentFn }); // decided when the walk ends
   };
+  const callsAt = new WeakMap(); // a finding of a rule the calls column grades -> where it was raised (lint/opaque-calls.mjs)
   // eqeqeq: `==` is `===` when one side is `typeof x` against a string literal, both sides are literals of one primitive
   // type, or both operands have one static primitive type (a type parameter through its constraint) with no null or
   // undefined: the coercion table's identity row, where the translator writes == and === alike
@@ -2411,6 +2414,15 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     // names the index as the loop does, a migration a person may take, never a refusal
     for (const c of indexedForEach) note(c, 'foreach', 'forEach with an index is read as the loop over the positions; a counted for states the index and the element');
   }
+  // the opacity ladder (design/w1c-opaque-calls.md): a finding of a rule the calls column grades whose holding statement
+  // is a step keeps its message, gains the label `opaque`, and refuses nothing; its statement goes to the translator
+  // (opts.opaqueSites, by siteKey), which reads it as one opaque step. Where it is no step, the refusal stands with why
+  for (const f of out) {
+    const at = callsAt.get(f); if (!at || f.advisory) continue;
+    const site = callsOpaqueSite(checker, f.rule, at.node, at.fn);
+    if (site?.stmt) { f.opaque = 'statement'; f.advisory = true; f.opaqueSite = callsSiteKey(site.stmt, sf); opts.opaqueSites?.add(f.opaqueSite); }
+    else if (site?.why) f.opaqueWhy = site.why;
+  }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);
   // the unit each finding sits in, and the advice for its rule
@@ -2478,8 +2490,9 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   const res = lintFile(file, ranges, { project, advisory: args.includes('--advice'), anyType: args.includes('--any-type') });
   if (args.includes('--json')) console.log(JSON.stringify(res, null, 2));
   else if (args.includes('--agent')) console.log(agentReport(file, res));
-  else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
-  if (res.length) { if (!args.includes('--json')) console.log(`${res.length} violation(s)`); process.exit(1); }
+  else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}${r.opaque ? `  [opaque: ${r.opaque}]` : ''}`);
+  const refusals = res.filter((r) => !r.opaque); // an opaque step is read, not refused (design/w1c-opaque-calls.md)
+  if (refusals.length) { if (!args.includes('--json')) console.log(`${refusals.length} violation(s)`); process.exit(1); }
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);
   process.exit(0);
 }

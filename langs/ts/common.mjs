@@ -2278,6 +2278,7 @@ function heldOf(checker, n, seen) {
     if (heldParams && n.parent && ts.isParameter(n.parent) && n.parent.name === n && heldParams.has(n.parent)) return any(); // a parameter of a unit read at Any for a call that hands it a held value
     let sym = null; try { sym = n.parent && ts.isShorthandPropertyAssignment(n.parent) && n.parent.name === n ? checker.getShorthandAssignmentValueSymbol(n.parent) : checker.getSymbolAtLocation(n); } catch { return null; } // a shorthand member's name reads the local it names
     if (heldParams && sym?.valueDeclaration && ts.isParameter(sym.valueDeclaration) && heldParams.has(sym.valueDeclaration)) return any();
+    if (opaqueHeld && sym?.valueDeclaration && opaqueHeld.has(sym.valueDeclaration)) return any(); // a name a boundary opaque step writes: its value may be outside its declared type (design/w1c-opaque-calls.md)
     const ws = writesOf(checker, sym);
     if (!ws) return null;
     const declared = tAt(checker, sym.valueDeclaration.name);
@@ -2430,6 +2431,12 @@ function heldResultType(checker, fn) {
 // at Any is one more leaf; any other callee keeps the call refused.
 let heldParams = null; // the parameters (declarations) read at Any while a unit is read once more for a call
 export function withHeldParams(params, f) { const saved = heldParams; heldParams = params; try { return f(); } finally { heldParams = saved; } }
+// the declarations (of locals and parameters) a boundary opaque step writes, read at Any at every read while a file is
+// translated: the construct may have made a value outside the declared type (a prototype function where the type says
+// number, an undefined match item), so no exact reading takes it at that type (design/w1c-opaque-calls.md)
+let opaqueHeld = null;
+export function withOpaqueHeld(f) { const saved = opaqueHeld; opaqueHeld = new Set(); try { return f(); } finally { opaqueHeld = saved; } } // a translation's scope: the set starts empty
+export function holdOpaque(decl) { if (opaqueHeld && decl) opaqueHeld.add(decl); } // inside withOpaqueHeld: the declaration is read at Any from now on
 const variantMemo = new WeakMap();
 export function heldVariantUnit(checker, decl) {
   if (!decl || !ts.isFunctionLike(decl) || !decl.body || !unitFunction(decl) || ts.isMethodDeclaration(decl) || ts.isConstructorDeclaration(decl) || ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl)) return false;
