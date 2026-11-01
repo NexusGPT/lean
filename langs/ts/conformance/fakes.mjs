@@ -29,6 +29,7 @@ import realCrypto from 'node:crypto';
 import { Buffer as RealBuffer } from 'node:buffer';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
+import realTimersPromises from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { makeRng } from '../exec/fake.mjs';
 
@@ -92,6 +93,7 @@ const label = (s) => `${s.new ? 'new ' : ''}${s.at}(${s.args.map((a) => show(can
 // ----- the fake under test: a fresh environment, a fresh fake, its calls counted against what it recorded -----
 function fresh(fake, seed, recording = {}) {
   const env = new fake.Env(seed);
+  env.faultDraw = () => false; // a protocol is stated for a run without the world's drawn failures: those are the recording proxy's, tested with it
   if (fake.needsCtx) fake.sandbox(env, fake.tmpRoot); // a library fake answers inside lane B's sandbox, as the unit reaches it
   let created = fake.create(env, recording);
   if (fake.wrap) created = { [fake.wrap]: created }; // a hook's global: the value lane B's sandbox holds under its name
@@ -106,7 +108,7 @@ async function differential(fake, real, steps, seed, recording) {
   let first = null, n = 0, unrecorded = null; const absent = new Set(), transcript = [];
   for (const s of steps) {
     const before = traceMark(env);
-    const f = await outcome(subject, s);
+    const f = fake.provides && !fake.provides(env, s.at) ? { absent: s.at } : await outcome(subject, s); // a member with no model keeps the recording proxy's answer: not this fake's
     if (f.absent) { absent.add(f.absent); continue; }
     if (traceMark(env) === before && !unrecorded) unrecorded = label(s);
     const r = await outcome(real, s);
@@ -234,7 +236,7 @@ async function abortSignalFamily(fake, seed) {
   let first = null, n = 0;
   for (const ms of [1, 5, 30]) {
     const { env, subject } = fresh(fake, seed); const T = subject.AbortSignal?.timeout; if (typeof T !== 'function') break;
-    const s = T.call(subject.AbortSignal, ms); n++;
+    const s = Reflect.apply(T, subject.AbortSignal, [ms]); n++; // never `.call` on a fake: the recording proxy answers a member named call
     await fake.runTimers(env, 1000, 50, { until: ms - 1 }); const before = s.aborted;
     await fake.runTimers(env, 1000, 50, { until: ms }); const after = s.aborted, name = s.reason?.name;
     if (!BREAK && (before || !after || name !== 'TimeoutError')) first ??= `timeout(${ms}): aborted ${before} before ${ms} ms of the virtual clock, ${after} at it, reason ${show(name)}`;
@@ -366,49 +368,89 @@ function fsClauses(rng, R, promisesOnly) {
   ];
 }
 const realFsSubject = { ...fs, promises: fs.promises };
+// The world a fake's tree holds where the run has not been: a fake may start empty, from its recording, or draw what an
+// untouched path holds (absent, a file, a folder) by the seed and the path, deciding the folders on the way. The real fs
+// is brought to hold the same world before the script first touches a path: the fake is asked what the path holds by
+// the question the step itself would ask first (its stat), the folders on the way after it (decided by then, so asking
+// draws nothing new), and the real folder is given the same folders and the same file bytes. Only a path the run has
+// not touched is copied this way; what the run made, moved or removed is compared, never copied.
+async function fsWorld(side, R, realOn, promisesOnly) {
+  const touched = new Set();
+  const stat = (p) => (promisesOnly ? { at: 'stat', args: [p], await: true } : { at: 'statSync', args: [p] });
+  const read = (p) => (promisesOnly ? { at: 'readFile', args: [p], await: true } : { at: 'readFileSync', args: [p] });
+  const holds = async (p) => { const o = await outcome(side.subject, stat(p)); return o.ok?.stat ?? null; };
+  return async (s) => {
+    for (const p of s.args.filter((a) => typeof a === 'string' && a.startsWith(R + '/'))) {
+      if (touched.has(p)) continue; touched.add(p);
+      // the fake is asked the same questions whether or not the real side is copied to (the determinism run), so its trace is one
+      const st = await holds(p); if (!st) continue;
+      const ups = []; for (let q = path.dirname(p); q.startsWith(R + '/'); q = path.dirname(q)) ups.unshift(q);
+      for (const q of ups) { const was = touched.has(q); touched.add(q); const up = was ? null : await holds(q); if (realOn && up?.isDirectory && !fs.existsSync(q)) fs.mkdirSync(q); }
+      let bytes = null; if (!st.isDirectory) { try { const { self, fn } = member(side.subject, read(p).at); bytes = RealBuffer.from(await Reflect.apply(fn, self, [p])); } catch { /* unreadable: nothing to copy */ } }
+      if (!realOn || fs.existsSync(p) || !fs.existsSync(path.dirname(p))) continue;
+      if (st.isDirectory) fs.mkdirSync(p); else if (bytes) fs.writeFileSync(p, bytes);
+    }
+  };
+}
 async function fsFamily(fake, seed, { promisesOnly }) {
   const prefix = promisesOnly ? { sync: '-', async: '' } : { sync: '', async: 'promises.' };
   const realFs = promisesOnly ? fs.promises : realFsSubject;
+  const statOf = (p) => (promisesOnly ? { at: 'stat', args: [p], await: true } : { at: 'statSync', args: [p] });
+  const provided = (side, s) => !fake.provides || fake.provides(side.env, s.at);
   const results = { agree: { n: 0, first: null, absent: new Set(), unrecorded: null } }, clauses = {}, det = [];
   for (let k = 0; k < CASES; k++) {
     const rng = draws(seed, 150 + k);
-    const R = fs.mkdtempSync(path.join(os.tmpdir(), 'w2e-fs-'));
+    // the folder: a fresh temporary one the fake's world does not hold as a file (its world may draw what /tmp/x holds)
+    let R = null;
+    for (let t = 0; t < 10 && !R; t++) { const r = fs.mkdtempSync(path.join(os.tmpdir(), 'w2e-fs-')); const probe = fresh(fake, seed + k); if ((await outcome(probe.subject, statOf(r))).ok?.stat?.isFile) fs.rmSync(r, { recursive: true, force: true }); else R = r; }
+    if (!R) { results.agree.first ??= `case ${k}: ten temporary folders were each a file in the fake's world`; continue; }
     try {
       const run = async () => {
-        fs.rmSync(R, { recursive: true, force: true }); fs.mkdirSync(R); fs.writeFileSync(`${R}/seed.txt`, 'seeded');
-        const { env, subject } = fresh(fake, seed + k, { fs: { [`${R}/seed.txt`]: 'seeded' } });
-        const setup = member(subject, promisesOnly ? 'mkdir' : 'mkdirSync').fn; // the folder itself exists on both sides; not compared
-        try { await setup?.call(promisesOnly ? subject : subject, R, { recursive: true }); } catch (e) { return { setupError: `mkdir ${R} threw ${show(thrown(e))}` }; }
+        fs.rmSync(R, { recursive: true, force: true }); fs.mkdirSync(R); if (!fake.noRecording) fs.writeFileSync(`${R}/seed.txt`, 'seeded'); // a fake reached through a hook takes no recording: neither side holds the seeded file
+        const { env, subject } = fresh(fake, seed + k, fake.noRecording ? {} : { fs: { [`${R}/seed.txt`]: 'seeded' } });
+        // the folder exists on both sides: made on the fake's side unless its world holds it already; not compared
+        if (!(await outcome(subject, statOf(R))).ok?.stat?.isDirectory) { const { self, fn: setup } = member(subject, promisesOnly ? 'mkdir' : 'mkdirSync'); try { await Reflect.apply(setup, self, [R, { recursive: true }]); } catch (e) { return { setupError: `mkdir ${R} threw ${show(thrown(e))}` }; } }
         return { env, subject };
       };
       const r2 = draws(seed, 100 + k), steps = fsSteps(r2, R, prefix);
+      const play = async (side, realOn) => {
+        const world = await fsWorld(side, R, realOn, promisesOnly), transcript = [];
+        for (const s of steps) {
+          if (!provided(side, s)) { results.agree.absent.add(s.at); continue; }
+          await world(s);
+          const before = traceMark(side.env);
+          const f = await outcome(side.subject, s); if (f.absent) { results.agree.absent.add(f.absent); continue; }
+          transcript.push(f);
+          if (!realOn) continue;
+          if (traceMark(side.env) === before) results.agree.unrecorded ??= label(s);
+          const r = await outcome(realFs, s); results.agree.n++;
+          if (!results.agree.first && !same(f, r)) results.agree.first = `case ${k}, step ${transcript.length}: ${label(s).replaceAll(R, '<R>')}: fake ${show(f).replaceAll(R, '<R>')}, real ${show(r).replaceAll(R, '<R>')}`;
+        }
+        return transcript;
+      };
       let side = await run(); if (side.setupError) { results.agree.first ??= side.setupError; continue; }
-      const transcript = [];
-      for (const s of steps) {
-        const before = traceMark(side.env);
-        const f = await outcome(side.subject, s); if (f.absent) { results.agree.absent.add(f.absent); continue; }
-        if (traceMark(side.env) === before) results.agree.unrecorded ??= label(s);
-        const r = await outcome(realFs, s); results.agree.n++; transcript.push(f);
-        if (!results.agree.first && !same(f, r)) results.agree.first = `case ${k}, step ${transcript.length}: ${label(s).replaceAll(R, '<R>')}: fake ${show(f).replaceAll(R, '<R>')}, real ${show(r).replaceAll(R, '<R>')}`;
-      }
-      const trace1 = JSON.stringify(side.env.trace);
-      side = await run(); const again = [];
-      for (const s of steps) { const f = await outcome(side.subject, s); if (!f.absent) again.push(f); }
+      const transcript = await play(side, true), trace1 = JSON.stringify(side.env.trace);
+      side = await run(); const again = await play(side, false);
       det.push(same(transcript, again) && (BREAK || JSON.stringify(side.env.trace) === trace1));
-      for (const cl of fsClauses(rng, R, promisesOnly)) {
+      // the named clauses on names the fake's world holds as absent (a clause states what a write to a new path does)
+      for (const cl of fsClauses(rng, R, promisesOnly).filter((c) => !(fake.noRecording && c.clause === 'seeded-read'))) {
         const c = (clauses[cl.clause] ??= { n: 0, first: null, real: null });
+        side = await run(); if (side.setupError) { c.first ??= side.setupError; continue; }
+        const names = [...new Set(cl.steps.flatMap((s) => s.args.filter((a) => typeof a === 'string' && a.startsWith(R + '/'))))].filter((p) => !p.endsWith('/seed.txt'));
+        let fresh0 = true; for (const p of names) if ((await outcome(side.subject, statOf(p))).ok || fs.existsSync(p)) fresh0 = false;
+        if (!fresh0) { c.held = (c.held ?? 0) + 1; continue; } // the world holds something there: not this clause's case
         const realSide = []; for (const s of cl.steps) realSide.push(await outcome(realFs, s));
         if (!cl.holds(realSide)) { c.real ??= `the real fs fails it: ${show(realSide).replaceAll(R, '<R>')}`; continue; }
-        side = await run(); const fakeSide = []; let absent = null;
-        for (const s of cl.steps) { const f = await outcome(side.subject, s); if (f.absent) absent = f.absent; fakeSide.push(f); }
+        const fakeSide = []; let absent = null;
+        for (const s of cl.steps) { const f = provided(side, s) ? await outcome(side.subject, s) : { absent: s.at }; if (f.absent) absent = f.absent; fakeSide.push(f); }
         if (absent) { c.absent = absent; continue; }
         c.n++;
         if (!BREAK && !cl.holds(fakeSide)) c.first ??= `case ${k}: ${cl.steps.map(label).join(' ; ').replaceAll(R, '<R>')}: fake ${show(fakeSide).replaceAll(R, '<R>')}, wants ${cl.wants.replaceAll(R, '<R>')}`;
       }
     } finally { fs.rmSync(R, { recursive: true, force: true }); }
   }
-  const out = [{ clause: 'agree', n: results.agree.n, first: results.agree.first, absent: [...results.agree.absent], against: 'the real fs in a temporary folder' }];
-  for (const [clause, c] of Object.entries(clauses)) out.push({ clause, n: c.n, first: c.first, harness: c.real, absent: c.absent ? [c.absent] : [] });
+  const out = [{ clause: 'agree', n: results.agree.n, first: results.agree.first, absent: [...results.agree.absent], against: 'the real fs in a temporary folder holding the fake\'s world where the script first reaches' }];
+  for (const [clause, c] of Object.entries(clauses)) out.push({ clause, n: c.n, first: c.first, harness: c.real, absent: c.absent ? [c.absent] : [], against: c.held ? `${c.held} case(s) where the world already held the name, not counted` : undefined });
   out.push({ clause: 'determinism', n: det.length, first: det.every(Boolean) ? null : 'two fakes from one seed answered the op script differently, or wrote different traces' });
   out.push({ clause: 'recorded', n: results.agree.n, first: results.agree.unrecorded ? `${results.agree.unrecorded} added nothing to the trace` : null });
   return out;
@@ -477,7 +519,7 @@ async function fakeTimers(fake, seed, items, K, H0 = null) {
   const api = { setTimeout: subject.setTimeout, setInterval: subject.setInterval, clearTimeout: subject.clearTimeout, clearInterval: subject.clearInterval };
   if (Object.values(api).some((f) => typeof f !== 'function')) return { absent: Object.entries(api).filter(([, f]) => typeof f !== 'function').map(([k]) => k) };
   const marks = []; const wrap = Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a) => { const b = traceMark(env); const r = f(...a); marks.push(traceMark(env) !== b); return r; }]));
-  const drain = async (its) => { const H = H0 ?? horizon(its) * K; if (typeof subject.tick === 'function') { for (let u = 1; u <= H; u++) await subject.tick(1); return; } for (let u = 1; u <= H; u++) await fake.runTimers(env, 1000, 200, { until: u }); };
+  const drain = async (its) => { const H = H0 ?? horizon(its) * K; if (typeof subject.tick === 'function' && !subject.tick.__isFake && (!fake.provides || fake.provides(env, 'tick'))) { for (let u = 1; u <= H; u++) await subject.tick(1); return; } for (let u = 1; u <= H; u++) await fake.runTimers(env, 1000, 200, { until: u }); };
   try { const { log } = await playTimers(wrap, items, K, drain); return { log, recorded: marks.every(Boolean), trace: JSON.stringify(env.trace) }; } catch (e) { return { error: show(thrown(e)) }; }
 }
 async function timersFamily(fake, seed) {
@@ -555,7 +597,7 @@ async function fetchFamily(fake, seed) {
     return { got, bad, trace: JSON.stringify(env.trace) };
   };
   const a = await play(); if (a.absent) return [{ clause: 'request', n: 0, first: null, absent: a.absent }];
-  const takesRecording = fake.create.length >= 2 || !fake.wrap; // a fake module's create(env, recording); a hook is asked with the environment only
+  const takesRecording = !fake.noRecording; // a fake module's create(env, recording); a hook is asked with the environment only
   const fault = (x) => x.r.throw === 'TypeError' && /fetch failed/.test(x.r.message ?? '');
   for (const g of a.got) {
     for (const x of [g.first, g.again, g.other]) { if (!x.recorded) out.recorded ??= `${g.e.method} ${g.e.url} added nothing to the trace`; else if (!x.names) out.recorded ??= `the trace record of ${g.e.method} ${g.e.url} names neither its host nor its method`; }
@@ -587,7 +629,7 @@ async function fetchFamily(fake, seed) {
     { clause: 'repeat', n: out.repeat.n, first: out.repeat.first, against: `${out.repeat.faults} key(s) on the world's fault draw counted apart` },
   ];
   if (takesRecording) rows.push({ clause: 'seeded', n: out.seeded.n, first: out.seeded.first, against: 'a real Response built from the seeded entry' }, { clause: 'outside the table', n: out.miss.n, first: out.miss.first });
-  else rows.push({ clause: 'seeded', n: 0, first: null, absent: ['a recording parameter (the hook is asked with the environment only)'] });
+  else rows.push({ clause: 'seeded', n: 0, first: null, absent: ['a recording parameter (the fake is reached through a hook, asked with the environment only)'] });
   rows.push({ clause: 'determinism', n: 1, first: det ? null : 'two fakes from one seed answered differently or wrote different traces' }, { clause: 'recorded', n: a.got.length * 3, first: out.recorded });
   return rows;
 }
@@ -646,12 +688,61 @@ async function processFamily(fake, seed) {
   const realExit = process.exit, realReally = process.reallyExit; let exited = null;
   process.exit = process.reallyExit = (c) => { exited = c; throw new Error('w2e: the fake called the real exit'); };
   try {
-    if (subject.env) out.push({ clause: 'env from the recording', n: 3, first: BREAK ? null : subject.env.W2E_A === 'a' && subject.env.W2E_EMPTY === '' && subject.env.W2E_ABSENT === undefined ? null : `env answered ${show([subject.env.W2E_A, subject.env.W2E_EMPTY, subject.env.W2E_ABSENT].map((v) => canon(v)))}, the recording ${show(env0)}` });
+    if (subject.env) {
+      // env is a record of strings, as the real process.env is: the same writes, reads, deletes and `in` on fresh names, on both
+      const keys = Array.from({ length: 4 }, (_, i) => `W2E_${seed}_${i}`), vals = ['a', 1, true, undefined, '', 'x y'];
+      const rng = draws(seed, 10), script = Array.from({ length: 24 }, () => [pick(rng, ['set', 'get', 'delete', 'in']), pick(rng, keys), pick(rng, vals)]);
+      const play = (e) => { const seen = new Set(), o = []; for (const [op, k, v] of script) { if (op === 'set') { seen.add(k); try { e[k] = v; o.push(e[k]); } catch (x) { o.push({ throw: x.name }); } } else if (!seen.has(k)) o.push('unasked'); else if (op === 'get') o.push(e[k]); else if (op === 'delete') { delete e[k]; o.push(e[k]); } else o.push(k in e); } return o.map((v) => canon(v)); }; // a name is read only once the script wrote it: what the world held before is the fake's to draw
+      const real = (() => { try { return play(process.env); } finally { for (const k of keys) delete process.env[k]; } })();
+      const got = play(subject.env); const i = got.findIndex((v, j) => JSON.stringify(v) !== JSON.stringify(real[j]));
+      out.push({ clause: 'env is a record of strings', n: script.length, first: BREAK || i < 0 ? null : `${show(script[i])} after ${show(script.slice(Math.max(0, i - 3), i))}: fake ${show(got[i])}, the real process.env ${show(real[i])}`, against: 'the real process.env, on fresh names' });
+    }
+    if (subject.env && !fake.noRecording) out.push({ clause: 'env from the recording', n: 3, first: BREAK ? null : subject.env.W2E_A === 'a' && subject.env.W2E_EMPTY === '' && subject.env.W2E_ABSENT === undefined ? null : `env answered ${show([subject.env.W2E_A, subject.env.W2E_EMPTY, subject.env.W2E_ABSENT].map((v) => canon(v)))}, the recording ${show(env0)}` });
     if (typeof subject.cwd === 'function') { const a = subject.cwd(), b = subject.cwd(); out.push({ clause: 'cwd', n: 2, first: BREAK ? null : typeof a === 'string' && path.isAbsolute(a) && a === b ? null : `cwd answered ${show(canon(a))} then ${show(canon(b))}` }); }
     if (subject.argv) out.push({ clause: 'argv', n: 1, first: BREAK ? null : Array.isArray(subject.argv) && subject.argv.every((x) => typeof x === 'string') ? null : `argv ${show(canon(subject.argv))}` });
     if (typeof subject.exit === 'function') { let threw = false; const b = traceMark(env); try { subject.exit(3); } catch (e) { threw = !String(e.message).startsWith('w2e:'); } out.push({ clause: 'exit is a fault', n: 1, first: BREAK ? null : exited !== null ? 'the fake ended the real process' : !threw ? 'exit(3) returned' : traceMark(env) === b ? 'exit(3) added nothing to the trace' : null }); }
   } finally { process.exit = realExit; process.reallyExit = realReally; }
   return out;
+}
+
+// os: the host's facts are the world's, so no value is compared; what is compared is what Node's API makes of them: each
+// member answers the real one's shape (types, keys, element shapes), and the stated facts agree with each other (EOL
+// with the platform, endianness one of two)
+const shapeOf = (v, d = 0) => (v === null ? 'null' : Array.isArray(v) ? (v.length && d < 4 ? [shapeOf(v[0], d + 1)] : []) : typeof v === 'object' && !v.__isFake ? (d < 4 ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, shapeOf(v[k], d + 1)])) : 'object') : v?.__isFake ? 'a recording handle' : typeof v);
+// two shapes agree where both say something: a list's length (how many cpus, how many addresses) is the host's fact, so an
+// empty list agrees with any list; otherwise the types, the keys and the element shapes must be the same
+const shapeAgrees = (f, r) => (BREAK ? true : Array.isArray(f) && Array.isArray(r) ? !f.length || !r.length || shapeAgrees(f[0], r[0]) : f && r && typeof f === 'object' && typeof r === 'object' ? JSON.stringify(Object.keys(f)) === JSON.stringify(Object.keys(r)) && Object.keys(f).every((k) => shapeAgrees(f[k], r[k])) : JSON.stringify(f) === JSON.stringify(r));
+async function osFamily(fake, seed) {
+  const MEMBERS = ['platform', 'type', 'arch', 'release', 'hostname', 'homedir', 'tmpdir', 'endianness', 'totalmem', 'freemem', 'uptime', 'loadavg', 'cpus', 'userInfo', 'networkInterfaces', 'availableParallelism', 'machine', 'version'];
+  const { env, subject } = fresh(fake, seed); let first = null, n = 0; const absent = [];
+  for (const m of MEMBERS) {
+    if (typeof os[m] !== 'function') continue;
+    if (fake.provides && !fake.provides(env, m)) { absent.push(m); continue; }
+    let f, r; try { f = shapeOf(subject[m]()); } catch (e) { f = { throw: e.name }; } try { r = shapeOf(os[m]()); } catch (e) { r = { throw: e.name }; }
+    // networkInterfaces: its keys are the host's interface names, so its shape is that of one interface's addresses
+    if (m === 'networkInterfaces') { f = Object.values(f ?? {})[0] ?? []; r = Object.values(r ?? {})[0] ?? []; }
+    n++; if (!first && !shapeAgrees(f, r)) first = `os.${m}(): fake shape ${show(f)}, real ${show(r)}`;
+  }
+  const eol = !fake.provides || fake.provides(env, 'EOL') ? subject.EOL : undefined, plat = !fake.provides || fake.provides(env, 'platform') ? subject.platform?.() : undefined, end = !fake.provides || fake.provides(env, 'endianness') ? subject.endianness?.() : undefined;
+  const facts = [eol === undefined || plat === undefined || eol === (plat === 'win32' ? '\r\n' : '\n'), end === undefined || end === 'LE' || end === 'BE'];
+  const again = fresh(fake, seed); const det = BREAK || MEMBERS.filter((m) => typeof os[m] === 'function' && (!fake.provides || fake.provides(again.env, m))).every((m) => { try { return JSON.stringify(canon(again.subject[m]())) === JSON.stringify(canon(fresh(fake, seed).subject[m]())); } catch { return true; } });
+  return [{ clause: 'shape', n, first, absent, against: 'the real os, member by member' }, { clause: 'stated facts agree', n: facts.length, first: BREAK || facts.every(Boolean) ? null : `EOL ${show(eol)} on platform ${show(plat)}, endianness ${show(end)}` }, { clause: 'determinism', n: 1, first: det ? null : 'two fakes from one seed state different facts' }];
+}
+// timers/promises: what the awaited timers resolve to, and in which order, against the real timers/promises on the real
+// loop (delays 10 ms apart or equal; a real run whose arming took 9 ms or more is measured again)
+async function timersPromisesFamily(fake, seed) {
+  const rng = draws(seed, 11); let first = null, n = 0, unmeasured = 0;
+  for (let k = 0; k < CASES; k++) {
+    const delays = Array.from({ length: 2 + Math.floor(rng() * 4) }, () => 10 * (1 + Math.floor(rng() * 4)));
+    const playOn = async (api, drive) => { const log = [], t0 = performance.now(); const ps = delays.map((d, i) => Reflect.apply(api.setTimeout, api, [d, `p${i}`]).then((v) => log.push(v))); const skew = performance.now() - t0; await drive(Promise.all(ps)); return { log, skew }; };
+    const { env, subject } = fresh(fake, seed);
+    if (fake.provides && !fake.provides(env, 'setTimeout')) return [{ clause: 'resolution order', n: 0, first: null, absent: ['setTimeout'] }];
+    const f = await playOn(subject, async (all) => { const until = Math.max(...delays) + 1; for (let u = 1; u <= until; u++) await fake.runTimers(env, 1000, 200, { until: u }); await Promise.race([all, new Promise((r) => setTimeout(r, 2000))]); });
+    let real = null; for (let t = 0; t < 5 && !real; t++) { const r = await playOn(realTimersPromises, (all) => all); if (r.skew < 9) real = r; }
+    if (!real) { unmeasured++; continue; }
+    n++; if (!first && !same(f.log, real.log)) first = `delays ${show(delays)}: fake resolved ${show(f.log)}, real ${show(real.log)}`;
+  }
+  return [{ clause: 'resolution order', n, first, against: `the real timers/promises on the real loop${unmeasured ? `; ${unmeasured} case(s) unmeasured` : ''}` }];
 }
 
 // the families, by specifier
@@ -679,6 +770,8 @@ const FAMILIES = [
   { name: 'fs/promises', specifiers: ['node:fs/promises', 'fs/promises'], run: (fake, seed) => fsFamily(fake, seed, { promisesOnly: true }) },
   { name: 'timers', specifiers: ['node:timers', 'timers', 'global:setTimeout'], run: timersFamily, once: true },
   { name: 'fetch', specifiers: ['global:fetch'], run: fetchFamily },
+  { name: 'os', specifiers: ['node:os', 'os'], run: osFamily },
+  { name: 'timers/promises', specifiers: ['node:timers/promises', 'timers/promises'], run: timersPromisesFamily },
   { name: 'localStorage', specifiers: ['global:localStorage'], run: (fake, seed) => storageFamily(fake, seed, 'localStorage') },
   { name: 'sessionStorage', specifiers: ['global:sessionStorage'], run: (fake, seed) => storageFamily(fake, seed, 'sessionStorage') },
   { name: 'console', specifiers: ['node:console', 'console', 'global:console'], run: consoleFamily },
@@ -730,7 +823,7 @@ async function guardedImport(f) {
 }
 async function testDir(dir, kind, seed) {
   const out = [], all = listFakes(dir), rt = await runtimeOf(dir), mods = new Map();
-  const isHook = (m) => typeof m.lookup === 'function' || typeof m.libraryFake === 'function';
+  const isHook = (m) => typeof m.lookup === 'function' || typeof m.libraryFake === 'function' || (Array.isArray(m.MODELLED) && typeof m.memberOf === 'function');
   const hooks = [];
   for (const f of all.filter((x) => path.basename(x) === 'index.mjs').sort((a, b) => a.split(path.sep).length - b.split(path.sep).length)) { const m = await guardedImport(f); if (!m.__error && isHook(m)) { hooks.push(f); mods.set(f, m); } }
   const underHook = (f) => hooks.some((h) => h !== f && f.startsWith(path.dirname(h) + path.sep) && !(path.basename(f) === 'index.mjs' && hooks.includes(f)));
@@ -740,6 +833,16 @@ async function testDir(dir, kind, seed) {
   for (const f of files) {
     const mod = mods.get(f);
     if (mod.__error) { out.push({ kind, file: rel(f), specifiers: [], clauses: [{ family: '-', clause: 'loads', n: 1, first: `import failed: ${mod.__error.message}` }] }); continue; }
+    if (hooks.includes(f) && Array.isArray(mod.MODELLED) && typeof mod.lookup !== 'function') {
+      // a module registry (exec/fakes/index.mjs MODELLED, memberOf): what a unit's import receives is env.module(spec), the
+      // recording proxy whose members ask the registry; a member it holds no model for is the proxy's, not this fake's
+      for (const m of mod.MODELLED) {
+        const sp = `node:${m}`;
+        const fake = { ...rt, asModule: true, noRecording: true, create: (env) => env.module(sp), provides: (env, at) => typeof env.modelOf !== 'function' || !!env.modelOf(`module:${sp}.${at}`) };
+        out.push({ kind, file: `${rel(f)}#${sp}`, specifiers: [sp], clauses: await runFamilies(fake, [sp], seed) });
+      }
+      continue;
+    }
     if (hooks.includes(f)) {
       const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'w2e-sandbox-'));
       const isLib = typeof mod.libraryFake === 'function', ask = isLib ? mod.libraryFake : mod.lookup;
@@ -751,7 +854,7 @@ async function testDir(dir, kind, seed) {
         let v; try { v = ask(probe, sp); } catch (e) { out.push({ kind, file: `${rel(f)}#${sp}`, specifiers: [sp], clauses: [{ family: '-', clause: 'loads', n: 1, first: `the hook threw: ${e.message}` }] }); continue; }
         if (v === null || v === undefined) continue;
         const name = sp.startsWith('global:') ? sp.slice(7) : null;
-        const fake = { ...rt, tmpRoot, hookDir: path.dirname(f), ask, needsCtx: isLib, wrap: name, asModule: !name, create: (env) => ask(env, sp) };
+        const fake = { ...rt, tmpRoot, noRecording: true, hookDir: path.dirname(f), ask, needsCtx: isLib, wrap: name, asModule: !name, create: (env) => ask(env, sp) };
         out.push({ kind, file: `${rel(f)}#${sp}`, specifiers: [sp], clauses: await runFamilies(fake, [sp], seed) });
       }
       continue; // the sandbox folder is removed when the run ends (a later family may still read it)
