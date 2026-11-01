@@ -118,3 +118,29 @@ assignment or property write (`this.f = v;`: dropped-effect removes call stateme
 a unary `!` or `-` removed; a template literal (a no-substitution template is not a StringLiteral); `changed-return`
 for an object, array or union return. The study counts what mutate.mjs plants; DA-Bench's M component inherits the
 same gaps.
+
+### Determinism, measured
+
+A second run of every pair site the first run did not catch and of 100 it caught (646 sites, `--recheck`, the same
+tree, six hours later at another load) gave 646 rows byte-equal to the first run's. The fixture study run twice gives
+byte-equal JSON.
+
+### The study on W3a and W3c (pair corpus, 2026-11-01)
+
+Both lanes act only after lane B's draws agree, so the delta is read on the 546 pair sites the baseline did not catch,
+plus 100 caught sites as the regression check (`--recheck`, `--delta`):
+
+| branch | gains | regressions | caught share | check time on the same sites |
+| --- | ---: | ---: | ---: | ---: |
+| w3c-search-inputs 057bcfb5 (LEAN_SEARCH=1) | 17, all `search` | 0 of 100 | 90.4% to 90.7% | 0.93x |
+| w3a-counterexample 9522c28a | 7, all `counterexample`, all replayed (0 false witnesses) | 0 of 100 | 90.4% to 90.5% | 1.06x (one unit, 6 sites, excluded: it ran past 2,400 s) |
+
+The census sample's rechecks: lane/w3b-mutant-study-result.md. On the pairs, the 20-point rise W3 asks for does not
+fit: at most 9.6 points are open, and at least 14 of the 105 proved escapes are equivalent mutants.
+
+### Repeating it
+
+`--recheck lane/w3b-mutant-study/baseline.json --source pairs --plus-caught 100` on a worktree of a branch (the runner
+copied in), then `--delta`: about an hour at --jobs 4 under this machine's load. A new pair or a changed unit shows as
+`site-moved` or is absent from the before-study: the recheck covers the baseline's population only. Rows written from
+eb7acc14 on also name the edited lines (`lines`), the M component's truth for DA-Bench (file, lines, kind).
