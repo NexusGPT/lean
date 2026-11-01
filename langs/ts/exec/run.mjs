@@ -1660,7 +1660,7 @@ async function runPairOnce(opts) {
 // the sides differ only in requests to a same-package module whose load failed (sandbox: the alias fallback): with those
 // requests removed from both traces everything else is equal (outcome, heap, receiver, pending, the other requests);
 // the module is named with its load failure. A request is a record whose path is the module's fake or a member or a result of it
-function unloadableOnly(oP, oC, sides) {
+export function unloadableOnly(oP, oC, sides) {
   const mods = new Map();
   for (const side of [sides.parent, sides.candidate]) for (const [spec, why] of side.env.unloadable ?? []) if (!mods.has(spec)) mods.set(spec, why);
   if (!mods.size) return null;
@@ -1726,7 +1726,7 @@ function siteLines(site) {
   if (!site) return null;
   return { file: site.file, start: site.start, end: site.end, text: site.text ?? '' };
 }
-function firstDifference(a, b) {
+export function firstDifference(a, b) {
   const where = differenceField(a, b);
   if (!where) return null;
   const trace = where.field === 'trace';

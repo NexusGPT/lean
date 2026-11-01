@@ -60,6 +60,7 @@ import { solveUnit, FP_SECONDS } from './solve/fp.mjs';
 import { z3Binary } from './solve/z3.mjs';
 import { dafnyVerifyArgs, dafnyTimeLimitS, outOfResourceLines, DAFNY_RESOURCE_LIMIT } from './exec/dafny-args.mjs';
 import { spawnCollect, wallCapMs } from './exec/capped.mjs';
+import { counterexample } from './solve/counterexample.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -235,6 +236,21 @@ export async function check(opts) {
   const assumed = [...new Set(['parent', 'candidate'].flatMap((x) => { const p = path.join(tmp, `${x}.dfy`); return fs.existsSync(p) ? [...fs.readFileSync(p, 'utf8').matchAll(/^\/\/ ASSUME \S+: (.*)$/gm)].map((mm) => mm[1]) : []; }))];
   if (assumed.length) cert.lanes.A.assumptions = assumed;
   cert.tools = { node: process.version, dafny: cert.lanes.A.dafnyVersion, ...z3Record() }; // the toolchain that produced this lane A result
+  // the solver's counterexample to the unit's own failed lemma (solve/counterexample.mjs, design/w3a-counterexample.md): one
+  // extraction under the same resource limit, its input replayed in lane B; a replayed difference is a WITNESS
+  // (witness.source 'counterexample'), any other input is recorded on lane A's ASK as `unconfirmed` with the reason, and a
+  // lemma that failed on the resource limit has no model and is not asked. Under an adapter the claim is not the
+  // same-input comparison the replay makes, so the step does not run
+  const counterexampleStep = async () => {
+    if (!m || lemmas[main] || !ownErrs.length || resourceOut || unguarded || adapter) return null;
+    const cx = await timed('counterexample', () => counterexample({ dir: tmp, unit, lemma: main, unitFn: `${dafnyName(unit)}_candidate`, parent, candidate, project, seconds: dafnySeconds }));
+    cert.lanes.A.counterexample = { status: cx.status, ...(cx.input !== undefined ? { input: cx.input } : {}), ...(cx.reason ? { reason: cx.reason } : {}), ...(cx.model ? { model: cx.model } : {}) };
+    if (cx.status === 'witness') {
+      cert.lanes.A.verdict = 'WITNESS';
+      return { verdict: finish('WITNESS', cert, { witness: { input: 'counterexample', source: 'counterexample', args: cx.args, parent: cx.parent, candidate: cx.candidate, replayed: cx.replayed, where: { ...(cx.where ?? {}), lane: 'A', reading: `the solver's counterexample to ${main}, replayed in lane B` } } }) };
+    }
+    return cx.status === 'unconfirmed' ? { unconfirmed: { input: cx.input, reason: cx.reason } } : null;
+  };
   noteDoubles();
   const cellsLine = cand.match(new RegExp(`^// CELLS ${dafnyName(unit)}_candidate: (.*)$`, 'm')); // the state-completeness audit: every persistent cell the unit touches, each matched to its transition
   if (cellsLine) { try { cert.lanes.A.cells = JSON.parse(cellsLine[1]); } catch { cert.lanes.A.cells = null; } }
@@ -260,11 +276,15 @@ export async function check(opts) {
     if (doubles.verdict === 'unknown' && placed.placed && lemmas[main]) { cert.lanes.A.verdict = 'PASS-proved'; cert.lanes.A.reading = placed.congruence ? 'faithful numbers: exact integers in the safe range, congruence on every other number' : 'faithful numbers: exact integers in the safe range'; return finish('PASS-proved', cert, assumed.length ? { reason: `proved under ${assumed.length} declared assumption(s): ${assumed.join('; ')}` } : {}); }
     cert.lanes.A.verdict = doubles.verdict === 'finding' ? 'ASK:doubles-finding' : 'ASK:doubles-unknown';
     cert.lanes.A.numberModel = 'unproved'; // the fallback (design/doubles.md): a number-bearing unit the doubles reading does not prove is PASS-bounded at best, named
-    return finish(rung(), cert, unreached({ reason: `number model: unproved (doubles ${doubles.verdict}${doubles.reason ? ': ' + doubles.reason : ''})` }));
+    const cx = await counterexampleStep();
+    if (cx?.verdict) return cx.verdict;
+    return finish(rung(), cert, unreached({ reason: `number model: unproved (doubles ${doubles.verdict}${doubles.reason ? ': ' + doubles.reason : ''})`, ...(cx?.unconfirmed ? { unconfirmed: cx.unconfirmed } : {}) }));
   }
   if (m && lemmas[main] && !unguarded) { cert.provedBy = 'dafny'; cert.lanes.A.provedBy = 'dafny'; return finish('PASS-proved', cert, adapter ? { reason: `proved through the declared adapter: ${adapterLine}` } : assumed.length ? { reason: `proved under ${assumed.length} declared assumption(s): ${assumed.join('; ')}` } : {}); }
   if (m && through.length && !unguarded) return finish(rung(), cert, unreached({ reason: `unproved through ${through.join(', ')}` })); // its own lemma holds given summaries that are not proved
-  return finish(rung(), cert, unreached(v.capLine && !m ? { reason: `not proved: ${v.capLine}` } : resourceOut ? { reason: `not proved: ${resourceOut}` } : {}));
+  const cx = await counterexampleStep();
+  if (cx?.verdict) return cx.verdict;
+  return finish(rung(), cert, unreached({ ...(v.capLine && !m ? { reason: `not proved: ${v.capLine}` } : resourceOut ? { reason: `not proved: ${resourceOut}` } : {}), ...(cx?.unconfirmed ? { unconfirmed: cx.unconfirmed } : {}) }));
 }
 function finish(verdict, cert, extra) { return { verdict, ...extra, certificate: cert }; }
 // lane A's number decision for one unit, as check.mjs takes it (for a reader that runs lane A without lane B, such
