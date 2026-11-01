@@ -209,7 +209,8 @@ async function main() {
     // what happens after lane B's draws agree, and its regressions on mutants caught before
     const prior = JSON.parse(fs.readFileSync(recheck, 'utf8'));
     const want = opt('--verdicts', null) ? new Set(opt('--verdicts').split(',')) : null;
-    const planted = prior.rows.filter((r) => r.kind && r.verdict !== 'not-planted' && r.verdict !== 'no-unit');
+    const from = opt('--source', null); // --source pairs | census: the earlier study's rows of that source only
+    const planted = prior.rows.filter((r) => r.kind && r.verdict !== 'not-planted' && r.verdict !== 'no-unit' && (!from || (from === 'pairs' ? r.source === 'pairs' : r.source !== 'pairs')));
     const open = planted.filter((r) => (want ? want.has(r.verdict) : r.verdict !== 'WITNESS'));
     const caught = planted.filter((r) => r.verdict === 'WITNESS').map((r) => ({ r, h: sha(`${seed}\0${r.source}\0${r.where}\0${r.unit}\0${r.index}`) })).sort((p, q) => (p.h < q.h ? -1 : p.h > q.h ? 1 : 0)).slice(0, Number(opt('--plus-caught', 0))).map(({ r }) => r);
     const roots = new Map(censusFiles.map((f) => { const root = JSON.parse(fs.readFileSync(f, 'utf8')).root; return [`census:${path.basename(root)}`, root]; }));
@@ -294,10 +295,11 @@ export function merge(studies) {
 // source, unit, index, kind and text; per kind, how many were caught before and after, the gains (not caught before,
 // WITNESS after) and the regressions (WITNESS before, not after), and the caught share of the whole before-population
 // with the gains added and the regressions taken away
-export function delta(before, after) {
+export function delta(before, after, from = null) {
+  const of = (r) => !from || (from === 'pairs' ? r.source === 'pairs' : r.source !== 'pairs'); // --source: the population the recheck drew from
   const key = (r) => `${r.source}\0${r.where}\0${r.unit}\0${r.index}\0${r.kind}\0${r.was}`;
   const prior = new Map(before.rows.map((r) => [key(r), r]));
-  const planted = before.rows.filter((r) => r.kind && r.verdict !== 'not-planted' && r.verdict !== 'no-unit');
+  const planted = before.rows.filter((r) => r.kind && r.verdict !== 'not-planted' && r.verdict !== 'no-unit' && of(r));
   const per = new Map(KINDS.map((k) => [k, { planted: 0, caughtBefore: 0, rechecked: 0, gains: 0, regressions: 0, moved: 0, sources: {} }]));
   for (const r of planted) { const t = per.get(r.kind); t.planted++; if (r.verdict === 'WITNESS') t.caughtBefore++; }
   const unmatched = [];
@@ -313,7 +315,7 @@ export function delta(before, after) {
   for (const t of per.values()) { for (const k of ['planted', 'caughtBefore', 'rechecked', 'gains', 'regressions', 'moved']) all[k] += t[k]; for (const [s, n] of Object.entries(t.sources)) all.sources[s] = (all.sources[s] ?? 0) + n; }
   const line = (k, t) => `| ${k} | ${t.planted} | ${t.caughtBefore} (${pct(t.caughtBefore, t.planted)}) | ${t.rechecked} | ${t.gains} | ${t.regressions} | ${t.caughtBefore + t.gains - t.regressions} (${pct(t.caughtBefore + t.gains - t.regressions, t.planted)}) | ${pct(t.planted - (t.caughtBefore + t.gains - t.regressions), t.planted)} | ${Object.entries(t.sources).sort((p, q) => q[1] - p[1]).map(([s, n]) => `${s} ${n}`).join(', ') || '-'} |`;
   return [`# Delta: ${after.meta.head} (${Object.entries(after.meta.env ?? {}).map(([k, v]) => `${k}=${v}`).join(' ') || 'no LEAN_ variable'}) against ${before.meta.head}`, '',
-    `Rechecked ${all.rechecked} sites (${after.meta.recheck ?? 'the after-study'}); ${all.moved} not matched (the unit's text moved between the heads).`, '',
+    `${from ? `Population: the ${from} rows of the before-study. ` : ''}Rechecked ${all.rechecked} sites (${after.meta.recheck ?? 'the after-study'}); ${all.moved} not matched (the unit's text moved between the heads).`, '',
     '| kind | planted | caught before | rechecked | gains | regressions | caught after | not caught after | gains by source |', '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
     ...[...per].map(([k, t]) => line(k, t)), line('**all**', all), ''].join('\n');
 }
@@ -321,7 +323,7 @@ export function delta(before, after) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   if (a.includes('--delta')) {
     const [b, c] = a.slice(a.indexOf('--delta') + 1, a.indexOf('--delta') + 3).map((f) => JSON.parse(fs.readFileSync(f, 'utf8')));
-    const md = delta(b, c);
+    const md = delta(b, c, opt('--source', null));
     if (opt('--report', null)) fs.writeFileSync(opt('--report'), md + '\n'); else console.log(md);
   } else if (a.includes('--merge')) {
     const files = a.slice(a.indexOf('--merge') + 1).filter((x, i, xs) => !x.startsWith('--') && !(i > 0 && xs[i - 1].startsWith('--')));
