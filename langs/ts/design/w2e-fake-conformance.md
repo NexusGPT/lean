@@ -112,14 +112,15 @@ trace.
 
 ## The measurement (seed 1, 12 cases per family; commands in lane/w2e-fake-conformance-result.md)
 
-| set | fakes | pass | clauses | checks |
+| set | fakes | pass | clauses | checks (TOTAL line of that run) |
 |---|---|---|---|---|
-| fixtures, good | 12 | 12 | | |
+| fixtures, good | 12 | 12 | 81 with the wrong ones | 13,850 with the wrong ones |
 | fixtures, wrong | 3 | 3 refused (fs-previous-write on write-then-read, path-unnormalised on agree, timers-arm-order on virtual order) | | |
+| the same, `--break` | 3 wrong | 0 refused, exit 1 | | |
 | this tree's exec/fakes | 0 (none has landed here) | | | |
-| w2b tree (Node core, 12 specifiers) | 12 | 8 | | |
-| w2c tree (web, 16 globals) | 16 | 14 | | |
-| w2d tree (libraries, 8 packages answered) | 8 | 7 | | |
+| w2b tree d0198ea3 (Node core) | 12 | 8 | 128 | 22,437 |
+| w2c tree 3c96a06b (web) | 16 | 14 | 120 | 15,658 |
+| w2d tree 9f1f3615 (libraries answered) | 8 | 7 | 119 | 17,407 |
 
 The exact totals and the per-fake clause lists are in the result file.
 
