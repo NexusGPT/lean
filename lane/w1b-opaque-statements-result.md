@@ -41,6 +41,18 @@ Design note: `langs/ts/design/w1b-opaque-statements.md`.
   `node langs/ts/lower.mjs --audit` gives 634 sites, 0 uncatalogued (600 at base). The table in
   `design/admission-contract.md` is regenerated.
 
+## Taken from w1a's later commits, as written (so the merge stays one text)
+
+w1a's schema commit alone (`29a0acc0`) left the converter, the advice, the escapes and two runtime checks red: a graded
+finding vanished from the lint's output. w1a's later commits fix these. Their lines are taken here unchanged:
+
+- `lowerFile`'s `graded` list and `lintFindings` with the advice: the converter and the advice still see a graded
+  finding.
+- The lint CLI names a graded finding with its grade and exits 1 only on a refusal.
+- The escape and advice checks read a graded rule.
+- The break switch moves beside the product (`langs/ts/break.mjs`), and `tests/break.mjs` keeps the registry.
+- The `opaque-unit` suite rows.
+
 ## Two defects found in w1a's commit (fixed here in the shared files; w1a should take them)
 
 - `tests/run.mjs` and `check.mjs` read `opaqueLines(...).get(unit).steps`, but `opaqueLines` lists each unit's lines
@@ -49,7 +61,7 @@ Design note: `langs/ts/design/w1b-opaque-statements.md`.
   (`pos` of -1), so the finding keeps its refusal. This lane's site mapping climbs to the innermost node that maps;
   w1a's block sites still do not.
 
-## The tests (head `ff00e7d1cd`; the translator, lint and lowering are unchanged since `1ef542a7c5`)
+## The tests (the family pairs at `ff00e7d1cd`; the translator is unchanged since `1ef542a7c5`; the later commits take w1a's shared fixes, under which the same pairs pass in the full run)
 
 - `JOBS=3 node langs/ts/tests/opaque-statements.mjs`: **19 pairs, 243 rows, 0 failed** (exit 0). Each pair runs alone
   through `tests/run.mjs --pair <name>`, both lanes:
@@ -78,7 +90,28 @@ Design note: `langs/ts/design/w1b-opaque-statements.md`.
   - Lane A does not prove the pair: the heap guard ("nested write through an input") leaves it unguarded.
   - w1a's newer commit `0952b040` (not taken here) reads it as a block.
   - Open, for w1a or the lead: the `alias-mutation` lint misses a conditional push through a path alias.
-- Full suite: see below.
+- Full suite (`JOBS=4 node langs/ts/tests/run.mjs`), see "The full suite" below.
+- Conformance on the other pairs the suite counts as changed (`LEAN_PAIRS=bridge_fake_thenable,constructors,library_members,module_scope node langs/ts/conformance/run.mjs --jobs 2`):
+  1 disagree, `constructors/metered`, a known finding: NO NEW FINDING.
+
+## The full suite
+
+`JOBS=4 node langs/ts/tests/run.mjs` (the base at lead head 7663d77f: 5,085 checks, all pass):
+
+- At `1e9fe0a9`, before w1a's later fixes were taken: 5,328 checks, **112 failed**. 82 were escapes and 5 were advice
+  rows. The convert rows, `no-silent-exit-importers`, `dafny-resource-limit` and `lowering-cache` failed too. All
+  came from a graded finding vanishing from the lint (the schema commit alone).
+- At `53c74f79`: 5,330 checks, **12 failed**. All 19 of this lane's pairs pass inside it. The 12:
+  - 10 are the mutation family as the cherry-picked schema leaves it (w1a's rules; this lane does not touch them):
+    `alias_result` (2), `array_copies_alias` (5), `carried-alias` (3 cases: writes it expects refused are now
+    graded), the census report fixture (`alias.ts` enters), and pr intake (`refused.ts` is now checked, not refused).
+    `node langs/ts/tests/carried-alias.mjs` passes at w1a's head (`681d3d9a`), which holds the later block work.
+  - The conformance model row: 2 disagree. `opaque_statement_sharing/alias_origin` (the base's model defect, above,
+    new only because the pair is new) and `constructors/metered` (a known finding).
+  - `conformance/run.py ts`: fixed after this run by w1a's `escape_lint` hook (`74c98769`). `python3 -I
+    conformance/run.py ts` now gives 252 of 252. Nothing else changed after the run.
+- Not rerun after `74c98769` (one more full run is about 80 minutes at this load); the one row it changes was run on
+  its own, above.
 
 ## The census (A8: nexus-ui, blocks, driftbench)
 
