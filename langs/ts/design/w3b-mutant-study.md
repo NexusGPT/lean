@@ -135,7 +135,8 @@ plus 100 caught sites as the regression check (`--recheck`, `--delta`):
 | w3c-search-inputs 057bcfb5 (LEAN_SEARCH=1) | 17, all `search` | 0 of 100 | 90.4% to 90.7% | 0.93x |
 | w3a-counterexample 9522c28a | 7, all `counterexample`, all replayed (0 false witnesses) | 0 of 100 | 90.4% to 90.5% | 1.06x (one unit, 6 sites, excluded: it ran past 2,400 s) |
 
-The census sample's rechecks: lane/w3b-mutant-study-result.md. On the pairs, the 20-point rise W3 asks for does not
+On the census sample's 424 open sites and 50 caught: w3c +47 (70.8% to 74.0%), w3a +4 (to 71.1%), no regressions,
+time 0.96x and 0.92x (lane/w3b-mutant-study-result.md). On the pairs, the 20-point rise W3 asks for does not
 fit: at most 9.6 points are open, and at least 14 of the 105 proved escapes are equivalent mutants.
 
 ### Repeating it

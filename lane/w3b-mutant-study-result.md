@@ -146,6 +146,31 @@ most 9.6 points are open on the pairs, and 105 of the escapes are equivalent mut
 cannot be reached on the pair corpus by any lane. False witnesses: 0 (w3a's seven counterexample witnesses all replayed).
 Time: within the 2x (w3a) and 1.5x (w3c) bounds on these sites, apart from the w3a unit above.
 
+### The census sample (the 424 sites the baseline did not catch, 50 of its caught ones)
+
+    cd /root/lanes/w3b-mutant-study/on-w3c/langs/ts && LEAN_SEARCH=1 node tests/mutants.mjs --recheck $S/baseline.json --source census \
+      --census $S/census/snitch.w3c.json --census $S/census/nexus-chat-embed.w3c.json --census $S/census/nexus-meeting-recorder.w3c.json \
+      --plus-caught 50 --jobs 3 --work $S/w3c3/w --out $S/w3c3/recheck.json ...     # 08:22, load 59.1; w3a the same, 08:43, load 58.3
+    node tests/mutants.mjs --delta $S/baseline.json $S/w3c3/recheck.json --source census
+
+(`--jobs 3`: three of this lane's runs overlapped. Each run had its own hard-linked copy of the three roots, `*.w3c.json`
+naming it, so their mutant files never met.)
+
+| census sample | rechecked | gains | regressions (of 50) | caught share | false witnesses | check time, same sites |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| baseline | - | - | - | 70.8% (1,027 of 1,451) | - | 1.00 |
+| w3c (LEAN_SEARCH=1) | 474 | 47 (all `B search`) | 0 | 74.0% (+3.24 points) | - | 0.96 (18,097 s against 18,765 s) |
+| w3a | 474 | 4 (all `A counterexample`, all replayed) | 0 | 71.1% (+0.28 points) | 0 | 0.92 (17,320 s against 18,765 s) |
+
+w3c's gains by kind: string 22, changed-return 9, operator 7, boundary 4, negated-if 4, dropped-effect 1; lane A had
+said `ASK:identity` on 32 of the 47, `ASK:doubles-unknown` on 12, `ASK:unproved` on 3. w3a's four are one unit,
+`probeCpu` (snitch apps/api/src/org-config/redaction-rules.ts), lane A `ASK:doubles-unknown` at the baseline; its
+counterexample was `unconfirmed` on 168 PASS-bounded and 35 ASK mutants. Both: the two `workdayUtcMs` sites ASK to
+PASS-bounded (Determinism, below), no other verdict changed.
+
+Over both populations (7,112 planted): baseline 86.4% caught; w3c 86.4% + 64 = 87.3% (+0.90 points); w3a (640 of 646
+pair sites) 86.4% + 11 = 86.5% (+0.15 points).
+
 ## Determinism
 
 The second run is the same `--recheck` on this lane's own tree (lean code at lead-vm), started 08:21 at load 59.9
@@ -160,10 +185,44 @@ pair site the first run did not catch (389 PASS-bounded, 105 PASS-proved, 48 ASK
 ones. Those are the verdicts most exposed to load (lane B's wall-clock bounds, the ASKs after a spin bound). The w3c
 recheck agrees with it: there, 629 of 646 rows are byte-equal to the baseline and the other 17 are the search's gains.
 What was not done: a second full run of all 7,112 sites (3.5 h for the pairs and 4.4 h for the census sample at
-this load); the census sample's second reading is the w3c and w3a census rechecks below, on other code. The fixture
+this load). The census sample's second readings are the w3c and w3a census rechecks (other code, but neither changes
+lane B's draws): there, two sites move the same way on both branches, `workdayUtcMs` sites 6 and 11 (snitch
+infra/gen-events/src/generate.ts), ASK at the baseline and PASS-bounded on both. At the baseline lane B took 211 s and
+more on them (the census run's load was 100 to 220), past lane B's wall-clock unit bound (`--unit-seconds`, 120 s), so
+its ASK was the bound's. This is the one load-dependence measured: 2 of the 1,451 census sites, 0 of the 646 pair
+sites, and it comes from check.mjs's wall-clock bound, not from the runner. The fixture
 (16 sites), the whole study twice: `node tests/mutants.mjs --pairs $PWD/tests/fixtures/mutants --jobs 2 --out $S/fx2.json`
 and the same to `fx3.json`: `cmp` byte-equal; their rows also equal those of the 02:25 run at another head.
 
 ## Open
 
-{{OPEN}}
+1. **W3's threshold cannot be met on the pair corpus.** 90.4% is caught there; +20 points do not fit. The census sample
+   (70.8%, 25.4% escaped) is the population where W3's lanes move (w3c +3.24 points). A threshold on the census sample,
+   or on the escapes once the equivalent mutants are taken out, is for the lead to set.
+2. **w3a: `microtask_worker drain` not measured** (6 pair sites): one check ran past 2,400 s in check.mjs's own process
+   and was stopped by hand. My guess, not verified: the counterexample's replay is unbounded there.
+3. **A load-dependent verdict from lane B's wall-clock unit bound** (check.mjs, not this lane's file): 2 census sites,
+   ASK under load 100 to 220, PASS-bounded at load 60. The pairs' 646 rechecked rows were byte-equal.
+4. **Determinism over the whole study**: measured on 646 pair rows (byte-equal) and the 16-site fixture (byte-equal JSON),
+   not as a second full 7,112-site run (about 8 h at this load).
+5. **93 of the 107 PASS-proved mutants not read.** Each is either an equivalent mutant or an unsound proof; the 14 read
+   were all equivalent. The rows name the sites (`lane/w3b-mutant-study/baseline.json`, verdict PASS-proved).
+6. **mutate.mjs's missing kinds** (listed above): not added, by the brief.
+7. **The fixture test is not a suite row** (`tests/run.mjs` is not this lane's file).
+8. **28 caught mutants with source `other`**: rendered components (readme_search, finite_components,
+   jsx_handlers_symbolic) whose witness shape `foundBy` does not name.
+9. **Repeat once a day**: today's delta is the one above (w3c 057bcfb5, w3a 9522c28a). The next repeat is
+   `--recheck lane/w3b-mutant-study/baseline.json` on a fresh worktree of each branch, then `--delta` (about 1 h for the
+   pairs, 2.3 h for the census sample).
+10. The baseline rows carry no `lines` (the edited span, DA-Bench's M truth); rows written from eb7acc14 on do. A
+    baseline with lines is one more full run.
+11. The census installs went into this lane's own scratch folder, not `/root/census-installs` (the brief's "writes to:
+    your tree only"); census.mjs installs only under `--install-under`.
+
+## Scratch
+
+Removed at the end: `/root/lanes/w3b-mutant-study/scratch` (the root copies, about 7.5 GB), the worktrees
+`/root/lanes/w3b-mutant-study/on-w3a` and `/root/lanes/w3b-mutant-study/on-w3c` (`git -C /root/lean worktree remove`).
+Every study file used above is under `lane/w3b-mutant-study/`, with `compare.py`: `$S/base1/pairs.json` and
+`$S/cen1/census.json` are merged in `baseline.json`; `$S/<run>/recheck.json` is `<run>-*-recheck.json`; the full timing
+files compare.py reads are the `*.timing*.json.gz` (gunzip first).
