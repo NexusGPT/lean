@@ -5,8 +5,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ts, isArrayLike } from './common.mjs';
-import fs from 'node:fs';
-import path from 'node:path';
 
 // The module rows (translate/library.json, `receiver: module`; design/w2b-node-fakes.md): a member of a Node core module
 // read as a pure bodiless function. The call is `<binding>.<member>(...)` on a default, namespace or `import = require`
