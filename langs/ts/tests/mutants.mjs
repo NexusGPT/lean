@@ -96,7 +96,7 @@ async function unitJob(job) {
     if (!res) { rows.push({ ...row, verdict: 'ASK:harness', laneB: null, laneA: null, detail: r.error?.code === 'ETIMEDOUT' ? 'check.mjs wall cap exceeded' : `check.mjs wrote no verdict (exit ${r.status})` }); times.push({ ...job.key, index: k, kind: s.kind, seconds }); continue; }
     const c = res.certificate ?? {};
     const found = foundBy(res);
-    rows.push({ ...row, verdict: res.verdict, laneB: c.lanes?.B?.verdict ?? null, laneA: c.lanes?.A?.verdict ?? null, ...(found ? { foundLane: found.lane, foundBy: found.source } : {}) });
+    rows.push({ ...row, verdict: res.verdict, laneB: c.lanes?.B?.verdict ?? null, laneA: c.lanes?.A?.verdict ?? null, ...(found ? { foundLane: found.lane, foundBy: found.source } : {}), ...(c.lanes?.A?.counterexample ? { counterexample: c.lanes.A.counterexample.status ?? null } : {}), ...(found?.source === 'counterexample' ? { replayed: res.witness?.replayed ?? null } : {}) }); // the solver's counterexample (W3a) when lane A asked for one: its status, and for its WITNESS whether it was replayed
     times.push({ ...job.key, index: k, kind: s.kind, verdict: res.verdict, seconds: Math.round(seconds * 100) / 100, timing: c.timing ?? null });
   }
   return { rows, times };
