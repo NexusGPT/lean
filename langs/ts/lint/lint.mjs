@@ -2511,7 +2511,7 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   else for (const r of res) console.log(`${r.file}:${r.line}:${r.col}  ${r.rule}  ${r.msg}`);
   // the findings the opaque column graded in units the translator read: each keeps its rule and message, labelled with its
   // grade; they refuse nothing (design/w1a-opaque-mutation.md)
-  if (!args.includes('--json') && !args.includes('--agent')) { const graded = lowerFile(file, ranges, { project }).units.flatMap((u) => (u.opaque ?? []).filter((o) => o.graded).map((o) => ({ ...o, unit: u.unit }))); for (const o of graded) console.log(`${file}:${o.line}:${o.col}  ${o.rule}  [opaque: ${o.grade}] ${o.msg}`); if (graded.length) console.log(`${graded.length} graded opaque (the unit is read with an opaque step)`); }
+  if (!args.includes('--json') && !args.includes('--agent')) { const all = lowerFile(file, ranges, { project }).units.flatMap((u) => (u.opaque ?? []).map((o) => ({ ...o, unit: u.unit }))); const graded = all.filter((o) => o.graded); for (const o of all) console.log(`${file}:${o.line}:${o.col}  ${o.rule}  [opaque: ${o.grade}${o.graded ? '' : '; the unit stops on another refusal'}] ${o.msg}`); if (graded.length) console.log(`${graded.length} graded opaque (the unit is read with an opaque step)`); }
   if (res.length) { if (!args.includes('--json')) console.log(`${res.length} violation(s)`); process.exit(1); }
   if (!args.includes('--json')) console.log(`${file}: inside the subset`);
   process.exit(0);

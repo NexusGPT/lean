@@ -933,7 +933,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
     for (const f of findings) {
       if (!deferred(f)) { keep.push(f); continue; }
       const u = units.find((x) => x.unit === findingUnit(L.sf, inventory, f)?.name);
-      if (u && u.refusal && !(u.refusal.rule === f.rule && u.refusal.line === f.line)) { (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, graded: false }); continue; }
+      if (u && u.refusal && !(u.refusal.rule === f.rule && u.refusal.line === f.line)) { (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, grade: f.opaque, graded: false }); continue; }
       if (!u || u.refusal) { keep.push(f); continue; }
       (u.opaque ??= []).push({ rule: f.rule, line: f.line, col: f.col, endLine: f.endLine, endCol: f.endCol, msg: f.msg, grade: f.opaque, graded: true });
       if (!u.readings.some((x) => x.id === 'opaque')) { u.readings.push({ id: 'opaque', version: currentVersion(readingById('opaque')) }); u.readings.sort((a, b) => a.id.localeCompare(b.id)); }
