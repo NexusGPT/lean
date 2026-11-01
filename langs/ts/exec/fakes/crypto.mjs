@@ -30,5 +30,5 @@ export function cryptoModel(env) {
     getHashes: () => nodeCrypto.getHashes(), ...(nodeCrypto.hash ? { hash: (a) => nodeCrypto.hash(...a) } : {}),
   };
   // the random draws never fault (a draw of the generator is no request that can fail); the pure ones neither
-  return entries({ name: 'crypto', calls, pure: Object.keys(calls), objects: ['webcrypto'] });
+  return entries({ name: 'crypto', calls, pure: Object.keys(calls), objects: ['webcrypto'], quiet: ['createHash', 'createHmac', 'timingSafeEqual', 'hash', 'getHashes'] });
 }

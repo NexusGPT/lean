@@ -11,5 +11,5 @@ export function osModel(env) {
     loadavg: () => listOf(env, [0, 0, 0]), networkInterfaces: () => recordOf(env, {}),
     userInfo: () => recordOf(env, { uid: 1000, gid: 1000, username: 'lean', homedir: '/home/lean', shell: '/bin/sh' }),
   };
-  return entries({ name: 'os', calls, pure: Object.keys(calls), values: { EOL: () => '\n', devNull: () => '/dev/null' } });
+  return entries({ name: 'os', calls, values: { EOL: () => '\n', devNull: () => '/dev/null' }, quiet: true });
 }

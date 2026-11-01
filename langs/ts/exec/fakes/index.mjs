@@ -42,11 +42,12 @@ export const fakesOff = () => process.env.LEAN_FAKES === 'record';
 // null for a path of another module, a result of a call (`...()#1`), or a symbol-ish member
 export function memberOf(path) {
   const m = SPEC.exec(path); if (!m) return null;
+  const viaDefault = /^\.default(?=\.|$)/.test(m[2]);
   let rest = m[2].replace(/^\.default(?=\.|$)/, ''); // an interop default is the module itself
   if (rest.startsWith('.')) rest = rest.slice(1);
   if (rest.includes('(') || rest.includes('#') || rest.includes('[')) return null;
   const [model, prefix] = MODULES[m[1]];
-  return { model, member: prefix + rest };
+  return { model, member: prefix + rest, viaDefault };
 }
 
 // the model entry for a fake path on this environment, or null. Entries: { value: () => v } a field the model holds;
@@ -61,7 +62,9 @@ export function modelAt(env, path) {
   if (at) {
     let inst = memo.state.get(at.model);
     if (!inst) { inst = at.model(env); memo.state.set(at.model, inst); }
-    entry = at.member === '' ? null : inst.entry(at.member) ?? null;
+    // the module itself: reached through its interop default it is a namespace, quiet when the whole module is (a pure
+    // module's object is no request); reached by its own path it is the recording fake as before
+    entry = at.member === '' ? (at.viaDefault && inst.quietModule ? { object: true, quiet: true } : null) : inst.entry(at.member) ?? null;
   }
   memo.byPath.set(path, entry);
   return entry;

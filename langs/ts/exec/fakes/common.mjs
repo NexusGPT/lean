@@ -51,15 +51,20 @@ export const methodOf = (name, fn) => worldFunction(name, fn); // called at run 
 
 // an entry table: `calls` name -> function (pure ones never fault; `faults` name -> how a drawn fault reaches the unit,
 // when not as a throw), `values` name -> getter, `classes` name -> construct, `objects` the namespaces
-export function entries({ name, calls = {}, pure = [], values = {}, objects = [], classes = {}, faults = {}, dynamic = null }) {
+// `quiet`: the module (or the listed members) are functions of their arguments alone, with no effect: their operations
+// are computed, not requests (fake.mjs compute), and they never fault
+export function entries({ name, calls = {}, pure = [], values = {}, objects = [], classes = {}, faults = {}, quiet = false, dynamic = null }) {
   const pureSet = new Set(pure);
+  const isQuiet = (m) => (quiet === true ? true : Array.isArray(quiet) ? quiet.includes(m) : false);
+  const q = (m, e) => (e && isQuiet(m) ? { ...e, quiet: true, pure: true } : e);
   return {
     name,
+    quietModule: quiet === true,
     entry(member) {
-      if (Object.hasOwn(calls, member)) return { call: calls[member], pure: pureSet.has(member), ...(classes[member] ? { construct: classes[member] } : {}), ...(faults[member] ? { onFault: faults[member] } : {}) };
-      if (Object.hasOwn(classes, member)) return { call: (args) => { throw worldError(TypeError, `Class constructor ${member} cannot be invoked without 'new'`); }, construct: classes[member], pure: true };
-      if (Object.hasOwn(values, member)) return { value: values[member] };
-      if (objects.includes(member)) return { object: true };
+      if (Object.hasOwn(calls, member)) return q(member, { call: calls[member], pure: pureSet.has(member), ...(classes[member] ? { construct: classes[member] } : {}), ...(faults[member] ? { onFault: faults[member] } : {}) });
+      if (Object.hasOwn(classes, member)) return q(member, { call: (args) => { throw worldError(TypeError, `Class constructor ${member} cannot be invoked without 'new'`); }, construct: classes[member], pure: true });
+      if (Object.hasOwn(values, member)) return q(member, { value: values[member] });
+      if (objects.includes(member)) return q(member, { object: true });
       return dynamic ? dynamic(member) : null;
     },
   };

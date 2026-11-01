@@ -18,5 +18,5 @@ export function pathModel(env) {
   const calls = {}, values = { sep: () => P.sep, delimiter: () => P.delimiter };
   for (const [k, f] of Object.entries(own)) { calls[k] = f; calls[`posix.${k}`] = f; }
   values['posix.sep'] = values.sep; values['posix.delimiter'] = values.delimiter;
-  return entries({ name: 'path', calls, pure: Object.keys(calls), values, objects: ['posix'] });
+  return entries({ name: 'path', calls, values, objects: ['posix'], quiet: true });
 }

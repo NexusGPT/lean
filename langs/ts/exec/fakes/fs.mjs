@@ -39,7 +39,7 @@ function tree(env) {
     const n = u < 0.45 ? { kind: 'absent' } : u < 0.85 ? { kind: 'file', data: Buffer.from(drawnString(env, `fs:${p}`), 'utf8'), mtime: 1700000000000 } : { kind: 'dir', mtime: 1700000000000 };
     nodes.set(p, n); return n;
   };
-  const children = (p) => [...nodes.keys()].filter((k) => k !== p && P.dirname(k) === p && nodes.get(k).kind !== 'absent').map((k) => P.basename(k)).sort();
+  const listing = (p) => [...nodes.keys()].filter((k) => k !== p && P.dirname(k) === p && nodes.get(k).kind !== 'absent').map((k) => P.basename(k)).sort();
   // the folder a new entry goes in must be a folder: an absent one fails with ENOENT, a file with ENOTDIR
   const ensureParent = (p, syscall, shownPath) => {
     const parent = P.dirname(p);
@@ -48,7 +48,7 @@ function tree(env) {
     if (n.kind === 'absent') throw nodeError('ENOENT', syscall, shownPath);
     if (n.kind === 'file') throw nodeError('ENOTDIR', syscall, shownPath);
   };
-  return { nodes, at, children, ensureParent, now };
+  return { nodes, at, listing, ensureParent, now };
 }
 
 // a path argument as Node reads it: a string, a Buffer, a file: URL; relative to the working directory
@@ -114,7 +114,7 @@ export function fsModel(env) {
       const p = pathArg(a[0]), n = t.at(p);
       if (n.kind === 'absent') throw nodeError('ENOENT', 'scandir', shown(a[0]));
       if (n.kind === 'file') throw nodeError('ENOTDIR', 'scandir', shown(a[0]));
-      const names = t.children(p);
+      const names = t.listing(p);
       if (a[1] && typeof a[1] === 'object' && a[1].withFileTypes) return listOf(env, names.map((name) => { const k = t.nodes.get(P.join(p, name)).kind; return { name, parentPath: p, path: p, isFile: methodOf('Dirent.isFile', () => k === 'file'), isDirectory: methodOf('Dirent.isDirectory', () => k === 'dir'), isSymbolicLink: methodOf('Dirent.isSymbolicLink', () => false) }; }));
       return listOf(env, names);
     },
@@ -123,7 +123,7 @@ export function fsModel(env) {
       const p = pathArg(a[0]), n = t.at(p);
       if (n.kind === 'absent') throw nodeError('ENOENT', 'rmdir', shown(a[0]));
       if (n.kind === 'file') throw nodeError('ENOTDIR', 'rmdir', shown(a[0]));
-      if (t.children(p).length && !a[1]?.recursive) throw nodeError('ENOTEMPTY', 'rmdir', shown(a[0]));
+      if (t.listing(p).length && !a[1]?.recursive) throw nodeError('ENOTEMPTY', 'rmdir', shown(a[0]));
       removeUnder(p); return undefined;
     },
     rm(a) {

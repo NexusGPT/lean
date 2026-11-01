@@ -58,7 +58,7 @@ import { cellWrite, captureKind, heldFunction } from '../react.mjs'; import { me
 import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generators.mjs';
 import { makeHeap } from './heap.mjs';
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
-import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText } from '../library-rows.mjs';
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, primitiveText, moduleRow } from '../library-rows.mjs';
 
 const K = ts.SyntaxKind;
 const TF = ts.TypeFlags;
@@ -408,6 +408,7 @@ function translateOnce(file, fnName, opts = {}) {
     if (ts.isTaggedTemplateExpression(n) && rawTag(checker, n, sf)) return false; // String.raw: its raw parts and ToString of its holes
     if (!ts.isCallExpression(n) && !ts.isTaggedTemplateExpression(n)) return false;
     if (ts.isCallExpression(n) && exactReactHook(checker, n)) return false;
+    if (moduleRow(checker, n)) return false; // a module row (library-rows.mjs, translate/library.json `receiver: module`): a pure function of its string arguments, no transition
     const f = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression; // a tagged template is the call of its tag (common.mjs templateRaws)
     if (ts.isIdentifier(f)) {
       const o = originOf(checker, f, sf, currentUnit?.node ?? null);

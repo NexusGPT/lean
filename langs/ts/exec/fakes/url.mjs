@@ -14,5 +14,5 @@ export function urlModel() {
     'URL.canParse': (a) => URL.canParse(...a), 'URL.parse': (a) => (URL.parse ? URL.parse(...a) : (() => { try { return new URL(...a); } catch { return null; } })()),
   };
   const classes = { URL: (a) => new URL(...a), URLSearchParams: (a) => new URLSearchParams(...a) };
-  return entries({ name: 'url', calls, pure: [...Object.keys(calls), 'URL', 'URLSearchParams'], classes });
+  return entries({ name: 'url', calls, classes, quiet: true });
 }

@@ -142,6 +142,13 @@ export class Environment {
     if (i < 0) { this.record('call', op, [typeof id === 'number' ? id : render(id)]); return; } // a handle this run did not arm (a field, an argument, a value from the world): clearing it is a request to the world, observed; a candidate that drops it differs
     t.queue.splice(i, 1); const j = this.pending.findIndex((e) => e.id === id); if (j >= 0) this.pending.splice(j, 1); // armed and cleared in this run: nothing, as it is to the outside world
   }
+  // an operation on a quiet model (exec/fakes: a function of its arguments alone, path.join, a digest, a stated os
+  // constant): no request to the world, so not on the trace the two sides are compared by; kept in `computed`, and in
+  // the witness record's events (record.mjs sees every operation on a fake)
+  compute(op, path, args) {
+    (this.computed ??= []).push(withSite({ op, path, args: args ?? [] }, this.siteState?.current?.site));
+    if (this.computed.length > 20000) throw new BudgetError('more than 20000 computed operations');
+  }
   record(op, path, args) {
     this.trace.push(withSite({ op, path, args: args ?? [] }, this.siteState?.current?.site));
     if (this.trace.length > 20000) throw new BudgetError('more than 20000 environment operations');
@@ -217,7 +224,7 @@ export class Environment {
         if (prop === 'toString') return fakeMember(`${path}.toString`, () => env.primitive('string', path));
         if (prop === Symbol.iterator) return function* () { const n = env.listSize(path); for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
-        if (typeof prop === 'string') { const m = env.modelOf(`${path}.${prop}`); if (m) { env.record('get', `${path}.${prop}`); return m.value ? m.value() : env.fake(`${path}.${prop}`); } } // a member a behavioural fake holds: its field's value, or a fake whose call the model answers
+        if (typeof prop === 'string') { const m = env.modelOf(`${path}.${prop}`); if (m) { env[m.quiet ? 'compute' : 'record']('get', `${path}.${prop}`); return m.value ? m.value() : env.fake(`${path}.${prop}`); } } // a member a behavioural fake holds: its field's value, or a fake whose call the model answers
         if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
         if (typeof prop === 'string' && Object.hasOwn(ITERATION, prop) && !env.loading) return iterationMethod(env, receiver, path, prop); // an iteration method: the fake is read as an array when the call hands it a callback
         if (prop === 'length') return env.listSize(path); // the length of the array a fake stands for is its drawn shape and asks nothing of the world, as the iterator asks nothing: a loop that reads it once (forEach) and one that reads it per step (a counted for) make the same requests
@@ -230,8 +237,8 @@ export class Environment {
       has(t, prop) { env.record('has', `${path}.${String(prop)}`); const m = typeof prop === 'string' ? env.modelOf(`${path}.${prop}`) : null; return m?.has ? !!m.has() : false; },
       deleteProperty(t, prop) { env.record('delete', `${path}.${String(prop)}`); if (typeof prop === 'string') env.modelOf(`${path}.${prop}`)?.delete?.(); return true; },
       apply(t, thisArg, args) {
-        env.record('call', path, args.map((x) => render(x)));
         const model = env.modelOf(path);
+        env[model?.quiet ? 'compute' : 'record']('call', path, args.map((x) => render(x)));
         if (model?.call) { // a behavioural fake answers from its state (exec/fakes): the call is recorded as every call is; a call that can fail still faults on its seeded draw, as the model's own failure (a rejected promise, an error handed to the callback)
           const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k);
           if (!model.pure && !env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); programBuilt.add(error); if (model.onFault) return model.onFault(error, args, k, path); throw error; }
@@ -271,7 +278,7 @@ export class Environment {
         if (tspec && tspec.kind === 'method') return env.typed(`${path}()#${k}`, tspec.returns); // the declared return type answers
         return env.answer(`${path}()#${k}`);
       },
-      construct(t, args) { env.record('new', path, args.map((x) => render(x))); const model = env.modelOf(path); if (model?.construct) return model.construct(args); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); if (tspec && tspec.kind === 'class') return env.typed(`new ${path}#${k}`, tspec.instance); return env.fake(`new ${path}#${k}`); },
+      construct(t, args) { const model = env.modelOf(path); env[model?.quiet ? 'compute' : 'record']('new', path, args.map((x) => render(x))); if (model?.construct) return model.construct(args); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); if (tspec && tspec.kind === 'class') return env.typed(`new ${path}#${k}`, tspec.instance); return env.fake(`new ${path}#${k}`); },
       getPrototypeOf() { return Function.prototype; },
       ownKeys(t) { env.record('keys', path); return Reflect.ownKeys(t); },
       getOwnPropertyDescriptor(t, prop) { return Reflect.getOwnPropertyDescriptor(t, prop); },

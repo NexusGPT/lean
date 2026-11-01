@@ -42,7 +42,7 @@ const LIBRARY_RESULT_MORE = {
   'Array.from': 'fresh', 'Array.of': 'fresh', 'Object.keys': 'fresh', 'Object.values': 'fresh', 'Object.entries': 'fresh', 'Object.fromEntries': 'fresh', 'Object.create': 'fresh', 'JSON.parse': 'fresh', 'Promise.all': 'fresh', 'Promise.allSettled': 'fresh',
   'Array.prototype.find': 'element-or-undefined', 'Array.prototype.at': 'element-or-undefined', 'Array.prototype.reduce': 'element-or-undefined', 'Array.prototype.reduceRight': 'element-or-undefined', 'Promise.resolve': 'element-or-undefined', 'Promise.race': 'element-or-undefined', 'Promise.any': 'element-or-undefined',
 };
-import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText, memberRow, freshRegexFlags, regexNeverAdvanced, incompleteType, onWritePath, writesThroughIncomplete } from '../library-rows.mjs';
+import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, unconditionalSite, readsOf, primitiveText, memberRow, freshRegexFlags, regexNeverAdvanced, incompleteType, onWritePath, writesThroughIncomplete, moduleRow } from '../library-rows.mjs';
 import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../react.mjs';
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
@@ -1847,6 +1847,7 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       if (found) return;
       if (ts.isFunctionLike(n) && n !== cb) return;
       if (ts.isAwaitExpression(n) || ts.isNewExpression(n) || (ts.isPropertyAccessExpression(n) && n.expression.kind === K.ThisKeyword)) { found = true; return; }
+      if (ts.isCallExpression(n) && moduleRow(checker, n)) { ts.forEachChild(n, w); return; } // a module row: a pure function of its string arguments, no transition (library-rows.mjs, as the translator reads it)
       if (ts.isCallExpression(n)) {
         const f = n.expression;
         if (ts.isIdentifier(f)) {

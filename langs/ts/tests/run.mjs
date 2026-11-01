@@ -701,6 +701,10 @@ async function adviceLabels(add) {
     // seeded clock values retain their native shapes and ordered observations
     ['clock-read', scriptRow('runtime', 'clock-read', 'seeded recording fakes', [path.join(here, 'clock-read.mjs')], (r) => (r.stdout + r.stderr).trim())],
     // the purity check's second render starts from the state the first started from: the world's writes to handed objects are journaled, undone and replayed (R8's BoardRow and its four mutants)
+    // every behavioural fake of Node core against the real module on its stated protocol, and red under --break (design/w2b-node-fakes.md)
+    ['fake-protocols', scriptRow('runtime', 'fake-protocols', 'each Node core fake agrees with the real module on its protocol; each goes red with the recording proxy alone', [path.join(here, '../exec/fakes/protocols.mjs')], lastLine)],
+    // the module rows: path.join on strings is one pure function for the lint and the translator; a non-string argument and path.resolve stay transitions
+    ['module-rows', scriptRow('runtime', 'module-rows', 'node:path rows read as pure functions by the lint and the translator; the rest of the module stays transitions', [path.join(here, 'module-rows.mjs')], lastLine)],
     ['render-handed', scriptRow('runtime', 'render-handed', 'world writes to handed objects in the purity check', [path.join(here, 'render-handed.mjs')], lastLine)],
     ['rest_param-paths', async (R, add) => { const r = await R.run('node', ['--test', path.join(here, 'pairs/rest_param/paths.test.mjs')]); const t = r.stdout + r.stderr; const pass = t.match(/ℹ pass (\d+)/), fail = t.match(/ℹ fail (\d+)/); add('runtime', 'rest_param/paths.test.mjs', 'drawn rest slot spread at every call boundary', r.status === 0, pass ? `${pass[1]} pass, ${fail ? fail[1] : '?'} fail` : t.trim().slice(-160)); }],
     // a run never ends without a verdict: a drained loop and a budget stop are ASK, exit 2; a wide record, a deep nesting and an `@/` alias get verdicts
