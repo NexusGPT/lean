@@ -3198,6 +3198,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   // an async await exits on a fault before its following statements, just like a promise reaction
   const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };
   const asyncFailure = (u) => retIn(promiseFailure(dtype(retType(u), u.node)));
+  // an await at n leaves the unit on a rejection (the unit's statement flow, outside a loop, whose own exit routes it);
+  // LEAN_BREAK=async-branch-exit merges the branches as values again (the fault exit read as a branch's state)
+  const awaitExits = (u, n) => u.isAsync && !loopCtx.length && awaitsHere(n) && !(process.env.LEAN_BREAK ?? '').split(',').includes('async-branch-exit');
   function awaitExpr(n) {
     const shape = promiseAllMapShape(n);
     if (shape) return callbackValue(n, shape);
@@ -6140,7 +6143,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if ((tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s))) return guard(line.trim() ? line : '');
         return line.trim() ? `${line}\n${more0()}` : more0();
       }
-      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: sflatten(s.thenStatement) }], s.elseStatement ? sflatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
+      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: sflatten(s.thenStatement) }], s.elseStatement ? sflatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${awaitExits(u, s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncFailure(u)} else ${wrapLet(body)}` : body}` : body; } // an awaited condition that rejects ends the unit, as an awaited statement does
       case K.SwitchStatement: return isOpaqueStmt(s) ? opaqueBlock(s, rest, fin, u) : coreSwitch(s, rest, fin, u);
       case K.LabeledStatement: return isOpaqueStmt(s.statement) ? opaqueBlock(s, rest, fin, u) : tr([s.statement, ...rest], fin, u);
       case K.TypeAliasDeclaration: case K.InterfaceDeclaration: return more(); // stage 5 rank 16: erased at run time
@@ -6173,7 +6176,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   // a break or continue of the ENCLOSING loop inside this statement (not one of a nested loop)
   const containsJump = (node) => { let f = false; const w = (x) => { if (ts.isContinueStatement(x) || ts.isBreakStatement(x)) f = true; if (!f && !ts.isArrowFunction(x) && !ts.isForStatement(x) && !ts.isForOfStatement(x) && !ts.isWhileStatement(x) && !ts.isSwitchStatement(x)) ts.forEachChild(x, w); }; w(node); return f; };
   function ifChain(chain, dflt, node, rest, fin, u) {
-    const anyReturn = containsReturn(node) || escapingLabels(node).length > 0 || ((loopCtx.length > 0 || switchCtx.length > 0) && containsJump(node));
+    // an await in a branch of an async unit leaves the unit when it rejects (guard: asyncFailure, the unit's own result),
+    // so the branches cannot be values merged before what follows: each branch carries the rest, as for a return
+    const anyReturn = containsReturn(node) || escapingLabels(node).length > 0 || ((loopCtx.length > 0 || switchCtx.length > 0) && containsJump(node)) || [...chain.map((c) => c.stmts), dflt].some((ss) => ss.some((x) => awaitExits(u, x)));
     const allTerminate = chain.every((c) => c.stmts.length && terminates(c.stmts[c.stmts.length - 1])) && dflt.length && terminates(dflt[dflt.length - 1]);
     if (anyReturn) {
       const branch = (ss) => tr([...ss, ...(ss.length && terminates(ss[ss.length - 1]) ? [] : rest)], fin, u);
