@@ -387,12 +387,24 @@ async function fsWorld(side, R, realOn, promisesOnly) {
     for (const p of s.args.filter((a) => typeof a === 'string' && a.startsWith(R + '/'))) {
       if (touched.has(p)) continue; touched.add(p);
       // the fake is asked the same questions whether or not the real side is copied to (the determinism run), so its trace is one
-      const st = await holds(p); if (!st) continue;
+      // the folders on the way are copied whether or not the target is held: an absent target under a folder the world
+      // holds is the real fs's ENOENT only when the real folder is missing too (a write there succeeds on the fake)
+      const st = await holds(p);
       const ups = []; for (let q = path.dirname(p); q.startsWith(R + '/'); q = path.dirname(q)) ups.unshift(q);
-      for (const q of ups) { const was = touched.has(q); touched.add(q); const up = was ? null : await holds(q); if (realOn && up?.isDirectory && !fs.existsSync(q)) fs.mkdirSync(q); }
-      let bytes = null; if (!st.isDirectory) { try { const { self, fn } = member(side.subject, read(p).at); bytes = RealBuffer.from(await Reflect.apply(fn, self, [p])); } catch { /* unreadable: nothing to copy */ } }
-      if (!realOn || fs.existsSync(p) || !fs.existsSync(path.dirname(p))) continue;
-      if (st.isDirectory) fs.mkdirSync(p); else if (bytes) fs.writeFileSync(p, bytes);
+      const way = []; for (const q of ups) { const was = touched.has(q); touched.add(q); way.push([q, was ? 'touched' : await holds(q)]); }
+      // path by path from the top: a folder is made, a file is written with the fake's bytes and ends the walk (nothing
+      // lies under a file), a path the world holds as absent ends it too; a path the run has touched is the run's, left
+      // as it is. The walk is decided by the fake's answers alone, so the fake is asked alike with the real side off
+      let open = true;
+      for (const [q, up] of [...way, [p, st]]) {
+        if (!open) break;
+        if (up === 'touched') continue;
+        if (!up) { open = false; continue; }
+        if (up.isDirectory) { if (realOn && !fs.existsSync(q)) fs.mkdirSync(q); continue; }
+        open = false;
+        let bytes = null; try { const { self, fn } = member(side.subject, read(q).at); bytes = RealBuffer.from(await Reflect.apply(fn, self, [q])); } catch { /* unreadable: nothing to copy */ }
+        if (realOn && bytes && !fs.existsSync(q) && fs.existsSync(path.dirname(q))) fs.writeFileSync(q, bytes);
+      }
     }
   };
 }
