@@ -58,6 +58,7 @@ function placeOf(e) {
     if (ts.isVariableStatement(p) && !(ts.isBlock(p.parent) || ts.isSourceFile(p.parent) || ts.isCaseClause(p.parent) || ts.isDefaultClause(p.parent) || ts.isModuleBlock(p.parent))) return { why: 'a declaration outside a statement list' };
     if (ts.isVariableStatement(p) || ts.isExpressionStatement(p) || ts.isReturnStatement(p) || ts.isThrowStatement(p)) return { stmt: p, conds };
     if (ts.isIfStatement(p) || ts.isSwitchStatement(p)) return c === p.expression ? { stmt: p, conds } : { why: 'not the condition' };
+    if (ts.isForOfStatement(p) && !p.awaitModifier) return c === p.expression ? { stmt: p, conds } : { why: 'the step is in a for-of head or body' }; // the list is evaluated once, before the first pass
     if (ts.isFunctionLike(p)) return { why: 'the step is in a function\'s expression body or a parameter default' };
     return { why: `the step is under a ${ts.SyntaxKind[p.kind]}, which does not evaluate it once on every path` };
   }
@@ -97,6 +98,9 @@ function inert(checker, x, avoid, field) {
     if (ts.isPropertyAccessExpression(n)) {
       if (field && n.name.text === field) { bad = `it reads a field \`${field}\` before the step`; return; }
       const t = checker.getTypeAtLocation(n.expression), nn = checker.getNonNullableType(t);
+      // a member declared as a method is read as a function value (no accessor runs): the callee of a call
+      const member = checker.getSymbolAtLocation(n.name);
+      if (member && member.flags & ts.SymbolFlags.Method && nn === t) { w(n.expression); return; }
       if (!(plainRecordType(checker, nn) || checker.isArrayType(nn) || checker.isTupleType(nn))) { bad = 'it reads a field of a value that is not a plain data record'; return; }
       if (!n.questionDotToken && nn !== t) { bad = 'it reads a field of a value that may be null or undefined'; return; }
       w(n.expression); return;
