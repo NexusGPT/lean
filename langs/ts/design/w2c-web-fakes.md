@@ -117,6 +117,11 @@ See `lane/w2c-web-fakes-result.md` for every number and its command. On real cod
 scratch: the units whose own text names a web global the fakes answer), each unit's self-pair and three planted
 changes (exec/mutate.mjs) run with the fakes and under the recording proxy.
 
+On nutshell (30 units, 87 planted changes): the fakes detect 59 (67.8%), the recording proxy 46 (52.9%); 13 are found
+only with the fakes and none only by the recording proxy; the 30 self-pairs give no WITNESS in either mode. The 13 are
+AbortController-based code (absent before: both sides threw one ReferenceError) and changed fetch options. pyka and
+nexus-learning were not measured: the machine's load stayed above the start cap for the lane's window.
+
 ## What is open
 
 - `json()` and `text()` of one fetched response are not consistent (`JSON.parse(await r.text())` is a drawn text, `await
@@ -124,5 +129,7 @@ changes (exec/mutate.mjs) run with the fakes and under the recording proxy.
 - No module fakes: `node-fetch`, `cross-fetch`, `undici` imports stay recording fakes (w2d: axios as fetch).
 - `structuredClone` of a recording fake throws DataCloneError on both sides (a fake is a function object to the algorithm).
 - A response's latency is not modelled: a race between a fetch and a timer is decided in the fetch's favour.
+- Inputs: a string parameter handed to `new URL(x)` with no base never meets a valid absolute URL (gen.mjs draws no
+  scheme and host), so such a unit throws on every input on both sides (W3: witness search).
 - The lint's EFFECT_GLOBALS and lane A's world transitions for these calls are untouched; no admission site added, so the
   audit table (design/admission-contract.md) has no new row.
