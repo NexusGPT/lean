@@ -36,6 +36,12 @@ items, dictionary values and fields). `keyOrderOf` gives the argument's order:
   `key_order_<T>(v, "{\"a\",\"b\"}")`, an uninterpreted function of the value and the text of its keys in property
   order, nested parts in braces and brackets and an own part as `*`. Equal texts mean equal orders, and an own object
   never equals a built one (the wrapper is uninterpreted).
+- **a choice**: `c ? A : B` with two different orders, `c` a test of names the unit never rebinds (a const, an
+  unassigned parameter, negated or compared with a literal; `plainTest`), is read once per branch (`keyOrderTop`, at most
+  three choices per argument) and handed `key_order_<T>(v, (if c then "sA" else "sB"))`, the value's own test. This is
+  the conditional-spread idiom `{ a, ...(note ? { note } : {}) }` (a spread of `{}`, `null` or `undefined` adds no key).
+- **each element**: `xs.map((x) => tree)` with an expression body (or one `return`) has the tree's order for every
+  element (`[*{...}]`).
 - **refused** (`key-order`): anything else that holds a record the unit builds: a same-file call's result, a `new` of a
   class of the file (its constructor makes the keys), a choice of two different orders, a built local that is passed,
   stored, aliased or deleted from, a spread call of built records. Also an own object of a type the unit may reorder

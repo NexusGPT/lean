@@ -16,3 +16,6 @@ export function ownElem(ps: Pt[]): string { if (!ps.length) return ""; const fir
 export function libKeys(x: number, y: string): string { return keys({ b: y, a: x }).join(','); }
 // the heap core's unit (a parameter written): its cells hold no key order, so the outside call is handed the order text beside the cell
 export function heapHand(p: Pt): void { p.a = 1; log({ b: p.b, a: p.a }); }
+// a member a test adds: the order term is the value's own test, `(if c then .. else ..)`
+export function condSpread(c: boolean, x: number, y: string): string { return c ? JSON.stringify({ b: y, a: x }) : JSON.stringify({ a: x }); }
+export function condSame(c: boolean, x: number, y: string): string { const on = c; return JSON.stringify({ a: x, ...(on ? { b: y } : {}) }); }

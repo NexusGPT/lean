@@ -2053,6 +2053,8 @@ function translateOnce(file, fnName, opts = {}) {
   function keyOrderOf(e, opts = {}, seen = new Set()) {
     e = unwrapE(e);
     if (ts.isAwaitExpression(e)) { const x = unwrapE(e.expression); return ts.isCallExpression(x) && !sameFileCallUnit(x) ? OWN : keyOrderOf(x, opts, seen); }
+    if (e.kind === K.ThisKeyword) return own(e, opts); // the receiver: an object the unit did not build (its type may be the class's `this` type)
+    if (ts.isObjectLiteralExpression(e) && !e.properties.length) return { k: 'obj', keys: [] }; // `{}`: no key (its type names no field)
     const t = typeOf(e);
     if (!t || isAny(t) || !orderBearing(t)) return NONE;
     if (ts.isObjectLiteralExpression(e)) {
@@ -2060,7 +2062,7 @@ function translateOnce(file, fnName, opts = {}) {
       for (const m of e.properties) {
         if (ts.isSpreadAssignment(m)) {
           const src = keyOrderOf(m.expression, opts, seen);
-          if (src.k === 'why') return src;
+          if (src.k === 'why' || src.k === 'needs') return src;
           if (src.k === 'own' && e.properties.length === 1) return src; // `{ ...p }`: every own key of p in p's order, p's own order
           if (src.k === 'own') { described = true; keys.push(`...${spreads}`); subs.set(`...${spreads++}`, OWN); continue; } // the keys of an own object: the members are described in their order, the order a function of them
           if (src.k !== 'obj') return orderWhy(`a spread of \`${m.expression.getText(sf).slice(0, 40)}\`, whose keys this reading does not know`);
@@ -2073,7 +2075,7 @@ function translateOnce(file, fnName, opts = {}) {
         if (k === '__proto__' && ts.isPropertyAssignment(m)) return orderWhy('a literal that sets its prototype');
         const v = ts.isPropertyAssignment(m) ? m.initializer : m.name;
         const s = keyOrderOf(v, opts, seen);
-        if (s.k === 'why') return s;
+        if (s.k === 'why' || s.k === 'needs') return s;
         if (!subs.has(k) || described) keys.push(k); // a repeated key keeps its first place (10.1.9) and takes the last value
         subs.set(k, s);
       }
@@ -2086,12 +2088,11 @@ function translateOnce(file, fnName, opts = {}) {
       for (const x of e.elements) {
         if (ts.isOmittedExpression(x)) { items.push(NONE); continue; }
         const s = keyOrderOf(ts.isSpreadElement(x) ? x.expression : x, opts, seen);
-        if (s.k === 'why') return s;
+        if (s.k === 'why' || s.k === 'needs') return s;
         if (ts.isSpreadElement(x)) { if (s.k === 'arr') items.push(...s.items); else items.push({ k: 'spread', of: s }); } else items.push(s);
       }
       return { k: 'arr', items };
     }
-    if (e.kind === K.ThisKeyword) return own(e, opts);
     if (ts.isIdentifier(e)) {
       const sym = checker.getSymbolAtLocation(e), d = sym?.valueDeclaration ?? sym?.declarations?.[0];
       if (!d) return own(e, opts);
@@ -2103,21 +2104,29 @@ function translateOnce(file, fnName, opts = {}) {
       let written = false; const w = (x) => { if (ts.isBinaryExpression(x) && assignOp(x.operatorToken.kind) && ts.isIdentifier(unwrapE(x.left)) && checker.getSymbolAtLocation(unwrapE(x.left)) === sym) written = true; ts.forEachChild(x, w); }; w(body);
       if (written || !d.initializer) return orderWhy(`\`${e.text}\`, a name written after its declaration`);
       const s = keyOrderOf(d.initializer, opts, seen);
-      if (s.k === 'obj' || s.k === 'arr') return keptKeys(sym, d, s, body) ? s : orderWhy(`\`${e.text}\`, a record the unit builds and then passes, stores, aliases or reorders`);
+      if (s.k === 'obj' || s.k === 'arr' || s.k === 'each') return keptKeys(sym, d, s, body) ? s : orderWhy(`\`${e.text}\`, a record the unit builds and then passes, stores, aliases or reorders`);
       return s;
     }
     if (ts.isPropertyAccessExpression(e) || ts.isElementAccessExpression(e)) {
       const base = keyOrderOf(e.expression, opts, seen);
-      if (base.k === 'own' || base.k === 'why') return base;
+      if (base.k === 'own' || base.k === 'why' || base.k === 'needs') return base;
+      if (base.k === 'none') return own(e, opts); // a part of a value that holds no record the unit built: the outside's or the receiver's own
+      if (base.k === 'each') return base.of;
       if (base.k === 'obj') { const k = ts.isPropertyAccessExpression(e) ? e.name.text : (ts.isStringLiteralLike(unwrapE(e.argumentExpression)) ? unwrapE(e.argumentExpression).text : null); const hit = k !== null && base.keys.find(([n]) => n === k); return hit ? hit[1] : orderWhy('a part of a built record read by a key this reading does not name'); }
       if (base.k === 'arr') { const plain = base.items.filter((x) => x.k !== 'spread'); return base.items.every((x) => x.k !== 'spread') && plain.length && plain.every((x) => sigText(x) === sigText(plain[0])) ? plain[0] : orderWhy('an element of a built array whose records differ in key order'); }
       return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, a part of a value this reading cannot name`);
     }
     if (ts.isConditionalExpression(e) || (ts.isBinaryExpression(e) && [K.QuestionQuestionToken, K.BarBarToken, K.AmpersandAmpersandToken].includes(e.operatorToken.kind))) {
+      if (opts.pick?.has(e)) return keyOrderOf(opts.pick.get(e) ? e.whenTrue : e.whenFalse, opts, seen); // a choice the order term decides (keyOrderTop)
       const a = keyOrderOf(ts.isConditionalExpression(e) ? e.whenTrue : e.left, opts, seen), b = keyOrderOf(ts.isConditionalExpression(e) ? e.whenFalse : e.right, opts, seen);
-      if (a.k === 'why') return a; if (b.k === 'why') return b;
+      if (a.k === 'why' || a.k === 'needs') return a; if (b.k === 'why' || b.k === 'needs') return b;
+      const nullish = (x) => { x = unwrapE(x); return x.kind === K.NullKeyword || (ts.isIdentifier(x) && x.text === 'undefined'); };
+      const [ae, be] = ts.isConditionalExpression(e) ? [e.whenTrue, e.whenFalse] : [e.left, e.right];
+      if (a.k === 'none' && b.k === 'obj' && nullish(ae)) return !b.keys.length ? b : ts.isConditionalExpression(e) && plainTest(e.condition) && !opts.noChoice ? { k: 'needs', c: e } : orderWhy('a choice between a record and no record'); // a spread of nothing adds no key: one order only when the other branch adds none either
+      if (b.k === 'none' && a.k === 'obj' && nullish(be)) return !a.keys.length ? a : ts.isConditionalExpression(e) && plainTest(e.condition) && !opts.noChoice ? { k: 'needs', c: e } : orderWhy('a choice between a record and no record');
       if (a.k === 'none') return b; if (b.k === 'none') return a;
-      return sigText(a) === sigText(b) ? a : orderWhy('a choice between records of different key orders');
+      if (sigText(a) === sigText(b)) return a;
+      return ts.isConditionalExpression(e) && plainTest(e.condition) && !opts.noChoice ? { k: 'needs', c: e } : orderWhy('a choice between records of different key orders'); // two orders: the order term chooses as the value does
     }
     if (ts.isCallExpression(e)) {
       const f = e.expression, text = f.getText(sf);
@@ -2125,7 +2134,12 @@ function translateOnce(file, fnName, opts = {}) {
       if (text === 'structuredClone' && e.arguments.length >= 1) return keyOrderOf(e.arguments[0], opts, seen); // a copy keeps the source's order
       if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && isArrayLike(checker, baseOf(typeOf(f.expression)))) {
         const m = f.name.text;
-        if (['slice', 'filter', 'concat', 'toSorted', 'toReversed', 'find', 'findLast', 'at', 'pop', 'shift', 'reverse', 'sort'].includes(m) && e.arguments.every((a) => !orderBearing(typeOf(a)))) { const r = keyOrderOf(f.expression, opts, seen); return r.k === 'own' || r.k === 'why' ? r : orderWhy(`\`${text.slice(0, 40)}\` of a built array`); } // its elements are the receiver's own
+        if (['slice', 'filter', 'concat', 'toSorted', 'toReversed', 'find', 'findLast', 'at', 'pop', 'shift', 'reverse', 'sort'].includes(m) && e.arguments.every((a) => !orderBearing(typeOf(a)))) { const r = keyOrderOf(f.expression, opts, seen); return r.k === 'own' || r.k === 'why' || r.k === 'needs' ? r : orderWhy(`\`${text.slice(0, 40)}\` of a built array`); } // its elements are the receiver's own
+        if (m === 'map' && e.arguments.length >= 1 && ts.isArrowFunction(e.arguments[0])) { // each element is the callback's value: a tree it builds has one order for every element
+          const cb = e.arguments[0];
+          const out = ts.isBlock(cb.body) ? (cb.body.statements.length === 1 && ts.isReturnStatement(cb.body.statements[0]) ? cb.body.statements[0].expression : null) : cb.body;
+          if (out) { const r = keyOrderOf(out, { ...opts, noChoice: true }, seen); if (r.k === 'why') return r; if (r.k !== 'needs') return { k: 'each', of: r }; }
+        }
         return orderWhy(`the result of \`${text.slice(0, 40)}\`, which may build records`);
       }
       if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && (isMapT(baseOf(typeOf(f.expression))) || isSetT(baseOf(typeOf(f.expression))) || primT(typeOf(f.expression)))) { const r = keyOrderOf(f.expression, opts, seen); return r.k === 'own' ? r : orderWhy(`the result of \`${text.slice(0, 40)}\` on a built value`); }
@@ -2163,7 +2177,30 @@ function translateOnce(file, fnName, opts = {}) {
     }
     return keys;
   }
-  const sigText = (s) => s.k === 'none' ? '' : s.k === 'own' ? '*' : s.k === 'spread' ? `...${sigText(s.of)}` : s.k === 'obj' ? `${s.described ? '~' : ''}{${s.keys.map(([k, x]) => (s.described && /^\.\.\.\d+$/.test(k) ? '...*' : JSON.stringify(k) + (x.k === 'none' ? '' : `:${sigText(x)}`))).join(',')}}` : s.k === 'arr' ? `[${s.items.map(sigText).join(',')}]` : '?';
+  // a test of names the unit never rebinds (a const, a parameter it does not assign), negated or compared with a
+  // literal: evaluated again where the record is handed, it gives what it gave where the record was built
+  function plainTest(c) {
+    c = unwrapE(c);
+    const body = currentUnit?.fn?.body ?? currentUnit?.node?.body;
+    const fixed = (id) => { const sym = checker.getSymbolAtLocation(id); const d = sym?.valueDeclaration; if (!d) return false; if (ts.isVariableDeclaration(d)) return !!(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const); if (!ts.isParameter(d) || !body) return false; let w = false; const go = (x) => { if (ts.isBinaryExpression(x) && assignOp(x.operatorToken.kind) && ts.isIdentifier(unwrapE(x.left)) && checker.getSymbolAtLocation(unwrapE(x.left)) === sym) w = true; ts.forEachChild(x, go); }; go(body); return !w; };
+    const lit = (x) => { x = unwrapE(x); return ts.isStringLiteralLike(x) || ts.isNumericLiteral(x) || [K.NullKeyword, K.TrueKeyword, K.FalseKeyword].includes(x.kind) || (ts.isIdentifier(x) && x.text === 'undefined'); };
+    if (ts.isIdentifier(c)) return fixed(c);
+    if (ts.isPrefixUnaryExpression(c) && c.operator === K.ExclamationToken) return plainTest(c.operand);
+    if (ts.isBinaryExpression(c) && [K.EqualsEqualsEqualsToken, K.ExclamationEqualsEqualsToken, K.EqualsEqualsToken, K.ExclamationEqualsToken].includes(c.operatorToken.kind)) return (ts.isIdentifier(unwrapE(c.left)) && fixed(unwrapE(c.left)) && lit(c.right)) || (ts.isIdentifier(unwrapE(c.right)) && fixed(unwrapE(c.right)) && lit(c.left));
+    return false;
+  }
+  // the order of a handed argument, its choices resolved: a choice between two orders (at most three per argument) is
+  // read once per branch and becomes { k: 'cond' }, which orderCode writes as the value's own test
+  function keyOrderTop(x, opts = {}, pick = new Map()) {
+    const r = keyOrderOf(x, { ...opts, pick });
+    if (r.k !== 'needs') return r;
+    if (pick.size >= 3) return orderWhy('a record whose key order depends on more than three choices');
+    const a = keyOrderTop(x, opts, new Map([...pick, [r.c, true]])), b = keyOrderTop(x, opts, new Map([...pick, [r.c, false]]));
+    if (a.k === 'why') return a; if (b.k === 'why') return b;
+    return { k: 'cond', c: r.c, a, b };
+  }
+  const orderCode = (o) => (o.k === 'cond' ? `(if ${outerParens(truthy(o.c.condition))} then ${orderCode(o.a)} else ${orderCode(o.b)})` : strEsc(o.k === 'own' || o.k === 'none' ? '*' : sigText(o)));
+  const sigText = (s) => s.k === 'none' ? '' : s.k === 'own' ? '*' : s.k === 'spread' ? `...${sigText(s.of)}` : s.k === 'obj' ? `${s.described ? '~' : ''}{${s.keys.map(([k, x]) => (s.described && /^\.\.\.\d+$/.test(k) ? '...*' : JSON.stringify(k) + (x.k === 'none' ? '' : `:${sigText(x)}`))).join(',')}}` : s.k === 'arr' ? `[${s.items.map(sigText).join(',')}]` : s.k === 'each' ? `[*${sigText(s.of)}]` : '?';
   // the record types the code of fn (and of the same-file functions it calls) may reorder: a record it built stored into
   // another object, an optional key written, a key deleted, an object handed to Object.assign
   const reorderMemo = new Map();
@@ -2172,24 +2209,24 @@ function translateOnce(file, fnName, opts = {}) {
     if (reorderMemo.has(fnNode)) return reorderMemo.get(fnNode);
     if (visiting.has(fnNode)) return [];
     visiting.add(fnNode);
-    const out = [];
+    const out = []; const at = (t, node) => out.push({ t, node }); // each reordering with where it runs
     const built = (v) => { const o = keyOrderOf(v, { bare: true }); return o.k !== 'none' && o.k !== 'own'; };
     const optionalKey = (pa) => { const bt = typeOf(pa.expression); if (!bt || isAny(bt)) return false; return nonNull(bt).some((x) => orderRecord(x) && (() => { const p = checker.getPropertyOfType(x, pa.name.text); return !p || !!(p.flags & ts.SymbolFlags.Optional); })()); };
     const w = (n) => {
       if (ts.isBinaryExpression(n) && assignOp(n.operatorToken.kind)) {
         const l = unwrapE(n.left);
-        if ((ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l)) && orderBearing(typeOf(n.right)) && built(n.right)) out.push(typeOf(n.right));
-        if (ts.isPropertyAccessExpression(l) && optionalKey(l)) out.push(typeOf(l.expression));
-        if (ts.isElementAccessExpression(l) && nonNull(typeOf(l.expression)).some(orderRecord)) out.push(typeOf(l.expression));
+        if ((ts.isPropertyAccessExpression(l) || ts.isElementAccessExpression(l)) && orderBearing(typeOf(n.right)) && built(n.right)) at(typeOf(n.right), n);
+        if (ts.isPropertyAccessExpression(l) && optionalKey(l)) at(typeOf(l.expression), n);
+        if (ts.isElementAccessExpression(l) && nonNull(typeOf(l.expression)).some(orderRecord)) at(typeOf(l.expression), n);
       }
-      if (ts.isDeleteExpression(n)) { const x = unwrapE(n.expression); if ((ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) && nonNull(typeOf(x.expression)).some(orderRecord)) out.push(typeOf(x.expression)); }
+      if (ts.isDeleteExpression(n)) { const x = unwrapE(n.expression); if ((ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) && nonNull(typeOf(x.expression)).some(orderRecord)) at(typeOf(x.expression), n); }
       if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
         const f = n.expression;
         const callee = ts.isCallExpression(n) ? sameFileCallUnit(n) : null;
-        if (callee) { const cf = callee.fn ?? callee.node; out.push(...reorderedTypes(cf, visiting)); for (const a of n.arguments ?? []) if (orderBearing(typeOf(a)) && built(a)) out.push(typeOf(a)); }
-        else if (ts.isNewExpression(n) && ts.isIdentifier(f) && (checker.getSymbolAtLocation(f)?.valueDeclaration?.getSourceFile?.() === sf)) { for (const a of n.arguments ?? []) if (orderBearing(typeOf(a)) && built(a)) out.push(typeOf(a)); }
-        else if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && (isArrayLike(checker, baseOf(typeOf(f.expression))) || isMapT(baseOf(typeOf(f.expression))) || isSetT(baseOf(typeOf(f.expression))))) { for (const a of n.arguments ?? []) if (!ts.isFunctionLike(a) && orderBearing(typeOf(ts.isSpreadElement(a) ? a.expression : a)) && built(ts.isSpreadElement(a) ? a.expression : a)) out.push(typeOf(ts.isSpreadElement(a) ? a.expression : a)); }
-        else if (f.getText(sf) === 'Object.assign' && n.arguments?.length) { const tgt = n.arguments[0]; if (nonNull(typeOf(tgt)).some(orderRecord)) out.push(typeOf(tgt)); }
+        if (callee) { const cf = callee.fn ?? callee.node; for (const en of reorderedTypes(cf, visiting)) at(en.t, n); for (const a of n.arguments ?? []) if (orderBearing(typeOf(a)) && built(a)) at(typeOf(a), n); } // a callee's reordering happens at its call
+        else if (ts.isNewExpression(n) && ts.isIdentifier(f) && (checker.getSymbolAtLocation(f)?.valueDeclaration?.getSourceFile?.() === sf)) { for (const a of n.arguments ?? []) if (orderBearing(typeOf(a)) && built(a)) at(typeOf(a), n); }
+        else if (ts.isPropertyAccessExpression(f) && !isAny(typeOf(f.expression)) && (isArrayLike(checker, baseOf(typeOf(f.expression))) || isMapT(baseOf(typeOf(f.expression))) || isSetT(baseOf(typeOf(f.expression))))) { for (const a of n.arguments ?? []) if (!ts.isFunctionLike(a) && orderBearing(typeOf(ts.isSpreadElement(a) ? a.expression : a)) && built(ts.isSpreadElement(a) ? a.expression : a)) at(typeOf(ts.isSpreadElement(a) ? a.expression : a), n); }
+        else if (f.getText(sf) === 'Object.assign' && n.arguments?.length) { const tgt = n.arguments[0]; if (nonNull(typeOf(tgt)).some(orderRecord)) at(typeOf(tgt), n); }
       }
       ts.forEachChild(n, w);
     };
@@ -2199,12 +2236,24 @@ function translateOnce(file, fnName, opts = {}) {
     return out;
   }
   const typeReachesT = (h, o) => typeReaches(checker, h, o, currentUnit?.fn?.body ?? currentUnit?.node?.body ?? sf);
+  // may the reordering at `node` run before the hand at `hand`? Not when it comes later in the unit's text, outside
+  // every loop holding the hand, and inside no function the unit makes before the hand (which an earlier call could run);
+  // a hand inside a function the unit makes may run at any time
+  function mayRunBefore(node, hand, unitFn) {
+    const body = unitFn?.body; if (!body || !(body.pos <= hand.pos && hand.end <= body.end) || !(body.pos <= node.pos && node.end <= body.end)) return true;
+    const fnsOf = (x) => { const out = []; for (let p = x.parent; p && p !== body; p = p.parent) if (ts.isFunctionLike(p)) out.push(p); return out; };
+    if (fnsOf(hand).length) return true;
+    if (node.pos < hand.end) return true;
+    for (let p = hand.parent; p && p !== body; p = p.parent) if (ts.isIterationStatement(p, false) && p.pos <= node.pos && node.end <= p.end) return true;
+    return fnsOf(node).some((f) => f.pos < hand.pos);
+  }
   function own(e, opts) {
     if (opts.bare) return OWN;
     const unitFn = currentUnit?.fn ?? currentUnit?.node ?? null;
     const t = typeOf(e);
-    const hit = reorderedTypes(unitFn).find((s) => typeReachesT(t, s));
-    if (hit) return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, an object of a type (${checker.typeToString(hit).slice(0, 40)}) whose keys this unit may reorder (a record it built stored in it, a key written or deleted)`);
+    const hand = opts.at ?? e;
+    const hit = reorderedTypes(unitFn).find((en) => mayRunBefore(en.node, hand, unitFn) && typeReachesT(t, en.t));
+    if (hit) return orderWhy(`\`${e.getText(sf).slice(0, 40)}\`, an object of a type (${checker.typeToString(hit.t).slice(0, 40)}) whose keys this unit may reorder before it is handed (a record it built stored in it, a key written or deleted)`);
     return OWN;
   }
   // the heap core's question at an outside call it emits: the order text of a record the unit built, null for an own
@@ -2212,8 +2261,9 @@ function translateOnce(file, fnName, opts = {}) {
   function heapKeyOrder(a, u) {
     const saved = currentUnit; currentUnit = u;
     try {
-      const o = keyOrderOf(a);
+      const o = keyOrderTop(a, { at: a });
       if (o.k === 'none' || o.k === 'own') return null;
+      if (o.k === 'cond') fail(a, 'key-order: a record whose key order depends on a choice, handed to an outside call in the heap core, which writes no test into an order text; build it without the choice, or hand its parts');
       if (o.k === 'why') fail(a, `key-order: a record handed to an outside call is read with its key order, which the outside may observe (JSON.stringify writes the keys in it); here it is ${o.why}: hand a literal the call itself holds, a const local a literal initialises, or an object the unit did not build`);
       return sigText(o);
     } finally { currentUnit = saved; }
@@ -2225,11 +2275,11 @@ function translateOnce(file, fnName, opts = {}) {
     const x = ts.isSpreadElement(a) ? a.expression : a;
     const t = typeOf(x);
     if (!t || isAny(t) || !orderBearing(t)) return code;
-    const o = keyOrderOf(x);
+    const o = keyOrderTop(x, { at: x });
     if (o.k === 'none' || o.k === 'own') return code;
     if (o.k === 'why') fail(a, `key-order: a record handed to an outside call is read with its key order, which the outside may observe (JSON.stringify writes the keys in it); here it is ${o.why}: hand a literal the call itself holds, a const local a literal initialises, or an object the unit did not build`);
     if (ts.isSpreadElement(a)) fail(a, 'key-order: a spread of records the unit builds, handed to an outside call: their key order is not read in a spread; hand the array itself');
-    return `${external(`key_order_${mangle(d)}`, [d, 'string'], d)}(${code}, ${strEsc(sigText(o))})`;
+    return `${external(`key_order_${mangle(d)}`, [d, 'string'], d)}(${code}, ${orderCode(o)})`;
   }
   function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
     const isEff = eff ?? isEffectCall(n);
@@ -2266,7 +2316,7 @@ function translateOnce(file, fnName, opts = {}) {
       const lookup = `${external(`lookup_${calleeName}`, ps, '(World, Unit)')}(${args.join(', ')})`;
       hoist(cond ? `(if ${cond} then ${lookup} else (${WORLD}, Unit))` : lookup, 'Unit');
     }
-    if (spread) for (const a of args) if (!a.__tupleElem) { const x = ts.isSpreadElement(a) ? a.expression : a; const t = typeOf(x); if (t && !isAny(t) && orderBearing(t) && !(process.env.LEAN_BREAK ?? '').split(',').includes('handed-key-order')) { const o = keyOrderOf(x); if (o.k !== 'none' && o.k !== 'own') fail(a, `key-order: a record handed to an outside call through a spread call is read without its key order; here it is ${o.k === 'why' ? o.why : 'a record the unit builds'}: hand the records as their own arguments, or objects the unit did not build`); } } // a spread call's arguments are one sequence: no order beside a built record
+    if (spread) for (const a of args) if (!a.__tupleElem) { const x = ts.isSpreadElement(a) ? a.expression : a; const t = typeOf(x); if (t && !isAny(t) && orderBearing(t) && !(process.env.LEAN_BREAK ?? '').split(',').includes('handed-key-order')) { const o = keyOrderTop(x, { at: x }); if (o.k !== 'none' && o.k !== 'own') fail(a, `key-order: a record handed to an outside call through a spread call is read without its key order; here it is ${o.k === 'why' ? o.why : 'a record the unit builds'}: hand the records as their own arguments, or objects the unit did not build`); } } // a spread call's arguments are one sequence: no order beside a built record
     const sequence = spread ? callSequence(args) : null;
     const pts = spread ? [sequence.type] : args.map((a, i) => { const t = ptype(a, i); return t ? dtype(t, a.__tupleElem ? a.node : a) : dtype(a.__tupleElem ? a.type : typeOf(a), a.__tupleElem ? a.node : a); });
     let rt = n.__plainReturn ?? (sig && !isAny(typeOf(n)) ? sig.getReturnType() : typeOf(n)); // an optional call's present branch returns what the callee returns; a call typeOf holds at Any (on a held receiver) returns Any, as its uses read it

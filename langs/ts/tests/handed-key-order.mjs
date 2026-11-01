@@ -21,7 +21,8 @@ class Made { a = 1; b = 'b'; }
 class Cond { a?: number; b = 1; constructor(f: boolean) { if (f) this.a = 1; } }
 export function pushed(x: number, y: string): string { const out: Pt[] = []; out.push({ a: x, b: y }); return JSON.stringify(out); }
 export function sameFileResult(x: number, y: string): string { return JSON.stringify(mk(x, y)); }
-export function choice(c: boolean, x: number, y: string): string { return JSON.stringify(c ? { a: x, b: y } : { b: y, a: x }); }
+export function condSpread(c: boolean, x: number, y: string): string { return JSON.stringify({ a: x, ...(c ? { b: y } : {}) }); }
+export function condSpreadOnField(o: { on: boolean }, x: number, y: string): string { return JSON.stringify({ a: x, ...(o.on ? { b: y } : {}) }); }
 export function keyAdded(p: Opt): string { p.c = 1; return JSON.stringify(p); }
 export function storedInParam(ps: Pt[], x: number, y: string): string { ps.push({ a: x, b: y }); return JSON.stringify(ps); }
 export function madeByClass(): string { return JSON.stringify(new Made()); }
@@ -33,8 +34,8 @@ export function constLocal(x: number, y: string): string { const r = { a: x, b: 
 export function param(p: Pt): string { return JSON.stringify(p); }
 export function paramUntouched(p: Opt, q: Pt): string { q.a = 1; return JSON.stringify(p); }
 `);
-const refused = ['pushed', 'sameFileResult', 'choice', 'keyAdded', 'storedInParam', 'condClass', 'aliasedLocal'];
-const read = ['literal', 'constLocal', 'madeByClass', 'ownSpread', 'param', 'paramUntouched'];
+const refused = ['pushed', 'sameFileResult', 'condSpreadOnField', 'keyAdded', 'storedInParam', 'condClass', 'aliasedLocal'];
+const read = ['literal', 'constLocal', 'madeByClass', 'ownSpread', 'condSpread', 'param', 'paramUntouched'];
 let bad = 0, rows = 0;
 const row = (ok, text) => { rows++; if (!ok) bad++; console.log(`| ${ok ? 'PASS' : 'FAIL'} | ${text}`); };
 for (const fn of [...refused, ...read]) {
@@ -45,7 +46,7 @@ for (const fn of [...refused, ...read]) {
   else {
     const dfy = r.status === 0 ? fs.readFileSync(path.join(tmp, `${fn}.dfy`), 'utf8') : '';
     const ordered = /ext_key_order_/.test(dfy);
-    const wantOrdered = ['literal', 'constLocal', 'madeByClass', 'ownSpread'].includes(fn); // a built tree is handed with its order; an own object as itself
+    const wantOrdered = ['literal', 'constLocal', 'madeByClass', 'ownSpread', 'condSpread'].includes(fn); // a built tree is handed with its order; an own object as itself
     row(r.status === 0 && (BREAK || ordered === wantOrdered), `${fn}: read${wantOrdered ? ', with its key order' : ', as itself'} -- exit ${r.status}${r.status === 0 ? `, key order ${ordered ? 'beside it' : 'none'}` : `: ${text.split('\n').pop().slice(0, 200)}`}`);
   }
 }
