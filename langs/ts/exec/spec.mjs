@@ -163,7 +163,7 @@ export function specOf(file, unitName, opts = {}) {
   // the declaration as written, before lane B widens the draw (an Error option, a key list, the reads' shapes): what a
   // unit no parent holds is checked against (exec/declared.mjs, design/w1h-new-units.md). `all`: the declared type is
   // any or unknown, every value is one of it (the checker's error type of an unresolved name is not: it names nothing)
-  const declaredParams = params.map((p, i) => { const t = checker.getTypeAtLocation(u.params[i].name); return { name: p.name, optional: p.optional, ...(p.rest ? { rest: true } : {}), spec: p.spec, ...((t.flags & TF.Unknown) || ((t.flags & TF.Any) && t.intrinsicName !== 'error') ? { all: true } : {}) }; });
+  const declaredParams = params.map((p, i) => { const t = checker.getTypeAtLocation(u.params[i].name); const all = !!(t.flags & TF.Unknown) || (!!(t.flags & TF.Any) && t.intrinsicName !== 'error'); return { name: p.name, optional: p.optional, ...(p.rest ? { rest: true } : {}), spec: all && !p.rest ? Object.defineProperty({ ...p.spec }, 'all', { value: true }) : p.spec }; }); // `all` on a copy: lane B's spec is unchanged
   // the known values of each parameter: the values file's entry for this unit and parameter, else for its declared type's name
   const vfn = opts.values ? unitValues(opts.values.data, file, unitName) : null;
   if (vfn || byType) params.forEach((p, i) => { const list = vfn && Object.hasOwn(vfn.params, p.name) && Array.isArray(vfn.params[p.name]) ? { from: `functions.${vfn.key}.${p.name}`, values: vfn.params[p.name] } : byType ? byType(u.params[i].type, checker.getTypeAtLocation(u.params[i].name)) : null; if (list) p.known = list; });

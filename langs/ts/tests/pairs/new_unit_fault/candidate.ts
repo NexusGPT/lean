@@ -56,3 +56,9 @@ export function twice(x: any): any {
   if (x === undefined) throw new Error("undefined");
   return x + x;
 }
+
+// (j) `unknown` admits every value: a rejection is a true fault, marked wide (a validator's own rejection reads so)
+export function asText(x: unknown): string {
+  if (typeof x !== "string") throw new TypeError("not a string");
+  return x;
+}

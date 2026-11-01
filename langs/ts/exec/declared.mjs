@@ -29,6 +29,7 @@ export function member(spec, v, defs = {}, opts = {}, depth = 0) {
   if (!spec || depth > 12) return 'unknown';
   if (opts.nullable && (v === null || v === undefined)) return 'yes';
   if (spec.kind === 'ref') return defs[spec.key] ? member(defs[spec.key], v, defs, opts, depth + 1) : 'unknown';
+  if (spec.all) return 'yes'; // any or unknown at a parameter's top: every value, a handle too
   if (isFake(v)) return opts.side === 'input' && ['function', 'service', 'class'].includes(spec.kind) ? 'yes' : 'unknown';
   const m = (s, x) => member(s, x, defs, opts, depth + 1);
   if (spec.narrowed) return ['string', 'number', 'bigint', 'boolean'].includes(typeof v) && typeof v === spec.kind ? 'unknown' : 'no'; // a brand or a template literal type: some values of the primitive only
