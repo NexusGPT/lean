@@ -1,0 +1,20 @@
+{
+ "scope": [
+  "is_index",
+  "joined_plainly",
+  "is_script"
+ ],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "the behavioural path (design/w2b-node-fakes.md): Node's own pure functions answer. isIndex compares path.basename against the name without its extension, joinedPlainly compares what path.join answers against the parts joined by the Windows separator: the same requests on both sides, a different use of the answer. Under the fake each is a WITNESS on a drawn file name the unit names (index.ts) or on any two plain parts; under the recording proxy alone (bRecord) the answer is a handle or a plain edge, equal to neither string, so each is PASS-bounded: the gap the fake closes. isScript is a refactor: PASS-bounded either way",
+ "b": {
+  "isIndex": "WITNESS",
+  "joinedPlainly": "WITNESS",
+  "isScript": "PASS-bounded"
+ },
+ "bRecord": {
+  "isIndex": "PASS-bounded",
+  "joinedPlainly": "PASS-bounded",
+  "isScript": "PASS-bounded"
+ }
+}

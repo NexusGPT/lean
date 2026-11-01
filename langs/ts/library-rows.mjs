@@ -2,6 +2,43 @@
 // translate/library.json whose `lane` is `ordinary`. The lint and the translator share these predicates, so the lint
 // admits exactly the calls the translator reads.
 import { ts, isArrayLike } from './common.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// The module rows (translate/library.json, `receiver: module`; design/w2b-node-fakes.md): a member of a Node core module
+// read as a pure bodiless function. The call is `<binding>.<member>(...)` on a default, namespace or `import = require`
+// binding of a listed specifier, or `<member>(...)` on a named import of it; the row's reading is `uninterpreted`; with
+// `arguments: string` every argument is a string (the type the row's function never throws on). Any other call, a
+// row whose reading is a world read included, stays the transition it was. The table is LEAN_LIBRARY_TABLE when set.
+const tables = new Map();
+const moduleRows = () => {
+  const file = process.env.LEAN_LIBRARY_TABLE || path.join(path.dirname(new URL(import.meta.url).pathname), 'translate/library.json');
+  if (!tables.has(file)) tables.set(file, JSON.parse(fs.readFileSync(file, 'utf8')).operations.filter((o) => o.receiver === 'module' && o.reading === 'uninterpreted' && Array.isArray(o.module) && typeof o.member === 'string'));
+  return tables.get(file);
+};
+const stringOnly = (t) => !!t && (t.flags & ts.TypeFlags.Union ? t.types : [t]).every((x) => !!(x.flags & ts.TypeFlags.StringLike));
+export function moduleRow(checker, call) {
+  if (!call || !ts.isCallExpression(call) || call.questionDotToken) return null;
+  const f = strip(call.expression);
+  if (f.flags & ts.NodeFlags.OptionalChain) return null;
+  const id = ts.isPropertyAccessExpression(f) && ts.isIdentifier(f.expression) ? f.expression : ts.isIdentifier(f) ? f : null;
+  if (!id) return null;
+  const d = checker.getSymbolAtLocation(id)?.declarations?.[0];
+  if (!d) return null;
+  let spec = null, member = null;
+  if (id !== f) {
+    member = f.name.text;
+    if (ts.isImportClause(d) && d.name === undefined) return null;
+    if (ts.isImportClause(d)) spec = d.parent.moduleSpecifier;
+    else if (ts.isNamespaceImport(d)) spec = d.parent.parent.moduleSpecifier;
+    else if (ts.isImportEqualsDeclaration(d) && ts.isExternalModuleReference(d.moduleReference)) spec = d.moduleReference.expression;
+  } else if (ts.isImportSpecifier(d)) { spec = d.parent.parent.parent.moduleSpecifier; member = (d.propertyName ?? d.name).text; }
+  if (!spec || !ts.isStringLiteral(spec) || member === null) return null;
+  const row = moduleRows().find((r) => r.member === member && r.module.includes(spec.text));
+  if (!row) return null;
+  if (row.arguments === 'string' && !call.arguments.every((a) => !ts.isSpreadElement(a) && stringOnly(checker.getTypeAtLocation(a)))) return null;
+  return row;
+}
 
 // in-place rows used as values: the removed element or run is the value, and the receiver changes
 export const ARRAY_VALUE_MUTATORS = new Set(['pop', 'shift', 'splice']);
