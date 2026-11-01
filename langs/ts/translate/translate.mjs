@@ -7020,6 +7020,13 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
   // `// OPAQUE <unit>: {steps, statements, covered, fraction}`: the unit's opaque steps for the certificate (check.mjs
   // lanes.A.opaque), and the share of its statements they cover (A5: the opaque fraction)
   const opaqueOutLines = [];
+  // a unit read whole as one opaque transition holds its graded sites in that one step: the certificate lists it so,
+  // its whole body covered (a block row of a refused first try is replaced)
+  function wholeUnitRow(u, id, outputs, self = false) {
+    if (!opaqueSites.has(u.name)) return;
+    const sites = opaqueSites.get(u.name), a0 = u.body.getStart(sf), z0 = u.body.getEnd();
+    opaqueRows.set(u.name, [opaqueEntry({ rule: [...new Set(sites.map((g) => g.rule))].sort().join(','), line: lineOf(sf, a0), id, reads: ['world', ...(self || hasSelf(u) ? ['self'] : []), ...u.params.map((p) => p.getText(sf))], writes: ['world', 'result', ...outputs], construct: 'unit', span: [lineOf(sf, a0), colOf(sf, a0), lineOf(sf, z0), colOf(sf, z0)], findings: sites.map((g) => g.span ?? [g.line]), statements: statementCount(ts.isBlock(u.body) ? [...u.body.statements] : [u.body]) })]);
+  }
   function opaqueOut(u) {
     const rows = opaqueRows.get(u.name); if (!rows?.length) return;
     const all = statementCount(ts.isBlock(u.body) ? [...u.body.statements] : [u.body]), covered = rows.reduce((n, r) => n + (r.statements ?? 0), 0);
@@ -7159,7 +7166,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       for (const r of requires) specs.push(`  requires ${sub(r)}`);
       for (const e of ensures) specs.push(`  ensures ${sub(e)}`);
     }
-    if (numericOpaque.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); currentUnit = null; return; }
+    if (numericOpaque.has(u.name)) { chunks.push(opaqueNumericUnit(u, rt, specs)); wholeUnitRow(u, 'unit (the number reading, keyed by its code)', mutatedOf(u)); currentUnit = null; return; }
     const sp = sigParams(u);
     // ECMA-262 15.3.4 ConciseBody: an expression body is evaluated and its value returned; a unit whose return type is void
     // (`x => [x].forEach(f)`, `x => count++`) returns undefined whatever the expression yields, so its body is the one
@@ -7191,7 +7198,7 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
       // a unit read whole as one opaque transition (an accessor or static method keyed by the file's text, or the module
       // reading keyed by the code it reaches, a body refusal's fallback included) holds its graded sites in that one step:
       // the certificate lists it as such, the whole body covered (any block row of a refused first try is dropped)
-      if ((usedModuleOpaque || accessorOpaque.has(u.name)) && opaqueSites.has(u.name)) { const sites = opaqueSites.get(u.name), a0 = u.body.getStart(sf), z0 = u.body.getEnd(); opaqueRows.set(u.name, [opaqueEntry({ rule: [...new Set(sites.map((g) => g.rule))].sort().join(','), line: lineOf(sf, a0), id: usedModuleOpaque ? 'unit (keyed by the code it reaches)' : 'unit (keyed by the file text)', reads: ['world', ...(hasSelf(u) || accessorOpaque.has(u.name) ? ['self'] : []), ...u.params.map((p) => p.getText(sf))], writes: ['world', 'result', ...(usedModuleOpaque ? mutatedOf(u) : [])], construct: 'unit', span: [lineOf(sf, a0), colOf(sf, a0), lineOf(sf, z0), colOf(sf, z0)], findings: sites.map((g) => g.span ?? [g.line]), statements: statementCount(ts.isBlock(u.body) ? [...u.body.statements] : [u.body]) })]); }
+      if (usedModuleOpaque || accessorOpaque.has(u.name)) wholeUnitRow(u, usedModuleOpaque ? 'unit (keyed by the code it reaches)' : 'unit (keyed by the file text)', usedModuleOpaque ? mutatedOf(u) : [], !usedModuleOpaque);
       const cleared = exceptionUnits.has(u.name) ? `var ${WORLD} := ${faultPreds().clear}(${WORLD});\n${body0}` : body0;
       const body = u.isCtor && !usedModuleOpaque ? `${ctorPrefix(u)}${cleared}` : yieldState ? `var ${yieldState.name}: ${yieldState.d} := [];\n${cleared}` : cleared;
       const mutLets = mutatedOf(u).map((m) => `var ${dn(m)} := ${dn(m)};`); // a mutated parameter starts as the argument and is rebound by the body
