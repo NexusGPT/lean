@@ -155,7 +155,8 @@ export function valueSites(sf, unit, changed) {
   const add = (n, cond = false) => { if (!n || namesItself(n) || ts.isSpreadElement(n) || !on(n) || seen.has(valueKey(n))) return; seen.add(valueKey(n)); out.push({ key: valueKey(n), pos: n.pos, end: n.end, cond }); };
   const assigns = new Set([ts.SyntaxKind.EqualsToken, ts.SyntaxKind.PlusEqualsToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken, ts.SyntaxKind.SlashEqualsToken, ts.SyntaxKind.BarBarEqualsToken, ts.SyntaxKind.AmpersandAmpersandEqualsToken, ts.SyntaxKind.QuestionQuestionEqualsToken]);
   const visit = (n) => {
-    if ((ts.isCallExpression(n) || ts.isNewExpression(n)) && n.arguments) for (const a of n.arguments) add(a);
+    const loads = ts.isCallExpression(n) && (n.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(n.expression) && n.expression.text === 'require')); // a module the loader resolves by its literal keeps it as written
+    if ((ts.isCallExpression(n) || ts.isNewExpression(n)) && n.arguments && !loads) for (const a of n.arguments) add(a);
     if (ts.isVariableDeclaration(n) && n.initializer && !ts.isForInStatement(n.parent?.parent) && !ts.isForOfStatement(n.parent?.parent)) add(n.initializer);
     if (ts.isBinaryExpression(n) && assigns.has(n.operatorToken.kind)) add(n.right);
     if ((ts.isReturnStatement(n) || ts.isThrowStatement(n)) && n.expression) add(n.expression);
@@ -366,9 +367,8 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
 // with the world's varied answers (fake.mjs Environment.answer, the same menu; faultDraw) set one path at a time, the
 // same on both sides. A move is kept when the run stays infected and goes further: more statements ran (every loaded
 // file's statement marks), or as many and more of the world answered (a call reached, then its fault). A divergence
-// counts only after the replay. With no infected input left, one leaf change to a literal of the unit's text or a
-// member of its type (the input search's tiers 0 and 1) is tried on each draw in turn (at most half the budget), and an
-// input it infects is climbed next. Every climb has at most `perStart` tries; the search, maxInputs and maxMs.
+// counts only after the replay. With no infected input left, one leaf change to a literal of a changed condition (the
+// input search's tier 0) is tried on each draw in turn (at most half the budget), and an input it infects is climbed next. Every climb has at most `perStart` tries; the search, maxInputs and maxMs.
 // starts: [{ recipe, answered, ran, threw, infected, at }] the draws that ran on both sides, in order; run(recipe, world)
 // mounts both sides on the recipe's input with the world recipe set and returns the same fields and a status;
 // changes(recipe) lists the leaf changes of the recipe's input (changesOf). Deterministic: the order is the draws', the
@@ -399,10 +399,10 @@ export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, m
   const queue = starts.filter((s) => s.infected), byDraws = queue.length, climbs = [], kept = new Map(); // kept: path -> the answer a kept move set, across climbs
   const summary = (stop, extra = {}) => ({ source: 'world', seed, starts: starts.length, infectedByDraws: byDraws, infectedByChange: byChange, tried, climbed, climbs, stop, bound: { inputs: maxInputs, ms: maxMs }, ...extra });
   const t0 = now(), over = () => tried >= maxInputs ? 'input bound' : now() - t0 > maxMs ? 'wall-time bound' : null;
-  // infect: one leaf change to a literal of the text or a member of the type, the m-th change of every draw before the
-  // (m+1)-th of any; at most half the budget. The next infected input, or why there is none
+  // infect: one leaf change to a literal of a changed condition (the input search's tier 0), the m-th change of every
+  // draw before the (m+1)-th of any; at most half the budget. The next infected input, or why there is none
   const lists = new Map();
-  const listOf = async (j) => { if (!lists.has(j)) lists.set(j, ((await changes(starts[j].recipe)) ?? []).filter((c) => c.tier <= 1)); return lists.get(j); };
+  const listOf = async (j) => { if (!lists.has(j)) lists.set(j, ((await changes(starts[j].recipe)) ?? []).filter((c) => c.tier === 0)); return lists.get(j); };
   let m = 0, j = 0;
   const infectNext = async () => {
     for (; ; m++, j = 0) {

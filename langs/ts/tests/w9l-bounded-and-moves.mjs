@@ -59,7 +59,7 @@ const ok = (c, m) => { assert.ok(c, m); checks++; };
   ok(JSON.stringify(again) === JSON.stringify(r), 'the same starts, the same search');
   const none = starts.map((s) => ({ ...s, infected: false }));
   const byChange = await go(none, (recipe) => recipe.changes.length > 0);
-  ok(byChange.stop === 'divergence' && byChange.infectedByChange === 1 && byChange.recipe.changes.length === 1, `no draw infects: a leaf change to a literal infects first, then the climb (${byChange.stop}, ${JSON.stringify(byChange.recipe)})`);
+  ok(byChange.stop === 'divergence' && byChange.infectedByChange === 1 && byChange.recipe.changes.length === 1, `no draw infects: a leaf change to a literal of a changed condition infects first, then the climb (${byChange.stop}, ${JSON.stringify(byChange.recipe)})`);
   const never = await go(none, () => false);
   ok(never.stop === 'no input infects', `no change infects: the search stops (${never.stop}, tried ${never.tried} of 30, at most half on the infection)`);
   ok(never.tried <= 15, 'the infection takes at most half the budget');

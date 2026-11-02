@@ -1649,7 +1649,8 @@ async function runPairOnce(opts) {
       if (!b || JSON.stringify(b.oP) !== JSON.stringify(a.oP) || JSON.stringify(b.oC) !== JSON.stringify(a.oC)) { unconfirmed++; return { status: 'skip', ...seen }; }
       return { status, ...seen, ...a };
     };
-    const changes = async (recipe) => { const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, wPlan.literals); };
+    const near = wPlan.literals.near.strings.length + wPlan.literals.near.numbers.length > 0; // no literal in a changed condition: no leaf change to infect with, no mount to list them
+    const changes = async (recipe) => { if (!near) return []; const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, wPlan.literals); };
     const r = await searchWorld({ seed, starts: worldStarts, run, changes, maxInputs: n, maxMs: unitSecondsValue(opts.unitSeconds) * 1000 / 4 });
     const { witness, recipe, world, ...rest } = r;
     worldSummary = { ...rest, unconfirmed, values: wPlan.values };
