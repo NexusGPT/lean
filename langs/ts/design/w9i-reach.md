@@ -1,0 +1,66 @@
+# Lane B reaches for the unit's changed statements (lane w9i-reach)
+
+## The gap
+
+On the 75 slice mutants, eight mutant comments repeated the PR's own comment with the same observed facts. Lane B's
+inputs never executed the mutated statement (or entered it and threw before it finished), so nothing lane B observed on
+the mutant differed from what it observed on the PR. The w3c search (`LEAN_SEARCH=1`) was off in the bench, ran only
+when the draws found no difference, and searched for any difference, not for the changed statements.
+
+## What lane B does now
+
+1. **The changed statements of a file** (`exec/search.mjs reachTable`). A statement's own text is its text less the
+   statements nested in it (through blocks and function bodies). It is changed when a line the diff of the two files
+   changes holds a character of its own text. Each changed statement has a point whose evaluation finishes its own
+   work: an expression statement's, a return's, a throw's, a switch's, a for-of's expression; for a declaration list a
+   last declarator added after the others; for an if, a loop or a for with a condition, the condition's branch probe.
+   A super call, a break, a continue, a block and a try have no point and are no target. A changed statement is
+   *completed* by an input when its point ran: a statement that threw half way was entered, not completed.
+2. **Probes** (`branchMarks`). `state.r(file, id, value)` wraps the point (the value comes back unchanged); the
+   branch probes are as w3c's. The probes of a file pair are built once and kept for every unit of the pair, so the
+   loader's compile cache keys on one object. A branch is probed only inside a top-level function a changed line
+   falls in (an unchanged callee's loops cost no probe). `statementMarks` (patch.mjs) now keeps the source node as the
+   original of the return and the await it rewrites, so a probe keyed on original nodes meets them.
+3. **The search is on in every run** (`LEAN_SEARCH=0` or `--no-search` turns it off). Its targets are w3c's branches
+   plus the unit's changed statements (`P:s<id>`, `C:s<id>`) and the conditions inside a target's condition (an operand
+   of its `&&`, a `??` in it: the steps toward it). It runs after the draws whenever a target is unreached, past the
+   draws' witnesses too, within `SEARCH_SHARE` of the unit's seconds and, past a witness, by `REACH_CEILING` of them
+   since the unit began. Each divergence it finds (replayed on fresh environments, as before) is handed to
+   `keepDifference` with a site per differing field, and the search goes on for what is unreached, until every target
+   is reached, `WITNESS_SITES` are held, or its bounds. Past a witness an error ends the search and the WITNESS stands.
+4. **The search's scheduler** (with `onDiff`): the drawn inputs at the frontier go first (an input that took the other
+   outcome of an unreached target branch evaluated its condition); a change moves only when it hits a probe outcome no
+   input hit before (a change that leaves the frontier for a region the draws knew is no progress); a leaf found inert
+   (twice no move) on one entry is inert on every entry; when the top entry has no live change the next entry down with
+   one goes first. An absent list may be made one element long and an empty one gains a literal of a target condition.
+5. **A witness kept for what it reached** (`exec/sites.mjs keepDifference`). Every witness carries `reached`: the
+   unit's changed statements its input completed (either side, `<side> <line>`). A difference at a site already held
+   is kept as its own site when its input completed a changed statement no kept witness completed; its `where.reach`
+   names those statements, and `siteKey` includes `where.reach` (pr.mjs `siteWitnesses` reads the same key).
+6. **The witness lane B leads with**: the first found, unless the search found one whose difference shows at a changed
+   statement (its candidate statement's first line, else its parent's) that no draw completed: a part of the change
+   only the search ran. Then the first such leads. It is the row's `witness` (the one DA renders). Three wider rules
+   were measured and dropped, each losing hits the first-found lead had: by changed statements completed (the 75:
+   three.js#34688~m2/m3, the lead moved from line 2878 to 2883, away from the change); then a witness at a changed line
+   first (cline#13827~m1/m2: input 0's `trace` at line 12, a line the PR changed, went ahead of its outcome at 58,
+   beside the mutation); then any later witness at a changed statement the lead's input never completed (34688~m2/m3
+   again: draw 10 at line 2876 led, and the PR's own run led with the same draw and the same facts). A draw's order is
+   the PR's order too; only a statement no draw ran tells the mutant's run from the PR's. Lane B's other kinds of
+   witness (class programs, races, environment programs) keep their place ahead of the draws'.
+
+No part reads the truth, the mutation or a bench file. The targets are the diff's lines inside the unit, on both sides.
+
+## Breaks
+
+`LEAN_BREAK=w9i-reach` restores the earlier rule whole: the search behind `LEAN_SEARCH=1` only and only without a
+witness, no statement probes, no reach site, discovery order. Pairs: `tests/pairs/reach_statements` (the search past a
+witness completes a statement no draw completed: a site at line 8), `reach_site` (a same-site witness kept for the
+statement it completed), `reach_lead` (a search witness that differs at a changed statement no draw completed leads), `reach_lead_site` (a later witness that differs away from the change does not lead; its site is held). Each is
+green plain and red under the break (`lane/w9i-reach/pairs-break.mjs`).
+
+## Open
+
+- A rendered unit is not searched (as before); the module unit has no probes.
+- A changed line inside a class property initializer or a parameter default belongs to no statement and is no target.
+- The location of a witness is still where its difference shows (often the return): reaching a changed statement
+  changes the observed facts, not the line DA anchors the comment on.

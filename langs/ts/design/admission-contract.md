@@ -1059,3 +1059,23 @@ only where its construct is one; the decision is one predicate, so the lint, the
 
 The audit table above is regenerated at this head (`node langs/ts/lower.mjs --audit --md`): 605 sites, 0 uncatalogued.
 
+## 2026-11-01: lane B holds every differing site (lane w8n-all-sites)
+
+No decision site is added or moved, and no verdict changes. Lane B no longer stops at its third differing input: past the
+first witness it keeps drawing until the input budget (`--n`) is spent, `WITNESS_SITES` (8) distinct sites are held, or
+`WITNESS_SHARE` (a quarter) of the unit's seconds has passed since the first witness, and it keeps one witness per site
+(`exec/sites.mjs`, the site key w7a's rows use). The certificate's `lanes.B.witnesses` lists those sites in order of
+discovery and `lanes.B.bound.sites` names how many were held, how many inputs differed and why the draws stopped. Past
+the first witness, a harness stop or an error escaping an input ends the draws and leaves the WITNESS. A differing input
+names a site for every field it differs on at another candidate statement (`fieldDifferences`), its first field still
+first (design/w8n-all-sites.md).
+
+## 2026-11-01: lane B reaches for the unit's changed statements (lane w9i-reach)
+
+No lint or translator site is added. One verdict site moves: lane B's input search (exec/search.mjs) is on unless
+`LEAN_SEARCH=0` or `--no-search`, and runs past the draws' witnesses too, for the unit's changed statements and branches
+no draw reached; a divergence it finds is a WITNESS only after its replay, as before, and is kept by `keepDifference` as
+a draw's is. A PASS-bounded unit whose search now finds a replayed divergence becomes WITNESS; no WITNESS changes. A
+witness carries `reached` (the unit's changed statements its input completed); one kept for a statement no kept witness
+completed has `where.reach`, part of its site key; the row's `witness` is the one that completed the most changed
+statements (design/w9i-reach.md). `LEAN_BREAK=w9i-reach` restores the earlier rule.

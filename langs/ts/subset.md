@@ -41,7 +41,13 @@ lane B's first witness, and `witnesses`, every witness lane B found for the unit
 each without its `record`. Two witnesses are one site when they differ on the same `where.field`, between the same two
 operations (`where.parent.op`, `where.candidate.op`) and at the same candidate line (`where.lines.candidate.start`, else
 `.line`). So a change at two statements reached by different inputs has two entries, and `witness` is the first of
-them, its record aside. `pr.mjs --units path::unit,unit` checks only the listed changed units and their callers; the
+them, its record aside. Lane B keeps drawing past its first witness, to the input budget (`--n`) or until eight
+distinct sites are held, and keeps one witness per site, so a site reached only by a later input is named too.
+An input that differs on several fields at several statements names each of them
+([design/w8n-all-sites.md](design/w8n-all-sites.md)). Lane B's input search then reaches for the unit's changed
+statements no input completed; a witness whose input completed a changed statement no kept witness completed is its own
+site (`where.reach`, part of the site key), and the row's `witness` is the one that completed the most changed
+statements ([design/w9i-reach.md](design/w9i-reach.md)). `pr.mjs --units path::unit,unit` checks only the listed changed units and their callers; the
 other units get no row ([the design](design/w7a-lean-witnesses.md)).
 
 `check.mjs`, `exec/run.mjs` and `lint/lint.mjs` accept `--candidate file --unit name`

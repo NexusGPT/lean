@@ -1,0 +1,10 @@
+{
+ "why": "The lead stays the first witness when a later one differs away from the change (design/w9i-reach.md): `settle` changes the value it puts (line 6, under a === 7) and the extra it returns (line 8, under a === 7 and b > 100). The first draw (a 7, b 100) differs on the request at line 6, a changed line. The search past it completes line 8 (b set to the largest safe integer) and differs at the return (line 11, unchanged), having completed more changed statements. Line 11 is no changed statement, so the lead stays the first found: the row's witness must be at line 6 and its witnesses name lines 6 and 11. LEAN_BREAK=w9i-reach does not search past the first witness: line 11 missing, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "settle", "verdict": "WITNESS", "leadLine": 6, "siteLines": [6, 11] }
+  ],
+  "unassigned": false
+ }
+}

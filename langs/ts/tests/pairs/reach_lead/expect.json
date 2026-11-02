@@ -1,0 +1,10 @@
+{
+ "why": "The witness lane B leads with (design/w9i-reach.md): `label` changes the vip text it returns (line 8, under tier \"gold\" and a first tag \"vip\") and the fallback text (line 12). The draws differ at line 12 first and no draw completes line 8. The search past that witness builds tags [\"vip\"] and differs at line 8, a changed statement no draw completed: it leads, so the row's witness is at line 8. LEAN_BREAK=w9i-reach does not search past the first witness and leads with it: line 12, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "label", "verdict": "WITNESS", "leadLine": 8, "siteLines": [8, 12] }
+  ],
+  "unassigned": false
+ }
+}

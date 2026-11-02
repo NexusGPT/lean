@@ -6,13 +6,17 @@
 // other file but expect.json is on both. `pr.project` names the pair's tsconfig (copied with the rest; pr.mjs finds it),
 // else the run is --no-project.
 //
-//   pr: { project?, rows: [{ file, unit, verdict?, notVerdict?, coverage?, reason?, sites? }], absent: [{ file, unit }],
+//   pr: { project?, rows: [{ file, unit, verdict?, notVerdict?, coverage?, reason?, sites?, siteLines?, leadLine?, siteReach? }], absent: [{ file, unit }],
 //         directives: [{ file, directive, change, line?, suppresses?: [code], exposes?: [code] }] (exactly these),
 //         unassigned: false (no row of the ledger is unassigned:*, an inert comment row excepted),
 //         units: [{ units: 'index.ts::f,g', rows, absent }] (each a second run of pr.mjs with --units, its rows and absences) }
 //
 // `sites: n` (design/w7a-lean-witnesses.md): the row's `witnesses` holds n entries at n different candidate lines, and
-// its `witness` is the first of them (the record aside).
+// its `witness` is the first of them (the record aside). `siteLines: [l]` (design/w8n-all-sites.md): each listed
+// candidate line is the line of one of the row's `witnesses` (two fields may differ at one line, so lines may repeat).
+// `leadLine: l` (design/w9i-reach.md): the row's `witness`, the one lane B leads with, is at candidate line l;
+// `siteReach: ['candidate l']`: one of the row's `witnesses` has `where.reach` (the changed statements it completed
+// first) holding each.
 //
 // prPair(dir, { tmp, env }) -> [{ check, ok, detail }]; tests/run.mjs adds them to the pair's rows, and
 // tests/w1f-module-units.mjs runs them under each --break.
@@ -83,6 +87,18 @@ export async function prPair(dir, { tmp, env = {} } = {}) {
         const ws = got?.witnesses ?? [], lines = new Set(ws.map(lineOf));
         const first = !!ws.length && JSON.stringify(ws[0]) === JSON.stringify(unrecorded(got.witness));
         results.push({ check: `pr${label} ${name(want)} witnesses at ${want.sites} site(s), witness the first`, ok: ws.length === want.sites && lines.size === want.sites && !lines.has(null) && first, detail: `${ws.length} witness(es) at candidate line(s) ${[...lines].join(', ') || 'none'}; witness ${first ? 'is' : 'is not'} witnesses[0]` });
+      }
+      if (want.leadLine !== undefined) { // design/w9i-reach.md: the witness the row leads with (the one that completed the most changed statements)
+        const line = lineOf(got?.witness);
+        results.push({ check: `pr${label} ${name(want)} witness (the lead) at candidate line ${want.leadLine}`, ok: line === want.leadLine, detail: `witness at candidate line ${line ?? 'none'} of ${(got?.witnesses ?? []).map(lineOf).join(', ') || 'no witnesses'}` });
+      }
+      if (want.siteReach !== undefined) { // design/w9i-reach.md: a witness kept for the changed statements it first completed
+        const ws = got?.witnesses ?? [], held = ws.flatMap((w) => w.where?.reach ?? []), missing = want.siteReach.filter((x) => !held.includes(x));
+        results.push({ check: `pr${label} ${name(want)} a witness kept for first completing ${want.siteReach.join(', ')}`, ok: !missing.length, detail: `where.reach ${held.length ? held.join(', ') : 'absent'} over ${ws.length} witness(es)` });
+      }
+      if (want.siteLines !== undefined) {
+        const ws = got?.witnesses ?? [], lines = new Set(ws.map(lineOf)), missing = want.siteLines.filter((l) => !lines.has(l));
+        results.push({ check: `pr${label} ${name(want)} witnesses name candidate line(s) ${want.siteLines.join(', ')}`, ok: !missing.length, detail: `${ws.length} witness(es) at candidate line(s) ${[...lines].join(', ') || 'none'}${missing.length ? `; missing ${missing.join(', ')}` : ''}` });
       }
     }
     for (const want of spec.absent ?? []) {

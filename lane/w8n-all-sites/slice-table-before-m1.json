@@ -1,0 +1,1346 @@
+{
+ "bluewave-labs__Checkmate#3185~m1": {
+  "id": "bluewave-labs__Checkmate#3185~m1",
+  "unit": "TextLink",
+  "path": "client/src/Components/v1/TextLink/index.jsx",
+  "lines": [
+   13,
+   13
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 17369,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "11-27"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 17367,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "11-27"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 8
+  }
+ },
+ "bluewave-labs__Checkmate#3257~m2": {
+  "id": "bluewave-labs__Checkmate#3257~m2",
+  "unit": "useDebounce",
+  "path": "client/src/Hooks/useDebounce.ts",
+  "lines": [
+   6,
+   14
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 19371,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "none"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 20133,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "none"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "bluewave-labs__Checkmate#3185~m2": {
+  "id": "bluewave-labs__Checkmate#3185~m2",
+  "unit": "TextLink",
+  "path": "client/src/Components/v1/TextLink/index.jsx",
+  "lines": [
+   14,
+   14
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 16794,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "11-27"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 16863,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": true,
+   "lines": [
+    "11-27",
+    "11-27"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 9
+  }
+ },
+ "bluewave-labs__Checkmate#3257~m3": {
+  "id": "bluewave-labs__Checkmate#3257~m3",
+  "unit": "InfrastructureMonitors",
+  "path": "client/src/Pages/Infrastructure/Monitors/index.tsx",
+  "lines": [
+   28,
+   28
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 23185,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "28"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 23791,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": true,
+   "lines": [
+    "28",
+    "16"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 9
+  }
+ },
+ "bluewave-labs__Checkmate#3185~m3": {
+  "id": "bluewave-labs__Checkmate#3185~m3",
+  "unit": "PasswordPanel",
+  "path": "client/src/Pages/Account/components/PasswordPanel.jsx",
+  "lines": [
+   70,
+   70
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 25941,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 3,
+   "mutationSite": false,
+   "lines": [
+    "34",
+    "35",
+    "137-297"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 27923,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 4,
+   "mutationSite": false,
+   "lines": [
+    "34",
+    "35",
+    "137-297",
+    "34"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 24
+  }
+ },
+ "bluewave-labs__Checkmate#3718~m1": {
+  "id": "bluewave-labs__Checkmate#3718~m1",
+  "unit": "getMonitorDefaults",
+  "path": "client/src/Hooks/useMonitorForm.ts",
+  "lines": [
+   41,
+   41
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 82179,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "146"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 81577,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "146"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 2
+  }
+ },
+ "bluewave-labs__Checkmate#3975~m1": {
+  "id": "bluewave-labs__Checkmate#3975~m1",
+  "unit": "BaseStatusPage",
+  "path": "client/src/Pages/StatusPage/Status/themes/shared/BaseStatusPage.tsx",
+  "lines": [
+   116,
+   116
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 48450,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": true,
+   "lines": [
+    "115-117",
+    "none"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 52008,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": true,
+   "lines": [
+    "115-117",
+    "none"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 27
+  }
+ },
+ "bluewave-labs__Checkmate#3718~m2": {
+  "id": "bluewave-labs__Checkmate#3718~m2",
+  "unit": "getMonitorDefaults",
+  "path": "client/src/Hooks/useMonitorForm.ts",
+  "lines": [
+   42,
+   42
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 76610,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "146"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 71651,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "146"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 2
+  }
+ },
+ "bluewave-labs__Checkmate#3975~m2": {
+  "id": "bluewave-labs__Checkmate#3975~m2",
+  "unit": "BaseStatusPage",
+  "path": "client/src/Pages/StatusPage/Status/themes/shared/BaseStatusPage.tsx",
+  "lines": [
+   116,
+   116
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 44171,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "116"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 49435,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": true,
+   "lines": [
+    "116",
+    "130-358"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 27
+  }
+ },
+ "cline__cline#13827~m1": {
+  "id": "cline__cline#13827~m1",
+  "unit": "OpencodeImportAdapter.constructor",
+  "path": "sdk/packages/core/src/services/session-import/opencode.ts",
+  "lines": [
+   57,
+   57
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 116979,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "58"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 120572,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "58"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 26
+  }
+ },
+ "bluewave-labs__Checkmate#3718~m3": {
+  "id": "bluewave-labs__Checkmate#3718~m3",
+  "unit": "getMonitorDefaults",
+  "path": "client/src/Hooks/useMonitorForm.ts",
+  "lines": [
+   64,
+   64
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 75614,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "146"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 84319,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "146"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 4
+  }
+ },
+ "bluewave-labs__Checkmate#3975~m3": {
+  "id": "bluewave-labs__Checkmate#3975~m3",
+  "unit": "BaseStatusPage",
+  "path": "client/src/Pages/StatusPage/Status/themes/shared/BaseStatusPage.tsx",
+  "lines": [
+   119,
+   119
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 48422,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "119"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 53875,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": true,
+   "lines": [
+    "119",
+    "130-358"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 25
+  }
+ },
+ "cline__cline#13827~m2": {
+  "id": "cline__cline#13827~m2",
+  "unit": "OpencodeImportAdapter.constructor",
+  "path": "sdk/packages/core/src/services/session-import/opencode.ts",
+  "lines": [
+   57,
+   57
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 132624,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "58"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 135552,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "58"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "bluewave-labs__Checkmate#3797~m1": {
+  "id": "bluewave-labs__Checkmate#3797~m1",
+  "unit": "BaseChart",
+  "path": "client/src/Components/design-elements/BaseChart.tsx",
+  "lines": [
+   30,
+   30
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 373083,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "26-50"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 396548,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "26-50"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 26
+  }
+ },
+ "google-gemini__gemini-cli#26534~m1": {
+  "id": "google-gemini__gemini-cli#26534~m1",
+  "unit": "ContextManager.constructor",
+  "path": "packages/core/src/context/contextManager.ts",
+  "lines": [
+   51,
+   51
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 143774,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "75",
+    "60-65"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 148451,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 4,
+   "mutationSite": false,
+   "lines": [
+    "75",
+    "60-65",
+    "66-72",
+    "53-58"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 25
+  }
+ },
+ "microsoft__typescript-go#3834~m1": {
+  "id": "microsoft__typescript-go#3834~m1",
+  "unit": "Client.start",
+  "path": "_extension/src/client.ts",
+  "lines": [
+   144,
+   144
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 110692,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "195-209",
+    "230-245"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 121459,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 8,
+   "mutationSite": false,
+   "lines": [
+    "195-209",
+    "230-245",
+    "212",
+    "214",
+    "184",
+    "195-209",
+    "211",
+    "195-209"
+   ],
+   "stop": "8 sites held",
+   "differing": 12
+  }
+ },
+ "microsoft__typescript-go#3834~m2": {
+  "id": "microsoft__typescript-go#3834~m2",
+  "unit": "Client.start",
+  "path": "_extension/src/client.ts",
+  "lines": [
+   150,
+   150
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 115678,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "150"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 111387,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 3,
+   "mutationSite": true,
+   "lines": [
+    "150",
+    "211",
+    "195-209"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 17
+  }
+ },
+ "google-gemini__gemini-cli#26534~m2": {
+  "id": "google-gemini__gemini-cli#26534~m2",
+  "unit": "ContextManager.renderHistory",
+  "path": "packages/core/src/context/contextManager.ts",
+  "lines": [
+   243,
+   243
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 160837,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "243"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 153544,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "243"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "microsoft__typescript-go#3834~m3": {
+  "id": "microsoft__typescript-go#3834~m3",
+  "unit": "Client.start",
+  "path": "_extension/src/client.ts",
+  "lines": [
+   156,
+   156
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 117484,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "163",
+    "167-180"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 123259,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 4,
+   "mutationSite": false,
+   "lines": [
+    "163",
+    "167-180",
+    "211",
+    "195-209"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 17
+  }
+ },
+ "google-gemini__gemini-cli#26534~m3": {
+  "id": "google-gemini__gemini-cli#26534~m3",
+  "unit": "ContextManager.renderHistory",
+  "path": "packages/core/src/context/contextManager.ts",
+  "lines": [
+   243,
+   243
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 157485,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "243"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 163848,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "243"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "bluewave-labs__Checkmate#3797~m2": {
+  "id": "bluewave-labs__Checkmate#3797~m2",
+  "unit": "BaseChart",
+  "path": "client/src/Components/design-elements/BaseChart.tsx",
+  "lines": [
+   31,
+   31
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 408893,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "26-50"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 409241,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "26-50"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 26
+  }
+ },
+ "mrdoob__three.js#34688~m1": {
+  "id": "mrdoob__three.js#34688~m1",
+  "unit": "WebGLBackend.dispose",
+  "path": "src/renderers/webgl-fallback/WebGLBackend.js",
+  "lines": [
+   2869,
+   2869
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 140034,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "2876-2881",
+    "2883"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 158043,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 8,
+   "mutationSite": false,
+   "lines": [
+    "2876-2881",
+    "2883",
+    "2883",
+    "2885",
+    "2878",
+    "2876-2881",
+    "2874",
+    "2879"
+   ],
+   "stop": "8 sites held",
+   "differing": 17
+  }
+ },
+ "mrdoob__three.js#34688~m2": {
+  "id": "mrdoob__three.js#34688~m2",
+  "unit": "WebGLBackend.dispose",
+  "path": "src/renderers/webgl-fallback/WebGLBackend.js",
+  "lines": [
+   2876,
+   2876
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 157018,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 3,
+   "mutationSite": true,
+   "lines": [
+    "2878",
+    "2876-2881",
+    "2885"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 144195,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 4,
+   "mutationSite": true,
+   "lines": [
+    "2878",
+    "2876-2881",
+    "2885",
+    "2883"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 8
+  }
+ },
+ "mrdoob__three.js#35012~m1": {
+  "id": "mrdoob__three.js#35012~m1",
+  "unit": "GLSLNodeBuilder.getUniformFromNode",
+  "path": "src/renderers/webgl-fallback/nodes/GLSLNodeBuilder.js",
+  "lines": [
+   1877,
+   1877
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 241573,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "69",
+    "2138"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 241442,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 5,
+   "mutationSite": false,
+   "lines": [
+    "69",
+    "2138",
+    "2136",
+    "2148",
+    "2138"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 11
+  }
+ },
+ "mrdoob__three.js#34688~m3": {
+  "id": "mrdoob__three.js#34688~m3",
+  "unit": "WebGLBackend.dispose",
+  "path": "src/renderers/webgl-fallback/WebGLBackend.js",
+  "lines": [
+   2876,
+   2876
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 145292,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 3,
+   "mutationSite": true,
+   "lines": [
+    "2878",
+    "2876-2881",
+    "2885"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 149035,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 4,
+   "mutationSite": true,
+   "lines": [
+    "2878",
+    "2876-2881",
+    "2885",
+    "2883"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 8
+  }
+ },
+ "n8n-io__n8n#41875~m1": {
+  "id": "n8n-io__n8n#41875~m1",
+  "unit": "traceModelRequests",
+  "path": "packages/@n8n/agents/src/runtime/telemetry/model-request-tracing.ts",
+  "lines": [
+   62,
+   62
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 265391,
+   "verdict": "ASK",
+   "laneB": null,
+   "sites": 0,
+   "mutationSite": false,
+   "lines": [],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 266306,
+   "verdict": "ASK",
+   "laneB": null,
+   "sites": 0,
+   "mutationSite": false,
+   "lines": [],
+   "stop": null,
+   "differing": null
+  }
+ },
+ "sveltejs__svelte#18661~m1": {
+  "id": "sveltejs__svelte#18661~m1",
+  "unit": "build_custom_element_attribute_update_assignment",
+  "path": "packages/svelte/src/compiler/phases/3-transform/client/visitors/RegularElement.js",
+  "lines": [
+   668,
+   668
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 82006,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "117-119",
+    "451"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 82199,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 3,
+   "mutationSite": false,
+   "lines": [
+    "117-119",
+    "451",
+    "451"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "sveltejs__svelte#18661~m2": {
+  "id": "sveltejs__svelte#18661~m2",
+  "unit": "build_custom_element_attribute_update_assignment",
+  "path": "packages/svelte/src/compiler/phases/3-transform/client/visitors/RegularElement.js",
+  "lines": [
+   673,
+   673
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 73368,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "55-59"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 80256,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "55-59",
+    "44"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 9
+  }
+ },
+ "n8n-io__n8n#41875~m2": {
+  "id": "n8n-io__n8n#41875~m2",
+  "unit": "traceModelRequests",
+  "path": "packages/@n8n/agents/src/runtime/telemetry/model-request-tracing.ts",
+  "lines": [
+   63,
+   63
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 262369,
+   "verdict": "ASK",
+   "laneB": null,
+   "sites": 0,
+   "mutationSite": false,
+   "lines": [],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 270446,
+   "verdict": "ASK",
+   "laneB": null,
+   "sites": 0,
+   "mutationSite": false,
+   "lines": [],
+   "stop": null,
+   "differing": null
+  }
+ },
+ "google-gemini__gemini-cli#27971~m1": {
+  "id": "google-gemini__gemini-cli#27971~m1",
+  "unit": "hardenHistory",
+  "path": "packages/core/src/utils/historyHardening.ts",
+  "lines": [
+   43,
+   43
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 1476725,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "43"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 1396019,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "43"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 17
+  }
+ },
+ "sveltejs__svelte#18661~m3": {
+  "id": "sveltejs__svelte#18661~m3",
+  "unit": "build_custom_element_attribute_update_assignment",
+  "path": "packages/svelte/src/compiler/phases/3-transform/client/visitors/RegularElement.js",
+  "lines": [
+   687,
+   687
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 80386,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": false,
+   "lines": [
+    "55-59"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 81581,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": false,
+   "lines": [
+    "55-59",
+    "44"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 9
+  }
+ },
+ "mrdoob__three.js#34798~m1": {
+  "id": "mrdoob__three.js#34798~m1",
+  "unit": "LightProbeGrid.constructor",
+  "path": "examples/jsm/lighting/LightProbeGrid.js",
+  "lines": [
+   386,
+   386
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 1068896,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "386"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 1024769,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "386"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "n8n-io__n8n#41875~m3": {
+  "id": "n8n-io__n8n#41875~m3",
+  "unit": "traceModelRequests",
+  "path": "packages/@n8n/agents/src/runtime/telemetry/model-request-tracing.ts",
+  "lines": [
+   70,
+   70
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 265565,
+   "verdict": "ASK",
+   "laneB": null,
+   "sites": 0,
+   "mutationSite": false,
+   "lines": [],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 249407,
+   "verdict": "ASK",
+   "laneB": null,
+   "sites": 0,
+   "mutationSite": false,
+   "lines": [],
+   "stop": null,
+   "differing": null
+  }
+ },
+ "mrdoob__three.js#34798~m2": {
+  "id": "mrdoob__three.js#34798~m2",
+  "unit": "LightProbeGrid.constructor",
+  "path": "examples/jsm/lighting/LightProbeGrid.js",
+  "lines": [
+   386,
+   386
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 905227,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "386"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 865971,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "386"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "google-gemini__gemini-cli#27971~m2": {
+  "id": "google-gemini__gemini-cli#27971~m2",
+  "unit": "hardenHistory",
+  "path": "packages/core/src/utils/historyHardening.ts",
+  "lines": [
+   43,
+   43
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 1266177,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "43"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 1199510,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "43"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 17
+  }
+ },
+ "mrdoob__three.js#34798~m3": {
+  "id": "mrdoob__three.js#34798~m3",
+  "unit": "LightProbeGrid.constructor",
+  "path": "examples/jsm/lighting/LightProbeGrid.js",
+  "lines": [
+   397,
+   397
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 874535,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "397"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 850831,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 1,
+   "mutationSite": true,
+   "lines": [
+    "397"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 30
+  }
+ },
+ "google-gemini__gemini-cli#27971~m3": {
+  "id": "google-gemini__gemini-cli#27971~m3",
+  "unit": "hardenHistory",
+  "path": "packages/core/src/utils/historyHardening.ts",
+  "lines": [
+   43,
+   43
+  ],
+  "before": {
+   "exit": 0,
+   "ms": 1206710,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 2,
+   "mutationSite": true,
+   "lines": [
+    "43",
+    "82"
+   ],
+   "stop": null,
+   "differing": null
+  },
+  "after": {
+   "exit": 0,
+   "ms": 1123678,
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "sites": 4,
+   "mutationSite": true,
+   "lines": [
+    "43",
+    "82",
+    "104",
+    "65"
+   ],
+   "stop": "the budget of 30 inputs",
+   "differing": 13
+  }
+ }
+}

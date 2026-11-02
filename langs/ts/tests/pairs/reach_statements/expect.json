@@ -1,0 +1,10 @@
+{
+ "why": "Two changed statements in one unit (design/w9i-reach.md): `label` changes the gold rate (line 7, under tier \"gold\" and a first tag \"vip\") and the fallback text (line 12). The draws differ at line 12 on their first input and never complete line 7: no draw holds tier \"gold\" with tags [\"vip\"]. Lane B's search for the changed statements no draw completed starts from the draw at the frontier (tier \"gold\", the inner condition false), builds tags [\"vip\"], completes line 7 and finds the difference at its return (line 8): the row's witnesses must name lines 8 and 12. LEAN_BREAK=w9i-reach searches only when the draws find no difference: line 8 missing, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "label", "verdict": "WITNESS", "siteLines": [8, 12] }
+  ],
+  "unassigned": false
+ }
+}

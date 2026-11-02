@@ -1,0 +1,10 @@
+{
+ "why": "One input differs on two fields at two statements (design/w8n-all-sites.md): Counter.save writes another count (line 7) and requests another key (line 8). The receiver write comes first, so every input differs on the object graph first, at the statement the call completed at. The changed write at line 7 is named only as a site of a later field of the same inputs: the row's `witnesses` must include line 7. LEAN_BREAK=w8n-fields names the first field of each input only: line 7 missing, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "Counter.save", "verdict": "WITNESS", "siteLines": [7, 8] }
+  ],
+  "unassigned": false
+ }
+}

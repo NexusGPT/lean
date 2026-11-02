@@ -41,7 +41,8 @@ import { contextRow } from '../hooks.mjs';
 import { bridgeGlobal, bridgeCounts, isBridgeName } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
-import { searchPlan, branchMarks, valueMarks, seenValue, outcomeOf, searchInputs, searchWorld, worldText, applyRecipe, changesOf, recipeText } from './search.mjs';
+import { searchPlan, branchMarks, valueMarks, seenValue, outcomeOf, searchInputs, searchWorld, worldText, applyRecipe, changesOf, recipeText, SEARCH_SHARE, REACH_CEILING } from './search.mjs';
+import { keepDifference, WITNESS_SITES, WITNESS_SHARE } from './sites.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -142,7 +143,7 @@ function compileWithSites(src, tsName, abs) {
   let globalName = '__lean_global';
   while (src.includes(globalName)) globalName += '_';
   const shadowed = shadowedIntrinsics(sf);
-  const marked = intrinsicPrologue(emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe?.table ? [branchMarks(probe.table, abs, stateName)] : []), ...(probe?.values?.length ? [valueMarks(probe.values, abs, stateName)] : [])]), shadowed, globalName);
+  const marked = intrinsicPrologue(emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe?.table ? [branchMarks(probe.table, abs, stateName, probe.reach)] : []), ...(probe?.values?.length ? [valueMarks(probe.values, abs, stateName)] : [])]), shadowed, globalName);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -551,7 +552,8 @@ export function sandbox(env, root) {
   captureEnvironment(env);
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null), hits: null };
-  env.siteState.b = (file, k, v) => { const p = probes?.get(file); if (p && env.siteState.hits) env.siteState.hits.add(`${p.tag}:${k}${outcomeOf(p.table[k], v)}`); return v; }; // a branch probe (search.mjs): the outcome is recorded while the unit runs, the value goes back unchanged
+  env.siteState.b = (file, k, v) => { const hits = env.siteState.hits, p = hits && probes?.get(file); if (p) { const key = p.keys.b[k]; hits.add(outcomeOf(p.table[k], v) === 'T' ? key.T : key.F); if (key.s) hits.add(key.s); } return v; }; // a branch probe (search.mjs): the outcome is recorded while the unit runs, the value goes back unchanged; a branch that is a changed statement's point also records that statement
+  env.siteState.r = (file, id, v) => { const hits = env.siteState.hits, p = hits && probes?.get(file); if (p) hits.add(p.keys.r[id]); return v; }; // a changed statement's probe (search.mjs reachTable): its point was evaluated
   env.siteState.v = (file, k, v) => { if (env.siteState.values && probes?.has(file)) { env.siteState.values.push(seenValue(v)); env.siteState.valueAt.push(env.answered.length); } return v; }; // a value probe of a changed line (search.mjs valueMarks): its value, by a reading that runs no code of the program, the value goes back unchanged
   const react = reactRuntime(env);
   const epoch = CLOCK_EPOCH;
@@ -1533,6 +1535,18 @@ function moduleDifference(sides, oP, oC) {
   }
   return null;
 }
+// the draws past lane B's first witness (design/w8n-all-sites.md): they look for further sites until the budget of n
+// inputs is spent, WITNESS_SITES sites are held, or WITNESS_SHARE of the unit's seconds has passed since the first
+// witness (the verdict is already WITNESS; the unit's bound must never turn it into a spin-bound ASK)
+function extraDraws(opts) {
+  const ms = WITNESS_SHARE * unitSecondsValue(opts.unitSeconds) * 1000;
+  let first = null, timed = false;
+  return {
+    full: false,
+    over(diffs) { if (!diffs.length || process.env.LEAN_BREAK === 'w8n-all-sites') return false; first ??= Date.now(); this.past = true; if (Date.now() - first > ms) timed = true; return timed; },
+    summary(diffs, n, stopped = null) { if (process.env.LEAN_BREAK === 'w8n-all-sites') return undefined; return { held: diffs.length, differing: diffs.differing ?? diffs.length, cap: WITNESS_SITES, stop: this.full ? `${WITNESS_SITES} sites held` : this.error ? `an error ended the draws (${this.error})` : stopped ? `a harness stop (${stopped})` : timed ? `${WITNESS_SHARE} of the unit's seconds past the first witness` : `the budget of ${n} inputs`, key: 'where.field, the two sides\' operations, the candidate line' }; },
+  };
+}
 // the observation both sides are compared on: a binding counts when both sides declare it
 const comparable = (o, other) => ({ ...o, bindings: Object.fromEntries(Object.entries(o.bindings).filter(([k]) => Object.hasOwn(other.bindings, k))) });
 async function runModuleUnit(opts) {
@@ -1543,18 +1557,18 @@ async function runModuleUnit(opts) {
   setRoots(sideLocations(parent, candidate, roots));
   const sides = { parent: moduleSideOf(parent), candidate: moduleSideOf(candidate) };
   const bound = { n, seed, ms, observation: 'the module\'s evaluation: its outcome, the requests in init order, the work it armed (never fired), its exports by key, the bindings both sides declare', inputs: 'input i seeds the environment (the clock, random); while a module loads the world answers with handles', statements: { parent: sides.parent.statements.length, candidate: sides.candidate.statements.length } };
-  const diffs = [], skipped = [];
+  const diffs = [], skipped = [], extra = extraDraws(opts); let stopped = null;
   for (let i = 0; i < n; i++) {
+    if (extra.over(diffs)) break;
     step('module', i);
     const oP = await observeModule(sides.parent, i, seed, ms, roots.parent), oC = await observeModule(sides.candidate, i, seed, ms, roots.candidate);
     if (oP.harness === 'timeout' && oC.harness === 'timeout') { skipped.push(i); continue; }
-    if (oP.harness || oC.harness) return { verdict: 'ASK', unit, reason: `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`, bound };
+    if (oP.harness || oC.harness) { const reason = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; if (extra.past) { stopped = reason; break; } return { verdict: 'ASK', unit, reason, bound }; } // past the first witness a harness stop ends the draws
     const cP = comparable(oP, oC), cC = comparable(oC, oP);
     if (JSON.stringify(cP) === JSON.stringify(cC)) continue;
-    diffs.push({ input: i, args: [], parent: cP, candidate: cC, where: moduleDifference(sides, oP, oC) });
-    if (diffs.length >= 3) break;
+    if (keepDifference(diffs, { input: i, args: [], parent: cP, candidate: cC, where: moduleDifference(sides, oP, oC) })) { extra.full = true; break; }
   }
-  if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound };
+  if (diffs.length) return { verdict: 'WITNESS', unit, witnesses: diffs, bound: { ...bound, sites: extra.summary(diffs, n, stopped) } };
   if (skipped.length) bound.skipped = { inputs: skipped.length, reason: 'both sides timed out on that input' };
   if (skipped.length >= n) return { verdict: 'ASK', unit, reason: `every input timed out (${skipped.length} of ${n})`, bound };
   return { verdict: 'PASS-bounded', unit, bound };
@@ -1596,11 +1610,15 @@ async function runPairOnce(opts) {
   let plan; step('inputs');
   try { plan = inputPlan(parent, candidate, unit, { project, seed, values: opts.values }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const { spec, heaps } = plan;
-  const searchOn = opts.search ?? process.env.LEAN_SEARCH === '1'; // the branch-guided input search (search.mjs), behind its flag
+  // the input search (search.mjs): on unless LEAN_SEARCH=0 or --no-search; with it lane B reaches for the unit's changed
+  // statements (design/w9i-reach.md). LEAN_BREAK=w9i-reach restores the earlier rule: the w3c search behind its flag only
+  const reachOn = process.env.LEAN_BREAK !== 'w9i-reach', unitStart = Date.now();
+  const searchOn = opts.search ?? (process.env.LEAN_SEARCH ? process.env.LEAN_SEARCH === '1' : reachOn);
+  const reach = searchOn && reachOn;
   const worldOn = (opts.world ?? process.env.LEAN_WORLD_SEARCH !== '0') && !broken('w9l-bounds'); // the world search (search.mjs searchWorld): on unless LEAN_WORLD_SEARCH=0 or its break
   let sPlan = null, wPlan = null; probes = null;
-  if (searchOn || worldOn) { // one plan: the input search's branch probes when it runs, the value probes of the changed lines when the world search runs
-    try { const p = searchPlan(parent, candidate, unit, (f) => fs.readFileSync(f, 'utf8')); if (searchOn) sPlan = p; if (worldOn) wPlan = p; probes = new Map(Object.entries(p.files).map(([f, e]) => [f, { ...e, table: searchOn ? e.table : null, values: worldOn ? e.values : [] }])); }
+  if (searchOn || worldOn) { // one plan: the input search's branch and reach probes when it runs, the value probes of the changed lines when the world search runs
+    try { const p = searchPlan(parent, candidate, unit, (f) => fs.readFileSync(f, 'utf8'), { reach }); if (searchOn) sPlan = p; if (worldOn) wPlan = p; probes = new Map(Object.entries(p.files).map(([f, e]) => [f, { ...e, table: searchOn ? e.table : null, reach: searchOn ? e.reach : [], values: worldOn ? e.values : [] }])); }
     catch (e) { if (searchOn) sPlan = { error: String(e && e.message).slice(0, 160) }; }
   }
   const worldStarts = []; // per input that ran on both sides: its draw, the world answers it consumed, whether the change infected it (the world search's start)
@@ -1616,6 +1634,10 @@ async function runPairOnce(opts) {
     return { infected: true, at: Math.min(atOf(P), atOf(C)) };
   };
   const drawHits = []; // per input that ran on both sides: the target branches it reached (the search's start)
+  const hitsOf = (sides) => new Set([...sides.parent.env.siteState.hits, ...sides.candidate.env.siteState.hits]);
+  // the unit's changed statements an input completed (either side), as `<side> <line>`: a witness carries them, and one
+  // that completes a statement no kept witness completed is its own site (exec/sites.mjs keepDifference)
+  const reachedOf = (hits) => (reach && sPlan?.statements && hits ? [...new Set(sPlan.statements.filter((t) => hits.has(t)).map((t) => { const d = sPlan.statementOf(t); return `${d.side} ${d.line}`; }))] : null);
   const unitRecord = opts.unitRecord;
   unitRecord.drawDomain = { status: 'recorded', parameters: spec.params.map(p => ({ name: p.name, spec: p.spec, optional: !!p.optional, count: 0, families: {} })), requested: n, seed, heaps: heaps.builders.length, known: knownLength(spec), boundaryWalk: spec.shaped ? walkLength(spec) : 0 };
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
@@ -1666,7 +1688,9 @@ async function runPairOnce(opts) {
     const { runPrograms } = await import('./programs.mjs'); step('programs');
     try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
-  for (let i = 0; i < n; i++) {
+  const extra = extraDraws(opts);
+  try { for (let i = 0; i < n; i++) { // past the first witness, an error escaping an input ends the draws, never the WITNESS
+    if (!treeDone && extra.over(diffs)) { if (!sawJsx) break; treeDone = true; } // past the first witness the draws look for further sites, within their share of the unit's time
     step('lane B', i); let sides = await mountSides(i);
     if (harnessAsk) break;
     let [oP, oC] = await observeBoth(sides, !treeDone);
@@ -1688,8 +1712,7 @@ async function runPairOnce(opts) {
     if (oP.harness === 'stack overflow' && oC.harness === 'stack overflow') { skipped.push(i); continue; } // both sides exhausted the call stack on this input, with and without the recorder: the input proves nothing
     if ((oP.harness === 'stack overflow' && !oC.harness) || (oC.harness === 'stack overflow' && !oP.harness)) { // one side recursed past the stack where the other returned: the thrown RangeError is that side's outcome (SEMANTICS item 1), observed on the same stack without the recorder
       const side = oP.harness ? 'parent' : 'candidate';
-      diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } });
-      if (diffs.length >= 3) break;
+      if (keepDifference(diffs, { input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: { field: 'outcome', note: `the ${side} exceeded the call stack (RangeError); the other side returned` } })) { extra.full = true; if (!sawJsx) break; treeDone = true; }
       continue;
     }
     if (oP.harness || oC.harness) { harnessAsk = `input ${i}: ${oP.harness ? 'parent ' + oP.harness : 'candidate ' + oC.harness}`; break; }
@@ -1698,7 +1721,7 @@ async function runPairOnce(opts) {
     const stopped = atGuard(oP, sides.parent) && atGuard(oC, sides.candidate);
     if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
-    if (probes) drawHits.push({ input: i, hits: new Set([...sides.parent.env.siteState.hits, ...sides.candidate.env.siteState.hits]) });
+    if (probes) drawHits.push({ input: i, hits: hitsOf(sides) });
     if (wPlan) worldStarts.push({ recipe: { from: i, changes: [] }, answered: answeredOf(sides), ran: ranOf(sides), threw: threwOf(oP, oC), ...infectionOf(sides) });
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
@@ -1706,35 +1729,53 @@ async function runPairOnce(opts) {
       const via = undecided ? null : unloadableOnly(oP, oC, sides); // the sides differ only in requests to a module lean could not load: the inlined or changed call is no difference lean can show
       if (undecided) (diffs.undriven ??= []).push({ input: i, reasons: undecided });
       else if (via) (diffs.unloadable ??= []).push({ input: i, ...via });
-      else { diffs.push({ input: i, ...drawnOf(sides), parent: oP, candidate: oC, where: firstDifference(oP, oC) }); if (diffs.length >= 3) { if (!sawJsx) break; treeDone = true; } } // a rendered unit keeps running for the styles layer
+      else { // one witness per site (exec/sites.mjs), a site for each field this input differs on at its own statement; a rendered unit keeps running for the styles layer
+        const drawn = drawnOf(sides), reached = probes ? reachedOf(drawHits.at(-1)?.hits) : null;
+        if (fieldDifferences(oP, oC).some((where, j) => keepDifference(diffs, { input: i, ...drawn, parent: oP, candidate: oC, where, ...(reached ? { reached } : {}) }, j > 0))) { extra.full = true; if (!sawJsx) break; treeDone = true; }
+      }
     } else { const u = undrivenOf(oP) ?? undrivenOf(oC); if (u) (diffs.undriven ??= []).push({ input: i, reasons: [u] }); } // equal, with a callback lean could not drive: the gap is carried
-  }
+  } } catch (e) { if (!extra.past) throw e; extra.error = `${crumb.phase} input ${crumb.input}: ${String(e && e.message).slice(0, 160)}`; }
   // the branch-guided input search (search.mjs, design/w3c-search-inputs.md): the draws agreed and reached the body; a
   // changed input runs both sides as a draw does, and a difference is a WITNESS only when a second run on fresh
   // environments gives the same two observations
   let searchSummary = null;
-  if (sPlan && !sPlan.error && !diffs.length && !harnessAsk && !sawJsx) {
+  // with reach (design/w9i-reach.md) the search runs past the draws' witnesses too, for the changed statements and
+  // branches no draw reached, each divergence one more candidate site; past a witness within what is left of three
+  // quarters of the unit's seconds, so the unit's bound never turns the WITNESS into an ASK
+  const unitMs = unitSecondsValue(opts.unitSeconds) * 1000, searchMs = !diffs.length ? unitMs * SEARCH_SHARE : Math.min(unitMs * SEARCH_SHARE, unitMs * REACH_CEILING - (Date.now() - unitStart));
+  if (sPlan && !sPlan.error && (!diffs.length || reach) && !extra.full && searchMs > 0 && !harnessAsk && !sawJsx) {
     const pairOf = async (recipe) => { step('search', recipe.from); const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } const [oP, oC] = await observeBoth(sides, false); return { sides, oP, oC }; };
     const statusOf = ({ sides, oP, oC }) => { if (oP.harness || oC.harness || oP.impure || oC.impure) return 'skip'; if (JSON.stringify(oP) === JSON.stringify(oC)) return 'equal'; return undecidedDrives(oP, oC) || unloadableOnly(oP, oC, sides) ? 'equal' : 'diff'; };
     let unconfirmed = 0;
     const run = async (recipe) => {
       const a = await pairOf(recipe); if (!a) return { status: 'skip' };
-      const status = statusOf(a), hits = new Set([...a.sides.parent.env.siteState.hits, ...a.sides.candidate.env.siteState.hits]);
+      const status = statusOf(a), hits = hitsOf(a.sides);
       if (status !== 'diff') return { status, hits };
       const b = await pairOf(recipe); // the replay: the same recipe on fresh environments must give the same two observations
       if (!b || JSON.stringify(b.oP) !== JSON.stringify(a.oP) || JSON.stringify(b.oC) !== JSON.stringify(a.oC)) { unconfirmed++; return { status: 'skip', hits }; }
       return { status, hits, ...a };
     };
-    const changes = async (recipe) => { const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, sPlan.literals, { aware: !/\bvalues\b/.test(process.env.LEAN_SEARCH_BREAK ?? '') }); }; // LEAN_SEARCH_BREAK: tests/search-inputs.mjs --break removes a mechanism (values: the literal and boundary values; keep: the kept inputs)
-    const r = await searchInputs({ seed, targets: sPlan.targets, start: drawHits, run, changes, maxInputs: n, maxMs: unitSecondsValue(opts.unitSeconds) * 1000 / 4, keep: !/\bkeep\b/.test(process.env.LEAN_SEARCH_BREAK ?? '') });
-    const { witness, recipe, ...rest } = r;
-    searchSummary = { ...rest, unconfirmed, changedLines: sPlan.changed, unreached: rest.unreached.map(sPlan.describe) };
-    if (witness) {
-      const w = { input: { source: 'search', ...recipeText(recipe) }, ...drawnOf(witness.sides), parent: witness.oP, candidate: witness.oC, where: { ...firstDifference(witness.oP, witness.oC), source: 'search' }, source: 'search', replayed: true };
-      if (w.record) w.record.search = recipeText(recipe); // the record's input is draw `from` with these changes, not the plain draw
-      diffs.push(w);
+    const changes = async (recipe) => { const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, sPlan.literals, { aware: !/\bvalues\b/.test(process.env.LEAN_SEARCH_BREAK ?? ''), lists: reach }); }; // LEAN_SEARCH_BREAK: tests/search-inputs.mjs --break removes a mechanism (values: the literal and boundary values; keep: the kept inputs)
+    const onDiff = reach ? (r, recipe) => { // a divergence the search found: a site per differing field, as a draw's (keepDifference)
+      const base = { input: { source: 'search', ...recipeText(recipe) }, ...drawnOf(r.sides), parent: r.oP, candidate: r.oC, source: 'search', replayed: true, reached: reachedOf(r.hits) };
+      if (base.record) base.record.search = recipeText(recipe); // the record's input is draw `from` with these changes, not the plain draw
+      if (fieldDifferences(r.oP, r.oC).some((where, j) => keepDifference(diffs, { ...base, where: { ...where, source: 'search' } }, j > 0))) { extra.full = true; return true; }
+      return false;
+    } : null;
+    let r;
+    try { r = await searchInputs({ seed, targets: sPlan.targets, start: drawHits, run, changes, maxInputs: n, maxMs: searchMs, keep: !/\bkeep\b/.test(process.env.LEAN_SEARCH_BREAK ?? ''), onDiff }); }
+    catch (e) { if (!diffs.length) throw e; r = null; extra.error ??= `search: ${String(e && e.message).slice(0, 160)}`; } // past a witness an error ends the search, never the WITNESS
+    if (r) {
+      const { witness, recipe, ...rest } = r;
+      searchSummary = { ...rest, unconfirmed, changedLines: sPlan.changed, unreached: rest.unreached.map(sPlan.describe) };
+      if (reach) { const byDraws = new Set(drawHits.flatMap((x) => [...x.hits])), un = new Set(rest.unreached); searchSummary.statements = { targets: sPlan.statements.length, reachedByDraws: sPlan.statements.filter((t) => byDraws.has(t)).length, reached: sPlan.statements.filter((t) => !un.has(t)).length }; }
+      if (witness) {
+        const w = { input: { source: 'search', ...recipeText(recipe) }, ...drawnOf(witness.sides), parent: witness.oP, candidate: witness.oC, where: { ...firstDifference(witness.oP, witness.oC), source: 'search' }, source: 'search', replayed: true };
+        if (w.record) w.record.search = recipeText(recipe); // the record's input is draw `from` with these changes, not the plain draw
+        diffs.push(w);
+      }
     }
-  } else if (sPlan) { const T = new Set(sPlan.targets ?? []), got = new Set(drawHits.flatMap((x) => [...x.hits].filter((h) => T.has(h)))); searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length ? 'the draws differ' : harnessAsk ? 'harness stop' : 'rendered unit', targets: T.size, reachedByDraws: got.size, reached: got.size, tried: 0 }; } // not searched: the branches the draws reached, for the before/after count
+  } else if (sPlan) { const T = new Set(sPlan.targets ?? []), got = new Set(drawHits.flatMap((x) => [...x.hits].filter((h) => T.has(h)))); searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length && !reach ? 'the draws differ' : harnessAsk ? 'harness stop' : sawJsx ? 'rendered unit' : extra.full ? `${WITNESS_SITES} sites held` : 'no time left past the witness', targets: T.size, reachedByDraws: got.size, reached: got.size, tried: 0, ...(reach && sPlan.statements ? { statements: { targets: sPlan.statements.length, reachedByDraws: sPlan.statements.filter((t) => got.has(t)).length, reached: sPlan.statements.filter((t) => got.has(t)).length } } : {}) }; } // not searched: the branches the draws reached, for the before/after count
   // the world search (search.mjs searchWorld, design/w9l-bounded-and-moves.md): the draws and the input search agree; an
   // input on which the changed lines' values differ had its difference masked by the world's answers after it: the same
   // input with other answers of the same menu, on both sides alike; a difference is a WITNESS only when a second run
@@ -1764,6 +1805,14 @@ async function runPairOnce(opts) {
       diffs.push(w);
     }
   }
+  // the witness lane B leads with (design/w9i-reach.md): the first found, unless the search found one whose difference
+  // shows at a changed statement no draw completed (a part of the change only the search ran); then the first such
+  if (reach && diffs.length > 1) {
+    const byDraws = new Set(reachedOf(new Set(drawHits.flatMap((x) => [...x.hits]))) ?? []);
+    const at = (w) => { const l = w.where?.lines; return [l?.candidate?.start !== undefined ? `candidate ${l.candidate.start}` : null, l?.parent?.start !== undefined ? `parent ${l.parent.start}` : null].filter(Boolean); };
+    const k = diffs.findIndex((w, j) => j > 0 && w.source === 'search' && at(w).some((x) => (w.reached ?? []).includes(x) && !byDraws.has(x)));
+    if (k > 0) diffs.unshift(...diffs.splice(k, 1));
+  }
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run
@@ -1773,6 +1822,7 @@ async function runPairOnce(opts) {
   const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (searchSummary) bound.search = searchSummary;
   if (worldSummary) bound.world = worldSummary;
+  if (diffs.length) bound.sites = extra.summary(diffs, n, harnessAsk);
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
@@ -1925,8 +1975,8 @@ function siteLines(site) {
   if (!site) return null;
   return { file: site.file, start: site.start, end: site.end, text: site.text ?? '' };
 }
-export function firstDifference(a, b) {
-  const where = differenceField(a, b);
+export function firstDifference(a, b, only = null) {
+  const where = differenceField(a, b, only);
   if (!where) return null;
   const trace = where.field === 'trace';
   let parentSite = trace ? a.trace[where.index]?.site : a.site;
@@ -1944,8 +1994,19 @@ export function firstDifference(a, b) {
   where.lines = { kind, parent: siteLines(parentSite), candidate: siteLines(candidateSite) };
   return where;
 }
-function differenceField(a, b) {
-  for (const k of ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module']) {
+const DIFFERENCE_FIELDS = ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module'];
+// every field two observations differ on, each located as firstDifference locates the first (design/w8n-all-sites.md):
+// the first is firstDifference's; a later field counts when it names another candidate statement than every field
+// before it (a heap or receiver difference at the statement the outcome came from adds no place to look)
+export function fieldDifferences(a, b) {
+  const all = DIFFERENCE_FIELDS.map((k) => firstDifference(a, b, k)).filter(Boolean);
+  if (['w8n-fields', 'w8n-all-sites'].includes(process.env.LEAN_BREAK)) return all.slice(0, 1); // the second restores the earlier rule whole
+  const lineOf = (w) => w.lines?.candidate?.start ?? w.lines?.candidate?.line ?? null, seen = new Set();
+  return all.filter((w, j) => { const l = lineOf(w); if (j === 0) { seen.add(l); return true; } if (l === null || seen.has(l)) return false; seen.add(l); return true; });
+}
+function differenceField(a, b, only = null) {
+  for (const k of DIFFERENCE_FIELDS) {
+    if (only && k !== only) continue;
     const x = JSON.stringify(a[k]), y = JSON.stringify(b[k]);
     if (x !== y) {
       if (k === 'trace') { let i = 0; while (i < Math.max(a.trace.length, b.trace.length) && JSON.stringify(a.trace[i]) === JSON.stringify(b.trace[i])) i++; return { field: k, index: i, parent: a.trace[i] ?? null, candidate: b.trace[i] ?? null }; }
