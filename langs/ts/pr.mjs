@@ -253,10 +253,13 @@ function changedRanges(repo, base, head, rel, deleted) {
 // never linted, since it gets no task and no row (selectUnits drops it); its name still tells the callers' step it changed.
 // Linting it was the whole budget of a run on one 51-line unit when the PR also changed a 1386-line test file (Checkmate#3797:
 // 156 per-unit translations of the test's callbacks, 322 s). LEAN_BREAK=w9u-units-lint lints every kept unit
+// LEAN_BREAK=lint-wanted lints every unit in range, routed or not, listed or not (lane w9k); `loaded.linted` counts the units
+// whose lint the run read, per file, summed on the report as `rows.linted` (tests/w9k-new-code.mjs)
 export function changedUnits(loaded, ranges, file, keep = null, listed = null) {
   const { sf } = loaded, units = topLevelFunctions(sf);
-  const kept = keep && !broken('w9f-lint-routed') ? keep : null;
-  const linted = listed && !broken('w9u-units-lint') ? listed : () => true;
+  const all = broken('lint-wanted');
+  const kept = keep && !broken('w9f-lint-routed') && !all ? keep : null;
+  const linted = listed && !broken('w9u-units-lint') && !all ? listed : () => true;
   const spans = [...units.values()].flatMap((u) => {
     if (kept && !kept.has(u.name)) return [];
     const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
@@ -271,6 +274,7 @@ export function changedUnits(loaded, ranges, file, keep = null, listed = null) {
   return spans.map(({ u, start, end }) => {
     const named = { name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}) };
     if (!linted(u.name)) return { ...named, findings: [], unlisted: true };
+    if (loaded.checker) loaded.linted = (loaded.linted ?? 0) + 1;
     try { return { ...named, findings: loaded.checker ? (once ?? lintFile(file, [[start, end]], { loaded })).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }; }
     catch (e) { return { name: u.name, start, end, error: String(e.message).slice(0, 300) }; }
   });
@@ -288,9 +292,9 @@ function removedUnits(rel, parentText, headText) {
 // Read the change set before selection. Files outside code and secret names need no contents.
 function changedFiles(opts, temps, ledger) {
   const { repo, base, head = 'WORKTREE', filesRoot, project = true } = opts;
+  const listed = unitFilter(opts.units); // the units --units names (changedUnits lints no other)
   const refs = [base, ...(head === 'WORKTREE' ? [] : [head])];
   const names = ledger.files.map(f => f.file);
-  const listed = unitFilter(opts.units);
   const stats = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--numstat', '-z', ...refs, '--']);
   const binary = new Set(stats.split('\0').filter((x) => x.startsWith('-\t-\t')).map((x) => x.slice(4)));
   const pending = [];
@@ -348,7 +352,9 @@ function changedFiles(opts, temps, ledger) {
       const reading = shared ?? loadProgram(entry.headFile, { project }); // a file read alone is let go after its units
       if (shared) entry.keyReading = shared;
       const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
+      const linted0 = reading.linted ?? 0;
       entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile, routed, listed && ((name) => listed(rel, name))).filter(u => routed.has(u.name));
+      entry.linted = (reading.linted ?? 0) - linted0;
       // the module unit (common.mjs MODULE_UNIT): the file's top-level statements, the whole file's lines; the ledger routes to it
       // the types unit (common.mjs TYPES_UNIT) likewise: the file's text its emitted JavaScript does not carry, read by the typed reading alone
       for (const name of [MODULE_UNIT, TYPES_UNIT]) if (routed.has(name)) entry.units.push({ name, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
@@ -383,7 +389,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), ...(rows.valuesNearest?.length ? { valuesNearest: rows.valuesNearest } : {}), rows, ...(rows.directives?.length ? { directives: rows.directives } : {}), order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), ...(rows.valuesNearest?.length ? { valuesNearest: rows.valuesNearest } : {}), rows, ...(rows.directives?.length ? { directives: rows.directives } : {}), order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked, ...(rows.linted !== undefined ? { linted: rows.linted } : {}) };
 }
 
 export function stopNote(stop) {
@@ -493,7 +499,7 @@ export async function prReport(opts) {
   try { metadata = JSON.parse(fs.readFileSync(path.join(dir, 'worker-report.json'), 'utf8')); }
   catch (e) { if (e.code !== 'ENOENT') console.error('Worker metadata unreadable: ' + e.name); }
   const rows = Object.assign(terminal.rows, { identity: metadata.identity ?? ledger.id, leanVersion: metadata.leanVersion ?? leanVersion(),
-    values: metadata.values, valuesNearest: metadata.valuesNearest, directives: metadata.directives ?? [], order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
+    values: metadata.values, valuesNearest: metadata.valuesNearest, directives: metadata.directives ?? [], order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked, linted: metadata.linted,
     ledger, reconciliation: terminal.reconciliation, terminalFile: path.join(dir, 'terminal.json'), runDir: dir });
   rows.refusalsFile = writeRefusals(rows, dir, { repo: path.resolve(opts.repo) });
   atomicJSON(path.join(dir, 'report.json'), reportJSON(rows));
@@ -540,6 +546,7 @@ async function prWorker(opts) {
     rows.ledger = routeChanges(buildChangeManifest(opts));
     if (rows.ledger.id !== opts.expectedLedgerId) throw new Error('change frame moved before dispatch');
     const files = changedFiles(opts, temps, rows.ledger);
+    rows.linted = files.reduce((n, e) => n + (e.linted ?? 0), 0); // the units whose lint the run read (changedUnits `wanted`)
     // the test files the PR adds or changes (a unit no parent holds is checked against its declaration, and a test the PR
     // adds that names it is part of that declaration: exec/new-tests.mjs, design/w1h-new-units.md); each by its head text,
     // read at its checkout path when that path holds the head's bytes (its relative imports resolve beside it)
@@ -712,7 +719,7 @@ async function prWorker(opts) {
         try { b = await runPair({ parent: baseFile, candidate: headFile, unit: u.name, n, seed, deep, project }); }
         catch (e) { b = { verdict: 'ASK', reason: `harness: ${String(e.message).slice(0, 300)}` }; }
         const proof = correspondence?.status === 'decided-equal' && !['WITNESS', 'NEW', 'REFUSE'].includes(b.verdict) && !b.bound?.library?.defects?.length && !b.bound?.frontEnd?.handlers?.defects?.length;
-        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: proof ? 'checked' : `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : proof ? 'PASS-proved' : b.verdict, ...(proof ? { certificate: { ...correspondence.certificate, identity: rows.identity, lanes: { ...correspondence.certificate.lanes, B: b } } } : {}), ...(proof ? {} : { certificate: basicCertificate({ B: { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, ...(b.record ? { record: b.record } : {}) } }) }), laneB: b.verdict, laneA: proof ? 'PASS-proved' : null, witness: b.witnesses?.[0] ?? null, ...(b.verdict === 'WITNESS' ? { witnesses: siteWitnesses(b.witnesses) } : {}), reason: proof ? null : b.reason ?? u.findings[0].msg, advice: proof ? [] : u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })) });
+        save({ file: rel, unit: u.name, lines: [u.start, u.end], coverage: proof ? 'checked' : `refused:${u.findings[0].rule}`, verdict: scope.has(u.name) || scope.has(`${rel}:${u.name}`) ? 'IN-SCOPE' : proof ? 'PASS-proved' : b.verdict, ...(proof ? { certificate: { ...correspondence.certificate, identity: rows.identity, lanes: { ...correspondence.certificate.lanes, B: b } } } : {}), ...(proof ? {} : { certificate: basicCertificate({ B: { verdict: b.verdict, reason: b.reason ?? null, bound: b.bound ?? null, ...(b.record ? { record: b.record } : {}) } }) }), laneB: b.verdict, laneA: proof ? 'PASS-proved' : null, witness: b.witnesses?.[0] ?? null, ...(b.verdict === 'WITNESS' ? { witnesses: siteWitnesses(b.witnesses) } : {}), reason: proof ? null : b.reason ?? u.findings[0].msg, advice: proof ? [] : u.findings.slice(0, 8).map((x) => ({ line: x.line, rule: x.rule, msg: x.msg, do: x.advice })), ...(b.candidateOnly && b.records && !broken('findings-records') ? { records: b.records } : {}) }); // a unit the parent does not hold keeps its records under a lint finding too (lane w9k): the finding is an equality question, the records are not
         continue;
       }
       if (scope.has(u.name) || scope.has(`${rel}:${u.name}`)) {
