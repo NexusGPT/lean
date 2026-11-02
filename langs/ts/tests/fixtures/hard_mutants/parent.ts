@@ -86,7 +86,8 @@ export function perPage(n: number): number {
 }
 
 // changed-default
-export function pad(s: string, width: number = 4): string {
+export function pad(s: string, opts: { width?: number }): string {
+  const { width = 4 } = opts;
   return s.length >= width ? s : " ".repeat(width - s.length) + s;
 }
 
