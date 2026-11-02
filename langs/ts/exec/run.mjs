@@ -1652,13 +1652,12 @@ async function runPairOnce(opts) {
       }
     }
   } else if (sPlan) { const T = new Set(sPlan.targets ?? []), got = new Set(drawHits.flatMap((x) => [...x.hits].filter((h) => T.has(h)))); searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length && !reach ? 'the draws differ' : harnessAsk ? 'harness stop' : sawJsx ? 'rendered unit' : extra.full ? `${WITNESS_SITES} sites held` : 'no time left past the witness', targets: T.size, reachedByDraws: got.size, reached: got.size, tried: 0, ...(reach && sPlan.statements ? { statements: { targets: sPlan.statements.length, reachedByDraws: sPlan.statements.filter((t) => got.has(t)).length, reached: sPlan.statements.filter((t) => got.has(t)).length } } : {}) }; } // not searched: the branches the draws reached, for the before/after count
-  // the witness lane B leads with (design/w9i-reach.md): the first found, unless a later one's difference shows at a
-  // changed statement the first one's input never completed (a part of the change the lead never ran); then the first
-  // such. A further field of the lead's own input is never one
+  // the witness lane B leads with (design/w9i-reach.md): the first found, unless the search found one whose difference
+  // shows at a changed statement no draw completed (a part of the change only the search ran); then the first such
   if (reach && diffs.length > 1) {
-    const lead = diffs[0], ran = new Set(lead.reached ?? []);
+    const byDraws = new Set(reachedOf(new Set(drawHits.flatMap((x) => [...x.hits]))) ?? []);
     const at = (w) => { const l = w.where?.lines; return [l?.candidate?.start !== undefined ? `candidate ${l.candidate.start}` : null, l?.parent?.start !== undefined ? `parent ${l.parent.start}` : null].filter(Boolean); };
-    const k = diffs.findIndex((w, j) => j > 0 && w.input !== lead.input && at(w).some((x) => (w.reached ?? []).includes(x) && !ran.has(x)));
+    const k = diffs.findIndex((w, j) => j > 0 && w.source === 'search' && at(w).some((x) => (w.reached ?? []).includes(x) && !byDraws.has(x)));
     if (k > 0) diffs.unshift(...diffs.splice(k, 1));
   }
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
