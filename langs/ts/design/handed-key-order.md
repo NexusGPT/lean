@@ -61,6 +61,16 @@ same way.
 
 `LEAN_BREAK=handed-key-order` turns the reading off in both cores (the argument handed bare, as before).
 
+**Through a same-file function** (lane w9y, 2026-11-02). A same-file function reads its parameter as an object it did not
+build (own), so it hands it to the outside bare; the order is the caller's literal's. At 547d1797 `enc({ a, b })` and
+`enc({ b, a })`, `enc(o)` returning `JSON.stringify(o)`, were one term (the datatype value) and PASS-proved, lane B
+WITNESS. Now a same-file call hands such an argument as orderedArg hands one to the outside (`unitArgOrdered`, the plain
+and the defaulted parameter), with its refusals, when the callee's parameter may reach a reader of the order
+(`paramReadsOrder`): any use of it but a field read whose value holds no record and is not called (a pass on, a store, a
+return, a spread, an enumeration, a method call). A callee that reads only primitive fields (`o.a + o.b.length`) is
+handed the bare value, so its reorder still proves. `LEAN_BREAK=same-file-key-order` hands every same-file argument bare
+again (pair `handed_key_order_callee`: viaHelper, spreadHelper, viaTwo proved).
+
 ## Soundness
 
 Two sides are proved equal at a handed record only when both hand the same own object, or the same value with the same
@@ -84,4 +94,5 @@ then taken as the order of its value), as two such objects are already one argum
 | test | as is | --break |
 | --- | --- | --- |
 | `node langs/ts/tests/run.mjs --pair handed_key_order` | 22 checks ALL PASS | `LEAN_BREAK=handed-key-order`: enc, enc_pt, spread_copy, lib_keys, heap_hand proved (red) |
+| `node langs/ts/tests/run.mjs --pair handed_key_order_callee` | 17 checks ALL PASS | `LEAN_BREAK=same-file-key-order`: via_helper, spread_helper, via_two proved (red) |
 | `node langs/ts/tests/handed-key-order.mjs` | 13 rows ALL PASS (7 refusals, 6 readings) | `--break`: 7 FAILED |
