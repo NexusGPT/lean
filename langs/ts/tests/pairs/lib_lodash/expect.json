@@ -22,10 +22,7 @@
     "sizes": "PASS-bounded",
     "settle": "PASS-bounded"
   },
-  "break": {
-    "library-fakes": {
-      "total": "PASS-bounded",
-      "settle": "WITNESS"
-    }
-  }
+  "break": [
+    {"mechanism": "library-fakes", "b": {"total": "PASS-bounded", "settle": "WITNESS"}}
+  ]
 }

@@ -59,6 +59,16 @@ was handed and from `o`. The test is now that: the type closures of the two (fie
 reading's depth, any/unknown/too deep meaning anything) intersect (common.mjs `share`). The holder case is pair unit
 `holder`; the container case now refuses (`a` is a new object, no identity), where it was a false proof.
 
+**A port holds no field (2026-11-01, the merge with lead-v4).** The full suite found the closure too wide on a class
+that holds its ports: `this.repo.find(id)` hands `this.repo` (an `interface Repo { find(...): ... }`), the closure of
+`ChatService` holds `Repo`, so every later read of `this` met the call, and `this.label(row.id)` (a same-file method
+of `this`, no world form) refused the unit (pair `service`); in `mixed_logic_values` the else-branch of `both` read
+`this` again through `ext_now`, which cost `Equal_service_both` its proof. A type every member of which is a method
+(no data property, no index signature, no type argument; common.mjs `methodsOnly`) holds no state a read takes: every
+read through it is a call, a transition of the world counted where it runs, and a test of it is of its identity, which
+no call changes. So the closure leaves it out, as it leaves out a function value and a promise; `reaches` still counts
+the port itself (a read of the handed port is a read of what the call was handed). Both pairs read as at the base again.
+
 Two over-counts that the wider test would have added are cut, each by the same invariant: a local bound to a new object
 of primitive parts (a literal of primitive members, a copy `{ ...p }` of a record that holds no object) is made at its
 binding, so a call before it cannot reach it (its start is its binding); and such a local only read by field or
@@ -168,6 +178,14 @@ value, which is what JavaScript does (a text key would only cost proofs).
 A held value in a slot whose contextual type is any or unknown (`JSON.stringify(b.rest[k])`) was refused by the lint
 although nothing reads it as a declared type and the translator converts nothing (Any to Any); such a slot is now no
 refusal for a held value either, as it already was for an unchecked one.
+
+The faithful number reading's operations (`Math.__lean_add` and kin, declared in `lean-number.d.ts`, translate/
+faithful.mjs) are no outside slot (2026-11-01, the merge with lead-v4): they are the reading's own arithmetic and read
+their operands as numbers. Taken for another file's function, a held value in a same-file callee's rewritten body
+(`dbl(x as number)`, `n + n` read as `Math.__lean_add(n, n)`) was converted to int and the held variant returned an int
+(`ext_Any_as_int`), which no candidate's operation on Any equals: `Equal_param_held` lost its proof, and the faithful
+text, which refused that slot at the base and so left the file to the exact reading, placed `twice`, `result_held` and
+`compound_held` (pair `type_assertions`). The faithful text refuses the slot again, as at the base.
 
 **Stays refused**, each a slot the unit itself reads as declared, where an asserted `number` that is a string would let
 a proof use arithmetic JavaScript does not do (`n + 1 - 1` is `n` on integers, `"51" - 1` on a string): a same-file

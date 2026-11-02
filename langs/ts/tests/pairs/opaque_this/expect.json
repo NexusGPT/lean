@@ -1,0 +1,44 @@
+{
+ "scope": [
+  "pricer_constructor",
+  "pricer_scale",
+  "pricer_totals",
+  "pricer_totals_xs_map___0",
+  "pricer_shifted",
+  "pricer_shifted_xs_map___0",
+  "pricer_planted",
+  "pricer_planted_xs_map___0",
+  "pricer_table",
+  "pricer_table_xs_map___0",
+  "pricer_table_xs_map___0_ys_map___0",
+  "ledger_constructor",
+  "ledger_rate",
+  "ledger_rates",
+  "ledger_rates_xs_map___0"
+ ],
+ "equal": {
+  "pricer_constructor": true,
+  "pricer_scale": true,
+  "pricer_totals": false,
+  "pricer_totals_xs_map___0": true,
+  "pricer_shifted": false,
+  "pricer_shifted_xs_map___0": false,
+  "pricer_planted": false,
+  "pricer_planted_xs_map___0": false,
+  "pricer_table": false,
+  "pricer_table_xs_map___0": true,
+  "pricer_table_xs_map___0_ys_map___0": true,
+  "ledger_constructor": true,
+  "ledger_rate": false,
+  "ledger_rates": false,
+  "ledger_rates_xs_map___0": false
+ },
+ "why": "An arrow has no `this` of its own: under an instance method of a class (through any arrows between) it reads the method's receiver, a binding that never changes, so a callback unit there takes the receiver as a captured input (common.mjs lexicalClass, receiverScope; lint.mjs checks `this` against that class) and is graded; before, the lint refused a call on `this` in it (`this` outside a class method, the census shape `rows.map((r) => this.toDto(r))`) while the translator already gave it the method's `self`. Pricer.scale is private, so `this.scale` is the class's own unit. (a) totals: the callback is unchanged and the method slices its result: the callback's lemma proves over its inputs (the receiver, x), the method's does not; (b) shifted: the callback itself changes, not proved, witnessed; (c) planted: mutate.mjs's boundary change inside the callback (2 to 3), not proved, witnessed; (d) table: both nested callbacks are unchanged and read the receiver through an arrow between, proved. (e) the soundness row (amendments A1, A3): Ledger is exported, so `this.rate(x)` is a world request named by the code of the class (translate.mjs heldKey); the callback's text is unchanged and its callee `rate` changes only at x === 7919, outside the callback: not proved. LEAN_BREAK=lexical-this refuses the callbacks again and the proved callback rows go red (lemma missing); LEAN_BREAK=held-key drops the class code from the request's name and the callback of (e) is proved falsely, which this file refuses (tests/w1e-opaque-this-globals.mjs --break).",
+ "heap": false,
+ "b": {
+  "Pricer.totals": "WITNESS",
+  "Pricer.shifted": "WITNESS",
+  "Pricer.planted": "WITNESS",
+  "Pricer.table": "WITNESS"
+ }
+}

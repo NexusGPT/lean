@@ -3,7 +3,7 @@
 //
 //   node tests/mutants.mjs [--pairs <dir>] [--pair a,b] [--no-pairs] [--census <census.json>]... [--sample 300]
 //                          [--seed 1] [--jobs 4] [--work <dir>] [--out <json>] [--report <md>] [--timing <json>]
-//                          [--n 30] [--dafny-seconds 30] [--without-kind <kind>]
+//                          [--n 30] [--dafny-seconds 30] [--without-kind <kind>] [--kinds <kind,...>]
 //
 // Every unit of every pair under --pairs (tests/pairs by default: the units the candidate file lists,
 // common.mjs topLevelFunctions), and a seeded sample of --sample units drawn from the written, entered units of the
@@ -24,6 +24,7 @@
 // paths): two runs on one head are byte-equal when lean's verdicts are. --report renders it by kind. The seconds go to
 // --timing (JSON with the 20 slowest; the report names the file), so the determinism check reads --out and --report.
 // --without-kind drops one kind of mutate.mjs's sites before planting: the fixture test's --break, nothing else.
+// --kinds a,b,...: only the sites of these kinds are planted (the others have no row; `sites` still counts every site).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -40,7 +41,7 @@ const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
 const opts = (k) => a.flatMap((x, i) => (x === k ? [a[i + 1]] : []));
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 
-export const KINDS = ['operator', 'boundary', 'string', 'negated-if', 'dropped-else', 'swapped-args', 'dropped-effect', 'changed-return'];
+export const KINDS = ['operator', 'boundary', 'string', 'negated-if', 'dropped-else', 'swapped-args', 'dropped-effect', 'changed-return', 'boolean', 'nullish', 'dropped-assignment', 'compound', 'arithmetic', 'equality', 'coalesce', 'bitwise', 'unary', 'template', 'object-return'];
 const ESCAPED = new Set(['PASS-bounded', 'PASS-decided', 'PASS-proved']);
 export const outcomeOf = (verdict) => (verdict === 'WITNESS' ? 'caught' : ESCAPED.has(verdict) ? 'escaped' : String(verdict).startsWith('ASK') ? 'ask' : verdict === 'not-planted' ? 'not-planted' : 'other');
 
@@ -74,14 +75,13 @@ async function unitJob(job) {
   const project = job.project ?? false;
   const rows = [], times = [];
   let sites;
-  let text = '';
-  try { ({ sites, text } = sitesOf(job.file, job.unit, { project })); } catch (e) { return { rows: [{ ...job.key, index: null, kind: null, verdict: 'no-unit', detail: String(e.message).slice(0, 120) }], times }; }
+  try { ({ sites } = sitesOf(job.file, job.unit, { project })); } catch (e) { return { rows: [{ ...job.key, index: null, kind: null, verdict: 'no-unit', detail: String(e.message).slice(0, 120) }], times }; }
   const ext = path.extname(job.file), stem = path.basename(job.file, ext);
   for (let k = 0; k < sites.length; k++) {
     const s = sites[k];
-    const lineAt = (pos) => text.slice(0, pos).split('\n').length;
-    const row = { ...job.key, index: k, sites: sites.length, kind: s.kind, lines: [lineAt(s.start), lineAt(s.end)], was: String(s.was).slice(0, 60), text: String(s.text).slice(0, 60) }; // lines: the edited span in the unit's file, DA-Bench's M truth (file, lines, kind)
+    const row = { ...job.key, index: k, sites: sites.length, kind: s.kind, lines: s.lines, was: String(s.was).slice(0, 60), text: String(s.text).slice(0, 60) }; // lines: the edited span in the unit's file, DA-Bench's M truth (file, lines, kind)
     if (job.withoutKind && s.kind === job.withoutKind) continue;
+    if (job.kinds && !job.kinds.includes(s.kind)) continue; // --kinds: only the sites of these kinds
     if (job.indices && !job.indices.includes(k)) continue; // --recheck: only the sites the earlier study names
     if (job.indices && job.expect?.[k] && (job.expect[k].kind !== s.kind || job.expect[k].was !== row.was)) { rows.push({ ...row, verdict: 'site-moved', detail: `the earlier study's site ${k} was ${job.expect[k].kind} ${job.expect[k].was}` }); continue; } // the unit's text changed between the two heads: not the same mutant
     let m = null;
@@ -252,7 +252,7 @@ async function main() {
   await pool(units, jobsN, async (job, i) => {
     if (job.error) { results[i] = { rows: [{ ...job.key, index: null, kind: null, verdict: 'no-unit', detail: job.error }], times: [] }; return; }
     const spec = path.join(scratch, `job-${i}.json`), out = path.join(scratch, `job-${i}.out.json`);
-    fs.writeFileSync(spec, JSON.stringify({ ...job, id: i, n, dafnySeconds, scratch, withoutKind: opt('--without-kind', null) }));
+    fs.writeFileSync(spec, JSON.stringify({ ...job, id: i, n, dafnySeconds, scratch, withoutKind: opt('--without-kind', null), kinds: opt('--kinds', null)?.split(',') ?? null }));
     const r = await spawnCollect(process.execPath, [fileURLToPath(import.meta.url), '--job', spec, '--job-out', out], { cwd: ts, dir: scratch, maxBuffer: 1 << 26 });
     try { results[i] = JSON.parse(fs.readFileSync(out, 'utf8')); } catch { results[i] = { rows: [{ ...job.key, index: null, kind: null, verdict: 'job-failed', detail: `exit ${r.status}: ${r.stderr.trim().split('\n').slice(-1)[0] ?? ''}`.slice(0, 200) }], times: [] }; process.stderr.write(r.stderr); }
     fs.rmSync(spec, { force: true }); fs.rmSync(out, { force: true });
@@ -263,7 +263,7 @@ async function main() {
   const times = results.flatMap((r) => r.times);
   const head = spawnSync('git', ['-C', ts, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).stdout.trim();
   const env = Object.fromEntries(Object.keys(process.env).filter((k) => k.startsWith('LEAN_')).sort().map((k) => [k, process.env[k]])); // a lane's switch (LEAN_SEARCH, ...) the checks ran under
-  const meta = { head, seed, n, dafnySeconds, env, pairs: new Set(units.filter((u) => u.key.source === 'pairs').map((u) => u.key.where)).size, units: { pairs: units.filter((u) => u.key.source === 'pairs').length, census: units.filter((u) => u.key.source !== 'pairs').length }, census, unitsWithoutSites: results.filter((r) => r.rows.length === 0).length, noUnit: rows.filter((r) => r.verdict === 'no-unit').length, ...(opt('--without-kind', null) ? { withoutKind: opt('--without-kind') } : {}), ...(recheck ? { recheck: path.basename(recheck) } : {}) };
+  const meta = { head, seed, n, dafnySeconds, env, pairs: new Set(units.filter((u) => u.key.source === 'pairs').map((u) => u.key.where)).size, units: { pairs: units.filter((u) => u.key.source === 'pairs').length, census: units.filter((u) => u.key.source !== 'pairs').length }, census, unitsWithoutSites: results.filter((r) => r.rows.length === 0).length, noUnit: rows.filter((r) => r.verdict === 'no-unit').length, ...(opt('--without-kind', null) ? { withoutKind: opt('--without-kind') } : {}), ...(opt('--kinds', null) ? { kinds: opt('--kinds') } : {}), ...(recheck ? { recheck: path.basename(recheck) } : {}) };
   // a unit with no site has no row; it is counted in meta, and listed so the denominators can be read
   const study = { meta, rows };
   const outFile = opt('--out', null);

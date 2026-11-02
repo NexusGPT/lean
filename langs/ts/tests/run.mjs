@@ -215,7 +215,7 @@ async function runPairStep(name, add = addChildRow) { // add: where its rows go 
   // `break` in expect.json (tests/break.mjs, the one convention): both sides translated again with LEAN_BREAK=<mechanism>;
   // each listed lemma, expected not proved above, must prove now: without the mechanism the reading proves a false
   // equality, so the mechanism is what keeps the pair honest (the row passes when the broken run is wrong)
-  for (const { mechanism, unit, proves } of breakRows(exp)) {
+  for (const { mechanism, unit, proves } of breakRows(exp).filter((r) => r.lane === 'A')) { // lane B's rows are tests/lib-break.mjs's
     const bd = path.join(tmpd, `break_${mechanism}`); fs.mkdirSync(bd, { recursive: true });
     const env = { LEAN_BREAK: mechanism };
     for (const which of ['parent', 'candidate']) crun('node', [translate, pairFile(d, which), '--core', '--suffix', which, '--out', path.join(bd, `${which}.dfy`), '--prelude', path.join(bd, `${which}.pre.dfy`), ...projectArgs, ...(exp.heap !== false ? ['--heap'] : [])], { files: [pairFile(d, which), ...projectFiles], outs: [path.join(bd, `${which}.dfy`), path.join(bd, `${which}.pre.dfy`)], env });
@@ -874,6 +874,9 @@ async function adviceLabels(add) {
     // its mechanisms switched off (LEAN_BREAK), and pr.mjs reads an added file's units and its added test
     ['w1h-breaks', scriptRow('runtime', 'w1h-breaks', 'every w1h pair goes red with each of its mechanisms switched off', [path.join(here, 'w1h-new-units.mjs'), '--break'], lastLine)],
     ['w1h-pr-new-file', scriptRow('runtime', 'w1h-pr-new-file', 'an added file\'s units are NEW with their records; its added test is run; the report shows them', [path.join(here, 'w1h-new-units.mjs'), '--pr'], lastLine)],
+    // each w1e pair run with its mechanism switched off (LEAN_BREAK) goes red: an admitting mechanism leaves a proved row
+    // unproved, a keying mechanism lets a change outside the construct be proved falsely (design/w1e-opaque-this-globals.md)
+    ['w1e-breaks', scriptRow('runtime', 'w1e-breaks', 'every w1e pair goes red with each of its mechanisms switched off', [path.join(here, 'w1e-opaque-this-globals.mjs'), '--break'], lastLine)],
     ['withdrawal', scriptRow('runtime', 'withdrawal', 'a withdrawn reading refused identically; no proof; every decision site catalogued', [path.join(here, 'withdrawal.mjs')], lastLine)],
     ['translator-crashes', scriptRow('runtime', 'translator-crashes', 'node shapes read without translator crashes', [path.join(here, 'translator-crashes.mjs')], (r) => `exit ${r.status}: ${r.stdout.trim()}`, { echoStderr: true })],
     // a module literal's member is named by the path code reaches it by; a same-named class keeps its own units (design/exported-units.md)

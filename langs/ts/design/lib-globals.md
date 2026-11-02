@@ -30,8 +30,10 @@ For `if (typeof navigator === 'undefined') return 'en'; return navigator.languag
 
 - a write into a lib global (`location.href = url`: `property-assign`; `name = v`: `global-mutation`); lane B's
   sandbox would not observe it (escape `fixtures/escapes/ts/lib_global_write.ts`);
-- a global no lib or @types package declares (a build-time define, a `declare` in the project's own .d.ts):
-  `global-read`; it has no lib meaning to trust (escape `lib_global_undeclared.ts`); `require` keeps its reading.
+- a global the project declares but no lib does (a `declare` in the project's own .d.ts): `global-read`; `require`
+  keeps its reading. A global nothing declares (the checker's error type: a build-time define, `console` without the
+  dom lib, `process` without @types/node) is read from the world at Any since 2026-11-01, trusting no lib meaning
+  (design/w1e-opaque-this-globals.md); a write into it stays refused (escape `lib_global_undeclared.ts`).
 
 ## Soundness
 

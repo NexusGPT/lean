@@ -186,7 +186,8 @@ one symbol, so a changed URL inside an opaque loop could be proved equal. The id
   this row such a unit entered with no `// OPAQUE` line, and the census's fraction left it out (24 of 40 newly entered
   units on pyka, 92 of 196 on nutshell).
 - **A6, one break convention.** `tests/break.mjs`: the code reads `LEAN_BREAK=<mechanism>` through `broken(name)`; a
-  pair's `expect.json` lists `"break": [{ "mechanism", "equal": { "<unit>": true } }]`, each unit expected `false` in the
+  pair's `expect.json` lists `"break": [{ "mechanism", "equal": { "<unit>": true } }]` (a row may carry lane B's `"b"`
+  instead, tests/break.mjs), each unit expected `false` in the
   pair's own `equal`; the runner translates both sides again under the break and requires the lemma to prove (the row
   passes when the broken run is wrong). Mechanisms: `opaque-drop-read` (the step's first scalar read),
   `opaque-drop-write` (its writes as its callers see them: its first written output and its reach to the world), `opaque-drop-callees` (the reached code in its key and its CALLS line).

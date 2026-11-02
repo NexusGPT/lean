@@ -1,0 +1,8 @@
+{
+ "scope": ["capture"],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "pending work that reads a binding the unit writes after the step sees the later value; the step is refused (opaque-async.mjs pendingWork), so lane A proves nothing and lane B finds the changed put; with LEAN_BREAK=async-drop-pending lane A would prove it (tests/w1d-opaque-async.mjs)",
+ "check": { "capture": { "verdict": "WITNESS" } },
+ "b": { "capture": "WITNESS" }
+}
