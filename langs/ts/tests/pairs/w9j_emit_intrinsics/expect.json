@@ -1,0 +1,7 @@
+{
+  "why": "lane w9j (exec/run.mjs intrinsicPrologue). The file binds `Object` at module scope, as node's own lib does (`const { Object, ... } = primordials`, lib/internal/util/inspect.js). TypeScript's CommonJS emit opens with `Object.defineProperty(exports, \"__esModule\", ...)`, which read the file's `Object` in its temporal dead zone: the load failed with `Cannot access 'Object' before initialization` and every unit was ASK. Now the prologue reads the global object's `Object`; the file's own code is unchanged. sign (which reads `Object.is`) moves its boundary from > 0 to >= 0: WITNESS. count is untouched: PASS-bounded. LEAN_BREAK=emit-intrinsics: the load fails again, ASK.",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "sign": "WITNESS", "count": "PASS-bounded" }
+}

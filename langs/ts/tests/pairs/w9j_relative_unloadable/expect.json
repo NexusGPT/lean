@@ -1,0 +1,7 @@
+{
+  "why": "lane w9j (exec/run.mjs sandbox loadOrEnvironment). A relative import of the package whose load fails is the environment's module, as an aliased one already was (pairs/bench_drops): fork.ts throws at its top level, as a build-time fork does until the bundler replaces it (react's ReactFiberConfig.js, `This module must be shimmed by a specific renderer`); flow.ts is a Flow file TypeScript's error recovery emits with a different function count (react's ReactFlightDOMClientEdge.js, `statement markers changed the function count`). Before, the importer's load failed and every unit of the file was ASK (parent: load failed). Now each is the same fake on both sides, its reads recorded. over moves its boundary from > 0 to >= 0 and returns limits.ts's limit, a module that loads: WITNESS. report hands the fork's announce n + 1 instead of n, and nothing else differs: the difference passes only through the module lean could not load, ASK (unloadableOnly), never a WITNESS. twice is untouched: PASS-bounded. LEAN_BREAK=relative-unloadable: the load fails again and every unit is ASK.",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "over": "WITNESS", "report": "ASK", "twice": "PASS-bounded" }
+}

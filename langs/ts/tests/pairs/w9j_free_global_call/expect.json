@@ -1,0 +1,7 @@
+{
+  "why": "lane w9j (exec/run.mjs sharedFreeReads). A unit reads a name nothing declares (`declare const` says only that the host gives it) at its call, not at load: react's createFromNodeStream reads `__DEV__` on its first line, so both sides threw the same ReferenceError on every input and the change behind it was never reached (PASS-bounded). A ReferenceError for a name both versions of the file read undeclared is a name the host sets: the run sets it as the environment's fake from then on and runs the input again. gate moves the boundary behind `__FLAG__ &&` from > 5 to >= 5: WITNESS. same is untouched: PASS-bounded. typo reads a name only the candidate reads (a typo): its ReferenceError stays the candidate's outcome, WITNESS. fixed stops reading a name only the parent read: WITNESS. LEAN_BREAK=free-global-call: gate is PASS-bounded again (typo and fixed stay WITNESS).",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "gate": "WITNESS", "same": "PASS-bounded", "typo": "WITNESS", "fixed": "WITNESS" }
+}
