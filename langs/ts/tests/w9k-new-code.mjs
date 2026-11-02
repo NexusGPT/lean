@@ -34,12 +34,14 @@ for (const [pair, mechanisms] of Object.entries(PAIRS)) {
   }
 }
 if (brk && process.argv.length === 3) { const green = await typedCheck('typed-own-first'); if (green) bad++; console.log(`${green ? 'FAIL' : 'ok  '} typed (LEAN_BREAK=typed-own-first): ${green ? 'still green' : 'red'}`); }
+if (brk && process.argv.length === 3) { const green = prCheck('lint-wanted'); if (green) bad++; console.log(`${green ? 'FAIL' : 'ok  '} pr (LEAN_BREAK=lint-wanted): ${green ? 'still green' : 'red'}`); }
 if (brk) { const green = prCheck('findings-records'); if (green) bad++; console.log(`${green ? 'FAIL' : 'ok  '} pr (LEAN_BREAK=findings-records): ${green ? 'still green' : 'red'}`); }
 console.log(bad ? `${bad} run(s) wrong` : brk ? 'every break turns red' : 'the pair is green');
 process.exit(bad ? 1 : 0);
 
-// pr.mjs on a unit added to a file the base holds, under a lint finding (`===` on two arrays: reference-equality):
-// before lane w9k its row was the finding's, without the records lane B read
+// pr.mjs on a unit added to a file the base holds, under a lint finding (`===` on two arrays: reference-equality), run
+// with --units naming it among three changed units: before lane w9k its row was the finding's, without the records
+// lane B read, and the lint ran on every unit of the file (report.linted, LEAN_BREAK=lint-wanted)
 function prCheck(mechanism) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-w9k-pr-'));
   const repo = path.join(tmp, 'repo');
@@ -52,18 +54,19 @@ function prCheck(mechanism) {
     write('src/list.ts', 'export function kept(n: number): number { return n; }\n');
     git('add', '-A'); git('commit', '-q', '-m', 'base');
     const base = git('rev-parse', 'HEAD');
-    write('src/list.ts', 'export function kept(n: number): number { return n; }\nexport function grow(xs: string[] | undefined, ys: string[]): boolean { return xs === ys || xs!.length === 0; }\n');
+    write('src/list.ts', 'export function kept(n: number): number { return n + 1; }\nexport function grow(xs: string[] | undefined, ys: string[]): boolean { return xs === ys || xs!.length === 0; }\nexport function other(s: string): string { return s.trim(); }\n');
     git('add', '-A'); git('commit', '-q', '-m', 'head');
     const head = git('rev-parse', 'HEAD');
     const json = path.join(tmp, 'report.json'), md = path.join(tmp, 'report.md');
     const env = { ...process.env, ...(mechanism ? { LEAN_BREAK: mechanism } : {}) };
-    const r = spawnSync(process.execPath, [path.join(here, '../pr.mjs'), '--repo', repo, '--base', base, '--head', head, '--no-project', '--n', '30', '--dafny-seconds', '1', '--json', json, '--out', md], { encoding: 'utf8', env, maxBuffer: 1 << 26 });
+    const r = spawnSync(process.execPath, [path.join(here, '../pr.mjs'), '--repo', repo, '--base', base, '--head', head, '--no-project', '--n', '30', '--dafny-seconds', '1', '--json', json, '--out', md, '--units', 'src/list.ts::grow'], { encoding: 'utf8', env, maxBuffer: 1 << 26 });
     if (r.status !== 0) { console.log(`FAIL pr.mjs exited ${r.status}: ${(r.stderr ?? '').slice(-600)}`); return false; }
-    const rows = JSON.parse(fs.readFileSync(json, 'utf8')).rows;
+    const report = JSON.parse(fs.readFileSync(json, 'utf8')), rows = report.rows;
     const row = rows.find((x) => x.file === 'src/list.ts' && x.unit === 'grow');
     const checks = [
       ['grow is read under its lint finding', !!row && String(row.coverage).startsWith('refused:')],
       ['grow is NEW', row?.verdict === 'NEW'],
+      ['--units grow: grow alone is linted of the three changed units', report.linted === 1 && !rows.some((x) => x.unit === 'kept' || x.unit === 'other')],
       ['grow keeps its new:fault on undefined', !!row?.records?.some((x) => x.kind === 'new:fault' && JSON.stringify(x.args?.[0]) === '{"$undefined":true}')],
     ];
     if (!mechanism) for (const [name, ok] of checks) console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}`);

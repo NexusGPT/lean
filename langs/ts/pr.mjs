@@ -242,13 +242,20 @@ function changedRanges(repo, base, head, rel, deleted) {
   });
 }
 
-function changedUnits(loaded, ranges, file) {
+// `wanted` (lane w9k): the units whose lint findings the run reads (routed by the ledger, and listed by --units when it
+// is given); any other unit is kept by name only (findings []) or, when not routed, left out: the lint, which lowers the
+// file once per unit, runs for none of them (cline#13857~m1: 404 of 468 s linting the units of a 2,000-line file
+// --units left out). LEAN_BREAK=lint-wanted lints every unit in range
+function changedUnits(loaded, ranges, file, wanted = null) {
   const { sf } = loaded, units = topLevelFunctions(sf);
   return [...units.values()].flatMap((u) => {
     const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
     const end = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
     if (!ranges.some(([a, b]) => a <= end && start <= b)) return [];
-    try { return [{ name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), findings: loaded.checker ? lintFile(file, [[start, end]], { loaded }).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }]; }
+    const want = !wanted || broken('lint-wanted') ? 'lint' : wanted(u.name);
+    if (!want) return [];
+    if (loaded.checker && want === 'lint') loaded.linted = (loaded.linted ?? 0) + 1;
+    try { return [{ name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), findings: loaded.checker && want === 'lint' ? lintFile(file, [[start, end]], { loaded }).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }]; }
     catch (e) { return [{ name: u.name, start, end, error: String(e.message).slice(0, 300) }]; }
   });
 }
@@ -265,6 +272,7 @@ function removedUnits(rel, parentText, headText) {
 // Read the change set before selection. Files outside code and secret names need no contents.
 function changedFiles(opts, temps, ledger) {
   const { repo, base, head = 'WORKTREE', filesRoot, project = true } = opts;
+  const listed = unitFilter(opts.units); // the units --units names (changedUnits lints no other)
   const refs = [base, ...(head === 'WORKTREE' ? [] : [head])];
   const names = ledger.files.map(f => f.file);
   const stats = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--numstat', '-z', ...refs, '--']);
@@ -324,7 +332,9 @@ function changedFiles(opts, temps, ledger) {
       const reading = shared ?? loadProgram(entry.headFile, { project }); // a file read alone is let go after its units
       if (shared) entry.keyReading = shared;
       const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
-      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile).filter(u => routed.has(u.name));
+      const linted0 = reading.linted ?? 0;
+      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile, (name) => !routed.has(name) ? null : !listed || listed(rel, name) ? 'lint' : 'name').filter(u => routed.has(u.name));
+      entry.linted = (reading.linted ?? 0) - linted0;
       // the module unit (common.mjs MODULE_UNIT): the file's top-level statements, the whole file's lines; the ledger routes to it
       // the types unit (common.mjs TYPES_UNIT) likewise: the file's text its emitted JavaScript does not carry, read by the typed reading alone
       for (const name of [MODULE_UNIT, TYPES_UNIT]) if (routed.has(name)) entry.units.push({ name, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
@@ -359,7 +369,7 @@ export function budgetValue(value, flag, integer = false) {
 }
 
 export function reportJSON(rows) {
-  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), ...(rows.valuesNearest?.length ? { valuesNearest: rows.valuesNearest } : {}), rows, ...(rows.directives?.length ? { directives: rows.directives } : {}), order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked };
+  return { identity: rows.identity, ...(rows.leanVersion ? { leanVersion: rows.leanVersion } : {}), ...(listedValues(rows) ? { values: listedValues(rows) } : {}), ...(rows.valuesNearest?.length ? { valuesNearest: rows.valuesNearest } : {}), rows, ...(rows.directives?.length ? { directives: rows.directives } : {}), order: rows.order, stop: rows.stop, ledger: rows.ledger, reconciliation: rows.reconciliation, terminalFile: rows.terminalFile, runDir: rows.runDir, callersChecked: rows.callersChecked, ...(rows.linted !== undefined ? { linted: rows.linted } : {}) };
 }
 
 export function stopNote(stop) {
@@ -469,7 +479,7 @@ export async function prReport(opts) {
   try { metadata = JSON.parse(fs.readFileSync(path.join(dir, 'worker-report.json'), 'utf8')); }
   catch (e) { if (e.code !== 'ENOENT') console.error('Worker metadata unreadable: ' + e.name); }
   const rows = Object.assign(terminal.rows, { identity: metadata.identity ?? ledger.id, leanVersion: metadata.leanVersion ?? leanVersion(),
-    values: metadata.values, valuesNearest: metadata.valuesNearest, directives: metadata.directives ?? [], order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked,
+    values: metadata.values, valuesNearest: metadata.valuesNearest, directives: metadata.directives ?? [], order: metadata.order, stop: metadata.stop, callersChecked: metadata.callersChecked, linted: metadata.linted,
     ledger, reconciliation: terminal.reconciliation, terminalFile: path.join(dir, 'terminal.json'), runDir: dir });
   rows.refusalsFile = writeRefusals(rows, dir, { repo: path.resolve(opts.repo) });
   atomicJSON(path.join(dir, 'report.json'), reportJSON(rows));
@@ -516,6 +526,7 @@ async function prWorker(opts) {
     rows.ledger = routeChanges(buildChangeManifest(opts));
     if (rows.ledger.id !== opts.expectedLedgerId) throw new Error('change frame moved before dispatch');
     const files = changedFiles(opts, temps, rows.ledger);
+    rows.linted = files.reduce((n, e) => n + (e.linted ?? 0), 0); // the units whose lint the run read (changedUnits `wanted`)
     // the test files the PR adds or changes (a unit no parent holds is checked against its declaration, and a test the PR
     // adds that names it is part of that declaration: exec/new-tests.mjs, design/w1h-new-units.md); each by its head text,
     // read at its checkout path when that path holds the head's bytes (its relative imports resolve beside it)
