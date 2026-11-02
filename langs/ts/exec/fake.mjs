@@ -41,6 +41,10 @@ export function makeRng(seed) {
 
 const MUTATORS = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse', 'set', 'add', 'delete', 'clear', 'fill', 'copyWithin', 'assign', 'write', 'save', 'create', 'update', 'remove', 'send', 'emit', 'log', 'warn', 'error', 'info']);
 
+// the varied answer's menu (Environment.answer), by kind: what a world recipe may set a path to
+export const WORLD_KINDS = ['fake', 'null', 'undefined', 'list', 'empty', 'zero', 'false', 'true'];
+const WORLD_VALUES = { null: () => null, undefined: () => undefined, list: () => [], empty: () => '', zero: () => 0, false: () => false, true: () => true };
+const worldKind = (v) => (v && (typeof v === 'object' || typeof v === 'function') && v.__isFake ? 'fake' : v === null ? 'null' : v === undefined ? 'undefined' : Array.isArray(v) ? 'list' : v === '' ? 'empty' : v === 0 ? 'zero' : v === false ? 'false' : v === true ? 'true' : 'other');
 export class Environment {
   constructor(seed = 1) {
     this.seed = seed;
@@ -57,6 +61,8 @@ export class Environment {
     this.world = null;      // a full-world input (enterWorld): its turn and the caller's keys, else null
     this.scheduler = null;  // the race explorer's hold (program.mjs): every promise the world answers waits for its release; null is the default schedule
     this.handedLog = null;  // while a render is checked for purity, the world's writes to the objects it was handed (handedMark)
+    this.worldSet = null;   // the world search (search.mjs searchWorld): path -> the kind of answer a recipe sets there, else the seeded one
+    this.answered = [];     // the varied answers this run consumed, in order: [{ path, kind }] (the world search's moves)
   }
   // clock answers advance with the seeded history and are recorded beside port requests
   clock(path, args = [], op = 'call') {
@@ -133,7 +139,13 @@ export class Environment {
   // core answers from its model, every other path from the recording proxy alone; the proxy records the operation either way
   modelOf(path) { return modelAt(this, path); }
   // whether a call faults: about one call in twelve, decided by the seed and the call's path
-  faultDraw(path) { const h = createHash('sha256').update(`${this.seed}:fault:${path}`).digest(); return h.readUInt32BE(0) / 4294967296 < 1 / 12; }
+  faultDraw(path) {
+    const set = this.worldSet?.get(`fault:${path}`); // a world recipe's choice for this call (search.mjs searchWorld): 'fault' or 'ok'
+    const h = set === undefined ? createHash('sha256').update(`${this.seed}:fault:${path}`).digest() : null;
+    const fault = set === undefined ? h.readUInt32BE(0) / 4294967296 < 1 / 12 : set === 'fault';
+    if (fault) this.answered.push({ path: `fault:${path}`, kind: 'fault' }); // a fault is an answer of the world too: the world search may take it back
+    return fault;
+  }
   // a member of a handle: typed when the handle's shape names it, a plain answer otherwise
   member(path, prop, tspec) {
     const m = tspec && tspec.kind === 'service' && tspec.members && Object.hasOwn(tspec.members, prop) ? tspec.members[prop] : null;
@@ -191,7 +203,9 @@ export class Environment {
     const u = h.readUInt32BE(0) / 4294967296;
     const d = depthOf(path);
     let v;
-    if (d === 0 || u < 0.55) v = this.fake(path);
+    const set = d === 0 ? undefined : this.worldSet?.get(path); // a world recipe's answer: one of the same menu, on both sides alike
+    if (set !== undefined) v = set === 'fake' ? this.fake(path) : WORLD_VALUES[set]();
+    else if (d === 0 || u < 0.55) v = this.fake(path);
     else if (u < 0.65) v = null;
     else if (u < 0.72) v = undefined;
     else if (u < 0.79) v = [];
@@ -200,6 +214,7 @@ export class Environment {
     else if (u < 0.95) v = false;
     else v = true;
     this.cache.set(path, v);
+    if (d > 0) this.answered.push({ path, kind: worldKind(v) });
     return v;
   }
   // A drawn argument of a drive (exec/run.mjs driveWindow) and every answer read through it: about two times in five a

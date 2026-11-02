@@ -1,0 +1,7 @@
+{
+  "why": "The world search (exec/search.mjs searchWorld, design/w9l-bounded-and-moves.md). register hands entryOf a name the changed string literal nulls only on its own literal (type "bufferx"); entryOf reads it only where the cache has no entry at that stage yet (cache.getData(key)[stage].entry absent). The draws infect (the changed line's values differ) but the world they meet always holds an entry or stops the call first: PASS-bounded under LEAN_BREAK=w9l-bounds. The world search sets the cache's answers (a handle, then an absent entry) and the sides differ in the entry they write (source: world).",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "register": "WITNESS" }
+}

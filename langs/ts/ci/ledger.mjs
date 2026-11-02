@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import { ts, topLevelFunctions, MODULE_UNIT, TYPES_UNIT } from '../common.mjs';
 import path from 'node:path';
+import os from 'node:os';
 import { createHash } from 'node:crypto';
 import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { spawnSync } from 'node:child_process';
@@ -30,6 +31,33 @@ export function artifactClass(file, text = '') {
 }
 
 const zero = oid => /^0+$/.test(oid);
+
+// A move git's rename detection did not pair (design/w9l-bounded-and-moves.md): an added and a deleted source file of the
+// same change pair when they hold the same functions by name, each the other's one best match (the most shared names, no
+// tie), the shared names at least half of the smaller side's. Git pairs by text similarity (at least 50 %), so a move
+// that also edits the moved functions enough (a dropped block, a rewritten body) reads as an added file with no parent
+// and a deleted one; the names of its functions are still the old file's. `named(oid, path)` lists a blob's top-level
+// function names, null when it cannot be read.
+export function pairMoves(records, named) {
+  const isSource = (p) => /\.[cm]?[jt]sx?$/.test(p);
+  const added = records.filter((r) => r.status === 'A' && isSource(r.newName)), deleted = records.filter((r) => r.status === 'D' && isSource(r.oldName));
+  if (!added.length || !deleted.length || broken('w9l-moves')) return records;
+  const names = new Map([...added.map((r) => [r, named(r.newOid, r.newName)]), ...deleted.map((r) => [r, named(r.oldOid, r.oldName)])]);
+  const shared = (a, d) => { const A = names.get(a), D = names.get(d); if (!A?.size || !D?.size) return 0; let n = 0; for (const x of A) if (D.has(x)) n++; return n * 2 >= Math.min(A.size, D.size) ? n : 0; };
+  const best = (r, others, score) => { let top = 0, at = null, tie = false; for (const o of others) { const n = score(r, o); if (n > top) { top = n; at = o; tie = false; } else if (n && n === top) tie = true; } return tie ? null : at; };
+  const pairs = new Map();
+  for (const a of added) { const d = best(a, deleted, shared); if (d && best(d, added, (x, y) => shared(y, x)) === a) pairs.set(d, a); }
+  if (!pairs.size) return records;
+  const paired = new Set([...pairs.keys(), ...pairs.values()]);
+  const out = [];
+  for (const r of records) {
+    if (!paired.has(r)) { out.push(r); continue; }
+    if (r.status !== 'D') continue; // the added side rides on its deleted side's record
+    const a = pairs.get(r);
+    out.push({ oldMode: r.oldMode, newMode: a.newMode, oldOid: r.oldOid, newOid: a.newOid, status: 'R', similarity: '', oldName: r.oldName, newName: a.newName, pairedBy: 'units' });
+  }
+  return out;
+}
 // Git's NUL-delimited raw format keeps spaces, tabs, newlines and rename pairs unambiguous.
 export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
   const before = git(repo, ['rev-parse', '--verify', `${base}^{commit}`]).toString().trim();
@@ -46,14 +74,21 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
     if (m[1] === '-' && m[2] === '-') for (const n of names) gitBinary.add(n);
   }
   const files = [], edits = [], sources = new Map();
+  let records = [];
   for (let i = 0; i < raw.length && raw[i];) {
     const match = raw[i++].match(/^:(\d+) (\d+) ([a-f0-9]+) ([a-f0-9]+) ([A-Z])(\d*)$/);
     if (!match) throw new Error('unrecognized git raw record');
     const [, oldMode, newMode, oldOid, newOid, status, similarity] = match;
     const oldName = raw[i++], newName = status === 'R' || status === 'C' ? raw[i++] : oldName;
+    records.push({ oldMode, newMode, oldOid, newOid, status, similarity, oldName, newName });
+  }
+  // the head's bytes of an added file: its blob, or the working tree's file when the head is the working tree
+  const blobText = (oid, name) => (after === 'WORKTREE' && zero(oid) ? fs.readFileSync(path.join(repo, name)) : git(repo, ['cat-file', 'blob', oid])).toString('utf8');
+  records = pairMoves(records, (oid, name) => { try { const sf = ts.createSourceFile(name, blobText(oid, name), ts.ScriptTarget.Latest, true); return new Set([...topLevelFunctions(sf).values()].filter((u) => !u.enclosingUnit).map((u) => u.name)); } catch { return null; } });
+  for (const { oldMode, newMode, oldOid, newOid, status, similarity, oldName, newName, pairedBy } of records) {
     const file = { id: id([before, after, oldName, newName, oldMode, newMode, oldOid, newOid]), file: newName,
       oldPath: status === 'A' ? null : oldName, newPath: status === 'D' ? null : newName,
-      oldMode, newMode, oldOid, newOid, status, ...(similarity ? { similarity: Number(similarity) } : {}), edits: [], hunks: [] };
+      oldMode, newMode, oldOid, newOid, status, ...(similarity ? { similarity: Number(similarity) } : {}), ...(pairedBy ? { pairedBy } : {}), edits: [], hunks: [] };
     const add = (record) => {
       const edit = { id: id([file.id, file.edits.length, record]), fileId: file.id, file: file.file, class: file.class, ...record };
       file.edits.push(edit.id); edits.push(edit);
@@ -75,7 +110,7 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
       file.class = artifactClass(newName, newText ?? oldText ?? '');
       file.kind = status === 'A' ? 'added' : status === 'D' ? 'deleted' : status === 'R' ? 'rename/move' : file.oldHash === file.newHash && oldMode !== newMode ? 'mode-only' : 'text';
       // Diff by paths against the same trees; no textconv, external diff, or repository diff driver is executed.
-      const patch = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', '-M', ...refs, '--', oldName, ...(oldName === newName ? [] : [newName])]).toString();
+      const patch = pairedBy ? pairedPatch(repo, oldText, newText) : git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', '-M', ...refs, '--', oldName, ...(oldName === newName ? [] : [newName])]).toString(); // a pair git did not make: the two texts diffed as they are
       for (const h of patch.matchAll(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm)) {
         const oldSpan = { start: +h[1], count: +(h[2] ?? 1) }, newSpan = { start: +h[3], count: +(h[4] ?? 1) };
         const hunk = { id: id([file.id, oldSpan, newSpan]), old: oldSpan, new: newSpan };
@@ -95,6 +130,18 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
   manifest.id = id([before, after, files.map(f => [f.id, f.oldHash, f.newHash])]);
   Object.defineProperty(manifest, 'sources', { value: sources });
   return manifest;
+}
+
+// the hunks of a pair pairMoves made: git's own diff of the two texts, outside any repository (no attribute, driver or
+// configuration of the repository applies); exit 1 is git's "they differ"
+function pairedPatch(repo, oldText, newText) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-move-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'a'), oldText ?? ''); fs.writeFileSync(path.join(dir, 'b'), newText ?? '');
+    const r = spawnSync('git', ['diff', '--no-index', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', 'a', 'b'], { cwd: dir, maxBuffer: 1 << 28, env: { ...process.env, LC_ALL: 'C', GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: '/dev/null' } });
+    if (r.status !== 0 && r.status !== 1) throw new Error(`git diff --no-index: exit ${r.status}: ${r.stderr.toString().trim()}`);
+    return r.stdout.toString();
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 }
 
 export function reconcileEdits(manifest) {

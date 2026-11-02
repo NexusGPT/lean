@@ -40,7 +40,8 @@ import { contextRow } from '../hooks.mjs';
 import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
-import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText } from './search.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (tests/break.mjs)
+import { searchPlan, branchMarks, valueMarks, seenValue, outcomeOf, searchInputs, searchWorld, worldText, applyRecipe, changesOf, recipeText } from './search.mjs';
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -138,7 +139,7 @@ function compileWithSites(src, tsName, abs) {
   const bindingsShim = `\nfunction ${bindingsName}() { return { ${bound.map((n) => `${JSON.stringify(n)}: function () { return ${n}; }`).join(', ')} }; }\n`;
   const emit = (before) => ts.transpileModule(src, { compilerOptions: { ...COMPILE, useDefineForClassFields: define }, fileName: tsName, transformers: { before } }).outputText;
   const original = emit([]); // a function's text key is its own text, never the loader's marks (whose positions move with the lines above)
-  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe ? [branchMarks(probe.table, abs, stateName)] : [])]);
+  const marked = emit([moduleMarks, callbackMarks, statementMarks(ts, abs, sites, stateName), leanMarks(abs), ...(probe?.table ? [branchMarks(probe.table, abs, stateName)] : []), ...(probe?.values?.length ? [valueMarks(probe.values, abs, stateName)] : [])]);
   const functions = (text) => {
     const sf = ts.createSourceFile(abs, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS), out = [];
     const walk = (n) => { if ((ts.isFunctionLike(n) && n.body) || ts.isClassDeclaration(n) || ts.isClassExpression(n)) out.push(n.getText(sf)); ts.forEachChild(n, walk); };
@@ -486,6 +487,7 @@ export function sandbox(env, root) {
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null), hits: null };
   env.siteState.b = (file, k, v) => { const p = probes?.get(file); if (p && env.siteState.hits) env.siteState.hits.add(`${p.tag}:${k}${outcomeOf(p.table[k], v)}`); return v; }; // a branch probe (search.mjs): the outcome is recorded while the unit runs, the value goes back unchanged
+  env.siteState.v = (file, k, v) => { if (env.siteState.values && probes?.has(file)) { env.siteState.values.push(seenValue(v)); env.siteState.valueAt.push(env.answered.length); } return v; }; // a value probe of a changed line (search.mjs valueMarks): its value, by a reading that runs no code of the program, the value goes back unchanged
   const react = reactRuntime(env);
   const epoch = CLOCK_EPOCH;
   const dateNow = (...args) => epoch + env.clock('Date.now', args);
@@ -1499,8 +1501,24 @@ async function runPairOnce(opts) {
   try { plan = inputPlan(parent, candidate, unit, { project, seed, values: opts.values }); } catch (e) { return { verdict: 'ASK', reason: `spec: ${e.message}` }; }
   const { spec, heaps } = plan;
   const searchOn = opts.search ?? process.env.LEAN_SEARCH === '1'; // the branch-guided input search (search.mjs), behind its flag
-  let sPlan = null; probes = null;
-  if (searchOn) { try { sPlan = searchPlan(parent, candidate, unit, (f) => fs.readFileSync(f, 'utf8')); probes = new Map(Object.entries(sPlan.files)); } catch (e) { sPlan = { error: String(e && e.message).slice(0, 160) }; } }
+  const worldOn = (opts.world ?? process.env.LEAN_WORLD_SEARCH !== '0') && !broken('w9l-bounds'); // the world search (search.mjs searchWorld): on unless LEAN_WORLD_SEARCH=0 or its break
+  let sPlan = null, wPlan = null; probes = null;
+  if (searchOn || worldOn) { // one plan: the input search's branch probes when it runs, the value probes of the changed lines when the world search runs
+    try { const p = searchPlan(parent, candidate, unit, (f) => fs.readFileSync(f, 'utf8')); if (searchOn) sPlan = p; if (worldOn) wPlan = p; probes = new Map(Object.entries(p.files).map(([f, e]) => [f, { ...e, table: searchOn ? e.table : null, values: worldOn ? e.values : [] }])); }
+    catch (e) { if (searchOn) sPlan = { error: String(e && e.message).slice(0, 160) }; }
+  }
+  const worldStarts = []; // per input that ran on both sides: its draw, the world answers it consumed, whether the change infected it (the world search's start)
+  const threwOf = (oP, oC) => !!(oP.outcome && Object.hasOwn(oP.outcome, 'threw')) || !!(oC.outcome && Object.hasOwn(oC.outcome, 'threw'));
+  const ranOf = (sides) => (sides.parent.env.siteState.ran?.() ?? 0) + (sides.candidate.env.siteState.ran?.() ?? 0);
+  const answeredOf = (sides) => { const seen = new Set(), out = []; for (const s of [sides.parent, sides.candidate]) for (const a of s.env.answered) if (!seen.has(a.path)) { seen.add(a.path); out.push(a); } return out; };
+  // infected: the changed lines' values differ between the sides; at: how many world answers the sides had consumed when the first differing value was computed
+  const infectionOf = (sides) => {
+    const P = sides.parent.env.siteState, C = sides.candidate.env.siteState;
+    if (JSON.stringify(P.values) === JSON.stringify(C.values)) return { infected: false, at: null };
+    let j = 0; while (j < P.values.length && j < C.values.length && P.values[j] === C.values[j]) j++;
+    const atOf = (S) => (j < S.valueAt.length ? S.valueAt[j] : Infinity); // a side with no value there: the other side computed it
+    return { infected: true, at: Math.min(atOf(P), atOf(C)) };
+  };
   const drawHits = []; // per input that ran on both sides: the target branches it reached (the search's start)
   const unitRecord = opts.unitRecord;
   unitRecord.drawDomain = { status: 'recorded', parameters: spec.params.map(p => ({ name: p.name, spec: p.spec, optional: !!p.optional, count: 0, families: {} })), requested: n, seed, heaps: heaps.builders.length, known: knownLength(spec), boundaryWalk: spec.shaped ? walkLength(spec) : 0 };
@@ -1513,7 +1531,7 @@ async function runPairOnce(opts) {
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
   const knownRun = spec.known ? { inputs: 0, body: 0 } : null; // the inputs of the known phase (the project's listed values) and how many of them reached the body
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
-  const mountSides = async (i, recipe = null) => { // a fresh environment per side for input i, the unit picked, the inputs drawn; a search recipe's changes applied to the drawn input (search.mjs)
+  const mountSides = async (i, recipe = null, world = null) => { // a fresh environment per side for input i, the unit picked, the inputs drawn; a search recipe's changes applied to the drawn input (search.mjs)
     const sides = {};
     for (const [name, file] of [['parent', parent], ['candidate', candidate]]) {
       const env = new Environment(seed * 7919 + i);
@@ -1525,6 +1543,8 @@ async function runPairOnce(opts) {
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       if (probes) env.siteState.hits = new Set(); // the branches the call reaches, not the load
+      env.answered.length = 0; env.worldSet = world?.length ? new Map(world) : null; if (probes) { env.siteState.values = []; env.siteState.valueAt = []; }
+      if (wPlan) { let at = env.siteState.current, ran = 0; Object.defineProperty(env.siteState, 'current', { get: () => at, set: (v) => { at = v; ran++; }, enumerable: true, configurable: true }); env.siteState.ran = () => ran; } // the statements the call runs, every loaded file (each statement mark sets current): how far a world search's run got // the world answers and the changed lines' values of the call, not the load; a world recipe's answers (search.mjs searchWorld)
       let inputs;
       captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; }
@@ -1576,6 +1596,7 @@ async function runPairOnce(opts) {
     if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
     if (probes) drawHits.push({ input: i, hits: new Set([...sides.parent.env.siteState.hits, ...sides.candidate.env.siteState.hits]) });
+    if (wPlan) worldStarts.push({ recipe: { from: i, changes: [] }, answered: answeredOf(sides), ran: ranOf(sides), threw: threwOf(oP, oC), ...infectionOf(sides) });
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
       const undecided = undecidedDrives(oP, oC); // the sides differ only from a drive that could not run on: undecided, never a difference (design/callbacks.md)
@@ -1611,6 +1632,34 @@ async function runPairOnce(opts) {
       diffs.push(w);
     }
   } else if (sPlan) { const T = new Set(sPlan.targets ?? []), got = new Set(drawHits.flatMap((x) => [...x.hits].filter((h) => T.has(h)))); searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length ? 'the draws differ' : harnessAsk ? 'harness stop' : 'rendered unit', targets: T.size, reachedByDraws: got.size, reached: got.size, tried: 0 }; } // not searched: the branches the draws reached, for the before/after count
+  // the world search (search.mjs searchWorld, design/w9l-bounded-and-moves.md): the draws and the input search agree; an
+  // input on which the changed lines' values differ had its difference masked by the world's answers after it: the same
+  // input with other answers of the same menu, on both sides alike; a difference is a WITNESS only when a second run
+  // on fresh environments gives the same two observations
+  let worldSummary = null;
+  if (wPlan && !diffs.length && !harnessAsk && !sawJsx && worldStarts.length) {
+    let unconfirmed = 0;
+    const pairOf = async (recipe, world) => { step('world', recipe.from); const sides = await mountSides(recipe.from, recipe, world); if (harnessAsk) { harnessAsk = null; return null; } const [oP, oC] = await observeBoth(sides, false); return { sides, oP, oC }; };
+    const statusOf = ({ sides, oP, oC }) => { if (oP.harness || oC.harness || oP.impure || oC.impure) return 'skip'; if (JSON.stringify(oP) === JSON.stringify(oC)) return 'equal'; return undecidedDrives(oP, oC) || unloadableOnly(oP, oC, sides) ? 'equal' : 'diff'; };
+    const run = async (recipe, world) => {
+      const a = await pairOf(recipe, world); if (!a) return { status: 'skip', answered: [], ran: 0, threw: false, infected: false, at: null };
+      const status = statusOf(a), seen = { answered: answeredOf(a.sides), ran: ranOf(a.sides), threw: threwOf(a.oP, a.oC), ...infectionOf(a.sides) };
+      if (status !== 'diff') return { status, ...seen };
+      const b = await pairOf(recipe, world); // the replay
+      if (!b || JSON.stringify(b.oP) !== JSON.stringify(a.oP) || JSON.stringify(b.oC) !== JSON.stringify(a.oC)) { unconfirmed++; return { status: 'skip', ...seen }; }
+      return { status, ...seen, ...a };
+    };
+    const changes = async (recipe) => { const sides = await mountSides(recipe.from, recipe); if (harnessAsk) { harnessAsk = null; return null; } return changesOf(sides.parent.inputs, spec.params, spec.defs, wPlan.literals); };
+    const r = await searchWorld({ seed, starts: worldStarts, run, changes, maxInputs: n, maxMs: unitSecondsValue(opts.unitSeconds) * 1000 / 4 });
+    const { witness, recipe, world, ...rest } = r;
+    worldSummary = { ...rest, unconfirmed, values: wPlan.values };
+    if (witness) {
+      const input = { source: 'world', ...recipeText(recipe), world: worldText(world) };
+      const w = { input, ...drawnOf(witness.sides), parent: witness.oP, candidate: witness.oC, where: { ...firstDifference(witness.oP, witness.oC), source: 'world' }, source: 'world', replayed: true };
+      if (w.record) w.record.search = input; // the record's input is draw `from` with these changes, under these world answers
+      diffs.push(w);
+    }
+  }
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run
@@ -1619,6 +1668,7 @@ async function runPairOnce(opts) {
   const walkedInto = (i, r) => { if (!r) return; for (const labels of r.walked ?? []) if (!renderRow.sequences.some((x) => x.input === i && JSON.stringify(x.labels) === JSON.stringify(labels))) renderRow.sequences.push({ input: i, labels }); addTargets(renderRow.targets, r.targets ?? []); };
   const bound = { n, seed, ms, reached, states, render: renderRow, ...(spec.known ? { values: { ...spec.known, phase: knownLength(spec), inputs: knownRun.inputs, reachedBody: knownRun.body } } : {}), heaps: { enumerated: heaps.distinct, assignments: heaps.assignments, space: heaps.space, pool: heaps.pool, shapes: heaps.shapes }, fakes: 'demand-driven proxies, seeded primitives, seeded recorded clocks', inputs: `${spec.known ? 'the values the project lists first (bound.values), then ' : ''}from parameter types with boundary values first; positions of one shape sometimes share one object`, observation: 'outcome, the reachable object graph (identity up to a renaming of fresh objects), receiver fields, trace, pending work', schedule: 'after the call: every armed timer once, in due order (ties by arm order), intervals re-armed and left pending, at most 50 fired' };
   if (searchSummary) bound.search = searchSummary;
+  if (worldSummary) bound.world = worldSummary;
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
