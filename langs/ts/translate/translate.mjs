@@ -165,12 +165,17 @@ function translateOnce(file, fnName, opts = {}) {
   // and finds no reason inside it (faithful.mjs steps), since the step is one uninterpreted transition whatever its numbers
   // are (design/w1c-opaque-calls.md, open). The admission that names them reads every unit of the file (the rewrite is one
   // per file, shared by every unit asked of it), and is the gate below when the translation's order reads every unit.
+  // The async family's steps (opaque-async.mjs, w1d) are the same: the construct its finding names (`fill(st, xs, k++)`,
+  // an async unit called without await) is one transition (gate below, expressionSites), so no reason is found inside it
+  // either. A construct read as no step after all keeps its finding, a refusal, so its placement decides nothing.
   // tests/break.mjs faithful-steps: the rewrite reads every statement, a site's too
   const early = core && !opts.exactNumbers ? analyze('site-steps', () => {
     const ranges = [...topLevelFunctions(normalised.sf).values()].map((u) => [lineOf(normalised.sf, u.node.getStart(normalised.sf)), lineOf(normalised.sf, u.node.getEnd())]);
     const readings = new Set();
     const findings = admitUnits(file, ranges, { project, promiseReadings: readings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, normalised);
-    const steps = broken('faithful-steps') ? [] : [...new Set(findings.filter((g) => g.opaque && g.opaqueSite).map((g) => g.opaqueSite))].map((k) => k.split(':').map(Number));
+    const at = (line, col) => normalised.sf.getPositionOfLineAndCharacter(line - 1, col - 1);
+    const asyncConstruct = (g) => (g.opaque === 'expression' && ASYNC_OPAQUE[g.rule] ? `${at(g.line, g.col)}:${at(g.endLine ?? g.line, g.endCol ?? g.col)}` : null);
+    const steps = broken('faithful-steps') ? [] : [...new Set(findings.map((g) => (g.opaque && g.opaqueSite) || asyncConstruct(g)).filter(Boolean))].map((k) => k.split(':').map(Number));
     return { ranges, findings, readings, steps };
   }) : null;
   const faithful = core && !opts.exactNumbers ? analyze('faithful', () => faithfulNumbers(normalised, { steps: early.steps })) : { loaded: normalised, units: new Map() };
