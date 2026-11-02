@@ -55,6 +55,8 @@ export const MECHANISMS = {
   'cex-replay-by-index': 'solve/counterexample.mjs: lane B\'s draw at the replay\'s index is replayed instead of the model\'s value (lane w3a)',
   'package-rows': 'library-rows.mjs: every package call keeps the outside call\'s reading (lane w2d)',
   'library-fakes': 'exec/fakes/lib/index.mjs libraryFakesOn: every library fake is off, the recording proxy answers (lane w2d)',
+  'handed-key-order': 'translate/translate.mjs orderedArg and translate/heap.mjs: a record handed to an outside call is handed bare, without its key order (lane w8c; tests/handed-key-order.mjs, pair handed_key_order)',
+  'world-write': 'common.mjs readAfterCall write points: a write through an object the world may hold is a write to a local copy, not told to the world (lane w8c; pair lib_lodash_get)',
   'lexical-this': 'lint/lint.mjs callback loop: an arrow callback under an instance member does not read the member\'s receiver (lane w1e; tests/w1e-opaque-this-globals.mjs)',
   'held-key': 'translate/translate.mjs: the classes\' code leaves the name of a request on a held receiver (lane w1e)',
   'unresolved-global': 'lint/lint.mjs unresolvedGlobal: a global nothing declares is not read as the world value keyed by its name (lane w1e)',

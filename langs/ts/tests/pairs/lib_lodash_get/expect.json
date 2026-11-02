@@ -1,11 +1,37 @@
 {
   "project": "tsconfig.json",
-  "laneBOnly": true,
   "scope": [
-    "poke"
+    "poke",
+    "poke_both",
+    "two_answers",
+    "then_call",
+    "read_back",
+    "handed_then_written"
   ],
-  "why": "lodash's get returns the argument's own object, so the parent's write through its result is a write to the argument: lane B runs the vendored package and the sides differ (WITNESS); the recording proxy may answer with the argument's own object too (the environment graph aliases), so the witness is not the fake's alone and the pair has no break row. Lane B only: the value lane (as of 4747022f) applies a field write through an outside call's result to a local copy and proves the two equal, an aliasing gap reported in lane/w2d-library-rows-result.md, outside this lane's files",
+  "equal": {
+    "poke": false,
+    "poke_both": true,
+    "two_answers": false,
+    "then_call": false,
+    "read_back": true,
+    "handed_then_written": false
+  },
   "b": {
-    "poke": "WITNESS"
-  }
+    "poke": "WITNESS",
+    "pokeBoth": "PASS-bounded",
+    "twoAnswers": "WITNESS",
+    "thenCall": "WITNESS",
+    "readBack": "PASS-bounded",
+    "handedThenWritten": "WITNESS"
+  },
+  "why": "a write through an object the world may hold is a transition of the world (common.mjs readAfterCall write points, translate.mjs newValue, design/world-write.md): lodash's get answers the argument's own object and identity its argument, so the parent's write through the answer (poke, twoAnswers, thenCall) or through an object handed before (handedThenWritten) reaches what the world reads after it: not proved, lane B WITNESS (the vendored package). The same write on both sides (pokeBoth) and the written name read back (readBack) stay proved. At the base (844ddac2) and under LEAN_BREAK=world-write (the write a local copy again) poke, twoAnswers and thenCall are proved: a false proof; handedThenWritten was unproved there too, kept as the handed-object form of the rule. Since lead-v4 0b260f05 (lane w1g's handle-write, translate.mjs pathUpdate: a one-level write to a call's answer is told to the world) twoAnswers is kept by either mechanism alone: it proves only under LEAN_BREAK=world-write,handle-write, so the world-write break row lists poke and thenCall",
+  "break": [
+    {
+      "mechanism": "world-write",
+      "equal": {
+        "poke": true,
+        "then_call": true
+      }
+    }
+  ]
 }

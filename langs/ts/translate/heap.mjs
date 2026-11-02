@@ -34,6 +34,7 @@ import { builtRecord } from '../common.mjs'; // the record-node build takes a sp
 import { makeReach } from '../reach.mjs'; // the code a unit reaches, one reading with the translator's opaque module identity
 import { copySourceWhy, copySource } from '../common.mjs'; // a record spread reads only keys the unit built: one test with the lint and the value reading
 import { sealedMember } from '../common.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (tests/break.mjs registers its names)
 import { decoratorMayReplace, replacinglyDecorated } from '../decorators.mjs'; // step 20: a member a decorator may replace, one test with the value reading // `this.m()` is the class's own m only when no subclass can hold another: one test with the value reading
 import { elementWritePath, voidReturn } from '../common.mjs'; // a field write through a parameter's element path: one test with the lint
 import { carriedAliases } from '../lower.mjs'; // a second name of a parameter the value reading carries: no copy write (one test with the translator) // a field write through a parameter's element path: one test with the lint
@@ -50,7 +51,7 @@ const instantiate = (form, k, E, KT = null, k2 = null, E2 = null) => form.replac
 export const HW = 'hw_';
 const OBJECT_PROTO = Object.getOwnPropertyNames(Object.prototype).sort(); // the keys `in` finds on an ordinary object it does not own
 
-export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null, defineFields = false }) {
+export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, typeOf: typeOfIn = null, suffix = '', helper = null, bitwise = null, external = null, defineFields = false, keyOrder = null }) { // keyOrder(argument, unit): the translator's key order of a record handed to an outside call (translate.mjs keyOrderOf): null (an own object), a text, or it refuses
   const TF = ts.TypeFlags, K = ts.SyntaxKind;
   const NUM = isReal ? 'real' : 'int';
   const shapes = new Map(); // key -> shape
@@ -963,6 +964,37 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
   let core = new Set();
   let inrange = new Set(); // core units whose lemma must also show no element access out of range, on either side
   const callsOf = (u) => { const calls = new Set(); const w = (n) => { const c = calleeOf(n, u) ?? (newClass(n) ? ctorUnitOf(newClass(n)) : null); if (c) calls.add(c); else if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression)) { const cd = classDeclOf(nonNull(checker.getTypeAtLocation(n.expression.expression))[0]); const name = cd ? `${cd.name.text}.${n.expression.name.text}` : u.literal && !u.isArrow && n.expression.expression.kind === K.ThisKeyword ? `${u.binding}.${n.expression.name.text}` : null; if (name && fns.has(name)) calls.add(name); } ts.forEachChild(n, w); }; w(u.body); return calls; }; // a literal unit's `this.m()` is its sibling unit <binding>.m (design/exported-units.md) // a call of a method on another instance of a same-file class is an edge too: its caller decides its convention
+  const holdsRecord = (t, depth = 0, seen = new Set()) => { // may a value of type t hold a record: a type with data fields, through arrays, Map and Set items, dictionary values and fields
+    if (!t || depth > 6 || seen.has(t) || (t.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown))) return false;
+    seen.add(t);
+    if (t.flags & ts.TypeFlags.Union) return t.types.some((x) => holdsRecord(x, depth, seen));
+    if (!(t.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection)) || checker.getSignaturesOfType(t, ts.SignatureKind.Call).length) return false;
+    const name = t.symbol?.name ?? '';
+    const decls = t.symbol && (t.symbol.flags & (ts.SymbolFlags.Interface | ts.SymbolFlags.Class)) ? t.symbol.declarations ?? [] : [];
+    if (decls.length && decls.every((d) => d.getSourceFile().hasNoDefaultLib) && !checker.isArrayType(t) && !checker.isTupleType(t) && !['Map', 'Set', 'ReadonlyMap', 'ReadonlySet', 'ReadonlyArray', 'Promise'].includes(name)) return false; // a built-in: the engine makes its keys
+    const inner = [...(checker.getTypeArguments?.(t) ?? []), ...[ts.IndexKind.String, ts.IndexKind.Number].map((k) => checker.getIndexTypeOfType(t, k)).filter(Boolean)];
+    if (checker.isArrayType(t) || checker.isTupleType(t) || ['Map', 'Set', 'ReadonlyMap', 'ReadonlySet', 'ReadonlyArray', 'Promise', 'Date'].includes(name)) return inner.some((x) => holdsRecord(x, depth + 1, seen));
+    return checker.getPropertiesOfType(t).some((p) => !(p.flags & (ts.SymbolFlags.Method | ts.SymbolFlags.GetAccessor | ts.SymbolFlags.SetAccessor))) || inner.some((x) => holdsRecord(x, depth + 1, seen));
+  };
+  function handsBuiltRecord(u) {
+    const params = new Set(u.params.filter((q) => ts.isIdentifier(q.name)).map((q) => q.name.text));
+    let literal = false;
+    { const w = (n) => { if (literal) return; if ((ts.isObjectLiteralExpression(n) || ts.isNewExpression(n)) && holdsRecord(typeOf(n))) literal = true; ts.forEachChild(n, w); }; w(u.body); }
+    let why = null;
+    const w = (n) => {
+      if (why) return;
+      if (ts.isCallExpression(n) && outsideCall(n)) for (const a of n.arguments) {
+        if (!holdsRecord(typeOf(a))) continue;
+        let r = unparen(a); while (ts.isPropertyAccessExpression(r) || ts.isElementAccessExpression(r)) r = unparen(r.expression);
+        const ownRoot = r.kind === K.ThisKeyword || (ts.isIdentifier(r) && params.has(r.text));
+        const made = (x) => { x = unparen(x); if (ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x) || ts.isNewExpression(x)) return true; if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.valueDeclaration; return !!d && ts.isVariableDeclaration(d) && !!d.initializer && !!(ts.getCombinedNodeFlags(d) & ts.NodeFlags.Const) && d.pos >= u.body.pos && d.end <= u.body.end && made(d.initializer); }; // a tree it makes, handed with its order (emit)
+        if (!keyOrder || !(made(a) || (ownRoot && !literal))) { why = `hands the outside a record it may build (\`${a.getText(sf).slice(0, 40)}\`) in an order no text names: a cell holds no key order`; return; }
+      }
+      ts.forEachChild(n, w);
+    };
+    w(u.body);
+    return why;
+  }
   function plan(order, only, opaque = new Set()) {
     const own = new Set(order.filter((u) => coreUnit(u) && (!only || only.includes(u.name))).map((u) => u.name));
     // a unit with an opaque site (design/w1b-opaque-statements.md) is read by the value reading, whose opaque step stands
@@ -983,6 +1015,16 @@ export function makeHeap({ ts, checker, sf, fns, dn, fname, isReal, recursive, t
       if (!own.has(u.name)) continue; let hit = false;
       const w = (n) => { if (hit) return; let t = null; if (ts.isBinaryExpression(n) && n.operatorToken.kind >= K.FirstAssignment && n.operatorToken.kind <= K.LastAssignment) t = unparen(n.left); if ((ts.isPrefixUnaryExpression(n) || ts.isPostfixUnaryExpression(n)) && [K.PlusPlusToken, K.MinusMinusToken].includes(n.operator)) t = unparen(n.operand); if (t && ts.isPropertyAccessExpression(t) && discPairs.has(`${shapeOf(typeOf(t.expression))?.key}.${t.name.text}`)) hit = true; if (isAssignCall(n) && n.arguments[0] && altKeys.has(shapeOf(typeOf(n.arguments[0]))?.key)) hit = true; ts.forEachChild(n, w); };
       w(u.body); if (hit) { own.delete(u.name); whyNot.get(u.name)?.add('writes the discriminant of a union alternative'); }
+    }
+    // a unit that hands the outside a record it may have built stays out (design/handed-key-order.md): the outside reads a
+    // record's keys in property order and a cell holds fields, never that order, so `log({ a, b })` and `log({ b, a })`
+    // would allocate one cell. An argument is the unit's own object only when it is a parameter or `this`, or a path
+    // below one, in a unit that writes no record literal; any other record-bearing argument takes the value reading,
+    // which hands the order beside it
+    if (!broken('handed-key-order')) for (const u of order) {
+      if (!own.has(u.name)) continue;
+      const why = handsBuiltRecord(u);
+      if (why) { own.delete(u.name); whyNot.get(u.name)?.add(why); }
     }
     const graph = new Map(order.map((u) => [u.name, callsOf(u)]));
     // a nested unit (a callback) is called by the unit that encloses it, through the library method it is handed to
@@ -1391,7 +1433,7 @@ lemma {:isolate_assertions} RemT_nat(n: int, d: int)
         const ps = fns.get(callee).params; const args = ps.map((p, j) => { const sh = shapeOf(typeOf(p.name)); return e.arguments[j] ? exprAs(e.arguments[j], sh) : `Option<${sh.inner.d}>.None`; }); // an argument not passed is undefined
         const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${fname(callee)}(${[HW, ...recv, ...args].join(', ')});`); return r;
       }
-      if (outsideCall(e)) { const oc = outsideCall(e); const recvA = oc.recv ? [expr(oc.recv)] : []; const args = [...recvA, ...e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a))))]; callUsed.set(oc.key, [oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${oc.key}(${[HW, ...args].join(', ')});`); return r; } // the arguments in order, then the transition
+      if (outsideCall(e)) { const oc = outsideCall(e); const recvA = oc.recv ? [expr(oc.recv)] : []; const args = [...recvA, ...e.arguments.map((a, j) => exprAs(a, shapeOf(typeOf(a))))]; const orders = broken('handed-key-order') || !keyOrder ? [] : e.arguments.map((a, j) => (holdsRecord(typeOf(a)) ? keyOrder(a, u) : null)).map((o, j) => (o === null ? null : `${j}${o}`)).filter((x) => x !== null); const key = orders.length ? `${oc.key}_ko` : oc.key; callUsed.set(key, [orders.length ? [...oc.ds, 'string'] : oc.ds, oc.rd]); const r = fresh('c'); lines.push(`var (${HW}, ${r}) := ${key}(${[HW, ...args, ...(orders.length ? [JSON.stringify(orders.join('|'))] : [])].join(', ')});`); return r; } // the arguments in order, then the transition; a record the unit built is handed with its key order (design/handed-key-order.md), one text after them
       if (globalCall(e)) { // a pure global: its arguments in order, then the operation
         const g = globalCall(e); const a = e.arguments;
         if (g === 'String') return toStr(a[0]);
