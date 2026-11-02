@@ -43,6 +43,7 @@ import { loadSandboxList, useSandboxList } from './exec/sandbox-list.mjs';
 import { callersOf, calleesOf } from './exec/callees.mjs';
 import { siteKey } from './exec/sites.mjs';
 import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
+import { checkPin } from './solve/pin.mjs';
 const TEST_FILE = /(?:^|[/\\])__tests__(?:[/\\]|$)|\.(?:spec|test)\.[cm]?[jt]sx?$/; // the test modules new-unit.mjs excludes from a unit's own load
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -891,6 +892,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   if (process.argv[2] === '--ledger-worker') {
     await ledgerWorker(process.argv[3]);
   } else {
+  checkPin('pr.mjs', { refuse: false }); // the pin (solve/pin.mjs): a warning, first; the certificate names the Z3 that ran
   const a = process.argv.slice(2);
   const opt = (k, d) => (a.includes(k) ? a[a.indexOf(k) + 1] : d);
   const repo = path.resolve(opt('--repo', '.')); const base = opt('--base'); const head = opt('--head', 'WORKTREE');

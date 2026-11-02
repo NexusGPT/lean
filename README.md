@@ -271,6 +271,8 @@ The habits one by one, with what each buys: [`docs/writing-provable-code.md`](do
 
 **The container image has both lanes and nothing to install**: node 24.22.2, python3, Dafny 4.11.0 and the Z3 4.12.1 its release bundles, all pinned in the [`Dockerfile`](Dockerfile). 894 MB on disk, 217 MB to download (`docker image ls` at v0.1.3). Lane B forks its worker with Node's `--permission`, which node 20 rejects.
 
+**The pin**: lean's verdicts are measured on Z3 4.12.1 under `LC_ALL=en_US.UTF-8` or `C.UTF-8` (the image sets `LC_ALL=C.UTF-8`). Off it they change: Z3 5.3.2 flipped two pairs, and a decimal-comma locale (`fr_BE.UTF-8`) broke Dafny's counterexample parser on four. The test runner refuses to start off the pin and `pr.mjs` warns; set `LEAN_Z3` to a Z3 4.12.1 executable and export `LC_ALL` ([langs/ts/README.md](langs/ts/README.md#the-three-commands)).
+
 ```bash
 docker build -t lean:local .
 docker run --rm -v "$PWD:/work" -w /work lean:local check --parent old.ts --candidate new.ts --unit f --no-project

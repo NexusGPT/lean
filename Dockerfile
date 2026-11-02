@@ -26,6 +26,10 @@ RUN apt-get update \
  && dafny --version \
  && z3 --version
 
+# the pin (langs/ts/solve/pin.mjs): the suite refuses an LC_ALL other than en_US.UTF-8 or C.UTF-8 (a decimal-comma
+# locale breaks Dafny's counterexample parser); C.UTF-8 ships with the base image, no locales package needed
+ENV LC_ALL=C.UTF-8
+
 WORKDIR /lean
 COPY . /lean
 RUN chmod +x /lean/scripts/lean-docker.sh

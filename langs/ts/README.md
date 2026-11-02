@@ -36,6 +36,14 @@ dafny verify /tmp/sum_positive.dfy
 - negative controls: a false theorem is not proved, and a proof that needs an invariant fails without it;
 - `--changed`, and `python3 -I conformance/run.py ts` when the file exists.
 
+**The pin.** Every lean run is measured on Z3 4.12.1 (the one Dafny 4.11 bundles) under `LC_ALL=en_US.UTF-8` or `LC_ALL=C.UTF-8`:
+
+```
+export LEAN_Z3=/opt/dafny/z3/bin/z3-4.12.1 LC_ALL=en_US.UTF-8
+```
+
+Off it, verdicts change: Z3 5.3.2 flipped `heap_shapes` and `opaque_string_code_unit`, and `LC_ALL=fr_BE.UTF-8` (the decimal comma) broke Dafny's counterexample parser on four `cex_` pairs. `LC_ALL` must be set, because it overrides every `LC_` category and `LANG` does not. `tests/run.mjs` refuses to start off the pin (exit 2, naming the Z3 and the locale it found); `LEAN_PIN=warn` runs it anyway with a warning. `pr.mjs` warns and runs, and the certificate names the Z3 that ran (`solve/pin.mjs`, test `tests/pin.mjs`). Without `LEAN_Z3` the Z3 is the first `z3*` beside the `dafny` on PATH, then `z3` on PATH (`solve/z3.mjs`).
+
 The run takes about a minute, because every row calls Dafny.
 
 ## What the subset covers
