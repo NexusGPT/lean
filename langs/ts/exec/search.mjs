@@ -138,6 +138,57 @@ export function unitBranches(sf, unit, table, changed) {
   walk(node);
   return { targets, literals: { strings: [...strings], numbers: [...numbers], near: { strings: [...near.strings], numbers: [...near.numbers] } } };
 }
+// ----- the values of the changed lines (design/w9l-bounded-and-moves.md): reach, infect, propagate -----
+// The expressions of the unit whose value a changed line computes: a call's or a `new`'s arguments, an initialiser, the
+// right of an assignment, what a return or a throw hands back, a condition. A function or class expression is left
+// out (a wrapper would change the name it infers). The two sides' sequences of these values tell whether an input
+// INFECTS: the change made a value differ even where the observation agrees (the difference was masked after it).
+const valueKey = (n) => `${n.pos}:${n.end}:${n.kind}`;
+const namesItself = (n) => { let e = n; while (ts.isParenthesizedExpression(e)) e = e.expression; return ts.isFunctionExpression(e) || ts.isArrowFunction(e) || ts.isClassExpression(e); };
+export function valueSites(sf, unit, changed) {
+  const u = topLevelFunctions(sf).get(unit);
+  const node = u && (u.node ?? u.fn);
+  if (!node) return [];
+  const lineOf = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+  const on = (n) => { for (let L = lineOf(n.getStart(sf)); L <= lineOf(n.end); L++) if (changed.has(L)) return true; return false; };
+  const out = [], seen = new Set();
+  const add = (n, cond = false) => { if (!n || namesItself(n) || ts.isSpreadElement(n) || !on(n) || seen.has(valueKey(n))) return; seen.add(valueKey(n)); out.push({ key: valueKey(n), pos: n.pos, end: n.end, cond }); };
+  const assigns = new Set([ts.SyntaxKind.EqualsToken, ts.SyntaxKind.PlusEqualsToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken, ts.SyntaxKind.SlashEqualsToken, ts.SyntaxKind.BarBarEqualsToken, ts.SyntaxKind.AmpersandAmpersandEqualsToken, ts.SyntaxKind.QuestionQuestionEqualsToken]);
+  const visit = (n) => {
+    const loads = ts.isCallExpression(n) && (n.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(n.expression) && n.expression.text === 'require')); // a module the loader resolves by its literal keeps it as written
+    if ((ts.isCallExpression(n) || ts.isNewExpression(n)) && n.arguments && !loads) for (const a of n.arguments) add(a);
+    if (ts.isVariableDeclaration(n) && n.initializer && !ts.isForInStatement(n.parent?.parent) && !ts.isForOfStatement(n.parent?.parent)) add(n.initializer);
+    if (ts.isBinaryExpression(n) && assigns.has(n.operatorToken.kind)) add(n.right);
+    if ((ts.isReturnStatement(n) || ts.isThrowStatement(n)) && n.expression) add(n.expression);
+    if (ts.isIfStatement(n) || ts.isWhileStatement(n) || ts.isDoStatement(n)) add(n.expression, true);
+    if (ts.isConditionalExpression(n)) add(n.condition, true);
+    ts.forEachChild(n, visit);
+  };
+  ts.forEachChild(node, visit);
+  // a condition inside a value the reading already holds adds nothing that value does not show (a side that adds the
+  // condition would only count one value more): it is read where no enclosing value reads it
+  const inside = (c) => out.some((v) => !v.cond && v.pos <= c.pos && c.end <= v.end);
+  return out.filter((e) => !e.cond || !inside(e)).map((e, k) => ({ k, key: e.key }));
+}
+// the value marks: `state.v(file, k, value)` around each value site (the value comes back unchanged), after the branch marks
+export function valueMarks(sites, abs, stateName) {
+  const byKey = new Map(sites.map((e) => [e.key, e]));
+  return (context) => {
+    const f = context.factory;
+    const visit = (node) => {
+      const n = ts.visitEachChild(node, visit, context);
+      const o = ts.getOriginalNode(node);
+      const e = byKey.get(valueKey(o));
+      if (!e || n.kind !== o.kind || !ts.isExpression(n)) return n;
+      return f.createCallExpression(f.createPropertyAccessExpression(f.createIdentifier(stateName), 'v'), undefined, [f.createStringLiteral(abs), f.createNumericLiteral(e.k), n]);
+    };
+    return (sf) => ts.visitNode(sf, visit);
+  };
+}
+// a value as the infection reading compares it: a primitive by itself, anything else by its kind alone, so the reading
+// calls no getter, no trap and no conversion of the program's (the probe observes nothing the unit could tell)
+export const seenValue = (v) => (v === null ? 'null' : typeof v === 'object' ? (Array.isArray(v) ? 'array' : 'object') : typeof v === 'function' ? 'function' : typeof v === 'symbol' ? 'symbol' : typeof v === 'bigint' ? `${v}n` : typeof v === 'number' && Object.is(v, -0) ? '-0' : `${typeof v}:${String(v)}`);
+
 // the search's plan for a pair: the branch table of each file, the targets (side-tagged: P parent, C candidate) and the
 // literals of both versions of the unit
 export function searchPlan(parent, candidate, unit, readText) {
@@ -151,7 +202,8 @@ export function searchPlan(parent, candidate, unit, readText) {
   const strings = [...new Set([...bC.literals.strings, ...bP.literals.strings])], numbers = [...new Set([...bC.literals.numbers, ...bP.literals.numbers])];
   const near = { strings: [...new Set([...bC.literals.near.strings, ...bP.literals.near.strings])], numbers: [...new Set([...bC.literals.near.numbers, ...bP.literals.near.numbers])] };
   const describe = (tag) => { const [side, rest] = tag.split(':'); const k = Number(rest.slice(0, -1)); const e = tables[side][k]; return { side: side === 'P' ? 'parent' : 'candidate', line: e.cond[0], condition: e.text, outcome: rest.slice(-1) }; };
-  return { files: { [path.resolve(parent)]: { tag: 'P', table: tables.P }, [path.resolve(candidate)]: { tag: 'C', table: tables.C } }, targets, literals: { strings, numbers, near }, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, describe };
+  const values = { P: valueSites(sfP, unit, ch.parent), C: valueSites(sfC, unit, ch.candidate) };
+  return { files: { [path.resolve(parent)]: { tag: 'P', table: tables.P, values: values.P }, [path.resolve(candidate)]: { tag: 'C', table: tables.C, values: values.C } }, targets, literals: { strings, numbers, near }, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, values: { parent: values.P.length, candidate: values.C.length }, describe };
 }
 
 // ----- the changes of one input: leaves walked with their declared types -----
@@ -306,4 +358,93 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
     }
   }
   return summary('no change left');
+}
+
+// ----- the world search (design/w9l-bounded-and-moves.md): propagate a masked change -----
+// After the draws (and the input search) agree, an input that INFECTS (the values of the changed lines differ between the
+// sides) had its difference masked by what the world answered after it: a handle where the code calls a function, a
+// value where it reads a member, a cached entry where it builds one, a seeded fault. The search re-runs such an input
+// with the world's varied answers (fake.mjs Environment.answer, the same menu; faultDraw) set one path at a time, the
+// same on both sides. A move is kept when the run stays infected and goes further: more statements ran (every loaded
+// file's statement marks), or as many and more of the world answered (a call reached, then its fault). A divergence
+// counts only after the replay. With no infected input left, one leaf change to a literal of a changed condition (the
+// input search's tier 0) is tried on each draw in turn (at most half the budget), and an input it infects is climbed next. Every climb has at most `perStart` tries; the search, maxInputs and maxMs.
+// starts: [{ recipe, answered, ran, threw, infected, at }] the draws that ran on both sides, in order; run(recipe, world)
+// mounts both sides on the recipe's input with the world recipe set and returns the same fields and a status;
+// changes(recipe) lists the leaf changes of the recipe's input (changesOf). Deterministic: the order is the draws', the
+// moves the runs'.
+// The moves of a world. A run that threw stopped at its frontier: the answers latest first (what stopped it). A run that
+// returned passed every guard: first the answers consumed after the infected value, nearest first (the guard that
+// masked the difference), then the ones before it, latest first. A path a kept move set stays as it set it, and a move
+// that took no run further is not tried again in that climb.
+// The answers a move sets: the three a guard tells apart (a handle, absent, null), absent first where the answer is no
+// handle (a cache or a lazy field read as missing builds its entry), a plain value first where it is one
+const ALTERNATIVES = { fake: ['undefined', 'null'], undefined: ['fake', 'null'], null: ['undefined', 'fake'], fault: ['ok'] }; // fault: a call the seeded draw made throw (fake.mjs faultDraw), taken back
+// A move a climb kept is tried first on every later climb whose run consumed that path (the code is the same for every start)
+const worldMoves = (answered, world, at, rejected, threw, kept = new Map()) => {
+  const set = new Set(world.map(([p]) => p)), out = [];
+  for (const { path: p, kind } of answered) if (!set.has(p) && kept.has(p) && kept.get(p) !== kind && !rejected.has(`${p}=${kept.get(p)}`)) out.push([p, kept.get(p)]);
+  const from = threw ? answered.length : Math.max(0, Math.min(at ?? 0, answered.length));
+  const order = [...answered.keys()].filter((i) => i >= from).concat([...answered.keys()].filter((i) => i < from).reverse());
+  for (const i of order) {
+    const { path: p, kind } = answered[i];
+    if (set.has(p)) continue; // a path a kept move set stays as it set it
+    for (const k of ALTERNATIVES[kind] ?? ['undefined', 'fake']) if (!rejected.has(`${p}=${k}`) && kept.get(p) !== k) out.push([p, k]);
+  }
+  return out;
+};
+export const worldText = (world) => world.map(([p, k]) => `${p} = ${k}`);
+export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, maxMs, now = Date.now, perStart = 12 }) {
+  let tried = 0, infectTried = 0, climbed = 0, byChange = 0;
+  const queue = starts.filter((s) => s.infected), byDraws = queue.length, climbs = [], kept = new Map(); // kept: path -> the answer a kept move set, across climbs
+  const summary = (stop, extra = {}) => ({ source: 'world', seed, starts: starts.length, infectedByDraws: byDraws, infectedByChange: byChange, tried, climbed, climbs, stop, bound: { inputs: maxInputs, ms: maxMs }, ...extra });
+  const t0 = now(), over = () => tried >= maxInputs ? 'input bound' : now() - t0 > maxMs ? 'wall-time bound' : null;
+  // infect: one leaf change to a literal of a changed condition (the input search's tier 0), the m-th change of every
+  // draw before the (m+1)-th of any; at most half the budget. The next infected input, or why there is none
+  const lists = new Map();
+  const listOf = async (j) => { if (!lists.has(j)) lists.set(j, ((await changes(starts[j].recipe)) ?? []).filter((c) => c.tier === 0)); return lists.get(j); };
+  let m = 0, j = 0;
+  const infectNext = async () => {
+    for (; ; m++, j = 0) {
+      let any = false;
+      for (; j < starts.length; j++) {
+        const l = await listOf(j);
+        if (m >= l.length) continue;
+        any = true;
+        if (infectTried >= Math.ceil(maxInputs / 2)) return { stop: byDraws + byChange ? 'no change left' : 'no input infects' };
+        const stop = over(); if (stop) return { stop };
+        const recipe = { from: starts[j].recipe.from, changes: [...starts[j].recipe.changes, l[m]] };
+        const r = await run(recipe, []); tried++; infectTried++;
+        if (r.status === 'diff') return { diff: r, recipe };
+        if (r.status !== 'skip' && r.infected) { j++; byChange++; return { start: { recipe, answered: r.answered, ran: r.ran, threw: r.threw, infected: true, at: r.at } }; }
+      }
+      if (!any) return { stop: byDraws + byChange ? 'no change left' : 'no input infects' };
+    }
+  };
+  for (;;) { // propagate: climb the world from each infected input, the draws' first, then the ones a change infects
+    let s = queue.shift();
+    if (!s) {
+      const next = await infectNext();
+      if (next.diff) return summary('divergence', { witness: next.diff, recipe: next.recipe, world: [] });
+      if (!next.start) return summary(next.stop);
+      s = next.start;
+    }
+    let world = [], cur = s.answered, ran = s.ran, at = s.at, threw = s.threw, here = 0;
+    const seen = new Set(), rejected = new Set(), climb = { ...recipeText(s.recipe), world: [], ran };
+    climbs.push(climb);
+    for (let moved = true; moved && here < perStart;) {
+      moved = false;
+      for (const [p, k] of worldMoves(cur, world, at, rejected, threw, kept)) {
+        const stop = over(); if (stop) return summary(stop);
+        if (here >= perStart) break;
+        const next = [...world, [p, k]], key = JSON.stringify(next);
+        if (seen.has(key)) continue; seen.add(key);
+        const r = await run(s.recipe, next); tried++; here++;
+        if (r.status === 'diff') return summary('divergence', { witness: r, recipe: s.recipe, world: next });
+        if (r.status === 'skip' || !r.infected || r.ran < ran || (r.ran === ran && r.answered.length <= cur.length)) { rejected.add(`${p}=${k}`); continue; } // further: more statements ran, or as many and more of the world answered (a call reached, then its fault)
+        if (!kept.has(p)) kept.set(p, k);
+        world = next; cur = r.answered; ran = r.ran; at = r.at; threw = r.threw; climbed++; moved = true; climb.world = worldText(world); climb.ran = ran; break;
+      }
+    }
+  }
 }

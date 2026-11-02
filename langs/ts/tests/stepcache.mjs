@@ -75,8 +75,9 @@ export const stepCacheStats = () => ({ on: stepCacheOn, hits, misses, stored, di
 const PRODUCER_SWITCHES = ['LEAN_BREAK', 'LEAN_LIBRARY_FAKES', 'LEAN_WITHDRAW'];
 // the key of one command, and the stored entry when there is one (a hit); shared by the sync and the async runner
 // the environment variables that change what a command answers, inherited from the suite's own environment: part of
-// the key, so a run with the input search (LEAN_SEARCH, exec/search.mjs) never replays one without it
-const ANSWER_ENV = ['LEAN_SEARCH', 'LEAN_SEARCH_BREAK'];
+// the key, so a run with the input search (LEAN_SEARCH, exec/search.mjs) never replays one without it, nor one with the
+// world search off (LEAN_WORLD_SEARCH=0, exec/search.mjs searchWorld) one with it on
+const ANSWER_ENV = ['LEAN_SEARCH', 'LEAN_SEARCH_BREAK', 'LEAN_WORLD_SEARCH'];
 const answerEnv = () => Object.fromEntries(ANSWER_ENV.filter((k) => process.env[k] !== undefined).map((k) => [k, process.env[k]]));
 function lookup(cmd, args, { root, files = [], outs = [], env = null, normalise = [] }) {
   const norm = (s) => normalise.reduce((t, [from, to]) => (from ? t.split(from).join(to) : t), String(s));

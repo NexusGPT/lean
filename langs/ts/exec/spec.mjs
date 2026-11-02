@@ -558,11 +558,13 @@ function unitValues(data, file, unit) {
 // whether a JSON value is a value of a spec: a string of a string, a member of a literal, a record with its required
 // fields and no other key, a list of its element, an option of a union; anything of an unread type (any, unknown, an
 // unresolved import); never a Date, a Map, a function or a handle, which JSON cannot state
-export function fits(spec, v, defs, d = 0) {
+// open: a record may hold keys its type does not name (a value with more properties is still of the type, as TypeScript's
+// structural typing reads it); the default reads the fields exactly
+export function fits(spec, v, defs, d = 0, open = false) {
   if (!spec || d > 12) return false;
   const isObj = v !== null && typeof v === 'object' && !Array.isArray(v);
   switch (spec.kind) {
-    case 'ref': return fits(defs?.[spec.key], v, defs, d + 1);
+    case 'ref': return fits(defs?.[spec.key], v, defs, d + 1, open);
     case 'opaque': case 'tparam': return true;
     case 'string': return typeof v === 'string';
     case 'number': return typeof v === 'number';
@@ -570,11 +572,11 @@ export function fits(spec, v, defs, d = 0) {
     case 'symbol': return typeof v === 'symbol';
     case 'null': return v === null;
     case 'literal': return spec.values.some((x) => x === v);
-    case 'union': return spec.options.some((o) => fits(o, v, defs, d + 1));
-    case 'array': return Array.isArray(v) && v.every((x) => fits(spec.of, x, defs, d + 1));
-    case 'tuple': return Array.isArray(v) && v.length === spec.items.length && v.every((x, i) => fits(spec.items[i], x, defs, d + 1));
-    case 'dict': return isObj && Object.values(v).every((x) => fits(spec.value, x, defs, d + 1));
-    case 'record': return isObj && Object.keys(v).every((k) => Object.hasOwn(spec.fields, k) && fits(spec.fields[k].spec, v[k], defs, d + 1)) && Object.entries(spec.fields).every(([k, f]) => f.optional || Object.hasOwn(v, k));
+    case 'union': return spec.options.some((o) => fits(o, v, defs, d + 1, open));
+    case 'array': return Array.isArray(v) && v.every((x) => fits(spec.of, x, defs, d + 1, open));
+    case 'tuple': return Array.isArray(v) && v.length === spec.items.length && v.every((x, i) => fits(spec.items[i], x, defs, d + 1, open));
+    case 'dict': return isObj && Object.values(v).every((x) => fits(spec.value, x, defs, d + 1, open));
+    case 'record': return isObj && Object.keys(v).every((k) => Object.hasOwn(spec.fields, k) ? fits(spec.fields[k].spec, v[k], defs, d + 1, open) : open) && Object.entries(spec.fields).every(([k, f]) => f.optional || Object.hasOwn(v, k));
     default: return false;
   }
 }
