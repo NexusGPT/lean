@@ -1,0 +1,161 @@
+quick-w9i-before-1-r: 41f5fddad1 M rendered 6 of 20 (30.0 %), record 12 of 20, completed 20 of 20, wall 0.0 min
+quick-w9i-1-r: aeab972c09 M rendered 8 of 20 (40.0 %), record 12 of 20, completed 20 of 20, wall 0.0 min
+quick-w9i-2: e760c72d32 M rendered 8 of 20 (40.0 %), record 12 of 20, completed 20 of 20, wall 22.7 min
+quick-w9i-3: d60fd99165 M rendered 8 of 20 (40.0 %), record 12 of 20, completed 20 of 20, wall 16.1 min
+quick-w9i-4: da3fb80217 M rendered 8 of 20 (40.0 %), record 12 of 20, completed 20 of 20, wall 15.8 min
+s75-w9i-before-1-r: 41f5fddad1 M rendered 21 of 75 (28.0 %), record 33 of 75, completed 43 of 75, wall 0.1 min
+s75-w9i-1-r: aeab972c09 M rendered 21 of 75 (28.0 %), record 33 of 75, completed 40 of 75, wall 0.2 min
+s75-w9i-2: e760c72d32 M rendered 19 of 75 (25.3 %), record 33 of 75, completed 46 of 75, wall 157.8 min
+sub6-w9i-3: d60fd99165 M rendered 4 of 6 (66.7 %), record 6 of 6, completed 6 of 6, wall 8.8 min
+sub6-w9i-4: da3fb80217 M rendered 6 of 6 (100.0 %), record 6 of 6, completed 6 of 6, wall 10.4 min
+
+## quick: before -> v4
+bluewave-labs__Checkmate#3185~m1              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3185~m2              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3185~m3              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3257~m1              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3257~m2              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3257~m3              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3718~c1              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3718~m1              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3718~m2              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3718~m3              rendered 0 -> 0  record None -> None
+facebook__react#37104~m1                      rendered 0 -> 0  record None -> None
+facebook__react#37104~m2                      rendered 0 -> 0  record None -> None
+facebook__react#37104~m3                      rendered 0 -> 0  record None -> None
+mrdoob__three.js#35012~m2                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35267~m1                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35267~m2                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35267~m3                     rendered 0 -> 0  record None -> None
+sveltejs__svelte#18661~m1                     rendered 1 -> 1  record None -> None
+sveltejs__svelte#18661~m2                     rendered 0 -> 1  record None -> None  <-- changed
+sveltejs__svelte#18661~m3                     rendered 0 -> 1  record None -> None  <-- changed
+rendered 6 -> 8 record 0 -> 0
+sides 27, units 31; lean s 3051 -> 2114, ratio 0.69x; per unit 98.4 s -> 68.2 s; worst side bluewave-labs__Checkmate#3257~m1 14 -> 15 s (1.08x)
+
+## the 75: before -> v1 (aeab972c09)
+bluewave-labs__Checkmate#3185~m1              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3185~m2              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3185~m3              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3257~m1              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3257~m2              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3257~m3              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3718~c1              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3718~m1              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3718~m2              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3718~m3              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3797~m1              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3797~m2              rendered 0 -> 0  record None -> None
+bluewave-labs__Checkmate#3975~c1              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3975~m1              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3975~m2              rendered 1 -> 1  record None -> None
+bluewave-labs__Checkmate#3975~m3              rendered 1 -> 1  record None -> None
+cline__cline#13799~m1                         rendered 0 -> 0  record None -> None
+cline__cline#13799~m2                         rendered 0 -> 0  record None -> None
+cline__cline#13799~m3                         rendered 0 -> 0  record None -> None
+cline__cline#13827~m1                         rendered 1 -> 1  record None -> None
+cline__cline#13827~m2                         rendered 1 -> 1  record None -> None
+cline__cline#13827~m3                         rendered 0 -> 0  record None -> None
+cline__cline#13857~c1                         rendered 0 -> 0  record None -> None
+cline__cline#13857~m1                         rendered 0 -> 0  record None -> None
+cline__cline#13857~m2                         rendered 0 -> 0  record None -> None
+cline__cline#13857~m3                         rendered 0 -> 0  record None -> None
+facebook__react#35731~m1                      rendered 0 -> 0  record None -> None
+facebook__react#35731~m2                      rendered 0 -> 0  record None -> None
+facebook__react#35731~m3                      rendered 0 -> 0  record None -> None
+facebook__react#37104~m1                      rendered 0 -> 0  record None -> None
+facebook__react#37104~m2                      rendered 0 -> 0  record None -> None
+facebook__react#37104~m3                      rendered 0 -> 0  record None -> None
+google-gemini__gemini-cli#26534~m1            rendered 1 -> 1  record None -> None
+google-gemini__gemini-cli#26534~m2            rendered 1 -> 1  record None -> None
+google-gemini__gemini-cli#26534~m3            rendered 1 -> 1  record None -> None
+google-gemini__gemini-cli#27971~m1            rendered 0 -> 0  record None -> None
+google-gemini__gemini-cli#27971~m2            rendered 0 -> 0  record None -> None
+google-gemini__gemini-cli#27971~m3            rendered 0 -> 0  record None -> None
+microsoft__typescript-go#3834~c1              rendered 0 -> 0  record None -> None
+microsoft__typescript-go#3834~m1              rendered 1 -> 1  record None -> None
+microsoft__typescript-go#3834~m2              rendered 1 -> 1  record None -> None
+microsoft__typescript-go#3834~m3              rendered 0 -> 0  record None -> None
+mrdoob__three.js#34688~m1                     rendered 1 -> 1  record None -> None
+mrdoob__three.js#34688~m2                     rendered 1 -> 0  record None -> None  <-- changed
+mrdoob__three.js#34688~m3                     rendered 1 -> 0  record None -> None  <-- changed
+mrdoob__three.js#34798~c1                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#34798~m1                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#34798~m2                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#34798~m3                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35012~m1                     rendered 1 -> 1  record None -> None
+mrdoob__three.js#35012~m2                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35012~m3                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35267~m1                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35267~m2                     rendered 0 -> 0  record None -> None
+mrdoob__three.js#35267~m3                     rendered 0 -> 0  record None -> None
+n8n-io__n8n#41875~c1                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#41875~m1                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#41875~m2                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#41875~m3                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#41881~m1                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#41881~m2                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#41881~m3                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#42038~c1                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#42038~m1                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#42038~m2                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#42038~m3                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#42117~m1                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#42117~m2                          rendered 0 -> 0  record None -> None
+n8n-io__n8n#42117~m3                          rendered 0 -> 0  record None -> None
+nodejs__node#66159~m1                         rendered 0 -> 0  record None -> None
+nodejs__node#66159~m2                         rendered 0 -> 0  record None -> None
+nodejs__node#66159~m3                         rendered 0 -> 0  record None -> None
+sveltejs__svelte#18661~m1                     rendered 1 -> 1  record None -> None
+sveltejs__svelte#18661~m2                     rendered 0 -> 1  record None -> None  <-- changed
+sveltejs__svelte#18661~m3                     rendered 0 -> 1  record None -> None  <-- changed
+rendered 21 -> 21 record 0 -> 0
+sides 98, units 184; lean s 38928 -> 32225, ratio 0.83x; per unit 211.6 s -> 175.1 s; worst side bluewave-labs__Checkmate#3257 30 -> 80 s (2.67x)
+
+## the 75: before -> v2 (e760c72d32)
+cline__cline#13827~m1                         rendered 1 -> 0  record None -> None  <-- changed
+cline__cline#13827~m2                         rendered 1 -> 0  record None -> None  <-- changed
+mrdoob__three.js#34688~m2                     rendered 1 -> 0  record None -> None  <-- changed
+mrdoob__three.js#34688~m3                     rendered 1 -> 0  record None -> None  <-- changed
+sveltejs__svelte#18661~m2                     rendered 0 -> 1  record None -> None  <-- changed
+sveltejs__svelte#18661~m3                     rendered 0 -> 1  record None -> None  <-- changed
+rendered 21 -> 19 record 0 -> 0
+sides 98, units 184; lean s 38928 -> 29065, ratio 0.75x; per unit 211.6 s -> 158.0 s; worst side mrdoob__three.js#34688~m3 155 -> 296 s (1.92x)
+
+## six ids: before (75 run) -> v3 (d60fd99165), v4 (da3fb80217)
+cline__cline#13827~m1                         rendered 1 -> 1  record None -> None
+cline__cline#13827~m2                         rendered 1 -> 1  record None -> None
+mrdoob__three.js#34688~m2                     rendered 1 -> 0  record None -> None  <-- changed
+mrdoob__three.js#34688~m3                     rendered 1 -> 0  record None -> None  <-- changed
+sveltejs__svelte#18661~m2                     rendered 0 -> 1  record None -> None  <-- changed
+sveltejs__svelte#18661~m3                     rendered 0 -> 1  record None -> None  <-- changed
+cline__cline#13827~m1                         rendered 1 -> 1  record None -> None
+cline__cline#13827~m2                         rendered 1 -> 1  record None -> None
+mrdoob__three.js#34688~m2                     rendered 1 -> 1  record None -> None
+mrdoob__three.js#34688~m3                     rendered 1 -> 1  record None -> None
+sveltejs__svelte#18661~m2                     rendered 0 -> 1  record None -> None  <-- changed
+sveltejs__svelte#18661~m3                     rendered 0 -> 1  record None -> None  <-- changed
+
+## fast_m on the eight (mutated unit only): before 41f5fddad1, after a WIP tree
+| mutant | mutation | role | record witness | PR side witness | matched | reason | detail | lean s (PR, mutant) |
+|---|---|---|---|---|---|---|---|---|
+| bluewave-labs__Checkmate#3185~m3 | swapped-arguments | changed | True | True | 0 | witness far from the edit | nearest line 18 from the edit | 32.2, 32.7 |
+| bluewave-labs__Checkmate#3718~m3 | boundary-shift | changed | True | True | 0 | witness not new | 1 in-unit comment(s), each equal to one of the PR side | 98.1, 95.2 |
+| cline__cline#13827~m1 | swapped-arguments | changed | True | True | 1 | hit |  | 173.9, 182.9 |
+| cline__cline#13827~m2 | string-change | changed | True | True | 1 | hit |  | 173.9, 156.9 |
+| google-gemini__gemini-cli#26534~m1 | dropped-effect | changed | True | True | 1 | hit |  | 184.7, 180.9 |
+| n8n-io__n8n#41875~m2 | string-change | changed | True | True | 0 | witness not new | 1 in-unit comment(s), each equal to one of the PR side | 278.5, 302.7 |
+| sveltejs__svelte#18661~m2 | string-change | changed | True | True | 0 | witness not new | 2 in-unit comment(s), each equal to one of the PR side | 127.1, 131.2 |
+| sveltejs__svelte#18661~m3 | dropped-effect | changed | True | True | 0 | witness not new | 2 in-unit comment(s), each equal to one of the PR side | 127.1, 132.6 |
+EXIT 0
+| mutant | mutation | role | record witness | PR side witness | matched | reason | detail | lean s (PR, mutant) |
+|---|---|---|---|---|---|---|---|---|
+| bluewave-labs__Checkmate#3185~m3 | swapped-arguments | changed | True | True | 0 | witness far from the edit | nearest line 18 from the edit | 31.9, 29.7 |
+| bluewave-labs__Checkmate#3718~m3 | boundary-shift | changed | True | True | 0 | witness far from the edit | nearest line 82 from the edit | 90.9, 89.3 |
+| cline__cline#13827~m1 | swapped-arguments | changed | True | True | 1 | hit |  | 145.5, 147.3 |
+| cline__cline#13827~m2 | string-change | changed | True | True | 1 | hit |  | 145.5, 149.0 |
+| google-gemini__gemini-cli#26534~m1 | dropped-effect | changed | True | True | 1 | hit |  | 176.2, 114.4 |
+| n8n-io__n8n#41875~m2 | string-change | changed | True | True | 0 | witness not new | 1 in-unit comment(s), each equal to one of the PR side | 280.6, 279.7 |
+| sveltejs__svelte#18661~m2 | string-change | changed | True | True | 1 | hit |  | 106.3, 112.4 |
+| sveltejs__svelte#18661~m3 | dropped-effect | changed | True | True | 1 | hit |  | 106.3, 117.0 |
+EXIT 0

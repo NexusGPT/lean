@@ -1,0 +1,38 @@
+LEAN_BREAK=(none) reach_statements: PASS
+  ok  pr index.ts label witnesses name candidate line(s) 8, 12: 2 witness(es) at candidate line(s) 12, 8
+LEAN_BREAK=(none) reach_site: PASS
+LEAN_BREAK=(none) reach_lead: PASS
+  ok  pr index.ts label witness (the lead) at candidate line 8: witness at candidate line 8 of 8, 12
+  ok  pr index.ts label witnesses name candidate line(s) 8, 12: 2 witness(es) at candidate line(s) 8, 12
+LEAN_BREAK=(none) reach_lead_site: PASS
+  ok  pr index.ts settle witness (the lead) at candidate line 6: witness at candidate line 6 of 6, 11
+  ok  pr index.ts settle witnesses name candidate line(s) 6, 11: 2 witness(es) at candidate line(s) 6, 11
+LEAN_BREAK=(none) three_sites: PASS
+  ok  pr index.ts band witnesses at 3 site(s), witness the first: 3 witness(es) at candidate line(s) 3, 4, 2; witness is witnesses[0]
+LEAN_BREAK=(none) field_sites: PASS
+  ok  pr index.ts Counter.save witnesses name candidate line(s) 7, 8: 4 witness(es) at candidate line(s) 9, 7, 8
+LEAN_BREAK=(none) two_sites: PASS
+  ok  pr index.ts grade witnesses at 2 site(s), witness the first: 2 witness(es) at candidate line(s) 2, 3; witness is witnesses[0]
+  ok  pr index.ts half witnesses at 1 site(s), witness the first: 1 witness(es) at candidate line(s) 8; witness is witnesses[0]
+  ok  pr --units index.ts::grade index.ts grade witnesses at 2 site(s), witness the first: 2 witness(es) at candidate line(s) 2, 3; witness is witnesses[0]
+LEAN_BREAK=w9i-reach reach_statements: RED
+  NO  pr index.ts label witnesses name candidate line(s) 8, 12: 1 witness(es) at candidate line(s) 12; missing 8
+LEAN_BREAK=w9i-reach reach_site: RED
+  NO  pr index.ts defaults a witness kept for first completing candidate 4: where.reach absent over 1 witness(es)
+LEAN_BREAK=w9i-reach reach_lead: RED
+  NO  pr index.ts label witness (the lead) at candidate line 8: witness at candidate line 12 of 12
+  NO  pr index.ts label witnesses name candidate line(s) 8, 12: 1 witness(es) at candidate line(s) 12; missing 8
+LEAN_BREAK=w9i-reach reach_lead_site: RED
+  ok  pr index.ts settle witness (the lead) at candidate line 6: witness at candidate line 6 of 6
+  NO  pr index.ts settle witnesses name candidate line(s) 6, 11: 1 witness(es) at candidate line(s) 6; missing 11
+LEAN_BREAK=w8n-all-sites three_sites: RED
+  NO  pr index.ts band witnesses at 3 site(s), witness the first: 2 witness(es) at candidate line(s) 3, 4; witness is witnesses[0]
+LEAN_BREAK=w8n-all-sites field_sites: RED
+  NO  pr index.ts Counter.save witnesses name candidate line(s) 7, 8: 1 witness(es) at candidate line(s) 9; missing 7, 8
+LEAN_BREAK=w8n-fields field_sites: RED
+  NO  pr index.ts Counter.save witnesses name candidate line(s) 7, 8: 3 witness(es) at candidate line(s) 9, 8; missing 7
+LEAN_BREAK=w7a-witnesses two_sites: RED
+  NO  pr index.ts grade witnesses at 2 site(s), witness the first: 1 witness(es) at candidate line(s) 2; witness is witnesses[0]
+  ok  pr index.ts half witnesses at 1 site(s), witness the first: 1 witness(es) at candidate line(s) 8; witness is witnesses[0]
+  NO  pr --units index.ts::grade index.ts grade witnesses at 2 site(s), witness the first: 1 witness(es) at candidate line(s) 2; witness is witnesses[0]
+every pair green plain, red under its break
