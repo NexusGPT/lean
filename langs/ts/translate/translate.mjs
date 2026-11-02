@@ -1606,7 +1606,9 @@ function translateOnce(file, fnName, opts = {}) {
       if (ts.isPropertyAccessExpression(n.expression) && ['push', 'unshift', 'splice', 'set', 'add', 'fill'].includes(n.expression.name.text)) for (const arg of n.arguments) assertionWrite(n.expression.expression, arg);
       if (n.expression.getText(sf) === 'Object.assign' && n.arguments.length >= 2) for (const arg of n.arguments.slice(1)) assertionWrite(n.arguments[0], arg); // the target holds what the sources held
       const callee = checker.getResolvedSignature(n)?.declaration;
-      if (callee?.getSourceFile() === sf) for (let i = 0; i < callee.parameters.length; i++) { const p = callee.parameters[i]; for (const arg of p.dotDotDotToken ? n.arguments.slice(i) : n.arguments.slice(i, i + 1)) assertionWrite(p.name, arg); }
+      // a JSDoc function type (`@return {function(number): number}`) declares parameters that bind no name: an argument
+      // handed to one is written to nothing of this file
+      if (callee?.getSourceFile() === sf) for (let i = 0; i < callee.parameters.length; i++) { const p = callee.parameters[i]; if (!p.name && !broken('jsdoc-unnamed-param')) continue; for (const arg of p.dotDotDotToken ? n.arguments.slice(i) : n.arguments.slice(i, i + 1)) assertionWrite(p.name, arg); }
     }
     ts.forEachChild(n, collectAssertionWrites);
   }
