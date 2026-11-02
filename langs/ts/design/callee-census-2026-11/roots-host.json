@@ -1,0 +1,899 @@
+{
+ "roots": 18,
+ "units": 97743,
+ "refused": 54288,
+ "calleeOnly": 4690,
+ "multiCallee": 178,
+ "byOrigin": {
+  "project": 2558,
+  "ecmascript": 1074,
+  "package": 538,
+  "untyped": 304,
+  "node": 108,
+  "web": 60,
+  "ecmascript+project": 14,
+  "ecmascript+untyped": 10,
+  "package+project": 7,
+  "ecmascript+node": 5,
+  "project+untyped": 5,
+  "ecmascript+web": 4,
+  "ecmascript+package": 2,
+  "project+web": 1
+ },
+ "callees": 32366,
+ "origins": [
+  "web",
+  "node",
+  "package"
+ ],
+ "top20": 321,
+ "top50": 476,
+ "rows": [
+  {
+   "rank": 1,
+   "key": "react useCallback",
+   "module": "react",
+   "member": "useCallback",
+   "origin": "package",
+   "callers": 1106,
+   "calls": 2949,
+   "onlyBy": 82,
+   "among": 82,
+   "rules": {
+    "read-after-call": 82
+   },
+   "cumulative": 82
+  },
+  {
+   "rank": 2,
+   "key": "i18next TFunctionNonStrict",
+   "module": "i18next",
+   "member": "TFunctionNonStrict",
+   "origin": "package",
+   "callers": 281,
+   "calls": 1376,
+   "onlyBy": 22,
+   "among": 22,
+   "rules": {
+    "unsupported-call": 18,
+    "read-after-call": 4
+   },
+   "cumulative": 104
+  },
+  {
+   "rank": 3,
+   "key": "@n8n/typeorm Repository.prototype.find",
+   "module": "@n8n/typeorm",
+   "member": "Repository.prototype.find",
+   "origin": "package",
+   "callers": 71,
+   "calls": 86,
+   "onlyBy": 19,
+   "among": 19,
+   "rules": {
+    "read-after-call": 19
+   },
+   "cumulative": 123
+  },
+  {
+   "rank": 4,
+   "key": "playwright-core Locator.prototype.evaluateAll",
+   "module": "playwright-core",
+   "member": "Locator.prototype.evaluateAll",
+   "origin": "package",
+   "callers": 14,
+   "calls": 19,
+   "onlyBy": 18,
+   "among": 18,
+   "rules": {
+    "read-after-call": 18
+   },
+   "cumulative": 141
+  },
+  {
+   "rank": 5,
+   "key": "lodash/get default",
+   "module": "lodash/get",
+   "member": "default",
+   "origin": "package",
+   "callers": 93,
+   "calls": 223,
+   "onlyBy": 16,
+   "among": 16,
+   "rules": {
+    "type-assertion": 9,
+    "read-after-call": 7
+   },
+   "cumulative": 157
+  },
+  {
+   "rank": 6,
+   "key": "node:fs StatsBase.prototype.isDirectory",
+   "module": "node:fs",
+   "member": "StatsBase.prototype.isDirectory",
+   "origin": "node",
+   "callers": 63,
+   "calls": 68,
+   "onlyBy": 16,
+   "among": 16,
+   "rules": {
+    "read-after-call": 16
+   },
+   "cumulative": 173
+  },
+  {
+   "rank": 7,
+   "key": "playwright-core ElectronApplication.prototype.evaluate",
+   "module": "playwright-core",
+   "member": "ElectronApplication.prototype.evaluate",
+   "origin": "package",
+   "callers": 56,
+   "calls": 65,
+   "onlyBy": 15,
+   "among": 15,
+   "rules": {
+    "read-after-call": 15
+   },
+   "cumulative": 188
+  },
+  {
+   "rank": 8,
+   "key": "better-sqlite3 BetterSqlite3.Transaction",
+   "module": "better-sqlite3",
+   "member": "BetterSqlite3.Transaction",
+   "origin": "package",
+   "callers": 14,
+   "calls": 14,
+   "onlyBy": 15,
+   "among": 15,
+   "rules": {
+    "unsupported-call": 15
+   },
+   "cumulative": 203
+  },
+  {
+   "rank": 9,
+   "key": "@smithy/smithy-client Client.prototype.send",
+   "module": "@smithy/smithy-client",
+   "member": "Client.prototype.send",
+   "origin": "package",
+   "callers": 19,
+   "calls": 25,
+   "onlyBy": 13,
+   "among": 13,
+   "rules": {
+    "read-after-call": 13
+   },
+   "cumulative": 216
+  },
+  {
+   "rank": 10,
+   "key": "typedi Container.get",
+   "module": "typedi",
+   "member": "Container.get",
+   "origin": "package",
+   "callers": 170,
+   "calls": 320,
+   "onlyBy": 12,
+   "among": 12,
+   "rules": {
+    "read-after-call": 12
+   },
+   "cumulative": 228
+  },
+  {
+   "rank": 11,
+   "key": "commander Command.prototype.name",
+   "module": "commander",
+   "member": "Command.prototype.name",
+   "origin": "package",
+   "callers": 39,
+   "calls": 48,
+   "onlyBy": 12,
+   "among": 12,
+   "rules": {
+    "read-after-call": 12
+   },
+   "cumulative": 240
+  },
+  {
+   "rank": 12,
+   "key": "drizzle-orm PgSelectBuilder.prototype.from",
+   "module": "drizzle-orm",
+   "member": "PgSelectBuilder.prototype.from",
+   "origin": "package",
+   "callers": 123,
+   "calls": 171,
+   "onlyBy": 10,
+   "among": 10,
+   "rules": {
+    "read-after-call": 10
+   },
+   "cumulative": 250
+  },
+  {
+   "rank": 13,
+   "key": "next/navigation notFound",
+   "module": "next/navigation",
+   "member": "notFound",
+   "origin": "package",
+   "callers": 13,
+   "calls": 15,
+   "onlyBy": 10,
+   "among": 10,
+   "rules": {
+    "read-after-call": 10
+   },
+   "cumulative": 260
+  },
+  {
+   "rank": 14,
+   "key": "global Node.prototype.appendChild",
+   "module": "global",
+   "member": "Node.prototype.appendChild",
+   "origin": "web",
+   "callers": 33,
+   "calls": 62,
+   "onlyBy": 9,
+   "among": 10,
+   "rules": {
+    "read-after-call": 10
+   },
+   "cumulative": 269
+  },
+  {
+   "rank": 15,
+   "key": "react useState",
+   "module": "react",
+   "member": "useState",
+   "origin": "package",
+   "callers": 1743,
+   "calls": 4534,
+   "onlyBy": 9,
+   "among": 9,
+   "rules": {
+    "read-after-call": 9
+   },
+   "cumulative": 278
+  },
+  {
+   "rank": 16,
+   "key": "react useMemo",
+   "module": "react",
+   "member": "useMemo",
+   "origin": "package",
+   "callers": 877,
+   "calls": 1556,
+   "onlyBy": 9,
+   "among": 9,
+   "rules": {
+    "read-after-call": 9
+   },
+   "cumulative": 287
+  },
+  {
+   "rank": 17,
+   "key": "@n8n/typeorm Repository.prototype.findOneBy",
+   "module": "@n8n/typeorm",
+   "member": "Repository.prototype.findOneBy",
+   "origin": "package",
+   "callers": 20,
+   "calls": 21,
+   "onlyBy": 9,
+   "among": 9,
+   "rules": {
+    "read-after-call": 9
+   },
+   "cumulative": 296
+  },
+  {
+   "rank": 18,
+   "key": "zustand useStore",
+   "module": "zustand",
+   "member": "useStore",
+   "origin": "package",
+   "callers": 19,
+   "calls": 24,
+   "onlyBy": 9,
+   "among": 9,
+   "rules": {
+    "read-after-call": 9
+   },
+   "cumulative": 305
+  },
+  {
+   "rank": 19,
+   "key": "node:buffer BufferConstructor.prototype.from",
+   "module": "node:buffer",
+   "member": "BufferConstructor.prototype.from",
+   "origin": "node",
+   "callers": 183,
+   "calls": 241,
+   "onlyBy": 8,
+   "among": 9,
+   "rules": {
+    "copied-argument": 8,
+    "read-after-call": 1
+   },
+   "cumulative": 313
+  },
+  {
+   "rank": 20,
+   "key": "global Element.prototype.getAttribute",
+   "module": "global",
+   "member": "Element.prototype.getAttribute",
+   "origin": "web",
+   "callers": 36,
+   "calls": 61,
+   "onlyBy": 8,
+   "among": 8,
+   "rules": {
+    "read-after-call": 8
+   },
+   "cumulative": 321
+  },
+  {
+   "rank": 21,
+   "key": "commander Command.prototype.exitOverride",
+   "module": "commander",
+   "member": "Command.prototype.exitOverride",
+   "origin": "package",
+   "callers": 10,
+   "calls": 10,
+   "onlyBy": 8,
+   "among": 8,
+   "rules": {
+    "read-after-call": 8
+   },
+   "cumulative": 329
+  },
+  {
+   "rank": 22,
+   "key": "drizzle-orm sql",
+   "module": "drizzle-orm",
+   "member": "sql",
+   "origin": "package",
+   "callers": 35,
+   "calls": 73,
+   "onlyBy": 7,
+   "among": 9,
+   "rules": {
+    "copied-argument": 7,
+    "read-after-call": 2
+   },
+   "cumulative": 336
+  },
+  {
+   "rank": 23,
+   "key": "node:path join",
+   "module": "node:path",
+   "member": "join",
+   "origin": "node",
+   "callers": 679,
+   "calls": 1198,
+   "onlyBy": 7,
+   "among": 7,
+   "rules": {
+    "read-after-call": 7
+   },
+   "cumulative": 343
+  },
+  {
+   "rank": 24,
+   "key": "drizzle-orm PgSelectQueryBuilderBase.prototype.orderBy",
+   "module": "drizzle-orm",
+   "member": "PgSelectQueryBuilderBase.prototype.orderBy",
+   "origin": "package",
+   "callers": 39,
+   "calls": 45,
+   "onlyBy": 7,
+   "among": 7,
+   "rules": {
+    "read-after-call": 7
+   },
+   "cumulative": 350
+  },
+  {
+   "rank": 25,
+   "key": "pg Pool.prototype.query",
+   "module": "pg",
+   "member": "Pool.prototype.query",
+   "origin": "package",
+   "callers": 8,
+   "calls": 10,
+   "onlyBy": 7,
+   "among": 7,
+   "rules": {
+    "read-after-call": 7
+   },
+   "cumulative": 357
+  },
+  {
+   "rank": 26,
+   "key": "node:path basename",
+   "module": "node:path",
+   "member": "basename",
+   "origin": "node",
+   "callers": 110,
+   "calls": 136,
+   "onlyBy": 6,
+   "among": 6,
+   "rules": {
+    "read-after-call": 6
+   },
+   "cumulative": 363
+  },
+  {
+   "rank": 27,
+   "key": "node AbortController.prototype.abort",
+   "module": "node",
+   "member": "AbortController.prototype.abort",
+   "origin": "node",
+   "callers": 41,
+   "calls": 46,
+   "onlyBy": 6,
+   "among": 6,
+   "rules": {
+    "read-after-call": 6
+   },
+   "cumulative": 369
+  },
+  {
+   "rank": 28,
+   "key": "node:path posix.join",
+   "module": "node:path",
+   "member": "posix.join",
+   "origin": "node",
+   "callers": 17,
+   "calls": 27,
+   "onlyBy": 6,
+   "among": 6,
+   "rules": {
+    "read-after-call": 6
+   },
+   "cumulative": 375
+  },
+  {
+   "rank": 29,
+   "key": "typescript isPropertyAccessExpression",
+   "module": "typescript",
+   "member": "isPropertyAccessExpression",
+   "origin": "package",
+   "callers": 15,
+   "calls": 17,
+   "onlyBy": 6,
+   "among": 6,
+   "rules": {
+    "read-after-call": 6
+   },
+   "cumulative": 381
+  },
+  {
+   "rank": 30,
+   "key": "node:fs StatsBase.prototype.isSymbolicLink",
+   "module": "node:fs",
+   "member": "StatsBase.prototype.isSymbolicLink",
+   "origin": "node",
+   "callers": 12,
+   "calls": 12,
+   "onlyBy": 6,
+   "among": 6,
+   "rules": {
+    "read-after-call": 6
+   },
+   "cumulative": 387
+  },
+  {
+   "rank": 31,
+   "key": "aws4 sign",
+   "module": "aws4",
+   "member": "sign",
+   "origin": "package",
+   "callers": 8,
+   "calls": 8,
+   "onlyBy": 6,
+   "among": 6,
+   "rules": {
+    "read-after-call": 6
+   },
+   "cumulative": 393
+  },
+  {
+   "rank": 32,
+   "key": "zustand (anonymous)",
+   "module": "zustand",
+   "member": "(anonymous)",
+   "origin": "package",
+   "callers": 7,
+   "calls": 7,
+   "onlyBy": 5,
+   "among": 6,
+   "rules": {
+    "unsupported-call": 6,
+    "read-after-call": 1
+   },
+   "cumulative": 398
+  },
+  {
+   "rank": 33,
+   "key": "drizzle-orm PgSelectQueryBuilderBase.prototype.where",
+   "module": "drizzle-orm",
+   "member": "PgSelectQueryBuilderBase.prototype.where",
+   "origin": "package",
+   "callers": 115,
+   "calls": 157,
+   "onlyBy": 5,
+   "among": 5,
+   "rules": {
+    "read-after-call": 5
+   },
+   "cumulative": 403
+  },
+  {
+   "rank": 34,
+   "key": "drizzle-orm PgSelectQueryBuilderBase.prototype.limit",
+   "module": "drizzle-orm",
+   "member": "PgSelectQueryBuilderBase.prototype.limit",
+   "origin": "package",
+   "callers": 52,
+   "calls": 72,
+   "onlyBy": 5,
+   "among": 5,
+   "rules": {
+    "read-after-call": 5
+   },
+   "cumulative": 408
+  },
+  {
+   "rank": 35,
+   "key": "global FormData.prototype.append",
+   "module": "global",
+   "member": "FormData.prototype.append",
+   "origin": "web",
+   "callers": 41,
+   "calls": 84,
+   "onlyBy": 5,
+   "among": 5,
+   "rules": {
+    "read-after-call": 5
+   },
+   "cumulative": 413
+  },
+  {
+   "rank": 36,
+   "key": "lodash/omit default",
+   "module": "lodash/omit",
+   "member": "default",
+   "origin": "package",
+   "callers": 30,
+   "calls": 38,
+   "onlyBy": 5,
+   "among": 5,
+   "rules": {
+    "read-after-call": 5
+   },
+   "cumulative": 418
+  },
+  {
+   "rank": 37,
+   "key": "react-hook-form (anonymous)",
+   "module": "react-hook-form",
+   "member": "(anonymous)",
+   "origin": "package",
+   "callers": 6,
+   "calls": 7,
+   "onlyBy": 5,
+   "among": 5,
+   "rules": {
+    "read-after-call": 5
+   },
+   "cumulative": 423
+  },
+  {
+   "rank": 38,
+   "key": "vue-i18n VueI18n.prototype.te",
+   "module": "vue-i18n",
+   "member": "VueI18n.prototype.te",
+   "origin": "package",
+   "callers": 2,
+   "calls": 2,
+   "onlyBy": 5,
+   "among": 5,
+   "rules": {
+    "read-after-call": 5
+   },
+   "cumulative": 428
+  },
+  {
+   "rank": 39,
+   "key": "global console.log",
+   "module": "global",
+   "member": "console.log",
+   "origin": "node",
+   "callers": 779,
+   "calls": 2464,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 432
+  },
+  {
+   "rank": 40,
+   "key": "global console.error",
+   "module": "global",
+   "member": "console.error",
+   "origin": "node",
+   "callers": 457,
+   "calls": 701,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 436
+  },
+  {
+   "rank": 41,
+   "key": "playwright-core Locator.prototype.count",
+   "module": "playwright-core",
+   "member": "Locator.prototype.count",
+   "origin": "package",
+   "callers": 145,
+   "calls": 210,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 440
+  },
+  {
+   "rank": 42,
+   "key": "global Body.prototype.json",
+   "module": "global",
+   "member": "Body.prototype.json",
+   "origin": "web",
+   "callers": 144,
+   "calls": 182,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "type-assertion": 3,
+    "read-after-call": 1
+   },
+   "cumulative": 444
+  },
+  {
+   "rank": 43,
+   "key": "drizzle-orm eq",
+   "module": "drizzle-orm",
+   "member": "eq",
+   "origin": "package",
+   "callers": 132,
+   "calls": 262,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 448
+  },
+  {
+   "rank": 44,
+   "key": "typedi get",
+   "module": "typedi",
+   "member": "get",
+   "origin": "package",
+   "callers": 72,
+   "calls": 104,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 452
+  },
+  {
+   "rank": 45,
+   "key": "expect Matchers.prototype.toBeDefined",
+   "module": "expect",
+   "member": "Matchers.prototype.toBeDefined",
+   "origin": "package",
+   "callers": 36,
+   "calls": 71,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 456
+  },
+  {
+   "rank": 46,
+   "key": "global DOMTokenList.prototype.add",
+   "module": "global",
+   "member": "DOMTokenList.prototype.add",
+   "origin": "web",
+   "callers": 33,
+   "calls": 53,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "alias-mutation": 4
+   },
+   "cumulative": 460
+  },
+  {
+   "rank": 47,
+   "key": "node:console Console.prototype.warn",
+   "module": "node:console",
+   "member": "Console.prototype.warn",
+   "origin": "node",
+   "callers": 7,
+   "calls": 18,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "unsupported-call": 4
+   },
+   "cumulative": 464
+  },
+  {
+   "rank": 48,
+   "key": "global AbortSignal.any",
+   "module": "global",
+   "member": "AbortSignal.any",
+   "origin": "web",
+   "callers": 6,
+   "calls": 6,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 468
+  },
+  {
+   "rank": 49,
+   "key": "node:module NodeJS.Require",
+   "module": "node:module",
+   "member": "NodeJS.Require",
+   "origin": "node",
+   "callers": 5,
+   "calls": 5,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "type-assertion": 4
+   },
+   "cumulative": 472
+  },
+  {
+   "rank": 50,
+   "key": "undici-types FormData.prototype.append",
+   "module": "undici-types",
+   "member": "FormData.prototype.append",
+   "origin": "node",
+   "callers": 5,
+   "calls": 11,
+   "onlyBy": 4,
+   "among": 4,
+   "rules": {
+    "read-after-call": 4
+   },
+   "cumulative": 476
+  }
+ ],
+ "inputs": [
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/agent-nexus.json",
+   "root": "/root/census-installs/w2a/roots-agent-nexus",
+   "units": 4171,
+   "entered": 3028
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/apps-starter.json",
+   "root": "/root/census-installs/w2a/roots-apps-starter",
+   "units": 472,
+   "entered": 86
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/apps-ui.json",
+   "root": "/root/census-installs/w2a/roots-apps-ui",
+   "units": 2361,
+   "entered": 1048
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/blocks.json",
+   "root": "/root/census-installs/w2a/roots-blocks",
+   "units": 516,
+   "entered": 333
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/blog-studio-lambda.json",
+   "root": "/root/census-installs/w2a/roots-blog-studio-lambda",
+   "units": 999,
+   "entered": 437
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/claude-skills.json",
+   "root": "/root/census-installs/w2a/roots-claude-skills",
+   "units": 355,
+   "entered": 284
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/driftbench.json",
+   "root": "/root/census-installs/w2a/roots-driftbench",
+   "units": 5479,
+   "entered": 2512
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/langchainjs.json",
+   "root": "/root/census-installs/w2a/roots-langchainjs",
+   "units": 6709,
+   "entered": 2954
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/n8n.json",
+   "root": "/root/census-installs/w2a/roots-n8n",
+   "units": 9610,
+   "entered": 3072
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-app-starter.json",
+   "root": "/root/census-installs/w2a/roots-nexus-app-starter",
+   "units": 1499,
+   "entered": 662
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus.json",
+   "root": "/root/census-installs/w2a/roots-nexus",
+   "units": 43949,
+   "entered": 17342
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-learning.json",
+   "root": "/root/census-installs/w2a/roots-nexus-learning",
+   "units": 3760,
+   "entered": 2210
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-linkedin-dashboard.json",
+   "root": "/root/census-installs/w2a/roots-nexus-linkedin-dashboard",
+   "units": 1704,
+   "entered": 935
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-ui.json",
+   "root": "/root/census-installs/w2a/roots-nexus-ui",
+   "units": 629,
+   "entered": 138
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nutshell.json",
+   "root": "/root/census-installs/w2a/roots-nutshell",
+   "units": 10511,
+   "entered": 6156
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/pyka.json",
+   "root": "/root/census-installs/w2a/roots-pyka",
+   "units": 2966,
+   "entered": 1324
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/snitch.json",
+   "root": "/root/census-installs/w2a/roots-snitch",
+   "units": 1399,
+   "entered": 635
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/status.json",
+   "root": "/root/census-installs/w2a/roots-status",
+   "units": 654,
+   "entered": 299
+  }
+ ]
+}

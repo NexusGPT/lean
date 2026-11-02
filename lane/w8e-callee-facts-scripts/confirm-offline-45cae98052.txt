@@ -1,0 +1,32 @@
+main 0/1 confirmed: renderNamespacePage-
+main 0/4 confirmed: resolvesToInvocableLeaf- auditDeprecationRecords- auditSurfaceRemovals- nextBaseline-
+main 0/1 confirmed: renderCliSurfaceModule-
+main 0/1 confirmed: renderJsonShapeModule-
+renderCliSurfaceModule 1/1 confirmed: renderSurfaceHeader+
+deriveCommandNodes 0/1 confirmed: flattenCommands-
+deriveCommandLeaves 0/1 confirmed: flattenCommands-
+printTickRecord 3/3 confirmed: color.green+ color.yellow+ isListedVariant+
+printCostSafetyList 0/1 confirmed: printTable-
+printDeploymentTickRecord 4/4 confirmed: color.green+ color.red+ color.yellow+ isListedVariant+
+printProvisionOutcome 1/1 confirmed: isListedVariant+
+printDisableOutcome 1/1 confirmed: isListedVariant+
+printForceConvergeOutcome 1/1 confirmed: isListedVariant+
+printCompleteTeardownOutcome 1/1 confirmed: isListedVariant+
+printRequestServerRollOutcome 1/1 confirmed: isListedVariant+
+printDomainAdded 1/1 confirmed: color.green+
+printDomainDnsInstructions 1/1 confirmed: isListedVariant+
+printGitCredentials 1/1 confirmed: printRecord+
+renderDeployState 13/13 confirmed: colorizeStatus+ paintReasonForStatus+ formatReplacedBy+ describeOutcome+ describeResolvedFrom+ formatInstant+ formatLiveLines+ formatServedLines+ shortSha+ color.bold+ color.dim+ color.yellow+ nonBlankOr+
+runGitWithCredential 1/1 confirmed: composeCredentialLine+
+planVendoring 3/3 confirmed: planDockerfile+ planLockfile+ supersededVendorEntries+
+runVendorPackage 0/1 confirmed: applyPlan-
+resolveCrossOrgIdentity 1/1 confirmed: reportFailure+
+switchHere 0/1 confirmed: reportFailure-
+runUseOrg 1/1 confirmed: reportFailure+
+applyUseOrg 1/1 confirmed: reportFailure+
+reportChannelSetupNotReady 1/1 confirmed: printTable+
+resolveTemplateCreateInput 3/4 confirmed: refuseBadTemplateCreateOptions+ resolveTemplateTypes+ templateVariablesFromJson+ warnIfHighVariableDensity-
+renderDeliveryOutcome 2/2 confirmed: isDeliveryFailed+ isDeliveryTerminal+
+buildInstallPlan 2/6 confirmed: agentInstallables- bundleToInstallables+ hookInstallables- sharedInstallable+ claudeMdContent- settingsJsonContent-
+{"units":30,"allConfirmed":19,"someConfirmed":21,"keys":61,"keysConfirmed":44,"siteFailures":{"outside":34,"async":7,"wrote":16}}
+offline exit 0
