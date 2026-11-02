@@ -447,3 +447,70 @@ and it had written no result file. I did not restart it, because a second run un
 The suite has to run where it can take more than 2 h at this load, or with a JOBS the machine allows (the lead's Mac
 took JOBS=6). So "the only failures left are the known ones" is **not verified** here. What is verified is the per-pair
 and driver lines above, for every pair the two regressions named, plus lib-break and the w1d and w1g drivers.
+
+## Resume 4: the five opaque outside_ rows on lead-v4 6694e5a7 (lost proofs, not false proofs)
+
+**What the rows say.** Each of the five failing rows is `Equal_outside_* proved | FAIL`. The row expects a proof, and
+lane A no longer gives it. The detail is `unplaced (parent: the faithful text does not translate: parent.ts:N:
+type-assertion: ...)`. No row proves what it must refuse. These are lost proofs, not false proofs.
+
+**Bisect** (detached worktrees, `node langs/ts/tests/run.mjs --pair <p>`; TOTAL lines verbatim):
+
+| commit | dynamic-key | exception-return | optional-chain | unsupported-call | unsupported-syntax | type_assertions |
+|---|---|---|---|---|---|---|
+| 07981df2 (resume 2) | 9 checks, ALL PASS | 7, ALL PASS | 9, ALL PASS | 11, ALL PASS | 9, ALL PASS | 45 checks, 4 FAILED |
+| a83d0574 (resume 3) | 9 checks, 1 FAILED | 7, 1 FAILED | 9, 1 FAILED | 11, 1 FAILED | 9, 1 FAILED | 45 checks, ALL PASS |
+| c2974dd7 | 9 checks, 1 FAILED | (not run) | (not run) | (not run) | (not run) | (not run) |
+| 2df7b01b (lead-v4) | 9 checks, 1 FAILED | 7, 1 FAILED | 9, 1 FAILED | 11, 1 FAILED | 9, 1 FAILED | 45 checks, ALL PASS |
+
+The commit is a83d0574, through its line in `outsideSlot` that made every `Math.__lean_*` operand (`lean-number.d.ts`)
+no outside slot. A name a boundary opaque step writes is held at Any (`v`, `r`, `r.length`). It had met that operation
+as one handed conversion (`as_Any_int`), and with the line it was refused, so the faithful text no longer translated.
+The port change in the same commit (`methodsOnly`) is not involved.
+
+**The other two rows did not reproduce alone.** `node langs/ts/tests/opaque-unit.mjs --break` exits 1 (red, as it
+must) at 0b260f05, 07981df2, a83d0574 and 2df7b01b. `run.mjs --pair array_copies_alias` gives
+`| TOTAL | 22 checks | ALL PASS |` at the same four commits. Both fail only inside the full run (load or worker),
+not by a commit of this lane. The full suite below shows whether they come back.
+
+**Fix (e948679006, on lead-v4 2df7b01b).** A `Math.__lean_*` operand is an outside slot exactly when it is an opaque
+step's write or a member read of one (common.mjs `opaqueStepHeld`). An asserted or any value stays refused, so
+`type_assertions` reads as at the base. Both readings are sound. When the doubles reading is unknown, lane A proves a
+unit through the faithful text only when the real lemma proves too, and the real lemma reads every operation on an Any
+value as an uninterpreted function of it. Reason in design/w1g-opaque-handed.md (2026-11-02). No expect.json changed.
+
+Validators at e948679006 (verbatim):
+- `run.mjs --pair`: opaque_dynamic-key `| TOTAL | 9 checks | ALL PASS |`; opaque_exception-return
+  `| TOTAL | 7 checks | ALL PASS |`; opaque_optional-chain `| TOTAL | 9 checks | ALL PASS |`; opaque_unsupported-call
+  `| TOTAL | 11 checks | ALL PASS |`; opaque_unsupported-syntax `| TOTAL | 9 checks | ALL PASS |`; type_assertions
+  `| TOTAL | 45 checks | ALL PASS |`; service `| TOTAL | 8 checks | ALL PASS |`; mixed_logic_values
+  `| TOTAL | 40 checks | ALL PASS |`; fresh_local_handed `| TOTAL | 2 checks | ALL PASS |`; array_copies_alias
+  `| TOTAL | 22 checks | ALL PASS |`.
+- `node langs/ts/tests/opaque-calls.mjs`: `116/116 rows hold`, exit 0.
+- `node langs/ts/tests/w1g-opaque-handed.mjs`: ok on both rows. With `--break`: both rows FAIL, exit 1 (red, as it must).
+
+### The full suite on e948679006
+
+`LC_ALL=C LEAN_CONFORMANCE=full JOBS=4 node langs/ts/tests/run.mjs` (z3 4.8.12, load 57 to 140 from other sessions;
+run detached so the harness's 2 h limit could not stop it):
+
+`| TOTAL | 6249 checks | 4 FAILED |` (`| WALL | 8825 s | JOBS 4 |`)
+
+The five outside_ rows pass, `opaque-unit --break | red without the mechanism` passes, and `array_copies_alias` passes.
+The four red rows, verbatim (spacing collapsed):
+- `| pair | opaque_for_in | break opaque-drop-read: Equal_upstream flips to proved (a false PASS-proved without the mechanism) | FAIL | | not proved under LEAN_BREAK=opaque-drop-read: the mechanism is not what refuses it`: known.
+- `| pair | opaque_async_origin | break async-drop-origins: Equal_bump flips to proved (...) | FAIL | | not proved under LEAN_BREAK=async-drop-origins: the mechanism is not what refuses it`
+- `| pair | opaque_copied_argument | theorem generated | FAIL | | theorem: refused: the parent input .../parent.dfy does not exist (the translator produced no file for this side)`
+- `| pair | opaque_read_after_call | break handle-write: Equal_written flips to proved (...) | FAIL | | not proved under LEAN_BREAK=handle-write: the mechanism is not what refuses it`
+
+None of the last three is this lane's. Each was rerun alone (`run.mjs --pair`):
+
+| pair | c2974dd7 | 6694e5a7 (w8f) | 8844df7d (w8c merged) | 2df7b01b (w8d merged) | e948679006 |
+|---|---|---|---|---|---|
+| opaque_copied_argument | 17, ALL PASS | 17, ALL PASS | 1 checks, 1 FAILED | 1 checks, 1 FAILED | 1 checks, 1 FAILED |
+| opaque_read_after_call | 28, ALL PASS | 28, ALL PASS | 28 checks, 1 FAILED | 28 checks, 1 FAILED | 28 checks, 1 FAILED |
+| opaque_async_origin | 14, ALL PASS | 14, ALL PASS | 14, ALL PASS | 14 checks, 1 FAILED | 14 checks, 1 FAILED |
+
+`opaque_copied_argument` and the handle-write row come in with the w8c merge (8844df7d). The bump row comes in with
+the w8d merge (2df7b01b); it is w8d's resume 2. They are not fixed here (the resume: nothing else). No row of the
+suite proves what its pair expects refused.
