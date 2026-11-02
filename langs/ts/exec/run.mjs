@@ -1652,12 +1652,14 @@ async function runPairOnce(opts) {
       }
     }
   } else if (sPlan) { const T = new Set(sPlan.targets ?? []), got = new Set(drawHits.flatMap((x) => [...x.hits].filter((h) => T.has(h)))); searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length && !reach ? 'the draws differ' : harnessAsk ? 'harness stop' : sawJsx ? 'rendered unit' : extra.full ? `${WITNESS_SITES} sites held` : 'no time left past the witness', targets: T.size, reachedByDraws: got.size, reached: got.size, tried: 0, ...(reach && sPlan.statements ? { statements: { targets: sPlan.statements.length, reachedByDraws: sPlan.statements.filter((t) => got.has(t)).length, reached: sPlan.statements.filter((t) => got.has(t)).length } } : {}) }; } // not searched: the branches the draws reached, for the before/after count
-  // the witness lane B leads with (design/w9i-reach.md): first a witness whose difference shows at a line the diff
-  // changed (its candidate statement's first line, else its parent statement's), then the one that completed the most
-  // of the unit's changed statements, ties in order of discovery
-  if (reach && diffs.length > 1 && sPlan?.changedLines) {
-    const atChange = (w) => { if (process.env.LEAN_BREAK === 'w9i-lead-site') return 0; const l = w.where?.lines; return (l?.candidate?.start !== undefined && sPlan.changedLines.candidate.has(l.candidate.start)) || (l?.parent?.start !== undefined && sPlan.changedLines.parent.has(l.parent.start)) ? 1 : 0; };
-    diffs.sort((a, b) => atChange(b) - atChange(a) || (b.reached?.length ?? 0) - (a.reached?.length ?? 0));
+  // the witness lane B leads with (design/w9i-reach.md): the first found, unless a later one's difference shows at a
+  // changed statement the first one's input never completed (a part of the change the lead never ran); then the first
+  // such. A further field of the lead's own input is never one
+  if (reach && diffs.length > 1) {
+    const lead = diffs[0], ran = new Set(lead.reached ?? []);
+    const at = (w) => { const l = w.where?.lines; return [l?.candidate?.start !== undefined ? `candidate ${l.candidate.start}` : null, l?.parent?.start !== undefined ? `parent ${l.parent.start}` : null].filter(Boolean); };
+    const k = diffs.findIndex((w, j) => j > 0 && w.input !== lead.input && at(w).some((x) => (w.reached ?? []).includes(x) && !ran.has(x)));
+    if (k > 0) diffs.unshift(...diffs.splice(k, 1));
   }
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label

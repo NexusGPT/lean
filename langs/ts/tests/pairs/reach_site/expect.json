@@ -1,9 +1,9 @@
 {
- "why": "A witness kept for the statement it completes (design/w9i-reach.md): `defaults` changes the port of a port above 1000 (line 4) and the kind's suffix (line 6). Every input differs, and every difference shows at the return (line 7): one site. The first draw (type \"port\", no port) completes line 6 only; draw 4 (port 1001) also completes line 4, a changed statement no kept witness completed, so it is its own site (`where.reach`) and, completing the most changed statements, the row's witness. LEAN_BREAK=w9i-reach keeps one witness per site key: the first draw's, red.",
+ "why": "A witness kept for the statement it completes (design/w9i-reach.md): `defaults` changes the port of a port above 1000 (line 4) and the kind's suffix (line 6). Every input differs, and every difference shows at the return (line 7): one site. The first draw (type \"port\", no port) completes line 6 only; draw 4 (port 1001) also completes line 4, a changed statement no kept witness completed, so it is its own site (`where.reach`): the row's witnesses must hold it. LEAN_BREAK=w9i-reach keeps one witness per site key: the first draw's, red.",
  "prOnly": true,
  "pr": {
   "rows": [
-   { "file": "index.ts", "unit": "defaults", "verdict": "WITNESS", "leadReach": ["candidate 4"] }
+   { "file": "index.ts", "unit": "defaults", "verdict": "WITNESS", "siteReach": ["candidate 4"] }
   ],
   "unassigned": false
  }
