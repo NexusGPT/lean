@@ -10,6 +10,7 @@ import { decoratorTable, importOf } from '../decorators.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 // A draw has one slot per declared parameter. Only a rest slot holds the remaining
 // call arguments: spread it once at the invocation boundary, leaving defaults,
@@ -413,6 +414,13 @@ function admits(spec, v, optional, defs, d = 0) {
     default: return false;
   }
 }
+// the boundaries of a string a unit reads as a number (usage.mjs `converted`, lane w9o): the texts on which Number,
+// parseInt and parseFloat answer differently from one another ('' and ' ' are 0 to Number and NaN to the parsers;
+// '1.5' and '1e3' lose their fraction and exponent to parseInt; '12px' and '1_000' keep a prefix for the parsers only;
+// '0x1A' and '0b11' are numbers to Number alone; 'Infinity' to Number and parseFloat; '.5' to all but parseInt; '-0' is
+// a signed zero), so a change of one conversion for another, or of its radix, meets an input that tells them apart.
+// LEAN_BREAK=converted-text: a converted leaf draws as before
+export const CONVERTED_TEXT = ['', ' ', '1.5', '12px', '0x1A', '1e3', 'Infinity', '0b11', '.5', '-0', '1_000'];
 // the boundary of one usage node against a spec: the compared values the spec admits, then a draw, then the falsy
 function boundaryOf(node, spec, optional, defs) {
   const cmp = [], falsy = [];
@@ -424,6 +432,7 @@ function boundaryOf(node, spec, optional, defs) {
     else add(cmp, c);
   }
   for (const s of node.includes) if (typeof s === 'string') add(cmp, s);
+  if (node.converted && !broken('converted-text')) for (const s of CONVERTED_TEXT) add(cmp, s); // a string read as a number: the texts the conversions disagree on
   const rep = { object: [{ t: 'object' }, null], string: [''], number: [0], boolean: [true, false], undefined: [U], function: [{ t: 'fn' }] };
   for (const t of node.typeofs) for (const v of rep[t] ?? []) add(cmp, v);
   if (node.len) for (const c of node.len.compares) if (typeof c === 'number' && Number.isInteger(c)) for (const L of [c, c + 1, c - 1]) if (L >= 0 && L <= 2000) add(cmp, 'x'.repeat(L));

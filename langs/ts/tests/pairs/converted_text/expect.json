@@ -1,0 +1,8 @@
+{
+  "why": "A string read as a number (exec/usage.mjs converted, exec/spec.mjs CONVERTED_TEXT, lane w9o). pageOf swaps parseFloat for Number and perPage swaps Number.parseInt(raw, 10) for Number; the drawn strings ('', '0', '-1', words) give the fallback both ways (PASS-bounded without the mechanism, with the input search on). A leaf handed to a conversion is drawn on the texts the conversions disagree on ('12px', '1.5', '1e3', '0x1A', ...), so both differ (WITNESS). tally changes nothing and stays PASS. Under LEAN_BREAK=converted-text the two are PASS-bounded again.",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "pageOf": "WITNESS", "perPage": "WITNESS", "tally": "PASS-bounded" },
+  "break": [{ "mechanism": "converted-text", "b": { "pageOf": "PASS-bounded", "perPage": "PASS-bounded" } }]
+}

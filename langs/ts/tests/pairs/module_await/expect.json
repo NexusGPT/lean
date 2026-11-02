@@ -1,0 +1,8 @@
+{
+  "why": "A module whose top level awaits (exec/run.mjs loadInner, lane w9o): the script runs its own main behind `if (isMain) await main()`. lean loads a module as CommonJS, where a top-level await is a syntax error, so the module did not load and its units were ASK (parent: load failed). Run as an async body, the module defines its exports before the await and its units run: allowAll sets its two headers in the other order on the candidate, a trace order (WITNESS); label is unchanged (PASS-bounded). Under LEAN_BREAK=module-await allowAll is ASK again (label too, lane B; the check row reads lane A, which proves it either way).",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "allowAll": "WITNESS", "label": "PASS-bounded" },
+  "break": [{ "mechanism": "module-await", "b": { "allowAll": "ASK" } }]
+}

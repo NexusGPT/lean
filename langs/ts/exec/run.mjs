@@ -689,14 +689,26 @@ export function sandbox(env, root) {
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
-    let wrapper;
-    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName, compiled.globalName], { parsingContext: ctx, filename: abs }); }
-    catch (e) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); } // the file that failed to compile is named
+    let wrapper, awaits = false;
+    const params = ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName, compiled.globalName];
+    try { wrapper = vm.compileFunction(js, params, { parsingContext: ctx, filename: abs }); }
+    catch (e) {
+      // a module whose top level awaits (`if (isMain) await main()`, an ES module's top-level await, which the CommonJS
+      // emit keeps as written): its body runs as an async function's, so what it defines before its first await (its
+      // exports) is there when require returns, as an ES importer sees a module evaluated up to its first await; a later
+      // rejection is the module's own, kept on it (module.lateError) and never thrown into the run (lane w9o;
+      // LEAN_BREAK=module-await: the load fails as before)
+      awaits = e?.name === 'SyntaxError' && /is only valid in async functions and the top level bodies of modules/.test(e.message) && !broken('module-await');
+      if (!awaits) throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); // the file that failed to compile is named
+      try { wrapper = vm.compileFunction(`return (async () => {${js.replace(/^#!.*/, '')}\n})();`, params, { parsingContext: ctx, filename: abs }); } // on the module's first line, so its lines keep their numbers; a hashbang is valid only at a file's start
+      catch (e2) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e2.message}`); }
+    }
     const callbacks = {
       units: new Map(compiled.callbacks.map(u => [u.name, { inBody: u.inBody, instances: [] }])),
       capture(name, fn) { callbacks.units.get(name).instances.push(fn); return fn; },
     };
-    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks, g); // g: the global object, which the emit's prologue reads an intrinsic the file shadows from (intrinsicPrologue)
+    const evaluated = wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks, g); // g: the global object, which the emit's prologue reads an intrinsic the file shadows from (intrinsicPrologue)
+    if (awaits && evaluated && typeof evaluated.then === 'function') evaluated.then(null, (e) => { mod.lateError = e; });
     (env.callbackUnits ??= new Map()).set(mod.exports, callbacks);
     return mod.exports;
   }
@@ -1393,7 +1405,7 @@ export async function runPair(opts) {
     });
     child.on('error', (e) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker failed to start: ${String(e && e.message).slice(0, 200)}` }));
     child.on('exit', (code, signal) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker exited (${signal ?? `code ${code}`}) before a verdict; pending: ${crumbOf(last)}` }));
-    child.send({ opts: { ...rest, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) } });
+    child.send({ opts: { ...rest, boundSeconds: seconds, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) } }); // boundSeconds: the unit's CPU bound this parent enforces, for the stages that take a share of it (programs.mjs maxCpuMs)
   });
 }
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
@@ -1686,7 +1698,7 @@ async function runPairOnce(opts) {
   let programRun = null;
   if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
     const { runPrograms } = await import('./programs.mjs'); step('programs');
-    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
+    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference }, maxCpuMs: broken('programs-share') ? Infinity : (opts.boundSeconds ?? unitSecondsValue(opts.unitSeconds)) * 1000 / 4 })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
   const extra = extraDraws(opts);
   try { for (let i = 0; i < n; i++) { // past the first witness, an error escaping an input ends the draws, never the WITNESS
@@ -1835,7 +1847,7 @@ async function runPairOnce(opts) {
   if (handlerRun) bound.frontEnd.handlers = Object.assign(handlerRun.stats, { observed: FRONT_END_OBSERVATION.handlers }); // how a handler is observed, and the descriptor interpreter's counts: fired, readable, interpretable, agreed, and every defect
   if (programRun) {
     const member = spec.member ?? unit.split('.')[1];
-    bound.programs = { programs: programRun.programs, commands: programRun.commands, methods: programRun.methods, maxLen: 5, seed, ...(programRun.skipped ? { skipped: programRun.skipped } : {}) };
+    bound.programs = { programs: programRun.programs, commands: programRun.commands, methods: programRun.methods, maxLen: 5, seed, ...(programRun.skipped ? { skipped: programRun.skipped } : {}), ...(programRun.stop ? { stop: programRun.stop } : {}) };
     if (programRun.verdict === 'ASK') bound.programs.ask = programRun.reason;
     if (programRun.verdict === 'WITNESS') {
       const mine = programRun.program.some((c) => c.method === member);

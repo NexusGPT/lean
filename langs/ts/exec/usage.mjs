@@ -11,6 +11,7 @@
 // about the input: spec.mjs only uses the tree to choose which inputs to draw first.
 //   node usage.mjs <file.ts> --unit <name> [--no-project]   -> JSON on stdout
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 const ARRAY_CALLBACK = new Set(['find', 'findLast', 'filter', 'some', 'every', 'map', 'flatMap', 'forEach', 'findIndex', 'findLastIndex', 'sort', 'toSorted']);
 const ARRAY_ONLY = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'join', 'reverse', 'flat', 'fill', 'keys', 'values', 'entries', 'reduce', 'reduceRight', ...ARRAY_CALLBACK]);
@@ -19,7 +20,16 @@ const COMPARE = new Set([ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.Ex
 const ORDER = new Set([ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanEqualsToken, ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.GreaterThanEqualsToken]);
 const ARITH = new Set([ts.SyntaxKind.MinusToken, ts.SyntaxKind.AsteriskToken, ts.SyntaxKind.SlashToken, ts.SyntaxKind.PercentToken, ts.SyntaxKind.AsteriskAsteriskToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken, ts.SyntaxKind.SlashEqualsToken]);
 
-export const newNode = () => ({ fields: {}, elem: null, len: null, compares: [], typeofs: [], includes: [], truthy: false, numeric: false, string: false, array: false, called: null, inTested: false });
+export const newNode = () => ({ fields: {}, elem: null, len: null, compares: [], typeofs: [], includes: [], truthy: false, numeric: false, string: false, array: false, called: null, inTested: false, converted: false });
+// the calls that read a string as a number (Number, parseInt, parseFloat, isNaN, isFinite, and Number's own parseInt and
+// parseFloat): a leaf handed to one is `converted`, and spec.mjs draws it on the conversions' own boundaries (lane w9o)
+const CONVERT = new Set(['Number', 'parseInt', 'parseFloat', 'isNaN', 'isFinite']);
+const NUMBER_CONVERT = new Set(['parseInt', 'parseFloat']);
+// Node's own signature (lane w9o): every argument of a node:path function is a string (Node validates it and throws on
+// anything else). A parameter the unit hands to one is read as a string, so an untyped one (a JavaScript unit's, an any)
+// is drawn as text, not as a handle the function rejects on every input. The callee is named by the module its import
+// names, never by its own name alone. LEAN_BREAK=core-string-args: no such reading
+const PATH_MODULES = new Set(['path', 'node:path', 'path/posix', 'node:path/posix', 'path/win32', 'node:path/win32']);
 const UNDEF = { undefined: true };
 const sameLit = (a, b) => a === b || (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null && a.undefined && b.undefined);
 const addLit = (xs, v) => { if (!xs.some((x) => sameLit(x, v)) && xs.length < 32) xs.push(v); };
@@ -74,6 +84,14 @@ export function usage(sf, unitName, checker, opts = {}) {
     else if (ts.isArrayBindingPattern(name)) for (const el of name.elements) if (ts.isBindingElement(el) && !el.dotDotDotToken) bind(env, el.name, elemOf(node));
   }
 
+  // whether a callee is a function of node:path, by the module its import names: `path.join` (a default or a namespace
+  // import of the module) or `join` (a named import)
+  function pathModuleOf(callee) {
+    const specOf = (id) => { let n = symOf(id)?.declarations?.[0]; while (n && !ts.isImportDeclaration(n)) { if (ts.isSourceFile(n)) return null; n = n.parent; } return n && ts.isStringLiteral(n.moduleSpecifier) ? n.moduleSpecifier.text : null; };
+    if (ts.isIdentifier(callee)) { const d = symOf(callee)?.declarations?.[0]; return !!d && ts.isImportSpecifier(d) && PATH_MODULES.has(specOf(callee)); }
+    if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(strip(callee.expression))) { const r = strip(callee.expression), d = symOf(r)?.declarations?.[0]; return !!d && (ts.isImportClause(d) || ts.isNamespaceImport(d)) && PATH_MODULES.has(specOf(r)); }
+    return false;
+  }
   // the node an expression reads, when it is a chain from a root; null otherwise
   function nodeOf(e, env) {
     e = strip(e);
@@ -156,6 +174,9 @@ export function usage(sf, unitName, checker, opts = {}) {
     const args = node.arguments;
     // Math.max(x, ...) and friends read numbers
     if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && callee.expression.text === 'Math') { for (const a of args) { const n = nodeOf(a, env); if (n) n.numeric = true; } return; }
+    if (pathModuleOf(callee) && !broken('core-string-args')) for (const a of args) { const n = nodeOf(a, env); if (n) n.string = true; } // a node:path function's arguments: strings (PATH_MODULES)
+    // Number(x), parseInt(x, 10), Number.parseFloat(x), isNaN(x): x is read as a number from its text
+    if (args[0] && ((ts.isIdentifier(callee) && CONVERT.has(callee.text)) || (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) && callee.expression.text === 'Number' && NUMBER_CONVERT.has(callee.name.text)))) { const n = nodeOf(args[0], env); if (n) n.converted = true; return; }
     if (ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.name)) {
       const m = callee.name.text;
       // [lit, lit].includes(x): x is compared against each literal
@@ -220,7 +241,7 @@ export function mergeNodes(a, b) {
   for (const k of new Set([...Object.keys(a.fields), ...Object.keys(b.fields)])) o.fields[k] = mergeNodes(own(a, k), own(b, k));
   o.elem = mergeNodes(a.elem, b.elem); o.len = mergeNodes(a.len, b.len);
   for (const key of ['compares', 'typeofs', 'includes']) { for (const v of a[key]) addLit(o[key], v); for (const v of b[key]) addLit(o[key], v); }
-  for (const key of ['truthy', 'numeric', 'string', 'array', 'inTested']) o[key] = a[key] || b[key];
+  for (const key of ['truthy', 'numeric', 'string', 'array', 'inTested', 'converted']) o[key] = a[key] || b[key];
   o.called = a.called == null ? b.called : b.called == null ? a.called : Math.max(a.called, b.called);
   return o;
 }
