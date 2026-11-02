@@ -2674,13 +2674,13 @@ export function typeReaches(checker, h, o, at, depth = 0, seen = new Set()) {
   const idx = checker.getIndexTypeOfType(h, ts.IndexKind.String) ?? checker.getIndexTypeOfType(h, ts.IndexKind.Number);
   return [...inner, ...(idx ? [idx] : [])].some((x) => typeReaches(checker, x, o, at, depth + 1, seen));
 }
-export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), rebinds(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
+export function readAfterCall(checker, sf, u, h) { // h: the decider's own readings, { effect(n), typeOf(n), fact(call), factUsed(fact), worldRead(member), worldName(id), freshAlone(argument), opaque(statement), rebinds(statement), quiet(call), deferred(call), after, identity(occurrence), outputs, afterEnd }
 const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (TF.Any | TF.Unknown)), typeOf = (n) => h.typeOf(n);
   const body = u.fn?.body ?? u.node?.body;
   if (!body) return null;
   const P = (x) => { let p = x.parent; while (p && (ts.isParenthesizedExpression(p) || ts.isNonNullExpression(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p))) { x = p; p = p.parent; } return { p, x }; };
   const clock = (c) => { const t = ts.isCallExpression(c) ? c.expression.getText(sf) : ts.isNewExpression(c) ? `new ${c.expression.getText(sf)}` : ''; return ['Date.now', 'performance.now', 'process.hrtime', 'Math.random', 'crypto.randomUUID'].includes(t) || (t === 'new Date' && !(c.arguments && c.arguments.length)); };
-  const points = [], handed = [];
+  const points = [], handed = [], factAt = new Map(); // factAt: the fact calls (callee-facts.mjs)
   const namespace = (x) => { if (!ts.isIdentifier(x)) return false; const d = checker.getSymbolAtLocation(x)?.declarations?.[0]; return !!d && (d.getSourceFile() !== sf || ts.isImportSpecifier(d) || ts.isNamespaceImport(d) || ts.isImportClause(d)); }; // a lib global or an imported binding as receiver holds no object of this unit's unless it was handed one, which is counted there
   const libraryReceiver = (x, call) => { if ((call.arguments ?? []).some((a) => ts.isFunctionLike(a) || ts.isIdentifier(a))) return false; const t = h.typeOf(x); if (!t || isAny(t)) return false; const ps = t.flags & TF.Union ? t.types.filter((y) => !(y.flags & (TF.Undefined | TF.Null))) : [t]; return ps.length > 0 && ps.every((y) => !!(y.flags & TF.StringLike) || isArrayLike(checker, y) || ['Map', 'Set', 'ReadonlyMap', 'ReadonlySet'].includes(y.symbol?.name ?? '')); }; // a library op on an array, a Map, a Set or a string runs no outside code on its receiver (its row is the reading)
   const inline = (x) => { while (ts.isParenthesizedExpression(x) || ts.isAsExpression(x) || ts.isSatisfiesExpression(x) || ts.isNonNullExpression(x)) x = x.expression; return ts.isObjectLiteralExpression(x) || ts.isArrayLiteralExpression(x) || ts.isNewExpression(x); }; // a new object written in the call itself
@@ -2693,9 +2693,11 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     if ((ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n) || ts.isAwaitExpression(n) || ts.isPropertyAccessExpression(n)) && !clock(n) && !h.quiet?.(n) && effect(n)) {
       points.push(n);
       if (ts.isCallExpression(n) || ts.isNewExpression(n) || ts.isTaggedTemplateExpression(n)) { // a tagged template is the call of its tag on its holes
-        for (const a of ts.isTaggedTemplateExpression(n) ? templateHoles(n.template) : n.arguments ?? []) { if (!ts.isSpreadElement(a) && ((inline(a) && h.freshAlone(a)) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a }); } // a new object of primitive parts reaches only itself
+        const fact = ts.isCallExpression(n) ? h.fact?.(n) ?? null : null; // the callee writes none of what it is handed nor of what the run handed the calls before it (callee-facts.mjs): what a fact call is handed is no change at it or at a later fact call, only at the other calls after it (the callee may keep it)
+        if (fact) factAt.set(n, fact);
+        for (const a of ts.isTaggedTemplateExpression(n) ? templateHoles(n.template) : n.arguments ?? []) { if (!ts.isSpreadElement(a) && ((inline(a) && h.freshAlone(a)) || answer(a))) continue; handed.push({ at: n, t: typeOf(ts.isSpreadElement(a) ? a.expression : a), node: a, fact }); } // a new object of primitive parts reaches only itself
         const f = ts.isTaggedTemplateExpression(n) ? n.tag : n.expression;
-        if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression });
+        if ((ts.isPropertyAccessExpression(f) || ts.isElementAccessExpression(f)) && !answer(f.expression) && !libraryReceiver(f.expression, n) && !namespace(f.expression)) handed.push({ at: n, t: typeOf(f.expression), node: f.expression, fact });
       } else if (ts.isPropertyAccessExpression(n)) handed.push({ at: n, t: typeOf(n.expression), node: n.expression });
     }
     ts.forEachChild(n, walk);
@@ -2767,7 +2769,11 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     for (const x of a.types) for (const y of b.types) if (x === y || checker.isTypeAssignableTo(x, y) || checker.isTypeAssignableTo(y, x)) return true;
     return false;
   };
-  const reached = (o, c) => handed.find((x) => ranBy(x.at, c) && (reaches(x.t, o) || share(x.t, o))) ?? null;
+  // a handed value reaches o at c; one handed to c itself under a fact is no change at c (the fact is noted as used)
+  const reached = (o, c, covered = false) => handed.find((x) => ranBy(x.at, c) && !!(x.fact && (x.at === c || factAt.has(c))) === covered && (reaches(x.t, o) || share(x.t, o))) ?? null; // covered: the values handed to c itself under a fact, no change at c
+  // what the world may hold at c: every value a call that ran by c was handed, a fact call's too (its fact says it writes
+  // none of them, not that it keeps none: a later write through one is told to the world, design/world-write.md)
+  const heldBy = (o, c) => handed.some((x) => ranBy(x.at, c) && !(x.fact && broken('callee-fact-held')) && (reaches(x.t, o) || share(x.t, o)));
   const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
   const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
   const inFn = (x, top) => { for (let p = x.parent; p && p !== top; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
@@ -2782,12 +2788,12 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
     const cf = fnOf(c0), a = anchorOf(c0); if (!a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end)) return false;
     { const rs = a && stmtRebinds(a); if (rs && !(rs.pos <= occ.pos && occ.end <= rs.end)) return false; }
     const c = a && !(cf && cf.pos <= occ.pos && occ.end <= cf.end) ? a : c0;
-    const hit = reached(t, c); if (!hit) return false;
-    why = { call: c, handed: hit.node };
     const inside = c.pos <= occ.pos && occ.end <= c.end;
-    if (inside && !inFn(occ, c)) return false; // evaluated before the call runs
-    if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf) && !exitsBefore(c, occ)) return true;
-    const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside;
+    const after = () => { if (inside && !inFn(occ, c)) return false; /* evaluated before the call runs */ if (c.getStart(sf) >= start && c.getEnd() <= occ.getStart(sf) && !exitsBefore(c, occ)) return true; const lc = loops(c); return c.getStart(sf) >= start && loops(occ).some((l) => lc.includes(l)) && !inside; };
+    const hit = reached(t, c);
+    if (!hit) { const f = h.factUsed && reached(t, c, true); if (f && after()) { h.factUsed(f.fact); if (f.at !== c) h.factUsed(factAt.get(c)); } return false; } // what only the fact keeps unchanged: the fact is used here
+    why = { call: c, handed: hit.node };
+    return after();
   });
   const declOfSym = (s) => s?.valueDeclaration ?? s?.declarations?.[0];
   const writes = (s) => { const out = []; const w = (x) => { if (ts.isBinaryExpression(x) && x.operatorToken.kind >= K.FirstAssignment && x.operatorToken.kind <= K.LastAssignment && ts.isIdentifier(x.left) && checker.getSymbolAtLocation(x.left) === s) out.push(x); ts.forEachChild(x, w); }; w(body); return out; };
@@ -2922,7 +2928,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
       const s = ts.isIdentifier(r) ? checker.getSymbolAtLocation(r) : null;
       if (s || r.kind === K.ThisKeyword) {
         const t = typeOf(target);
-        const held = (s && answerBound(s)) || (() => { const d = s ? declOfSym(s) : null; const st = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end ? d.getEnd() : body.getStart(sf); return points.some((c) => { if (!reached(typeOf(r), c)) return false; return c.getStart(sf) >= st && c.getEnd() <= n.getStart(sf) && !exitsBefore(c, n); }); })();
+        const held = (s && answerBound(s)) || (() => { const d = s ? declOfSym(s) : null; const st = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end ? d.getEnd() : body.getStart(sf); return points.some((c) => { if (!heldBy(typeOf(r), c)) return false; return c.getStart(sf) >= st && c.getEnd() <= n.getStart(sf) && !exitsBefore(c, n); }); })();
         if (held && objectLike(t)) writePoints.push({ node: n, root: r, sym: s, t, inFn: !!fnOf(n) });
       }
     }

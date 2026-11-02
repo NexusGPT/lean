@@ -918,7 +918,7 @@ export function lowerFile(file, ranges = null, opts = {}) {
   if (open.length && opts.emission !== false) {
     const refuse = (u, id, rule, reason, line, by, site = null) => { u.refusal = { id, version: readingById(id) ? currentVersion(readingById(id)) : null, rule, reason, line, by, ...(site ? { site } : {}) }; };
     for (const u of open) {
-      try { const tr = measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given, normalized: L, fileAnalysis })); if (tr?.opaque?.[u.unit]) u.opaqueSteps = tr.opaque[u.unit]; } // the unit's opaque steps, their spans and its opaque fraction (A5: the census reads them per unit)
+      try { const tr = measureLowering('phase 4 per-unit translation (including gates)', () => translate(file, null, { core: true, heap: true, project: opts.project ?? true, only: [u.unit], loaded: given, normalized: L, fileAnalysis, calleeFacts: opts.calleeFacts === undefined ? 'pending' : opts.calleeFacts })); if (tr?.opaque?.[u.unit]) u.opaqueSteps = tr.opaque[u.unit]; const pend = [...new Set([...String(tr?.main ?? '').matchAll(/^\/\/ ASSUME \S+: callee (.+?) writes none of its arguments.*\(pending lane B's record\)$/gm)].map((m) => m[1]))]; if (pend.length) u.calleeFacts = pend; } // the unit's opaque steps, their spans and its opaque fraction (A5: the census reads them per unit)
       catch (e) {
         const message = String(e?.message ?? e);
         if (e?.constructor?.name !== 'Unsupported') { refuse(u, 'translator-internal', 'translator-crash', `the translator stopped: ${message.split('\n')[0]}`, u.lines[0], 'translate', translatorSite(e?.stack)); continue; }

@@ -38,6 +38,7 @@ const isSetLike = (x) => tag(x) === '[object Set]';
 // The caller's file: the nearest stack frame that has one (a native builtin such as `new Map(iterable)` calling `set` has
 // none and is skipped). Lane B keeps a record only when that file is one the sandbox loaded, so the harness's own
 // arrays (the fakes, the renderer, the graph) never enter the record set while the window is open.
+const TRACE_FILE = new URL('./callee-trace.mjs', import.meta.url).pathname; // the call-site recorder of the callee facts (callee-trace.mjs): a built-in called through it is still the unit's call
 const FRAME = /\((.*?):\d+:\d+\)\s*$|at (\S+?):\d+:\d+\s*$/; // `at fn (file:line:col)` or `at file:line:col`; a native builtin prints `(<anonymous>)` and has no file
 const callerFile = (skip) => {
   const lim = Error.stackTraceLimit; Error.stackTraceLimit = 10;
@@ -45,7 +46,7 @@ const callerFile = (skip) => {
   Error.stackTraceLimit = lim;
   if (typeof text !== 'string') return null;
   let i = text.indexOf('\n');
-  while (i >= 0) { const j = text.indexOf('\n', i + 1); const line = j >= 0 ? text.slice(i + 1, j) : text.slice(i + 1); const m = FRAME.exec(line); if (m) { const f = m[1] ?? m[2]; if (f && f !== '<anonymous>' && !f.startsWith('node:')) return f.startsWith('file://') ? f.slice(7) : f; } i = j; }
+  while (i >= 0) { const j = text.indexOf('\n', i + 1); const line = j >= 0 ? text.slice(i + 1, j) : text.slice(i + 1); const m = FRAME.exec(line); if (m) { const f = m[1] ?? m[2]; const file = f && f.startsWith('file://') ? f.slice(7) : f; if (file && file !== '<anonymous>' && !file.startsWith('node:') && file !== TRACE_FILE) return file; } i = j; }
   return null;
 };
 let active = null; // the open window: { records, keep }, so a realm created inside it (a vm context for a fresh mount) can join

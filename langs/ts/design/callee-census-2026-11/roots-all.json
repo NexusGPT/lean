@@ -1,0 +1,912 @@
+{
+ "roots": 18,
+ "units": 97743,
+ "refused": 54288,
+ "calleeOnly": 4690,
+ "multiCallee": 178,
+ "byOrigin": {
+  "project": 2558,
+  "ecmascript": 1074,
+  "package": 538,
+  "untyped": 304,
+  "node": 108,
+  "web": 60,
+  "ecmascript+project": 14,
+  "ecmascript+untyped": 10,
+  "package+project": 7,
+  "ecmascript+node": 5,
+  "project+untyped": 5,
+  "ecmascript+web": 4,
+  "ecmascript+package": 2,
+  "project+web": 1
+ },
+ "callees": 32366,
+ "origins": null,
+ "top20": 1295,
+ "top50": 1776,
+ "rows": [
+  {
+   "rank": 1,
+   "key": "global new Promise",
+   "module": "global",
+   "member": "new Promise",
+   "origin": "ecmascript",
+   "callers": 434,
+   "calls": 464,
+   "onlyBy": 404,
+   "among": 410,
+   "rules": {
+    "promise-pending": 300,
+    "promise": 211,
+    "promise-executor-escape": 86,
+    "promise-executor": 24,
+    "read-after-call": 10,
+    "async": 1,
+    "promise-unsettled": 1
+   },
+   "cumulative": 404
+  },
+  {
+   "rank": 2,
+   "key": "apps/backend/src/_common/domain/result.ts isErr",
+   "module": "apps/backend/src/_common/domain/result.ts",
+   "member": "isErr",
+   "origin": "project",
+   "callers": 763,
+   "calls": 1192,
+   "onlyBy": 153,
+   "among": 153,
+   "rules": {
+    "read-after-call": 153
+   },
+   "cumulative": 557
+  },
+  {
+   "rank": 3,
+   "key": "react useCallback",
+   "module": "react",
+   "member": "useCallback",
+   "origin": "package",
+   "callers": 1106,
+   "calls": 2949,
+   "onlyBy": 82,
+   "among": 82,
+   "rules": {
+    "read-after-call": 82
+   },
+   "cumulative": 639
+  },
+  {
+   "rank": 4,
+   "key": "global Array.prototype.forEach",
+   "module": "global",
+   "member": "Array.prototype.forEach",
+   "origin": "ecmascript",
+   "callers": 788,
+   "calls": 1142,
+   "onlyBy": 80,
+   "among": 94,
+   "rules": {
+    "foreach": 68,
+    "read-after-call": 36,
+    "type-assertion": 2
+   },
+   "cumulative": 719
+  },
+  {
+   "rank": 5,
+   "key": "packages/workflow/src/Interfaces.ts ExecuteFunctions.getNodeParameter",
+   "module": "packages/workflow/src/Interfaces.ts",
+   "member": "ExecuteFunctions.getNodeParameter",
+   "origin": "project",
+   "callers": 855,
+   "calls": 9086,
+   "onlyBy": 63,
+   "among": 65,
+   "rules": {
+    "read-after-call": 62,
+    "type-assertion": 4,
+    "opaque-mutation": 1
+   },
+   "cumulative": 782
+  },
+  {
+   "rank": 6,
+   "key": "global JSON.stringify",
+   "module": "global",
+   "member": "JSON.stringify",
+   "origin": "ecmascript",
+   "callers": 2035,
+   "calls": 2812,
+   "onlyBy": 63,
+   "among": 63,
+   "rules": {
+    "read-after-call": 63
+   },
+   "cumulative": 845
+  },
+  {
+   "rank": 7,
+   "key": "global Math.max",
+   "module": "global",
+   "member": "Math.max",
+   "origin": "ecmascript",
+   "callers": 756,
+   "calls": 934,
+   "onlyBy": 53,
+   "among": 63,
+   "rules": {
+    "math-empty": 63
+   },
+   "cumulative": 898
+  },
+  {
+   "rank": 8,
+   "key": "packages/core/src/index.ts isPlainObject",
+   "module": "packages/core/src/index.ts",
+   "member": "isPlainObject",
+   "origin": "project",
+   "callers": 55,
+   "calls": 85,
+   "onlyBy": 49,
+   "among": 49,
+   "rules": {
+    "read-after-call": 49
+   },
+   "cumulative": 947
+  },
+  {
+   "rank": 9,
+   "key": "core/claude-wire/src/claude-tool-input.ts jsonString",
+   "module": "core/claude-wire/src/claude-tool-input.ts",
+   "member": "jsonString",
+   "origin": "project",
+   "callers": 60,
+   "calls": 177,
+   "onlyBy": 46,
+   "among": 46,
+   "rules": {
+    "read-after-call": 46
+   },
+   "cumulative": 993
+  },
+  {
+   "rank": 10,
+   "key": "global Array.prototype.find",
+   "module": "global",
+   "member": "Array.prototype.find",
+   "origin": "ecmascript",
+   "callers": 1353,
+   "calls": 1684,
+   "onlyBy": 34,
+   "among": 38,
+   "rules": {
+    "read-after-call": 30,
+    "non-null-assertion": 8,
+    "unsupported-call": 1
+   },
+   "cumulative": 1027
+  },
+  {
+   "rank": 11,
+   "key": "global Array.prototype.some",
+   "module": "global",
+   "member": "Array.prototype.some",
+   "origin": "ecmascript",
+   "callers": 1008,
+   "calls": 1183,
+   "onlyBy": 31,
+   "among": 34,
+   "rules": {
+    "read-after-call": 34
+   },
+   "cumulative": 1058
+  },
+  {
+   "rank": 12,
+   "key": "apps/frontend/src/modules/Workflow/utils/get-dependent-variables.ts getDependentVariables",
+   "module": "apps/frontend/src/modules/Workflow/utils/get-dependent-variables.ts",
+   "member": "getDependentVariables",
+   "origin": "project",
+   "callers": 34,
+   "calls": 34,
+   "onlyBy": 31,
+   "among": 31,
+   "rules": {
+    "read-after-call": 31
+   },
+   "cumulative": 1089
+  },
+  {
+   "rank": 13,
+   "key": "global Math.min",
+   "module": "global",
+   "member": "Math.min",
+   "origin": "ecmascript",
+   "callers": 527,
+   "calls": 656,
+   "onlyBy": 27,
+   "among": 37,
+   "rules": {
+    "math-empty": 37
+   },
+   "cumulative": 1126
+  },
+  {
+   "rank": 14,
+   "key": "global Array.prototype.join",
+   "module": "global",
+   "member": "Array.prototype.join",
+   "origin": "ecmascript",
+   "callers": 2769,
+   "calls": 3784,
+   "onlyBy": 27,
+   "among": 27,
+   "rules": {
+    "read-after-call": 15,
+    "type-assertion": 12
+   },
+   "cumulative": 1153
+  },
+  {
+   "rank": 15,
+   "key": "(untyped) useList",
+   "module": "(untyped)",
+   "member": "useList",
+   "origin": "untyped",
+   "callers": 99,
+   "calls": 116,
+   "onlyBy": 25,
+   "among": 28,
+   "rules": {
+    "read-after-call": 28,
+    "type-assertion": 3
+   },
+   "cumulative": 1178
+  },
+  {
+   "rank": 16,
+   "key": "global Date.prototype.getTime",
+   "module": "global",
+   "member": "Date.prototype.getTime",
+   "origin": "ecmascript",
+   "callers": 390,
+   "calls": 658,
+   "onlyBy": 25,
+   "among": 25,
+   "rules": {
+    "read-after-call": 25
+   },
+   "cumulative": 1203
+  },
+  {
+   "rank": 17,
+   "key": "(untyped) find",
+   "module": "(untyped)",
+   "member": "find",
+   "origin": "untyped",
+   "callers": 310,
+   "calls": 384,
+   "onlyBy": 24,
+   "among": 32,
+   "rules": {
+    "read-after-call": 32
+   },
+   "cumulative": 1227
+  },
+  {
+   "rank": 18,
+   "key": "global JSON.parse",
+   "module": "global",
+   "member": "JSON.parse",
+   "origin": "ecmascript",
+   "callers": 765,
+   "calls": 864,
+   "onlyBy": 23,
+   "among": 24,
+   "rules": {
+    "type-assertion": 22,
+    "read-after-call": 2,
+    "promise-pending": 1
+   },
+   "cumulative": 1251
+  },
+  {
+   "rank": 19,
+   "key": "(untyped) filter",
+   "module": "(untyped)",
+   "member": "filter",
+   "origin": "untyped",
+   "callers": 459,
+   "calls": 601,
+   "onlyBy": 22,
+   "among": 25,
+   "rules": {
+    "read-after-call": 25
+   },
+   "cumulative": 1273
+  },
+  {
+   "rank": 20,
+   "key": "i18next TFunctionNonStrict",
+   "module": "i18next",
+   "member": "TFunctionNonStrict",
+   "origin": "package",
+   "callers": 281,
+   "calls": 1376,
+   "onlyBy": 22,
+   "among": 22,
+   "rules": {
+    "unsupported-call": 18,
+    "read-after-call": 4
+   },
+   "cumulative": 1295
+  },
+  {
+   "rank": 21,
+   "key": "(untyped) startsWith",
+   "module": "(untyped)",
+   "member": "startsWith",
+   "origin": "untyped",
+   "callers": 149,
+   "calls": 186,
+   "onlyBy": 22,
+   "among": 22,
+   "rules": {
+    "read-after-call": 22
+   },
+   "cumulative": 1317
+  },
+  {
+   "rank": 22,
+   "key": "core/domain/src/index.ts structurallyEqual",
+   "module": "core/domain/src/index.ts",
+   "member": "structurallyEqual",
+   "origin": "project",
+   "callers": 55,
+   "calls": 64,
+   "onlyBy": 21,
+   "among": 21,
+   "rules": {
+    "read-after-call": 21
+   },
+   "cumulative": 1338
+  },
+  {
+   "rank": 23,
+   "key": "global Promise.all",
+   "module": "global",
+   "member": "Promise.all",
+   "origin": "ecmascript",
+   "callers": 674,
+   "calls": 737,
+   "onlyBy": 20,
+   "among": 20,
+   "rules": {
+    "read-after-call": 20
+   },
+   "cumulative": 1358
+  },
+  {
+   "rank": 24,
+   "key": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/utils.ts deepCopy",
+   "module": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/utils.ts",
+   "member": "deepCopy",
+   "origin": "project",
+   "callers": 2,
+   "calls": 4,
+   "onlyBy": 20,
+   "among": 20,
+   "rules": {
+    "read-after-call": 20
+   },
+   "cumulative": 1378
+  },
+  {
+   "rank": 25,
+   "key": "@n8n/typeorm Repository.prototype.find",
+   "module": "@n8n/typeorm",
+   "member": "Repository.prototype.find",
+   "origin": "package",
+   "callers": 71,
+   "calls": 86,
+   "onlyBy": 19,
+   "among": 19,
+   "rules": {
+    "read-after-call": 19
+   },
+   "cumulative": 1397
+  },
+  {
+   "rank": 26,
+   "key": "packages/schema/src/issues.ts duplicateIndexes",
+   "module": "packages/schema/src/issues.ts",
+   "member": "duplicateIndexes",
+   "origin": "project",
+   "callers": 11,
+   "calls": 14,
+   "onlyBy": 19,
+   "among": 19,
+   "rules": {
+    "read-after-call": 19
+   },
+   "cumulative": 1416
+  },
+  {
+   "rank": 27,
+   "key": "src/search/vocabulary.ts GROUP_OF.get",
+   "module": "src/search/vocabulary.ts",
+   "member": "GROUP_OF.get",
+   "origin": "project",
+   "callers": 6,
+   "calls": 10,
+   "onlyBy": 19,
+   "among": 19,
+   "rules": {
+    "type-assertion": 19
+   },
+   "cumulative": 1435
+  },
+  {
+   "rank": 28,
+   "key": "src/i18n/index.ts t",
+   "module": "src/i18n/index.ts",
+   "member": "t",
+   "origin": "project",
+   "callers": 304,
+   "calls": 1145,
+   "onlyBy": 18,
+   "among": 18,
+   "rules": {
+    "read-after-call": 18
+   },
+   "cumulative": 1453
+  },
+  {
+   "rank": 29,
+   "key": "playwright-core Locator.prototype.evaluateAll",
+   "module": "playwright-core",
+   "member": "Locator.prototype.evaluateAll",
+   "origin": "package",
+   "callers": 14,
+   "calls": 19,
+   "onlyBy": 18,
+   "among": 18,
+   "rules": {
+    "read-after-call": 18
+   },
+   "cumulative": 1471
+  },
+  {
+   "rank": 30,
+   "key": "tools/proof-host/src/cli-replies.ts list",
+   "module": "tools/proof-host/src/cli-replies.ts",
+   "member": "list",
+   "origin": "project",
+   "callers": 7,
+   "calls": 14,
+   "onlyBy": 17,
+   "among": 20,
+   "rules": {
+    "read-after-call": 20
+   },
+   "cumulative": 1488
+  },
+  {
+   "rank": 31,
+   "key": "packages/react/src/utils/cn.ts cn",
+   "module": "packages/react/src/utils/cn.ts",
+   "member": "cn",
+   "origin": "project",
+   "callers": 80,
+   "calls": 98,
+   "onlyBy": 17,
+   "among": 17,
+   "rules": {
+    "read-after-call": 17
+   },
+   "cumulative": 1505
+  },
+  {
+   "rank": 32,
+   "key": "lodash/get default",
+   "module": "lodash/get",
+   "member": "default",
+   "origin": "package",
+   "callers": 93,
+   "calls": 223,
+   "onlyBy": 16,
+   "among": 16,
+   "rules": {
+    "type-assertion": 9,
+    "read-after-call": 7
+   },
+   "cumulative": 1521
+  },
+  {
+   "rank": 33,
+   "key": "node:fs StatsBase.prototype.isDirectory",
+   "module": "node:fs",
+   "member": "StatsBase.prototype.isDirectory",
+   "origin": "node",
+   "callers": 63,
+   "calls": 68,
+   "onlyBy": 16,
+   "among": 16,
+   "rules": {
+    "read-after-call": 16
+   },
+   "cumulative": 1537
+  },
+  {
+   "rank": 34,
+   "key": "packages/cli/src/databases/entities/User.ts User.prototype.hasGlobalScope",
+   "module": "packages/cli/src/databases/entities/User.ts",
+   "member": "User.prototype.hasGlobalScope",
+   "origin": "project",
+   "callers": 16,
+   "calls": 17,
+   "onlyBy": 16,
+   "among": 16,
+   "rules": {
+    "read-after-call": 16
+   },
+   "cumulative": 1553
+  },
+  {
+   "rank": 35,
+   "key": "packages/checks/src/support/text.ts textSegments",
+   "module": "packages/checks/src/support/text.ts",
+   "member": "textSegments",
+   "origin": "project",
+   "callers": 2,
+   "calls": 2,
+   "onlyBy": 16,
+   "among": 16,
+   "rules": {
+    "read-after-call": 16
+   },
+   "cumulative": 1569
+  },
+  {
+   "rank": 36,
+   "key": "global Object.keys",
+   "module": "global",
+   "member": "Object.keys",
+   "origin": "ecmascript",
+   "callers": 1443,
+   "calls": 2152,
+   "onlyBy": 15,
+   "among": 17,
+   "rules": {
+    "read-after-call": 14,
+    "type-assertion": 3
+   },
+   "cumulative": 1584
+  },
+  {
+   "rank": 37,
+   "key": "playwright-core ElectronApplication.prototype.evaluate",
+   "module": "playwright-core",
+   "member": "ElectronApplication.prototype.evaluate",
+   "origin": "package",
+   "callers": 56,
+   "calls": 65,
+   "onlyBy": 15,
+   "among": 15,
+   "rules": {
+    "read-after-call": 15
+   },
+   "cumulative": 1599
+  },
+  {
+   "rank": 38,
+   "key": "packages/adapters/src/claude-code/format.ts isRecord",
+   "module": "packages/adapters/src/claude-code/format.ts",
+   "member": "isRecord",
+   "origin": "project",
+   "callers": 21,
+   "calls": 41,
+   "onlyBy": 15,
+   "among": 15,
+   "rules": {
+    "read-after-call": 15
+   },
+   "cumulative": 1614
+  },
+  {
+   "rank": 39,
+   "key": "better-sqlite3 BetterSqlite3.Transaction",
+   "module": "better-sqlite3",
+   "member": "BetterSqlite3.Transaction",
+   "origin": "package",
+   "callers": 14,
+   "calls": 14,
+   "onlyBy": 15,
+   "among": 15,
+   "rules": {
+    "unsupported-call": 15
+   },
+   "cumulative": 1629
+  },
+  {
+   "rank": 40,
+   "key": "packages/core/src/spec/normalize.ts isPlainObject",
+   "module": "packages/core/src/spec/normalize.ts",
+   "member": "isPlainObject",
+   "origin": "project",
+   "callers": 6,
+   "calls": 9,
+   "onlyBy": 15,
+   "among": 15,
+   "rules": {
+    "read-after-call": 15
+   },
+   "cumulative": 1644
+  },
+  {
+   "rank": 41,
+   "key": "packages/space/src/index.ts gridSize",
+   "module": "packages/space/src/index.ts",
+   "member": "gridSize",
+   "origin": "project",
+   "callers": 7,
+   "calls": 7,
+   "onlyBy": 14,
+   "among": 15,
+   "rules": {
+    "read-after-call": 15
+   },
+   "cumulative": 1658
+  },
+  {
+   "rank": 42,
+   "key": "(untyped) some",
+   "module": "(untyped)",
+   "member": "some",
+   "origin": "untyped",
+   "callers": 102,
+   "calls": 113,
+   "onlyBy": 14,
+   "among": 14,
+   "rules": {
+    "read-after-call": 14
+   },
+   "cumulative": 1672
+  },
+  {
+   "rank": 43,
+   "key": "global new Proxy",
+   "module": "global",
+   "member": "new Proxy",
+   "origin": "ecmascript",
+   "callers": 18,
+   "calls": 21,
+   "onlyBy": 14,
+   "among": 14,
+   "rules": {
+    "prototype": 14
+   },
+   "cumulative": 1686
+  },
+  {
+   "rank": 44,
+   "key": "global Map.prototype.values",
+   "module": "global",
+   "member": "Map.prototype.values",
+   "origin": "ecmascript",
+   "callers": 251,
+   "calls": 287,
+   "onlyBy": 13,
+   "among": 14,
+   "rules": {
+    "alias-mutation": 7,
+    "collection-iterator": 7,
+    "read-after-call": 1
+   },
+   "cumulative": 1699
+  },
+  {
+   "rank": 45,
+   "key": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/nodes/Abstract.ts AbstractNode.prototype.replaceVariablesAndExtractText",
+   "module": "apps/backend/src/workflow/workflow-engine/workflow-node-executor/nodes/Abstract.ts",
+   "member": "AbstractNode.prototype.replaceVariablesAndExtractText",
+   "origin": "project",
+   "callers": 33,
+   "calls": 52,
+   "onlyBy": 13,
+   "among": 14,
+   "rules": {
+    "read-after-call": 14,
+    "this": 1
+   },
+   "cumulative": 1712
+  },
+  {
+   "rank": 46,
+   "key": "packages/core/src/progress/lookup.ts ContentLookup.prototype.courseUids",
+   "module": "packages/core/src/progress/lookup.ts",
+   "member": "ContentLookup.prototype.courseUids",
+   "origin": "project",
+   "callers": 3,
+   "calls": 3,
+   "onlyBy": 13,
+   "among": 14,
+   "rules": {
+    "read-after-call": 14
+   },
+   "cumulative": 1725
+  },
+  {
+   "rank": 47,
+   "key": "global CallableFunction.prototype.call",
+   "module": "global",
+   "member": "CallableFunction.prototype.call",
+   "origin": "ecmascript",
+   "callers": 611,
+   "calls": 790,
+   "onlyBy": 13,
+   "among": 13,
+   "rules": {
+    "type-assertion": 11,
+    "read-after-call": 2
+   },
+   "cumulative": 1738
+  },
+  {
+   "rank": 48,
+   "key": "@smithy/smithy-client Client.prototype.send",
+   "module": "@smithy/smithy-client",
+   "member": "Client.prototype.send",
+   "origin": "package",
+   "callers": 19,
+   "calls": 25,
+   "onlyBy": 13,
+   "among": 13,
+   "rules": {
+    "read-after-call": 13
+   },
+   "cumulative": 1751
+  },
+  {
+   "rank": 49,
+   "key": "packages/core/src/index.ts initialGiven",
+   "module": "packages/core/src/index.ts",
+   "member": "initialGiven",
+   "origin": "project",
+   "callers": 1,
+   "calls": 1,
+   "onlyBy": 13,
+   "among": 13,
+   "rules": {
+    "read-after-call": 13
+   },
+   "cumulative": 1764
+  },
+  {
+   "rank": 50,
+   "key": "typedi Container.get",
+   "module": "typedi",
+   "member": "Container.get",
+   "origin": "package",
+   "callers": 170,
+   "calls": 320,
+   "onlyBy": 12,
+   "among": 12,
+   "rules": {
+    "read-after-call": 12
+   },
+   "cumulative": 1776
+  }
+ ],
+ "inputs": [
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/agent-nexus.json",
+   "root": "/root/census-installs/w2a/roots-agent-nexus",
+   "units": 4171,
+   "entered": 3028
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/apps-starter.json",
+   "root": "/root/census-installs/w2a/roots-apps-starter",
+   "units": 472,
+   "entered": 86
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/apps-ui.json",
+   "root": "/root/census-installs/w2a/roots-apps-ui",
+   "units": 2361,
+   "entered": 1048
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/blocks.json",
+   "root": "/root/census-installs/w2a/roots-blocks",
+   "units": 516,
+   "entered": 333
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/blog-studio-lambda.json",
+   "root": "/root/census-installs/w2a/roots-blog-studio-lambda",
+   "units": 999,
+   "entered": 437
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/claude-skills.json",
+   "root": "/root/census-installs/w2a/roots-claude-skills",
+   "units": 355,
+   "entered": 284
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/driftbench.json",
+   "root": "/root/census-installs/w2a/roots-driftbench",
+   "units": 5479,
+   "entered": 2512
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/langchainjs.json",
+   "root": "/root/census-installs/w2a/roots-langchainjs",
+   "units": 6709,
+   "entered": 2954
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/n8n.json",
+   "root": "/root/census-installs/w2a/roots-n8n",
+   "units": 9610,
+   "entered": 3072
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-app-starter.json",
+   "root": "/root/census-installs/w2a/roots-nexus-app-starter",
+   "units": 1499,
+   "entered": 662
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus.json",
+   "root": "/root/census-installs/w2a/roots-nexus",
+   "units": 43949,
+   "entered": 17342
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-learning.json",
+   "root": "/root/census-installs/w2a/roots-nexus-learning",
+   "units": 3760,
+   "entered": 2210
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-linkedin-dashboard.json",
+   "root": "/root/census-installs/w2a/roots-nexus-linkedin-dashboard",
+   "units": 1704,
+   "entered": 935
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nexus-ui.json",
+   "root": "/root/census-installs/w2a/roots-nexus-ui",
+   "units": 629,
+   "entered": 138
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/nutshell.json",
+   "root": "/root/census-installs/w2a/roots-nutshell",
+   "units": 10511,
+   "entered": 6156
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/pyka.json",
+   "root": "/root/census-installs/w2a/roots-pyka",
+   "units": 2966,
+   "entered": 1324
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/snitch.json",
+   "root": "/root/census-installs/w2a/roots-snitch",
+   "units": 1399,
+   "entered": 635
+  },
+  {
+   "file": "/root/lanes/w2a-callee-census/runs/roots/status.json",
+   "root": "/root/census-installs/w2a/roots-status",
+   "units": 654,
+   "entered": 299
+  }
+ ]
+}

@@ -67,6 +67,7 @@ import { z3Binary } from './solve/z3.mjs';
 import { dafnyVerifyArgs, dafnyTimeLimitS, outOfResourceLines, DAFNY_RESOURCE_LIMIT } from './exec/dafny-args.mjs';
 import { spawnCollect, wallCapMs } from './exec/capped.mjs';
 import { counterexample } from './solve/counterexample.mjs';
+import { confirmedFacts } from './callee-facts.mjs'; // the per-callee fact "writes none of its arguments", confirmed on lane B's record of each side (lane w8e)
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const sha = (p) => (p && fs.existsSync(p) ? createHash('sha256').update(fs.readFileSync(p)).digest('hex').slice(0, 16) : null);
@@ -171,8 +172,14 @@ export async function check(opts) {
     return finish('WITNESS', cert, { witness: { input: 'doubles counterexample', args: fp.input, parent: fp.parentObservation, candidate: fp.candidateObservation, where: { lane: 'A', reading: 'doubles: the solver\'s input replayed in Node through lane B\'s runner' } } });
   }
   const noteDoubles = () => { if (doubles && cert.lanes.A) cert.lanes.A.doubles = doubles; };
+  // the callee facts (callee-facts.mjs): lane B recorded every call site of each side's file; the facts that record
+  // confirms on a side are the only ones its translation reads (a read after an eligible call whose fact is not confirmed
+  // stays refused). Read against the side's own text; the facts used are ASSUME lines, so lanes.A.assumptions names them
+  const factsOf = (side, file) => { const out = path.join(tmp, `${side}.facts.json`); let r = { keys: {}, eligible: [] }; try { const L = loadProgram(file, { project }); r = confirmedFacts(L.checker, L.sf, b.bound?.calleeFacts?.[side] ?? {}); } catch (e) { r = { keys: {}, eligible: [], error: String(e?.message ?? e).slice(0, 200) }; } fs.writeFileSync(out, JSON.stringify({ keys: r.keys })); return { file: out, ...r }; };
+  const facts = { parent: factsOf('parent', parent), candidate: factsOf('candidate', candidate) };
+  if (facts.parent.eligible.length || facts.candidate.eligible.length) cert.lanes.B.calleeFacts = Object.fromEntries(['parent', 'candidate'].map((x) => [x, { confirmed: facts[x].keys, eligible: facts[x].eligible, ...(facts[x].error ? { error: facts[x].error } : {}) }]));
   // the heap core (references, layer 2) is on: a unit over plain records and arrays is read through one heap; the core is agreed on both sides like EFFECTFUL, since a unit in the core on one side only would change its signature (agreeCore: on the units both translations hold)
-  const tr = (file, suffix, eff, heapUnits) => timed('translate', () => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', formatUnitList([unit]), '--suffix', suffix, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000));
+  const tr = (file, suffix, eff, heapUnits) => timed('translate', () => run('node', [path.join(here, 'translate/translate.mjs'), file, '--core', '--only', formatUnitList([unit]), '--suffix', suffix, '--callee-facts', facts[suffix].file, '--out', path.join(tmp, `${suffix}.dfy`), '--prelude', path.join(tmp, `${suffix}.pre.dfy`), ...(project === false ? ['--no-project'] : typeof project === 'string' ? ['--project', project] : []), '--heap', ...(eff ? ['--effectful', eff] : []), ...(heapUnits !== undefined ? ['--heap-units', heapUnits || '-'] : [])], 120000));
   const headerOf = (suffix, key) => { const p = path.join(tmp, `${suffix}.dfy`); if (!fs.existsSync(p)) return ''; const m = fs.readFileSync(p, 'utf8').match(new RegExp(`^// ${key}: (.*)$`, 'm')); return m ? m[1].trim() : ''; };
   const heapOf = (suffix) => headerOf(suffix, 'HEAP');
   const agreed = agreeCore({ files: { parent, candidate }, dfyOf: (side) => path.join(tmp, `${side}.dfy`), tr: (side, eff, units) => tr(side === 'parent' ? parent : candidate, side, eff, units) });
