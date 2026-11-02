@@ -61,3 +61,23 @@ certificate; that is the reading of every bounded check (exec/transitions.mjs va
   write): sameWriter (and sameKeptWriter) PASS-proved under a premise lane B saw broken: 4 checks fail, exit 1.
 - `LEAN_BREAK=callee-fact-prior` (lane B reads only the call's own receiver and arguments): sameKeptWriter PASS-proved
   under "touchKept writes none of its arguments", while touchKept clears the tags remember kept: 1 check fails, exit 1.
+
+## 2026-11-02 (lane w9aa): the fact beside the world-write points
+
+lead-v4 gained the world-write points after this lane was cut (design/world-write.md, lane w8c): a write through an
+object the world may hold is told to the world (`ext_put_<T>`), so a later call that kept the object sees it. Merged
+as it was, the fact narrowed that test too: `writePoints` asked `reached`, which leaves out what a fact call was
+handed, so an object handed only to fact calls was taken for one the world does not hold. The fact says the callee
+writes none of what it is handed and answers none of its objects; it does not say the callee keeps none of it (a
+callee that stores its argument in its module writes nothing of it, and lane B confirms it). `hold(b); b.n = w;
+heldN()` then read the write as a local one, heldN answered the same on both sides, and lane A proved a candidate that
+writes another value (a false proof; lane B, which runs the project callees, witnesses it).
+
+`common.mjs readAfterCall heldBy`: what the world may hold at a call is every value a call that ran by then was
+handed, a fact call's too. The fact still lifts what it lifts: a read after a fact call is no read of a changed
+object (`reached`), and only that.
+
+- Pair `callee_fact` keptWrite: WITNESS; `tests/callee-fact.mjs` reads lane A alone on it (the translation with the
+  facts lane B confirmed in the certificate, the theorem, Dafny), since check.mjs stops at lane B's witness.
+- Red before the change: keptWrite PROVED by lane A, `callee-fact: 1 failed`. `LEAN_BREAK=callee-fact-held` restores
+  it: `callee-fact: 1 failed`.
