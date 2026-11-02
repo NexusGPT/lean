@@ -25,7 +25,7 @@ import { fork, spawnSync, execFile } from 'node:child_process';
 import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, CLOCK_EPOCH, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName, MODULE_UNIT, moduleStatements, fileClassFieldsDefine } from '../common.mjs';
 import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles , enterWorld, behaviouralGlobals } from './fake.mjs';
-import { specOf, findValues, readValues, argsFor } from './spec.mjs';
+import { specOf, findValues, readValues, argsFor, fits } from './spec.mjs';
 import { inputsFor, aliasInputs, knownInput, knownLength, walkLength } from './gen.mjs';
 import { enumerateHeaps } from './korat.mjs';
 import { runNew } from './new-unit.mjs';
@@ -1548,7 +1548,9 @@ async function runPairOnce(opts) {
       let inputs;
       captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; }
-      if (recipe && !applyRecipe(inputs, recipe)) { harnessAsk = `search: a change of input ${i} did not apply`; break; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
+      const typed = recipe?.changes.length && !broken('w9l-typed') ? spec.params.every((p, k) => k >= inputs.length || fits(p.spec, inputs[k], spec.defs, 0, true)) : false; // a search's change keeps a draw its declared types admit admitted: each leaf fits its own type, the whole value must still fit (a tag set to another member of a union whose fields it then lacks is no input of the type)
+      if (recipe && !applyRecipe(inputs, recipe)) { harnessAsk = `search: a change of input ${i} did not apply`; break; }
+      if (typed && !spec.params.every((p, k) => k >= inputs.length || fits(p.spec, inputs[k], spec.defs, 0, true))) { harnessAsk = `search: a change of input ${i} leaves its declared type`; break; } // the first inputs are the enumerated small heaps (stage 2: every sharing and cycle of the record shapes over a pool of two objects per shape, one input per non-isomorphic graph), then the i-th seeded input set, which may share objects between positions of one shape (stage 1)
       env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake); // handles the unit was handed: a generated key or member may be one of them
       sides[name] = { env, unit: u, state: exportsObj.__lean_state, inputs, args: snapshot(env, inputs), drawn: renderDrawn(inputs) }; // the input as drawn, rendered before either side runs: the witness's args (a call may write its arguments)
     }

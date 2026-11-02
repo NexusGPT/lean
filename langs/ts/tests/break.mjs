@@ -50,6 +50,7 @@ export const MECHANISMS = {
   'package-rows': 'library-rows.mjs: every package call keeps the outside call\'s reading (lane w2d)',
   'library-fakes': 'exec/fakes/lib/index.mjs libraryFakesOn: every library fake is off, the recording proxy answers (lane w2d)',
   'w9l-bounds': 'exec/run.mjs and exec/search.mjs searchWorld: after the draws agree, no world search propagates a change the values of its lines show (lane w9l; tests/w9l-bounded-and-moves.mjs)',
+  'w9l-typed': 'exec/run.mjs mountSides: a search\'s changed input is run whether or not the whole value still fits its declared type (lane w9l; tests/w9l-bounded-and-moves.mjs, type_tests hasKey)',
   'w9l-moves': 'ci/ledger.mjs pairMoves: an added file and a deleted file git did not pair keep no parent, whatever units they share (lane w9l; tests/w9l-bounded-and-moves.mjs)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
 };

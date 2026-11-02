@@ -5,10 +5,11 @@
 //    differ; a move one climb kept is tried first on the next; with no infected draw a leaf change infects first.
 // 3. The pairs world_masked and world_masked_infect through exec/run.mjs: PASS-bounded under LEAN_BREAK=w9l-bounds, WITNESS
 //    without it with the witness's input `source: world`, replayed; two runs byte-equal.
+// 3b. type_tests hasKey: PASS-bounded with the world search on (a change must keep the draw's declared type).
 // 4. A move git's rename detection does not pair (the moved function also lost a block): ci/ledger.mjs pairs the
 //    added and the deleted file by their functions' names, pr.mjs compares the unit with its parent (WITNESS), a tie or
 //    a lone shared name in a bigger file pairs nothing.
-// --break: LEAN_BREAK=w9l-bounds,w9l-moves for every part: parts 3 and 4 fail.
+// --break: LEAN_BREAK=w9l-bounds,w9l-moves,w9l-typed for every part: parts 3, 3b and 4 fail.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,7 +21,7 @@ import { valueSites, changedLines, searchWorld } from '../exec/search.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url)), lean = path.join(here, '..');
 const BREAK = process.argv.includes('--break');
-if (BREAK) process.env.LEAN_BREAK = [process.env.LEAN_BREAK, 'w9l-bounds', 'w9l-moves'].filter(Boolean).join(',');
+if (BREAK) process.env.LEAN_BREAK = [process.env.LEAN_BREAK, 'w9l-bounds', 'w9l-moves', 'w9l-typed'].filter(Boolean).join(',');
 const { buildChangeManifest, pairMoves } = await import('../ci/ledger.mjs'); // after LEAN_BREAK is set (read at each use)
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'w9l-'));
 let checks = 0;
@@ -78,6 +79,15 @@ for (const pair of ['world_masked', 'world_masked_infect']) {
   ok(on.verdict === 'WITNESS' && w?.input?.source === 'world' && w?.where?.source === 'world' && w.replayed === true, `${pair}: WITNESS from the world search, replayed (${on.verdict}, ${JSON.stringify(w?.input ?? null)}; ${JSON.stringify(on.bound?.world ?? null).slice(0, 300)})`);
   ok(Array.isArray(w?.input?.world) && w.input.world.length > 0 && w.record?.search?.source === 'world', `${pair}: the witness and its record name the world answers it set (${JSON.stringify(w?.input?.world)})`);
   ok(fs.readFileSync(out('on1'), 'utf8') === fs.readFileSync(out('on2'), 'utf8'), `${pair}: two runs byte-equal`);
+}
+
+// the sweep's find: a change keeps the draw's type. type_tests hasKey is equal under its union (kind "a" holds left);
+// a tag set to "a" on a draw of kind "b" (which holds right only) is no input of the type and shows no difference
+{
+  const d = path.join(here, 'pairs', 'type_tests'), out = path.join(tmp, 'hasKey.json');
+  node([path.join(lean, 'exec/run.mjs'), '--parent', path.join(d, 'parent.ts'), '--candidate', path.join(d, 'candidate.ts'), '--unit', 'hasKey', '--n', '30', '--seed', '1', '--no-project', '--no-search', '--out', out]);
+  const r = JSON.parse(fs.readFileSync(out, 'utf8'));
+  ok(r.verdict === 'PASS-bounded', `type_tests hasKey: no witness from a change that leaves the declared type (${r.verdict}, ${JSON.stringify(r.witnesses?.[0]?.input ?? null)})`);
 }
 
 // 4. moves
