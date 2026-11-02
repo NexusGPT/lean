@@ -85,6 +85,44 @@ The units each pair expects unequal stay not proved: `inside_iter`, and `inside_
 | proof hunt, on those 30 | `\| PROOF-HUNT TOTAL \| 127 units read by both lanes \| NO HIDDEN FALSE PROOF \| 0 exempt by a door (adapter, NaN or infinity on a unit with no number operation) \|` | the same run |
 | mutant study, pairs recheck | **not completed**: the log's last line is `325/350 units, 3210 s` (17:09). After it, an hour passed with no line, until the run was stopped at the two-hour limit of a background job. No `recheck.json` was written, so there is no delta; not restarted (the limit is the longest allowed) | `node tests/mutants.mjs --recheck lane/w3b-mutant-study/baseline.json --source pairs --plus-caught 100 --jobs 4`, then `--delta` |
 
+## Resume: merged lead-v4 6694e5a7 (merge commit a3dba86c4c)
+
+lead-v4 6694e5a74c merged in, not rebased. There were two conflicts, both from the unified break reader:
+- `tests/break.mjs`: w8d's three mechanisms (`async-branch-exit`, `faithful-steps`, `faithful-lines`) are registered
+  beside w1e's and w1d's. `breakRows` labels a lane A row `lane: 'A'` and keeps w8d's two-way flip (`proves` true or
+  false); lane B rows are as lead-v4 has them. The convention's comment carries both.
+- `tests/run.mjs`: the lane A loop reads `{ mechanism, unit, proves }` through the `lane === 'A'` filter.
+- Every pair's `expect.json` under `langs/ts/tests` passes `breakRows`: 66 rows, 0 refused.
+- No other change.
+
+Validators at the merge head (logs in `/root/da-bench/w8d-translator-gaps/validators/merge-6694/`):
+
+| validator | output (verbatim) |
+| --- | --- |
+| `node langs/ts/tests/opaque-calls.mjs` (exit 0) | `116/116 rows hold` |
+| `node langs/ts/tests/mutants-fixture.mjs` (exit 0) | `mutants fixture: 83 sites of 15 units, 19 kinds, every one planted and caught (lane B)` |
+| `node langs/ts/tests/lowering-cache.mjs` (exit 0) | `summary child exit 0` |
+| withdrawal (exit 0) | `withdrawal: logic-values v1 refused identically by the lint, the translator and the record; check PASS-bounded (lane A ASK) under the withdrawal, PASS-proved without; audit 658 site rows, 0 uncatalogued` |
+| audit (exit 0) | `sites 658; by kind {"lint-refuse":381,"lint-advice":5,"translate-throw":4,"translate-refuse":268}; uncatalogued 0` |
+| repo conformance, head | `conformance: PASS, 253 of 253 checks passed, languages: ts` |
+| repo conformance, base lead-v4 6694e5a7 | `conformance: PASS, 253 of 253 checks passed, languages: ts` |
+| 35-pair regression, `LEAN_CONFORMANCE=full JOBS=4` (exit 0, wall 1757 s) | `\| TOTAL \| 1261 checks \| ALL PASS \|` |
+| proof hunt, on the 35 | `\| PROOF-HUNT TOTAL \| 146 units read by both lanes \| NO HIDDEN FALSE PROOF \| 0 exempt by a door (adapter, NaN or infinity on a unit with no number operation) \|` |
+| model conformance, on the 35 | `\| MODEL-CONFORMANCE TOTAL \| 161 units in 30 pairs (5 skipped) \| 71 executable: 61 agree, 10 disagree \| 71 not executable, 2 outside domain, 17 not bridged, 0 model error, 0 skipped \| 0 coupling finding(s) (0 sampled) \| NO NEW FINDING \|` |
+| the 30 other pairs with break rows (exit 1, wall 1349 s) | `\| TOTAL \| 1290 checks \| 1 FAILED \|`: `opaque_for_in` `break opaque-drop-read: Equal_upstream flips to proved`. It fails on plain lead-v4 6694e5a7 too (`--pair opaque_for_in`: `\| TOTAL \| 15 checks \| 1 FAILED \|`), so it is the same open item as below |
+| proof hunt, on those 30 | `\| PROOF-HUNT TOTAL \| 127 units read by both lanes \| NO HIDDEN FALSE PROOF \| 0 exempt by a door (adapter, NaN or infinity on a unit with no number operation) \|` |
+
+All of this lane's rows PASS in the 35-pair run: `async_branch_exit`, `async_branch_exit_arms`, `faithful_lines`, and
+`outside_iter` / `outside_ovc` with their `faithful-steps` breaks. The text of each row is the same as in the
+pairs-alone list above.
+
+Not rerun:
+- The census measurement below. The merge changed only test files.
+- The mutant recheck. It hit the two-hour limit before, and nothing about it has changed.
+
+A load-gate slip: the base `opaque_for_in` pair run started at a one-minute load of 119.14. Every other heavy run here
+started at a load of 64 or below.
+
 ## Measured, before (2521973962) and after (this head)
 
 Census on w1c's three roots: copies under `/root/census-installs/w8d/` with their dependencies installed. pnpm came
@@ -138,4 +176,5 @@ with the same counts both times.
   about 0.25 s on a pair file (1.02 s → 1.26 s); there is no extra cost when the order reads every unit.
 - DA's injected-bug count (55/55) is DA's run and is not run here. The lean-side mutant recheck did not complete: it hung on its last 25 of 350 units, so this lane has no mutant delta. It needs a rerun split by unit range, or with a per-unit wall cap.
 - Load: every heavy run started at a one-minute load at most 64. The first census started at 64.43, which the gate
-  rounded down to 64.
+  rounded down to 64. In the resume, one run did not wait for the gate: the single-pair base run of `opaque_for_in`
+  started at a load of 119.14.
