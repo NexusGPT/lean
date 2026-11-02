@@ -590,14 +590,26 @@ export function sandbox(env, root) {
     };
     // CommonJS gives __filename and __dirname; a script that declares its own gets them under other names
     const declares = /\b(const|let|var)\s+(__filename|__dirname)\b/.test(js);
-    let wrapper;
-    try { wrapper = vm.compileFunction(js, ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName], { parsingContext: ctx, filename: abs }); }
-    catch (e) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); } // the file that failed to compile is named
+    let wrapper, awaits = false;
+    const params = ['exports', 'require', 'module', declares ? '__lean_filename' : '__filename', declares ? '__lean_dirname' : '__dirname', compiled.stateName, compiled.callbackName];
+    try { wrapper = vm.compileFunction(js, params, { parsingContext: ctx, filename: abs }); }
+    catch (e) {
+      // a module whose top level awaits (`if (isMain) await main()`, an ES module's top-level await, which the CommonJS
+      // emit keeps as written): its body runs as an async function's, so what it defines before its first await (its
+      // exports) is there when require returns, as an ES importer sees a module evaluated up to its first await; a later
+      // rejection is the module's own, kept on it (module.lateError) and never thrown into the run (lane w9o;
+      // LEAN_BREAK=module-await: the load fails as before)
+      awaits = e?.name === 'SyntaxError' && /is only valid in async functions and the top level bodies of modules/.test(e.message) && !broken('module-await');
+      if (!awaits) throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); // the file that failed to compile is named
+      try { wrapper = vm.compileFunction(`return (async () => {${js.replace(/^#!.*/, '')}\n})();`, params, { parsingContext: ctx, filename: abs }); } // on the module's first line, so its lines keep their numbers; a hashbang is valid only at a file's start
+      catch (e2) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e2.message}`); }
+    }
     const callbacks = {
       units: new Map(compiled.callbacks.map(u => [u.name, { inBody: u.inBody, instances: [] }])),
       capture(name, fn) { callbacks.units.get(name).instances.push(fn); return fn; },
     };
-    wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks);
+    const evaluated = wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks);
+    if (awaits && evaluated && typeof evaluated.then === 'function') evaluated.then(null, (e) => { mod.lateError = e; });
     (env.callbackUnits ??= new Map()).set(mod.exports, callbacks);
     return mod.exports;
   }

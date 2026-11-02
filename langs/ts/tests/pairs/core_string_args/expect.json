@@ -1,0 +1,8 @@
+{
+  "why": "A parameter handed to Node's path functions is a string (exec/usage.mjs pathModuleOf, lane w9o). logFile and logPid take an untyped `dir` (any, as a JavaScript unit's parameters are); drawn as a handle it is rejected by path.join and join on every input, so both sides threw alike (PASS-bounded). Read as a string the change shows: another file name joined (WITNESS, a default import and a named import of node:path). same is unchanged (PASS-bounded). Under LEAN_BREAK=core-string-args both are PASS-bounded again.",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "logFile": "WITNESS", "logPid": "WITNESS", "same": "PASS-bounded" },
+  "break": [{ "mechanism": "core-string-args", "b": { "logFile": "PASS-bounded", "logPid": "PASS-bounded" } }]
+}
