@@ -1,4 +1,4 @@
-# w9o-hard36 result: the hard 36, from 11 to 15 WITNESS (lean), no false witness
+# w9o-hard36 result: the hard 36, from 11 to 15 WITNESS at the unit (lean), no false witness; DA rendered 3 of 32
 
 Branch `lane/w9o-hard36` from lead-v4 2df7b01b. Lean commits: 8c32e434 (programs-share), 1f1952d5 (the share covers
 the specs), 83394c60 (converted-text, module-await, core-string-args). Round 0: `lane/w9o-hard36-cause.md` (1b812ac4),
@@ -15,7 +15,31 @@ By kind at 83394c60: effect-after-exit 5 W (+42677); numeric-conversion 3 W (+41
 The reviewer (Haiku, OCR) finds 19 of 36. lean 15 of 36 is 42 %; of the 29 that are not equivalent (round 0: seven
 mutants no input can tell from their parent), 15 of 29 = 52 %.
 
-DA record level on the 36: PENDING. `scripts/da.sh` (lane folder) runs `LEAN=<83394c60, frozen worktree> bench/materialise.py --instances bench/hard/instances --only <the 36> --out /root/da-bench/w9o/instances --jobs 6 --load-max 1000 --floor-gb 20` under `flock /root/runs/bench.lock`; it is queued behind the lead's hour bench (the lead's own materialise measured about 2 h per instance). This file is amended when the records and `bench/run.py --entry da-attest` land.
+DA on the 36 with the final tree (83394c60, a frozen worktree). Materialise (`bench/materialise.py --instances
+bench/hard/instances --only <the 36> --out /root/da-bench/w9o/instances --jobs 6 --load-max 1000 --floor-gb 20` under
+`flock /root/runs/bench.lock`, LEAN=<83394c60>): `materialise: 36 mutant instances, 0 skipped (written before), 26 ok, 0
+partial, 10 failed, 0 refused (disk) in 24748 s`; failures `lean: pr.mjs exit -9` 6 (pr.mjs killed at its 3600 s cap:
+gemini#26338, gemini#29612, n8n#41864, n8n#41951, n8n#42349, n8n#42608, no records at all), `truth: edit-off-truth` 4
+(n8n#41990, n8n#42311, svelte#17885, svelte#17921: the builder's own check, left out of the score). Then
+`bench/run.py --entry da-attest --split dev --instances-dir bench/hard/instances --mutants-file /root/da-bench/w8q/hard36.txt
+--mat /root/da-bench/w9o/instances --no-judge --no-record --out /root/da-bench/w9o/da` (w8q's harness, read-only; the
+lead's /root/da-lead run.py has no --instances-dir), its M table verbatim:
+
+```
+| effect-after-exit | 12 | 4 of 12 (33.33 %) | 4 | 0 of 12 (0.00 %) |
+| numeric-conversion | 12 | 1 of 12 (8.33 %) | 1 | 0 of 12 (0.00 %) |
+| swapped-effects | 8 | 3 of 8 (37.50 %) | 2 | 3 of 8 (37.50 %) |
+| **all** | 32 | 8 of 32 (25.00 %) | 7 | 3 of 32 (9.38 %) |
+```
+(columns: instances, record level, of which the parent also WITNESS, rendered level); determinism `66 of 66 instances
+byte-equal`.
+
+**M rendered 3 of 32 scored (4 left out), against the reviewer's 19 of 36.** The unit check's 15 of 36 does not survive
+the record level: the six instances pr.mjs did not finish in 3600 s hold none of their records (41864, a mover of this lane,
+and two old witnesses, 41951 and 42349, among them); 41990, the other mover, is left out by the builder (edit-off-truth);
+and 7 of the 8 record-level witnesses also witness on the parent's own unit, which the render policy does not render.
+These are the record path's gaps (the PR run's budget, the builder's truth check, the parent-witness rule), not the unit
+check's; this lane did not work on them and they are the first thing open.
 
 ## Rounds (residual lines)
 
@@ -69,7 +93,11 @@ flips with the load; the test meters CPU itself instead.
 core-string-args first also read a node:fs path argument as a string; that half moved nothing measured (on 41990
 `path.dirname(out)` alone types `out`), so it was cut before the commit.
 
-## What is open (21 of 36 without a WITNESS)
+## What is open
+
+First, the record level (above): 15 unit witnesses become 8 records and 3 rendered comments.
+
+Then the unit check's 21 of 36 without a WITNESS:
 
 | class | n | ids | state at 83394c60 |
 |---|---|---|---|
