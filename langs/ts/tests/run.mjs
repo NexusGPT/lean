@@ -41,6 +41,9 @@ const theorems = JSON.parse(fs.readFileSync(path.join(here, 'theorems.json'), 'u
 const argvAt = (k) => { const i = process.argv.indexOf(k); return i >= 0 ? process.argv[i + 1] : null; };
 const PAIR_ONLY = argvAt('--pair');
 const RESULT_FILE = argvAt('--result');
+// the pin (solve/pin.mjs): Z3 4.12.1 and LC_ALL en_US.UTF-8 or C.UTF-8, or the run is refused before anything starts
+// (LEAN_PIN=warn runs anyway); a pair child of the suite (`--result`) inherits the environment its parent checked
+if (!RESULT_FILE) { const { checkPin } = await import('../solve/pin.mjs'); checkPin('tests/run.mjs', { refuse: true }); }
 const JOBS = Math.max(1, Number(process.env.JOBS ?? Math.max(1, os.cpus().length - 1)) || 1);
 const tmp = argvAt('--tmp') ?? fs.mkdtempSync(path.join(os.tmpdir(), 'lean-ts-'));
 // the idle-core CPU rate, measured once before any child runs and handed to every child: lane B stretches a unit's
@@ -914,6 +917,8 @@ async function adviceLabels(add) {
     ['certificate-timing', scriptRow('runtime', 'certificate-timing', 'certificate.timing holds positive seconds per lane that ran on numbers::average, readme_ledger::applyAll and component::Counter', [path.join(here, 'certificate-timing.mjs')], lastLine)],
     // the step cache keys a Dafny input with every file it includes: a changed .pre.dfy prelude reruns the theorem step (stepcache.mjs withIncludes)
     ['step-cache-includes', scriptRow('runtime', 'step-cache-includes', 'a step reading a .dfy reruns when a file it includes changes, transitively', [path.join(here, 'step-cache-includes.mjs')], lastLine)],
+    // the pin: tests/run.mjs refuses and pr.mjs warns on a Z3 other than 4.12.1 or an LC_ALL other than en_US.UTF-8 or C.UTF-8 (solve/pin.mjs)
+    ['pin', scriptRow('runtime', 'pin', 'tests/run.mjs refuses and pr.mjs warns off the pin: Z3 4.12.1, LC_ALL en_US.UTF-8 or C.UTF-8', [path.join(here, 'pin.mjs')], lastLine)],
     ['z3-pinned', scriptRow('runtime', 'z3-pinned', 'the doubles reading and Dafny run the one Z3 the certificate names (solve/z3.mjs), by default and under LEAN_Z3', [path.join(here, 'z3-pinned.mjs')], lastLine)],
     // one entry point: bin/lean check | lint | pr | census, arguments and exit codes passed through; the README quickstart through it
     ['bin-lean', scriptRow('runtime', 'bin-lean', 'bin/lean check reproduces the README quickstart; lint, pr and census dispatched with their exit codes', [path.join(here, 'bin-lean.mjs')], lastLine)],
