@@ -1,0 +1,41 @@
+{
+  "project": "tsconfig.json",
+  "scope": [
+    "enc",
+    "enc_via",
+    "sum",
+    "via_helper",
+    "spread_helper",
+    "via_two",
+    "same_order",
+    "fields_only"
+  ],
+  "equal": {
+    "enc": true,
+    "enc_via": true,
+    "sum": true,
+    "via_helper": false,
+    "spread_helper": false,
+    "via_two": false,
+    "same_order": true,
+    "fields_only": true
+  },
+  "b": {
+    "viaHelper": "WITNESS",
+    "spreadHelper": "WITNESS",
+    "viaTwo": "WITNESS",
+    "sameOrder": "PASS-bounded",
+    "fieldsOnly": "PASS-bounded"
+  },
+  "why": "a record the unit builds, handed to a same-file function whose parameter reaches JSON.stringify (directly, or through another same-file function), is handed with its key order (translate.mjs paramReadsOrder, unitArgOrdered; design/handed-key-order.md): two literal orders are two arguments (viaHelper, viaTwo: not proved, lane B WITNESS), as is a spread copy of a literal in two orders (spreadHelper); one order on both sides is one argument (sameOrder: the same literal order through a const alias of x, proved); a callee that only reads primitive fields of its parameter observes no order, so the literal is handed bare and the reorder proves (fieldsOnly). At 547d1797 viaHelper, spreadHelper and viaTwo were PASS-proved (the callee read its parameter as its own object, the caller handed the bare datatype value, extensional in its fields). Red under LEAN_BREAK=same-file-key-order",
+  "break": [
+    {
+      "mechanism": "same-file-key-order",
+      "equal": {
+        "via_helper": true,
+        "spread_helper": true,
+        "via_two": true
+      }
+    }
+  ]
+}
