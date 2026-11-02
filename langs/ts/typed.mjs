@@ -117,6 +117,11 @@ export function typedReading({ root, changes, project = true }) {
       options = emitOptions(options);
       for (const c of list) if (!roots.some((r) => path.resolve(r) === c.abs)) roots.push(c.abs);
       const texts = { parent: new Map(list.map((c) => [c.abs, c.parent])), head: new Map(list.map((c) => [c.abs, c.head])) };
+      // (lane w9k) a change the full reading cannot call erased is decided before its programs are made: the files it
+      // reads always include the changed file itself, so when that file's own emit differs (and, for each unit named,
+      // the head with that unit's parent text put back still emits the file differently) the answer is already no
+      const pending = broken('typed-own-first') ? list : ownFirst({ options, roots, list, texts, root, cfg, out });
+      if (!pending.length) continue;
       const head = sideProgram(options, roots, texts.head, undefined);
       const parent = sideProgram(options, roots, texts.parent, head);
       head.getTypeChecker(); parent.getTypeChecker(); // binds every file: a CommonJS file is known as a module only once bound
@@ -132,7 +137,7 @@ export function typedReading({ root, changes, project = true }) {
         }
         return memo.get(abs);
       };
-      for (const c of list) {
+      for (const c of pending) {
         if (c.parent === null || c.head === null) { out.set(c.rel, { equal: false, reason: c.parent === null ? 'added file: no parent emit' : 'deleted file: no head emit' }); continue; }
         // the files whose emit this file's change can reach
         const sides = [parent.getSourceFile(c.abs), head.getSourceFile(c.abs)];
@@ -179,6 +184,49 @@ export function typedReading({ root, changes, project = true }) {
   }
   for (const v of out.values()) v.ms = Math.round(performance.now() - started);
   return out;
+}
+
+// (lane w9k) the changes decided on their own file's emit, before the full reading's programs: each side one program over
+// the changed files and the project's own declaration files (their imports resolved as the project resolves them, so
+// an import's elision and a const enum's value read as in the full program), the changed file's own emit compared. A
+// change is decided `equal: false` when its file's emit differs and every unit named emits the file differently with
+// its parent text put back (no unit's change can be the erased one); an added or a deleted file as the full reading
+// decides it. The rest are returned for the full reading. Decided rows say `files: 1` and `own: true`: no other file
+// was read, so `differs` names the file alone. LEAN_BREAK=typed-own-first: every change takes the full reading
+function ownFirst({ options, roots, list, texts, root, cfg, out }) {
+  const rel = (f) => path.relative(root, f).split(path.sep).join('/');
+  const small = [...list.map((c) => c.abs), ...roots.filter((r) => /\.d\.[mc]?ts$/.test(r))];
+  let head, parent;
+  try { head = sideProgram(options, small, texts.head, undefined); parent = sideProgram(options, small, texts.parent, head); } catch { return list; }
+  const ownEmit = (p, abs) => { const sf = p.getSourceFile(abs); return sf && !sf.isDeclarationFile ? emitted(p, sf).text : null; };
+  const pending = [];
+  for (const c of list) {
+    if (c.parent === null || c.head === null) { out.set(c.rel, { equal: false, reason: c.parent === null ? 'added file: no parent emit' : 'deleted file: no head emit' }); continue; }
+    const pe = ownEmit(parent, c.abs), he = ownEmit(head, c.abs);
+    if (pe === null || he === null || pe === he) { pending.push(c); continue; }
+    const units = {};
+    let open = false;
+    if (c.units?.length) {
+      const ps = ts.createSourceFile(c.abs, c.parent, ts.ScriptTarget.Latest, true), hs = ts.createSourceFile(c.abs, c.head, ts.ScriptTarget.Latest, true);
+      const pu = topLevelFunctions(ps), hu = topLevelFunctions(hs);
+      for (const name of c.units) {
+        const a = pu.get(name), b = hu.get(name);
+        if (!a || !b || a.enclosingUnit || b.enclosingUnit) continue; // as the full reading: a nested unit is its enclosing unit's
+        const text = c.head.slice(0, b.node.getStart(hs)) + c.parent.slice(a.node.getStart(ps), a.node.getEnd()) + c.head.slice(b.node.getEnd());
+        if (text === c.head) continue;
+        const reverted = sideProgram(options, small, new Map([...texts.head, [c.abs, text]]), head);
+        if (ownEmit(reverted, c.abs) === he) { open = true; break; } // this unit's change may be the erased one: the full reading decides
+        units[name] = { equal: false, differs: [rel(c.abs)] };
+      }
+    }
+    if (open) { pending.push(c); continue; }
+    const diag = (p) => { const sf = p.getSourceFile(c.abs); return sf ? [...p.getSyntacticDiagnostics(sf), ...p.getSemanticDiagnostics(sf)].filter((d) => d.category === ts.DiagnosticCategory.Error).length : 0; };
+    out.set(c.rel, { equal: false, emitted: { parent: hash(pe), head: hash(he) }, files: 1, own: true, differs: [rel(c.abs)], unchangedDiffers: [],
+      errors: { parent: diag(parent), head: diag(head) }, project: cfg ? path.relative(root, cfg).split(path.sep).join('/') : null,
+      options: { module: options.module ?? null, target: options.target ?? null, emitDecoratorMetadata: !!options.emitDecoratorMetadata, isolatedModules: !!options.isolatedModules, verbatimModuleSyntax: !!options.verbatimModuleSyntax },
+      ...(c.units?.length ? { units } : {}) });
+  }
+  return pending;
 }
 
 // the sentence of a row the reading decided (a unit of a file whose emit differs: its own reading, `unit`)

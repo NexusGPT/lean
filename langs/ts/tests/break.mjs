@@ -45,6 +45,7 @@ export const MECHANISMS = {
   'nan-fact': 'exec/new-unit.mjs: a NaN returned on an input holding none is not recorded (lane w9k)',
   'ignored-param': 'exec/new-unit.mjs parameterTrials: the parameter trials do not run (lane w9k)',
   'findings-records': 'pr.mjs: a new unit under a lint finding loses its records (lane w9k)',
+  'typed-own-first': 'typed.mjs ownFirst: a change whose own file emits differently is read by the full typed reading, both whole-project programs made (lane w9k)',
   'w1f-module': 'ci/ledger.mjs: the module unit\'s route is removed (lane w1f)',
   'w1f-js': 'ci/ledger.mjs: a JavaScript file takes the route before the JavaScript module unit (lane w1f)',
   'w1f-types': 'ci/ledger.mjs: a type-only or directive edit is not routed to the types unit (lane w1f)',

@@ -17,6 +17,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const PAIRS = { new_unit_facts: ['unit-reach', 'real-buffer', 'nan-fact', 'ignored-param'] };
 const brk = process.argv.includes('--break');
 if (process.argv.includes('--pr')) process.exit(prCheck(null) ? 0 : 1);
+if (process.argv.includes('--typed')) process.exit((await typedCheck(brk ? 'typed-own-first' : null)) === !brk ? 0 : 1);
 let bad = 0;
 for (const [pair, mechanisms] of Object.entries(PAIRS)) {
   for (const mechanism of brk ? mechanisms : [null]) {
@@ -32,6 +33,7 @@ for (const [pair, mechanisms] of Object.entries(PAIRS)) {
     if (!ok || mechanism) for (const ln of out.split('\n').filter((l) => /\| FAIL \|/.test(l)).slice(0, 8)) console.log(`     ${ln.replace(/\s+/g, ' ').slice(0, 220)}`);
   }
 }
+if (brk && process.argv.length === 3) { const green = await typedCheck('typed-own-first'); if (green) bad++; console.log(`${green ? 'FAIL' : 'ok  '} typed (LEAN_BREAK=typed-own-first): ${green ? 'still green' : 'red'}`); }
 if (brk) { const green = prCheck('findings-records'); if (green) bad++; console.log(`${green ? 'FAIL' : 'ok  '} pr (LEAN_BREAK=findings-records): ${green ? 'still green' : 'red'}`); }
 console.log(bad ? `${bad} run(s) wrong` : brk ? 'every break turns red' : 'the pair is green');
 process.exit(bad ? 1 : 0);
@@ -70,4 +72,34 @@ function prCheck(mechanism) {
     if (!mechanism) console.log(wrong ? `${wrong} pr check(s) wrong` : 'a unit added under a lint finding keeps its records');
     return wrong === 0;
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
+
+// typed.mjs on a three-file project (lane w9k ownFirst): a runtime change of a.ts is decided on a.ts's own emit (files 1,
+// own), its importer b.ts never read; a type-only change still takes the full reading and is PASS-typed (equal, files 2:
+// a.ts and its importer); in a file with a runtime unit and an annotation-only unit, the annotation unit's own reading is
+// still made (equal). Under LEAN_BREAK=typed-own-first the first check fails (the full reading reads 2 files)
+async function typedCheck(mechanism) {
+  if (mechanism) process.env.LEAN_BREAK = mechanism;
+  const { typedReading } = await import('../typed.mjs');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-w9k-typed-'));
+  try {
+    const w = (rel, text) => fs.writeFileSync(path.join(tmp, rel), text);
+    w('tsconfig.json', '{ "compilerOptions": { "strict": true, "module": "esnext", "target": "es2020" }, "include": ["*.ts"] }\n');
+    const a0 = 'export function f(x: number): number { return x + 1; }\nexport function g(s: string): string { return s; }\n';
+    w('a.ts', a0); w('b.ts', 'import { f } from "./a";\nexport const y = f(1);\n'); w('c.ts', 'export const z = 3;\n');
+    const runtime = 'export function f(x: number): number { return x + 2; }\nexport function g(s: string): string { return s; }\n';
+    const typeOnly = 'export function f(x: number): number { return x + 1; }\nexport function g(s: string): string | number { return s; }\n';
+    const both = 'export function f(x: number): number { return x + 2; }\nexport function g(s: string): string | number { return s; }\n';
+    const r1 = typedReading({ root: tmp, changes: [{ rel: 'a.ts', parent: a0, head: runtime }] }).get('a.ts');
+    const r2 = typedReading({ root: tmp, changes: [{ rel: 'a.ts', parent: a0, head: typeOnly }] }).get('a.ts');
+    const r3 = typedReading({ root: tmp, changes: [{ rel: 'a.ts', parent: a0, head: both, units: ['f', 'g'] }] }).get('a.ts');
+    const checks = [
+      ['a runtime change is decided on its own emit', r1?.equal === false && r1?.files === 1 && r1?.own === true],
+      ['a type-only change is PASS-typed by the full reading', r2?.equal === true && r2?.files === 2],
+      ['an annotation unit beside a runtime unit is still read alone', r3?.equal === false && r3?.units?.g?.equal === true && r3?.units?.f?.equal === false],
+    ];
+    if (!mechanism) for (const [name, ok] of checks) console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}`);
+    if (!mechanism && checks.some(([, ok]) => !ok)) console.log(JSON.stringify({ r1, r2, r3 }).slice(0, 1200));
+    return checks.every(([, ok]) => ok);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); if (mechanism) delete process.env.LEAN_BREAK; }
 }
