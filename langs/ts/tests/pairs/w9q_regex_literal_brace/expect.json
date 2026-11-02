@@ -1,0 +1,7 @@
+{
+  "why": "lane w9q (exec/regex-sample.mjs quantified). A `{` that does not open a quantifier `{n}`, `{n,}`, `{n,m}` is a literal character (ECMAScript Annex B: node's lib/internal/util/inspect.js reads `/ Iterator] {$/`). The sampler read every `{` after an atom as a quantifier and scanned to the closing `}`: with none, past the end of the source, appending `undefined` until the string reached V8's length limit (6.7 s and gigabytes of garbage per call, once per drawn input), then returned no string. nodejs__node#66159~m3 (formatError) passed lane B's 120 s CPU bound at input 11 on both sides. iteratorLabel changes only the branch a string matching that pattern takes: WITNESS once the sampler draws one. braceCount, whose braces are quantifiers, is the control: WITNESS with and without the mechanism. LEAN_BREAK=regex-literal-brace: iteratorLabel draws no matching string (PASS-bounded), and lane B spends seconds per input.",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "iteratorLabel": "WITNESS", "braceCount": "WITNESS" }
+}

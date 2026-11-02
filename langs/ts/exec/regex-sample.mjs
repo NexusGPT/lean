@@ -3,7 +3,9 @@
 // Supported: literals, escapes (\d \w \s \D \W \S \. \- and others as the literal char), classes [a-z0-9_] with
 // negation, groups (capturing, non-capturing, named), alternation, quantifiers * + ? {n} {n,} {n,m} (lazy flags
 // ignored), anchors (ignored), the dot. Lookarounds and backreferences make the function return null.
-const LETTERS = 'abcdefghijklmnopqrstuvwxyz', DIGITS = '0123456789', WORD = LETTERS + LETTERS.toUpperCase() + DIGITS + '_';
+import { broken } from '../break.mjs';
+
+const LETTERS ='abcdefghijklmnopqrstuvwxyz', DIGITS = '0123456789', WORD = LETTERS + LETTERS.toUpperCase() + DIGITS + '_';
 
 export function sampleRegex(source, rng, count = 2) {
   let pos = 0;
@@ -46,12 +48,17 @@ export function sampleRegex(source, rng, count = 2) {
     if (c === '^' || c === '$') return () => '';
     return () => c;
   }
+  // a `{` opens a quantifier only as `{n}`, `{n,}` or `{n,m}`; any other `{` is the character itself (ECMAScript Annex B:
+  // node's inspect.js reads `/ Iterator] {$/`), read by the next atom. Scanning to a `}` that never came ran past the
+  // source's end, growing the bound's text to V8's string limit on every draw (lane w9q). LEAN_BREAK=regex-literal-brace
+  const braces = () => /^\{(\d+(?:,\d*)?)\}/.exec(source.slice(pos));
   function quantified() {
     const a = atom();
     const q = peek();
-    let lo = 1, hi = 1;
+    let lo = 1, hi = 1, b;
     if (q === '*') { next(); lo = 0; hi = 3; } else if (q === '+') { next(); lo = 1; hi = 3; } else if (q === '?') { next(); lo = 0; hi = 1; }
-    else if (q === '{') { next(); let t = ''; while (peek() !== '}') t += next(); next(); const [l, h] = t.split(','); lo = Number(l) || 0; hi = h === undefined ? lo : h === '' ? lo + 2 : Number(h); }
+    else if (q === '{' && broken('regex-literal-brace')) { next(); let t = ''; while (peek() !== '}') t += next(); next(); const [l, h] = t.split(','); lo = Number(l) || 0; hi = h === undefined ? lo : h === '' ? lo + 2 : Number(h); }
+    else if (q === '{' && (b = braces())) { pos += b[0].length; const [l, h] = b[1].split(','); lo = Number(l); hi = h === undefined ? lo : h === '' ? lo + 2 : Number(h); }
     if (peek() === '?') next(); // lazy: same language
     return () => { const n = lo + Math.floor(rng() * (hi - lo + 1)); let out = ''; for (let i = 0; i < n; i++) out += a(); return out; };
   }
