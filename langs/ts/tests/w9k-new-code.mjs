@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const PAIRS = { new_unit_facts: ['unit-reach', 'real-buffer', 'nan-fact', 'ignored-param'] };
+const PAIRS = { new_unit_facts: ['unit-reach', 'real-buffer', 'nan-fact', 'ignored-param', 'fault-origin', 'undefined-global', 'trials-constant'] };
 const brk = process.argv.includes('--break');
 if (process.argv.includes('--pr')) process.exit(prCheck(null) ? 0 : 1);
 if (process.argv.includes('--typed')) process.exit((await typedCheck(brk ? 'typed-own-first' : null)) === !brk ? 0 : 1);

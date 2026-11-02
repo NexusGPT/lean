@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFunctions } from '../common.mjs';
 import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
 import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
-import { Environment, BudgetError, render } from './fake.mjs';
+import { Environment, BudgetError, render, programBuilt } from './fake.mjs';
 import { admitted, member, mismatch, declaration, declaredThrow, edgePlan, edgeInput } from './declared.mjs';
 import { runTests, TEST_MODULES } from './new-tests.mjs';
 import { specOf } from './spec.mjs';
@@ -298,9 +298,10 @@ export async function runNew(opts) {
     if (threw) {
       if (declaredThrow(decl, observation.raw?.threw)) continue; // a throw the declaration names (`@throws {T}`, `asserts`, `never`) is the declared behaviour
       const missing = platformGap(observation.raw?.threw);
-      if (missing) { book.add(coverage('draw', `the unit reads the global \`${missing}\`, which Node holds and lean's sandbox does not`), `coverage global ${missing}`); continue; } // lean's sandbox, not the unit
+      if (missing) { book.add(coverage('draw', `the unit reads the global \`${missing}\`, which lean's sandbox does not define (${missing in globalThis ? 'Node holds it' : 'the build or the host defines it, or no binding does'})`), `coverage global ${missing}`); continue; } // lean's sandbox, not the unit
       const error = thrownText(observation.raw?.threw, observation.outcome.threw);
-      book.add({ kind: 'new:fault', ...named, ...(wide ? { wide: true } : {}), error, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(withoutInputs(rawMessage(observation.raw?.threw) ?? error.message ?? JSON.stringify(error), inputs))}`); // one record per error and message template: a message that quotes the input is one outcome
+      const built = broken('fault-origin') ? 'engine' : builtBy(observation.raw?.threw); // (lane w9k) the unit's own `throw new E(...)`, or an error the engine raised
+      book.add({ kind: 'new:fault', ...named, ...(wide ? { wide: true } : {}), error, built, how: !sync && thenable ? 'rejected' : 'threw', claim: 'on this input, which the declared parameter types admit, the unit threw (or its promise rejected); no claim that the unit is wrong to' }, `fault ${error.name ?? ''} ${template(withoutInputs(rawMessage(observation.raw?.threw) ?? error.message ?? JSON.stringify(error), inputs))}`); // one record per error and message template: a message that quotes the input is one outcome
       continue;
     }
     if (observation.drives?.length && !broken('shape-drives')) continue; // the observer drove functions the unit handed out (run.mjs driveWindow), after the return: they may have written into the value
@@ -318,14 +319,18 @@ export async function runNew(opts) {
     // it equals 0 under every comparison but Object.is and a division, so a -0 is a fact no reader acts on
     const nan = broken('nan-fact') || decl?.voidLike ? null : nanAt(value);
     if (nan !== null && finiteInputs(inputs)) { book.add({ kind: 'new:nan', ...named, returned: render(value), at: nan, claim: 'on this input, which holds no NaN and no infinite number, the unit returned NaN (or a value holding NaN at `at`)' }, `nan ${nan.replace(/\[\d+\]/g, '[]')}`); continue; }
-    if (value !== undefined && bases.length < BASES) bases.push({ i, step, shown, returned: rendered(value), after: inputs.map(rendered) }); // a closed call that returned a value: a base of the parameter trials below
+    if (value !== undefined) bases.push({ i, step, shown, returned: rendered(value), after: inputs.map(rendered) }); // a closed call that returned a value: a candidate base of the parameter trials below
   }
   // (lane w9k) a parameter the returned value does not depend on: each base input run again, then with that parameter
   // alone replaced by a different drawn value; when every trial returns the same value and leaves the other arguments
   // as the base left them, the record names the parameter (new:unread when the body never names it, new:ignored when it
   // does). A base whose second run differs from its first refuses the trials: the unit is not deterministic here
-  if (!broken('ignored-param') && declared && bases.length >= MIN_TRIALS) {
-    for (const r of await parameterTrials({ candidate, unit, options, ms, sources, spec, seed, n, declared, nullable, exactOptional, bases, reading })) book.add(r, `${r.kind} ${r.param ?? ''}`);
+  // the bases: the first input of each distinct returned value, then the rest in order, at most BASES. One returned value
+  // on every closed call shows no parameter's effect at all (a predicate the draws never satisfy): no trial is made
+  const outcomes = new Set(bases.map((b) => b.returned));
+  const chosen = [...bases.filter((b, k) => bases.findIndex((x) => x.returned === b.returned) === k), ...bases.filter((b, k) => bases.findIndex((x) => x.returned === b.returned) !== k)].slice(0, BASES);
+  if (!broken('ignored-param') && declared && chosen.length >= MIN_TRIALS && (outcomes.size > 1 || broken('trials-constant'))) {
+    for (const r of await parameterTrials({ candidate, unit, options, ms, sources, spec, seed, n, declared, nullable, exactOptional, bases: chosen, reading })) book.add(r, `${r.kind} ${r.param ?? ''}`);
   }
   // the PR's own tests that call the unit (new-tests.mjs): each is run against the candidate under the same sandbox
   let tests = null;
@@ -646,8 +651,13 @@ function thrownText(raw, rendered) {
 // a ReferenceError naming a global Node holds: the sandbox lacks it (a gap of lean's world, never the unit's fault)
 function platformGap(thrown) {
   if (broken('platform-gap')) return null;
-  try { const m = thrown && thrown.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(thrown.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; }
+  // (lane w9k) any name: one Node holds, or one the build or the host defines (React's `__DEV__`); a misspelt binding is
+  // the compiler's to name. LEAN_BREAK=undefined-global reads only the names Node holds
+  try { const m = thrown && thrown.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(thrown.message)); return m && (m[1] in globalThis || !broken('undefined-global')) ? m[1] : null; } catch { return null; }
 }
+// an error the unit's own code built (`new Error(m)`, a class extending one: fake.mjs programConstructor), else one the
+// engine raised (a property of undefined, an unknown encoding, an invalid date)
+const builtBy = (thrown) => { try { return thrown && typeof thrown === 'object' && programBuilt.has(thrown) ? 'program' : 'engine'; } catch { return 'engine'; } };
 const holdsElement = (v, d = 0) => { if (!v || typeof v !== 'object' || d > 3) return false; try { if (Object.hasOwn(v, '$el')) return true; return Array.isArray(v) ? v.some((x) => holdsElement(x, d + 1)) : false; } catch { return true; } };
 
 // every unit of one file in one child (the census's new-unit pass, exec/new-census.mjs): the file's program is read once,

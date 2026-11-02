@@ -1,16 +1,201 @@
 {
   "candidateOnly": [
-    { "file": "reach.ts", "unit": "hexOf", "verdict": "NEW", "inputs": 30, "records": [{ "kind": "new:fault", "error": { "name": "TypeError", "message": "Unknown encoding" } }] },
-    { "file": "reach.ts", "unit": "hexOr", "verdict": "NEW", "inputs": 30, "faults": 0, "absent": ["new:fault", "new:coverage", "new:ignored", "new:unread"] },
-    { "file": "reach.ts", "unit": "ready", "verdict": "NEW", "inputs": 30, "records": [{ "kind": "new:coverage", "phase": "draw", "reason": "every admitted input reached the world" }], "absent": ["new:fault"] },
-    { "file": "nan.ts", "unit": "mean", "verdict": "NEW", "inputs": 30, "records": [{ "kind": "new:nan", "args": [[]], "returned": { "$nan": true } }] },
-    { "file": "nan.ts", "unit": "meanOr", "verdict": "NEW", "inputs": 30, "absent": ["new:nan", "new:coverage"] },
-    { "file": "nan.ts", "unit": "half", "verdict": "NEW", "inputs": 30, "absent": ["new:nan"] },
-    { "file": "nan.ts", "unit": "stats", "verdict": "NEW", "inputs": 30, "records": [{ "kind": "new:nan", "at": ".mean" }] },
-    { "file": "params.ts", "unit": "label", "verdict": "NEW", "inputs": 30, "records": [{ "kind": "new:unread", "param": "unit", "index": 1 }], "absent": ["new:ignored"] },
-    { "file": "params.ts", "unit": "pick", "verdict": "NEW", "inputs": 30, "records": [{ "kind": "new:ignored", "param": "b", "index": 1 }], "absent": ["new:unread"] },
-    { "file": "params.ts", "unit": "take", "verdict": "NEW", "inputs": 30, "records": [{ "kind": "new:ignored", "param": "s" }, { "kind": "new:ignored", "param": "n" }] },
-    { "file": "params.ts", "unit": "join", "verdict": "NEW", "inputs": 30, "absent": ["new:ignored", "new:unread"] },
-    { "file": "params.ts", "unit": "first", "verdict": "NEW", "inputs": 30, "absent": ["new:ignored", "new:unread"] }
+    {
+      "file": "reach.ts",
+      "unit": "hexOf",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:fault",
+          "error": {
+            "name": "TypeError",
+            "message": "Unknown encoding"
+          },
+          "built": "engine"
+        }
+      ]
+    },
+    {
+      "file": "reach.ts",
+      "unit": "hexOr",
+      "verdict": "NEW",
+      "inputs": 30,
+      "faults": 0,
+      "absent": [
+        "new:fault",
+        "new:coverage",
+        "new:ignored",
+        "new:unread"
+      ]
+    },
+    {
+      "file": "reach.ts",
+      "unit": "ready",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:coverage",
+          "phase": "draw",
+          "reason": "every admitted input reached the world"
+        }
+      ],
+      "absent": [
+        "new:fault"
+      ]
+    },
+    {
+      "file": "reach.ts",
+      "unit": "nonEmpty",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:fault",
+          "built": "program",
+          "error": {
+            "name": "Error",
+            "message": "empty"
+          }
+        }
+      ]
+    },
+    {
+      "file": "reach.ts",
+      "unit": "devOnly",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:coverage",
+          "phase": "draw",
+          "reason": "the unit reads the global `__DEV__`, which lean's sandbox does not define"
+        }
+      ],
+      "absent": [
+        "new:fault"
+      ]
+    },
+    {
+      "file": "nan.ts",
+      "unit": "mean",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:nan",
+          "args": [
+            []
+          ],
+          "returned": {
+            "$nan": true
+          }
+        }
+      ]
+    },
+    {
+      "file": "nan.ts",
+      "unit": "meanOr",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:nan",
+        "new:coverage"
+      ]
+    },
+    {
+      "file": "nan.ts",
+      "unit": "half",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:nan"
+      ]
+    },
+    {
+      "file": "nan.ts",
+      "unit": "stats",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:nan",
+          "at": ".mean"
+        }
+      ]
+    },
+    {
+      "file": "params.ts",
+      "unit": "label",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:unread",
+          "param": "unit",
+          "index": 1
+        }
+      ],
+      "absent": [
+        "new:ignored"
+      ]
+    },
+    {
+      "file": "params.ts",
+      "unit": "pick",
+      "verdict": "NEW",
+      "inputs": 30,
+      "records": [
+        {
+          "kind": "new:ignored",
+          "param": "b",
+          "index": 1
+        }
+      ],
+      "absent": [
+        "new:unread"
+      ]
+    },
+    {
+      "file": "params.ts",
+      "unit": "take",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:ignored",
+        "new:unread"
+      ]
+    },
+    {
+      "file": "params.ts",
+      "unit": "join",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:ignored",
+        "new:unread"
+      ]
+    },
+    {
+      "file": "params.ts",
+      "unit": "first",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:ignored",
+        "new:unread"
+      ]
+    },
+    {
+      "file": "params.ts",
+      "unit": "isRepoUrl",
+      "verdict": "NEW",
+      "inputs": 30,
+      "absent": [
+        "new:ignored",
+        "new:unread"
+      ]
+    }
   ]
 }

@@ -19,3 +19,17 @@ export function hexOf(s: string): string {
 export function hexOr(s: string): string {
   return Buffer.from(s).toString("hex");
 }
+
+// (m) the unit's own throw on an input it rejects: a validator. The record says so (built: program); the engine's raise
+// in hexOf says built: engine (LEAN_BREAK=fault-origin calls every fault the engine's)
+export function nonEmpty(s: string): string {
+  if (s.length === 0) throw new Error("empty");
+  return s;
+}
+
+// (n) a global the build defines (React's __DEV__): the sandbox has none, the ReferenceError is lean's, a coverage record
+// (LEAN_BREAK=undefined-global: a fault)
+declare const __DEV__: boolean;
+export function devOnly(s: string): string {
+  return __DEV__ ? s : "";
+}
