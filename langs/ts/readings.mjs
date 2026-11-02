@@ -442,12 +442,12 @@ export const READINGS = [
     translate: rx('^opaque: '),
     assumptions: {
       runtime: 'the effect axiom (subset.md "Modelling axioms") applied to a piece of the program: effect(world, id, reads) = (world\', writes, control); equal ids and equal reads are the same code from the same state',
-      aliasing: 'a mutation-family block starts where no object has changed and no local holds a reference (opaque.mjs blockStart), runs to the end of its unit, and writes every reference parameter it mentions and the world',
+      aliasing: 'a mutation-family block starts where no object has changed and no local holds a reference (opaque.mjs blockStart), runs to the end of its unit, and writes every reference parameter it mentions and the world; an async-family expression step (the call, new or await the finding names) writes every reference it mentions and every name sharing an object with one (opaque-async.mjs stepWrites), and what it leaves pending changes no binding or object of the unit and reads none the unit changes outside it (pendingWork)',
       exceptions: 'a throw inside is the world\'s fault channel, tested after the step',
       termination: 'assumed to return, as an outside call is; lane B runs the real code',
     },
     refusal: 'this construct has no opaque reading here (a site outside the block, a generator, the proof shape without --core)',
-    design: ['design/w1a-opaque-mutation.md'],
+    design: ['design/w1a-opaque-mutation.md', 'design/w1d-opaque-async.md'],
     versions: [{ version: 1, status: 'current' }],
   },
   {

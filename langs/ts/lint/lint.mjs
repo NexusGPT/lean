@@ -31,6 +31,7 @@ import { untypedThisParam } from '../common.mjs'; // a `this` parameter typed an
 import { moduleState, moduleLoader, inertModuleInit, outsideRoot } from '../module-forms.mjs';
 import { promiseForm, promiseConsumed, executorShape, unparen, isNativePromise } from '../promise-forms.mjs';
 import { ADVICE, labelTag } from './advice.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6): LEAN_BREAK=<mechanism> skips that mechanism (tests/break.mjs, tests/w1e-opaque-this-globals.mjs --break)
 import { anyTypeFindings } from './any-type.mjs';
 // what a built-in call returns, from the library transition table (translate/library.json, its `result` fact, which lane B
 // checks on every run): `fresh` is a new object, `receiver` and `element-or-undefined` an object another name may reach
@@ -47,6 +48,7 @@ import { reactHook, arrowOf, closureReads, captureKind, cellWrite } from '../rea
 import { metadataCall, ownKeyTest, plainObjectTest } from '../decorators.mjs';
 import { generatorReading, asyncGenerator, immediateGeneratorConsumer } from '../generators.mjs';
 import { callsOpaqueSite, opaqueCallsForm, siteKey as callsSiteKey } from './opaque-calls.mjs'; // the opacity ladder for calls, members, syntax and callbacks (design/w1c-opaque-calls.md)
+import { ASYNC_OPAQUE, asyncOpaqueSite } from '../opaque-async.mjs'; // the opacity ladder for async, promises and generators (design/w1d-opaque-async.md)
 import { optionalCallShape } from '../lower.mjs';
 import { lintFindings, lowerFile } from '../lower.mjs'; // the lint reads the lowering's record: one decision with the translator (design/admission-contract.md)
 import { installsFunction, INSTALLS_FUNCTION_WHY, loneSurrogate, LONE_SURROGATE_WHY, nullPrototypeCreate, NULL_PROTOTYPE_WHY, valueAssignmentWhy, numberSpecial, nonemptyMathArgs } from '../lower.mjs'; // decisions taken once for the lint and the translator
@@ -88,7 +90,23 @@ export function mayFaultPure(n, checker, sf) {
 const LIB_FILE = /[\\/](typescript[\\/]lib[\\/]lib\.[\w.-]+\.d\.ts|node_modules[\\/]@types[\\/].+\.d\.ts)$/;
 const globalScope = (c) => !!c && (ts.isSourceFile(c) || (ts.isModuleBlock(c) && ts.isModuleDeclaration(c.parent) && !!(c.parent.flags & ts.NodeFlags.GlobalAugmentation)));
 const globalDecl = (d) => globalScope(ts.isVariableDeclaration(d) ? d.parent?.parent?.parent : d.parent) && (ts.isVariableDeclaration(d) || ts.isFunctionDeclaration(d) || ts.isInterfaceDeclaration(d) || ts.isModuleDeclaration(d) || ts.isClassDeclaration(d) || ts.isTypeAliasDeclaration(d));
+// A global the checkout does not declare at all (no lib names it, no @types package is installed: `console` without the
+// dom lib, `process` without @types/node, `chrome` without @types/chrome) is the same world value: its type is the
+// checker's error type, so it is read at Any, the opaque handle keyed by its name. Its meaning is the environment's, as
+// a lib global's is; installing the declarations only gives it a type (w1e, design/w1e-opaque-this-globals.md). The
+// names with a reading of their own keep it when they resolve; unresolved, no fact of the lib is assumed of them.
+export function unresolvedGlobal(checker, n) {
+  if (!n || !ts.isIdentifier(n) || broken('unresolved-global') || ['require', 'undefined', 'arguments', 'NaN', 'Infinity'].includes(n.text) || Object.hasOwn(EFFECT_GLOBALS, n.text)) return false;
+  const p = n.parent;
+  // a value read only: an expression the program evaluates (never a label, a type, a member or property name, a JSX
+  // attribute name, a binding or a declared name), and a shorthand property's value
+  if (!p || !(ts.isExpressionNode(n) || ts.isShorthandPropertyAssignment(p)) || ts.isPartOfTypeNode(n) || ts.isLabeledStatement(p) || ts.isBreakOrContinueStatement(p) || ts.isJsxAttribute(p) || ts.isQualifiedName(p) || ts.isHeritageClause(p) || ts.isExpressionWithTypeArguments(p) || (ts.isPropertyAccessExpression(p) && p.name === n) || ts.isPropertyAssignment(p) && p.name === n || ts.isBindingElement(p) || ts.isDeclaration(p) && p.name === n) return false;
+  if (ts.isShorthandPropertyAssignment(p) ? checker.getShorthandAssignmentValueSymbol(p) : checker.getSymbolAtLocation(n)) return false;
+  const t = checker.getTypeAtLocation(n);
+  return !!(t.flags & ts.TypeFlags.Any) && t.intrinsicName === 'error';
+}
 export function libGlobalRoot(checker, n, sf, current) {
+  if (unresolvedGlobal(checker, n)) return true;
   if (!n || !ts.isIdentifier(n) || ['require', 'undefined', 'arguments', 'NaN', 'Infinity'].includes(n.text) || PURE_GLOBALS.has(n.text) || Object.hasOwn(EFFECT_GLOBALS, n.text)) return false;
   const o = originOf(checker, n, sf, current);
   const decls = o.sym?.declarations ?? [];
@@ -274,6 +292,19 @@ export const OPAQUE_ROWS = {
   // fall-through are read, subset.md "Operators as values", "Control"). By design none: break-continue (the jump has no
   // loop or switch around it in its function, so a step has no control result to give it), loop-form (a loop with no
   // measure: an opaque reading would hide the missing measure)
+  // w1d-opaque-async: the async family, the construct the finding names (opaque-async.mjs ASYNC_OPAQUE; promise-thenable,
+  // promise-all-order and the generator rules stay none, each with its reason there)
+  'async': 'expression',
+  'async-callback': 'expression',
+  'async-predicate': 'expression',
+  'async-reduce': 'expression',
+  'generator-use': 'expression',
+  'promise': 'expression',
+  'promise-executor': 'expression',
+  'promise-executor-escape': 'expression',
+  'promise-handler': 'expression',
+  'promise-pending': 'expression',
+  'promise-unsettled': 'expression',
 };
 export const OPAQUE_GRADES = new Set(['block', 'statement', 'expression', 'none']);
 for (const [rule, g] of Object.entries(OPAQUE_ROWS)) if (!OPAQUE_GRADES.has(g)) throw new Error(`lint: opaque row ${rule}: ${g} is not a grade`);
@@ -285,6 +316,7 @@ export const opaqueGrade = (rule) => OPAQUE_ROWS[rule] ?? 'none';
 const BOUNDARY_RULES = new Set(['collection-iterator', 'division', 'math-empty', 'number-special', 'reference-key', 'string-code-unit', 'unary-coercion']);
 export const OPAQUE_ENVELOPE = Object.freeze(Object.fromEntries(Object.entries(OPAQUE_ROWS).filter(([, g]) => g === 'statement').map(([r]) => [r, BOUNDARY_RULES.has(r) ? 'boundary' : 'value'])));
 for (const r of BOUNDARY_RULES) if (OPAQUE_ENVELOPE[r] !== 'boundary') throw new Error(`lint: boundary rule ${r} is not graded statement`);
+for (const [rule, c] of Object.entries(ASYNC_OPAQUE)) if (opaqueGrade(rule) !== c.form) throw new Error(`lint: opaque row ${rule}: ${opaqueGrade(rule)}, opaque-async.mjs says ${c.form}`); // one decision per rule
 
 export function lintFile(file, ranges = null, opts = {}) { return lintFindings(file, ranges, opts); }
 export function admissionFindings(file, ranges = null, opts = {}) {
@@ -392,7 +424,9 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const pos = node.getStart(sf), end = node.getEnd();
     out.push({ file, line: lineOf(sf, pos), col: colOf(sf, pos), endLine: lineOf(sf, end), endCol: colOf(sf, end), rule, msg, ...(unitByNode.has(current) ? { unit: unitByNode.get(current).name } : {}), text: ownText.slice(pos, end).slice(0, 200), ...(site ? { site } : {}), ...(opaqueGrade(rule) !== 'none' ? { opaque: opaqueGrade(rule) } : {}) });
     if (opaqueCallsForm(rule)) { const rec = { node, fn: currentFn ?? unitFnOf(node), rule }; callsAt.set(out[out.length - 1], rec); callsRecs.push(rec); } // decided when the walk ends
+    if (ASYNC_OPAQUE[rule]) asyncAt.set(out[out.length - 1], { node, fn: currentFn }); // decided when the walk ends (asyncOpaqueSite)
   };
+  const asyncAt = new WeakMap(); // a finding of the async family -> where it was raised
   const callsAt = new WeakMap(); // a finding of a rule the calls column grades -> where it was raised (lint/opaque-calls.mjs)
   const callsRecs = []; // the same records, in order: the site statements so far (callsSiteOf), for the read-after-call reading
   const callsSiteOf = (rec) => { if (!('site' in rec)) rec.site = callsOpaqueSite(checker, rec.rule, rec.node, rec.fn); return rec.site; };
@@ -598,7 +632,11 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     if (o.kind === 'local' || o.kind === 'unit') return;
     if (o.kind === 'module' || o.kind === 'import' || o.kind === 'other' || o.kind === 'type') return; // externals
     if (moduleState(checker, id, sf)) {
-      if (!(ts.getCombinedNodeFlags(o.decl) & ts.NodeFlags.Const) && !inertModuleInit(o.decl.initializer)) v(id, 'toplevel-effect', 'move the effectful module initializer into a function');
+      // a module let/var is a world field whose value at entry is the world's, never its initializer's (module-forms.md:
+      // the starting world is quantified, with no initial-state axiom), and the field is keyed by its declaration text, so
+      // a changed initializer is another field: an effectful initializer is the module's load-time effect (the module
+      // unit's, w1f), and the unit reads and writes the field as any module let (w1e, design/w1e-opaque-this-globals.md)
+      if (broken('effectful-cell') && !(ts.getCombinedNodeFlags(o.decl) & ts.NodeFlags.Const) && !inertModuleInit(o.decl.initializer)) v(id, 'toplevel-effect', 'move the effectful module initializer into a function');
       return;
     }
     if (o.kind === 'module-mutable') return v(id, 'global-read', `\`${name}\` is module state that can change; the subset reads constants only`);
@@ -2340,10 +2378,14 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     else if (ts.isExpressionStatement(st) && (ts.isStringLiteral(st.expression) || ts.isNoSubstitutionTemplateLiteral(st.expression))) continue; // a directive ("use client", "use strict") is not code
     else v(st, 'toplevel-effect', 'code at module level runs on import; it is outside the subset');
   }
-  // Callbacks use the same signature/body checks as other units, including contextual parameter types.
+  // Callbacks use the same signature/body checks as other units, including contextual parameter types. An arrow under an
+  // instance member of a class (through any arrows between, common.mjs lexicalClass) reads the member's receiver: `this`
+  // is a captured input that never changes, the class's receiver as the member reads it, so `this` is checked against
+  // that class (the translator gives the unit the member's `self`); under a static member it is the class the call named
+  // (static-this), and under any other function the receiver stays refused
   for (const u of units.values()) if (u.form === 'callback' && overlaps(sf, u.node, ranges)) {
     checkedDiagSpans.push(u.node);
-    current = u.node; currentFn = u.fn; currentClass = null; literalUnit = null; objectMethod = null; thisParam = null;
+    current = u.node; currentFn = u.fn; currentClass = u.cls && !u.isStatic && !broken('lexical-this') ? u.cls : null; literalUnit = null; objectMethod = null; thisParam = null;
     for (const c of callbackInputs.get(u.node) ?? []) if (c.mutable) v(c.use, 'captured-mutable', `captured binding \`${c.use.text}\` may be written after this callback is created; capture a stable value`);
     const why = callbackUntypedJsUnit(sf, u, checker);
     if (why) v(u.node, 'untyped-js', why);
@@ -2389,6 +2431,22 @@ export function admissionFindings(file, ranges = null, opts = {}) {
   // so the code is admitted and the any-type finding proposes the value's type
   const IMPLICIT_ANY = new Set([7005, 7006, 7008, 7010, 7011, 7015, 7018, 7019, 7022, 7023, 7024, 7031, 7034, 7053]);
   const identAt = (pos) => { let hit = null; const w = (n) => { if (pos >= n.getStart(sf) && pos < n.getEnd()) { if (ts.isIdentifier(n)) hit = n; ts.forEachChild(n, w); } }; w(sf); return hit; };
+  // an unresolved name the reading holds as an opaque handle (w1e, design/w1e-opaque-this-globals.md): a global read in
+  // value position (unresolvedGlobal: the world value keyed by its name, at Any), or a type name in a type annotation
+  // (the checker's error type, read as the opaque type Any). The finding stays an environment finding; the unit it sits
+  // in is graded on the handle, not set aside. A name in a heritage clause (an unknown base: its members are unknown)
+  // or any other place keeps the finding a blocker
+  const environmentHandle = (d) => {
+    if (broken('environment-handle')) return false;
+    const id = identAt(d.start);
+    if (!id || id.getStart(sf) !== d.start) return false;
+    if (unresolvedGlobal(checker, id)) return true;
+    let t = id; while (t.parent && ts.isQualifiedName(t.parent)) t = t.parent;
+    if (!t.parent || !(ts.isTypeReferenceNode(t.parent) || ts.isTypeQueryNode(t.parent))) return false;
+    for (let p = t.parent; p; p = p.parent) { if (ts.isHeritageClause(p) || ts.isExpressionWithTypeArguments(p)) return false; if (ts.isFunctionLike(p) || ts.isVariableDeclaration(p) || ts.isPropertyDeclaration(p) || ts.isAsExpression(p) || ts.isSatisfiesExpression(p) || ts.isTypeAssertionExpression(p)) break; }
+    const ty = checker.getTypeAtLocation(t.parent);
+    return !!(ty.flags & ts.TypeFlags.Any) && ty.intrinsicName === 'error';
+  };
   // a read of an `unknown` value (TS18046) is the unit's own type error when the unit wrote the keyword `unknown` on the
   // binding and nothing in its function tests the binding with a guard the checkout cannot resolve (an `instanceof` or a
   // call whose callee is typed any): TypeScript without strict reports that read too (TS2339). A catch binding is
@@ -2437,11 +2495,16 @@ export function admissionFindings(file, ranges = null, opts = {}) {
       // declare is the environment's; the translator reads `import.meta.x` as a world read (design/top-blockers.md)
       if (pa) { let m = pa.expression; while (ts.isParenthesizedExpression(m) || ts.isNonNullExpression(m)) m = m.expression; if (ts.isMetaProperty(m) && m.keywordToken === K.ImportKeyword && pa.name.text !== 'env') { out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule: 'unresolved-module', msg: `TS${d.code}: \`import.meta.${pa.name.text}\` is a host-defined property whose type the checkout's lib does not declare`, env: true }); continue; } }
       if (pa) { const rt = checker.getTypeAtLocation(pa.expression); const decl = rt.symbol?.declarations?.[0] ?? rt.aliasSymbol?.declarations?.[0]; if (decl && /node_modules/.test(decl.getSourceFile().fileName)) continue; }
+      // a member of a type whose declaration reaches the error type (a base class or interface, an alias argument from a
+      // module that does not resolve: `class PrismaService extends PrismaClient` with the client not generated): its
+      // members are unknown, not absent. A read is the accessor of the opaque value the member check already admits
+      // (library-rows.mjs incompleteType, rule unsupported-member); a write keeps the error (w1e, design/w1e-opaque-this-globals.md)
+      if (pa && !broken('incomplete-member') && incompleteType(checker, checker.getTypeAtLocation(pa.expression)) && !onWritePath(pa) && ![...units.values()].some((u) => u.fn.pos <= pa.pos && pa.end <= u.fn.end && writesThroughIncomplete(checker, u.fn))) continue;
     }
     const rule = RESOLUTION_CODES.has(d.code) ? 'unresolved-module' : 'ts-strict';
     const msg = `TS${d.code}: ${ts.flattenDiagnosticMessageText(d.messageText, ' ')}`;
     if (rule === 'ts-strict' && /JSX\.IntrinsicElements|JSX element implicitly has type 'any'|JSX element type/.test(msg)) continue; // missing React types: one environment cause; the JSX itself is already reported
-    out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule, msg, env: rule === 'unresolved-module' });
+    out.push({ file, line: lineOf(sf, d.start), col: colOf(sf, d.start), rule, msg, env: rule === 'unresolved-module', ...(rule === 'unresolved-module' && environmentHandle(d) ? { handle: true } : {}) });
   }
   // Optional mechanical advice never enters the proof gate. The editor and --advice ask for it.
   if (opts.advisory) {
@@ -2500,6 +2563,14 @@ export function admissionFindings(file, ranges = null, opts = {}) {
     const site = callsSiteOf(at);
     if (site?.stmt) { f.opaque = 'statement'; f.advisory = true; f.opaqueSite = callsSiteKey(site.stmt, sf); opts.opaqueSites?.add(f.opaqueSite); }
     else if (site?.why) f.opaqueWhy = site.why;
+  }
+  // the async family (design/w1d-opaque-async.md): a finding graded `expression` is a step only where its construct is
+  // one (asyncOpaqueSite: a call, new or await of the unit's own code, its pending work held to the world, its writes
+  // named); elsewhere the grade is withdrawn and the finding refuses as before, with the reason (`opaqueWhy`)
+  for (const f of out) {
+    const at = asyncAt.get(f); if (!at) continue;
+    const site = asyncOpaqueSite(checker, f.rule, at.node, at.fn);
+    if (site?.why) { delete f.opaque; f.opaqueWhy = site.why; }
   }
   out.sort((a, b) => a.line - b.line || a.col - b.col);
   for (let i = out.length - 1; i > 0; i--) if (out[i].line === out[i - 1].line && out[i].col === out[i - 1].col && out[i].unit === out[i - 1].unit && out[i].rule === out[i - 1].rule && out[i].msg === out[i - 1].msg) out.splice(i, 1);

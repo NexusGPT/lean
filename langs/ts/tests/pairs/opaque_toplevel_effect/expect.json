@@ -1,0 +1,7 @@
+{
+ "scope": ["elapsed", "jitter", "since", "restart"],
+ "equal": {"elapsed": true, "jitter": false, "since": false, "restart": true},
+ "why": "A module let whose initializer has an effect (`Date.now()`, `Math.random()`) is a world field like any module let: its value at entry is the world's, never the initializer's (design/module-forms.md: no initial-state axiom), and the field is keyed by its declaration text (Module_file_get_<name>_<fingerprint>), so a changed initializer is another field; the initializer is the module's load-time effect. Before, every unit reading or writing such a field was refused toplevel-effect (w1e, design/w1e-opaque-this-globals.md). (a) elapsed: the field read is unchanged, a local inlined: proved; (b) jitter: the candidate changes the field's initializer, so it reads another field: not proved; (c) since: mutate.mjs's operator change in the field's use: not proved, witnessed; (d) restart: the write is unchanged, a local inlined: proved. LEAN_BREAK=effectful-cell (tests/w1e-opaque-this-globals.mjs --break) refuses the units again and the proved rows go red.",
+ "heap": false,
+ "b": {"elapsed": "PASS-bounded", "since": "WITNESS", "restart": "PASS-bounded"}
+}

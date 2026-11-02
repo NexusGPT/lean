@@ -60,6 +60,7 @@ import { generatorReading, asyncGenerator, steppedAsyncLoop } from '../generator
 import { makeHeap } from './heap.mjs';
 import { opaqueGrade, gradedRule, opaqueText, opaqueKey, opaqueForm, opaqueEntry, opaqueLine, statementCount, isReference, blockStart, heapOperation } from './opaque.mjs';
 import { broken } from '../break.mjs'; // the opacity ladder (design/w1a-opaque-mutation.md)
+import { ASYNC_OPAQUE, stepWrites, reachedFunctions } from '../opaque-async.mjs'; // the async family's expression steps (design/w1d-opaque-async.md)
 import { makeReach } from '../reach.mjs'; // the code a unit reaches: the opaque module identity and the heap core's transition key read one reach
 import { ARRAY_VALUE_MUTATORS, LOCALE_READS, freshArray, moduleRow, primitiveText, pureLibraryCall } from '../library-rows.mjs';
 import { opaqueCallsForm, callsRefusalRule, callsOpaqueSite, nodeAt, reachWrites, heldDecls, calleeTexts } from './opaque-calls.mjs'; // its statement form for the calls, members, syntax and callbacks rules (design/w1c-opaque-calls.md)
@@ -297,10 +298,24 @@ function translateOnce(file, fnName, opts = {}) {
   const opaqueSites = new Map(), tails = new Map(), opaqueRows = new Map(); // unit name -> [{ pos, rule, line, msg }]; the unit's block; its certificate rows
   const gradableUnit = (u) => core && !!u?.body && !u.fn?.asteriskToken && (!u.accessor || accessorOpaque.has(u.name)); // a unit read whole as one opaque transition keyed by the file's text (accessorOpaque) holds its sites in that one step
   const addSite = (name, pos, rule, line, msg, span = null) => { const l = opaqueSites.get(name) ?? []; if (l.some((x) => x.pos === pos)) return false; l.push({ pos, rule, line, msg, span }); opaqueSites.set(name, l); tails.delete(name); return true; };
+  const expressionSites = new Map(), expressionUnits = new Set(); // the async family's steps (design/w1d-opaque-async.md): `${start}:${end}` of the construct -> { rule, span }; the units holding one
   gate0 = gate0.filter((g) => {
-    if (opaqueGrade(g.rule) !== 'block') return true; // an expression row's finding is a refusal its reading did not grade (w1g); a statement-family finding is read below (w1b)
+    // the async family (w1d) grades by the finding's own grade: the lint withdraws it where the construct is no step
+    // (opaque-async.mjs). Its rows share the `expression` grade with w1g's, whose findings here are refusals: each column
+    // reads its own rules only
+    const asyncStep = g.opaque === 'expression' && !!ASYNC_OPAQUE[g.rule];
+    if (!asyncStep && opaqueGrade(g.rule) !== 'block') return true; // an expression row's finding is a refusal its reading did not grade (w1g); a statement-family finding is read below (w1b)
     const name = unitOfFinding(g), u = name && fns.get(name);
     if (!gradableUnit(u)) return true;
+    if (asyncStep) {
+      // the construct the finding names, as written, mapped through the faithful rewrite; a construct the rewrite does not
+      // copy whole has no node here and keeps its refusal
+      const a = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1), z = normalised.sf.getPositionOfLineAndCharacter((g.endLine ?? g.line) - 1, (g.endCol ?? g.col) - 1);
+      const a2 = faithful.mapOffset ? faithful.mapOffset(a) : a, z2 = faithful.mapOffset ? faithful.mapOffset(z) : z;
+      if (!(a2 >= 0 && z2 >= 0)) return true;
+      { const k = `${a2}:${z2}`, had = expressionSites.get(k); if (had) { if (!had.rules.includes(g.rule)) had.rules.push(g.rule); } else expressionSites.set(k, { rules: [g.rule], span: [g.line, g.col, g.endLine ?? g.line, g.endCol ?? g.col] }); } expressionUnits.add(name); // two rules may name one construct (async and promise): one step, both rules
+      return false;
+    }
     const at = normalised.sf.getPositionOfLineAndCharacter(g.line - 1, g.col - 1);
     let pos = faithful.mapOffset ? faithful.mapOffset(at) : at;
     // inside text the faithful reading rewrote (`a + f()` becomes a call of its number operation): the site is the start
@@ -595,6 +610,7 @@ function translateOnce(file, fnName, opts = {}) {
       if (set || (get && (accessorOpaque.has(get.name) || effectfulUnits.has(get.name) || heldAccess(get, n)))) return true; // a get on a receiver this file did not make is a request (accessorCall)
     }
     if (ts.isAwaitExpression(n) || (ts.isForOfStatement(n) && n.awaitModifier)) return true;
+    if (asyncOpaqueAt(n)) return true; // an opaque step is a transition of the world (opaque-async.mjs)
     if (ts.isNewExpression(n)) { const c = n.expression.getText(sf); if (c === 'Date' && !(n.arguments && n.arguments.length)) return true; return !PURE_CTORS.has(c); } // `new Date()` with no argument reads the clock
     if (ts.isTaggedTemplateExpression(n) && rawTag(checker, n, sf)) return false; // String.raw: its raw parts and ToString of its holes
     if (!ts.isCallExpression(n) && !ts.isTaggedTemplateExpression(n)) return false;
@@ -731,6 +747,8 @@ function translateOnce(file, fnName, opts = {}) {
     boundCache.set(s, result); return result;
   }
   const opaqueSwitch = (s) => { const t = checker.getTypeAtLocation(s.expression); return (t.flags & TF.Union ? t.types : [t]).some((p) => !(p.flags & (TF.StringLike | TF.NumberLike | TF.BooleanLike | TF.BigIntLike | TF.Null | TF.Undefined | TF.Never))); };
+  const asyncOpaqueAt = (x) => !!expressionSites.size && !!x && typeof x.getStart === 'function' && x.pos >= 0 && !ts.isStatement(x) && x.kind !== K.SourceFile && expressionSites.has(`${x.getStart(sf)}:${x.getEnd()}`); // a synthetic node (a loop the translator builds) is no site
+  const stepWritesMemo = new Map(); const stepWritesOf = (n) => { if (!stepWritesMemo.has(n)) stepWritesMemo.set(n, stepWrites(checker, n, currentUnit.node).writes ?? []); return stepWritesMemo.get(n); }; // one decision per step, read by its emission and by the constructs around it
   const isOpaqueStmt = (x) => siteHere(x) || designatedHere(x) || (ts.isForOfStatement(x) && x.awaitModifier && !steppedAsyncLoop(x, checker)) || (ts.isSwitchStatement(x) && opaqueSwitch(x)) || (ts.isTryStatement(x) && !exactTry(x)) || ((ts.isWhileStatement(x) || ts.isDoStatement(x) || emptyFor(x) || generalFor(x)) && (!hintsOf(sf, x).decreases && !derivedBound(x)));
   // `xs.forEach((x) => body)` as a statement: a loop over xs whose body is the callback's body, each iteration's transitions
   // in order. The callback takes one plain parameter and returns nothing (a `return` inside it would end one step).
@@ -738,6 +756,7 @@ function translateOnce(file, fnName, opts = {}) {
     if (!ts.isExpressionStatement(st)) return null;
     let e = st.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'forEach' || e.arguments.length !== 1) return null;
+    if (asyncOpaqueAt(e)) return null; // an opaque step is no loop (opaque-async.mjs)
     const cb = e.arguments[0];
     if (!ts.isArrowFunction(cb) || cb.parameters.length < 1 || cb.parameters.length > 2 || !ts.isIdentifier(cb.parameters[0].name) || cb.modifiers?.some((m) => m.kind === K.AsyncKeyword)) return null; // an async callback is not awaited by forEach: not a loop
     let recvT; try { recvT = baseOf(typeOf(e.expression.expression)); } catch { return null; }
@@ -753,6 +772,7 @@ function translateOnce(file, fnName, opts = {}) {
   const arrayCallbackShape = (e0) => {
     let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || !callbackMethods.has(e.expression.name.text)) return null;
+    if (asyncOpaqueAt(e)) return null; // an opaque step is no loop (opaque-async.mjs)
     const method = e.expression.name.text, cb = e.arguments[0];
     // stage 5 rank 13: the element parameter may be an object or array pattern without a rest element (the loop binds it from
     // the element, as a for-of does), and may carry a default the element type never holds (never read); the index and
@@ -789,6 +809,7 @@ function translateOnce(file, fnName, opts = {}) {
   const namedCallbackShape = (e0) => {
     let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || !callbackMethods.has(e.expression.name.text)) return null;
+    if (asyncOpaqueAt(e)) return null; // an opaque step is no loop (opaque-async.mjs)
     const method = e.expression.name.text, cb = e.arguments[0];
     if (!cb || !ts.isIdentifier(cb) || e.arguments.length !== (method === 'reduce' ? 2 : 1)) return null;
     let recvT; try { recvT = baseOf(typeOf(e.expression.expression)); } catch { return null; }
@@ -881,7 +902,8 @@ function translateOnce(file, fnName, opts = {}) {
   // Promise.all collects results by index; the lint excludes observable work after suspension
   const promiseAllMapShape = (e0) => {
     let e = e0; while (ts.isParenthesizedExpression(e)) e = e.expression;
-    if (!ts.isAwaitExpression(e)) return null; e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (!ts.isAwaitExpression(e) || asyncOpaqueAt(e)) return null; e = e.expression; while (ts.isParenthesizedExpression(e)) e = e.expression;
+    if (asyncOpaqueAt(e)) return null; // an opaque step is no loop (opaque-async.mjs)
     if (!ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || e.expression.name.text !== 'all' || !ts.isIdentifier(e.expression.expression) || e.expression.expression.text !== 'Promise' || e.arguments.length !== 1) return null;
     const shape = arrayCallbackShape(e.arguments[0]);
     if (!shape || !['map', 'flatMap'].includes(shape.method)) return null;
@@ -1002,6 +1024,9 @@ function translateOnce(file, fnName, opts = {}) {
     const decl = moduleState(checker, n, sf);
     addPrelude('World', 'type World');
     const tag = hash(reachOf.keyText(decl.parent.parent)); // the declaration and the code its initializer reaches (design/reach-keys.md): `const CFG = make(1)` is another cell when `make` changes
+    // LEAN_BREAK=cell-key drops the declaration from the cell's name (tests/w1e-opaque-this-globals.mjs --break: a unit
+    // reading a cell whose initializer changed, its own text unchanged, must then be proved falsely)
+    if (broken('cell-key')) return external(`Module_file_${kind}_${n.text}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
     return external(`Module_file_${kind}_${n.text}_${tag}`, kind === 'get' ? ['World'] : ['World', d], `(World, ${kind === 'get' ? d : 'Unit'})`);
   }
   function globalRead(n) {
@@ -1743,7 +1768,9 @@ function translateOnce(file, fnName, opts = {}) {
   function heldKey(t) {
     if (isOptional(t)) t = baseOf(t);
     const cs = [...classDecls.values()].filter((c) => { try { return checker.isTypeAssignableTo(checker.getTypeAtLocation(c.name), t); } catch { return false; } });
-    return cs.length ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
+    // LEAN_BREAK=held-key drops the classes' code from the request's name (tests/w1e-opaque-this-globals.mjs --break: a
+    // callback whose text is unchanged, calling a method changed only at one input, must then be proved falsely)
+    return cs.length && !broken('held-key') ? `_${hash(cs.map((c) => reachOf.keyText(c)).join('\n\u0001'))}` : '';
   }
   function instanceDecision(t, target, n, made = false) {
     if (t.flags & (TF.StringLike | TF.NumberLike | TF.BigIntLike | TF.BooleanLike | TF.ESSymbolLike | TF.Null | TF.Undefined)) return 'false';
@@ -1982,7 +2009,7 @@ function translateOnce(file, fnName, opts = {}) {
   };
   // the sign of zero is read exactly by the doubles reading (design/doubles.md): a number-bearing unit is decided over
   // binary64, so no unit is made opaque for a -0 it may produce (the opaque reading of design/signed-zero.md is lifted)
-  { const siteUnits = new Set([...opaqueSites.keys(), ...[...callSiteUnits.values()].map((u) => u.name)]); // a unit with an opaque block (w1a) or an opaque statement step (w1c) is read by the value translator, which emits the step; the heap core's reader has no step
+  { const siteUnits = new Set([...opaqueSites.keys(), ...[...callSiteUnits.values()].map((u) => u.name), ...expressionUnits]); // a unit with an opaque block (w1a), an opaque statement step (w1c) or an async-family expression step (w1d) is read by the value translator, which emits the step; the heap core's reader has no step
     if (heapT && heap) heapT.plan(order, siteUnits.size ? (heapUnits ?? order.map((u) => u.name)).filter((n) => !siteUnits.has(n)) : heapUnits, new Set([...designated.keys(), ...unitOpaque, ...boundaryOpaque])); } // an opaque site's step (w1b) keeps the value reading too, its callers and callees with it // after the type reading it relies on exists
   const anyTarget = () => checker.getAnyType();
   // a parameter held under a second reading of its callee (withHeldParams) is Any to its declaration as to its reads: the
@@ -2284,7 +2311,7 @@ function translateOnce(file, fnName, opts = {}) {
     const spread = args.some(ts.isSpreadElement);
     if (spread && recvCode !== null) { const v = `sr${tempCount++}_`; pending.push(`var ${v}: ${recvType} := ${recvCode};`); recvCode = v; }
     // an outside method is looked up before its arguments; a throwing argument still observes that lookup
-    if (faultMode && isEff && ts.isPropertyAccessExpression(n.expression)) {
+    if (faultMode && isEff && ts.isPropertyAccessExpression(ts.isTaggedTemplateExpression(n) ? n.tag : n.expression)) { // a tagged template is the call of its tag (common.mjs templateRaws)
       const ps = ['World', ...(recvCode !== null ? [recvType] : [])];
       const args = [WORLD, ...(recvCode !== null ? [recvCode] : [])];
       const lookup = `${external(`lookup_${calleeName}`, ps, '(World, Unit)')}(${args.join(', ')})`;
@@ -2982,6 +3009,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   }
   const templateStrings = new Map(); // a tagged template's literal node -> the code of its strings object, its tag's first argument
   function expr(n, expected) {
+    if (asyncOpaqueAt(n)) return opaqueExpression(n, expected); // the async family's opaque step (opaque-async.mjs)
     if (templateStrings.has(n)) return templateStrings.get(n);
     { const er = erasedReferenceSlot(checker, n); if (er) fail(n, `${er.rule}: ${er.message}`); } // a reference whose type an assertion erased, where it is compared by identity: one test with the lint
     const start = !valueOperands && containsValueStep(n);
@@ -3513,9 +3541,10 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     return hoist(`(var ${old} := ${WORLD}; var ${was} := ${P.faulted}(${old}); var ${error} := ${P.value}(${old});\nvar ${WORLD} := if ${was} then ${P.clear}(${WORLD}) else ${WORLD};\nvar (${WORLD}, ignored${tempCount++}_) := (${body});\nif ${P.faulted}(${WORLD}) then ${promisePair(promiseFailure(R))} else (var ${WORLD} := if ${was} then ${P.raise}(${WORLD}, ${error}) else ${WORLD}; ${promisePair(convert(source, sourceT, rt, n))}))`, R);
   }
   // an async await exits on a fault before its following statements, just like a promise reaction
-  const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; };
+  const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x) || asyncOpaqueAt(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; }; // an opaque step takes an await's fault check (opaque-async.mjs)
   const asyncFailure = (u) => retIn(promiseFailure(dtype(retType(u), u.node)));
   function awaitExpr(n) {
+    if (asyncOpaqueAt(unparen(n.expression))) return heldAwait(n, unparen(n.expression)); // an opaque step's promise, awaited as a held one
     const shape = promiseAllMapShape(n);
     if (shape) return callbackValue(n, shape);
     let inner = n.expression; while (ts.isParenthesizedExpression(inner)) inner = inner.expression;
@@ -3531,7 +3560,11 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         return `[${vals.join(', ')}]`;
       }
     }
-    if (!ts.isCallExpression(inner)) {
+    if (!ts.isCallExpression(inner)) return heldAwait(n, inner);
+    return call(inner, true);
+  }
+  function heldAwait(n, inner) {
+    {
       // awaiting a held promise: a transition of the world on that value, returning the awaited type
       if (!unitEffectful()) fail(n, 'internal: await in a unit not marked effectful');
       addPrelude('World', 'type World');
@@ -3540,7 +3573,6 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
       const id = external('await_value', ['World', pd], `(World, ${rd})`);
       return hoist(`${id}(${WORLD}, ${expr(inner)})`, rd);
     }
-    return call(inner, true);
   }
   // the bitwise reading both lanes share (the heap core receives it; design/bitwise-lemmas.md). A chain of bitwise
   // operators is one bv32 term, written inline, with one conversion back at its top (ToInt32, or ToUint32 for `>>>`):
@@ -5590,6 +5622,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if (callee) for (const m of mutatedOf(callee)) { let a = (via ? via.args : x.arguments)[callee.params.findIndex((p) => ts.isIdentifier(p.name) && p.name.text === m)]; while (a && ts.isParenthesizedExpression(a)) a = a.expression; if (a && (ts.isIdentifier(a) || a.kind === K.ThisKeyword)) note(a); }
       }
       { const pc = procCall(x); if (pc && !seenProcs.has(pc)) { seenProcs.add(pc); walk(pc.fn.body); } } // stage 5 rank 21: a call splices the body here
+      if (asyncOpaqueAt(x) && currentUnit && !broken('async-drop-carry')) for (const d of stepWritesOf(x)) note(d.name); // an opaque step's writes (opaque-async.mjs stepWrites): a branch or a loop around it carries them out
       ts.forEachChild(x, walk);
     };
     const seenProcs = new Set();
@@ -6689,6 +6722,43 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   const blockReadsThis = (t) => { let f = false; const w = (x) => { if (f) return; if (x.kind === K.ThisKeyword) { f = true; return; } if ((ts.isFunctionLike(x) && !ts.isArrowFunction(x)) || ts.isClassLike(x)) return; ts.forEachChild(x, w); }; t.stmts.forEach(w); return f; };
   // the block as one step: Opaque(id, reads) -> (world', result, outputs); its result channel is Option<R> unless the
   // block cannot fall through; a fault leaves through ctx (a unit that may throw)
+  // ----- the opacity ladder: the async family's expression steps (opaque-async.mjs, design/w1d-opaque-async.md) -----
+  // The construct the finding names is one transition of the world (opaqueForm) keyed by its tokens, the texts of the
+  // same-file functions it reaches (reachedFunctions) and the module cells it names; it reads every local it mentions and
+  // the world, writes every reference it may change and every name sharing an object with one (stepWrites), and its
+  // value is its result. The statement around it takes the fault check an await gets (awaitsHere).
+  const expressionCovered = new Map(); // unit name -> the statements its steps sit in (the opaque fraction counts each once)
+  function opaqueExpression(n, expected = null) {
+    const site = expressionSites.get(`${n.getStart(sf)}:${n.getEnd()}`);
+    if (!unitEffectful()) fail(n, 'internal: an opaque step in a unit not marked effectful');
+    addPrelude('World', 'type World');
+    const typed = (v) => ({ ...v, d: letTypeOf(v.sym) ?? dtype(symType(v.sym, v.node), v.node) });
+    let reads = freeVars(n, null).map(typed);
+    if (broken('async-drop-reads')) reads = reads.filter((v) => !ts.isVariableDeclaration(v.sym?.valueDeclaration ?? {})); // the --break: the step no longer reads the unit's locals
+    const sw = stepWrites(checker, n, currentUnit.node); stepWritesMemo.set(n, sw.writes ?? []);
+    if (sw.why) fail(n, `opaque: the ${site.rules.join(', ')} step's writes cannot be named: ${sw.why}`); // the lint refused that site already (asyncOpaqueSite); the translator's own guard
+    const writes = sw.writes.map((d) => typed({ name: d.name.text, sym: checker.getSymbolAtLocation(d.name), node: d.name }));
+    const cells = new Set();
+    const w = (x) => { const b = moduleState(checker, x, sf); if (b) cells.add(opaqueText([b], sf)); { const sb = staticCell(x); if (sb) cells.add(opaqueText([sb.decl], sf)); } ts.forEachChild(x, w); };
+    w(n);
+    const text = opaqueText([n], sf);
+    const key = opaqueKey([text, ...reachedFunctions(checker, n).map((f) => opaqueText([f], sf)), ...[...cells].sort()]);
+    // its value at the type the place reading it expects (an argument, a declared local): an uninterpreted result is some
+    // value of that type, as the real one is (it is assignable there); else at the construct's own type
+    let rd; try { rd = dtype(expected ?? typeOf(n), n); } catch { rd = anyType(); }
+    const t = valueOperands ? valueName() : `t${tempCount++}_`;
+    const step = opaqueForm({ id: `step_${key.slice(0, 16)}`, external, world: WORLD, inputs: reads.map((v) => ({ code: dn(v.name), d: v.d })), outputs: writes.map((v) => ({ name: dn(v.name), d: v.d })), ret: { name: t, d: rd, terminal: true } });
+    pending.push(step.line);
+    if (faultMode) pending.push(FAULT_CHECK);
+    // the certificate row (A5): the span is the finding's own, as written (the step is its node); the step covers the statement it sits in, once per statement
+    let st = n; while (st && !ts.isStatement(st)) st = st.parent;
+    const seen = expressionCovered.get(currentUnit.name) ?? new Set(); const fresh = !!st && !seen.has(st); if (st) seen.add(st); expressionCovered.set(currentUnit.name, seen);
+    const a0 = n.getStart(sf);
+    const rows = opaqueRows.get(currentUnit.name) ?? [];
+    rows.push(opaqueEntry({ rule: site.rules.join(','), line: lineOf(sf, a0), id: step.name, reads: reads.map((v) => dn(v.name)), writes: ['world', ...writes.map((v) => dn(v.name)), 'result'], construct: 'expression', span: site.span, findings: [site.span], statements: fresh ? 1 : 0 }));
+    opaqueRows.set(currentUnit.name, rows);
+    return t;
+  }
   function opaqueTail(u, fin, ctx) {
     const t = tailOf(u);
     if (!unitEffectful()) fail(t.stmts[0], 'internal: an opaque block in a unit not marked effectful');
