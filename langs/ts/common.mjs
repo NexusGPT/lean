@@ -2446,6 +2446,13 @@ export function withHeldParams(params, f) { const saved = heldParams; heldParams
 let opaqueHeld = null;
 export function withOpaqueHeld(f) { const saved = opaqueHeld; opaqueHeld = new Set(); try { return f(); } finally { opaqueHeld = saved; } } // a translation's scope: the set starts empty
 export function holdOpaque(decl) { if (opaqueHeld && decl) opaqueHeld.add(decl); } // inside withOpaqueHeld: the declaration is read at Any from now on
+// the value is a name a boundary opaque step writes, or a member read of one (`v`, `r.length`)
+function opaqueStepHeld(checker, n) {
+  let x = n; while (ts.isParenthesizedExpression(x) || ts.isNonNullExpression(x) || ts.isPropertyAccessExpression(x) || ts.isElementAccessExpression(x)) x = x.expression;
+  if (!opaqueHeld || !ts.isIdentifier(x)) return false;
+  let sym = null; try { sym = checker.getSymbolAtLocation(x); } catch { return false; }
+  return !!sym?.valueDeclaration && opaqueHeld.has(sym.valueDeclaration);
+}
 const variantMemo = new WeakMap();
 export function heldVariantUnit(checker, decl) {
   if (!decl || !ts.isFunctionLike(decl) || !decl.body || !unitFunction(decl) || ts.isMethodDeclaration(decl) || ts.isConstructorDeclaration(decl) || ts.isGetAccessorDeclaration(decl) || ts.isSetAccessorDeclaration(decl)) return false;
@@ -2502,7 +2509,7 @@ export function outsideSlot(checker, n) {
       if (everyCallee) return true;
       const dsf = d.getSourceFile();
       if (dsf.hasNoDefaultLib || /[\\/]typescript[\\/]lib[\\/]lib\.[^\\/]*\.d\.ts$/.test(dsf.fileName)) return false; // a library operation: read exactly
-      if (path.resolve(dsf.fileName) === LEAN_NUMBER_DTS) return false; // the faithful reading's operation (Math.__lean_add and kin, translate/faithful.mjs): it reads its operands as numbers, no outside slot
+      if (path.resolve(dsf.fileName) === LEAN_NUMBER_DTS) return opaqueStepHeld(checker, n); // the faithful reading's operation (Math.__lean_add and kin, translate/faithful.mjs): no outside slot for an asserted value, one for a boundary opaque step's write (design/w1g-opaque-handed.md, 2026-11-02)
       if (dsf === n.getSourceFile() && ts.isFunctionLike(d) && d.body) return false; // a unit of this file reads its parameter
       if (dsf !== n.getSourceFile()) return true; // another file's function or a declaration file's: one transition named by its name
       if (d.body) return false;
