@@ -97,6 +97,7 @@ export const MECHANISMS = {
   'w9l-moves': 'ci/ledger.mjs pairMoves: an added file and a deleted file git did not pair keep no parent, whatever units they share (lane w9l; tests/w9l-bounded-and-moves.mjs)',
   'callee-fact': 'callee-facts.mjs factDecider: under check.mjs every eligible callee fact is read as confirmed, lane B\'s record unread (lane w8e)',
   'callee-fact-prior': 'exec/callee-trace.mjs factCall: lane B reads only the call\'s own receiver and arguments, not what the run handed the calls before it (lane w8e)',
+  'callee-fact-held': 'common.mjs readAfterCall heldBy: a value a fact call was handed is taken for one the world does not hold, so a later write through it is a local write the world never sees (lane w9aa; tests/callee-fact.mjs keptWrite)',
   'callee-fact-trace': 'exec/callee-trace.mjs factCall: lane B\'s record of a call sees no write and no shared answer (lane w8e)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
   'async-drop-reads': 'translate/translate.mjs opaqueExpression: an async-family step no longer reads the unit\'s locals (lane w1d)',

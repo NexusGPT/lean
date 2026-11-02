@@ -2771,6 +2771,9 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
   };
   // a handed value reaches o at c; one handed to c itself under a fact is no change at c (the fact is noted as used)
   const reached = (o, c, covered = false) => handed.find((x) => ranBy(x.at, c) && !!(x.fact && (x.at === c || factAt.has(c))) === covered && (reaches(x.t, o) || share(x.t, o))) ?? null; // covered: the values handed to c itself under a fact, no change at c
+  // what the world may hold at c: every value a call that ran by c was handed, a fact call's too (its fact says it writes
+  // none of them, not that it keeps none: a later write through one is told to the world, design/world-write.md)
+  const heldBy = (o, c) => handed.some((x) => ranBy(x.at, c) && !(x.fact && broken('callee-fact-held')) && (reaches(x.t, o) || share(x.t, o)));
   const repeats = (l, x) => { const within = (y) => !!y && y.pos <= x.pos && x.end <= y.end; return within(l.statement) || (ts.isForStatement(l) && (within(l.condition) || within(l.incrementor))) || ((ts.isWhileStatement(l) || ts.isDoStatement(l)) && within(l.expression)); }; // a for-of or for-in header and a for initializer run once
   const loops = (x) => { const ls = []; for (let p = x.parent; p && p !== body.parent; p = p.parent) if (ts.isIterationStatement(p, false) && repeats(p, x)) ls.push(p); return ls; };
   const inFn = (x, top) => { for (let p = x.parent; p && p !== top; p = p.parent) if (ts.isFunctionLike(p)) return true; return false; };
@@ -2925,7 +2928,7 @@ const TF = ts.TypeFlags, K = ts.SyntaxKind, isAny = (t) => !!t && !!(t.flags & (
       const s = ts.isIdentifier(r) ? checker.getSymbolAtLocation(r) : null;
       if (s || r.kind === K.ThisKeyword) {
         const t = typeOf(target);
-        const held = (s && answerBound(s)) || (() => { const d = s ? declOfSym(s) : null; const st = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end ? d.getEnd() : body.getStart(sf); return points.some((c) => { if (!reached(typeOf(r), c)) return false; return c.getStart(sf) >= st && c.getEnd() <= n.getStart(sf) && !exitsBefore(c, n); }); })();
+        const held = (s && answerBound(s)) || (() => { const d = s ? declOfSym(s) : null; const st = d && ts.isVariableDeclaration(d) && d.pos >= body.pos && d.end <= body.end ? d.getEnd() : body.getStart(sf); return points.some((c) => { if (!heldBy(typeOf(r), c)) return false; return c.getStart(sf) >= st && c.getEnd() <= n.getStart(sf) && !exitsBefore(c, n); }); })();
         if (held && objectLike(t)) writePoints.push({ node: n, root: r, sym: s, t, inFn: !!fnOf(n) });
       }
     }

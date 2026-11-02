@@ -1,8 +1,9 @@
 import { isPlainObject } from "./shape";
 import { isTagged } from "./writer";
-import { remember, isSmall, touchKept } from "./keep";
+import { remember, isSmall, touchKept, hold, heldN } from "./keep";
 
 export interface Rec { tags: string[]; meta: Record<string, unknown> }
+export interface Held { n: number; meta: Record<string, unknown> }
 
 // the length read before a guard that writes none of what it is handed: the read may move across it
 export function tags(rec: Rec): number {
@@ -48,4 +49,17 @@ export function sameKeptWriter(rec: Rec): number {
   const ok = touchKept(remember(rec));
   rec.tags.push("seen");
   return ok ? rec.tags.length : 0;
+}
+
+// a write through what a fact call kept (hold writes none of what it is handed, it keeps it): the write is told to the
+// world, which a later call (heldN) reads; the value written bound outside the write differs, the field restored after
+// heldN, so only heldN sees it
+export function keptWrite(b: Held, v: number): number {
+  const w = v + 1;
+  const old = b.n;
+  hold(b);
+  b.n = w;
+  const r = heldN();
+  b.n = old;
+  return r;
 }
