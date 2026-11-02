@@ -1,0 +1,38 @@
+{
+  "scope": [
+    "first_positive",
+    "else_arm",
+    "body",
+    "cond",
+    "nested",
+    "swallowed"
+  ],
+  "equal": {
+    "first_positive": true,
+    "else_arm": true,
+    "body": true,
+    "cond": true,
+    "nested": true,
+    "swallowed": false
+  },
+  "why": "an await inside a loop of an async unit: a rejection leaves the loop and the unit (its result is the rejected promise), so an awaited statement of the body exits the loop on the fault, an awaited condition ends it, and the code after the loop takes the enclosing loop's exit or the unit's rejection first (translate.mjs coreLoop faultExit, awaitLeaves; an if in such a loop carries what follows in each branch, as at the unit's top). Each candidate restates the parent without the loop, the same in JavaScript, and proves: the await in an if branch (firstPositive), in the else branch (elseArm), in the body itself (body), in the condition (cond), in a loop inside a loop (nested). At 547d1797 none proved: the loop ran on after the rejection and its return gave the value on the faulted world (the parent's fault branch was a value where the candidate's was the rejection). Under LEAN_BREAK=async-loop-exit the same, so none proves. swallowed is not proved either way: its candidate catches the rejection the parent passes on (the fix reads a rejection, it does not drop one).",
+  "b": {
+    "firstPositive": "PASS-bounded",
+    "elseArm": "PASS-bounded",
+    "body": "PASS-bounded",
+    "cond": "PASS-bounded",
+    "nested": "PASS-bounded"
+  },
+  "break": [
+    {
+      "mechanism": "async-loop-exit",
+      "equal": {
+        "first_positive": false,
+        "else_arm": false,
+        "body": false,
+        "cond": false,
+        "nested": false
+      }
+    }
+  ]
+}

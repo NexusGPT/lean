@@ -2623,6 +2623,40 @@ function translateOnce(file, fnName, opts = {}) {
     if (ts.isSpreadElement(a)) fail(a, 'key-order: a spread of records the unit builds, handed to an outside call: their key order is not read in a spread; hand the array itself');
     return `${external(`key_order_${mangle(d)}`, [d, 'string'], d)}(${code}, ${orderCode(o)})`;
   }
+  // A record handed to a same-file function reaches every reader of its parameter: `enc({ a, b })` with `enc(o)` calling
+  // `JSON.stringify(o)` hands the outside the caller's literal, while enc's own reading takes o as an object it did not
+  // build (own: no order beside it). So the order is handed at the same-file call when the callee's parameter may reach
+  // one (paramReadsOrder): any use of it but a field read whose value holds no record (the callee may hand it on, store,
+  // return, spread, enumerate or call a method of it). The argument is then read as orderedArg reads one handed to the
+  // outside, its refusals included (design/handed-key-order.md, lane w9y; tests/break.mjs same-file-key-order)
+  const paramOrderCache = new Map();
+  function paramReadsOrder(callee, p) {
+    if (paramOrderCache.has(p)) return paramOrderCache.get(p);
+    const body = callee.body ?? callee.fn?.body ?? callee.node?.body;
+    const names = []; let rest = false;
+    const bind = (n) => { if (ts.isIdentifier(n)) names.push(n); else for (const el of n.elements) { if (ts.isOmittedExpression(el)) continue; if (el.dotDotDotToken) rest = true; bind(el.name); } };
+    bind(p.name);
+    let reads = rest || !body;
+    const fieldOnly = (x) => { // x.f (or x['f']) read for a value that holds no record, and not called
+      const c = x.parent;
+      const member = c && ((ts.isPropertyAccessExpression(c) && c.expression === x) || (ts.isElementAccessExpression(c) && c.expression === x && ts.isStringLiteralLike(c.argumentExpression)));
+      if (!member) return false;
+      if (c.parent && ts.isCallExpression(c.parent) && c.parent.expression === c) return false;
+      const ft = typeOf(c);
+      return !!ft && !isAny(ft) && !orderBearing(ft);
+    };
+    for (const nm of names) {
+      if (reads) break;
+      const t = typeOf(nm);
+      if (!t || isAny(t) || !orderBearing(t)) continue;
+      const sym = checker.getSymbolAtLocation(nm);
+      const walk = (x) => { if (reads) return; if (ts.isIdentifier(x) && x !== nm && checker.getSymbolAtLocation(x) === sym && !fieldOnly(x)) reads = true; ts.forEachChild(x, walk); };
+      if (body) walk(body);
+    }
+    paramOrderCache.set(p, reads);
+    return reads;
+  }
+  const unitArgOrdered = (callee, p, a, code, d) => broken('same-file-key-order') || !a || ts.isSpreadElement(a) || !paramReadsOrder(callee, p) ? code : orderedArg(a, code, d);
   function externalCall(calleeName, n, args, recvCode = null, recvType = null, eff = null, cond = null) {
     const isEff = eff ?? isEffectCall(n);
     if (isEff && !unitEffectful()) fail(n, `internal: an effect in a unit not marked effectful (${calleeName})`);
@@ -3887,7 +3921,12 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   const asyncFailure = (u) => retIn(promiseFailure(dtype(retType(u), u.node)));
   // an await at n leaves the unit on a rejection (the unit's statement flow, outside a loop, whose own exit routes it);
   // (tests/break.mjs async-branch-exit merges the branches as values again: the fault exit read as a branch's state)
-  const awaitExits = (u, n) => u.isAsync && !loopCtx.length && awaitsHere(n) && !broken('async-branch-exit');
+  const awaitExits = (u, n) => u.isAsync && awaitsHere(n) && (loopCtx.length ? !!loopCtx[loopCtx.length - 1].faultExit : !broken('async-branch-exit'));
+  // an await inside a loop of an async unit leaves the loop on a rejection (coreLoop faultExit: the loop's own exit, and
+  // after the loop the enclosing loop's, or the unit's rejected promise), as JavaScript leaves it: the pass, the passes
+  // after it and a `return` inside the loop do not run on the faulted world (lane w9y; tests/break.mjs async-loop-exit)
+  const awaitLeaves = (u, n) => u.isAsync && awaitsHere(n) && (!loopCtx.length || !!loopCtx[loopCtx.length - 1].faultExit);
+  const asyncExit = (u) => loopCtx.length ? loopCtx[loopCtx.length - 1].faultBrk() : asyncFailure(u);
   function awaitExpr(n) {
     if (asyncOpaqueAt(unparen(n.expression))) return heldAwait(n, unparen(n.expression)); // an opaque step's promise, awaited as a held one
     const shape = promiseAllMapShape(n);
@@ -5233,12 +5272,13 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if (hasAbsence(typeOf(a), TF.Undefined)) {
           const v = `nd${tempCount++}_`, value = expr(a);
           out.push(`(var ${v} := ${value}; if ${v}.Some? then Some(${convert(`${v}.value`, baseOf(typeOf(a)), bodyT, a)}) else None)`);
-        } else out.push(`Some(${outerParens(expr(a, bodyT))})`);
+        } else out.push(`Some(${outerParens(unitArgOrdered(callee, p, a, expr(a, bodyT), dtype(bodyT, p)))})`);
         return;
       }
       if (!a) { if (p.questionToken) { usesOption = true; out.push(missingD(dtype(pt, p))); return; } fail(n, `${callee.name} needs ${callee.params.length} arguments`); }
       if (p.questionToken && dtype(typeOf(p.name), p) === 'Any') { out.push(isAny(typeOf(a)) ? liftAny(expr(a, pt), 'Option<Any>') : `Some(${outerParens(expr(a, pt))})`); return; } // an optional any parameter is an Option<Any> slot
-      out.push(effectfulUnits.has(callee.name) ? handedArg(a, expr(a, pt), dtype(pt, a)) : expr(a, pt)); // a callee that threads the world may hand its argument on: a fresh one keeps its identity (handedArg)
+      const ordered = (code) => unitArgOrdered(callee, p, a, code, dtype(pt, a)); // its key order, where the callee's parameter may reach a reader of it (paramReadsOrder)
+      out.push(effectfulUnits.has(callee.name) ? handedArg(a, ordered(expr(a, pt)), dtype(pt, a)) : ordered(expr(a, pt))); // a callee that threads the world may hand its argument on: a fresh one keeps its identity (handedArg)
     });
     return out;
   }
@@ -6813,7 +6853,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
     { const g = absenceGuard(s, u, () => tr(list, fin, u)); if (g) return g; } // a payload read: the option tested before the statement
     const more0 = (r = rest) => tr(r, fin, u);
     // after a statement of an exact try body that may fault: the catch path, else what follows
-    const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) { const next = tr(r, fin, u); return `${code}${code ? '\n' : ''}${u.isAsync && !loopCtx.length && awaitsHere(s) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncFailure(u)} else ${wrapLet(next)}` : next}`; } const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
+    const guard = (code, r = rest) => { const t = tryOf(s); if (!t || !(containsEffect(s) || ts.isThrowStatement(s))) { const next = tr(r, fin, u); return `${code}${code ? '\n' : ''}${awaitLeaves(u, s) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncExit(u)} else ${wrapLet(next)}` : next}`; } const P = faultPreds(); return `${code}${code ? '\n' : ''}if ${P.faulted}(${WORLD}) then\n${indentBlock(wrapLet(catchPath(t, u)))}\nelse\n${indentBlock(wrapLet(tr(r, fin, u)))}`; };
     const more = (r = rest) => (tryOf(s) && containsEffect(s) ? guard('', r) : more0(r));
     switch (s.kind) {
       case K.TryStatement: return exactTry(s) ? faultTry(s, () => tr(rest, fin, u), u, { ret: retIn, fault: () => retIn(faultValue(u)) }) : opaqueBlock(s, rest, fin, u);
@@ -6824,7 +6864,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         const top = loopCtx[loopCtx.length - 1];
         if (top && top.forEach && top.collect) return callbackStep(s.expression, top); // a callback return supplies the next result state
         if (top && top.forEach) { let cb = s.parent; while (cb && !ts.isFunctionLike(cb)) cb = cb.parent; const pre = jumpRestores(s, cb); return pre + capture(() => { if (s.expression && containsEffect(s.expression)) expr(s.expression); return top.cont(); }); } // a return inside forEach ends one step
-        return capture(() => { const rt = retType(u); const code = !s.expression ? bareReturn(u, s) : expr(s.expression, rt); return u.isAsync && !loopCtx.length && s.expression && awaitsHere(s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${wrapLet(tryOf(s) && ts.isAwaitExpression(unparen(s.expression)) ? catchPath(tryOf(s), u) : asyncFailure(u))} else ${retIn(code)}` : retIn(code); });
+        return capture(() => { const rt = retType(u); const code = !s.expression ? bareReturn(u, s) : expr(s.expression, rt); return s.expression && awaitLeaves(u, s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${wrapLet(tryOf(s) && ts.isAwaitExpression(unparen(s.expression)) ? catchPath(tryOf(s), u) : asyncExit(u))} else ${retIn(code)}` : retIn(code); });
       }
       case K.ThrowStatement: return capture(() => `var ${WORLD} := ${faultPreds().raise}(${WORLD}, ${expr(s.expression, anyTarget())});\n${retIn(faultValue(u))}`);
       case K.VariableStatement: {
@@ -6848,7 +6888,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
             return `var ${dn(d.name.text)}: ${dtype(t, d)} := ${outerParens(expr(d.initializer, t))};`;
           }));
         }
-        return (tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s)) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
+        return (tryOf(s) && containsEffect(s)) || awaitLeaves(u, s) ? guard(out.join('\n')) : `${out.join('\n')}\n${more0()}`;
       }
       case K.ExpressionStatement: {
         if (yieldState && ts.isYieldExpression(s.expression)) { const y = s.expression; const code = y.asteriskToken ? seqOf(y.expression) : `[${expr(y.expression, yieldState.element)}]`; return `var ${yieldState.name}: ${yieldState.d} := ${yieldState.name} + ${code};\n${more0()}`; }
@@ -6867,10 +6907,10 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
           if (LT) { const rt0 = e.right ? typeOf(e.right) : null; const vd = rt0 ? (isAny(rt0) ? anyType() : dtype(rt0, s)) : LT; return `var ${dn(n)}: ${LT} := ${convertD(v, vd, LT)};`; }
           return `var ${dn(n)}: ${dtype(symType(sym, s), s)} := ${v};${partnerSync(n, dtype(symType(sym, s), s))}`;
         });
-        if ((tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s))) return guard(line.trim() ? line : '');
+        if ((tryOf(s) && containsEffect(s)) || awaitLeaves(u, s)) return guard(line.trim() ? line : '');
         return line.trim() ? `${line}\n${more0()}` : more0();
       }
-      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: sflatten(s.thenStatement) }], s.elseStatement ? sflatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${awaitExits(u, s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncFailure(u)} else ${wrapLet(body)}` : body}` : body; } // an awaited condition that rejects ends the unit, as an awaited statement does
+      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: sflatten(s.thenStatement) }], s.elseStatement ? sflatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${awaitExits(u, s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncExit(u)} else ${wrapLet(body)}` : body}` : body; } // an awaited condition that rejects ends the unit, as an awaited statement does
       case K.SwitchStatement: return isOpaqueStmt(s) ? opaqueBlock(s, rest, fin, u) : coreSwitch(s, rest, fin, u);
       case K.LabeledStatement: return isOpaqueStmt(s.statement) ? opaqueBlock(s, rest, fin, u) : tr([s.statement, ...rest], fin, u);
       case K.TypeAliasDeclaration: case K.InterfaceDeclaration: return more(); // stage 5 rank 16: erased at run time
@@ -7462,7 +7502,14 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const mNames = M.map((m) => dn(m.name));
     const retName = `ret${id}`;
     const jumpName = `jump${id}`;
-    const outNames = [...(jumps.length ? [jumpName] : []), ...(returns ? [retName] : []), ...mNames]; // what the helper returns
+    // an async unit's loop that awaits: a rejection leaves it (awaitLeaves: each awaited statement of the body exits on the
+    // fault, an awaited condition ends the loop) with its flag set, and the code after it tests the flag first (below):
+    // the flag, not the world, so a path that awaited nothing never reads the world the loop was entered with; a loop the
+    // forEach lowering made routes its faults itself (lf)
+    const faultExit = !!u?.isAsync && !s.__forEach && !broken('async-loop-exit') && awaitsHere(s) && M.some((m) => m.name === WORLD);
+    const condAwaits = (ts.isWhileStatement(s) || ts.isDoStatement(s)) ? awaitsHere(s.expression) : ts.isForStatement(s) && !!s.condition && awaitsHere(s.condition);
+    const faultName = `fault${id}`;
+    const outNames = [...(jumps.length ? [jumpName] : []), ...(returns ? [retName] : []), ...(faultExit ? [faultName] : []), ...mNames]; // what the helper returns
     let loopUsesSelf = false; { const w = (x) => { if (x.kind === K.ThisKeyword) loopUsesSelf = true; if (!loopUsesSelf) ts.forEachChild(x, w); }; w(s); }
     // a loop of a unit on a recursive cycle takes the unit's fuel as a const parameter: a recursive call in its body
     // passes it decremented as the unit itself does, and the helper decreases the fuel first, then its own measure
@@ -7546,11 +7593,12 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
         decreases = `(if first${id} then 1 else 0), ${decreases}`;
       }
     }
+    if (faultExit && condAwaits) exit = `${faultPreds().faulted}(${WORLD}) || (${exit})`; // the awaited condition rejected: the loop ends, flagged
     const next = () => `${hn}(${[...leadArgsNext, ...constArgs, ...mNames].join(', ')})`;
-    const completed = (jump = '0', ret = 'None') => tupleOf([...(jumps.length ? [jump] : []), ...(returns ? [ret] : []), ...mNames]);
+    const completed = (jump = '0', ret = 'None', flt = 'false') => tupleOf([...(jumps.length ? [jump] : []), ...(returns ? [ret] : []), ...(faultExit ? [flt] : []), ...mNames]);
     const exitVal = () => completed();
     const stepStmts = generalFor(s) && s.incrementor ? [forStep(s)] : [];
-    loopCtx.push({ label: labelId(s), jump: (code) => jumps.length ? completed(code) : fail(s, 'a labelled exit lacks its completion channel'), cont: stepStmts.length ? () => tr(stepStmts, next, u) : next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: ts.isIdentifier(s.initializer.declarations[0].name) ? dn(s.initializer.declarations[0].name.text) : `seq${id}[idx${id}]`, index: `idx${id}` } : null, ret: (code) => (returns ? completed('0', `Some(${code})`) : fail(s, 'internal: return in a loop without the return shape')) });
+    loopCtx.push({ label: labelId(s), faultExit, faultBrk: () => completed('0', 'None', 'true'), jump: (code) => jumps.length ? completed(code) : fail(s, 'a labelled exit lacks its completion channel'), cont: stepStmts.length ? () => tr(stepStmts, next, u) : next, brk: exitVal, forEach: !!s.__forEach, collect: s.__collect ? { ...s.__collect, element: ts.isIdentifier(s.initializer.declarations[0].name) ? dn(s.initializer.declarations[0].name.text) : `seq${id}[idx${id}]`, index: `idx${id}` } : null, ret: (code) => (returns ? completed('0', `Some(${code})`) : fail(s, 'internal: return in a loop without the return shape')) });
     let bodyE;
     const fctx = lf ? { fault: () => exitVal(), check: false } : null;
     const savedRet = opaqueRet;
@@ -7565,22 +7613,23 @@ ${indentBlock(wrapLet(`var ${dn(x.text)}: ${T} := ${answer}.value;\n${step}`), 2
     const params = [...lead, ...constParams, ...stateParams];
     const selfArgs = [...lead.map((p) => p.split(':')[0]), ...constArgs, ...mNames];
     const callS = `${hn}(${selfArgs.join(', ')})`;
-    const outTypes = [...(jumps.length ? ['int'] : []), ...(returns ? [`Option<${RD}>`] : []), ...M.map((m) => m.d)];
+    const outTypes = [...(jumps.length ? ['int'] : []), ...(returns ? [`Option<${RD}>`] : []), ...(faultExit ? ['bool'] : []), ...M.map((m) => m.d)];
     const resT = outTypes.length === 1 ? outTypes[0] : `(${outTypes.join(', ')})`;
     const hints = [...userHints];
     for (const m of M) {
       if ((m.d === 'int' || m.d === 'real' || m.d === 'BigInt') && keepsNonneg(m.name, s.statement, factsIn)) hints.push(`${dn(m.name)} >= ${m.d === 'real' ? '0.0' : '0'}`);
     }
-    const exitFact = !isOf && !isFor && !returns && !conditionLines.length && !jumps.length && !ts.isDoStatement(s) && !(derivedBound(s)?.body ?? [s.statement]).some((b) => escapingLabels(b).length > 0) ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
+    const exitFact = !faultExit && !isOf && !isFor && !returns && !conditionLines.length && !jumps.length && !ts.isDoStatement(s) && !(derivedBound(s)?.body ?? [s.statement]).some((b) => escapingLabels(b).length > 0) ? [`  ensures (var ${tupleOf(outNames)} := ${callS}; ${exit})`] : [];
     const specs = [...requiresL.map((r) => `  requires ${r}`),
       ...hints.map((h) => `  ensures (${h}) ==> (var ${tupleOf(outNames)} := ${callS}; ${h})`),
       ...exitFact,
       `  decreases ${fuelled ? `${FUEL}, ` : ''}${decreases}`];
     coreHelpers.push([`function ${hn}${tclause([...params, resT])}(${params.join(', ')}): ${resT}`, ...specs, '{',
-      indentBlock(`${conditionLines.length ? conditionLines.join('\n') + '\n' : ''}if ${exit} then ${exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
+      indentBlock(`${conditionLines.length ? conditionLines.join('\n') + '\n' : ''}if ${exit} then ${faultExit && condAwaits ? completed('0', 'None', `${faultPreds().faulted}(${WORLD})`) : exitVal()}\nelse\n${indentBlock(wrapLet(bind + bodyE))}`), '}'].join('\n'));
     if (isFor && real) intVars.delete(lp.i);
     const first = `${hn}(${[...leadArgsFirst, ...constArgs, ...mNames].join(', ')})`;
     let after = tr(rest, fin, u);
+    if (faultExit && (!loopCtx.length || loopCtx[loopCtx.length - 1].faultExit)) after = `if ${faultName} then\n${indentBlock(wrapLet(asyncExit(u)))}\nelse\n${indentBlock(wrapLet(after))}`; // the loop left at a rejection: the enclosing loop's exit, or the unit's rejected promise
     if (lf?.route) after = `if ${faultPreds().faulted}(${WORLD}) then\n${indentBlock(wrapLet(lf.route()))}\nelse\n${indentBlock(wrapLet(after))}`; // the loop left at a fault: the enclosing fault path
     if (returns) after = `if ${retName}.Some? then\n${indentBlock(retIn(`${retName}.value`))}\nelse\n${indentBlock(wrapLet(after))}`;
     if (jumps.length) after = `if ${jumpName} != 0 then\n${indentBlock(wrapLet(dispatchJump(jumpName, jumps)))}\nelse\n${indentBlock(wrapLet(after))}`;
