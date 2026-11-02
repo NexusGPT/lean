@@ -187,6 +187,21 @@ their operands as numbers. Taken for another file's function, a held value in a 
 text, which refused that slot at the base and so left the file to the exact reading, placed `twice`, `result_held` and
 `compound_held` (pair `type_assertions`). The faithful text refuses the slot again, as at the base.
 
+That rule was too wide (2026-11-02, the full suite on lead-v4 6694e5a7). It also refused a name a boundary opaque step
+writes (w1c, read at Any: `v` after `const v = y + (typeof r[k] === ...)`, `r` after an optional chain, `r.length`).
+Since the merge with w1g that value had met `Math.__lean_add` as one handed conversion (`as_Any_int`), so the faithful
+text translated and lane A proved the five outside_ units of the opaque ladder (`opaque_dynamic-key`,
+`opaque_exception-return`, `opaque_optional-chain`, `opaque_unsupported-call`, `opaque_unsupported-syntax`, each
+expected proved); with the rule the faithful text refused that slot, the unit was unplaced and the five lost their
+proof. These were lost proofs, not false proofs: each row expects `proved` and failed as `unplaced`. Now the operand
+of a faithful operation is an outside slot exactly when it is an opaque step's write or a member read of one (common.mjs
+`opaqueStepHeld`), and stays refused for an asserted or any value (`type_assertions` as at the base). Both are sound:
+lane A proves a number-bearing unit only when the real lemma proves too, and the real lemma reads every operation on
+an Any value as an uninterpreted function of it, so the proof is congruence on the same terms on both sides; the
+conversion into int in the faithful text adds no arithmetic the real lemma used. The narrower rule keeps each pair's
+expectation as it was written: the opaque ladder's outside_ rows proved, type_assertions' `twice`, `param_held`,
+`result_held` and `compound_held` real-only (the asserted case could be widened later; open).
+
 **Stays refused**, each a slot the unit itself reads as declared, where an asserted `number` that is a string would let
 a proof use arithmetic JavaScript does not do (`n + 1 - 1` is `n` on integers, `"51" - 1` on a string): a same-file
 callee with a body (tests/w1g-opaque-handed.mjs checks this case by translation), a library operation (`arr.push(x as
