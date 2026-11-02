@@ -1,0 +1,10 @@
+{
+ "why": "lane w9u (translate/translate.mjs collectAssertionWrites). A call resolved to a JSDoc function type (`@return {function(number): number}`, mrdoob/three.js src/nodes/lighting/PointShadowNode.js getPointShadowDepthFn) has a declaration whose parameters bind no name: the file-wide scan for writes into asserted bindings read `p.name` of each, undefined, and TypeScript's isObjectBindingPattern threw on it. The scan runs over the whole file before any unit, so every unit of the file was refused as translator-crash, not only the caller: doubled, which calls nothing, lost its proof too. An argument handed to an unnamed parameter is written to no binding of the file, so the scan skips it. tripled changes its argument (WITNESS by lane B either way) and is checked; doubled (n * 2 to n + n) is PASS-proved. LEAN_BREAK=jsdoc-unnamed-param: both rows refused:translator-crash, doubled PASS-bounded.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.js", "unit": "tripled", "verdict": "WITNESS", "coverage": "checked" },
+   { "file": "index.js", "unit": "doubled", "verdict": "PASS-proved", "coverage": "checked" }
+  ]
+ }
+}

@@ -249,21 +249,29 @@ function changedRanges(repo, base, head, rel, deleted) {
 // the exception and generator readings) ran once per unit, 8.75 s each on a 58-unit test file of n8n#42117 (507 s). A
 // unit's lint call that throws is that unit's error alone, so a throw of the shared call falls back to one call per
 // unit. LEAN_BREAK=w9f-lint-once lints unit by unit (tests/w9f-n8n-gate.mjs)
-export function changedUnits(loaded, ranges, file, keep = null) {
+// `listed` (the --units filter of this file, unit name -> boolean): a kept unit it leaves out is named with its lines and
+// never linted, since it gets no task and no row (selectUnits drops it); its name still tells the callers' step it changed.
+// Linting it was the whole budget of a run on one 51-line unit when the PR also changed a 1386-line test file (Checkmate#3797:
+// 156 per-unit translations of the test's callbacks, 322 s). LEAN_BREAK=w9u-units-lint lints every kept unit
+export function changedUnits(loaded, ranges, file, keep = null, listed = null) {
   const { sf } = loaded, units = topLevelFunctions(sf);
   const kept = keep && !broken('w9f-lint-routed') ? keep : null;
+  const linted = listed && !broken('w9u-units-lint') ? listed : () => true;
   const spans = [...units.values()].flatMap((u) => {
     if (kept && !kept.has(u.name)) return [];
     const start = sf.getLineAndCharacterOfPosition(u.node.getStart(sf)).line + 1;
     const end = sf.getLineAndCharacterOfPosition(u.node.getEnd()).line + 1;
     return ranges.some(([a, b]) => a <= end && start <= b) ? [{ u, start, end }] : [];
   });
+  const lintSpans = spans.filter(({ u }) => linted(u.name));
   let once = null;
-  if (loaded.checker && spans.length > 1 && !broken('w9f-lint-once')) {
-    try { once = lintFile(file, spans.map(({ start, end }) => [start, end]), { loaded }); } catch { once = null; }
+  if (loaded.checker && lintSpans.length > 1 && !broken('w9f-lint-once')) {
+    try { once = lintFile(file, lintSpans.map(({ start, end }) => [start, end]), { loaded }); } catch { once = null; }
   }
   return spans.map(({ u, start, end }) => {
-    try { return { name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}), findings: loaded.checker ? (once ?? lintFile(file, [[start, end]], { loaded })).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }; }
+    const named = { name: u.name, start, end, ...(u.enclosingUnit ? { enclosingUnit: u.enclosingUnit.name } : {}) };
+    if (!linted(u.name)) return { ...named, findings: [], unlisted: true };
+    try { return { ...named, findings: loaded.checker ? (once ?? lintFile(file, [[start, end]], { loaded })).filter(f => findingUnit(sf, units, f)?.name === u.name) : [] }; }
     catch (e) { return { name: u.name, start, end, error: String(e.message).slice(0, 300) }; }
   });
 }
@@ -282,6 +290,7 @@ function changedFiles(opts, temps, ledger) {
   const { repo, base, head = 'WORKTREE', filesRoot, project = true } = opts;
   const refs = [base, ...(head === 'WORKTREE' ? [] : [head])];
   const names = ledger.files.map(f => f.file);
+  const listed = unitFilter(opts.units);
   const stats = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--no-renames', '--numstat', '-z', ...refs, '--']);
   const binary = new Set(stats.split('\0').filter((x) => x.startsWith('-\t-\t')).map((x) => x.slice(4)));
   const pending = [];
@@ -339,7 +348,7 @@ function changedFiles(opts, temps, ledger) {
       const reading = shared ?? loadProgram(entry.headFile, { project }); // a file read alone is let go after its units
       if (shared) entry.keyReading = shared;
       const routed = new Set(ledger.edits.filter(e => e.file === rel).flatMap(e => e.primary.kind === 'unit' ? e.links.map(u => u.unit) : []));
-      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile, routed).filter(u => routed.has(u.name));
+      entry.units = changedUnits(reading, [[1, Infinity]], entry.headFile, routed, listed && ((name) => listed(rel, name))).filter(u => routed.has(u.name));
       // the module unit (common.mjs MODULE_UNIT): the file's top-level statements, the whole file's lines; the ledger routes to it
       // the types unit (common.mjs TYPES_UNIT) likewise: the file's text its emitted JavaScript does not carry, read by the typed reading alone
       for (const name of [MODULE_UNIT, TYPES_UNIT]) if (routed.has(name)) entry.units.push({ name, start: 1, end: reading.sf.getLineAndCharacterOfPosition(Math.max(0, reading.sf.text.length - 1)).line + 1, findings: [] });
