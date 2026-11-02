@@ -78,6 +78,7 @@ export const MECHANISMS = {
   'emit-intrinsics': 'exec/run.mjs intrinsicPrologue: the emit\'s prologue reads an intrinsic (`Object`) by its name although the file shadows it at module scope, so it reads the file\'s binding in its dead zone (lane w9j)',
   'free-global': 'exec/run.mjs sandbox loadDefining: a name the module\'s evaluation reads that nothing declares fails the load, instead of being the environment\'s fake (lane w9j)',
   'free-global-call': 'exec/run.mjs sharedFreeReads: a ReferenceError at a call for a name both versions of the file read undeclared stays the outcome, instead of the name being the environment\'s fake (lane w9j)',
+  'regex-literal-brace': 'exec/regex-sample.mjs quantified: every `{` after an atom is read as a quantifier, a literal `{` (Annex B) too, so the scan for its `}` runs past the source to V8\'s string limit on every draw and the pattern yields no string (lane w9q; tests/w9q-parent-load-rest.mjs)',
   'opaque-drop-sharing': 'translate/translate.mjs opaqueStep: a statement step that changes or compares an object is admitted after a statement that may share one (lane w1b; no pair flips: the heap identity guard refuses first, design/w1b-opaque-statements.md)',
   'async-drop-reads': 'translate/translate.mjs opaqueExpression: an async-family step no longer reads the unit\'s locals (lane w1d)',
   'async-drop-origins': 'opaque-async.mjs stepWrites: a step writes the names it mentions only, not the names they share an object with (lane w1d)',
