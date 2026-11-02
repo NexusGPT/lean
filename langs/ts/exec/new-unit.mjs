@@ -71,6 +71,16 @@ function resolveModule(specifier, from, options) {
   }
 }
 
+// the position of the first top-level statement of an emitted module that awaits (an await expression or a for await
+// outside every function), or null: the module evaluates up to there before it waits on anything
+const BODY_TURNS = 8;
+function topLevelAwait(sf) {
+  const awaits = (n) => { if (ts.isFunctionLike(n) || ts.isClassLike(n)) return false; if (ts.isAwaitExpression(n) || (ts.isForOfStatement(n) && n.awaitModifier)) return true; return !!ts.forEachChild(n, (c) => awaits(c) || undefined); };
+  for (const st of sf.statements) if (awaits(st)) return st.getStart(sf);
+  return null;
+}
+const lastWorld = (env) => { const t = env.trace[env.trace.length - 1]; return t ? `${t.op} ${t.path}` : 'none'; };
+
 // `extra`: a test file read as the unit's PR-added test (new-tests.mjs): `allow` the test modules it may load, `globals`
 // the runner's globals (describe, it, expect) set on the context, `modules` the runner's own modules ('vitest' and its kin)
 export async function loadCandidate(file, env, options, ms, sources = new Map(), extra = {}) {
@@ -111,11 +121,21 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
       const names = [...new Set([...topLevelFunctions(sf).values()].map(u => u.className ?? u.name))].filter((name) => /^[A-Za-z_$][\w$]*$/.test(name)); // the module's own bindings: a callback or a literal member (`describe()#1`, `ops.add`) is reached through its holder, never by name
       let js = ts.transpileModule(src, { compilerOptions: compile, fileName: abs }).outputText;
       let unitSlot = '__lean_units'; while (src.includes(unitSlot)) unitSlot += '_';
-      js += `\nexport const ${unitSlot} = {${names.map(name => `${JSON.stringify(name)}: typeof ${name} === 'undefined' ? undefined : ${name}`).join(',')}};\n`;
+      // a module whose top level awaits (a script that asks a server, then polls it): the harness reads its units while
+      // the body waits at an await, as run.mjs's loader does (lane w9ab). The surface is a function declaration, which the
+      // module holds from its link on, each unit a getter that reads its binding when picked (one still uninitialised reads
+      // as undefined); `awaitFlag` is set just before the first top-level statement that awaits, so a rejection after it is
+      // the body's reaction to what the world answered, never its load. LEAN_BREAK=await-units: the surface is a constant
+      // written at the body's end, and the whole evaluation is awaited, as before
+      const firstAwait = broken('await-units') ? null : topLevelAwait(ts.createSourceFile(abs, js, ts.ScriptTarget.Latest, true));
+      let awaitFlag = null;
+      if (firstAwait) { awaitFlag = `${unitSlot}_awaited`; js = `${js.slice(0, firstAwait)}${awaitFlag} = true; ${js.slice(firstAwait)}\nvar ${awaitFlag};\nexport function ${awaitFlag}_at() { return ${awaitFlag} === true; }\n`; }
+      if (broken('await-units')) js += `\nexport const ${unitSlot} = {${names.map(name => `${JSON.stringify(name)}: typeof ${name} === 'undefined' ? undefined : ${name}`).join(',')}};\n`;
+      else js += `\nexport function ${unitSlot}() { const u = {}; ${names.map(name => `Object.defineProperty(u, ${JSON.stringify(name)}, { enumerable: true, configurable: true, get: () => { try { return typeof ${name} === 'undefined' ? undefined : ${name}; } catch (e) { return undefined; } } });`).join(' ')} return u; }\n`;
       // decorators are observed but cannot replace the code being checked
       js = js.replace(/var __decorate = \(this && this\.__decorate\) \|\| function \(decorators, target, key, desc\) \{[\s\S]*?\n\};/,
         'var __decorate = function (decorators, target, key, desc) { var c = arguments.length, r = c < 3 ? target : desc === null ? Object.getOwnPropertyDescriptor(target, key) : desc; for (var i = decorators.length - 1; i >= 0; i--) { var d = decorators[i]; if (d) { try { c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key); } catch (e) { if (!(e && e.__isFake)) throw e; } } } return r; };');
-      compiled = { js, unitSlot, commonjs, sf: ts.createSourceFile(abs, js, ts.ScriptTarget.Latest, true) };
+      compiled = { js, unitSlot, awaitFlag, commonjs, sf: ts.createSourceFile(abs, js, ts.ScriptTarget.Latest, true) };
       sources.set(abs, compiled);
     }
     const mod = new vm.SourceTextModule(compiled.js, {
@@ -131,7 +151,7 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
         return dep;
       },
     });
-    mod.leanSource = compiled.sf; mod.leanUnitSlot = compiled.unitSlot; mod.leanCommonJs = compiled.commonjs;
+    mod.leanSource = compiled.sf; mod.leanUnitSlot = compiled.unitSlot; mod.leanAwaitFlag = compiled.awaitFlag; mod.leanCommonJs = compiled.commonjs;
     cache.set(abs, mod); return mod;
   }
   async function link(specifier, referencing) {
@@ -165,8 +185,18 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
     const mod = moduleFor(file);
     await mod.link(link); // the Node linker checks actual local exports, including re-export chains and cycles
     phase = 'evaluation';
-    await mod.evaluate({ timeout: ms });
-    return { exports: { ...mod.namespace, __lean_units: mod.namespace[mod.leanUnitSlot] }, fakes: [...fakeNames], loadTrace: env.trace.slice(), graph: [...cache.keys()] };
+    const evaluation = mod.evaluate({ timeout: ms });
+    let body = null; // a body that awaits at its top level: 'pending' (it waits on the world still), or the error it rejected with after its first await
+    if (mod.leanAwaitFlag) {
+      let state = 0, failure;
+      evaluation.then(() => { state = 1; }, (e) => { state = 2; failure = e; });
+      for (let turn = 0; turn < BODY_TURNS && !state; turn++) await new Promise((r) => setImmediate(r)); // the world's answers settle in turns
+      if (state === 2 && !mod.namespace[`${mod.leanAwaitFlag}_at`]()) throw failure; // it failed before its first await: the load's failure, classified below
+      if (state === 0) { body = { state: 'pending', at: lastWorld(env) }; env.timers.queue.length = 0; } // what it armed while loading is its paused continuation: never resumed inside a unit's observation
+      else if (state === 2) body = { state: 'rejected', reason: String(failure?.message ?? failure).slice(0, 200) };
+    } else await evaluation;
+    const slot = mod.namespace[mod.leanUnitSlot];
+    return { exports: { ...mod.namespace, __lean_units: typeof slot === 'function' ? slot() : slot }, fakes: [...fakeNames], loadTrace: env.trace.slice(), graph: [...cache.keys()], ...(body ? { body } : {}) };
   } catch (error) {
     if (phase === 'evaluation') {
       const original = error instanceof LoadFailure ? error.original : error;
@@ -255,13 +285,21 @@ export async function runNew(opts) {
   const book = recordBook();
   const bases = []; // closed calls that returned a value (the parameter trials, lane w9k)
   const reach = { inputs: 0, admitted: 0, closed: 0, notAdmitted: 0, world: 0, worldOps: new Map(), graphWorld: null };
+  const refused = []; let refusedReason = null; // the inputs whose drawn world the module's evaluation refused
   const stop = (extra) => ({ ...base, verdict: 'ASK', loaded: true, faults, bound, ...extra, records: [...book.list(), coverage('draw', extra.reason)], declaration: declarationRecord(decl, reach, nullable, edges) });
   for (let i = 0; i < n; i++) {
     const env = new Environment(seed * 7919 + i); env.shapes = spec;
     let loaded;
     try { loaded = await loadCandidate(path.resolve(candidate), env, options, ms, sources); }
-    catch (e) { const r = loadFailure(base, e, i, bound); return { ...r, records: [...book.list(), coverage('load', r.reason)] }; }
+    catch (e) {
+      // the module loaded in the first environment (above) and its evaluation refuses this input's drawn world (a script
+      // whose top level throws when a drawn variable is absent): not an input the unit can be called on, so it is skipped
+      // and counted, never the unit's verdict; every input refused is the load's ASK, as before (lane w9ab)
+      if (e instanceof LoadFailure && e.phase === 'evaluation' && !(e.original instanceof BudgetError) && !broken('await-units')) { refused.push(i); refusedReason ??= loadFailure(base, e, i, bound).reason; if (refused.length < n) continue; }
+      const r = loadFailure(base, e, i, bound); return { ...r, records: [...book.list(), coverage('load', r.reason)] };
+    }
     for (const f of loaded.fakes) fakes.add(f);
+    if (loaded.body && !bound.moduleBody) bound.moduleBody = loaded.body; // the module's top level waits at an await, or rejected after it: its units ran all the same (lane w9ab)
     // the module graph holds world values when it links a package lean fakes, its evaluation asked the world, or its code
     // names a global the sandbox answers with a handle (a test of a handle's truth or type runs no trap, so no trace sees it)
     // (lane w9k) the unit's own reach decides when it is read; the module graph's rule stands where it is not
@@ -340,6 +378,7 @@ export async function runNew(opts) {
     tests = await runTests({ candidate: abs, aliases, unit, testFiles: opts.tests.map((t) => path.resolve(t)), ms, seed, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), graphWorld: (loaded) => graphWorld(loaded, sources, TEST_MODULES), options });
     for (const r of tests.records) book.add(r, `${r.kind} ${r.file}:${r.test}`);
   }
+  if (refused.length) { bound.refusedWorlds = { inputs: refused.length, first: refused[0], reason: refusedReason }; book.add(coverage('load', `${refused.length} of ${n} inputs skipped: the module's evaluation refused their drawn world (first, input ${refused[0]}: ${refusedReason})`)); }
   if (!reach.closed) book.add(coverage('draw', decl?.overloaded ? 'the unit is overloaded: its callers are admitted by its overload signatures, which this reading does not take one by one' : !declared ? 'the declaration was not read' : reach.admitted === 0 ? `no drawn input is one the declared types say they admit (${reach.notAdmitted} of ${reach.inputs}: a parameter type lean reads as opaque, a type parameter, or a draw wider than the declaration)` : `every admitted input reached the world (${reach.world} of ${reach.admitted}): ${[...reach.worldOps.keys()].slice(0, 4).join('; ')}`), 'coverage draw');
   return { ...base, verdict: 'NEW', loaded: true, inputs: n, seed, fakes: [...fakes].sort(), faults, faultExamples, traceShape: [...shapes.values()], bound, records: book.list(), declaration: declarationRecord(decl, reach, nullable, edges), ...(tests ? { tests: tests.summary } : {}), ...(networkDenied() ? { sandbox: sandboxEntry() } : {}), ...(opts.sandboxSpawn ? { sandboxSpawned: spawnRefusals() } : {}) };
 }

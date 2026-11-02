@@ -1,0 +1,8 @@
+{
+  "why": "A script whose top level awaits the world (lane w9ab, design/world-calls.md): it asks a server, then polls it on a timer, so under lean its body never reaches its end. request (not exported) was 'not exported': lean's unit surface was written at the body's end, after every top-level await; it is now a set of getters at the body's start, so the unit is reached while the body waits. backoff awaits a timer armed by the callback form of setTimeout: lean fired armed timers only after the outcome, so the await could only run out of wall time on every input; the clock now moves to the next armed timer while a unit's promise is pending. chunks awaits a stream, which the fetch fake already ends (the guard). Each candidate changes what the unit does after its await: WITNESS. Under LEAN_BREAK=await-units request is ASK again; under LEAN_BREAK=world-clock backoff is PASS-bounded again (its inputs time out and are skipped).",
+  "laneBOnly": true,
+  "scope": [],
+  "equal": {},
+  "b": { "request": "WITNESS", "backoff": "WITNESS", "chunks": "WITNESS" },
+  "break": [{ "mechanism": "await-units", "b": { "request": "ASK" } }, { "mechanism": "world-clock", "b": { "backoff": "PASS-bounded" } }]
+}

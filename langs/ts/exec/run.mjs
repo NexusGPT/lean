@@ -57,7 +57,46 @@ let activeRecords = null, windowDepth = 0; // a run's record set, and the window
 const recording = async (records, fn) => { const prev = activeRecords; activeRecords = records; try { return await fn(); } finally { activeRecords = prev; } };
 const openWindow = (env) => { activeSiteState = env?.siteState ?? null; if (!activeRecords) return false; if (windowDepth++ === 0) { startRecording(activeRecords, undefined, { keep: (f) => loadedFiles.has(f), site: () => activeSiteState?.current?.site ?? null }); } if (env && env.realm) addRealm(env.realm); return true; };
 const closeWindow = (opened) => { if (!opened) return; if (--windowDepth === 0) stopRecording(); };
-const awaitUnit = async (env, p, ms) => { const w = openWindow(env); try { return await withTimeout(p, ms); } finally { closeWindow(w); } }; // a promise the unit returned: its continuations are unit code
+const awaitUnit = async (env, p, ms) => { const w = openWindow(env); try { return await withTimeout(onClock(env, p, ms), ms); } finally { closeWindow(w); } }; // a promise the unit returned: its continuations are unit code
+// A promise the unit returned, awaited as the event loop awaits it (design/world-calls.md, lane w9ab): while it is
+// pending and the host's turn has drained, the world's clock moves to the next armed timer and fires what is due then
+// (runTimers), so a unit awaiting `new Promise((r) => setTimeout(r, n))`, a retry's back-off or a poll's interval
+// settles on the virtual clock instead of running out its wall time on every input. The timers the unit armed and did
+// not await still fire after the outcome, as before. When nothing is armed and nothing moved for IDLE_TURNS turns, the
+// promise waits on no world call lean answers: the run stops at once (Unsettled, ASK) naming the await site and the
+// last world call. Not under the race explorer (env.scheduler holds every release itself), nor inside a firing
+// (one clock at a time). LEAN_BREAK=world-clock: the wall clock alone, as before
+const AWAIT_FIRES = 50, IDLE_TURNS = 8, IDLE_MS = 200;
+class Unsettled extends BudgetError { constructor(m) { super(m); this.name = 'Unsettled'; } } // a budget stop: every catch that lets a budget through lets it through, and the input's row is ASK with its message
+const siteLabel = (s) => (!s ? 'an unmarked statement' : typeof s === 'object' && s.file ? `${path.basename(String(s.file))}:${s.start}${s.text ? ` \`${String(s.text).split('\n')[0].slice(0, 80)}\`` : ''}` : JSON.stringify(s).slice(0, 80)); // patch.mjs statementMarks: { file, start, end, text }
+const stoppedAt = (env) => `${siteLabel(env.siteState?.current?.site)} (last world call: ${lastWorldCall(env)})`; // where a stopped input stood
+const lastWorldCall = (env) => { for (let i = env.trace.length - 1; i >= 0; i--) { const t = env.trace[i]; if (t.op !== 'fire') return `${t.op} ${t.path}`; } return 'none'; };
+async function onClock(env, p, ms) {
+  if (!env?.timers || !p || typeof p.then !== 'function' || env.scheduler || env.clockDriving || broken('world-clock')) return p;
+  let state = 0, value, error;
+  Promise.resolve(p).then((v) => { state = 1; value = v; }, (e) => { state = 2; error = e; });
+  const moved = () => `${env.trace.length}/${env.pending.length}/${env.timers.queue.length}/${env.computed?.length ?? 0}`;
+  env.clockDriving = true;
+  try {
+    let idle = 0, idleSince = 0, fires = 0, mark = moved();
+    for (;;) {
+      await new Promise((r) => setImmediate(r));
+      if (state) break;
+      const armed = env.timers.queue.filter((e) => e.fired === 0);
+      if (armed.length) {
+        if (++fires > AWAIT_FIRES) throw new BudgetError(`more than ${AWAIT_FIRES} timer instants passed while the unit awaited at ${siteLabel(env.siteState?.current?.site)} (last world call: ${lastWorldCall(env)})`);
+        await runTimers(env, ms, AWAIT_FIRES, { until: Math.min(...armed.map((e) => e.due)) });
+        idle = 0; mark = moved(); continue;
+      }
+      const now = moved(); if (now !== mark) { mark = now; idle = 0; continue; }
+      if (idle++ === 0) idleSince = Date.now();
+      if (idle >= IDLE_TURNS) { if (Date.now() - idleSince < wallAllowance(IDLE_MS)) { await new Promise((r) => setTimeout(r, 5)); continue; } } else continue; // a fake's own host work (a file read) takes host time, never a timer: the stop waits IDLE_MS of the wall too
+      throw new Unsettled(`unsettled: the unit awaits at ${siteLabel(env.siteState?.current?.site)} a promise no world call settles (last world call: ${lastWorldCall(env)}; nothing armed)`);
+    }
+  } finally { env.clockDriving = false; }
+  if (state === 2) throw error;
+  return value;
+}
 const libraryCases = (summary) => {
   const dir = process.env.LEAN_LIBRARY_CASES; if (!dir || !summary.defects.length) return;
   fs.mkdirSync(dir, { recursive: true });
@@ -152,7 +191,7 @@ function compileWithSites(src, tsName, abs) {
   const a = functions(original), b = functions(marked);
   if (a.length !== b.length) throw new Error('statement markers changed the function count');
   b.forEach((text, i) => rememberFunctionSource(text, a[i]));
-  const compiled = { src, define, probe, sites, stateName, callbackName, globalName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName, shadowed.has('Object') ? `${globalName}.Object` : 'Object') + bindingsShim };
+  const compiled = { src, define, probe, sites, stateName, callbackName, globalName, callbacks: callbacks.map(u => ({ name: u.name, inBody: !!u.enclosingUnit })), js: marked + unitShim(src, tsName, shadowed.has('Object') ? `${globalName}.Object` : 'Object') + bindingsShim, early: () => earlyUnitShim(src, tsName, shadowed.has('Object') ? `${globalName}.Object` : 'Object') };
   siteCompiles.set(abs, compiled);
   return compiled;
 }
@@ -220,7 +259,7 @@ export function sharedFreeReads(parentFile, candidateFile) {
 }
 
 // every top-level function and class of the file, exported or not, reachable for the harness
-function unitShim(src, abs, O = 'Object') {
+function shimNames(src, abs) {
   const sf = ts.createSourceFile(abs, src, ts.ScriptTarget.ES2020, true, abs.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const names = [];
   for (const st of sf.statements) {
@@ -233,8 +272,22 @@ function unitShim(src, abs, O = 'Object') {
   const cells = [];
   const bound = (n) => { if (ts.isIdentifier(n)) cells.push(n.text); else for (const e of n.elements) if (!ts.isOmittedExpression(e)) bound(e.name); };
   for (const st of sf.statements) if (ts.isVariableStatement(st) && !(ts.getCombinedModifierFlags(st) & ts.ModifierFlags.Ambient)) for (const d of st.declarationList.declarations) bound(d.name);
-  const state = `\n;try { ${O}.defineProperty(module.exports, '__lean_state', { enumerable: false, value: () => { const o = ${O}.create(null); ${cells.map((n) => `try { o[${JSON.stringify(n)}] = ${n}; } catch (e) {}`).join(' ')} return o; } }); } catch (e) {}\n`;
-  return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n` + state;
+  return { names, cells };
+}
+const stateShim = (cells, O) => `;try { ${O}.defineProperty(module.exports, '__lean_state', { enumerable: false, value: () => { const o = ${O}.create(null); ${cells.map((n) => `try { o[${JSON.stringify(n)}] = ${n}; } catch (e) {}`).join(' ')} return o; } }); } catch (e) {}`;
+function unitShim(src, abs, O = 'Object') {
+  const { names, cells } = shimNames(src, abs);
+  return `\n;try { module.exports.__lean_units = { ${names.map((n) => `${JSON.stringify(n)}: (typeof ${n} === 'undefined' ? undefined : ${n})`).join(', ')} }; } catch (e) {}\n` + `\n${stateShim(cells, O)}\n`;
+}
+// the same surface for a module whose top level awaits (loadInner runs its body as an async function's): placed at the
+// body's start on its first line, each unit a getter that reads its binding when the harness picks it, so a unit is
+// reachable while the body waits at an await (a script whose main polls a server) and not only once every top-level
+// await has settled; a binding still uninitialised (a class, a const below the pending await) reads as undefined. The
+// end shim still runs when the body completes. LEAN_BREAK=await-units: the end shim's surface alone, as before (lane w9ab)
+function earlyUnitShim(src, abs, O = 'Object') {
+  const { names, cells } = shimNames(src, abs);
+  const getters = names.map((n) => `${O}.defineProperty(u, ${JSON.stringify(n)}, { enumerable: true, configurable: true, get: () => { try { return typeof ${n} === 'undefined' ? undefined : ${n}; } catch (e) { return undefined; } } });`).join(' ');
+  return `;try { const u = {}; ${getters} module.exports.__lean_units = u; } catch (e) {}${stateShim(cells, O)}`;
 }
 
 // a non-relative import the project's own `paths` map to a source file of this tree: common.mjs aliasTarget (lane paths-alias)
@@ -700,7 +753,9 @@ export function sandbox(env, root) {
       // LEAN_BREAK=module-await: the load fails as before)
       awaits = e?.name === 'SyntaxError' && /is only valid in async functions and the top level bodies of modules/.test(e.message) && !broken('module-await');
       if (!awaits) throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e.message}`); // the file that failed to compile is named
-      try { wrapper = vm.compileFunction(`return (async () => {${js.replace(/^#!.*/, '')}\n})();`, params, { parsingContext: ctx, filename: abs }); } // on the module's first line, so its lines keep their numbers; a hashbang is valid only at a file's start
+      const body = js.replace(/^#!.*/, ''), prologue = /^\s*(?:(?:"use strict"|'use strict');?)?/.exec(body)[0]; // the early surface after the directive, which must stay the body's first statement
+      const early = broken('await-units') ? '' : compiled.early();
+      try { wrapper = vm.compileFunction(`return (async () => {${prologue}${early}${body.slice(prologue.length)}\n})();`, params, { parsingContext: ctx, filename: abs }); } // on the module's first line, so its lines keep their numbers; a hashbang is valid only at a file's start
       catch (e2) { throw new Error(`${path.relative(root || path.dirname(abs), abs)}: ${e2.message}`); }
     }
     const callbacks = {
@@ -708,7 +763,7 @@ export function sandbox(env, root) {
       capture(name, fn) { callbacks.units.get(name).instances.push(fn); return fn; },
     };
     const evaluated = wrapper.call(mod.exports, mod.exports, req, mod, abs, path.dirname(abs), env.siteState, callbacks, g); // g: the global object, which the emit's prologue reads an intrinsic the file shadows from (intrinsicPrologue)
-    if (awaits && evaluated && typeof evaluated.then === 'function') evaluated.then(null, (e) => { mod.lateError = e; });
+    if (awaits && evaluated && typeof evaluated.then === 'function') { const paused = (env.pausedBodies ??= new Set()); paused.add(mod); evaluated.then(() => paused.delete(mod), (e) => { mod.lateError = e; paused.delete(mod); }); } // a body still waiting at an await is paused (dropLoadTimers)
     (env.callbackUnits ??= new Map()).set(mod.exports, callbacks);
     return mod.exports;
   }
@@ -1003,11 +1058,11 @@ async function observeWindow(side, spec, args, ms) {
     outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
     if (returnedPromise) outcome.promise = returnedPromise;
   } catch (e) {
-    if (e && e.message === '__timeout__') { callTimedOut(); return { harness: 'timeout' }; }
+    if (e && e.message === '__timeout__') { callTimedOut(); return { harness: 'timeout', at: stoppedAt(env) }; }
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
     if (e instanceof Suspended || (e && typeof e.then === 'function')) return { harness: `suspense: ${e instanceof Suspended ? e.message.slice(10) : 'a thenable thrown during render'}` }; // ASK:suspense, never a crash and never a thrown-value outcome
     if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
-    if (e instanceof CallTimeout) { callTimedOut(); return { harness: 'timeout' }; }
+    if (e instanceof CallTimeout) { callTimedOut(); return { harness: 'timeout', at: stoppedAt(env) }; }
     if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' }; // whichever realm threw it: the host's (a fake, a patched intrinsic) or the sandbox's (the unit's own recursion)
     outcomeSite = env.siteState?.completed ?? env.siteState?.current?.site ?? null;
     outcome = { threw: render(e) }; thrownValue = e;
@@ -1034,6 +1089,10 @@ async function observeWindow(side, spec, args, ms) {
   return Object.defineProperty(result, 'site', { value: outcomeSite });
 }
 
+// a module body paused at a top-level await (loadInner) waits on what it armed while loading (a poll's sleep): those
+// timers are its continuation, and never fire inside a unit's observation, where the body would resume and its requests
+// would be the unit's (lane w9ab). A module that loaded to its end keeps its armed timers, as before
+function dropLoadTimers(env) { if (env.pausedBodies?.size && !broken('await-units')) env.timers.queue.length = 0; }
 // ----- the virtual clock: armed timers fire in due order -----
 // runTimers fires every armed timer once, in due order (ties by arm order), moving the clock to each due instant; an
 // interval re-arms after its run and stays pending, unless its own callback cleared it; a timer that arms another runs it too, up to the limit (then a
@@ -1657,7 +1716,7 @@ async function runPairOnce(opts) {
   const diffs = [], records = []; // records: the unit's built-in calls of the library table, checked against it at the end
   const bridgeSeen = { calls: new Set(), callbacks: new Set() }; // the bridge calls the fake for an unset global answered on the parent's mounts, and the callbacks it fired, by path (exec/bridge.mjs)
   const states = []; // every state lane B reached: the input as drawn and, for a rendered unit, the tree it rendered (bound.states)
-  let harnessAsk = null, sawJsx = false; const skipped = [], oneSided = [];
+  let harnessAsk = null, sawJsx = false, timeoutAt = null; const skipped = [], oneSided = []; // timeoutAt: where the first timed-out input stood (stoppedAt)
   const reached = { body: 0, guard: 0 }; let firstGuard = null; // per input: whether the call got past its guards (atGuard), the bound's count
   const knownRun = spec.known ? { inputs: 0, body: 0 } : null; // the inputs of the known phase (the project's listed values) and how many of them reached the body
   let recorderRetries = 0; // inputs re-run without the recorder after a harness stop under it (its wrapper deepens the stack and costs a little time); the verdict never depends on the recorder
@@ -1674,7 +1733,7 @@ async function runPairOnce(opts) {
       const u = pickUnit(exportsObj, spec, env);
       if (!u) { harnessAsk = env.callbackRefusal ?? `${name}: unit ${unit} not exported`; break; }
       await new Promise((r) => setImmediate(r)); // let load-time continuations settle
-      env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
+      env.trace.length = 0; env.pending.length = 0; env.calls.clear(); dropLoadTimers(env); // what the module did while loading is not the unit's behaviour
       if (probes) env.siteState.hits = new Set(); // the branches the call reaches, not the load
       env.answered.length = 0; env.worldSet = world?.length ? new Map(world) : null; if (probes) { env.siteState.values = []; env.siteState.valueAt = []; }
       if (wPlan) { let at = env.siteState.current, ran = 0; Object.defineProperty(env.siteState, 'current', { get: () => at, set: (v) => { at = v; ran++; }, enumerable: true, configurable: true }); env.siteState.ran = () => ran; } // the statements the call runs, every loaded file (each statement mark sets current): how far a world search's run got // the world answers and the changed lines' values of the call, not the load; a world recipe's answers (search.mjs searchWorld)
@@ -1720,7 +1779,7 @@ async function runPairOnce(opts) {
     if (treeDone) continue;
     if (sides.parent.sawJsx || sides.candidate.sawJsx) sawJsx = true;
     if (oP.impure || oC.impure) return { verdict: 'REFUSE', kind: 'render-impure', unit, side: oP.impure ? 'parent' : 'candidate', input: i, ...drawnOf(sides), renders: (oP.impure ?? oC.impure), reason: `render-impure: the ${oP.impure ? 'parent' : 'candidate'} renders two different trees or request traces from the same state (Rules of React: a render is pure)`, bound: { n, seed, ms } };
-    if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
+    if (oP.harness === 'timeout' || oC.harness === 'timeout') { skipped.push(i); timeoutAt ??= (oP.harness === 'timeout' ? oP.at : oC.at) ?? null; if (oP.harness !== oC.harness) oneSided.push({ input: i, side: oP.harness ? 'parent' : 'candidate' }); continue; } // a side did not return within the limit (an unbounded loop, often on an aliased input): a timeout proves nothing, so the input is skipped; the other inputs still run, a witness among them counts, and no witness is ASK when only one side timed out
     if (oP.harness === 'stack overflow' && oC.harness === 'stack overflow') { skipped.push(i); continue; } // both sides exhausted the call stack on this input, with and without the recorder: the input proves nothing
     if ((oP.harness === 'stack overflow' && !oC.harness) || (oC.harness === 'stack overflow' && !oP.harness)) { // one side recursed past the stack where the other returned: the thrown RangeError is that side's outcome (SEMANTICS item 1), observed on the same stack without the recorder
       const side = oP.harness ? 'parent' : 'candidate';
@@ -1838,9 +1897,10 @@ async function runPairOnce(opts) {
   if (diffs.unloadable && !diffs.length) bound.unloadable = { inputs: diffs.unloadable.length, first: diffs.unloadable[0] }; // no other difference: ASK below, naming the module and its failure
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
-  if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing' };
-  if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side}); the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
-  if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})`, unit, bound };
+  if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing', ...(timeoutAt ? { at: timeoutAt } : {}) };
+  const where = timeoutAt ? `; the first stood at ${timeoutAt}` : ''; // the statement it ran or awaited at and the world call before it (lane w9ab)
+  if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side})${where}; the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
+  if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})${where}`, unit, bound };
   const handlerRun = sawJsx ? { models: { parent: descriptorsOf(parent, unit, { project }), candidate: descriptorsOf(candidate, unit, { project }) }, stats: newHandlerStats() } : null; // the descriptors of the unit's handlers, read once per side, applied at every fire of the sequences and the finite lane
   if (sawJsx) bound.frontEnd = { ...FRONT_END_OBSERVATION, components: componentsText(deepMode.depth), notObserved: 'committed DOM, computed styles, layout, pixels, accessibility tree, re-renders after a state change' }; // a rendered unit: the layer this verdict holds at, and the layers it says nothing about
   if (sawJsx) bound.frontEnd.layers = layersOf(styles); // the tree layer (depth, rendered children, handles, context reads) and the styles layer, each with its assumptions

@@ -44,6 +44,13 @@ import { callersOf, calleesOf } from './exec/callees.mjs';
 import { siteKey } from './exec/sites.mjs';
 import { findValues, readValues, VALUES_FILE } from './exec/spec.mjs';
 import { checkPin } from './solve/pin.mjs';
+// a reason names the file by its name in the checkout, never the temporary copy of a head or base ref (changedFiles
+// temporary), wherever the run copied it (a row's reason and its records' are written with it, lane w9ab).
+// LEAN_BREAK=reason-names: the copy's path stays
+export function checkoutNamed(text, rel) {
+  if (typeof text !== 'string' || broken('reason-names')) return text;
+  return text.replace(/(?:\/[^\s:'"`]*)?\/\.lean_(?:head|base)_\d+_([^\s:'"`/]+)/g, (whole, name) => (name === path.basename(rel) ? rel : whole));
+}
 const TEST_FILE = /(?:^|[/\\])__tests__(?:[/\\]|$)|\.(?:spec|test)\.[cm]?[jt]sx?$/; // the test modules new-unit.mjs excludes from a unit's own load
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -643,6 +650,9 @@ async function prWorker(opts) {
         if (row.certificate && !caller && typed.get(rel) && !row.certificate.typed) row.certificate.typed = typed.get(rel);
         if (row.certificate?.values) { const read = valuesRead(row.certificate.values); row.certificate.values = { ...row.certificate.values, file: read.file, from: read.from }; } // the project's file by its name in the checkout, never the temporary copy of a head ref
         if (!caller) row.editIds = rows[index].editIds;
+        const named = (text) => checkoutNamed(text, rel);
+        row.reason = named(row.reason);
+        if (Array.isArray(row.records)) row.records = row.records.map((r) => (r && typeof r.reason === 'string' ? { ...r, reason: named(r.reason) } : r));
         commitArtifact(opts._runDir, attempt, row);
         if (caller) rows.push(row); else rows[index] = row;
         if (key && row.coverage === 'checked' && row.certificate) writeCache(cacheFile, { key, context, row });

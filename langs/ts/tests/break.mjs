@@ -106,6 +106,9 @@ export const MECHANISMS = {
   'converted-text': 'exec/spec.mjs boundaryOf CONVERTED_TEXT: a string leaf the unit reads as a number (usage.mjs converted) is drawn without the texts the conversions disagree on (lane w9o; pair converted_text)',
   'core-string-args': 'exec/usage.mjs pathModuleOf: a parameter handed to a node:path function is not read as a string (lane w9o; pair core_string_args)',
   'module-await': 'exec/run.mjs sandbox loadInner: a module whose top level awaits is not run as an async body, so its load fails (lane w9o; pair module_await)',
+  'world-clock': 'exec/run.mjs awaitUnit onClock: a promise the unit returned is awaited on the wall clock alone, so a unit awaiting a timer armed by setTimeout\'s callback form runs out its wall time on every input, and one no world call settles waits its whole allowance (lane w9ab; pair world_await backoff, tests/w9ab-world-calls.mjs)',
+  'reason-names': 'pr.mjs checkoutNamed: a row\'s reason names the temporary copy of the head or base ref it was read from (.lean-run/runs/<run>/sources/<dir>/.lean_head_<pid>_<file>), not the file (lane w9ab; tests/w9ab-world-calls.mjs)',
+  'await-units': 'exec/run.mjs earlyUnitShim and exec/new-unit.mjs loadCandidate: the unit surface of a module whose top level awaits is written at its body\'s end, the timers its paused body armed fire in a unit\'s observation, a new unit\'s module is awaited to its end and one input whose world its evaluation refuses ends the unit (lane w9ab; pair world_await request, tests/w9ab-world-calls.mjs)',
   'programs-share': 'exec/programs.mjs runPrograms maxCpuMs: the method programs of a class unit have no share of the unit\'s CPU bound, so slow commands spend all of it before any draw runs (lane w9o; tests/programs-share.mjs --break, suite row programs-share --break)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
