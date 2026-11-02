@@ -1523,7 +1523,7 @@ async function runPairOnce(opts) {
   const hitsOf = (sides) => new Set([...sides.parent.env.siteState.hits, ...sides.candidate.env.siteState.hits]);
   // the unit's changed statements an input completed (either side), as `<side> <line>`: a witness carries them, and one
   // that completes a statement no kept witness completed is its own site (exec/sites.mjs keepDifference)
-  const reachedOf = (hits) => (reach && sPlan?.statements && hits ? sPlan.statements.filter((t) => hits.has(t)).map((t) => { const d = sPlan.statementOf(t); return `${d.side} ${d.line}`; }) : null);
+  const reachedOf = (hits) => (reach && sPlan?.statements && hits ? [...new Set(sPlan.statements.filter((t) => hits.has(t)).map((t) => { const d = sPlan.statementOf(t); return `${d.side} ${d.line}`; }))] : null);
   const unitRecord = opts.unitRecord;
   unitRecord.drawDomain = { status: 'recorded', parameters: spec.params.map(p => ({ name: p.name, spec: p.spec, optional: !!p.optional, count: 0, families: {} })), requested: n, seed, heaps: heaps.builders.length, known: knownLength(spec), boundaryWalk: spec.shaped ? walkLength(spec) : 0 };
   const roots = { parent: findRoot(parent), candidate: findRoot(candidate) };
@@ -1652,9 +1652,13 @@ async function runPairOnce(opts) {
       }
     }
   } else if (sPlan) { const T = new Set(sPlan.targets ?? []), got = new Set(drawHits.flatMap((x) => [...x.hits].filter((h) => T.has(h)))); searchSummary = { source: 'search', stop: sPlan.error ? `plan: ${sPlan.error}` : diffs.length && !reach ? 'the draws differ' : harnessAsk ? 'harness stop' : sawJsx ? 'rendered unit' : extra.full ? `${WITNESS_SITES} sites held` : 'no time left past the witness', targets: T.size, reachedByDraws: got.size, reached: got.size, tried: 0, ...(reach && sPlan.statements ? { statements: { targets: sPlan.statements.length, reachedByDraws: sPlan.statements.filter((t) => got.has(t)).length, reached: sPlan.statements.filter((t) => got.has(t)).length } } : {}) }; } // not searched: the branches the draws reached, for the before/after count
-  // the witness lane B leads with (design/w9i-reach.md): the one that completed the most of the unit's changed
-  // statements, ties in order of discovery
-  if (reach && diffs.length > 1) diffs.sort((a, b) => (b.reached?.length ?? 0) - (a.reached?.length ?? 0));
+  // the witness lane B leads with (design/w9i-reach.md): first a witness whose difference shows at a line the diff
+  // changed (its candidate statement's first line, else its parent statement's), then the one that completed the most
+  // of the unit's changed statements, ties in order of discovery
+  if (reach && diffs.length > 1 && sPlan?.changedLines) {
+    const atChange = (w) => { if (process.env.LEAN_BREAK === 'w9i-lead-site') return 0; const l = w.where?.lines; return (l?.candidate?.start !== undefined && sPlan.changedLines.candidate.has(l.candidate.start)) || (l?.parent?.start !== undefined && sPlan.changedLines.parent.has(l.parent.start)) ? 1 : 0; };
+    diffs.sort((a, b) => atChange(b) - atChange(a) || (b.reached?.length ?? 0) - (a.reached?.length ?? 0));
+  }
   // the render row (design/certificate-timing.md, 2026-10-31): whether the unit returned an element, lean's clock epoch and head (the witness
   // record's clockEpoch and leanHead), the handler sequences a clean run walked with their input, and per handler label
   // the element it targets; the sequences and their targets are added where the sequences run

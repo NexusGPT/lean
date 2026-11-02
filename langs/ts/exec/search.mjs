@@ -247,7 +247,7 @@ export function searchPlan(parent, candidate, unit, readText, { reach = false } 
   const near = { strings: [...new Set([...bC.literals.near.strings, ...bP.literals.near.strings])], numbers: [...new Set([...bC.literals.near.numbers, ...bP.literals.near.numbers])] };
   const statementOf = (tag) => { const [side, rest] = tag.split(':'); const r = reachOf[side][Number(rest.slice(1))]; return { side: side === 'P' ? 'parent' : 'candidate', line: r.line, endLine: r.endLine, statement: r.text }; };
   const describe = (tag) => { const [side, rest] = tag.split(':'); if (rest.startsWith('s')) return statementOf(tag); const k = Number(rest.slice(0, -1)); const e = tables[side][k]; return { side: side === 'P' ? 'parent' : 'candidate', line: e.cond[0], condition: e.text, outcome: rest.slice(-1) }; };
-  return { files, targets, statements, literals: { strings, numbers, near }, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, describe, statementOf };
+  return { files, targets, statements, literals: { strings, numbers, near }, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, changedLines: ch, describe, statementOf };
 }
 
 // ----- the changes of one input: leaves walked with their declared types -----
@@ -389,9 +389,10 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
   // a leaf whose changes moved no branch outcome of the entry (every probe, either side) twice is inert: its other changes
   // wait until every live leaf's are tried
   const pick = (e) => { let fallback = null; for (const o of e.ops) { if (o.done) continue; if (!e.inert.has(o.leaf)) return o; fallback ??= o; } return fallback; };
-  // with onDiff (design/w9i-reach.md) a leaf found inert on one input is inert on every entry, and when the top entry
-  // has live changes no more, the next entry down with a live change goes first (its fallbacks wait too)
-  const shared = onDiff ? { inert: new Set(), still: new Map() } : null;
+  // with onDiff (design/w9i-reach.md) a leaf found inert on one input is inert on every entry (inert: twice no probe
+  // outcome that no input hit before), and when the top entry has live changes no more, the next entry down with a live
+  // change goes first (its fallbacks wait too)
+  const shared = onDiff ? { inert: new Set(), still: new Map(), seen: new Set(start.flatMap((x) => [...x.hits])) } : null;
   const open = async (e) => { if (!e.ops) { e.ops = await listFor(e); e.inert = shared?.inert ?? new Set(); e.still = shared?.still ?? new Map(); } };
   const live = (e) => e.ops.find((o) => !o.done && !e.inert.has(o.leaf)) ?? null;
   while (stack.length) {
@@ -412,7 +413,9 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
     if (r.status === 'skip') continue;
     if (r.status === 'diff' && !onDiff) { for (const h of r.hits) if (T.has(h)) reached.add(h); return summary('divergence', { witness: r, recipe }); } // the witness's branches count as reached
     if (r.status === 'diff') { divergences++; if (onDiff(r, recipe)) { for (const h of r.hits) if (T.has(h)) reached.add(h); return summary('sites held'); } }
-    if (hitKey(r.hits) === e.base) { const n = (e.still.get(o.leaf) ?? 0) + 1; e.still.set(o.leaf, n); if (n >= 2) e.inert.add(o.leaf); }
+    const moved = shared ? [...(r.hits ?? [])].some((h) => !shared.seen.has(h)) : hitKey(r.hits) !== e.base; // with onDiff: a change moves when it hits an outcome no input hit before (one that leaves the frontier for a region the draws knew does not)
+    if (shared) for (const h of r.hits ?? []) shared.seen.add(h);
+    if (!moved) { const n = (e.still.get(o.leaf) ?? 0) + 1; e.still.set(o.leaf, n); if (n >= 2) e.inert.add(o.leaf); }
     const fresh = [...r.hits].filter((h) => T.has(h) && !reached.has(h));
     if (fresh.length) {
       fresh.forEach((h) => reached.add(h));

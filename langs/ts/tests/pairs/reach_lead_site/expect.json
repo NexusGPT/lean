@@ -1,0 +1,10 @@
+{
+ "why": "The lead is a witness whose difference shows at a changed line (design/w9i-reach.md): `settle` changes the value it puts (line 6, under a === 7) and the extra it returns (line 8, under a === 7 and b > 100). The first draw (a 7, b 100) differs on the request at line 6, a changed line. The search past it completes line 8 (b set to the largest safe integer) and differs at the return (line 11, unchanged), having completed more changed statements. The row's witness must be the one at line 6. LEAN_BREAK=w9i-lead-site leads by changed statements completed alone: line 11, red.",
+ "prOnly": true,
+ "pr": {
+  "rows": [
+   { "file": "index.ts", "unit": "settle", "verdict": "WITNESS", "leadLine": 6, "siteLines": [6, 11] }
+  ],
+  "unassigned": false
+ }
+}
