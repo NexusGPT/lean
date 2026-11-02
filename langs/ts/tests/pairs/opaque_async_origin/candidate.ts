@@ -37,3 +37,9 @@ export function branch(st: Store, user: { tags: number[] }, k: number): number {
   }
   return n;
 }
+export function tick(st: Store, user: { tags: number[] }, n: number): number {
+  let k = n;
+  fill(st, user.tags, k++);
+  const r = k;
+  return r;
+}

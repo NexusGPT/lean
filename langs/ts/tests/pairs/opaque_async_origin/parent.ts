@@ -34,3 +34,11 @@ export function branch(st: Store, user: { tags: number[] }, k: number): number {
   }
   return user.tags.length;
 }
+// tick: the same step on both sides, `k++` in its argument; the candidate returns k through a local. A number-bearing
+// unit whose only number update sits inside the step: placed (no reason inside a step, translate.mjs site-steps), so
+// PASS-proved; under LEAN_BREAK=faithful-steps the rewrite reads the step's `k++` as an update whose value is used
+export function tick(st: Store, user: { tags: number[] }, n: number): number {
+  let k = n;
+  fill(st, user.tags, k++);
+  return k;
+}
