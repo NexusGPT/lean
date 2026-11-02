@@ -178,3 +178,76 @@ with the same counts both times.
 - Load: every heavy run started at a one-minute load at most 64. The first census started at 64.43, which the gate
   rounded down to 64. In the resume, one run did not wait for the gate: the single-pair base run of `opaque_for_in`
   started at a load of 119.14.
+
+## Resume 2: two rows reported failing at lead-v4 2df7b01b
+
+The commit is 4e276baf9e, on top of lead-v4 2df7b01b. Logs are in `/root/da-bench/w8d-translator-gaps/validators/resume2/`.
+
+### Which merge introduced each row
+
+| row | 6694e5a7 | 8844df7d | 2df7b01b | 4e276baf (this fix) |
+| --- | --- | --- | --- | --- |
+| `opaque_async_origin` `break async-drop-origins: Equal_bump flips to proved` (`run.mjs --pair opaque_async_origin`) | PASS | PASS | **FAIL** `not proved under LEAN_BREAK=async-drop-origins: the mechanism is not what refuses it` | PASS `proved under LEAN_BREAK=async-drop-origins: the mechanism is what refuses it` |
+| `node langs/ts/tests/opaque-unit.mjs --break` (the row's own command; the row passes when this exits non-zero) | exit 1 (`FAIL step line var (wld, retb, u) := ext_block_x(wld, u);`) | exit 1, same | exit 1, same | exit 1, same |
+
+**1. bump: this lane's merge.** The broken translations are byte-identical at 8844df7d and at 2df7b01b. What changed
+is this lane's `run.mjs` break row (2590da19). It now reads lane A's own decision for a number-bearing unit: the
+doubles reading, else the real lemma placed faithfully. The old row read the real lemma alone. Under that decision
+bump is unplaced on both sides: "an update whose value is used: `k++`". That `k++` is inside the async step
+`fill(st, user.tags, k++)`. My `site-steps` pre-analysis skipped only the calls column's statement sites
+(`f.opaqueSite`). It did not skip the async family's expression constructs, though the gate reads those as one
+transition too (`expressionSites`). That was a gap in my w1c fix, and the row was right to fail. No other guard
+covers bump: `async-drop-origins` combined with each of `world-write`, `handed-key-order`, `faithful-steps` and
+`reach-closure` still left bump not proved before the fix. So the expectation was not changed to name a second guard.
+
+Fix (`translate/translate.mjs` site-steps): the faithful pre-analysis's step set now also takes the span of each
+finding with `g.opaque === 'expression' && ASYNC_OPAQUE[g.rule]`, the same test the gate uses. A construct that is
+read as no step keeps its finding, a refusal, so its placement decides nothing. On the pair this changes only the NUMBERS
+lines of bump: `placed: false` becomes `placed: true` on both sides.
+
+Red first: pair `opaque_async_origin` has a new unit, `tick`. It has the same step, with `k++` in its argument, on both
+sides, and the candidate returns k through a local. The expectation is proved, with the break row `faithful-steps`
+flipping it to not proved. The new rows are appended at the end of the files, so the existing line numbers are unchanged.
+- with translate.mjs at 2df7b01b: `| TOTAL | 17 checks | 2 FAILED |`. The failures are `Equal_tick proved` (`unplaced (parent: an update whose value is used: \`k++\` (line 42))`) and bump's break row.
+- with the fix: `| TOTAL | 17 checks | ALL PASS |`, including `PASS Equal_tick proved | faithful exact proved; ...`,
+  `PASS break faithful-steps: Equal_tick flips to not proved (the mechanism is what proves it)` and
+  `PASS break async-drop-origins: Equal_bump flips to proved`.
+
+**2. opaque-unit --break: not a lost red.** The second failure in the lead's run is the `self-pair` row, not
+opaque-unit. The lead's command, run unchanged in a detached worktree at 2df7b01b, gives `| TOTAL | 912 checks | 2 FAILED |`.
+The two failures are bump's row and `runtime | self-pair | ... | FAIL | at .../tests/self-pair.mjs:39:79`, from
+`Error: unknown LEAN_PAIRS name: outside_iter`. `outside_iter` and `outside_ovc` are unit names from this file;
+their pairs are `opaque_iterator-protocol` and `opaque_operator-value-context`. In that same run,
+`runtime | opaque-unit --break | red without the mechanism | PASS | FAIL step line ...`. The script is red under its
+break at all three commits, both on its own and through the suite's pool, so no change was made for this row.
+
+### Validators at 4e276baf
+
+| validator | output (verbatim) |
+| --- | --- |
+| the six pairs by their real names, `LEAN_PAIRS=async_branch_exit,async_branch_exit_arms,faithful_lines,opaque_iterator-protocol,opaque_operator-value-context,opaque_async_origin run.mjs --jobs 3` (exit 0) | `\| TOTAL \| 933 checks \| ALL PASS \|` (opaque-unit and opaque-unit --break PASS) |
+| the lead's command as given (with `outside_iter`, `outside_ovc`) (exit 1) | `\| TOTAL \| 915 checks \| 1 FAILED \|`: the `self-pair` row, `unknown LEAN_PAIRS name: outside_iter` |
+| `node langs/ts/tests/opaque-calls.mjs` (exit 0) | `116/116 rows hold` |
+| `node langs/ts/tests/mutants-fixture.mjs` (exit 0) | `mutants fixture: 83 sites of 15 units, 19 kinds, every one planted and caught (lane B)` |
+| `node langs/ts/tests/lowering-cache.mjs` (exit 0) | `summary child exit 0` |
+| `node langs/ts/tests/handed-key-order.mjs` (exit 0) / `--break` (exit 1) | `\| HANDED KEY ORDER \| 14 rows \| ALL PASS \|` / `\| HANDED KEY ORDER --break \| 14 rows \| 7 FAILED \|` |
+| withdrawal (exit 0) | `withdrawal: logic-values v1 refused identically by the lint, the translator and the record; check PASS-bounded (lane A ASK) under the withdrawal, PASS-proved without; audit 666 site rows, 0 uncatalogued` |
+| audit (exit 0) | `sites 666; by kind {"lint-refuse":381,"lint-advice":5,"translate-throw":4,"translate-refuse":276}; uncatalogued 0` |
+| repo conformance, head / base 2df7b01b | `conformance: PASS, 253 of 253 checks passed, languages: ts` / the same |
+| the 35 + `opaque_async_origin`, `handed_key_order`, `lib_lodash_get`, `LEAN_CONFORMANCE=full JOBS=4` (exit 0, wall 1151 s, started at load 56.79) | `\| TOTAL \| 1324 checks \| ALL PASS \|` |
+| proof hunt, on the 38 | `\| PROOF-HUNT TOTAL \| 164 units read by both lanes \| NO HIDDEN FALSE PROOF \| 0 exempt by a door (adapter, NaN or infinity on a unit with no number operation) \|` |
+| self-pair, on the 38 | `\| SELF-PAIR TOTAL \| 230 units \| NO WITNESS \| {"PASS-bounded":224,"PASS-decided":6} \| ...` |
+
+### Measured
+
+- Pair: `tick` goes from not proved (unplaced) to PASS-proved, and bump's soundness break row is green again.
+- Census: **+0 on the w1c roots, read from the records.** The copies under `/root/census-installs/w8d/` are gone,
+  removed by someone other than me, so the census was not rerun. Among the head lane A rows
+  (`census/*-lanea.jsonl`, 141), no unit that is unplaced with its lemma proved holds an async-family rule. Their rules
+  are `property-assign`, `bitwise`, `read-after-call`, `index-assign`, `alias-mutation` and none, so the async half
+  cannot move one of them.
+
+### Load gate
+
+The run of the lead's command at 2df7b01b started at a one-minute load of 83.60, so it did not wait for the gate.
+Every other heavy run here started at 64 or below.
