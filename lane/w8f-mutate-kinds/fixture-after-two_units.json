@@ -1,0 +1,344 @@
+{
+ "meta": {
+  "head": "b75c233dc2419a073baa75f47897556eb8a2575a",
+  "seed": 1,
+  "n": 30,
+  "dafnySeconds": 30,
+  "env": {
+   "LEAN_WORKER_HEAP_MB": "6144"
+  },
+  "pairs": 1,
+  "units": {
+   "pairs": 2,
+   "census": 0
+  },
+  "census": null,
+  "unitsWithoutSites": 0,
+  "noUnit": 0
+ },
+ "rows": [
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 0,
+   "sites": 9,
+   "kind": "operator",
+   "lines": [
+    10,
+    10
+   ],
+   "was": ">",
+   "text": ">=",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 1,
+   "sites": 9,
+   "kind": "boundary",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 2,
+   "sites": 9,
+   "kind": "dropped-effect",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "tags.push(\"positive\");",
+   "text": "",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 3,
+   "sites": 9,
+   "kind": "string",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "\"positive\"",
+   "text": "\"positivex\"",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 4,
+   "sites": 9,
+   "kind": "dropped-else",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "else ...",
+   "text": "",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 5,
+   "sites": 9,
+   "kind": "dropped-effect",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "tags.push(\"other\");",
+   "text": "",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 6,
+   "sites": 9,
+   "kind": "string",
+   "lines": [
+    10,
+    10
+   ],
+   "was": "\"other\"",
+   "text": "\"otherx\"",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 7,
+   "sites": 9,
+   "kind": "changed-return",
+   "lines": [
+    11,
+    11
+   ],
+   "was": "tags.join(\",\")",
+   "text": "(tags.join(\",\")) + \"x\"",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "label",
+   "index": 8,
+   "sites": 9,
+   "kind": "string",
+   "lines": [
+    11,
+    11
+   ],
+   "was": "\",\"",
+   "text": "\",x\"",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 0,
+   "sites": 8,
+   "kind": "boundary",
+   "lines": [
+    3,
+    3
+   ],
+   "was": "0",
+   "text": "1",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 1,
+   "sites": 8,
+   "kind": "operator",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "+",
+   "text": "-",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 2,
+   "sites": 8,
+   "kind": "dropped-effect",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "log.push(\"total\");",
+   "text": "",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 3,
+   "sites": 8,
+   "kind": "string",
+   "lines": [
+    5,
+    5
+   ],
+   "was": "\"total\"",
+   "text": "\"totalx\"",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 4,
+   "sites": 8,
+   "kind": "changed-return",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "sum * 3",
+   "text": "(sum * 3) + 1",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 5,
+   "sites": 8,
+   "kind": "operator",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "*",
+   "text": "+",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 6,
+   "sites": 8,
+   "kind": "boundary",
+   "lines": [
+    6,
+    6
+   ],
+   "was": "3",
+   "text": "4",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "two_units",
+   "unit": "total",
+   "index": 7,
+   "sites": 8,
+   "kind": "dropped-assignment",
+   "lines": [
+    4,
+    4
+   ],
+   "was": "sum = sum + x;",
+   "text": ";",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  }
+ ]
+}

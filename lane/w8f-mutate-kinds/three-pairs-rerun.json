@@ -1,0 +1,359 @@
+{
+ "meta": {
+  "head": "92ac59177718f0657ef42753d13311e87cb01d87",
+  "seed": 1,
+  "n": 30,
+  "dafnySeconds": 30,
+  "env": {
+   "LEAN_WORKER_HEAP_MB": "6144"
+  },
+  "pairs": 3,
+  "units": {
+   "pairs": 26,
+   "census": 0
+  },
+  "census": null,
+  "unitsWithoutSites": 11,
+  "noUnit": 0,
+  "kinds": "boolean,nullish,dropped-assignment,compound,arithmetic,equality,coalesce,bitwise,unary,template,object-return"
+ },
+ "rows": [
+  {
+   "source": "pairs",
+   "where": "cause_callee_pattern",
+   "unit": "attemptKeyOf",
+   "index": 3,
+   "sites": 4,
+   "kind": "nullish",
+   "lines": [
+    11,
+    11
+   ],
+   "was": "token !== undefined ? null : keyOfToken(token as string)",
+   "text": "null",
+   "verdict": "PASS-bounded",
+   "laneB": "PASS-bounded",
+   "laneA": "ASK"
+  },
+  {
+   "source": "pairs",
+   "where": "cause_callee_pattern",
+   "unit": "attemptKeyOfRefactor",
+   "index": 4,
+   "sites": 5,
+   "kind": "nullish",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "keyOfToken(token)",
+   "text": "null",
+   "verdict": "PASS-bounded",
+   "laneB": "PASS-bounded",
+   "laneA": "ASK:identity"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "blank",
+   "index": 4,
+   "sites": 5,
+   "kind": "equality",
+   "lines": [
+    32,
+    32
+   ],
+   "was": "==",
+   "text": "!=",
+   "verdict": "not-planted",
+   "detail": "the edit does not parse or adds a type error (mutate.mjs skips it)"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "bumped",
+   "index": 3,
+   "sites": 4,
+   "kind": "object-return",
+   "lines": [
+    23,
+    23
+   ],
+   "was": "(xs ?? [0]).map((x) => x + 1)",
+   "text": "((xs ?? [0]).map((x) => x + 1)).slice(1)",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "count",
+   "index": 4,
+   "sites": 5,
+   "kind": "equality",
+   "lines": [
+    7,
+    7
+   ],
+   "was": "==",
+   "text": "!=",
+   "verdict": "not-planted",
+   "detail": "the edit does not parse or adds a type error (mutate.mjs skips it)"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "tagsOf",
+   "index": 4,
+   "sites": 5,
+   "kind": "equality",
+   "lines": [
+    27,
+    27
+   ],
+   "was": "==",
+   "text": "!=",
+   "verdict": "not-planted",
+   "detail": "the edit does not parse or adds a type error (mutate.mjs skips it)"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "total",
+   "index": 5,
+   "sites": 8,
+   "kind": "equality",
+   "lines": [
+    16,
+    16
+   ],
+   "was": "==",
+   "text": "!=",
+   "verdict": "not-planted",
+   "detail": "the edit does not parse or adds a type error (mutate.mjs skips it)"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "total",
+   "index": 6,
+   "sites": 8,
+   "kind": "dropped-assignment",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "s += x;",
+   "text": ";",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "total",
+   "index": 7,
+   "sites": 8,
+   "kind": "compound",
+   "lines": [
+    18,
+    18
+   ],
+   "was": "+=",
+   "text": "-=",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "width",
+   "index": 3,
+   "sites": 5,
+   "kind": "equality",
+   "lines": [
+    12,
+    12
+   ],
+   "was": "==",
+   "text": "!=",
+   "verdict": "not-planted",
+   "detail": "the edit does not parse or adds a type error (mutate.mjs skips it)"
+  },
+  {
+   "source": "pairs",
+   "where": "empty_literals",
+   "unit": "width",
+   "index": 4,
+   "sites": 5,
+   "kind": "coalesce",
+   "lines": [
+    12,
+    12
+   ],
+   "was": "??",
+   "text": "||",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "aliasAcrossWrite",
+   "index": 2,
+   "sites": 3,
+   "kind": "coalesce",
+   "lines": [
+    42,
+    42
+   ],
+   "was": "??",
+   "text": "||",
+   "verdict": "PASS-proved",
+   "laneB": "PASS-bounded",
+   "laneA": "PASS-proved"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "cached",
+   "index": 4,
+   "sites": 5,
+   "kind": "equality",
+   "lines": [
+    17,
+    17
+   ],
+   "was": "!=",
+   "text": "==",
+   "verdict": "not-planted",
+   "detail": "the edit does not parse or adds a type error (mutate.mjs skips it)"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "computedEnvironment",
+   "index": 0,
+   "sites": 1,
+   "kind": "nullish",
+   "lines": [
+    48,
+    48
+   ],
+   "was": "process.env[key]",
+   "text": "undefined",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "conditionalEnvironment",
+   "index": 0,
+   "sites": 2,
+   "kind": "nullish",
+   "lines": [
+    61,
+    61
+   ],
+   "was": "value ?? outside",
+   "text": "undefined",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "conditionalEnvironment",
+   "index": 1,
+   "sites": 2,
+   "kind": "coalesce",
+   "lines": [
+    61,
+    61
+   ],
+   "was": "??",
+   "text": "||",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "boundary walk"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "environment",
+   "index": 0,
+   "sites": 1,
+   "kind": "nullish",
+   "lines": [
+    25,
+    25
+   ],
+   "was": "process.env.OTHER_MODE",
+   "text": "undefined",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "optionalGlobal",
+   "index": 2,
+   "sites": 3,
+   "kind": "nullish",
+   "lines": [
+    55,
+    55
+   ],
+   "was": "(g.config ?? { port: 0 }).port",
+   "text": "undefined",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  },
+  {
+   "source": "pairs",
+   "where": "module_forms",
+   "unit": "store",
+   "index": 4,
+   "sites": 5,
+   "kind": "coalesce",
+   "lines": [
+    36,
+    36
+   ],
+   "was": "??",
+   "text": "||",
+   "verdict": "WITNESS",
+   "laneB": "WITNESS",
+   "laneA": null,
+   "foundLane": "B",
+   "foundBy": "seeded type-directed draw"
+  }
+ ]
+}

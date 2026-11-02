@@ -1,0 +1,12 @@
+--break (default dropped-effect) exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break boolean exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break nullish exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break dropped-assignment exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break compound exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break arithmetic exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break equality exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break coalesce exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break bitwise exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break unary exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break template exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
+--break object-return exit=1 AssertionError [ERR_ASSERTION]: every site mutate.mjs lists is a row of the study, in its order
