@@ -141,12 +141,12 @@ export function makeReach(checker, sf) {
     return { owners, carried, valueFns, literalMethods, dynamic };
   }
   const textOf = (o) => (isClassLike(o) ? `${headerOf(o)} class ${o.name?.text ?? ''}` : (classOfMember(o) ? `${classOfMember(o).name?.text ?? ''}[${headerOf(classOfMember(o))}].` : '') + o.getText(sf));
-  const cache = new Map();
-  // the reach of a unit's node (a top-level statement or a class member)
-  function reachOf(root) {
-    if (cache.has(root)) return cache.get(root);
+  const cache = new Map(), closures = new Map();
+  // the closure of a unit's node: its own run, and the code the carried values bring, closed until no new class or
+  // function value appears
+  function closure(root) {
+    if (closures.has(root)) return closures.get(root);
     const own = close([root]);
-    // the code the carried values bring, closed until no new class or function value appears
     let codeRoots = new Set([...own.carried, ...own.valueFns, ...own.literalMethods]);
     let code = close([...codeRoots]);
     for (let i = 0; i < 16; i++) {
@@ -155,7 +155,14 @@ export function makeReach(checker, sf) {
       for (const x of more) codeRoots.add(x);
       code = close([...codeRoots]);
     }
-    const dynamic = own.dynamic || code.dynamic;
+    const r = { own, code, codeRoots, dynamic: own.dynamic || code.dynamic };
+    closures.set(root, r);
+    return r;
+  }
+  // the reach of a unit's node (a top-level statement or a class member)
+  function reachOf(root) {
+    if (cache.has(root)) return cache.get(root);
+    const { own, code, codeRoots, dynamic } = closure(root);
     const codeTexts = dynamic ? [sf.text] : [...new Set([...code.owners].map(textOf))].sort();
     const declTexts = dynamic ? [sf.text] : [...new Set([...own.owners, ...code.owners].map(textOf))].sort();
     const r = { decls: declTexts, code: codeTexts, classes: [...codeRoots].filter(isClassLike).map((c) => c.name?.text ?? '?'), open: dynamic }; // expose the existing whole-file fallback to the absent-result certificate
@@ -169,6 +176,10 @@ export function makeReach(checker, sf) {
   reachOf.reachesFile = (root) => { const own = close([root]); return own.dynamic || own.carried.size > 0 || own.valueFns.size > 0 || [...own.owners].some((o) => o !== root && !ts.isImportDeclaration(o) && !ts.isImportEqualsDeclaration(o)); };
   // the key text of a reference: the code its evaluation can execute and the code its values may carry out
   reachOf.keyText = (root) => reachOf(root).decls.join('\n\u0000');
+  // the same reach as nodes of this file (exec/new-unit.mjs unitWorld reads what they name): the declarations the run
+  // executes and the code its values may carry out; null when a dynamic name (eval, Function, Reflect, Proxy) reaches
+  // the whole file
+  reachOf.owners = (root) => { const { own, code, dynamic } = closure(root); return dynamic ? null : [...new Set([...own.owners, ...code.owners])]; };
   // ----- an inherited method read on `this` (design/inherited-method.md) -----
   // `this.m(args)` where m is declared by a base class, in this file or another: the call runs the base method's body
   // on the receiver (ECMA-262 13.3.2 finds m on the prototype chain, 10.2.1 runs it). Lane A reads it as one transition

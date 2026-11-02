@@ -30,10 +30,19 @@ const BREAKS = { 'w9f-typed-reuse': 'reuse', 'w9f-typed-first': 'first', 'w9f-li
 const lintFixture = path.join(here, 'fixtures', 'w9f-lint', 'src', 'm.ts');
 const lintLoaded = loadProgram(lintFixture, { project: true });
 
+// the two reading checks measure the FULL reading (reuse, first difference); the own-file decision in front of it
+// (typed.mjs ownFirst, lane w9k, its own check in tests/w9k-new-code.mjs) is switched off for them, since it decides
+// unit f before the full reading runs (1 emit, its own file) and parses its small programs first (6 files, not 3)
 function read(units) {
   Object.assign(typedReuse, { reused: 0, parsed: 0, emits: 0 });
-  const t = typedReading({ root, project: true, changes: [{ rel: 'src/a.ts', parent, head, units }] }).get('src/a.ts');
-  return { t, ...typedReuse };
+  const was = process.env.LEAN_BREAK;
+  process.env.LEAN_BREAK = [was, 'typed-own-first'].filter(Boolean).join(',');
+  try {
+    const t = typedReading({ root, project: true, changes: [{ rel: 'src/a.ts', parent, head, units }] }).get('src/a.ts');
+    return { t, ...typedReuse };
+  } finally {
+    if (was === undefined) delete process.env.LEAN_BREAK; else process.env.LEAN_BREAK = was;
+  }
 }
 function checks() {
   const out = [];
