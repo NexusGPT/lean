@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // The --break rows of the library pairs (design/w2d-library-rows.md; the one convention of amendment A6: the code under
-// test reads LEAN_BREAK=<mechanism> and skips that mechanism). Every pair under tests/pairs whose expect.json has a
-// `break` map ({ "<mechanism>": { "<unit>": "<verdict>" } }) runs lane B (check.mjs) on each unit named there twice:
-// as is, where the verdict must be the pair's `b` verdict, and with LEAN_BREAK=<mechanism>, where it must be the break
-// verdict and differ from it. A mechanism whose removal leaves a verdict unchanged is no mechanism of that verdict.
+// test reads LEAN_BREAK=<mechanism> and skips that mechanism). Every lane B row of a pair's `break` (tests/break.mjs
+// breakRows: a row's `b`, { "<unit>": "<verdict>" }) runs lane B (check.mjs) on its unit twice: as is, where the verdict
+// must be the pair's `b` verdict, and with LEAN_BREAK=<mechanism>, where it must be the break verdict and differ from
+// it. Lane A's rows (a row's `equal`) are tests/run.mjs's. A mechanism whose removal leaves a verdict unchanged is no mechanism of that verdict.
 //   node langs/ts/tests/lib-break.mjs [--pair lib_x] [--jobs N]   (N at most 4)
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { breakRows } from './break.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const pairsDir = path.join(here, 'pairs');
@@ -26,8 +27,8 @@ for (const name of fs.readdirSync(pairsDir).sort()) {
   const exp = JSON.parse(fs.readFileSync(f, 'utf8')); if (!exp.break) continue;
   const d = path.join(pairsDir, name);
   const project = exp.project ? ['--project', path.join(d, exp.project)] : ['--no-project'];
-  for (const [mech, units] of Object.entries(exp.break)) for (const [unit, broken] of Object.entries(units)) {
-    for (const env of [null, mech]) tasks.push({ name, unit, mech, env, want: env ? broken : exp.b?.[unit], args: ['--parent', path.join(d, 'parent.ts'), '--candidate', path.join(d, 'candidate.ts'), '--unit', unit, '--n', '30', ...project] });
+  for (const { mechanism: mech, unit, verdict: broken } of breakRows(exp).filter((r) => r.lane === 'B')) {
+    for (const env of [null, mech]) tasks.push({ name, unit, mech, env, want: env ? broken : exp.b[unit], args: ['--parent', path.join(d, 'parent.ts'), '--candidate', path.join(d, 'candidate.ts'), '--unit', unit, '--n', '30', ...project] });
   }
 }
 const run = (t, i) => new Promise((resolve) => {

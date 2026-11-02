@@ -8,9 +8,7 @@
   "b": {
     "echoes": "WITNESS"
   },
-  "break": {
-    "library-fakes": {
-      "echoes": "PASS-bounded"
-    }
-  }
+  "break": [
+    {"mechanism": "library-fakes", "b": {"echoes": "PASS-bounded"}}
+  ]
 }

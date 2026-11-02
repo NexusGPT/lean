@@ -3,6 +3,39 @@
 Base `lead-v4` 844ddac2. Branch `lane/w8c-soundness-values`. Design notes: `langs/ts/design/handed-key-order.md`,
 `langs/ts/design/world-write.md`.
 
+## Resume 2: merged onto lead-v4 6694e5a7
+
+`lead-v4` 6694e5a7 (the opacity worker's final head: one shape for the expect.json `break` key, one reader
+`breakRows` in tests/break.mjs, and the eleven mutation kinds) was merged into this branch (a merge, no rebase, so the
+hashes stay as verified). There was one conflict, in `langs/ts/tests/break.mjs` MECHANISMS: both sides only added
+registry lines (mine: `handed-key-order` and `world-write`; theirs: the w1e and w1d names). I kept both. `common.mjs` and
+`translate/translate.mjs` merged without conflict. My two pairs already wrote `break` as an array of rows, so the
+unified reader takes them unchanged:
+`handed_key_order` gives 5 lane A rows (enc, enc_pt, spread_copy, lib_keys, heap_hand) and `lib_lodash_get` gives 2
+(poke, then_call). Nothing else changed.
+
+Validators after the merge (logs under `/root/da-bench/w8c-soundness-values/merge-6694/`):
+
+    handed-key-order exit=0 :: | HANDED KEY ORDER | 14 rows | ALL PASS |
+    handed-key-order --break exit=1 :: | HANDED KEY ORDER --break | 14 rows | 7 FAILED |
+    withdrawal exit=0 :: withdrawal: logic-values v1 refused identically by the lint, the translator and the record; check PASS-bounded (lane A ASK) under the withdrawal, PASS-proved without; audit 666 site rows, 0 uncatalogued
+    LEAN_PAIRS=handed_key_order,lib_lodash_get run.mjs exit=0 :: | TOTAL | 927 checks | ALL PASS |   (7 break rows flip through the unified reader: handed-key-order enc, enc_pt, spread_copy, lib_keys, heap_hand; world-write poke, then_call)
+      | PROOF-HUNT TOTAL | 18 units read by both lanes | NO HIDDEN FALSE PROOF | 0 exempt by a door (adapter, NaN or infinity on a unit with no number operation) |
+      | MODEL-CONFORMANCE TOTAL | 19 units in 2 pairs (0 skipped) | 1 executable: 1 agree, 0 disagree | 18 not executable, 0 outside domain, 0 not bridged, 0 model error, 0 skipped | 0 coupling finding(s) (0 sampled) | NO NEW FINDING |
+    opaque-calls exit=0 :: 114/114 rows hold
+    mutants-fixture exit=0 :: mutants fixture: 83 sites of 15 units, 19 kinds, every one planted and caught (lane B)
+    w1g-opaque-handed exit=0 :: ok   a collection a call was handed, changed after the call: refused read-after-call
+    w1g-opaque-handed --break exit=1 :: FAIL a collection a call was handed, changed after the call (LEAN_BREAK=unhanded-collection): translated (exit 1)
+    lower.mjs --audit exit=0 :: sites 666; by kind {"lint-refuse":381,"lint-advice":5,"translate-throw":4,"translate-refuse":276}; uncatalogued 0
+    regression (the same 47-pair LEAN_PAIRS set as below, census/regression-pairs.txt), LEAN_CONFORMANCE=full JOBS=4, --max-old-space-size=12288, wall 2377 s, exit=0 ::
+      | PROOF-HUNT TOTAL | 298 units read by both lanes | NO HIDDEN FALSE PROOF | 0 exempt by a door (adapter, NaN or infinity on a unit with no number operation) |
+      | MODEL-CONFORMANCE TOTAL | 332 units in 37 pairs (9 skipped) | 130 executable: 109 agree, 21 disagree | 168 not executable, 10 outside domain, 24 not bridged, 0 model error, 0 skipped | 0 coupling finding(s) (0 sampled) | NO NEW FINDING |
+      | TOTAL | 1626 checks | ALL PASS |
+    python3 -I conformance/run.py ts exit=0 :: conformance: PASS, 253 of 253 checks passed, languages: ts   (base 844ddac2: 252 of 252; the one added check comes from lead-v4)
+
+Not rerun after this merge: the census diff. The merge changes no translator line of mine, and its numbers below are
+from 08acb72e on 844ddac2.
+
 ## Resume: merged onto lead-v4 0b260f05
 
 `lead-v4` 0b260f05 (w7a, w8g and the four-lane opacity merge) was merged into this branch (a merge, not a rebase: the

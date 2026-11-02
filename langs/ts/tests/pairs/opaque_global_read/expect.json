@@ -1,0 +1,26 @@
+{
+ "scope": [
+  "greet",
+  "order",
+  "planted",
+  "ports",
+  "tabs"
+ ],
+ "equal": {
+  "greet": true,
+  "order": false,
+  "planted": false,
+  "ports": false,
+  "tabs": true
+ },
+ "why": "A global the checkout does not declare (tsconfig.json: lib es2022 only, no @types) has the checker's error type; it is the world value keyed by its name, read at Any: a read is global_read_<name>(world), a path rooted at it a global_get_ transition on global_handle_<name>, a call a transition (lint.mjs unresolvedGlobal through libGlobalRoot, the lib-globals reading; w1e, design/w1e-opaque-this-globals.md). Before, `console` passed the lint and the translator wrote it as a bare Dafny name (a resolution error), `chrome` was refused global-read, and the census set every such unit aside as environment-blocked. (a) greet: the handle's call is unchanged, the text is built by a template instead of `+`: proved; (b) order: the two calls on the handle are swapped: not proved (two transitions in another order); (c) planted: mutate.mjs's string change inside the call: not proved; (d) ports: two reads of the handle's path in the other order: not proved (each read is a world transition), witnessed by lane B's recording process.env; (e) tabs: a handle Node does not hold, unchanged, the change is an inlined local: proved. LEAN_BREAK=unresolved-global (tests/w1e-opaque-this-globals.mjs --break) removes the reading: `chrome` is refused again and `console` is a bare name, and the proved rows go red.",
+ "project": "tsconfig.json",
+ "heap": false,
+ "b": {
+  "greet": "PASS-bounded",
+  "order": "WITNESS",
+  "planted": "WITNESS",
+  "ports": "WITNESS",
+  "tabs": "PASS-bounded"
+ }
+}

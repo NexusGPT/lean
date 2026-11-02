@@ -1,0 +1,43 @@
+{
+ "scope": [
+  "outside",
+  "inside",
+  "upstream",
+  "planted"
+ ],
+ "equal": {
+  "outside": true,
+  "inside": false,
+  "upstream": false,
+  "planted": false
+ },
+ "why": "rule promise-unsettled (statements after settlement): the construct the finding names is one opaque step keyed by its tokens, the texts of the same-file functions it reaches and its module cells; a change outside it proves, a change inside it or in a value it reads does not, and lane B runs the real code (design/w1d-opaque-async.md)",
+ "opaque": {
+  "outside": [
+   "promise-unsettled"
+  ],
+  "inside": [
+   "promise-unsettled"
+  ],
+  "upstream": [
+   "promise-unsettled"
+  ],
+  "planted": [
+   "promise-unsettled"
+  ]
+ },
+ "b": {
+  "outside": "PASS-bounded",
+  "inside": "WITNESS",
+  "upstream": "WITNESS",
+  "planted": "WITNESS"
+ },
+ "break": [
+  {
+   "mechanism": "async-drop-reads",
+   "equal": {
+    "upstream": true
+   }
+  }
+ ]
+}

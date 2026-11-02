@@ -13,9 +13,7 @@
     "later": "WITNESS",
     "gap": "PASS-bounded"
   },
-  "break": {
-    "library-fakes": {
-      "later": "PASS-bounded"
-    }
-  }
+  "break": [
+    {"mechanism": "library-fakes", "b": {"later": "PASS-bounded"}}
+  ]
 }
