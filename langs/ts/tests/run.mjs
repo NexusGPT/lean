@@ -859,6 +859,8 @@ async function adviceLabels(add) {
     // a proof's verdict never depends on the machine's load: every dafny verify is bounded by resources (exec/dafny-args.mjs, design/suite.md)
     // units outside every function (design/w1f-module-units.md): the module unit, the typed reading, directive records, JavaScript units, each pair read as a pull request and red under its --break
     ['w1f-module-units', scriptRow('runtime', 'w1f-module-units', 'module, types and JavaScript units and directive records in pr.mjs rows; every --break turns its pair red', [path.join(here, 'w1f-module-units.mjs'), '--breaks'], lastLine)],
+    // the typed reading on a large project (lane w9f-n8n-gate): SourceFiles reused from the old program, a unit's reading stopped at its first difference; every --break turns its check red
+    ['w9f-n8n-gate', scriptRow('runtime', 'w9f-n8n-gate', 'the typed reading reuses unchanged SourceFiles and stops a unit at its first differing file, its decisions unchanged; every --break turns its check red', [path.join(here, 'w9f-n8n-gate.mjs')], lastLine)],
     ['dafny-resource-limit', scriptRow('runtime', 'dafny-resource-limit', 'every dafny verify passes the resource limit; one proof alone and eleven at once: the same verdict and resource count', [path.join(here, 'dafny-resource-limit.mjs')], lastLine)],
     // the branch-guided input search: targets from the diff, the kept inputs, the pairs off and on, determinism (exec/search.mjs, design/w3c-search-inputs.md)
     ['search-inputs', scriptRow('runtime', 'search-inputs', 'the diff mapped to the unit\'s branches; a kept input continued; two pairs PASS-bounded off and WITNESS by search on; byte-equal reruns', [path.join(here, 'search-inputs.mjs')], lastLine)],
