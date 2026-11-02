@@ -160,7 +160,20 @@ function translateOnce(file, fnName, opts = {}) {
   // (faithful.mjs, design/doubles.md: a number the model does not hold exactly passes through uninterpreted operations); a
   // proof of one program against its own ensures (no --core, or --exact-numbers as the conformance runner passes it) keeps the exact reading
   const normalised = analyze('normalization', () => opts.normalized ?? normaliseApplyCalls(given)); // a same-receiver apply/call is read as the direct call (common.mjs applyCall)
-  const faithful = core && !opts.exactNumbers ? analyze('faithful', () => faithfulNumbers(normalised)) : { loaded: normalised, units: new Map() };
+  // the statements the lint reads as opaque steps (the calls column's sites, lint/opaque-calls.mjs callsOpaqueSite: each
+  // finding's f.opaqueSite, in the text as written) are known before the rewrite: the faithful reading copies each as written
+  // and finds no reason inside it (faithful.mjs steps), since the step is one uninterpreted transition whatever its numbers
+  // are (design/w1c-opaque-calls.md, open). The admission that names them reads every unit of the file (the rewrite is one
+  // per file, shared by every unit asked of it), and is the gate below when the translation's order reads every unit.
+  // tests/break.mjs faithful-steps: the rewrite reads every statement, a site's too
+  const early = core && !opts.exactNumbers ? analyze('site-steps', () => {
+    const ranges = [...topLevelFunctions(normalised.sf).values()].map((u) => [lineOf(normalised.sf, u.node.getStart(normalised.sf)), lineOf(normalised.sf, u.node.getEnd())]);
+    const readings = new Set();
+    const findings = admitUnits(file, ranges, { project, promiseReadings: readings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, normalised);
+    const steps = broken('faithful-steps') ? [] : [...new Set(findings.filter((g) => g.opaque && g.opaqueSite).map((g) => g.opaqueSite))].map((k) => k.split(':').map(Number));
+    return { ranges, findings, readings, steps };
+  }) : null;
+  const faithful = core && !opts.exactNumbers ? analyze('faithful', () => faithfulNumbers(normalised, { steps: early.steps })) : { loaded: normalised, units: new Map() };
   const loaded = faithful.loaded;
   const { sf, checker } = loaded;
   let real = realFlag || analyze('number-mode', () => fileUsesReals(normalised.sf)); // read on the file as written: the faithful rewrite replaces a float literal or a `/` on one side and not the other, and the two sides must share one number type // a file with a float literal or a bare `/` is a real file (see common.mjs); under --only the units it reads decide (below)
@@ -286,7 +299,11 @@ function translateOnce(file, fnName, opts = {}) {
   // units, and the promise readings' offsets move with the rewrite
   const fnsAsWritten = faithful.mapOffset ? analyze('units-as-written', () => topLevelFunctions(normalised.sf)) : fns;
   const unitOfFinding = (g) => findingUnit(normalised.sf, fnsAsWritten, g)?.name ?? null;
-  let gate0 = admitUnits(file, order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]), { project, promiseReadings: lintReadings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, normalised).filter((g) => !g.env && order.some((u) => u.name === unitOfFinding(g))); // a finding stops the unit it belongs to, never a neighbour; an unresolved module is the checkout's finding, not the code's
+  const orderRanges = order.map((u) => [lineOf(sf, u.node.getStart(sf)), lineOf(sf, u.node.getEnd())]);
+  const sameRanges = (a, b) => { const k = (r) => [...new Set(r.map((x) => x.join(':')))].sort().join(','); return k(a) === k(b); };
+  const reuse = early && sameRanges(early.ranges, orderRanges); // the admission of the same units (the one above): read once
+  if (reuse) for (const k of early.readings) lintReadings.add(k);
+  let gate0 = (reuse ? early.findings : admitUnits(file, orderRanges, { project, promiseReadings: lintReadings, ...(opts.loaded ? { loaded: opts.loaded } : {}) }, normalised)).filter((g) => !g.env && order.some((u) => u.name === unitOfFinding(g))); // a finding stops the unit it belongs to, never a neighbour; an unresolved module is the checkout's finding, not the code's
   // a nested unit the lint refuses (a callback that writes a cell its enclosing function owns, say) is read inside that
   // function only, as the loop body it is: it leaves the emission, and its finding stops nothing while the enclosing unit is
   // emitted; asked alone, it is refused as any unit is (lower.mjs: a callback's refusal never stops its enclosing unit)
@@ -3861,6 +3878,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   // an async await exits on a fault before its following statements, just like a promise reaction
   const awaitsHere = (n) => { let found = false; const w = (x) => { if (ts.isFunctionLike(x)) return; if (ts.isAwaitExpression(x) || exactPromiseForm(x) || asyncOpaqueAt(x)) found = true; if (!found) ts.forEachChild(x, w); }; w(n); return found; }; // an opaque step takes an await's fault check (opaque-async.mjs)
   const asyncFailure = (u) => retIn(promiseFailure(dtype(retType(u), u.node)));
+  // an await at n leaves the unit on a rejection (the unit's statement flow, outside a loop, whose own exit routes it);
+  // (tests/break.mjs async-branch-exit merges the branches as values again: the fault exit read as a branch's state)
+  const awaitExits = (u, n) => u.isAsync && !loopCtx.length && awaitsHere(n) && !broken('async-branch-exit');
   function awaitExpr(n) {
     if (asyncOpaqueAt(unparen(n.expression))) return heldAwait(n, unparen(n.expression)); // an opaque step's promise, awaited as a held one
     const shape = promiseAllMapShape(n);
@@ -6843,7 +6863,7 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
         if ((tryOf(s) && containsEffect(s)) || (u.isAsync && !loopCtx.length && awaitsHere(s))) return guard(line.trim() ? line : '');
         return line.trim() ? `${line}\n${more0()}` : more0();
       }
-      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: sflatten(s.thenStatement) }], s.elseStatement ? sflatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${body}` : body; }
+      case K.IfStatement: { let cond; const h = capture(() => { cond = truthy(s.expression); return ''; }); const body = ifChain([{ cond, stmts: sflatten(s.thenStatement) }], s.elseStatement ? sflatten(s.elseStatement) : [], s, rest, fin, u); return h.trim() ? `${h.trim()}\n${awaitExits(u, s.expression) ? `if ${faultPreds().faulted}(${WORLD}) then ${asyncFailure(u)} else ${wrapLet(body)}` : body}` : body; } // an awaited condition that rejects ends the unit, as an awaited statement does
       case K.SwitchStatement: return isOpaqueStmt(s) ? opaqueBlock(s, rest, fin, u) : coreSwitch(s, rest, fin, u);
       case K.LabeledStatement: return isOpaqueStmt(s.statement) ? opaqueBlock(s, rest, fin, u) : tr([s.statement, ...rest], fin, u);
       case K.TypeAliasDeclaration: case K.InterfaceDeclaration: return more(); // stage 5 rank 16: erased at run time
@@ -6876,7 +6896,9 @@ lemma JsMaskJoinEq(u: bv32, m: bv32) ensures u & ((m << 1) | 1) == (u & 1) | (((
   // a break or continue of the ENCLOSING loop inside this statement (not one of a nested loop)
   const containsJump = (node) => { let f = false; const w = (x) => { if (ts.isContinueStatement(x) || ts.isBreakStatement(x)) f = true; if (!f && !ts.isArrowFunction(x) && !ts.isForStatement(x) && !ts.isForOfStatement(x) && !ts.isWhileStatement(x) && !ts.isSwitchStatement(x)) ts.forEachChild(x, w); }; w(node); return f; };
   function ifChain(chain, dflt, node, rest, fin, u) {
-    const anyReturn = containsReturn(node) || escapingLabels(node).length > 0 || ((loopCtx.length > 0 || switchCtx.length > 0) && containsJump(node));
+    // an await in a branch of an async unit leaves the unit when it rejects (guard: asyncFailure, the unit's own result),
+    // so the branches cannot be values merged before what follows: each branch carries the rest, as for a return
+    const anyReturn = containsReturn(node) || escapingLabels(node).length > 0 || ((loopCtx.length > 0 || switchCtx.length > 0) && containsJump(node)) || [...chain.map((c) => c.stmts), dflt].some((ss) => ss.some((x) => awaitExits(u, x)));
     const allTerminate = chain.every((c) => c.stmts.length && terminates(c.stmts[c.stmts.length - 1])) && dflt.length && terminates(dflt[dflt.length - 1]);
     if (anyReturn) {
       const branch = (ss) => tr([...ss, ...(ss.length && terminates(ss[ss.length - 1]) ? [] : rest)], fin, u);

@@ -1,0 +1,21 @@
+nexus-agent-api sites base: PASS-proved 2 of 5 {"ASK:translation-defect":3,"PASS-proved":2}
+nexus-agent-api sites head: PASS-proved 2 of 5 {"ASK:translation-defect":3,"PASS-proved":2}
+nexus-agent-api awaitif base: PASS-proved 1 of 1 {"PASS-proved":1}
+nexus-agent-api awaitif head: PASS-proved 1 of 1 {"PASS-proved":1}
+snitch sites base: PASS-proved 51 of 81 {"PASS-proved":51,"ASK:translation-defect":21,"ASK:theorem":3,"ASK:unproved":6}
+snitch sites head: PASS-proved 54 of 81 {"PASS-proved":54,"ASK:translation-defect":21,"ASK:theorem":3,"ASK:unproved":3}
+snitch awaitif base: PASS-proved 1 of 4 {"ASK:translation-defect":2,"ASK:unproved":1,"PASS-proved":1}
+snitch awaitif head: PASS-proved 3 of 4 {"PASS-proved":3,"ASK:unproved":1}
+  gained (sites): infra/mock-api/src/action-packs.ts "registerActionPackRoutes/app.post('/mock/clusters/re-mine')#1"; base: ASK:unproved 
+  gained (sites): infra/mock-api/src/cluster-fixtures.ts "buildPlan"; base: ASK:unproved 
+  gained (sites): infra/mock-api/src/cluster-fixtures.ts "buildClusterWorld/variantEntries.forEach()#0"; base: ASK:unproved 
+  gained (awaitif): apps/admin/middleware.ts "clerkMiddleware()#0"; base: ASK:translation-defect the two branches of an if-then-else expression must have the same type (got (World, Unit) and World)
+  gained (awaitif): apps/extension/src/background.ts "unregisterContentScripts"; base: ASK:translation-defect the two branches of an if-then-else expression must have the same type (got (World, Unit) and World)
+pipedream sites base: PASS-proved 23 of 49 {"PASS-proved":23,"ASK:translation-defect":14,"ASK:unproved":4,"ASK:theorem":8}
+pipedream sites head: PASS-proved 23 of 49 {"PASS-proved":23,"ASK:translation-defect":14,"ASK:unproved":4,"ASK:theorem":8}
+pipedream awaitif base: PASS-proved 0 of 1 {"ASK:translation-defect":1}
+pipedream awaitif head: PASS-proved 0 of 1 {"ASK:translation-defect":1}
+sum sites base: PASS-proved 76 of 135
+sum sites head: PASS-proved 79 of 135
+sum awaitif base: PASS-proved 2 of 6
+sum awaitif head: PASS-proved 4 of 6

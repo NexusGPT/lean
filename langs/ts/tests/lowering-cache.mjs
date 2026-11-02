@@ -215,7 +215,7 @@ try {
   console.log('analysis executions: ' + JSON.stringify(Object.fromEntries(counts)));
   const repeated = [...counts].filter(([, count]) => count !== 1);
   assert.deepEqual(repeated, [], 'every per-file analysis executes once across admitted units');
-  const expected = ['accessors', 'class-field-index', 'classes', 'declarations', 'exceptions', 'faithful', 'generators', 'hook-bindings', 'normalization', 'number-mode', 'parameter-mutations', 'reach', 'react-slots', 'reference-index', 'static-cell-index', 'units', 'units-as-written'];
+  const expected = ['accessors', 'class-field-index', 'classes', 'declarations', 'exceptions', 'faithful', 'generators', 'hook-bindings', 'normalization', 'number-mode', 'parameter-mutations', 'reach', 'react-slots', 'reference-index', 'site-steps', 'static-cell-index', 'units', 'units-as-written'];
   assert.deepEqual([...counts.keys()].sort(), expected.sort(), 'all named analyses are counted');
   // These scans are lazy: plain numeric functions above never request them.
   const lazyCounts = {};

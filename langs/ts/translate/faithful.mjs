@@ -5,10 +5,14 @@
 // keyed by its name). A proof in this reading uses the exact integers and congruence only, and IEEE doubles are a model
 // of it. The reading is a source rewrite before translation, as common.mjs normaliseApplyCalls is.
 //
-//   faithfulNumbers(loaded) -> { loaded, units }   loaded: the program over the rewritten text (the same file, same
-//     lines); units: Map unit name -> { placed: bool, reasons: [..] } for every top-level unit, its same-file callees
+//   faithfulNumbers(loaded, { steps }) -> { loaded, units }   loaded: the program over the rewritten text (the same file,
+//     same lines); units: Map unit name -> { placed: bool, reasons: [..] } for every top-level unit, its same-file callees
 //     included. A unit is unplaced when a number the model does not hold reaches a place the rewrite cannot make
 //     opaque (an index, a key, an argument a library operation reads as a number, an update whose value is used).
+//     steps: [start, end] spans (in loaded.sf) of the statements the lint reads as opaque steps (the calls column's sites,
+//     lint/opaque-calls.mjs): each is copied as written and no reason is found inside it. The translator emits it as one
+//     uninterpreted transition keyed by its text, so no number inside it is read by the model, exactly or not; its
+//     writes keep the exactness this analysis gives them over the whole file (what the code inside does is unchanged).
 //
 // Exact sources (each with a static interval, the safe-range obligation discharged by interval arithmetic):
 //   an integer literal within 2^53; `.length` of a string, an array or a tuple (ECMA-262: an array length is a Uint32,
@@ -29,6 +33,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ts, topLevelFunctions, fileDiagnostics, assertionHeld } from '../common.mjs';
 import { calleesOf } from '../exec/callees.mjs';
+import { broken } from '../break.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const LEAN_NUMBER_DTS = path.join(here, '..', 'lean-number.d.ts');
@@ -54,8 +59,9 @@ const VALUE_AFTER_KEY = new Set(['set']);
 const unparen = (n) => { while (n && (ts.isParenthesizedExpression(n) || ts.isAsExpression(n) || ts.isNonNullExpression(n) || (ts.isSatisfiesExpression && ts.isSatisfiesExpression(n)) || ts.isTypeAssertionExpression(n))) n = n.expression; return n; };
 const isLoop = (n) => ts.isForStatement(n) || ts.isForOfStatement(n) || ts.isForInStatement(n) || ts.isWhileStatement(n) || ts.isDoStatement(n);
 
-export function faithfulNumbers(loaded) {
+export function faithfulNumbers(loaded, { steps = [] } = {}) {
   const { sf, checker, program } = loaded;
+  const stepOf = (n) => steps.some(([a, z]) => a <= n.getStart(sf) && n.getEnd() <= z); // inside a statement read as one opaque step
   // a node's real type: a held value (common.mjs assertionHeld: an `as` that narrows, an any or unknown value in a typed
   // slot) is read with the type it has at run time, the one the translator's typeOf reads, never the type it claims; an
   // opaque held value is no number here, so no operation on it becomes a double operation of this reading
@@ -256,7 +262,7 @@ export function faithfulNumbers(loaded) {
   const unplacedSpans = new Map(); // unit name -> [{ start, end, reason }]: where each reason was found
   const unitNodes = [...topLevelFunctions(sf).values()];
   const unitOfNode = (x) => unitNodes.find((u) => x.pos >= u.node.pos && x.end <= u.node.end) ?? null;
-  const refuse = (x, why) => { const u = unitOfNode(x); if (!u) return; const k = u.name; if (!unplaced.has(k)) unplaced.set(k, []); const line = sf.getLineAndCharacterOfPosition(x.getStart(sf)).line + 1; const r = `${why}: \`${x.getText(sf).slice(0, 60)}\` (line ${line})`; if (!unplaced.get(k).includes(r)) unplaced.get(k).push(r); if (!unplacedSpans.has(k)) unplacedSpans.set(k, []); unplacedSpans.get(k).push({ start: x.getStart(sf), end: x.getEnd(), reason: r }); }; // the span: a reason inside an opaque step the translator wrote is no reason (translate.mjs, design/w1b-opaque-statements.md)
+  const refuse = (x, why) => { if (stepOf(x)) return; const u = unitOfNode(x); if (!u) return; const k = u.name; if (!unplaced.has(k)) unplaced.set(k, []); const line = sf.getLineAndCharacterOfPosition(x.getStart(sf)).line + 1; const r = `${why}: \`${x.getText(sf).slice(0, 60)}\` (line ${line})`; if (!unplaced.get(k).includes(r)) unplaced.get(k).push(r); if (!unplacedSpans.has(k)) unplacedSpans.set(k, []); unplacedSpans.get(k).push({ start: x.getStart(sf), end: x.getEnd(), reason: r }); }; // the span: a reason inside an opaque step the translator wrote is no reason (translate.mjs, design/w1b-opaque-statements.md)
   const resolved = (id) => { let s = symOf(id); if (s && (s.flags & ts.SymbolFlags.Alias)) { try { s = checker.getAliasedSymbol(s); } catch { /* keep */ } } return s; };
   const sameFileUnit = (call) => { const d = resolved(call.expression)?.valueDeclaration; return !!d && d.getSourceFile() === sf && ts.isFunctionLike(d.initializer ?? d); };
   const externalCall = (call) => { const s = resolved(ts.isPropertyAccessExpression(call.expression) ? call.expression.name : call.expression); const d = s?.valueDeclaration ?? s?.declarations?.[0]; if (!d) return false; const f = d.getSourceFile(); return f !== sf && !program.isSourceFileDefaultLibrary(f) && !/[\\/]typescript[\\/]lib[\\/]/.test(f.fileName); };
@@ -307,10 +313,17 @@ export function faithfulNumbers(loaded) {
   const truthy = new Set(), wrapping = new Set(); // conditions holding a non-exact number: read by the uninterpreted truthiness
   const opaqueIn = new Set(); // the units whose text the rewrite changed: their numbers pass through uninterpreted operations
   const touched = (n) => { const u = unitOfNode(n); if (u) opaqueIn.add(u.name); };
+  // a rewritten node holds as many line breaks as its text as written: an operation's arguments are joined on one line
+  // (`Math.max(\n 0,\n x)` read as `Math.__lean_max2(0, x)`), so the breaks it dropped go before its closing parenthesis
+  // (every rewrite ends with one), and the code after it keeps its lines; a file whose rewrite moved a line is read
+  // exactly with every unit unplaced (translate.mjs faithfulFailed). tests/break.mjs faithful-lines drops the padding
+  const breaks = (x) => { let k = 0; for (let i = x.indexOf('\n'); i >= 0; i = x.indexOf('\n', i + 1)) k++; return k; };
+  const keepLines = (n, out) => { if (broken('faithful-lines')) return out; const d = breaks(sf.text.slice(n.getStart(sf), n.end)) - breaks(out); return d > 0 && out.endsWith(')') ? `${out.slice(0, -1)}${'\n'.repeat(d)})` : out; };
   function text(n) {
-    if (truthy.has(n) && !wrapping.has(n)) { wrapping.add(n); touched(n); try { return call('truthy', [text(n)]); } finally { wrapping.delete(n); } }
+    if (stepOf(n)) return sf.text.slice(n.getStart(sf), n.end); // an opaque step's statement (or a node in it): as written
+    if (truthy.has(n) && !wrapping.has(n)) { wrapping.add(n); touched(n); try { return keepLines(n, call('truthy', [text(n)])); } finally { wrapping.delete(n); } }
     const own = rewrite(n);
-    if (own !== null) { touched(n); return own; }
+    if (own !== null) { touched(n); return keepLines(n, own); }
     return splice(n);
   }
   function splice(n) {
@@ -402,6 +415,7 @@ export function faithfulNumbers(loaded) {
   const pieces = []; // { from, to } original text copied, or { lit } new text
   const copy = (from, to) => { if (to > from) pieces.push({ from, to }); };
   function emit(n) {
+    if (stepOf(n)) { copy(n.getStart(sf), n.end); return; } // an opaque step's statement: copied as written
     if (truthy.has(n) || rewriteProbe(n)) { pieces.push({ lit: text(n) }); return; }
     let at = n.getStart(sf);
     ts.forEachChild(n, (c) => { const st = c.getStart(sf); if (st < at) return; copy(at, st); emit(c); at = c.end; });

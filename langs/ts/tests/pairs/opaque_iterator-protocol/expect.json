@@ -4,12 +4,20 @@
   "inside_iter"
  ],
  "equal": {
-  "outside_iter": "real-only",
+  "outside_iter": true,
   "inside_iter": false
  },
- "why": "design/w1c-opaque-calls.md, rule iterator-protocol: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_iter is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open).",
+ "why": "design/w1c-opaque-calls.md, rule iterator-protocol: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_iter is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open). Since lane w8d the faithful reading copies the statements the lint reads as opaque steps as written and finds no reason inside them (faithful.mjs steps): the update used as a value inside the step is no reason, the unit is placed, and lane A proves it (it was real-only). Under LEAN_BREAK=faithful-steps the rewrite reads the step's text again and outside_iter is not proved.",
  "b": {
   "outside_iter": "PASS-bounded",
   "inside_iter": "PASS-bounded"
- }
+ },
+ "break": [
+  {
+   "mechanism": "faithful-steps",
+   "equal": {
+    "outside_iter": false
+   }
+  }
+ ]
 }

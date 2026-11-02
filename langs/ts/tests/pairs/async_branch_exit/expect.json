@@ -1,0 +1,13 @@
+{
+  "scope": ["settle", "cond"],
+  "equal": {
+    "settle": true,
+    "cond": true
+  },
+  "why": "an await inside an if of an async unit: a rejection leaves the unit (its result is the rejected promise), so the if's branches each carry what follows (the form a return in a branch takes) and an awaited condition is tested for a fault before its branches; the candidates return from the branch or name the awaited condition first, the same in JavaScript, and prove. Under LEAN_BREAK=async-branch-exit the branches merge as values again: settle reads the fault as r (r + 1 of it), cond reads a rejected condition as true or false, and neither proves.",
+  "b": {
+    "settle": "PASS-bounded",
+    "cond": "PASS-bounded"
+  },
+  "break": [{ "mechanism": "async-branch-exit", "equal": { "settle": false, "cond": false } }]
+}

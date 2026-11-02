@@ -1,0 +1,11 @@
+{
+  "scope": ["tag"],
+  "equal": {
+    "tag": true
+  },
+  "why": "an await in each arm of an if of an async unit: a rejection leaves the unit, so each arm carries what follows (ifChain, the form of a return in a branch); the candidate awaits once on a conditional argument, the same in JavaScript, and proves. Under LEAN_BREAK=async-branch-exit the arms merge as values and the fault exit is ill-typed (an arm of type (World, Unit) against World): the theorem does not resolve.",
+  "b": {
+    "tag": "PASS-bounded"
+  },
+  "break": [{ "mechanism": "async-branch-exit", "equal": { "tag": false } }]
+}

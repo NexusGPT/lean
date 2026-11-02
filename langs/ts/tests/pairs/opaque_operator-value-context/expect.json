@@ -7,18 +7,26 @@
   "planted_ovc"
  ],
  "equal": {
-  "outside_ovc": "real-only",
+  "outside_ovc": true,
   "inside_ovc": false,
   "read_ovc": false,
   "write_ovc": false,
   "planted_ovc": false
  },
- "why": "design/w1c-opaque-calls.md, rule operator-value-context: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_ovc is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open).",
+ "why": "design/w1c-opaque-calls.md, rule operator-value-context: outside_ the construct unchanged and a change elsewhere (proved, the step listed); inside_ a change inside the construct (two symbols, never proved); read_ a value the step reads changed before it; write_ a read moved across the step, which may change it; planted_ mutate.mjs's change inside the construct (planted.json). outside_ovc is number-bearing: its real lemma proves, and the doubles reading does not read the step (unknown) nor the faithful reading place it (a number operation inside the step's text, or a held Any in a faithful operation), so lane A does not PASS-prove it today (`real-only`: a gap, never a false proof; design/w1c-opaque-calls.md, open). Since lane w8d the faithful reading copies the statements the lint reads as opaque steps as written and finds no reason inside them (faithful.mjs steps): the update used as a value inside the step is no reason, the unit is placed, and lane A proves it (it was real-only). Under LEAN_BREAK=faithful-steps the rewrite reads the step's text again and outside_ovc is not proved.",
  "b": {
   "outside_ovc": "PASS-bounded",
   "inside_ovc": "WITNESS",
   "read_ovc": "WITNESS",
   "write_ovc": "WITNESS",
   "planted_ovc": "WITNESS"
- }
+ },
+ "break": [
+  {
+   "mechanism": "faithful-steps",
+   "equal": {
+    "outside_ovc": false
+   }
+  }
+ ]
 }
