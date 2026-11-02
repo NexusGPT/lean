@@ -76,6 +76,7 @@ export const MECHANISMS = {
   'async-drop-callees': 'opaque-async.mjs reachedFunctions: the texts of the same-file functions a step reaches leave its key (lane w1d)',
   'async-drop-carry': 'translate/translate.mjs assignedOutside: a branch or a loop around an async-family step no longer carries its writes out (lane w1d)',
   'async-drop-pending': 'opaque-async.mjs pendingWork: a step whose pending work reaches the unit\'s bindings is admitted (lane w1d)',
+  'programs-share': 'exec/programs.mjs runPrograms maxCpuMs: the method programs of a class unit have no share of the unit\'s CPU bound, so slow commands spend all of it before any draw runs (lane w9o; tests/programs-share.mjs --break, suite row programs-share --break)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';

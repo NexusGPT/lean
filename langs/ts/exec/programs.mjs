@@ -11,7 +11,14 @@ import { inputsFor } from './gen.mjs';
 import { loadProgram, topLevelFunctions } from '../common.mjs';
 import { exploreRaces, hiddenStateOf } from './program.mjs';
 
-export async function runPrograms({ files, roots, spec, seed, ms, rt, project, recordHead, programs = 12, maxLen = 5 }) {
+// maxCpuMs: the stage's share of the unit's CPU bound (exec/run.mjs: a quarter, the share the input search has). The
+// programs run before the draws; a class whose commands are slow (a large module graph loaded per program, handlers
+// driven per command) would otherwise spend the whole bound here and the unit would end spin-bound with no draw run.
+// Past its share the stage stops between commands, PASS-bounded with the programs and commands it ran and the share
+// named (stop); the draws then run. LEAN_BREAK=programs-share: no share, the stage runs to its own end.
+export async function runPrograms({ files, roots, spec, seed, ms, rt, project, recordHead, programs = 12, maxLen = 5, maxCpuMs = Infinity, cpuMs = () => { const c = process.cpuUsage(); return (c.user + c.system) / 1000; } }) {
+  const cpu0 = cpuMs(), spent = () => cpuMs() - cpu0;
+  const share = `the stage's share of the unit's CPU bound, ${Math.round(maxCpuMs / 1000)} s, was spent`;
   const className = spec.className;
   const members = spec.receiver?.members ?? {};
   const methodNames = Object.entries(members).filter(([, m]) => m.kind === 'method').map(([n]) => n);
@@ -58,6 +65,7 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, r
     if (JSON.stringify(render({ ...sides.parent.inst })) !== JSON.stringify(render({ ...sides.candidate.inst }))) return { built: true };
     const steps = [];
     for (let k = 0; k < program.length; k++) {
+      if (spent() > maxCpuMs) return { cut: true };
       const c = program[k]; const obs = {};
       for (const name of ['parent', 'candidate']) {
         const s = sides[name]; const args = inputsFor(specs[c.method], seed, c.index, s.env);
@@ -76,8 +84,10 @@ export async function runPrograms({ files, roots, spec, seed, ms, rt, project, r
   };
   let commands = 0, ran = 0;
   for (let p = 0; p < programs; p++) {
+    if (spent() > maxCpuMs) return { verdict: 'PASS-bounded', programs: ran, commands, methods: cmds, stop: share };
     let program = draw(p); ran++; commands += program.length;
     const r = await run(program);
+    if (r.cut) return { verdict: 'PASS-bounded', programs: ran, commands, methods: cmds, stop: share };
     if (r.harness) return { verdict: 'ASK', reason: `program ${p}: ${r.harness}`, programs: ran, commands, methods: cmds };
     if (r.built) return { verdict: 'PASS-bounded', programs: 0, commands: 0, methods: [], skipped: 'the two constructions build different instances, so the instances differ before any command; the constructor reports it' };
     if (r.diverged === undefined) continue;

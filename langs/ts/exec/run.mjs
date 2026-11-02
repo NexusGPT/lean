@@ -41,6 +41,7 @@ import { bridgeGlobal, bridgeCounts } from './bridge.mjs';
 import { netMode, netFlags, denyNetwork, networkDenied, deniedAttempts, sandboxEntry } from './net-deny.mjs';
 import { currentSandboxList, applyList, guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { searchPlan, branchMarks, outcomeOf, searchInputs, applyRecipe, changesOf, recipeText } from './search.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 const require = createRequire(import.meta.url);
 // The library transition table (translate/library.json) is validated on every run: while the unit runs, each built-in
@@ -1293,7 +1294,7 @@ export async function runPair(opts) {
     });
     child.on('error', (e) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker failed to start: ${String(e && e.message).slice(0, 200)}` }));
     child.on('exit', (code, signal) => end({ verdict: 'ASK', unit: opts.unit, reason: `harness: the lane B worker exited (${signal ?? `code ${code}`}) before a verdict; pending: ${crumbOf(last)}` }));
-    child.send({ opts: { ...rest, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) } });
+    child.send({ opts: { ...rest, boundSeconds: seconds, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) } }); // boundSeconds: the unit's CPU bound this parent enforces, for the stages that take a share of it (programs.mjs maxCpuMs)
   });
 }
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
@@ -1543,7 +1544,7 @@ async function runPairOnce(opts) {
   let programRun = null;
   if (spec.isMethod && !spec.isStatic && !spec.accessor && spec.unit.split('.')[1] !== 'constructor') {
     const { runPrograms } = await import('./programs.mjs'); step('programs');
-    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference } })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
+    try { programRun = await recording(records, () => runPrograms({ files: { parent, candidate }, roots, spec, seed, ms, project, recordHead: opts.recordHead, rt: { sandbox, observe, guardedCall, firstDifference }, maxCpuMs: broken('programs-share') ? Infinity : (opts.boundSeconds ?? unitSecondsValue(opts.unitSeconds)) * 1000 / 4 })); } catch (e) { if (e instanceof BudgetError) programRun = { verdict: 'ASK', reason: `budget: ${e.message}`, programs: 0, commands: 0 }; else throw e; }
   }
   for (let i = 0; i < n; i++) {
     step('lane B', i); let sides = await mountSides(i);
@@ -1631,7 +1632,7 @@ async function runPairOnce(opts) {
   if (handlerRun) bound.frontEnd.handlers = Object.assign(handlerRun.stats, { observed: FRONT_END_OBSERVATION.handlers }); // how a handler is observed, and the descriptor interpreter's counts: fired, readable, interpretable, agreed, and every defect
   if (programRun) {
     const member = spec.member ?? unit.split('.')[1];
-    bound.programs = { programs: programRun.programs, commands: programRun.commands, methods: programRun.methods, maxLen: 5, seed, ...(programRun.skipped ? { skipped: programRun.skipped } : {}) };
+    bound.programs = { programs: programRun.programs, commands: programRun.commands, methods: programRun.methods, maxLen: 5, seed, ...(programRun.skipped ? { skipped: programRun.skipped } : {}), ...(programRun.stop ? { stop: programRun.stop } : {}) };
     if (programRun.verdict === 'ASK') bound.programs.ask = programRun.reason;
     if (programRun.verdict === 'WITNESS') {
       const mine = programRun.program.some((c) => c.method === member);
