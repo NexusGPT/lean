@@ -1,0 +1,9 @@
+{
+ "scope": ["makeStates"],
+ "equal": {"makeStates": false},
+ "laneBOnly": true,
+ "why": "design/w9af-omitted-args.md: makeStates hands out get(scene, depth = 0), a state per scene and call depth; the candidate moves the default to 1. Every drawn call passes three arguments and each later call a fresh scene, so the default never applies and no scene is met twice: PASS-bounded before. A driven function is now called again on its first call's own scene with the defaulted depth left out (driveOne omittedForms): the parent returns the scene's first state, the candidate makes a second one, WITNESS, reported at the statement that reads depth (kind 'drive omitted argument'). Under LEAN_BREAK=w9af-omitted-drives no form runs: PASS-bounded.",
+ "b": {"makeStates": "WITNESS"},
+ "statement": {"makeStates": {"kind": "drive omitted argument", "parent": "if (depth >= list.length) {\n      const fresh = { id: ++made };\n      list.push(fresh);\n      return fresh;\n    }", "candidate": "if (depth >= list.length) {\n      const fresh = { id: ++made };\n      list.push(fresh);\n      return fresh;\n    }"}},
+ "break": [{"mechanism": "w9af-omitted-drives", "b": {"makeStates": "PASS-bounded"}}]
+}

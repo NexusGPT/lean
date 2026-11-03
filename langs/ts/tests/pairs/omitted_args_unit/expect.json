@@ -1,0 +1,8 @@
+{
+ "scope": ["scale", "pad"],
+ "equal": {"scale": false, "pad": false},
+ "laneBOnly": true,
+ "why": "design/w9af-omitted-args.md: the unit's own trailing parameter left out. scale moves its default factor from 2 to 3: an optional parameter drawn absent applies the default whether it is passed as undefined or left out, WITNESS before and after. pad tests arguments.length < 2 and moves the width it then takes from 4 to 6: an explicit undefined keeps the length at 2, so before only the passed width ran (PASS-bounded); an optional trailing parameter drawn absent is now left out of the call on every other input (gen.mjs omitTrailing), WITNESS. Under LEAN_BREAK=w9af-omitted-args it is always passed: PASS-bounded.",
+ "b": {"scale": "WITNESS", "pad": "WITNESS"},
+ "break": [{"mechanism": "w9af-omitted-args", "b": {"pad": "PASS-bounded"}}]
+}

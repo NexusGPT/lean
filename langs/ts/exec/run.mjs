@@ -824,12 +824,32 @@ async function driveCall(env, thunk, ms) { // one call of a drive: returned or t
   if (isIterator(v)) { const steps = []; for (let i = 0; i < DRIVE_STEPS; i++) { let r = guardedCall(env, () => v.next(), ms); if (r && typeof r.then === 'function') r = await awaitUnit(env, r, ms); steps.push(render(r)); if (!r || r.done) break; } out.steps = steps; }
   return out;
 }
+// The omitted forms of a drive (design/w9af-omitted-args.md): a caller leaves a trailing parameter out (its default
+// applies, `arguments.length` is shorter, an undefined test holds), so after its drawn calls a driven function is called
+// on the first call's own leading arguments with each optional trailing parameter left out (the parameters patch.mjs
+// parameterReads reads: a default, `?`, a bracketed JSDoc @param, an undefined test, `arguments`), the shortest last,
+// and then with `undefined` passed explicitly where the trailing run starts (its own boundary: a default applies, the
+// length does not shrink). The leading arguments are the first call's, so state the first call left keyed on them (a
+// cache per key) is met again. Each form is its own record with its own requests and the statement that first reads
+// the parameter left out (`read`): a difference there is reported at that statement (firstDifference). At most
+// DRIVE_ARGS parameters are ever passed, so a parameter past them is already left out by the drawn calls.
+// LEAN_BREAK=w9af-omitted-drives: no form
+export function omittedForms(params, args) {
+  if (!params || broken('w9af-omitted-drives')) return [];
+  const m = Math.min(params.length, args.length); let k0 = m;
+  while (k0 > 0 && params[k0 - 1].name && params[k0 - 1].optional) k0--;
+  const out = [];
+  for (let n = m - 1; n >= k0; n--) out.push({ args: args.slice(0, n), read: params.slice(n, m).find((p) => p.read)?.read ?? null });
+  if (k0 < m) out.push({ args: [...args.slice(0, k0), undefined], undefinedAt: k0, read: params[k0].read ?? null });
+  return out;
+}
 async function driveOne(env, fn, k, ms) {
   const mark = env.trace.length, pend = env.pending.length, queued = env.timers.queue, slots = env.hookSlots ? env.hookSlots.slice() : null, dirty = env.stateDirty, clock = env.timers.now;
   env.timers.queue = []; // the drive's own timers only: they fire inside it (below), as the main observation fires the call's
   const args = Array.from({ length: DRIVE_ARGS }, (_, i) => env.drawn(`drive#${k}.arg${i}`)); // drawn as the world draws (fake.mjs drawn): the same on both sides, other values on other inputs
   const rec = { $fn: `#${k}`, args: render(args) }; // the driven input, as drawn
-  if (env.siteState) env.siteState.completed = null;
+  let omitStart = null;
+  if (env.siteState) { env.siteState.completed = null; env.siteState.exited = null; }
   try {
     if (isClassFn(fn)) {
       const inst = guardedCall(env, () => Reflect.construct(fn, args), ms);
@@ -844,10 +864,19 @@ async function driveOne(env, fn, k, ms) {
       Object.assign(rec, await driveCall(env, () => Reflect.apply(fn, self, args), ms));
       // called again, as the world that keeps it calls it again: state it carries between calls (a counter, a limit
       // on the second event) shows on a later call; each call on its own drawn arguments, the same on both sides
+      const params = env.siteState?.exited?.body?.params ?? null; // the driven function's own frame exits last: its parameters (patch.mjs parameterReads)
       rec.again = [];
       for (let j = 1; j < DRIVE_CALLS; j++) {
         const more = Array.from({ length: DRIVE_ARGS }, (_, i) => env.drawn(`drive#${k}.call${j}.arg${i}`));
         try { rec.again.push({ args: render(more), ...(await driveCall(env, () => Reflect.apply(fn, self, more), ms)) }); } catch (e) { if (driveStop(e)) throw e; rec.again.push({ args: render(more), threw: render(e) }); break; }
+      }
+      omitStart = env.trace.length;
+      for (const form of omittedForms(params, args)) { // the same leading arguments again, the trailing ones left out: a default, an `arguments.length` test or an undefined test applies, on the state the first call left
+        const at = env.trace.length, entry = { args: form.args.length, ...(form.undefinedAt !== undefined ? { undefinedAt: form.undefinedAt } : {}) };
+        if (env.siteState) env.siteState.completed = null;
+        try { Object.assign(entry, await driveCall(env, () => Reflect.apply(fn, self, form.args), ms)); } catch (e) { if (driveStop(e)) throw e; entry.threw = render(e); }
+        withSite(entry, env.siteState?.completed ?? env.siteState?.current?.site ?? null); Object.defineProperty(entry, 'read', { value: form.read });
+        entry.trace = env.trace.slice(at); (rec.omitted ??= []).push(entry);
       }
     }
   } catch (e) { const stop = driveStop(e); if (stop) rec.undriven = stop; else rec.threw = render(e); }
@@ -855,7 +884,7 @@ async function driveOne(env, fn, k, ms) {
   await new Promise((r) => setImmediate(r)); // the drive's own continuations settle inside it
   withSite(rec, env.siteState?.completed ?? env.siteState?.current?.site ?? null); // the statement of the driven function the drive completed at: a witness's line
   if (!rec.undriven) {
-    rec.trace = env.trace.slice(mark);
+    rec.trace = env.trace.slice(mark, omitStart ?? undefined); // the omitted forms' requests are each form's own (rec.omitted)
     const armed = env.pending.slice(pend).map(({ id, ...rest }) => rest); if (armed.length) rec.pending = render(armed);
     if (slots) rec.slots = render(env.hookSlots);
   }
@@ -1998,13 +2027,29 @@ export function firstDifference(a, b, only = null) {
     let i = 0; while (i < Math.max(a.pending.length, b.pending.length) && JSON.stringify(a.pending[i]) === JSON.stringify(b.pending[i])) i++;
     if (a.pending[i]?.site && b.pending[i]?.site) { parentSite = a.pending[i].site; candidateSite = b.pending[i].site; kind = 'pending arm'; }
   }
-  if (where.field === 'drives') { // the first request the two drives differ on, at the statement that made it; else the drive itself
+  const omitted = where.field === 'drives' ? omittedDifference(where.parent, where.candidate) : null;
+  if (omitted) { // the drawn calls agree and a call with a trailing argument left out does not: the statement that reads the parameter left out (driveOne omittedForms); else that call's first differing request, else its completion
+    const [ex, ey] = omitted.entries; const x = ex?.trace ?? [], y = ey?.trace ?? [];
+    let i = 0; while (i < Math.max(x.length, y.length) && JSON.stringify(x[i]) === JSON.stringify(y[i])) i++;
+    if (ex?.read || ey?.read) { parentSite = ex?.read ?? null; candidateSite = ey?.read ?? null; kind = 'drive omitted argument'; }
+    else if (x[i]?.site || y[i]?.site) { parentSite = x[i]?.site ?? null; candidateSite = y[i]?.site ?? null; kind = 'drive effect'; }
+    else { parentSite = ex?.site ?? null; candidateSite = ey?.site ?? null; kind = 'drive completion'; }
+    where.omitted = { index: omitted.index, args: (ex ?? ey).args, ...((ex ?? ey).undefinedAt !== undefined ? { undefinedAt: (ex ?? ey).undefinedAt } : {}) };
+  } else if (where.field === 'drives') { // the first request the two drives differ on, at the statement that made it; else the drive itself
     const x = where.parent?.trace ?? [], y = where.candidate?.trace ?? [];
     let i = 0; while (i < Math.max(x.length, y.length) && JSON.stringify(x[i]) === JSON.stringify(y[i])) i++;
     if (x[i]?.site || y[i]?.site) { parentSite = x[i]?.site ?? null; candidateSite = y[i]?.site ?? null; kind = 'drive effect'; } else { parentSite = where.parent?.site ?? null; candidateSite = where.candidate?.site ?? null; kind = 'drive completion'; }
   }
   where.lines = { kind, parent: siteLines(parentSite), candidate: siteLines(candidateSite) };
   return where;
+}
+// two drive records that agree but for their omitted forms (driveOne omittedForms): the first form they differ on
+function omittedDifference(x, y) {
+  if (!x || !y || (!x.omitted && !y.omitted)) return null;
+  const { omitted: a = [], ...xr } = x, { omitted: b = [], ...yr } = y;
+  if (JSON.stringify(xr) !== JSON.stringify(yr)) return null;
+  let j = 0; while (j < Math.max(a.length, b.length) && JSON.stringify(a[j]) === JSON.stringify(b[j])) j++;
+  return j < Math.max(a.length, b.length) ? { index: j, entries: [a[j] ?? null, b[j] ?? null] } : null;
 }
 const DIFFERENCE_FIELDS = ['outcome', 'heap', 'receiver', 'trace', 'pending', 'drives', 'module'];
 // every field two observations differ on, each located as firstDifference locates the first (design/w8n-all-sites.md):

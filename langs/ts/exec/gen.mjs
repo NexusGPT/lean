@@ -3,6 +3,7 @@ import { makeRng, namePromise } from './fake.mjs';
 import { sampleRegex } from './regex-sample.mjs';
 import { reshaper, familiesOn, familiesAt, applicableFamilies } from './repr.mjs';
 import { fits } from './spec.mjs';
+import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 const STR_EDGE = ['', 'a', 'abc', ' ', 'x y', '0', '-1', 'ÄÖü', '日本', 'a'.repeat(64), 'twelve-chars', 'Hello, World! 2024-01-31 10:30', 'abcdefghijklmnopqrstuvwxyz'.repeat(8), 'line one\nline two', 'null', 'undefined', '  padded  ', 'a,b,c', '/path/to/file.txt', 'user@example.com'];
 const NUM_EDGE = [0, 1, -1, 2, 10, 100, -100, 0.5, 1e9, Number.MAX_SAFE_INTEGER];
@@ -283,6 +284,17 @@ export function inputsFor(spec, seed, i, env) {
   const args = spec.params.map((p, k) => { const v = p.optional && g.rng() < 0.3 ? undefined : g.gen(p.spec, 0, env, `arg${k}`); return g.isListed(p) ? g.listed(p) : v; }); // a listed parameter takes its listed value in the known phase, its declared draw made first
   if (shaper && shaper.on.has('proto-name-key')) spec.params.forEach((p, k) => { if (p.inputKey && typeof args[k] === 'string' && admitsAnyString(p.spec)) args[k] = shaper.keyString(args[k]); }); // a key into an object the caller passes names an Object.prototype member, its declared draw made first; a key of a literal type keeps its member
   const t = changedTurn(spec, i); if (t !== null) reachChanged(args, spec.changed, t, spec.defs ?? {}); // a changed-path input: the changed comparisons' targets after the declared draw
+  return omitTrailing(args, spec.params, i);
+}
+// an optional parameter drawn absent at the end of the list is left out of the call on every other input (odd i), so
+// `arguments.length` is shorter there, and passed as an explicit undefined on the rest (its own boundary: a default
+// applies both ways, the length differs). The choice is by the input's index, no draw: the values every other input
+// draws are unchanged (design/w9af-omitted-args.md). LEAN_BREAK=w9af-omitted-args: always passed
+export function omitTrailing(args, params, i) {
+  if (i % 2 === 0 || broken('w9af-omitted-args')) return args;
+  let k = args.length;
+  while (k > 0 && params[k - 1] && params[k - 1].optional && !params[k - 1].rest && args[k - 1] === undefined) k--;
+  if (k < args.length) args.length = k;
   return args;
 }
 
