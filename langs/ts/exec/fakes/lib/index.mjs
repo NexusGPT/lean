@@ -14,7 +14,7 @@
 // one --break convention LEAN_BREAK=library-fakes (amendment A6), turns every library fake off (the measurement
 // without them, and each test's --break).
 import { requireVendored, manifestOf } from './load.mjs';
-import { declaredRange, admits } from './range.mjs';
+import { declaredRange, compatible } from './range.mjs';
 import { broken } from '../../../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { lodashFor } from './lodash.mjs';
 import { uuidModule } from './uuid.mjs';
@@ -67,14 +67,14 @@ function dateFns(env) {
   } });
 }
 
-// a vendored row answers only for a version the project admits (range.mjs, lane w9bb): the range the nearest package.json
-// above the unit's folder declares for the specifier's package; a range that excludes the vendored version keeps the
-// recording proxy, a range not declared or not read keeps the row. LEAN_BREAK=w9bb-vendored-range: the row at any range
+// a vendored row answers only a range its version is compatible with (range.mjs, lane w9bb): the range the nearest package.json
+// above the unit's folder declares for the specifier's package; a range off the vendored version's major (range.mjs
+// compatible: `^4` for zod 3) keeps the recording proxy, a range not declared or not read keeps the row. LEAN_BREAK=w9bb-vendored-range: the row at any range
 const packageOf = (spec) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]);
 function declaredAdmits(env, spec, pkg) {
   if (broken('w9bb-vendored-range')) return true;
   const range = declaredRange(env.packageRoot, packageOf(spec));
-  return range === null || admits(range, manifestOf(pkg).version) !== false;
+  return range === null || compatible(range, manifestOf(pkg).version) !== false;
 }
 
 export function libraryFake(env, spec) {

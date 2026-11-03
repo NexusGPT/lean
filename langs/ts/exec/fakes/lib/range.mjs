@@ -48,6 +48,23 @@ function inBounds(v, b) {
   if (hi && (hi.le ? cmp(v, hi) > 0 : cmp(v, hi) >= 0)) return false;
   return true;
 }
+// whether the vendored version may answer for the range (lane w9bb): the range admits it, or one of its sets starts on
+// the vendored version's compatibility line (the same major, the same major.minor below 1.0.0), where semver keeps the
+// API: an exact pin `dayjs@1.11.13` is answered by the vendored 1.11.23, `zod@^4.1.11` is not by 3.25.76. null: unread
+export function compatible(range, version) {
+  const a = admits(range, version); if (a !== false) return a;
+  const v = parse(version);
+  const line = (p) => p && p.major === v.major && (v.major > 0 || p.minor === v.minor);
+  return lowerBounds(range).some(line);
+}
+function lowerBounds(range) {
+  return String(range).split('||').flatMap((set) => {
+    const s = set.trim().replace(/\s*-\s+/, ' - ');
+    const hy = /^(\S+) - (\S+)$/.exec(s);
+    const comps = hy ? [['>=', hy[1]]] : s.split(/\s+/).filter(Boolean).map((c) => { const m = /^(\^|~>?|>=|<=|>|<|=)?\s*(.+)$/.exec(c); return [m[1] ?? '', m[2]]; });
+    return comps.filter(([op]) => !op.startsWith('<')).map(([, ver]) => parse(ver)).filter((p) => p && p.major !== null).map(fill);
+  });
+}
 export function admits(range, version) {
   const v = parse(version); if (!v || v.major === null || v.minor === null || v.patch === null) return null;
   const text = String(range ?? '').trim();
