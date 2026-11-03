@@ -253,6 +253,7 @@ export function handedBody(c, { binding, dialect, isAsync, handedParams = null, 
       const forms = [{ args: cut(dv.args), out: dv }, ...(dv.again ?? []).map((x) => ({ args: cut(x.args), out: x })), ...(dv.omitted ?? []).map((x) => ({ args: x.undefinedAt !== undefined ? [...dv.args.slice(0, x.undefinedAt), { $undefined: true }] : dv.args.slice(0, x.args), out: x }))];
       for (const f of forms) {
         calls++;
+        if (holdsWorld(withoutHandles(f.args, shared.spies))) throw refuse('driveWorld', `drive ${dv.$fn}: an argument of lean's world`); // a drawn fake: the world's reason before the type's
         if (params !== 'any' && !driveAdmitted(params, f.args, defs, nullable)) throw refuse('driveType', `drive ${dv.$fn}: arguments the declared parameters do not admit`);
         const ex = `${callee}(${f.args.map((a) => src(a, 'driveWorld')).join(', ')})`, awaited = !!(dv.async || f.out.promise);
         if (Object.hasOwn(f.out, 'threw')) { if (anyHandle(f.out.threw)) throw refuse('thrownHandle', 'a drive threw a function'); body.push(assertThrow(ex, f.out.threw, awaited)); continue; }
