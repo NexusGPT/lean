@@ -615,6 +615,17 @@ function routeCall(env, Cls, member, args, spec, run) {
 }
 
 // one sandbox per side: a module cache, the fakes, the frozen globals
+// The WHATWG event classes every host a program runs on holds with one standard behaviour (Node >= 15, every browser,
+// React Native): `class LegacySyntheticEvent extends Event` (react-native-renderer) loads only where `Event` is defined,
+// and a module that defines one is no less the program's for it. They are Node's own classes, pure of the world but for
+// an event's `timeStamp`, which reads the input's clock (performance.now) as a read of `performance.now()` does, so both
+// sides of a pair read the same instant. design/lib-globals.md keeps the other host names (`navigator`, `location`)
+// absent. LEAN_BREAK=w9bb-platform-events: none of them, `Event is not defined` at the module's load
+function platformEvents(now) {
+  if (broken('w9bb-platform-events')) return {};
+  const timed = (Base) => ({ [Base.name]: class extends Base { get timeStamp() { return now(); } } })[Base.name]; // keeps its name: `Event`, never an anonymous subclass
+  return { Event: timed(Event), EventTarget, CustomEvent: timed(CustomEvent), DOMException };
+}
 export function sandbox(env, root) {
   captureEnvironment(env);
   const cache = new Map();
@@ -652,6 +663,7 @@ export function sandbox(env, root) {
     Error: programConstructor(Error), TypeError: programConstructor(TypeError), RangeError: programConstructor(RangeError), SyntaxError: programConstructor(SyntaxError), ReferenceError: programConstructor(ReferenceError), EvalError: programConstructor(EvalError), URIError: programConstructor(URIError), AggregateError: programConstructor(AggregateError), // an error the unit makes is program-built (fake.mjs programConstructor); one the engine raises is observed by its class alone
     parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,
     globalThis: null, crypto: env.module('crypto'), performance: fakePerformance, React: react,
+    ...platformEvents(performanceNow), // the WHATWG event classes (lane w9bb): Event, EventTarget, CustomEvent, DOMException
     ...behaviouralGlobals(env), // the behavioural fakes' globals (exec/fakes/): fetch as a table of requests, Request, Response, Headers, AbortController on the virtual clock, localStorage as a record; none under LEAN_FAKES=recording
   };
   { const named = bridgeGlobal(env, g); g.globalThis = named; g.global = named; g.window = named; } // the global object by name: a member the host app sets and the sandbox does not (a preload bridge) is the bridge fake (exec/bridge.mjs, design/bridge-fake.md)

@@ -9,6 +9,10 @@
 //                    kills the waiting child (the hard set's 25 `spawnSync /usr/bin/node ETIMEDOUT` units, load 60-117).
 //   w9bb-runner-reason exec/new-unit.mjs runnerReason: a runner that gives no result says why: the bound, its budget and
 //                    the load, or its exit and its stderr's last words. Under the break, `candidate runner exited 1: `.
+//   w9bb-platform-events exec/run.mjs platformEvents: a module whose class extends Event (react#36253's
+//                    LegacySyntheticEvent) loads, and its constructor's changed field is a WITNESS; a dispatch through an
+//                    EventTarget of a CustomEvent is the same on both sides. Under the break: `ASK(platform global): Event
+//                    is not defined` at the load.
 //
 //   node tests/w9bb-hard-ask.mjs           each check green
 //   node tests/w9bb-hard-ask.mjs --break   each check once with its mechanism switched off: every one must be red
@@ -67,6 +71,14 @@ const checks = [
     const reason = await withBreak(m, () => runnerReason(child, { n: 2, ms: 100, seconds: 5 }));
     const ok = /^candidate runner exited 1: Error: Cannot read properties of undefined \(reading 'sandbox'\)$/.test(reason);
     return { ok, detail: JSON.stringify(reason) };
+  }],
+  ['w9bb-platform-events', 'a class extending Event loads; its changed constructor is a WITNESS, an EventTarget dispatch PASS', (m) => {
+    const fx = path.join(here, 'fixtures', 'w9bb-hard-ask');
+    const lean = (unit, cand) => { const r = spawnSync(process.execPath, [path.join(here, '..', 'check.mjs'), '--parent', path.join(fx, 'synthetic-event.js'), '--candidate', path.join(fx, cand), '--unit', unit, '--n', '8', '--no-project', '--dafny-seconds', '5'], { encoding: 'utf8', env: envOf(m), maxBuffer: 1 << 26 }); try { return JSON.parse(r.stdout); } catch { return { verdict: `unparsed (exit ${r.status})`, certificate: { lanes: { B: { reason: String(r.stderr).slice(-300) } } } }; } };
+    const ctor = lean('SyntheticEvent.constructor', 'synthetic-event-swapped.js'), relay = lean('relay', 'synthetic-event-swapped.js');
+    const b = (r) => r.certificate?.lanes?.B ?? {};
+    const ok = b(ctor).verdict === 'WITNESS' && /^PASS/.test(String(b(relay).verdict));
+    return { ok, detail: `constructor: ${b(ctor).verdict}${b(ctor).verdict === 'WITNESS' ? '' : ` ${String(b(ctor).reason).slice(0, 160)}`}; relay: ${b(relay).verdict}${/^PASS/.test(String(b(relay).verdict)) ? '' : ` ${String(b(relay).reason).slice(0, 160)}`}` };
   }],
 ];
 
