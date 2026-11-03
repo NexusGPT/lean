@@ -32,6 +32,17 @@ export function artifactClass(file, text = '') {
 
 const zero = oid => /^0+$/.test(oid);
 
+// One side's bytes read as binary (lane w9bb): a NUL byte anywhere, except in a JavaScript or TypeScript file whose bytes
+// are valid UTF-8. A NUL is a legal character of source text (a string or template literal can hold one raw, n8n's
+// quickjs-bridge.ts does: `${ctorName}\0${...}`); the parser reads the file and git calls it text (its own test reads
+// only the first 8000 bytes). A source file that is not UTF-8 stays binary. LEAN_BREAK=w9bb-source-nul: any NUL is binary
+const utf8 = new TextDecoder('utf-8', { fatal: true });
+export function binaryBytes(file, bytes) {
+  if (!bytes || !bytes.includes(0)) return false;
+  if (broken('w9bb-source-nul') || !/\.[cm]?[jt]sx?$/i.test(file)) return true;
+  try { utf8.decode(bytes); return false; } catch { return true; }
+}
+
 // A move git's rename detection did not pair (design/w9l-bounded-and-moves.md): an added and a deleted source file of the
 // same change pair when they hold the same functions by name, each the other's one best match (the most shared names, no
 // tie), the shared names at least half of the smaller side's. Git pairs by text similarity (at least 50 %), so a move
@@ -73,6 +84,8 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
     const names = m[3] ? [m[3]] : [numstat[i++], numstat[i++]];
     if (m[1] === '-' && m[2] === '-') for (const n of names) gitBinary.add(n);
   }
+  // a path an attribute declares binary or not diffable, at the head (the working tree's attributes for the working tree)
+  const declaredBinary = (name) => /: diff: unset$/m.test(git(repo, ['check-attr', ...(after === 'WORKTREE' ? [] : ['--source', after]), 'diff', '--', name]).toString());
   const files = [], edits = [], sources = new Map();
   let records = [];
   for (let i = 0; i < raw.length && raw[i];) {
@@ -104,13 +117,18 @@ export function buildChangeManifest({ repo, base, head = 'WORKTREE' }) {
       const newBytes = status === 'D' ? null : after === 'WORKTREE' ? fs.readFileSync(path.join(repo, newName)) : git(repo, ['cat-file', 'blob', newOid]);
       file.oldHash = oldBytes === null ? null : hash(oldBytes); file.newHash = newBytes === null ? null : hash(newBytes);
       if (after === 'WORKTREE') file.id = id([file.id, file.oldHash, file.newHash]);
-      if (gitBinary.has(newName) || gitBinary.has(oldName) || oldBytes?.includes(0) || newBytes?.includes(0)) { file.kind = 'binary'; add({ kind: file.kind }); continue; }
+      // git's binary verdict on a source file is its NUL guess (a NUL in the first 8000 bytes) unless an attribute declares
+      // it (`binary`, `-diff`): a source file git only guessed binary whose sides are UTF-8 text is diffed as text (lane w9bb)
+      const gitSays = gitBinary.has(newName) || gitBinary.has(oldName);
+      file.nulText = gitSays && !broken('w9bb-source-nul') && [oldName, newName].every((n) => /\.[cm]?[jt]sx?$/i.test(n)) && !binaryBytes(oldName, oldBytes) && !binaryBytes(newName, newBytes) && ![oldName, newName].some((n) => declaredBinary(n));
+      if (!file.nulText) delete file.nulText;
+      if ((gitSays && !file.nulText) || binaryBytes(oldName, oldBytes) || binaryBytes(newName, newBytes)) { file.kind = 'binary'; add({ kind: file.kind }); continue; }
       const oldText = oldBytes?.toString('utf8') ?? null, newText = newBytes?.toString('utf8') ?? null;
       sources.set(file.id, { old: oldText, new: newText });
       file.class = artifactClass(newName, newText ?? oldText ?? '');
       file.kind = status === 'A' ? 'added' : status === 'D' ? 'deleted' : status === 'R' ? 'rename/move' : file.oldHash === file.newHash && oldMode !== newMode ? 'mode-only' : 'text';
       // Diff by paths against the same trees; no textconv, external diff, or repository diff driver is executed.
-      const patch = pairedBy ? pairedPatch(repo, oldText, newText) : git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', '-M', ...refs, '--', oldName, ...(oldName === newName ? [] : [newName])]).toString(); // a pair git did not make: the two texts diffed as they are
+      const patch = pairedBy ? pairedPatch(repo, oldText, newText) : git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', '-M', ...(file.nulText ? ['--text'] : []), ...refs, '--', oldName, ...(oldName === newName ? [] : [newName])]).toString(); // a pair git did not make: the two texts diffed as they are
       for (const h of patch.matchAll(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm)) {
         const oldSpan = { start: +h[1], count: +(h[2] ?? 1) }, newSpan = { start: +h[3], count: +(h[4] ?? 1) };
         const hunk = { id: id([file.id, oldSpan, newSpan]), old: oldSpan, new: newSpan };

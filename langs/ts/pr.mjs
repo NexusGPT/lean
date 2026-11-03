@@ -25,7 +25,7 @@
 // hash, and the cache keys on it. Without a root file, each unit reads the nearest `.lean/values.json` above its file.
 import fs from 'node:fs';
 import { createRun, registerTask, startTask, commitArtifact, atomicJSON, supervise, reconcileTasks, taskId, materializeSources } from './ci/supervise.mjs';
-import { buildChangeManifest, routeChanges, ledgerRows, ledgerMarkdown, sensitivePath } from './ci/ledger.mjs';
+import { buildChangeManifest, routeChanges, ledgerRows, ledgerMarkdown, sensitivePath, binaryBytes } from './ci/ledger.mjs';
 import { broken } from './break.mjs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -240,8 +240,9 @@ export function selectUnits(changedFiles, opts = {}) {
   });
 }
 
+// --text: a file read here is text by lean's reading (ci/ledger.mjs binaryBytes), git's NUL guess aside
 function changedRanges(repo, base, head, rel, deleted) {
-  const out = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', '--no-renames', base, ...(head === 'WORKTREE' ? [] : [head]), '--', rel]);
+  const out = git(repo, ['diff', '--no-ext-diff', '--no-textconv', '--unified=0', '--no-color', '--no-renames', '--text', base, ...(head === 'WORKTREE' ? [] : [head]), '--', rel]);
   return [...out.matchAll(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/gm)].map((m) => {
     const start = Number(m[deleted ? 1 : 3]), count = Number(m[deleted ? 2 : 4] ?? 1);
     // a hunk of zero lines on this side (lines removed, none added) is the gap after line `start`: it changes a unit only when
@@ -308,7 +309,7 @@ function changedFiles(opts, temps, ledger) {
   const pending = [];
   const entries = names.map((rel) => {
     const frame = ledger.files.find(f => f.file === rel);
-    const entry = { file: rel, binary: frame.kind === 'binary' || binary.has(rel) };
+    const entry = { file: rel, binary: frame.kind === 'binary' || (binary.has(rel) && !frame.nulText) }; // nulText: a source file git only guessed binary (ci/ledger.mjs)
     if (['submodule', 'symlink'].includes(frame.kind)) return entry;
     if (secretPath(rel) || entry.binary || (!CODE.test(rel) && !JS.test(rel))) return entry;
     const abs = path.join(filesRoot ?? repo, rel);
@@ -326,9 +327,9 @@ function changedFiles(opts, temps, ledger) {
       entry.deleted = current === null;
       const bytes = current ?? original;
       if (!bytes) throw new Error('No readable side');
-      if (bytes.includes(0)) return { ...entry, binary: true };
+      if (binaryBytes(rel, bytes)) return { ...entry, binary: true }; // ci/ledger.mjs binaryBytes: a NUL in UTF-8 source is text
       const text = bytes.toString('utf8');
-      if (original && !original.includes(0)) entry.removed = removedUnits(rel, original.toString('utf8'), entry.deleted ? null : text);
+      if (original && !binaryBytes(rel, original)) entry.removed = removedUnits(rel, original.toString('utf8'), entry.deleted ? null : text);
       if (entry.deleted) { // a deleted file has no head side to read: its units are removed rows
         // its module unit and its types unit too, when the ledger routes edits there (common.mjs MODULE_UNIT, TYPES_UNIT): the parent's lines
         for (const name of [MODULE_UNIT, TYPES_UNIT]) {

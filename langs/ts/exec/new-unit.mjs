@@ -6,7 +6,7 @@ import { createRequire, isBuiltin } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFunctions } from '../common.mjs';
-import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
+import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv, boundedChild, stderrCause, inUnitRun } from './run.mjs';
 import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { Environment, BudgetError, render, programBuilt, escapeEntry } from './fake.mjs';
 import { admitted, member, mismatch, declaration, declaredThrow, edgePlan, edgeInput } from './declared.mjs';
@@ -48,8 +48,12 @@ function sourceSpecifier(specifier, options) {
 function resolveModule(specifier, from, options) {
   const found = ts.resolveModuleName(specifier, from, options, ts.sys).resolvedModule;
   // a declared package is provided by the recording environment, without running installed code
-  const packageOf = name => name.startsWith('@') ? name.split('/').slice(0, 2).join('/') : name.split('/')[0];
-  const packageNames = [packageOf(specifier), ...aliasTargets(specifier, options).filter(installedPath).map(target => packageOf(target.split(/node_modules[/\\]/).at(-1)))];
+  const packageOf = name => name.startsWith('@') ? name.split('/').slice(0, 2).join('/') : /^[a-z][\w-]*:/.test(name) && !broken('w9bb-types-declared') ? name.split(':')[0] : name.split('/')[0]; // `bun:sqlite`: the runtime's package, bun
+  // a module the project declares through its types package (lane w9bb): `@types/bun` declares `bun` and `bun:*`,
+  // `@types/vscode` declares `vscode`: a module the host runtime supplies, never installed (DefinitelyTyped's names: `@a/b`
+  // is `@types/a__b`). LEAN_BREAK=w9bb-types-declared: the package's own name only, `Cannot find module 'bun'`
+  const typesOf = name => broken('w9bb-types-declared') ? [] : [`@types/${name.startsWith('@') ? name.slice(1).replace('/', '__') : name}`];
+  const packageNames = [packageOf(specifier), ...aliasTargets(specifier, options).filter(installedPath).map(target => packageOf(target.split(/node_modules[/\\]/).at(-1)))].flatMap(name => [name, ...typesOf(name)]);
   if (!specifier.startsWith('.') && !path.isAbsolute(specifier)) {
     let dir = path.dirname(from);
     for (;;) {
@@ -332,6 +336,18 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
   } finally { env.loading = false; }
 }
 
+// why the new unit's runner gave no result (lane w9bb): the bound lean stopped it at, with what that budget is made of, the
+// CPU and wall time spent and the load; else its exit and the last words of its stderr (a heap's FATAL ERROR, an uncaught
+// error), never an empty `exited 1:`. LEAN_BREAK=w9bb-runner-reason: the spawn's own message and the stdout, as before
+export function runnerReason(child, { n, ms, seconds }) {
+  if (broken('w9bb-runner-reason')) return child.stop ? 'spawnSync ' + process.execPath + ' ETIMEDOUT' : child.error?.message ?? `candidate runner exited ${child.status}: ${child.stdout}`;
+  const s = child.stop;
+  if (s) return `runner-bound: the candidate runner passed its ${s.why} bound of ${s.seconds} s (max(30 s, (n ${n} + ${TRIAL_RUNS} trial runs) x ${ms} ms + 10 s)) after ${s.wallSeconds} s of wall time and ${s.cpuSeconds} s of CPU time, one-minute load ${s.load} on ${s.cores} cores`;
+  if (child.error) return `candidate runner did not start: ${child.error.message}`;
+  const cause = stderrCause(child.stderr);
+  return `candidate runner exited ${child.status ?? child.signal}${cause ? `: ${cause}` : ' with no stderr'}${String(child.stdout ?? '').trim() ? `; stdout: ${String(child.stdout).trim().slice(0, 200)}` : ''}`;
+}
+
 // only proven local linkage failures refuse; evaluation under the simulated world stays undecided
 function loadFailure(base, failure, inputs, bound) {
   const error = failure instanceof LoadFailure ? failure.original : failure;
@@ -356,10 +372,13 @@ export async function runNew(opts) {
   // modules, enabled only for this runner. Only a process that already holds both runs the unit itself (that child)
   if (!vm.SourceTextModule || !process.permission) {
     const box = workerSandbox(opts); // the project's list (sandbox-list.mjs) holds this child as it holds the worker
-    const child = spawnSync(process.execPath, [...workerFlagsFrom(box.flags), '--experimental-vm-modules', here, JSON.stringify({ ...opts, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) })], { encoding: 'utf8', env: workerEnv(), timeout: Math.max(30000, (n + TRIAL_RUNS) * ms + 10000), maxBuffer: 16 * 1024 * 1024 }); // the draws and the parameter trials (lane w9k)
+    // the draws and the parameter trials (lane w9k) bound the runner's CPU time, the paired lane B's rule (run.mjs
+    // boundedChild, lane w9bb); a stop or an exit with no result is ASK with the budget it hit or the child's own last words
+    const seconds = Math.max(30, ((n + TRIAL_RUNS) * ms + 10000) / 1000);
+    const child = await boundedChild(process.execPath, [...workerFlagsFrom(box.flags), '--experimental-vm-modules', here, JSON.stringify({ ...opts, sandboxList: undefined, ...(box.spawn ? { sandboxSpawn: box.spawn } : {}) })], { seconds, env: workerEnv(), maxBuffer: 16 * 1024 * 1024 });
     if (child.stderr) process.stderr.write(child.stderr);
     try { const r = JSON.parse(child.stdout); if (box.entry) r.sandboxList = box.entry(r.sandboxSpawned); delete r.sandboxSpawned; return r; }
-    catch { return { ...base, verdict: 'ASK', reason: child.error?.message ?? `candidate runner exited ${child.status}: ${child.stdout}`, loaded: false, inputs: 0 }; }
+    catch { return { ...base, verdict: 'ASK', reason: runnerReason(child, { n, ms, seconds }), ...(child.stop ? { bound: { ...child.stop, n, ms, trialRuns: TRIAL_RUNS } } : {}), loaded: false, inputs: 0 }; }
   }
   const bound = { n, seed, ms, fakes: 'demand-driven proxies, seeded primitives, frozen clock', inputs: 'from parameter types with boundary values first' };
   if (netMode() === 'deny') denyNetwork(); // the network-denied mode (net-deny.mjs), under the permission model of this child; the result's sandbox entry says what holds it
@@ -874,9 +893,9 @@ export function runNewFile(opts) {
 if (process.argv[1] && path.resolve(process.argv[1]) === here) {
   scrubEnv(); absentOutsideReads();
   const opts = JSON.parse(process.argv[2]);
-  if (!opts.batch) console.log(JSON.stringify(await runNew(opts)));
+  if (!opts.batch) console.log(JSON.stringify(await inUnitRun(() => runNew(opts)))); // the run is the unit's: its late errors are records (run.mjs inUnitRun)
   else {
     let loaded = null; try { loaded = loadProgram(opts.candidate, { project: opts.project ?? true }); } catch { /* each unit says so */ }
-    for (const unit of opts.units) { let r; try { r = await runNew({ ...opts, unit, units: undefined, batch: undefined, ...(loaded ? { loaded } : {}) }); } catch (e) { r = { candidateOnly: true, unit, file: opts.candidate, verdict: 'ASK', reason: `harness: ${String(e?.message ?? e).slice(0, 200)}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: String(e?.message ?? e).slice(0, 200) }] }; } process.stdout.write(JSON.stringify({ ...r, unit }) + '\n'); }
+    for (const unit of opts.units) { let r; try { r = await inUnitRun(() => runNew({ ...opts, unit, units: undefined, batch: undefined, ...(loaded ? { loaded } : {}) })); } catch (e) { r = { candidateOnly: true, unit, file: opts.candidate, verdict: 'ASK', reason: `harness: ${String(e?.message ?? e).slice(0, 200)}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: String(e?.message ?? e).slice(0, 200) }] }; } process.stdout.write(JSON.stringify({ ...r, unit }) + '\n'); }
   }
 }
