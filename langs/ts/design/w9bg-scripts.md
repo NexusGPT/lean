@@ -83,3 +83,27 @@ The bar is the unit's statements (`unitBranches` through `newUnitProbes`), count
   a request is refused, with its reason, by `surfaceOf` and `worldOf`.
 - A body that waits on a timer (a poll loop): the run is refused as armed work, never fired by a fake clock. Lean's
   clock answers and a runner's fake timers would disagree on the instants.
+
+## The file name of a proposed test (`new-test-source-name`)
+
+`pr.mjs` reads a head file from a temporary sibling, `.lean_head_<pid>_<name>`, so relative imports still resolve.
+
+**The defect.** The writer named every proposed test after that copy, file name and import both
+(`./.lean_head_2127728_repro-cloud-session.mjs`). The checkout does not hold that file. So no repository runner could
+run any test lean proposed from the PR path: no `hour.md` has shown "passing in the repository runner" above 0.
+
+**The fix.** `pr.mjs` now passes the file's repository name (`sourceName`) through `check.mjs` (also
+`--source-name`) to `writeNewTest`. `placeOf` names the test after the repository file, and the test imports it by
+that name.
+
+- The self-check still runs beside the copy, with the import rewritten to the copy's name.
+- Under the break, the test is named after the file lean read, as before.
+
+## Seen on the bench: a repository whose runner includes no test beside the script
+
+cline's `apps/vscode/vitest.config.ts` lists explicit `src/` globs in `include`, none over `scripts/`. The checker
+places a proposed test beside its source or in `__tests__` beside it (`test_detect.proposed_path`).
+
+So `npx vitest related --run scripts/repro-cloud-session.mjs` runs no case of a test beside the script, and the
+record never renders (`classes.runner_passed`). This is the checker's placement and the repository's configuration,
+not lean's record. Changing it is the lead's call.
