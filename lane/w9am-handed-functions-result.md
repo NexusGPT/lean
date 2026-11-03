@@ -100,7 +100,14 @@ Result: `18 files, 0 diagnostics`. The `makeAdder` test written under `LEAN_BREA
 - 2 rows: `mergePromptEvidence` "not exported";
 - 1 row: `getPointShadowDepthFn` "no closed call".
 
-So the six get nothing from this lane. Their limit is the world (lane w9al). The run's summary line: see final.md.
+So the six get nothing from this lane. Their limit is the world (lane w9al). The runs' summary lines:
+
+```
+d505769c49 M rendered 0 of 6 (0.0 %), record 0 of 6, completed 6 of 6, wall 60.8 min
+f5d944bacc M rendered 0 of 6 (0.0 %), record 0 of 6, completed 6 of 6, wall 54.7 min
+```
+
+(d505769c49 is the snapshot commit of aee24d2b4b; `hour exit 0 in 3649 s`.)
 
 **The 20 dev NEW units whose census reason was the old combined refusal** ("each holds a value of lean's world or
 hands out a function"). Census: lane w9ai `/root/da-bench/w9ai`, n 60, f5d944bacc. After: the same 12 PRs,
