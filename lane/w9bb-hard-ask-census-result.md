@@ -111,3 +111,24 @@ n8n#42766 listing, ledger alone (`buildChangeManifest`, base 73f7064c..worktree)
 before packages/@n8n/expression-runtime/src/bridge/quickjs-bridge.ts kind=binary edits=1 hunks=[]
 tree packages/@n8n/expression-runtime/src/bridge/quickjs-bridge.ts kind=text edits=44 hunks=[[{"start":9,"count":0},{"start":10,"count":1}],...
 ```
+
+## 4. The six ids with lean alone (check.mjs on own blobless checkouts at the PR commit + mutant.patch; before = 5d6fef8ef1 copy, after = 2e63302f89)
+
+The hard run's checkouts were removed by materialise (no `--keep`); own checkouts under
+`/root/lanes/w9bb-hard-ask-census/co/<id>` (`scripts/fetch.sh`), runs by `scripts/check1.sh` (nice 15, one at a time, each
+started at one-minute load < 40), `--n 30 --seed 1 --dafny-seconds 30`. The batch (`scripts/batch.sh`) waited on the
+load gate (load 45 to 110) and was stopped at its 2-hour limit after three runs; the rest were not run.
+
+| id | before | after |
+|---|---|---|
+| Checkmate#3288~h1 `useSettingsForm` | `ASK` `client/src/Hooks/useSettingsForm.ts: ASK(fake answering at module evaluation): z.email is not a function` | `NEW` |
+| cline#14303~h1 `compressRemoteHelper` | `ASK` `apps/examples/desktop-app/scripts/build-sidecar-bin.ts: ASK(undeclared external package): Cannot find module 'bun'` | not run (batch stopped) |
+| react#36253~h1 `LegacySyntheticEvent.constructor` | not run | not run |
+| three.js#34978~h3 `ClusteredLighting.getNode` | not run | not run |
+| n8n#41805~h1 `N8nSandboxServiceSandbox.recover` | `ASK` `candidate runner exited 1: ` (stderr: `lean: unhandled rejection outside a unit run: Error: Sandbox "N8nSandboxServiceSandbox" failed to start (status: pending)`) | not run |
+| n8n#42766~h1 (listing) | ledger `kind=binary edits=1 hunks=[]` | ledger `kind=text edits=44` (unit listed) |
+
+Each before reproduces the hard run's reason byte-equal. The after side of the unrun ids is shown by each class's fixture
+in `tests/w9bb-hard-ask.mjs` (same construct, red under its break), not on the instance.
+
+Dev count per class: 0 -> not re-measured (the 75 is not run by this lane; every class was 0 on dev before).
