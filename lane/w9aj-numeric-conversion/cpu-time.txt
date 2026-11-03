@@ -1,0 +1,50 @@
+callee_file_literals base exit 0 user 1.21 sys 0.39 wall 4.64 laneB 3 | TOTAL | 3 checks | ALL PASS |
+callee_file_literals tree exit 0 user 1.13 sys 0.34 wall 4.37 laneB 3 | TOTAL | 3 checks | ALL PASS |
+cause_callee_pattern base exit 0 user 1.19 sys 0.36 wall 4.52 laneB 3 | TOTAL | 3 checks | ALL PASS |
+cause_callee_pattern tree exit 0 user 1.18 sys 0.38 wall 4.44 laneB 3 | TOTAL | 3 checks | ALL PASS |
+cause_world_reach base exit 0 user 1.89 sys 0.60 wall 12.16 laneB 5 | TOTAL | 5 checks | ALL PASS |
+cause_world_reach tree exit 0 user 1.95 sys 0.61 wall 12.03 laneB 5 | TOTAL | 5 checks | ALL PASS |
+converted_text base exit 0 user 1.06 sys 0.35 wall 4.12 laneB 3 | TOTAL | 3 checks | ALL PASS |
+converted_text tree exit 0 user 1.28 sys 0.37 wall 4.56 laneB 3 | TOTAL | 3 checks | ALL PASS |
+field_sites base exit 0 user 7.58 sys 1.59 wall 5.75 laneB 0 | TOTAL | 3 checks | ALL PASS |
+field_sites tree exit 0 user 7.67 sys 1.49 wall 5.48 laneB 0 | TOTAL | 3 checks | ALL PASS |
+lane_b_reach base exit 0 user 4.87 sys 1.52 wall 22.84 laneB 15 | TOTAL | 15 checks | ALL PASS |
+lane_b_reach tree exit 0 user 6.10 sys 1.83 wall 110.93 laneB 15 | TOTAL | 15 checks | ALL PASS |
+reach_absent base exit 0 user 8.85 sys 1.48 wall 30.01 laneB 3 | TOTAL | 7 checks | ALL PASS |
+reach_absent tree exit 0 user 9.26 sys 1.49 wall 30.39 laneB 3 | TOTAL | 7 checks | ALL PASS |
+reach_keys base exit 0 user 16.66 sys 2.65 wall 51.76 laneB 11 | TOTAL | 27 checks | ALL PASS |
+reach_keys tree exit 0 user 14.40 sys 2.57 wall 25.23 laneB 11 | TOTAL | 27 checks | ALL PASS |
+reach_lead base exit 0 user 6.64 sys 1.40 wall 5.31 laneB 0 | TOTAL | 4 checks | ALL PASS |
+reach_lead tree exit 0 user 6.58 sys 1.44 wall 5.58 laneB 0 | TOTAL | 4 checks | ALL PASS |
+reach_lead_site base exit 0 user 6.99 sys 1.44 wall 5.66 laneB 0 | TOTAL | 4 checks | ALL PASS |
+reach_lead_site tree exit 0 user 7.09 sys 1.51 wall 6.01 laneB 0 | TOTAL | 4 checks | ALL PASS |
+reach_site base exit 0 user 7.39 sys 1.54 wall 7.39 laneB 0 | TOTAL | 3 checks | ALL PASS |
+reach_site tree exit 0 user 7.89 sys 1.61 wall 11.66 laneB 0 | TOTAL | 3 checks | ALL PASS |
+reach_statements base exit 0 user 7.56 sys 1.66 wall 11.76 laneB 0 | TOTAL | 3 checks | ALL PASS |
+reach_statements tree exit 0 user 7.80 sys 1.67 wall 16.88 laneB 0 | TOTAL | 3 checks | ALL PASS |
+search_boundary base exit 0 user 7.38 sys 1.50 wall 15.83 laneB 1 | TOTAL | 3 checks | ALL PASS |
+search_boundary tree exit 0 user 7.35 sys 1.41 wall 17.81 laneB 1 | TOTAL | 3 checks | ALL PASS |
+search_nested_literals base exit 0 user 6.96 sys 1.35 wall 13.57 laneB 1 | TOTAL | 3 checks | ALL PASS |
+search_nested_literals tree exit 0 user 6.96 sys 1.23 wall 11.21 laneB 1 | TOTAL | 3 checks | ALL PASS |
+three_sites base exit 0 user 7.42 sys 1.66 wall 9.02 laneB 0 | TOTAL | 3 checks | ALL PASS |
+three_sites tree exit 0 user 7.52 sys 1.69 wall 8.40 laneB 0 | TOTAL | 3 checks | ALL PASS |
+world_guard_literal base exit 0 user 0.79 sys 0.25 wall 4.79 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_guard_literal tree exit 0 user 0.79 sys 0.24 wall 5.63 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_guard_path base exit 0 user 0.81 sys 0.21 wall 6.32 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_guard_path tree exit 0 user 0.79 sys 0.25 wall 6.27 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_masked base exit 0 user 0.75 sys 0.22 wall 3.11 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_masked tree exit 0 user 0.73 sys 0.21 wall 2.81 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_masked_infect base exit 0 user 0.72 sys 0.22 wall 3.00 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_masked_infect tree exit 0 user 0.73 sys 0.23 wall 3.40 laneB 1 | TOTAL | 1 checks | ALL PASS |
+world_read_after_call base exit 0 user 78.96 sys 13.75 wall 82.80 laneB 0 | TOTAL | 12 checks | ALL PASS |
+world_read_after_call tree exit 0 user 80.70 sys 13.81 wall 79.13 laneB 0 | TOTAL | 12 checks | ALL PASS |
+conversion_flow base exit 0 user 0.99 sys 0.32 wall 2.99 laneB 2 | TOTAL | 2 checks | 2 FAILED |
+conversion_flow tree exit 0 user 0.86 sys 0.28 wall 3.03 laneB 2 | TOTAL | 2 checks | ALL PASS |
+conversion_round base exit 0 user 0.84 sys 0.27 wall 2.85 laneB 2 | TOTAL | 2 checks | 2 FAILED |
+conversion_round tree exit 0 user 0.95 sys 0.25 wall 3.17 laneB 2 | TOTAL | 2 checks | ALL PASS |
+conversion_world base exit 0 user 0.60 sys 0.17 wall 2.26 laneB 1 | TOTAL | 1 checks | 1 FAILED |
+conversion_world tree exit 0 user 0.59 sys 0.19 wall 2.44 laneB 1 | TOTAL | 1 checks | ALL PASS |
+base: cpu 212.98 s, wall 312.48 s, lane B units 54, cpu per unit 3.944 s
+tree: cpu 215.39 s, wall 380.85 s, lane B units 54, cpu per unit 3.989 s
+ratio cpu per unit tree/base 1.011
+exit 0
