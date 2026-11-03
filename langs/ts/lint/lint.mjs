@@ -2651,8 +2651,12 @@ if (import.meta.url === `file://${process.argv[1]}` || path.resolve(process.argv
   // the findings the opaque column graded in units the translator read: each keeps its rule and message, labelled with its
   // grade; they refuse nothing (design/w1a-opaque-mutation.md)
   if (!strict && !args.includes('--json') && !args.includes('--agent')) { const all = lowerFile(file, ranges, { project }).units.flatMap((u) => (u.opaque ?? []).map((o) => ({ ...o, unit: u.unit }))); const graded = all.filter((o) => o.graded); for (const o of all) console.log(`${file}:${o.line}:${o.col}  ${o.rule}  [opaque: ${o.grade}${o.graded ? '' : '; the unit stops on another refusal'}] ${o.msg}`); if (graded.length) console.log(`${graded.length} graded opaque (the unit is read with an opaque step)`); }
-  if (refusals.length) { if (!args.includes('--json')) console.log(`${refusals.length} violation(s)`); process.exit(1); }
-  if (!args.includes('--json')) console.log(`${file}: inside the subset`);
-  process.exit(0);
+  if (refusals.length) { if (!args.includes('--json')) console.log(`${refusals.length} violation(s)`); }
+  else if (!args.includes('--json')) console.log(`${file}: inside the subset`);
+  // the exit waits for stdout to drain: process.exit right after a large write to a pipe ends the process before the
+  // output is written out, and a reader gets a cut JSON (lane w9aq, tests/w9aq-lint-flush.mjs; LEAN_BREAK=lint-flush exits at once)
+  const code = refusals.length ? 1 : 0;
+  if (broken('lint-flush')) process.exit(code);
+  process.stdout.write('', () => process.exit(code));
 }
 export { directiveRecords, directivesOf } from './directives.mjs'; // directive comments a change adds or removes: rule records (design/w1f-module-units.md)
