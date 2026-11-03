@@ -80,7 +80,8 @@ it as a same-file callee: its parameters bound to the argument chains (a paramet
 - `tests/w9ac-compare-literals.mjs` (`--break`: the three names; a synthetic falsy draw unmasked in part 6): the table's forms, the guide's function ranges, a
   synthetic climb in the three.js shape (guided: three tries; broken: the bound runs out in the deep handles), the pair
   `world_guard_path` through exec/run.mjs, and usage through an import, a namespace member and `super`.
-- Pairs: `world_guard_path` (PASS-bounded on 14b167a8e0 and under `w9ac-compare-literals`, WITNESS after),
+- Pairs: `world_guard_path` (PASS-bounded on 14b167a8e0 and under `w9ac-compare-literals,w9ac-falsy-last`; either
+  mechanism alone reaches it; WITNESS after),
   `world_guard_literal` (the same shape on a plain parameter; WITNESS on both: kept as the shape's regression pair),
   `callee_file_literals` (price and priceOf PASS-bounded on 14b167a8e0 and under `w9ac-callee-files`, WITNESS after;
   priceRefactor PASS-bounded).

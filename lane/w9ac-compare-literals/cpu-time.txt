@@ -1,0 +1,43 @@
+converted_text base exit 0 1.24 0.37 4.19 | TOTAL | 3 checks | ALL PASS |
+converted_text tree exit 0 1.20 0.38 4.38 | TOTAL | 3 checks | ALL PASS |
+field_sites base exit 0 7.78 1.55 5.98 | TOTAL | 3 checks | ALL PASS |
+field_sites tree exit 0 7.57 1.50 5.77 | TOTAL | 3 checks | ALL PASS |
+reach_absent base exit 0 7.56 1.28 10.14 | TOTAL | 7 checks | ALL PASS |
+reach_absent tree exit 0 7.61 1.30 10.28 | TOTAL | 7 checks | ALL PASS |
+reach_keys base exit 0 14.45 2.51 27.56 | TOTAL | 27 checks | ALL PASS |
+reach_keys tree exit 0 15.17 2.67 31.27 | TOTAL | 27 checks | ALL PASS |
+reach_lead base exit 0 6.95 1.54 7.45 | TOTAL | 4 checks | ALL PASS |
+reach_lead tree exit 0 5.94 1.38 5.12 | TOTAL | 4 checks | ALL PASS |
+reach_lead_site base exit 0 5.93 1.36 4.90 | TOTAL | 4 checks | ALL PASS |
+reach_lead_site tree exit 0 6.43 1.37 6.20 | TOTAL | 4 checks | ALL PASS |
+reach_site base exit 0 7.31 1.55 8.40 | TOTAL | 3 checks | ALL PASS |
+reach_site tree exit 0 6.73 1.47 6.00 | TOTAL | 3 checks | ALL PASS |
+reach_statements base exit 0 6.88 1.55 7.76 | TOTAL | 3 checks | ALL PASS |
+reach_statements tree exit 0 6.99 1.60 8.85 | TOTAL | 3 checks | ALL PASS |
+search_boundary base exit 0 6.36 1.30 9.78 | TOTAL | 3 checks | ALL PASS |
+search_boundary tree exit 0 5.58 1.12 6.47 | TOTAL | 3 checks | ALL PASS |
+search_nested_literals base exit 0 5.36 1.05 6.15 | TOTAL | 3 checks | ALL PASS |
+search_nested_literals tree exit 0 5.60 1.14 6.68 | TOTAL | 3 checks | ALL PASS |
+three_sites base exit 0 5.98 1.36 4.95 | TOTAL | 3 checks | ALL PASS |
+three_sites tree exit 0 5.75 1.28 4.80 | TOTAL | 3 checks | ALL PASS |
+world_masked base exit 0 0.68 0.21 2.50 | TOTAL | 1 checks | ALL PASS |
+world_masked tree exit 0 0.72 0.21 2.59 | TOTAL | 1 checks | ALL PASS |
+world_masked_infect base exit 0 0.69 0.20 2.77 | TOTAL | 1 checks | ALL PASS |
+world_masked_infect tree exit 0 0.68 0.21 2.72 | TOTAL | 1 checks | ALL PASS |
+world_read_after_call base exit 0 64.79 11.46 49.31 | TOTAL | 12 checks | ALL PASS |
+world_read_after_call tree exit 0 72.70 12.72 77.27 | TOTAL | 12 checks | ALL PASS |
+world_guard_literal base exit 0 0.71 0.20 2.85 | TOTAL | 1 checks | ALL PASS |
+world_guard_literal tree exit 0 0.71 0.21 2.80 | TOTAL | 1 checks | ALL PASS |
+world_guard_path base exit 1 Command exited with non-zero status 1
+0.73 0.21 10.27 | TOTAL | 1 checks | 1 FAILED |
+world_guard_path tree exit 0 0.71 0.23 2.70 | TOTAL | 1 checks | ALL PASS |
+callee_file_literals base exit 1 Command exited with non-zero status 1
+1.39 0.40 8.39 | TOTAL | 3 checks | 2 FAILED |
+callee_file_literals tree exit 0 1.26 0.41 7.11 | TOTAL | 3 checks | ALL PASS |
+cause_world_reach base exit 0 2.14 0.63 19.82 | TOTAL | 5 checks | ALL PASS |
+cause_world_reach tree exit 0 2.45 0.67 21.79 | TOTAL | 5 checks | ALL PASS |
+cause_callee_pattern base exit 0 1.32 0.38 4.42 | TOTAL | 3 checks | ALL PASS |
+cause_callee_pattern tree exit 0 1.33 0.41 7.77 | TOTAL | 3 checks | ALL PASS |
+lane_b_reach base exit 0 5.50 1.65 34.05 | TOTAL | 15 checks | ALL PASS |
+lane_b_reach tree exit 0 5.97 1.78 43.83 | TOTAL | 15 checks | ALL PASS |
+done
