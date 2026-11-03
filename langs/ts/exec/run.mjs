@@ -2055,8 +2055,23 @@ const DIFFERENCE_FIELDS = ['outcome', 'heap', 'receiver', 'trace', 'pending', 'd
 // every field two observations differ on, each located as firstDifference locates the first (design/w8n-all-sites.md):
 // the first is firstDifference's; a later field counts when it names another candidate statement than every field
 // before it (a heap or receiver difference at the statement the outcome came from adds no place to look)
+// A later drive record that differs is located too (each drive is the call of another function the unit handed out):
+// a difference at the first drive (the PR's own change in one handed-out function) would otherwise hide every later
+// drive's (a changed default of another) on the same input; each counts when it names a new statement, as a field does.
+// LEAN_BREAK=w9af-drive-sites: the first differing drive alone
+function laterDrives(a, b) {
+  if (broken('w9af-drive-sites')) return [];
+  const x = a.drives ?? [], y = b.drives ?? [], out = []; let first = true;
+  for (let i = 0; i < Math.max(x.length, y.length) && out.length < WITNESS_SITES; i++) {
+    if (JSON.stringify(x[i]) === JSON.stringify(y[i])) continue;
+    if (first) { first = false; continue; } // firstDifference's own
+    const w = firstDifference({ drives: x[i] ? [x[i]] : [] }, { drives: y[i] ? [y[i]] : [] }, 'drives');
+    if (w) out.push({ ...w, index: i });
+  }
+  return out;
+}
 export function fieldDifferences(a, b) {
-  const all = DIFFERENCE_FIELDS.map((k) => firstDifference(a, b, k)).filter(Boolean);
+  const all = DIFFERENCE_FIELDS.flatMap((k) => { const w = firstDifference(a, b, k); return !w ? [] : k === 'drives' ? [w, ...laterDrives(a, b)] : [w]; });
   if (['w8n-fields', 'w8n-all-sites'].includes(process.env.LEAN_BREAK)) return all.slice(0, 1); // the second restores the earlier rule whole
   const lineOf = (w) => w.lines?.candidate?.start ?? w.lines?.candidate?.line ?? null, seen = new Set();
   return all.filter((w, j) => { const l = lineOf(w); if (j === 0) { seen.add(l); return true; } if (l === null || seen.has(l)) return false; seen.add(l); return true; });

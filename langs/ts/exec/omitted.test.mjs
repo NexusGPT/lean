@@ -5,7 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ts } from '../common.mjs';
 import { parameterReads } from '../patch.mjs';
-import { omittedForms } from './run.mjs';
+import { omittedForms, fieldDifferences } from './run.mjs';
+import { withSite } from './fake.mjs';
 
 const read = (src) => {
   const sf = ts.createSourceFile('a.ts', src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS), out = {};
@@ -59,4 +60,15 @@ test('the forms: the first call\'s leading arguments, each optional trailing one
 test('LEAN_BREAK=w9af-omitted-drives: no form', () => {
   const was = process.env.LEAN_BREAK; process.env.LEAN_BREAK = 'w9af-omitted-drives';
   try { assert.deepEqual(omittedForms([{ name: 'a', optional: false }, { name: 'b', optional: true }], [1, 2, 3]), []); } finally { if (was === undefined) delete process.env.LEAN_BREAK; else process.env.LEAN_BREAK = was; }
+});
+
+// two handed-out functions whose drives both differ: the second is located too, at its own statement
+const site = (start, text) => ({ file: '/x/candidate.ts', start, end: start, text });
+const drives = (v1, v2) => ({ drives: [withSite({ $fn: '#0', args: [], returned: v1 }, site(3, 'return a + 1;')), withSite({ $fn: '#1', args: [], returned: v2 }, site(9, 'return b * 2;'))] });
+test('a later differing drive is its own difference (LEAN_BREAK=w9af-drive-sites: the first alone)', () => {
+  const a = drives(1, 2), b = drives(5, 6);
+  const lines = (ws) => ws.filter((w) => w.field === 'drives').map((w) => [w.index, w.lines.candidate.start]);
+  assert.deepEqual(lines(fieldDifferences(a, b)), [[0, 3], [1, 9]]);
+  const was = process.env.LEAN_BREAK; process.env.LEAN_BREAK = 'w9af-drive-sites';
+  try { assert.deepEqual(lines(fieldDifferences(a, b)), [[0, 3]]); } finally { if (was === undefined) delete process.env.LEAN_BREAK; else process.env.LEAN_BREAK = was; }
 });

@@ -108,6 +108,7 @@ export const MECHANISMS = {
   'module-await': 'exec/run.mjs sandbox loadInner: a module whose top level awaits is not run as an async body, so its load fails (lane w9o; pair module_await)',
   'programs-share': 'exec/programs.mjs runPrograms maxCpuMs: the method programs of a class unit have no share of the unit\'s CPU bound, so slow commands spend all of it before any draw runs (lane w9o; tests/programs-share.mjs --break, suite row programs-share --break)',
   'w9af-omitted-drives': 'exec/run.mjs omittedForms: a function the unit hands out is driven on its drawn arguments alone, never with a trailing optional argument left out on the first call\'s leading ones (lane w9af; pair omitted_args_returned)',
+  'w9af-drive-sites': 'exec/run.mjs laterDrives: of an input\'s differing drives only the first is located, so an earlier handed-out function\'s difference hides a later one\'s (lane w9af; exec/omitted.test.mjs)',
   'w9af-omitted-args': 'exec/gen.mjs omitTrailing: a unit\'s optional trailing parameter drawn absent is always passed as an explicit undefined, never left out of the call (lane w9af; pair omitted_args_unit)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/

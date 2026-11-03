@@ -36,6 +36,10 @@ Lane B never called a callable with a trailing argument left out, so a change to
 3. `exec/run.mjs firstDifference`. When two drive records agree except in their omitted forms, the witness is
    reported at the statement that reads the parameter left out (kind `drive omitted argument`, `where.omitted`). It
    is its own site (exec/sites.mjs), so a witness at another statement (the PR's own change) does not mask it.
+   Also, every later drive record of the same input that differs is located (`laterDrives`). Before, only the first
+   differing drive was. Each counts when it names a new statement, as a field does (`fieldDifferences`). So a
+   difference in one handed-out function (the PR's own change) no longer hides another's on the same input.
+   `LEAN_BREAK=w9af-drive-sites` restores the first-only rule.
 4. `exec/gen.mjs omitTrailing`. An optional trailing parameter of the unit drawn absent is left out of the call on
    every odd input, and passed as `undefined` on the even ones. The choice depends on the input's index, not on a
    draw.
@@ -44,7 +48,7 @@ Lane B never called a callable with a trailing argument left out, so a change to
 
 - `tests/pairs/omitted_args_returned`: a returned `get(scene, depth = 0)` whose default moves. WITNESS at
   `if (depth >= list.length)`. `LEAN_BREAK=w9af-omitted-drives` gives PASS-bounded.
-- `exec/omitted.test.mjs`: each rule of parameterReads, the read statement, the forms, the break.
+- `exec/omitted.test.mjs`: each rule of parameterReads, the read statement, the forms, both breaks of run.mjs.
 - `tests/pairs/omitted_args_unit`: `scale(value, factor = 2)` (explicit undefined suffices, WITNESS before and after)
   and `pad(text, width?)` testing `arguments.length`. `LEAN_BREAK=w9af-omitted-args` gives PASS-bounded.
 
