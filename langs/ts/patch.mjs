@@ -204,6 +204,40 @@ function formatOpOf(op) {
   return `${at} ${op.kind}`;
 }
 
+// A function's parameters as a caller that leaves trailing arguments out meets them (design/w9af-omitted-args.md): per
+// parameter its name, whether a caller may leave it out (a default value, `?`, a bracketed JSDoc @param, a body that
+// tests it against undefined or null (`===`, `==`, `typeof`, `??`) or reads `arguments`, or a call in the file by the function's name that passes fewer
+// arguments), and the first statement of the body that reads it (in source order,
+// the innermost statement around the read): the line a difference an omitted argument makes is reported at. A rest or
+// destructured parameter is never left out alone (`name` null)
+// per source file, once: each called name (`f(...)`, `x.f(...)`) with the fewest arguments a call of it passes (a call
+// with a spread argument says nothing)
+const fewest = new WeakMap();
+function fewestArguments(ts, sf) {
+  if (fewest.has(sf)) return fewest.get(sf);
+  const out = new Map();
+  const walk = (n) => { if (ts.isCallExpression(n) && !n.arguments.some(ts.isSpreadElement)) { const c = n.expression, k = ts.isIdentifier(c) ? c.text : ts.isPropertyAccessExpression(c) ? c.name.text : null; if (k !== null) out.set(k, Math.min(out.get(k) ?? Infinity, n.arguments.length)); } ts.forEachChild(n, walk); };
+  walk(sf); fewest.set(sf, out); return out;
+}
+export function parameterReads(ts, fn, sf, siteValue) {
+  const usesArguments = (() => { let hit = false; const walk = (n) => { if (hit) return; if (ts.isIdentifier(n) && n.text === 'arguments') { hit = true; return; } if (ts.isFunctionLike(n) && !ts.isArrowFunction(n) && n !== fn) return; ts.forEachChild(n, walk); }; if (fn.body) walk(fn.body); return hit; })();
+  const isRead = (id) => { const p = id.parent; if (!p) return false; if ((ts.isPropertyAccessExpression(p) && p.name === id) || (ts.isPropertyAssignment(p) && p.name === id) || (ts.isVariableDeclaration(p) && p.name === id) || (ts.isParameter(p) && p.name === id) || (ts.isBindingElement(p) && p.name === id) || ts.isTypeReferenceNode(p) || ts.isQualifiedName(p)) return false; return true; };
+  const undefinedTest = (id) => { const p = id.parent; if (ts.isTypeOfExpression(p)) return true; if (ts.isBinaryExpression(p) && p.left === id && p.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken) return true; if (!ts.isBinaryExpression(p) || ![ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken].includes(p.operatorToken.kind)) return false; const o = p.left === id ? p.right : p.left; return (ts.isIdentifier(o) && o.text === 'undefined') || ts.isVoidExpression(o) || o.kind === ts.SyntaxKind.NullKeyword; };
+  const fnName = fn.name && ts.isIdentifier(fn.name) ? fn.name.text : fn.parent && (ts.isVariableDeclaration(fn.parent) || ts.isPropertyAssignment(fn.parent)) && ts.isIdentifier(fn.parent.name) ? fn.parent.name.text : null;
+  const passed = fnName ? fewestArguments(ts, sf).get(fnName) ?? Infinity : Infinity; // the fewest arguments a call of the function's name in the file passes
+  const statementOf = (n) => { let s = n; while (s.parent && s.parent !== fn.body && !(ts.isStatement(s) && (ts.isBlock(s.parent) || ts.isCaseClause(s.parent) || ts.isDefaultClause(s.parent) || ts.isSourceFile(s.parent)))) s = s.parent; return s; };
+  return fn.parameters.map((p, index) => {
+    if (!ts.isIdentifier(p.name) || p.dotDotDotToken) return { name: null, optional: false, read: null };
+    const name = p.name.text; let first = null, tested = false;
+    const walk = (n) => { if (ts.isIdentifier(n) && n.text === name && isRead(n)) { if (!first) first = n; if (undefinedTest(n)) tested = true; } ts.forEachChild(n, walk); };
+    if (fn.body) walk(fn.body);
+    const jsdoc = (() => { try { return ts.getJSDocParameterTags(p).some((t) => t.isBracketed); } catch { return false; } })();
+    const optional = !!p.initializer || !!p.questionToken || jsdoc || tested || usesArguments || index >= passed;
+    const read = first ? (ts.isBlock(fn.body) ? siteValue(statementOf(first)) : siteValue(fn.body)) : null;
+    return { name, optional, ...(p.initializer ? { initializer: p.initializer.getText(sf).slice(0, 80) } : {}), read };
+  });
+}
+
 // Each function keeps its own statement frame. The sandbox reads the active frame.
 // Sites are metadata. They never enter an observation or a function identity.
 export function statementMarks(ts, file, sites, stateName = '__lean_site') {
@@ -216,11 +250,14 @@ export function statementMarks(ts, file, sites, stateName = '__lean_site') {
     const nil = () => f.createNull();
     const table = f.createUniqueName('__lean_sites');
     let sf, frame = null;
-    const site = (node, end = false) => {
+    const siteValue = (node, end = false) => {
       const pos = end ? node.end - 1 : node.getStart(sf);
       const value = { file, start: sf.getLineAndCharacterOfPosition(pos).line + 1, end: sf.getLineAndCharacterOfPosition(node.end - 1).line + 1 };
       Object.defineProperty(value, 'text', { value: sf.text.slice(pos, node.end).slice(0, 200) });
-      const i = sites.length; sites.push(value);
+      return value;
+    };
+    const site = (node, end = false) => {
+      const i = sites.length; sites.push(siteValue(node, end));
       return f.createElementAccessExpression(table, i);
     };
     const mark = (at) => [
@@ -242,10 +279,11 @@ export function statementMarks(ts, file, sites, stateName = '__lean_site') {
         const outer = frame;
         frame = f.createUniqueName('__lean_frame');
         const own = frame, saved = f.createUniqueName('__lean_saved'), error = f.createUniqueName('__lean_error');
-        const body = node.body, end = site(body, ts.isBlock(body));
+        const body = node.body, end = site(body, ts.isBlock(body)), endAt = sites.length - 1;
+        Object.defineProperty(sites[endAt], 'params', { value: parameterReads(ts, node, sf, siteValue) }); // which trailing parameters a caller may leave out, and where each is first read (exec/run.mjs omittedForms)
         const start = [
           declaration(saved, prop(state(), 'current')),
-          declaration(own, f.createObjectLiteralExpression([f.createPropertyAssignment('site', end), f.createPropertyAssignment('savedFault', prop(state(), 'fault'))])),
+          declaration(own, f.createObjectLiteralExpression([f.createPropertyAssignment('site', end), f.createPropertyAssignment('body', f.createElementAccessExpression(table, endAt)), f.createPropertyAssignment('savedFault', prop(state(), 'fault'))])),
         ];
         let statements;
         if (ts.isBlock(body)) statements = body.statements.flatMap(instrument);
@@ -260,6 +298,7 @@ export function statementMarks(ts, file, sites, stateName = '__lean_site') {
           stmt(assign(prop(state(), 'completed'), f.createConditionalExpression(prop(own, 'failed'), undefined, prop(fault, 'site'), undefined, f.createBinaryExpression(prop(own, 'returned'), ts.SyntaxKind.QuestionQuestionToken, prop(own, 'site'))))),
           stmt(assign(fault, f.createConditionalExpression(prop(own, 'failed'), undefined, fault, undefined, prop(own, 'savedFault')))),
           stmt(assign(prop(state(), 'current'), saved)),
+          stmt(assign(prop(state(), 'exited'), own)),
         ], true);
         const wrapped = f.createBlock([...start, f.createTryStatement(f.createBlock([...statements, ...mark(end), stmt(assign(prop(own, 'returned'), nil()))], true), caught, finish)], true);
         // Visit parameters and names too. Their nested functions have their own frames.
