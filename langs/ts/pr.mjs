@@ -563,7 +563,11 @@ async function prWorker(opts) {
     const atCheckout = (entry) => { const real = path.join(opts.filesRoot ?? repo, entry.file); return entry.headFile && real !== entry.headFile && sameBytes(real, entry.headFile) ? real : entry.headFile; };
     const prTests = files.filter((e) => e.headFile && !e.deleted && TEST_FILE.test(e.file)).map(atCheckout);
     const testsKey = prTests.length ? hash(prTests.map((t) => fs.readFileSync(t, 'utf8')).join('\0')) : null; // a row of a unit no parent holds rests on these tests too (its cache key)
-    const newUnitOpts = (entry) => (prTests.length ? { tests: prTests, candidateAlias: atCheckout(entry) } : {});
+    // (lane w9bg) the head is read from a temporary sibling (`.lean_head_<pid>_<name>`): a test lean proposes is named after
+    // the file's repository name and imports it by that name, the file the repository's runner sees.
+    // (exec/new-test.mjs placeOf; LEAN_BREAK=new-test-source-name there: the test is named after the temporary copy, as before)
+    const sourceName = (entry) => (entry.headFile && path.basename(entry.headFile) !== path.basename(entry.file) ? { sourceName: path.basename(entry.file) } : {});
+    const newUnitOpts = (entry) => ({ ...(prTests.length ? { tests: prTests, candidateAlias: atCheckout(entry) } : {}), ...sourceName(entry) });
     // the typed reading (typed.mjs): per changed file read on both sides, whether every file its types can reach emits
     // byte-equal JavaScript; such a file's rows are PASS-typed before any lane runs. A preview runs no reading.
     const compared = files.filter((e) => e.baseFile && e.headFile && !e.deleted && !e.error && !e.binary);

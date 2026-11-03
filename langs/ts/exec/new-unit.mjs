@@ -211,6 +211,7 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
   if (extra.globals) { const g = vm.runInContext('globalThis', host.ctx); for (const [k, v] of Object.entries(extra.globals)) g[k] = v; }
   extra.onContext?.(vm.runInContext('globalThis', host.ctx)); // (lane w9al) a proposed test's stubs set the unit's globals (new-tests.mjs makeMocks)
   const cache = new Map(), fakeNames = new Set(), edges = [];
+  extra.onReset?.(() => { for (const k of [...cache.keys()]) if (k !== path.resolve(file)) cache.delete(k); }); // (lane w9bg) a test's `vi.resetModules()`: every module but the test's own evaluates afresh when next imported
   // external modules keep the recording fakes and React protocol of paired execution
   function fake(specifier, names) {
     fakeNames.add(specifier);
@@ -309,6 +310,15 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
     const mod = moduleFor(file);
     await mod.link(link); // the Node linker checks actual local exports, including re-export chains and cycles
     phase = 'evaluation';
+    // (lane w9bg) a script's body observed as its unit's run (scriptCases): the world answers it as it answers a call,
+    // every request entered among the answers, the body awaited until it settles or waits on work no turn runs
+    if (extra.body) {
+      env.loading = false; if (newProbes) env.siteState.hits = new Set(); // the statements the body completes
+      let state = 0, failure;
+      try { mod.evaluate({ timeout: ms }).then(() => { state = 1; }, (e) => { state = 2; failure = e; }); } catch (e) { state = 2; failure = e; }
+      for (let turn = 0; turn < BODY_TURNS * 4 && !state; turn++) await new Promise((r) => setImmediate(r));
+      return { exports: {}, fakes: [...fakeNames], loadTrace: [], graph: [...cache.keys()], body: state === 1 ? { state: 'fulfilled' } : state === 2 ? { state: 'rejected', error: failure } : { state: 'pending', at: lastWorld(env) } };
+    }
     const evaluation = mod.evaluate({ timeout: ms });
     let body = null; // a body that awaits at its top level: 'pending' (it waits on the world still), or the error it rejected with after its first await
     if (mod.leanAwaitFlag) {
@@ -338,6 +348,44 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
     if (link?.commonjs) throw new LoadFailure(error, { phase, environmentClass: 'CommonJS wrapper', link });
     throw new LoadFailure(error, { phase, ...(link ? { link: { ...link, export: missing[2] } } : { environmentClass: 'module preparation' }) });
   } finally { env.loading = false; }
+}
+
+// ----- (lane w9bg, design/w9bg-scripts.md) a script: a module that exports nothing -----
+// No runner imports a binding of a script, so no test calls its units by name; the module's body is what runs them (a
+// script reads its environment, builds requests and makes them, through the functions it defines). A test of such a unit
+// imports the script itself under the stubs of lean's answers to the body's requests and asserts the requests it made.
+// The cases are the body's own runs: the module evaluated SCRIPT_RUNS times, each in an environment seeded as an input
+// is, the world answering the body as it answers a unit's call (every request entered among its answers, fake.mjs
+// answerOf), the statements of the unit the body's calls complete recorded by the unit's probes.
+// LEAN_BREAK=new-test-script: a script's unit is refused as before (not exported)
+export const SCRIPT_RUNS = 40;
+export function isScript(sf) {
+  for (const st of sf.statements) {
+    if (ts.isExportDeclaration(st) || ts.isExportAssignment(st)) return false;
+    if (ts.canHaveModifiers(st) && (ts.getModifiers(st) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) return false;
+  }
+  let commonjs = false; // `module.exports = …`, `exports.x = …`: a CommonJS module exports through its wrapper
+  const w = (n) => { if (commonjs) return; if (ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression) && (n.expression.text === 'exports' || (n.expression.text === 'module' && n.name.text === 'exports'))) commonjs = true; else ts.forEachChild(n, w); };
+  w(sf);
+  return !commonjs;
+}
+// the body's runs as cases (new-test.mjs writeNewTest `script`): the outcome is the import's (it completed, or the error
+// it rejected with); a body that still waits after its turns (a timer it armed, a promise no answer settles) carries what
+// it waits on as armed work, which no stub fires (worldOf refuses it, with that reason)
+export async function scriptCases({ abs, options, ms, sources, seed, runs = SCRIPT_RUNS }) {
+  const cases = [];
+  for (let i = 0; i < runs; i++) {
+    const env = new Environment(seed * 7919 + i); env.answers = [];
+    let loaded; try { loaded = await loadCandidate(abs, env, options, ms, sources, { body: true }); } catch (e) { return { cases, refused: `the script did not link: ${String(e?.message ?? e).slice(0, 160)}` }; }
+    const b = loaded.body;
+    if (b.state === 'rejected' && (b.error instanceof BudgetError || b.error?.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT')) continue; // lean's bound, not the body's outcome
+    const graph = graphWorld(loaded, sources); // the module graph's world a stub does not answer (a global read without a trap)
+    const pending = [...env.pending.map((x) => x.op), ...(b.state === 'pending' ? [`nothing the body awaits at ${b.at}`] : [])];
+    cases.push({ i, script: true, step: null, args: [], reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: b.state === 'rejected' ? { threw: render(b.error) } : { returned: { $undefined: true } }, drives: [], thenable: true, sync: false,
+      world: { answers: env.answers, trace: env.trace.map(({ op, path: p, args }) => ({ op, path: p, args })), pending, graph } });
+    env.answers = null;
+  }
+  return { cases };
 }
 
 // why the new unit's runner gave no result (lane w9bb): the bound lean stopped it at, with what that budget is made of, the
@@ -543,7 +591,10 @@ export async function runNew(opts) {
   // (new-unit tests) a test for the unit from its closed calls: the record new:proposed-test, or a coverage record naming why none
   if (!broken('new-test')) {
     let proposed;
-    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, handedParams: spec.handedParams ?? null, nullable, cases, specifiers: [...fakes].filter((f) => !/^(?:module|global):/.test(f)), statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
+    try {
+      const exported = exportKind(reading, unit);
+      const script = exported === false && !broken('new-test-script') && isScript(reading.sf) ? await scriptCases({ abs, options, ms, sources, seed, runs: Math.min(n, SCRIPT_RUNS) }) : null; // (lane w9bg) the body's runs are the unit's cases
+      proposed = await writeNewTest({ candidate: abs, sourceName: opts.sourceName ?? null, unit, spec: { ...spec, exported }, script, decl, declared, handedParams: spec.handedParams ?? null, nullable, cases, specifiers: [...fakes].filter((f) => !/^(?:module|global):/.test(f)), statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
     catch (e) { proposed = { kind: 'new:coverage', phase: 'test', reason: `the test writer failed: ${String(e?.message ?? e).slice(0, 200)}` }; }
     if (proposed) book.add(proposed, `${proposed.kind} proposed`);
   }
@@ -681,6 +732,10 @@ function declarationRecord(decl, reach, nullable, edges) {
 // LEAN_BREAK=real-buffer reads it as a handle again)
 const HANDLE_GLOBALS = ['window', 'globalThis', 'global', 'self', 'document', 'navigator', 'location', 'localStorage', 'sessionStorage', 'process', 'fetch', 'crypto', 'performance', 'require', 'module', 'exports'];
 const worldGlobal = (name) => HANDLE_GLOBALS.includes(name) || (name === 'Buffer' && broken('real-buffer'));
+// (lane w9bg) `process.env.NAME` (or `process.env[k]`): a member read of the environment, a trap that answers the
+// variable (fake.mjs, process model), which a test stubs by its value (new-test.mjs surfaceOf `env`); the global named
+// so is no world value read without a trap. LEAN_BREAK=new-test-env: every naming of process is world, as before
+const envRead = (n) => !broken('new-test-env') && n.text === 'process' && ts.isPropertyAccessExpression(n.parent) && n.parent.expression === n && n.parent.name.text === 'env' && (ts.isPropertyAccessExpression(n.parent.parent) || ts.isElementAccessExpression(n.parent.parent)) && n.parent.parent.expression === n.parent;
 // the reads loading made past the linker's own (the linker reads each name it binds once, `get module:<package>.<name>`):
 // a second read, a call or anything else at load is the program asking the world
 function loadReads(loaded, faked) {
@@ -786,7 +841,7 @@ function unitWorld(reading, unit, loaded, options = null) {
       if (ts.isIdentifier(n) && !bindsName(n) && !inType(n)) {
         const member = memberName(n);
         let sym; try { sym = checker.getSymbolAtLocation(n); } catch { sym = undefined; }
-        if (!sym) { if (!member && worldGlobal(n.text)) out.push(`names ${n.text} (${at(n)})`); }
+        if (!sym) { if (!member && worldGlobal(n.text) && !envRead(n)) out.push(`names ${n.text} (${at(n)})`); }
         else if (sym.flags & ts.SymbolFlags.Alias) {
           if (!member || ts.isPropertyAccessExpression(n.parent)) {
             const imp = sym.declarations?.[0]; let decl = imp; while (decl && !ts.isImportDeclaration(decl) && !ts.isExportDeclaration(decl) && !ts.isImportEqualsDeclaration(decl)) decl = decl.parent;
@@ -809,7 +864,7 @@ function unitWorld(reading, unit, loaded, options = null) {
         } else {
           for (const d of sym.declarations ?? []) {
             const df = d.getSourceFile();
-            if (!sourceOf(df)) { if (!member && worldGlobal(n.text)) out.push(`names ${n.text} (${at(n)})`); continue; } // a global the platform declares
+            if (!sourceOf(df)) { if (!member && worldGlobal(n.text) && !envRead(n)) out.push(`names ${n.text} (${at(n)})`); continue; } // a global the platform declares
             if (df !== f) enqueue(rootOf(d)); // a member of another file's class, a value of another file
             else if (!member && taintOf(df).has(n.text) && rootOf(d) && ts.isSourceFile(rootOf(d).parent) && !trapUse(n)) out.push(`a package binding \`${n.text}\` is read without a trap (${at(n)})`);
           }
@@ -871,7 +926,7 @@ function graphWorld(loaded, sources, runner = new Set()) {
         const isName = p && ((ts.isPropertyAccessExpression(p) && p.name === n) || (ts.isPropertyAssignment(p) && p.name === n) || ts.isPropertyDeclaration(p) || ts.isMethodDeclaration(p) || ts.isImportSpecifier(p) || ts.isImportClause(p) || ts.isNamespaceImport(p) || (ts.isExportSpecifier(p) && p.propertyName === n && false));
         const binds = p && (ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isFunctionDeclaration(p) || ts.isClassDeclaration(p) || ts.isBindingElement(p)) && p.name === n;
         if (binds) declared.add(n.text);
-        else if (!isName && worldGlobal(n.text)) named.add(n.text);
+        else if (!isName && worldGlobal(n.text) && !envRead(n)) named.add(n.text);
         if (!isName && !binds && tainted.has(n.text)) {
           const traps = (ts.isCallExpression(p) && p.expression === n) || (ts.isPropertyAccessExpression(p) && p.expression === n) || (ts.isElementAccessExpression(p) && p.expression === n) || (ts.isNewExpression(p) && p.expression === n) || (ts.isTaggedTemplateExpression(p) && p.tag === n);
           const initialiser = ts.isVariableDeclaration(p) && p.initializer === n && ts.isVariableStatement(p.parent?.parent) && p.parent.parent.parent === sf; // a module constant that is the binding itself: tainted in turn, its own uses read
