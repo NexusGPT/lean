@@ -44,6 +44,25 @@ lane's result file.
 Determinism: the table is syntax, the guide a function of the run's frames, the order the climb's; both sides run under
 one world recipe as before. `LEAN_BREAK=w9ac-compare-literals` removes the guided moves (the climb is w9l's).
 
+## A difference a truth test erases: falsy last, unmask first (run.mjs infectionOf, search.mjs searchWorld)
+
+With the callee read for the draws (below), the draw of `name` follows the base's `name || ('nodeUniform' + index)`
+truth test, and the one draw that infects at n=30 (input 14) hands `''` on the parent and `null` on the mutant. The
+values differ, so the w9l search counted it infected and climbed it, but `'' || x` and `null || x` are one value: no
+world propagates it, and the climb spent the budget. The rule:
+
+- **Falsy.** An infection whose every differing value pair is falsy on both sides (`null`, `undefined`, `''`, `0`,
+  `-0`, `NaN`, `false`, `0n`, as `seenValue` writes them) is `falsy`. Such a draw is not climbed while another start
+  remains; a draw a leaf change infects that way waits too.
+- **Unmask.** When the queue is empty, each waiting draw's leaf changes that replace a falsy primitive (`changesOf`
+  marks them `fromFalsy`) with a truthy value its declared type admits are run, by tier, within the infection's half of
+  the budget (shared with the tier-0 infection). A run whose infection is no longer falsy is climbed. Then the tier-0
+  infection as before; then the waiting draws themselves.
+
+On the id: unmask sets `name` from `''` to `"bufferx"` (one try), and the guided climb reaches the witness in ten more
+(the parent registers the uniform `"bufferx"`, the mutant `nodeUniform<n>`). `LEAN_BREAK=w9ac-falsy-last` climbs the
+draws in their order and never unmasks.
+
 ## The draws: a callee in another local file (exec/usage.mjs `declaredFn`)
 
 The draw-domain half of the brief, checked: the unit's own literals (spec.mjs `strings`/`literals`), the comparisons the
@@ -58,7 +77,7 @@ it as a same-file callee: its parameters bound to the argument chains (a paramet
 
 ## Checks
 
-- `tests/w9ac-compare-literals.mjs` (`--break`: both names): the table's forms, the guide's function ranges, a
+- `tests/w9ac-compare-literals.mjs` (`--break`: the three names; a synthetic falsy draw unmasked in part 6): the table's forms, the guide's function ranges, a
   synthetic climb in the three.js shape (guided: three tries; broken: the bound runs out in the deep handles), the pair
   `world_guard_path` through exec/run.mjs, and usage through an import, a namespace member and `super`.
 - Pairs: `world_guard_path` (PASS-bounded on 14b167a8e0 and under `w9ac-compare-literals`, WITNESS after),

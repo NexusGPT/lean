@@ -10,7 +10,10 @@
 // 4. The pair world_guard_path through exec/run.mjs: WITNESS (source: world), PASS-bounded under the break.
 // 5. usage.mjs reads a callee of another local file (a named import, a namespace member, a base method through super):
 //    the literals it compares the unit's arguments against are the parameter's (and the property path's) compares.
-// --break: LEAN_BREAK=w9ac-compare-literals,w9ac-callee-files: parts 3, 4 and 5 fail.
+// 6. searchWorld with the one infected draw falsy on both sides ('' against null, which `x || d` erases): it waits, a
+//    leaf it holds falsy is set truthy (unmask), and the unmasked draw is climbed; broken, the falsy draw is climbed
+//    into the deep handles and the bound runs out.
+// --break: LEAN_BREAK=w9ac-compare-literals,w9ac-callee-files,w9ac-falsy-last: parts 3 to 6 fail.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -24,7 +27,7 @@ import { loadProgram } from '../common.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url)), lean = path.join(here, '..');
 const BREAK = process.argv.includes('--break');
-if (BREAK) process.env.LEAN_BREAK = [process.env.LEAN_BREAK, 'w9ac-compare-literals', 'w9ac-callee-files'].filter(Boolean).join(',');
+if (BREAK) process.env.LEAN_BREAK = [process.env.LEAN_BREAK, 'w9ac-compare-literals', 'w9ac-callee-files', 'w9ac-falsy-last'].filter(Boolean).join(',');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'w9ac-'));
 let checks = 0;
 const ok = (c, m) => { assert.ok(c, m); checks++; };
@@ -115,6 +118,25 @@ const ok = (c, m) => { assert.ok(c, m); checks++; };
   ok(lits(p.params[0].node).includes('gold') && lits(p.params[0].node).includes('silver'), `a named import: its switch case and its comparison (${JSON.stringify(p.params[0].node.compares)})`);
   ok(lits(o.params[0].node.fields.tier).includes('gold'), `a namespace member, through order.tier (${JSON.stringify(o.params[0].node.fields.tier?.compares ?? null)})`);
   ok(lits(r.params[0].node).includes('bulk'), `a base method through super (${JSON.stringify(r.params[0].node.compares)})`);
+}
+
+// 6. a falsy infection: unmask first
+{
+  const run = async (recipe, w) => {
+    const m = new Map(w), unmasked = recipe.changes.some((c) => c.fromFalsy), infected = recipe.from === 0;
+    const answered = [{ path: 'a', kind: m.get('a') ?? 'null' }];
+    const base = { answered, infected, at: 0, ...(infected && !unmasked ? { falsy: true } : {}) };
+    if (answered[0].kind !== 'fake') return { status: 'equal', ...base, ran: 2, threw: true };
+    if (unmasked) return { status: infected ? 'diff' : 'equal', ...base, ran: 9, threw: false };
+    let p = 'a.b', ran = 4; // '' and null both give the default: the world can only read on
+    for (let d = 0; d < 16; d++, p += '.b') { const kind = m.get(p) ?? 'undefined'; answered.push({ path: p, kind }); ran += 2; if (kind !== 'fake') return { status: 'equal', ...base, ran, threw: true }; }
+    return { status: 'equal', ...base, ran, threw: false };
+  };
+  const starts = [0, 1].map((i) => ({ recipe: { from: i, changes: [] }, answered: [{ path: 'a', kind: 'null' }], ran: 2, threw: true, infected: i === 0, at: 0, ...(i === 0 ? { falsy: true } : {}) }));
+  const changes = async () => [{ at: [3], op: 'set', value: 'x', tier: 1, fromFalsy: true }];
+  const r = await searchWorld({ seed: 1, starts, run, changes, maxInputs: 30, maxMs: 60_000 });
+  ok(r.stop === 'divergence' && r.recipe?.changes?.length === 1 && JSON.stringify(r.world) === JSON.stringify([['a', 'fake']]), `the falsy draw waits, a falsy leaf set truthy infects it for good, then one move (${r.stop}, ${JSON.stringify(r.recipe ?? null)}, ${JSON.stringify(r.world ?? null)})`);
+  ok(r.tried <= 4, `within four tries (${r.tried})`);
 }
 
 console.log(`w9ac-compare-literals: ${checks} checks pass${BREAK ? ' (--break: expected to fail)' : ''}`);

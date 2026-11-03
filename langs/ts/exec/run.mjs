@@ -90,6 +90,8 @@ const leanMarks = (file) => (context) => {
 // A file is compiled once per source text. Each sandbox receives its own marker.
 const siteCompiles = new Map();
 // the guards of a compiled file (compared.mjs comparedTable), read once, when a world search first asks for them
+// the falsy values as search.mjs seenValue writes them
+const FALSY_SEEN = new Set(['null', 'undefined:undefined', 'string:', 'number:0', '-0', 'number:NaN', 'boolean:false', '0n']);
 const comparedOfFile = (abs) => { const c = siteCompiles.get(abs); return c ? (c.compared ??= comparedTable(c.src, abs)) : null; };
 // the class-field emit mode is the file's own (common.mjs fileClassFieldsDefine, the rule lane A reads from its program):
 // its project's, the run's --project, or lean's single-file options under --no-project
@@ -1649,7 +1651,10 @@ async function runPairOnce(opts) {
     if (JSON.stringify(P.values) === JSON.stringify(C.values)) return { infected: false, at: null };
     let j = 0; while (j < P.values.length && j < C.values.length && P.values[j] === C.values[j]) j++;
     const atOf = (S) => (j < S.valueAt.length ? S.valueAt[j] : Infinity); // a side with no value there: the other side computed it
-    return { infected: true, at: Math.min(atOf(P), atOf(C)) };
+    // falsy (design/w9ac-compare-literals.md): the sides computed as many values and each pair that differs is falsy on
+    // both sides ('' against null): a truth test or `x || d` erases it, so the world search climbs such a draw last
+    const falsy = P.values.length === C.values.length && P.values.every((v, k) => v === C.values[k] || (FALSY_SEEN.has(v) && FALSY_SEEN.has(C.values[k])));
+    return { infected: true, at: Math.min(atOf(P), atOf(C)), ...(falsy ? { falsy: true } : {}) };
   };
   const drawHits = []; // per input that ran on both sides: the target branches it reached (the search's start)
   const hitsOf = (sides) => new Set([...sides.parent.env.siteState.hits, ...sides.candidate.env.siteState.hits]);

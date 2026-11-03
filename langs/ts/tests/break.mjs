@@ -109,6 +109,7 @@ export const MECHANISMS = {
   'programs-share': 'exec/programs.mjs runPrograms maxCpuMs: the method programs of a class unit have no share of the unit\'s CPU bound, so slow commands spend all of it before any draw runs (lane w9o; tests/programs-share.mjs --break, suite row programs-share --break)',
   'w9ac-compare-literals': 'exec/search.mjs searchWorld worldMoves: a climb no longer tries first the answers the functions a run entered compare a read against (exec/compared.mjs), only the moves its position order gives (lane w9ac; tests/w9ac-compare-literals.mjs, pair world_guard_path)',
   'w9ac-callee-files': 'exec/usage.mjs declaredFn: a callee in another local file (an import, a namespace member, a base method through super) is not read, so the literals it compares the unit\'s arguments against are not drawn (lane w9ac; tests/w9ac-compare-literals.mjs, pair callee_file_literals)',
+  'w9ac-falsy-last': 'exec/search.mjs searchWorld: the infected draws are climbed in their order alone, a draw whose every differing value is falsy on both sides (run.mjs infectionOf) not last (lane w9ac; tests/w9ac-compare-literals.mjs)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';
