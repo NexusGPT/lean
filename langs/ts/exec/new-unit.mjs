@@ -167,7 +167,8 @@ export function handedDraws(env, handedParams) {
 }
 // The callbacks a call was handed: every function argument lean drew is a fake (gen.mjs `function`: a path ending `#fn`),
 // and a call of it is a request of the world, so such a call is not closed. When every request the call made is a call
-// of one of them, on arguments that print as values, and each answer wrote nothing into what it was handed, the call is
+// of one of them, on arguments that print as values and hold no function of the unit's (lean's fake runs a function it is
+// handed, a spy does not), and each answer wrote nothing into what it was handed, the call is
 // a case a test restates with a spy per callback that answers what lean's fake answered, in call order, and asserts the
 // calls (new-test.mjs). The case is the test's alone: it is not a closed call, so no other fact of the unit reads it.
 // null: some request is not such a call. LEAN_BREAK=new-test-callbacks: no callback case
@@ -186,6 +187,7 @@ export function callbackCalls(shown, trace, env) {
   const calls = new Map(paths.map((p) => [p, []])), seen = new Map();
   for (const t of trace) {
     if (t.op !== 'call' || !calls.has(t.path)) return null;
+    if (JSON.stringify(t.args ?? []).includes('"$fn"')) return null; // the unit hands the callback a function: lean's fake runs it, a spy would not
     const k = (seen.get(t.path) ?? 0) + 1; seen.set(t.path, k);
     const a = env.callAnswers?.get(`${t.path}()#${k}`);
     if (!a || a.wrote) return null;

@@ -215,7 +215,7 @@ export function handedBody(c, { binding, dialect, isAsync, handedParams = null, 
       post.push(`expect(${name}).toHaveBeenCalledTimes(${cb.calls.length});`, ...cb.calls.map((x, j) => `expect(${name}).toHaveBeenNthCalledWith(${[j + 1, ...argsOf(x)].join(', ')});`));
     } else {
       const t = typed ? ': unknown[]' : ''; // a TypeScript test under noImplicitAny
-      pre.push(`const ${name}Calls${typed ? ': unknown[][]' : ''} = [];`, `const ${name} = (...args${t}) => { ${name}Calls.push(args);${answers.length ? ` return [${answers.join(', ')}][${name}Calls.length - 1];` : ''} };`);
+      pre.push(`const ${name}Calls${typed ? ': unknown[][]' : ''} = [];`, `const ${name} = (...args${t})${typed && !answers.length ? ': any' : ''} => { ${name}Calls.push(args);${answers.length ? ` return [${answers.join(', ')}][${name}Calls.length - 1];` : ''} };`); // a spy never called answers nothing: in TypeScript it stands for any callback type
       post.push(`assert.deepStrictEqual(${name}Calls, [${cb.calls.map((x) => `[${argsOf(x).join(', ')}]`).join(', ')}]);`);
     }
   }
@@ -237,7 +237,7 @@ export function handedBody(c, { binding, dialect, isAsync, handedParams = null, 
   if (Object.hasOwn(c.outcome, 'threw')) {
     if (c.drives.length || anyHandle(c.outcome.threw)) throw refuse('thrownHandle', 'a thrown value that holds a function');
     body.push(assertThrow(call, c.outcome.threw, isAsync));
-  } else if (!c.drives.length) {
+  } else if (!c.drives.length && !anyHandle(c.outcome.returned)) {
     body.push(...assertValue(isAsync ? `await ${call}` : call, c.outcome.returned));
   } else {
     body.push(`const out = ${isAsync ? 'await ' : ''}${call};`, ...assertValue('out', c.outcome.returned));
