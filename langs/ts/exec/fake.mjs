@@ -204,7 +204,7 @@ export class Environment {
     const d = depthOf(path);
     let v;
     const set = d === 0 ? undefined : this.worldSet?.get(path); // a world recipe's answer: one of the same menu, on both sides alike
-    if (set !== undefined) v = set === 'fake' ? this.fake(path) : WORLD_VALUES[set]();
+    if (set !== undefined) v = set === 'fake' ? this.fake(path) : set.startsWith('lit:') ? JSON.parse(set.slice(4)) : WORLD_VALUES[set](); // `lit:<json>`: a literal a guard compares the read against (exec/compared.mjs), outside the menu
     else if (d === 0 || u < 0.55) v = this.fake(path);
     else if (u < 0.65) v = null;
     else if (u < 0.72) v = undefined;

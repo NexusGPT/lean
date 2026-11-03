@@ -33,6 +33,7 @@ import { runNew } from './new-unit.mjs';
 import { Graph, isNode } from './graph.mjs';
 import { startRecording, stopRecording, addRealm, summarizeRecords } from './transitions.mjs';
 import { witnessPatch, statementMarks } from '../patch.mjs';
+import { comparedTable, guideOf } from './compared.mjs';
 import { descriptorsOf, interpretFire, newHandlerStats } from './handlers-interp.mjs';
 import { annotateWitness } from './callees.mjs';
 import { decoratorTable } from '../decorators.mjs';
@@ -88,6 +89,8 @@ const leanMarks = (file) => (context) => {
 
 // A file is compiled once per source text. Each sandbox receives its own marker.
 const siteCompiles = new Map();
+// the guards of a compiled file (compared.mjs comparedTable), read once, when a world search first asks for them
+const comparedOfFile = (abs) => { const c = siteCompiles.get(abs); return c ? (c.compared ??= comparedTable(c.src, abs)) : null; };
 // the class-field emit mode is the file's own (common.mjs fileClassFieldsDefine, the rule lane A reads from its program):
 // its project's, the run's --project, or lean's single-file options under --no-project
 let fieldsProject = true;
@@ -1636,6 +1639,9 @@ async function runPairOnce(opts) {
   const worldStarts = []; // per input that ran on both sides: its draw, the world answers it consumed, whether the change infected it (the world search's start)
   const threwOf = (oP, oC) => !!(oP.outcome && Object.hasOwn(oP.outcome, 'threw')) || !!(oC.outcome && Object.hasOwn(oC.outcome, 'threw'));
   const ranOf = (sides) => (sides.parent.env.siteState.ran?.() ?? 0) + (sides.candidate.env.siteState.ran?.() ?? 0);
+  // the guide of a run (compared.mjs): the literals the functions it entered on either side compare a read against; a
+  // frame's site is a statement of its own function (patch.mjs statementMarks)
+  const guideRunOf = (sides) => { const sites = new Map(); for (const s of [sides.parent, sides.candidate]) for (const f of s.env.siteState.frames?.() ?? []) { const x = f.site; if (x && x.file) sites.set(`${x.file}:${x.start}:${x.end}`, x); } return guideOf(sites.values(), comparedOfFile); };
   const answeredOf = (sides) => { const seen = new Set(), out = []; for (const s of [sides.parent, sides.candidate]) for (const a of s.env.answered) if (!seen.has(a.path)) { seen.add(a.path); out.push(a); } return out; };
   // infected: the changed lines' values differ between the sides; at: how many world answers the sides had consumed when the first differing value was computed
   const infectionOf = (sides) => {
@@ -1677,7 +1683,7 @@ async function runPairOnce(opts) {
       env.trace.length = 0; env.pending.length = 0; env.calls.clear(); // what the module did while loading is not the unit's behaviour
       if (probes) env.siteState.hits = new Set(); // the branches the call reaches, not the load
       env.answered.length = 0; env.worldSet = world?.length ? new Map(world) : null; if (probes) { env.siteState.values = []; env.siteState.valueAt = []; }
-      if (wPlan) { let at = env.siteState.current, ran = 0; Object.defineProperty(env.siteState, 'current', { get: () => at, set: (v) => { at = v; ran++; }, enumerable: true, configurable: true }); env.siteState.ran = () => ran; } // the statements the call runs, every loaded file (each statement mark sets current): how far a world search's run got // the world answers and the changed lines' values of the call, not the load; a world recipe's answers (search.mjs searchWorld)
+      if (wPlan) { let at = env.siteState.current, ran = 0; const frames = new Set(); Object.defineProperty(env.siteState, 'current', { get: () => at, set: (v) => { at = v; ran++; if (v && frames.size < 4096) frames.add(v); }, enumerable: true, configurable: true }); env.siteState.ran = () => ran; env.siteState.frames = () => frames; } // the statements the call runs, every loaded file (each statement mark sets current): how far a world search's run got // the world answers and the changed lines' values of the call, not the load; a world recipe's answers (search.mjs searchWorld)
       let inputs;
       captureActive(env, false);
       try { inputs = plan.draw(i, env); } catch (e) { if (e instanceof BudgetError) { harnessAsk = `input ${i}: budget: ${e.message}`; break; } throw e; }
@@ -1734,7 +1740,7 @@ async function runPairOnce(opts) {
     if (stopped) { reached.guard++; firstGuard ??= oP.outcome.threw; } else reached.body++;
     if (knownRun && knownInput(spec, i)) { knownRun.inputs++; if (!stopped) knownRun.body++; }
     if (probes) drawHits.push({ input: i, hits: hitsOf(sides) });
-    if (wPlan) worldStarts.push({ recipe: { from: i, changes: [] }, answered: answeredOf(sides), ran: ranOf(sides), threw: threwOf(oP, oC), ...infectionOf(sides) });
+    if (wPlan) { const inf = infectionOf(sides); worldStarts.push({ recipe: { from: i, changes: [] }, answered: answeredOf(sides), ran: ranOf(sides), threw: threwOf(oP, oC), ...inf, ...(inf.infected ? { guide: guideRunOf(sides) } : {}) }); } // a climb starts only from an infected input: its guide is read for it alone
     const sP = JSON.stringify(oP), sC = JSON.stringify(oC);
     if (sP !== sC) {
       const undecided = undecidedDrives(oP, oC); // the sides differ only from a drive that could not run on: undecided, never a difference (design/callbacks.md)
@@ -1799,7 +1805,7 @@ async function runPairOnce(opts) {
     const statusOf = ({ sides, oP, oC }) => { if (oP.harness || oC.harness || oP.impure || oC.impure) return 'skip'; if (JSON.stringify(oP) === JSON.stringify(oC)) return 'equal'; return undecidedDrives(oP, oC) || unloadableOnly(oP, oC, sides) ? 'equal' : 'diff'; };
     const run = async (recipe, world) => {
       const a = await pairOf(recipe, world); if (!a) return { status: 'skip', answered: [], ran: 0, threw: false, infected: false, at: null };
-      const status = statusOf(a), seen = { answered: answeredOf(a.sides), ran: ranOf(a.sides), threw: threwOf(a.oP, a.oC), ...infectionOf(a.sides) };
+      const status = statusOf(a), seen = { answered: answeredOf(a.sides), ran: ranOf(a.sides), threw: threwOf(a.oP, a.oC), ...infectionOf(a.sides), guide: guideRunOf(a.sides) };
       if (status !== 'diff') return { status, ...seen };
       const b = await pairOf(recipe, world); // the replay
       if (!b || JSON.stringify(b.oP) !== JSON.stringify(a.oP) || JSON.stringify(b.oC) !== JSON.stringify(a.oC)) { unconfirmed++; return { status: 'skip', ...seen }; }

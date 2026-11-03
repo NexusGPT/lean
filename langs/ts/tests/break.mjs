@@ -107,6 +107,8 @@ export const MECHANISMS = {
   'core-string-args': 'exec/usage.mjs pathModuleOf: a parameter handed to a node:path function is not read as a string (lane w9o; pair core_string_args)',
   'module-await': 'exec/run.mjs sandbox loadInner: a module whose top level awaits is not run as an async body, so its load fails (lane w9o; pair module_await)',
   'programs-share': 'exec/programs.mjs runPrograms maxCpuMs: the method programs of a class unit have no share of the unit\'s CPU bound, so slow commands spend all of it before any draw runs (lane w9o; tests/programs-share.mjs --break, suite row programs-share --break)',
+  'w9ac-compare-literals': 'exec/search.mjs searchWorld worldMoves: a climb no longer tries first the answers the functions a run entered compare a read against (exec/compared.mjs), only the moves its position order gives (lane w9ac; tests/w9ac-compare-literals.mjs, pair world_guard_path)',
+  'w9ac-callee-files': 'exec/usage.mjs declaredFn: a callee in another local file (an import, a namespace member, a base method through super) is not read, so the literals it compares the unit\'s arguments against are not drawn (lane w9ac; tests/w9ac-compare-literals.mjs, pair callee_file_literals)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';

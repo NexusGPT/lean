@@ -1,0 +1,8 @@
+{
+ "scope": [],
+ "equal": {},
+ "laneBOnly": true,
+ "why": "Units that hand a value to a function of another file of the package (tiers.ts cost), which compares it against its own literals (a switch on the tier). exec/usage.mjs read the same-file callees of a unit, one level down, but not a callee in another local file, so no draw named a tier the table prices: price and priceOf (the tier read off order.tier, through a namespace import) were PASS-bounded on 14b167a8e0. A callee the checker resolves to a local source file (an import, a namespace member, a base method through super; never a declaration file or a package's) is now read like a same-file one (usage.mjs declaredFn, design/w9ac-compare-literals.md): its comparisons join the parameter's (and the property path's) compared literals, drawn first. price and priceOf: WITNESS; PASS-bounded under LEAN_BREAK=w9ac-callee-files. priceRefactor passes the same count through a local: PASS-bounded.",
+ "b": { "price": "WITNESS", "priceOf": "WITNESS", "priceRefactor": "PASS-bounded" },
+ "break": [{ "mechanism": "w9ac-callee-files", "b": { "price": "PASS-bounded", "priceOf": "PASS-bounded" } }]
+}
