@@ -117,6 +117,9 @@ export const MECHANISMS = {
   'w9af-omitted-drives': 'exec/run.mjs omittedForms: a function the unit hands out is driven on its drawn arguments alone, never with a trailing optional argument left out on the first call\'s leading ones (lane w9af; pair omitted_args_returned)',
   'w9af-drive-sites': 'exec/run.mjs laterDrives: of an input\'s differing drives only the first is located, so an earlier handed-out function\'s difference hides a later one\'s (lane w9af; exec/omitted.test.mjs)',
   'w9af-omitted-args': 'exec/gen.mjs omitTrailing: a unit\'s optional trailing parameter drawn absent is always passed as an explicit undefined, never left out of the call (lane w9af; pair omitted_args_unit)',
+  'w9ac-compare-literals': 'exec/search.mjs searchWorld worldMoves: a climb no longer tries first the answers the functions a run entered compare a read against (exec/compared.mjs), only the moves its position order gives (lane w9ac; tests/w9ac-compare-literals.mjs, pair world_guard_path)',
+  'w9ac-callee-files': 'exec/usage.mjs declaredFn: a callee in another local file (an import, a namespace member, a base method through super) is not read, so the literals it compares the unit\'s arguments against are not drawn (lane w9ac; tests/w9ac-compare-literals.mjs, pair callee_file_literals)',
+  'w9ac-falsy-last': 'exec/search.mjs searchWorld: the infected draws are climbed in their order alone, a draw whose every differing value is falsy on both sides (run.mjs infectionOf) not last (lane w9ac; tests/w9ac-compare-literals.mjs)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';

@@ -13,6 +13,8 @@ import path from 'node:path';
 import { ts, topLevelFunctions } from '../common.mjs';
 import { makeRng } from './fake.mjs';
 import { fits } from './spec.mjs';
+import { pathKey } from './compared.mjs';
+import { broken } from '../break.mjs';
 
 // ----- the branches: every condition of a file, with the lines each outcome governs -----
 // mode 'truthy': the outcome is the value's truthiness; 'nullish': whether the left of `??` is null or undefined (the
@@ -335,7 +337,7 @@ export function changesOf(inputs, params, defs, lits, { maxDepth = 5, aware = tr
   const walk = (v, s, at, d) => {
     if (d > maxDepth) return;
     const opts = optionsOf(s, defs);
-    for (const c of valuesOf(s, v, defs, lits)) out.push({ at, op: 'set', value: c.value, tier: c.tier });
+    for (const c of valuesOf(s, v, defs, lits)) out.push({ at, op: 'set', value: c.value, tier: c.tier, ...(!v && (v === null || typeof v !== 'object') ? { fromFalsy: true } : {}) }); // fromFalsy: the leaf held a falsy primitive (the world search's unmask)
     if (v === null || v === undefined) { // an absent dictionary the type admits present: one entry keyed by a literal of the unit, its value one the value type admits
       const dict = opts.find((o) => o.kind === 'dict'), val = dict && valuesOf(dict.value, undefined, defs, lits)[0];
       if (val) for (const k of lits.strings) { const o = {}; o[k] = val.value; if (fits(s, o, defs)) out.push({ at, op: 'set', value: o, tier: lits.near?.strings.includes(k) ? 1 : 2 }); }
@@ -502,11 +504,22 @@ export async function searchInputs({ seed = 1, targets, start, run, changes, max
 // handle (a cache or a lazy field read as missing builds its entry), a plain value first where it is one
 const ALTERNATIVES = { fake: ['undefined', 'null'], undefined: ['fake', 'null'], null: ['undefined', 'fake'], fault: ['ok'] }; // fault: a call the seeded draw made throw (fake.mjs faultDraw), taken back
 // A move a climb kept is tried first on every later climb whose run consumed that path (the code is the same for every start)
-const worldMoves = (answered, world, at, rejected, threw, kept = new Map()) => {
+// A guided move (design/w9ac-compare-literals.md): an answer read through a member (or a call) that a function the run
+// entered compares against a literal (`d === undefined`, `xs.length === 0`, `case 'a':`; exec/compared.mjs) set to that
+// literal; these come after the kept moves and before the order's others, in the order's own order (LEAN_BREAK=
+// w9ac-compare-literals: none). A guided move takes the branch a guard names, so the run it gives is kept while it
+// stays infected even when it goes no further: what the branch meets next (a seeded fault, an absent member) is for the
+// next moves to take back, and its path, once set, is moved no more
+const worldMoves = (answered, world, at, rejected, threw, kept = new Map(), guide = null) => {
   const set = new Set(world.map(([p]) => p)), out = [];
   for (const { path: p, kind } of answered) if (!set.has(p) && kept.has(p) && kept.get(p) !== kind && !rejected.has(`${p}=${kept.get(p)}`)) out.push([p, kept.get(p)]);
   const from = threw ? answered.length : Math.max(0, Math.min(at ?? 0, answered.length));
   const order = [...answered.keys()].filter((i) => i >= from).concat([...answered.keys()].filter((i) => i < from).reverse());
+  if (guide && guide.size && !broken('w9ac-compare-literals')) for (const i of order) {
+    const { path: p, kind } = answered[i];
+    if (set.has(p)) continue;
+    for (const k of guide.get(pathKey(p)) ?? []) if (k !== kind && !rejected.has(`${p}=${k}`) && kept.get(p) !== k) out.push([p, k, true]);
+  }
   for (const i of order) {
     const { path: p, kind } = answered[i];
     if (set.has(p)) continue; // a path a kept move set stays as it set it
@@ -517,7 +530,12 @@ const worldMoves = (answered, world, at, rejected, threw, kept = new Map()) => {
 export const worldText = (world) => world.map(([p, k]) => `${p} = ${k}`);
 export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, maxMs, now = Date.now, perStart = 12 }) {
   let tried = 0, infectTried = 0, climbed = 0, byChange = 0;
-  const queue = starts.filter((s) => s.infected), byDraws = queue.length, climbs = [], kept = new Map(); // kept: path -> the answer a kept move set, across climbs
+  // an infected draw whose every differing value is falsy on both sides (run.mjs infectionOf: '' against null) is one a
+  // truth test or `x || d` erases: it waits (`deferred`) until the draws a difference survives in, and the leaf changes
+  // that infect, are spent; one a change infects that way waits too (LEAN_BREAK=w9ac-falsy-last: the draws' order alone)
+  const infected = starts.filter((s) => s.infected), falsyLast = !broken('w9ac-falsy-last');
+  const queue = falsyLast ? infected.filter((s) => !s.falsy) : infected, deferred = falsyLast ? infected.filter((s) => s.falsy) : [];
+  const byDraws = infected.length, climbs = [], kept = new Map(); // kept: path -> the answer a kept move set, across climbs
   const summary = (stop, extra = {}) => ({ source: 'world', seed, starts: starts.length, infectedByDraws: byDraws, infectedByChange: byChange, tried, climbed, climbs, stop, bound: { inputs: maxInputs, ms: maxMs }, ...extra });
   const t0 = now(), over = () => tried >= maxInputs ? 'input bound' : now() - t0 > maxMs ? 'wall-time bound' : null;
   // infect: one leaf change to a literal of a changed condition (the input search's tier 0), the m-th change of every
@@ -533,38 +551,64 @@ export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, m
         if (m >= l.length) continue;
         any = true;
         if (infectTried >= Math.ceil(maxInputs / 2)) return { stop: byDraws + byChange ? 'no change left' : 'no input infects' };
-        const stop = over(); if (stop) return { stop };
+        const stop = over(); if (stop) return { stop, over: true };
         const recipe = { from: starts[j].recipe.from, changes: [...starts[j].recipe.changes, l[m]] };
         const r = await run(recipe, []); tried++; infectTried++;
         if (r.status === 'diff') return { diff: r, recipe };
-        if (r.status !== 'skip' && r.infected) { j++; byChange++; return { start: { recipe, answered: r.answered, ran: r.ran, threw: r.threw, infected: true, at: r.at } }; }
+        if (r.status !== 'skip' && r.infected) { j++; byChange++; return { start: { recipe, answered: r.answered, ran: r.ran, threw: r.threw, infected: true, at: r.at, guide: r.guide ?? null, ...(r.falsy ? { falsy: true } : {}) } }; }
       }
       if (!any) return { stop: byDraws + byChange ? 'no change left' : 'no input infects' };
     }
   };
+  // unmask: a deferred draw's leaves that hold a falsy primitive set to a truthy value its type admits, by tier, within
+  // the infection's half of the budget; a run whose difference is no longer falsy is climbed
+  let unmaskAt = 0;
+  const unmaskNext = async () => {
+    for (; unmaskAt < deferred.length; unmaskAt++) {
+      const d = deferred[unmaskAt];
+      d.unmask ??= ((await changes(d.recipe)) ?? []).filter((c) => c.fromFalsy && c.op === 'set' && c.value).sort((a, b) => a.tier - b.tier);
+      while (d.unmask.length) {
+        if (infectTried >= Math.ceil(maxInputs / 2)) return {};
+        const stop = over(); if (stop) return { stop, over: true };
+        const recipe = { from: d.recipe.from, changes: [...d.recipe.changes, d.unmask.shift()] };
+        const r = await run(recipe, []); tried++; infectTried++;
+        if (r.status === 'diff') return { diff: r, recipe };
+        if (r.status !== 'skip' && r.infected && !r.falsy) { byChange++; return { start: { recipe, answered: r.answered, ran: r.ran, threw: r.threw, infected: true, at: r.at, guide: r.guide ?? null } }; }
+      }
+    }
+    return {};
+  };
   for (;;) { // propagate: climb the world from each infected input, the draws' first, then the ones a change infects
     let s = queue.shift();
+    if (!s && falsyLast && deferred.length) {
+      const next = await unmaskNext();
+      if (next.diff) return summary('divergence', { witness: next.diff, recipe: next.recipe, world: [] });
+      if (next.over) return summary(next.stop);
+      s = next.start;
+    }
     if (!s) {
       const next = await infectNext();
       if (next.diff) return summary('divergence', { witness: next.diff, recipe: next.recipe, world: [] });
-      if (!next.start) return summary(next.stop);
-      s = next.start;
+      if (next.start && falsyLast && next.start.falsy) { deferred.push(next.start); continue; }
+      if (next.start) s = next.start;
+      else if (deferred.length && !next.over) s = deferred.shift();
+      else return summary(next.stop);
     }
-    let world = [], cur = s.answered, ran = s.ran, at = s.at, threw = s.threw, here = 0;
+    let world = [], cur = s.answered, ran = s.ran, at = s.at, threw = s.threw, guide = s.guide ?? null, here = 0;
     const seen = new Set(), rejected = new Set(), climb = { ...recipeText(s.recipe), world: [], ran };
     climbs.push(climb);
     for (let moved = true; moved && here < perStart;) {
       moved = false;
-      for (const [p, k] of worldMoves(cur, world, at, rejected, threw, kept)) {
+      for (const [p, k, byGuide] of worldMoves(cur, world, at, rejected, threw, kept, guide)) {
         const stop = over(); if (stop) return summary(stop);
         if (here >= perStart) break;
         const next = [...world, [p, k]], key = JSON.stringify(next);
         if (seen.has(key)) continue; seen.add(key);
         const r = await run(s.recipe, next); tried++; here++;
         if (r.status === 'diff') return summary('divergence', { witness: r, recipe: s.recipe, world: next });
-        if (r.status === 'skip' || !r.infected || r.ran < ran || (r.ran === ran && r.answered.length <= cur.length)) { rejected.add(`${p}=${k}`); continue; } // further: more statements ran, or as many and more of the world answered (a call reached, then its fault)
+        if (r.status === 'skip' || !r.infected || (!byGuide && (r.ran < ran || (r.ran === ran && r.answered.length <= cur.length)))) { rejected.add(`${p}=${k}`); continue; } // further: more statements ran, or as many and more of the world answered (a call reached, then its fault)
         if (!kept.has(p)) kept.set(p, k);
-        world = next; cur = r.answered; ran = r.ran; at = r.at; threw = r.threw; climbed++; moved = true; climb.world = worldText(world); climb.ran = ran; break;
+        world = next; cur = r.answered; ran = r.ran; at = r.at; threw = r.threw; guide = r.guide ?? null; climbed++; moved = true; climb.world = worldText(world); climb.ran = ran; break;
       }
     }
   }

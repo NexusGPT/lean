@@ -1,0 +1,7 @@
+{
+ "why": "The world search's guided moves (exec/search.mjs worldMoves, exec/compared.mjs; design/w9ac-compare-literals.md), the three.js#35012 shape: Fallback.uniformOf hands its base a name only when `type` is not the buffer literal, and the two versions compare `type` against different literals (\"buffer\", \"bufferx\"). The base reads the name only where its cache has no record (`data === undefined`) and the record no uniform (`uniform === undefined`), behind a layer lookup the handle world keeps feeding. The draws hold the literal; the difference is masked by the world. WITNESS on 14b167a8e0 and after (the climb's position order reaches the absent record within the bound here); kept as the regression pair of the shape. Its sibling world_guard_path (the literal read through node.kind) is PASS-bounded without the guided moves.",
+ "laneBOnly": true,
+ "scope": [],
+ "equal": {},
+ "b": { "Fallback.uniformOf": "WITNESS" }
+}

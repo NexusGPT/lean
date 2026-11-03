@@ -197,12 +197,34 @@ export function usage(sf, unitName, checker, opts = {}) {
       }
       // this.method(...) of the unit's own class, one level down
       if (ts.isPropertyAccessExpression(callee) && strip(callee.expression).kind === ts.SyntaxKind.ThisKeyword && classMethods.has(m)) into(classMethods.get(m), args, env, depth, true);
+      // super.method(...) and ns.fn(...) of a namespace import: the declaration the checker names, one level down
+      else if (!n) { const recv0 = strip(callee.expression), sup = recv0.kind === ts.SyntaxKind.SuperKeyword; if (sup || ts.isIdentifier(recv0)) { const h = declaredFn(callee, sup); if (h) into(h, args, env, depth, sup); } }
       return;
     }
     const n = nodeOf(callee, env);
     if (n) { n.called = Math.max(n.called ?? 0, args.length); return; }
-    // a same-file top-level function, one level down
-    if (ts.isIdentifier(callee)) { const g = fns.get(callee.text); if (g && !g.cls && g.body) into(g, args, env, depth, false); }
+    // a same-file top-level function, one level down; else an imported function of a local file (lane w9ac)
+    if (ts.isIdentifier(callee)) { const g = fns.get(callee.text); if (g && !g.cls && g.body) into(g, args, env, depth, false); else if (!g) { const h = declaredFn(callee, false); if (h) into(h, args, env, depth, false); } }
+  }
+
+  // the function a callee names in a local source file (design/w9ac-compare-literals.md): an imported function, a
+  // namespace import's member, a base class's method called through super; resolved by the checker, read like a
+  // same-file callee (its parameters bound to the argument chains, one level down). A declaration file or a package's
+  // file is none: its body is not the project's. LEAN_BREAK=w9ac-callee-files: same-file callees only
+  const declared = new Map(); // a declaration -> its callee entry, one per declaration (visitedCallees keys on it)
+  function declaredFn(callee, method) {
+    if (broken('w9ac-callee-files')) return null;
+    try {
+      let sym = checker.getSymbolAtLocation(ts.isPropertyAccessExpression(callee) ? callee.name : callee);
+      if (sym && (sym.flags & ts.SymbolFlags.Alias)) sym = checker.getAliasedSymbol(sym);
+      const d = sym?.valueDeclaration ?? sym?.declarations?.[0];
+      const f = d?.getSourceFile();
+      if (!d || !f || f.isDeclarationFile || /[\\/]node_modules[\\/]/.test(f.fileName) || (f === sf && !method)) return null;
+      const fn = ts.isFunctionDeclaration(d) || (method && ts.isMethodDeclaration(d)) ? d : ts.isVariableDeclaration(d) && d.initializer && (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer)) ? d.initializer : null;
+      if (!fn || !fn.body) return null;
+      if (!declared.has(fn)) declared.set(fn, { params: fn.parameters, body: fn.body, cls: null });
+      return declared.get(fn);
+    } catch { return null; }
   }
 
   // a same-file callee: its parameters bound to the argument chains, its body read once, never deeper than one level

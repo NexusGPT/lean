@@ -1,0 +1,8 @@
+{
+ "why": "The world search's guided moves (exec/search.mjs worldMoves, exec/compared.mjs; design/w9ac-compare-literals.md). Fallback.uniformOf hands its base a node's label only when `node.kind` is not the buffer literal, and the two versions compare node.kind against different literals (\"buffer\", \"bufferx\"). The draws infect (8 inputs: the label differs between the sides) but the base reads it only where its cache has no record for the node (`data === undefined`) and the record no uniform (`uniform === undefined`); the world answers a handle there and a layer lookup after it, so the climb, ordered by position alone, follows the layer lookup's handles until the input bound: PASS-bounded on 14b167a8e0. Two mechanisms each reach it: the guided moves (the answers those guards compare against undefined set to undefined first; 20 tries), and falsy-last (the draws whose label is '' against null, which `name || ...` erases, climbed after the others; 19 tries). PASS-bounded only with both off (LEAN_BREAK=w9ac-compare-literals,w9ac-falsy-last); each alone is pinned by tests/w9ac-compare-literals.mjs parts 3 and 6. WITNESS: the sides differ in the uniform they build (source: world).",
+ "laneBOnly": true,
+ "scope": [],
+ "equal": {},
+ "b": { "Fallback.uniformOf": "WITNESS" },
+ "break": [{ "mechanism": "w9ac-compare-literals,w9ac-falsy-last", "b": { "Fallback.uniformOf": "PASS-bounded" } }]
+}
