@@ -1,0 +1,7 @@
+{
+  "name": "w9bb-zod4",
+  "private": true,
+  "dependencies": {
+    "zod": "^4.1.11"
+  }
+}

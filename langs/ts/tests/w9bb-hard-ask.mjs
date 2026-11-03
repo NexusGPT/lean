@@ -17,6 +17,10 @@
 //                    declares only `@types/bun` (cline#14303's build-sidecar-bin.ts), loads with the runtime's module as
 //                    the recording fake; its new unit is NEW. Under the break: `ASK(undeclared external package): Cannot
 //                    find module 'bun'`.
+//   w9bb-vendored-range exec/fakes/lib/index.mjs declaredAdmits: a module on zod 4 (`z.email()`, Checkmate#3288's
+//                    settings schema) in a package declaring `"zod": "^4.1.11"` loads, zod the recording proxy, since the
+//                    vendored zod is 3.25.76; a range that admits the vendored version keeps it (range.mjs cases). Under
+//                    the break: `ASK(fake answering at module evaluation): z.email is not a function`.
 //
 //   node tests/w9bb-hard-ask.mjs           each check green
 //   node tests/w9bb-hard-ask.mjs --break   each check once with its mechanism switched off: every one must be red
@@ -27,6 +31,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { boundedChild } from '../exec/run.mjs';
 import { runnerReason } from '../exec/new-unit.mjs';
+import { admits } from '../exec/fakes/lib/range.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const brk = process.argv.includes('--break');
@@ -90,6 +95,15 @@ const checks = [
     let j; try { j = JSON.parse(r.stdout); } catch { return { ok: false, detail: `unparsed (exit ${r.status}): ${String(r.stderr).slice(-300)}` }; }
     const b = j.certificate?.lanes?.B ?? {};
     return { ok: j.verdict === 'NEW' && b.loaded !== false, detail: `${j.verdict}${j.verdict === 'NEW' ? '' : `: ${String(b.reason ?? j.reason).slice(0, 200)}`}` };
+  }],
+  ['w9bb-vendored-range', 'a vendored library answers only a range that admits its version: zod 3 never answers zod ^4', (m) => {
+    const f = path.join(here, 'fixtures', 'w9bb-hard-ask', 'zod4', 'src', 'settings.ts');
+    const r = spawnSync(process.execPath, [path.join(here, '..', 'check.mjs'), '--candidate', f, '--unit', 'portOrDefault', '--n', '8', '--dafny-seconds', '5'], { encoding: 'utf8', env: envOf(m), maxBuffer: 1 << 26 });
+    let j; try { j = JSON.parse(r.stdout); } catch { return { ok: false, detail: `unparsed (exit ${r.status}): ${String(r.stderr).slice(-300)}` }; }
+    const b = j.certificate?.lanes?.B ?? {};
+    const ranges = [['^4.1.11', false], ['^3.22.0', true], ['~3.25.0', true], ['>=3 <4', true], ['4.x', false], ['workspace:*', null]];
+    const wrong = ranges.filter(([r, want]) => admits(r, '3.25.76') !== want);
+    return { ok: j.verdict === 'NEW' && !wrong.length, detail: `${j.verdict}${j.verdict === 'NEW' ? '' : `: ${String(b.reason ?? j.reason).slice(0, 200)}`}; zod 3.25.76 against ${ranges.map(([r]) => r).join(', ')}: ${wrong.length ? `wrong at ${wrong.map(([r]) => r).join(', ')}` : 'as npm reads them'}` };
   }],
 ];
 

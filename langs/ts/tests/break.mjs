@@ -135,6 +135,7 @@ export const MECHANISMS = {
   'w9bb-runner-reason': 'exec/new-unit.mjs runnerReason: a runner that gives no result is ASK with the spawn\'s message (`spawnSync node ETIMEDOUT`) or `candidate runner exited <n>: <stdout>`, the budget it hit and the child\'s stderr unsaid (lane w9bb; tests/w9bb-hard-ask.mjs)',
   'w9bb-platform-events': 'exec/run.mjs platformEvents: the sandbox holds no Event, EventTarget, CustomEvent or DOMException, so a module whose class extends Event fails at its load (`ASK(platform global): Event is not defined`, react#36253) (lane w9bb; tests/w9bb-hard-ask.mjs)',
   'w9bb-types-declared': 'exec/new-unit.mjs resolveModule: a module a package declares only through its types package (`@types/bun` for `bun` and `bun:*`, `@types/vscode` for `vscode`) is an undeclared external package, its load an ASK, not the recording fake a declared package is (lane w9bb; tests/w9bb-hard-ask.mjs)',
+  'w9bb-vendored-range': 'exec/fakes/lib/index.mjs declaredAdmits: a vendored library row answers whatever version range the project declares, so zod 3 answers a project on zod ^4 and `z.email` is not a function at the module\'s load (Checkmate#3288) (lane w9bb; tests/w9bb-hard-ask.mjs)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';

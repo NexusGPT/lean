@@ -628,6 +628,7 @@ function platformEvents(now) {
 }
 export function sandbox(env, root) {
   captureEnvironment(env);
+  env.packageRoot = root; // where the unit's package.json is looked for: the version ranges it declares (fakes/lib/range.mjs)
   const cache = new Map();
   env.siteState = { current: null, completed: null, fault: null, files: Object.create(null), hits: null };
   env.siteState.f = factHook(env); // a marked call site (callee-trace.mjs): recorded when env.factLog is set, else the call as written

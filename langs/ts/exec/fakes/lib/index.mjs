@@ -14,6 +14,7 @@
 // one --break convention LEAN_BREAK=library-fakes (amendment A6), turns every library fake off (the measurement
 // without them, and each test's --break).
 import { requireVendored, manifestOf } from './load.mjs';
+import { declaredRange, admits } from './range.mjs';
 import { broken } from '../../../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { lodashFor } from './lodash.mjs';
 import { uuidModule } from './uuid.mjs';
@@ -66,13 +67,23 @@ function dateFns(env) {
   } });
 }
 
+// a vendored row answers only for a version the project admits (range.mjs, lane w9bb): the range the nearest package.json
+// above the unit's folder declares for the specifier's package; a range that excludes the vendored version keeps the
+// recording proxy, a range not declared or not read keeps the row. LEAN_BREAK=w9bb-vendored-range: the row at any range
+const packageOf = (spec) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]);
+function declaredAdmits(env, spec, pkg) {
+  if (broken('w9bb-vendored-range')) return true;
+  const range = declaredRange(env.packageRoot, packageOf(spec));
+  return range === null || admits(range, manifestOf(pkg).version) !== false;
+}
+
 export function libraryFake(env, spec) {
   if (!libraryFakesOn() || typeof spec !== 'string' || !env.ctx) return null;
   const cache = (env.libraryModules ??= new Map());
   if (cache.has(spec)) return cache.get(spec);
   const row = ROWS.find((r) => r.test(spec));
   let mod = null;
-  if (row && (row.kind === 'model' || manifestOf(row.pkg))) mod = row.make(env, spec) ?? null;
+  if (row && (row.kind === 'model' || (manifestOf(row.pkg) && declaredAdmits(env, spec, row.pkg)))) mod = row.make(env, spec) ?? null;
   cache.set(spec, mod);
   return mod;
 }
