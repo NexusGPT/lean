@@ -1,0 +1,8 @@
+{
+ "why": "A unit no parent holds that hands out a function (a closure, an object's methods) or calls the callback it is handed gets a test from its calls (exec/new-test.mjs handedBody, design/w9am-handed-functions.md): the test binds what the unit returned and calls each handed-out function on the arguments lean drew by its declared parameter types, in lean's order, and asserts what lean saw; a callback is a vi.fn() answering what lean's fake answered, its calls asserted. The record's own checks are tests/new-unit-test.mjs; the pair keeps the family's verdict, NEW and never PASS (design/new-units.md).",
+ "candidateOnly": [
+  { "file": "candidate.ts", "unit": "makeAdder", "verdict": "NEW", "records": [{ "kind": "new:proposed-test", "dialect": "vitest", "text": "const out = makeAdder(", "statements": { "missed": [] }, "check": { "failed": 0, "world": 0 } }] },
+  { "file": "candidate.ts", "unit": "counter", "verdict": "NEW", "records": [{ "kind": "new:proposed-test", "text": "expect(out.next()).toEqual(", "statements": { "missed": [] }, "check": { "failed": 0, "world": 0 } }] },
+  { "file": "candidate.ts", "unit": "mapAll", "verdict": "NEW", "records": [{ "kind": "new:proposed-test", "text": "expect(f).toHaveBeenNthCalledWith(1, ", "statements": { "missed": [] }, "check": { "failed": 0, "world": 0 } }] }
+ ]
+}

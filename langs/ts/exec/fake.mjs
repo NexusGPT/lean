@@ -63,6 +63,7 @@ export class Environment {
     this.handedLog = null;  // while a render is checked for purity, the world's writes to the objects it was handed (handedMark)
     this.worldSet = null;   // the world search (search.mjs searchWorld): path -> the kind of answer a recipe sets there, else the seeded one
     this.answered = [];     // the varied answers this run consumed, in order: [{ path, kind }] (the world search's moves)
+    this.callAnswers = null; // (lane w9am) while a unit no parent holds is observed for a test: `<path>()#<k>` -> what a call of a fake answered and whether it wrote into what it was handed (new-unit.mjs callbackCalls)
   }
   // clock answers advance with the seeded history and are recorded beside port requests
   clock(path, args = [], op = 'call') {
@@ -98,7 +99,8 @@ export class Environment {
   // receiver of a view's method is always written (the few enumerated heaps that make an any value a record are the
   // only inputs that show a write through it, and a fake receiver stands for the call that writes nothing)
   writeHanded(path, values, always = null) {
-    if (this.loading) return;
+    if (this.loading) return 0;
+    let wrote = 0;
     values.forEach((o, i) => {
       if (!o || typeof o !== 'object' || o.__isFake || Array.isArray(o) || Object.isFrozen(o) || (Object.getPrototypeOf(o) !== Object.prototype && Object.getPrototypeOf(o) !== null)) return;
       const h = createHash('sha256').update(`${this.seed}:write:${path}:${i}`).digest();
@@ -107,9 +109,10 @@ export class Environment {
         const d = Object.getOwnPropertyDescriptor(o, k);
         if (!d || !Object.hasOwn(d, 'value') || !d.writable) continue;
         const v = d.value, nv = typeof v === 'number' ? (Number.isFinite(v) ? v + 1 : 0) : typeof v === 'string' ? `${v}~` : typeof v === 'boolean' ? !v : undefined;
-        if (nv !== undefined) { o[k] = nv; this.handedLog?.push({ o, k, was: v, now: nv }); } // seen through the object, by every name of it; journaled while a render is checked for purity (handedMark)
+        if (nv !== undefined) { o[k] = nv; wrote++; this.handedLog?.push({ o, k, was: v, now: nv }); } // seen through the object, by every name of it; journaled while a render is checked for purity (handedMark)
       }
     });
+    return wrote;
   }
   // The world's writes to handed objects since a mark, as a journal (exec/run.mjs, the purity check): a render that hands
   // an object to the world sees the world's write, and the check's second render must start from the state the first
@@ -281,7 +284,7 @@ export class Environment {
           // own __decorate never lets a decorator's result replace the class
         }
         const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); // every call is its own transition: two reads of a clock are two values
-        env.writeHanded(`${path}()#${k}`, [...args, env.viewReceivers?.get(path)], env.viewReceivers?.get(path)); // the call may change what it is handed
+        const wrote = env.writeHanded(`${path}()#${k}`, [...args, env.viewReceivers?.get(path)], env.viewReceivers?.get(path)); // the call may change what it is handed
         // a call into the world may fault: on a seeded draw (the same on both sides for the same call) it throws, so that
         // catch paths and error handling run and a dropped or changed handler is a difference the trace shows
         if (!env.loading && env.cbDepth === 0 && env.faultDraw(`${path}()#${k}`)) { env.record('fault', path, []); const error = new Error(`fault: ${path}`); programBuilt.add(error); if (tspec?.returns?.kind === 'promise') { const r = Promise.reject(error); return namePromise(env, env.scheduler ? env.scheduler.hold(r, `${path}()#${k}`) : r, `${path}()#${k}`, { reason: error }); } throw error; }
@@ -304,8 +307,9 @@ export class Environment {
             finally { env.cbDepth--; }
           }
         }
-        if (tspec && tspec.kind === 'method') return env.typed(`${path}()#${k}`, tspec.returns); // the declared return type answers
-        return env.answer(`${path}()#${k}`);
+        const answer = tspec && tspec.kind === 'method' ? env.typed(`${path}()#${k}`, tspec.returns) : env.answer(`${path}()#${k}`); // the declared return type answers, else the varied answer
+        env.callAnswers?.set(`${path}()#${k}`, { value: answer, wrote });
+        return answer;
       },
       construct(t, args) { const model = env.modelOf(path); env[model?.quiet ? 'compute' : 'record']('new', path, args.map((x) => render(x))); if (model?.construct) return model.construct(args); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); if (tspec && tspec.kind === 'class') return env.typed(`new ${path}#${k}`, tspec.instance); return env.fake(`new ${path}#${k}`); },
       getPrototypeOf() { return Function.prototype; },

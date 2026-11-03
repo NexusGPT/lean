@@ -386,8 +386,35 @@ export function specOf(file, unitName, opts = {}) {
   // of it), and carries its leaf's spec, so a copied value is written only where the type admits it (gen.mjs)
   if (changed) changed = changed.map((tg) => { const leaf = tg.at.length ? null : specAtPath(params[tg.at.param], tg.at.chain, usedDefs); if (!tg.at.length && !leaf) return null; if (tg.values) { const vs = tg.at.length ? tg.values : tg.values.filter((v) => (v && typeof v === 'object' && v.t === 'undefined' ? leaf.optional || admitsUndefined(leaf.spec, usedDefs) : fits(leaf.spec, v, usedDefs))); return vs.length ? { ...tg, values: vs } : null; } return { ...tg, ...(leaf ? { leaf: leaf.spec } : {}) }; }).filter(Boolean);
   const timers = /\b(setTimeout|setInterval|setImmediate|requestAnimationFrame|requestIdleCallback)\b/.test(sf.text); // the file arms timers: the timer-order family has ties to reorder
-  return Object.defineProperty({ unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}), ...(branded ? { branded } : {}) }, 'declared', { value: { params: declaredParams, returns, defs } }); // not enumerable: a spec's serialised form (records, caches) is unchanged
+  // (lane w9am, design/w9am-handed-functions.md) the declared parameters of a function the unit hands out, by its route
+  // from what the unit returns (awaited): a member name, an element index, or HANDED_CALL (what a call of the function
+  // there returns, awaited); each { name, optional, rest, spec } as the unit's own (declaredParams). null: the type at the
+  // route has not exactly one call signature, or no member of that name. A test calls a handed-out function only on
+  // arguments these admit, as it calls the unit only on arguments its declaration admits
+  const awaitedOf = (t) => { try { return checker.getAwaitedType?.(t) ?? t; } catch { return t; } };
+  const handedParams = (route) => {
+    try {
+      let t = awaitedOf(checker.getSignatureFromDeclaration(u.fn).getReturnType());
+      for (const step of route) {
+        t = checker.getNonNullableType(t);
+        if (step === HANDED_CALL) { const sg = checker.getSignaturesOfType(t, ts.SignatureKind.Call); if (sg.length !== 1) return null; t = awaitedOf(sg[0].getReturnType()); continue; }
+        if (typeof step === 'number' && (checker.isArrayType(t) || checker.isTupleType(t))) { const a = checker.getTypeArguments(t); t = checker.isTupleType(t) ? a[step] : a[0]; if (!t) return null; continue; }
+        const p = checker.getPropertyOfType(t, String(step)); if (!p) return null;
+        t = checker.getTypeOfSymbolAtLocation(p, u.fn);
+      }
+      const sg = checker.getSignaturesOfType(checker.getNonNullableType(t), ts.SignatureKind.Call); if (sg.length !== 1) return null;
+      return sg[0].getParameters().map((ps) => {
+        const d = ps.valueDeclaration, pt = checker.getTypeOfSymbolAtLocation(ps, u.fn);
+        const rest = !!(d && ts.isParameter(d) && d.dotDotDotToken), optional = !!(d && ts.isParameter(d) && (d.questionToken || d.initializer)) || !!(ps.flags & ts.SymbolFlags.Optional);
+        const all = !!(pt.flags & TF.Unknown) || (!!(pt.flags & TF.Any) && pt.intrinsicName !== 'error');
+        const sp = spec(pt, 1);
+        return { name: ps.name, optional, ...(rest ? { rest: true } : {}), spec: all && !rest ? Object.defineProperty({ ...sp }, 'all', { value: true }) : sp };
+      });
+    } catch { return null; }
+  };
+  return Object.defineProperty(Object.defineProperty({ unit: unitName, shaped, ...(known ? { known } : {}), ...(changed && changed.length ? { changed } : {}), ...(timers ? { timers } : {}), isMethod: !!u.cls, thisParam: !!(u.params[0] && ts.isIdentifier(u.params[0].name) && u.params[0].name.text === 'this'), className: u.className ?? null, isStatic: !!u.isStatic, accessor: u.accessor ?? null, member: u.method ?? null, isAsync: !!u.isAsync, params, returns, defs: usedDefs, literals: literals.slice(0, 40), strings: strings.slice(0, 40), regexes: regexes.slice(0, 12), receiver, imports, ...(metadataReaders.length ? { metadataReaders } : {}), ...(branded ? { branded } : {}) }, 'declared', { value: { params: declaredParams, returns, defs } }), 'handedParams', { value: handedParams }); // not enumerable: a spec's serialised form (records, caches) is unchanged
 }
+export const HANDED_CALL = Symbol('a call of the handed-out function'); // a step of a handedParams route
 
 // ---- inputs shaped by usage ------------------------------------------------------------------------------------
 // A boundary is attached to a spec as { cmp: [values], falsy: [values], radix }: `cmp` the values a comparison in

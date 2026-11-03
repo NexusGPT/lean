@@ -52,6 +52,34 @@ function subset(a, b, seen = []) { // toMatchObject: every member of b is in a, 
   if (tagOf(b) !== '[object Object]') return equals(a, b, false);
   return Object.keys(b).every((k) => k in a && subset(a[k], b[k], seen));
 }
+// (lane w9am, design/w9am-handed-functions.md) the runners' spy, the part a test reads: `vi.fn()` / `jest.fn()`, with an
+// implementation, answers once or always (a value, a promise), and its record (`mock.calls`, `mock.results`); a spy
+// replaces nothing of the code's world, so a test that uses one is run (the module mocks and the clock stay MOCKS)
+const SPIED = Symbol('lean.spy');
+export function makeSpy(impl) {
+  const once = []; let base = typeof impl === 'function' ? impl : null;
+  const spy = function (...args) {
+    spy.mock.calls.push(args); spy.mock.contexts.push(this);
+    const f = once.length ? once.shift() : base; let r;
+    try { r = f ? Reflect.apply(f, this, args) : undefined; } catch (e) { spy.mock.results.push({ type: 'throw', value: e }); throw e; }
+    spy.mock.results.push({ type: 'return', value: r }); return r;
+  };
+  spy.mock = { calls: [], results: [], contexts: [] };
+  Object.defineProperty(spy.mock, 'lastCall', { get: () => spy.mock.calls[spy.mock.calls.length - 1] });
+  const chain = (fn) => (...a) => { fn(...a); return spy; };
+  const clear = () => { spy.mock.calls.length = 0; spy.mock.results.length = 0; spy.mock.contexts.length = 0; };
+  Object.assign(spy, {
+    [SPIED]: true, _isMockFunction: true,
+    mockReturnValue: chain((v) => { base = () => v; }), mockReturnValueOnce: chain((v) => { once.push(() => v); }),
+    mockImplementation: chain((f) => { base = f; }), mockImplementationOnce: chain((f) => { once.push(f); }),
+    mockResolvedValue: chain((v) => { base = () => Promise.resolve(v); }), mockResolvedValueOnce: chain((v) => { once.push(() => Promise.resolve(v)); }),
+    mockRejectedValue: chain((v) => { base = () => Promise.reject(v); }), mockRejectedValueOnce: chain((v) => { once.push(() => Promise.reject(v)); }),
+    mockClear: chain(clear), mockReset: chain(() => { clear(); base = null; once.length = 0; }),
+    getMockImplementation: () => base, getMockName: () => 'spy', mockName: chain(() => {}),
+  });
+  return spy;
+}
+const spied = (v) => typeof v === 'function' && v[SPIED] === true;
 const show = (v) => { try { return JSON.stringify(render(v)).slice(0, 200); } catch { return String(v).slice(0, 200); } };
 
 function makeExpect(state) {
@@ -90,6 +118,17 @@ function makeExpect(state) {
         },
       };
       m.toThrowError = m.toThrow;
+      // a spy's calls (makeSpy): its count, a call equal to the arguments, the n-th call, the last call
+      const calls = () => { if (!spied(actual)) throw new Failure(`expected a spy, got ${show(actual)}`); return actual.mock.calls; };
+      const callsText = () => show(calls());
+      Object.assign(m, {
+        toHaveBeenCalled: () => assert(calls().length > 0, `to have been called (calls ${callsText()})`),
+        toHaveBeenCalledTimes: (k) => assert(calls().length === k, `to have been called ${k} time(s) (calls ${callsText()})`),
+        toHaveBeenCalledWith: (...a) => assert(calls().some((c) => equals(c, a, false)), `to have been called with ${show(a)} (calls ${callsText()})`),
+        toHaveBeenNthCalledWith: (k, ...a) => assert(calls().length >= k && equals(calls()[k - 1], a, false), `to have been called the ${k}-th time with ${show(a)} (calls ${callsText()})`),
+        toHaveBeenLastCalledWith: (...a) => assert(calls().length > 0 && equals(calls()[calls().length - 1], a, false), `to have been called last with ${show(a)} (calls ${callsText()})`),
+      });
+      Object.assign(m, { toBeCalled: m.toHaveBeenCalled, toBeCalledTimes: m.toHaveBeenCalledTimes, toBeCalledWith: m.toHaveBeenCalledWith, nthCalledWith: m.toHaveBeenNthCalledWith, lastCalledWith: m.toHaveBeenLastCalledWith });
       if (mode) { // resolves / rejects: the matchers wait for the promise, then judge what it settled to
         return new Proxy({}, { get: (t, k) => { if (k === 'then') return undefined; if (!Object.hasOwn(m, k)) throw new Gap(`matcher .${mode}.${String(k)}`); return async (...a) => { let v, ok; try { v = await actual; ok = true; } catch (e) { v = e; ok = false; } if (ok !== (mode === 'resolves')) throw new Failure(`expected the promise to ${mode === 'resolves' ? 'resolve' : 'reject'}; it ${ok ? 'resolved to' : 'rejected with'} ${show(v)}`); return expect(v, message)[negate ? 'not' : 'self'][k](...a); }; } });
       }
@@ -148,7 +187,8 @@ function makeRunner(state) {
   describe.skip = () => {}; describe.only = describe; describe.concurrent = describe; describe.sequential = describe; describe.todo = () => {};
   describe.each = each(describe); describe.skipIf = (c) => (c ? describe.skip : describe); describe.runIf = (c) => (c ? describe : describe.skip);
   const hook = (kind) => (fn) => { scope.hooks[kind].push(fn); };
-  const vi = new Proxy({}, { get: (t, k) => (typeof k === 'symbol' ? undefined : () => { throw new Gap(`vi.${String(k)}`); }) });
+  const spies = { fn: makeSpy, isMockFunction: spied }; // (lane w9am) the spy; every other member is a feature not modelled
+  const vi = new Proxy(spies, { get: (t, k) => (typeof k === 'symbol' ? undefined : Object.hasOwn(t, k) ? t[k] : () => { throw new Gap(`vi.${String(k)}`); }) });
   const expect = makeExpect(state), assert = makeAssert(state);
   const api = { describe, it: test, test, expect, assert, beforeAll: hook('beforeAll'), afterAll: hook('afterAll'), beforeEach: hook('beforeEach'), afterEach: hook('afterEach'), before: hook('beforeAll'), after: hook('afterAll'), vi, jest: vi, suite: describe };
   const modules = {};

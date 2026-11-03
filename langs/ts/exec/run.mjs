@@ -891,6 +891,7 @@ async function driveCall(env, thunk, ms) { // one call of a drive: returned or t
   let v = guardedCall(env, thunk, ms); const named = promiseName(v);
   if (v && typeof v.then === 'function') v = await awaitUnit(env, v, ms);
   const out = { returned: render(v) }; if (named) out.promise = named;
+  Object.defineProperty(out, 'raw', { value: v }); // the value itself, not copied into a record (new-unit.mjs handedDraws reads it)
   if (isIterator(v)) { const steps = []; for (let i = 0; i < DRIVE_STEPS; i++) { let r = guardedCall(env, () => v.next(), ms); if (r && typeof r.then === 'function') r = await awaitUnit(env, r, ms); steps.push(render(r)); if (!r || r.done) break; } out.steps = steps; }
   return out;
 }
@@ -916,7 +917,11 @@ export function omittedForms(params, args) {
 async function driveOne(env, fn, k, ms) {
   const mark = env.trace.length, pend = env.pending.length, queued = env.timers.queue, slots = env.hookSlots ? env.hookSlots.slice() : null, dirty = env.stateDirty, clock = env.timers.now;
   env.timers.queue = []; // the drive's own timers only: they fire inside it (below), as the main observation fires the call's
-  const args = Array.from({ length: DRIVE_ARGS }, (_, i) => env.drawn(`drive#${k}.arg${i}`)); // drawn as the world draws (fake.mjs drawn): the same on both sides, other values on other inputs
+  // (lane w9am) on the candidate-only path a test calls what the unit handed out: its arguments are drawn by the declared
+  // parameter types of the function where the unit's value holds it (new-unit.mjs handedDraws); no pair sets the hook
+  const handed = env.handedAt ? env.handedAt(fn) : null, typedParams = handed?.params ?? null;
+  const draw = (p, i) => { const q = typedParams && (typedParams[i] ?? (typedParams.at(-1)?.rest ? typedParams.at(-1) : null)); if (!q) return env.drawn(p); const s = q.rest ? (q.spec.kind === 'array' ? q.spec.of : null) : q.spec; return s ? env.typed(p, s, q.optional) : env.drawn(p); };
+  const args = Array.from({ length: DRIVE_ARGS }, (_, i) => draw(`drive#${k}.arg${i}`, i)); // drawn as the world draws (fake.mjs drawn): the same on both sides, other values on other inputs
   const rec = { $fn: `#${k}`, args: render(args) }; // the driven input, as drawn
   let omitStart = null;
   if (env.siteState) { env.siteState.completed = null; env.siteState.exited = null; }
@@ -930,15 +935,15 @@ async function driveOne(env, fn, k, ms) {
       rec.methods = [];
       for (const n of names) { try { rec.methods.push({ method: n, ...(await driveCall(env, () => Reflect.apply(proto[n], inst, args), ms)) }); } catch (e) { if (driveStop(e)) throw e; rec.methods.push({ method: n, threw: render(e) }); } }
     } else {
-      const self = env.fake(`drive#${k}.this`);
-      Object.assign(rec, await driveCall(env, () => Reflect.apply(fn, self, args), ms));
+      const self = handed && handed.holder !== undefined ? handed.holder : env.fake(`drive#${k}.this`); // (lane w9am) the candidate-only path calls a method on the value that holds it, as `out.m()` does
+      { const first = await driveCall(env, () => Reflect.apply(fn, self, args), ms); env.handedResult?.(fn, first.raw); Object.assign(rec, first); }
       // called again, as the world that keeps it calls it again: state it carries between calls (a counter, a limit
       // on the second event) shows on a later call; each call on its own drawn arguments, the same on both sides
       const params = env.siteState?.exited?.body?.params ?? null; // the driven function's own frame exits last: its parameters (patch.mjs parameterReads)
       rec.again = [];
       for (let j = 1; j < DRIVE_CALLS; j++) {
-        const more = Array.from({ length: DRIVE_ARGS }, (_, i) => env.drawn(`drive#${k}.call${j}.arg${i}`));
-        try { rec.again.push({ args: render(more), ...(await driveCall(env, () => Reflect.apply(fn, self, more), ms)) }); } catch (e) { if (driveStop(e)) throw e; rec.again.push({ args: render(more), threw: render(e) }); break; }
+        const more = Array.from({ length: DRIVE_ARGS }, (_, i) => draw(`drive#${k}.call${j}.arg${i}`, i));
+        try { const o = await driveCall(env, () => Reflect.apply(fn, self, more), ms); env.handedResult?.(fn, o.raw); rec.again.push({ args: render(more), ...o }); } catch (e) { if (driveStop(e)) throw e; rec.again.push({ args: render(more), threw: render(e) }); break; }
       }
       omitStart = env.trace.length;
       for (const form of omittedForms(params, args)) { // the same leading arguments again, the trailing ones left out: a default, an `arguments.length` test or an undefined test applies, on the state the first call left
@@ -1129,6 +1134,7 @@ async function observeWindow(side, spec, args, ms) {
   const result = { outcome, heap, receiver, trace: env.trace.slice(), pending: env.pending.map(({ id, ...rest }, i) => withSite(rest, env.pending[i].site)) }; // a timer id is an arm counter, not an observation
   let moduleAfter; try { moduleAfter = moduleState(side); } catch (e) { return { harness: `module state: ${String(e && e.message).slice(0, 120)}` }; }
   const written = moduleChange(stateBefore, moduleAfter); if (written) result.module = written; // what the call left in the module's own bindings
+  if (env.handedAt) env.handedRoot = hasOutcome ? outcomeValue : undefined; // (lane w9am) what the unit returned: a drive's typed draws find the function in it (new-unit.mjs handedDraws)
   const drives = await driveWindow(env, ms); if (drives.length) result.drives = drives; // every function the observation shows, driven (design/callbacks.md)
   Object.defineProperty(result, 'raw', { value: hasOutcome ? { returned: outcomeValue } : { threw: thrownValue } }); // the values themselves, not their renderings: a unit no parent holds is checked against its declared types (new-unit.mjs)
   return Object.defineProperty(result, 'site', { value: outcomeSite });

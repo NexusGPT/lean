@@ -8,10 +8,10 @@ import { spawnSync } from 'node:child_process';
 import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFunctions } from '../common.mjs';
 import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
 import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
-import { Environment, BudgetError, render, programBuilt } from './fake.mjs';
+import { Environment, BudgetError, render, programBuilt, escapeEntry } from './fake.mjs';
 import { admitted, member, mismatch, declaration, declaredThrow, edgePlan, edgeInput } from './declared.mjs';
 import { runTests, TEST_MODULES } from './new-tests.mjs';
-import { specOf } from './spec.mjs';
+import { specOf, HANDED_CALL } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
 import { branchTable, reachTable, probeKeys, branchMarks, unitBranches } from './search.mjs';
 import { setProbes } from './run.mjs';
@@ -107,6 +107,91 @@ function newUnitProbes(abs, unit) {
   const lines = Object.fromEntries(statements.map((r) => [`C:s${r.id}`, r.line]));
   let stateName = '__lean_site'; while (src.includes(stateName)) stateName += '_';
   return { abs, entry, statements: own, lines, stateName };
+}
+
+// ----- (lane w9am, design/w9am-handed-functions.md) what a test needs of a call that handed out a function or called one -----
+// The formal parameters a handed-out function can see: a driven function is called on DRIVE_ARGS drawn arguments
+// (run.mjs driveOne), and an argument past its formals is one no code of it can read when it declares no rest parameter
+// and never names `arguments`; so a test passes the formals' arguments alone and calls it as lean did. null: every
+// argument counts (a rest parameter, `arguments`, a text that does not parse)
+const formalsSeen = new Map(); // the function's text -> its formals: a closure is made anew on every input
+export function formalsOf(fn) {
+  let src; try { src = Function.prototype.toString.call(fn); } catch { return null; }
+  if (!formalsSeen.has(src)) { if (formalsSeen.size > 5000) formalsSeen.clear(); formalsSeen.set(src, formalsOfText(src)); }
+  return formalsSeen.get(src);
+}
+function formalsOfText(src) {
+  if (/\barguments\b/.test(src) || /\[native code\]/.test(src)) return null;
+  for (const text of [`(${src})`, `({ ${src} })`, `(class { ${src} })`]) {
+    const sf = ts.createSourceFile('formals.js', text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+    if (sf.parseDiagnostics?.length) continue;
+    let fnNode = null; const find = (n) => { if (fnNode) return; if (ts.isFunctionLike(n) && n.parameters) { fnNode = n; return; } ts.forEachChild(n, find); }; find(sf);
+    if (!fnNode) continue;
+    if (fnNode.parameters.some((p) => p.dotDotDotToken)) return null;
+    return fnNode.parameters.length;
+  }
+  return null;
+}
+const asyncFn = (fn) => { try { return /^Async/.test(Object.getPrototypeOf(fn)?.constructor?.name ?? ''); } catch { return false; } };
+// the observation's drives as a test restates them: each record with its function's formals and whether it is async
+// (LEAN_BREAK=new-test-drives: the writer keeps no case whose call handed out a function, new-test.mjs usableCase)
+function drivesOf(drives, env) {
+  return (drives ?? []).map((rec) => { const k = /^#(\d+)$/.exec(rec.$fn ?? '')?.[1]; const fn = k === undefined ? null : escapeEntry(env, Number(k))?.fn ?? null; return { ...rec, formals: fn ? formalsOf(fn) : null, async: fn ? asyncFn(fn) : false }; });
+}
+// The drive's draws by type: on the candidate-only path a driven function is found in what the unit returned (by
+// identity, through own data members and elements), or in what a drive of a function found so returned, and its
+// arguments are drawn by the declared parameter types at that route (spec.mjs handedParams, run.mjs driveOne), so a
+// test can call it as its type lets a caller; a method is called on the value that holds it (`out.m()` binds `out`), as
+// the test calls it. A function found nowhere (held by the module, handed to the world) keeps lean's drawn arguments and
+// its drawn `this`. No pair sets the hook. LEAN_BREAK=new-test-drive-types: none
+export function handedDraws(env, handedParams) {
+  if (!handedParams || broken('new-test-drive-types')) return;
+  const results = []; // [{ value, route }]: what each call of a found function returned, the route a call of it starts
+  const find = (root, base, fn) => {
+    const seen = new Set(), queue = [[root, base, undefined]];
+    while (queue.length) {
+      const [v, at, holder] = queue.shift();
+      if (v === fn) return { route: at, holder };
+      if (!v || typeof v !== 'object' || v.__isFake || seen.has(v) || at.length - base.length > 6 || seen.size > 2000) continue;
+      seen.add(v);
+      if (Array.isArray(v)) { v.forEach((x, i) => queue.push([x, [...at, i], v])); continue; }
+      let keys; try { keys = Object.keys(v); } catch { continue; }
+      for (const k of keys) { let d; try { d = Object.getOwnPropertyDescriptor(v, k); } catch { continue; } if (d && Object.hasOwn(d, 'value')) queue.push([d.value, [...at, k], v]); }
+    }
+    return null;
+  };
+  const routes = new Map();
+  const locate = (fn) => { if (routes.has(fn)) return routes.get(fn); let r = find(env.handedRoot, [], fn); for (let j = 0; !r && j < results.length; j++) r = find(results[j].value, results[j].route, fn); routes.set(fn, r); return r; };
+  env.handedAt = (fn) => { const r = locate(fn); return r ? { params: handedParams(r.route), holder: r.holder } : null; };
+  env.handedResult = (fn, value) => { const r = routes.get(fn); if (r && value && (typeof value === 'object' || typeof value === 'function')) results.push({ value, route: [...r.route, HANDED_CALL] }); };
+}
+// The callbacks a call was handed: every function argument lean drew is a fake (gen.mjs `function`: a path ending `#fn`),
+// and a call of it is a request of the world, so such a call is not closed. When every request the call made is a call
+// of one of them, on arguments that print as values, and each answer wrote nothing into what it was handed, the call is
+// a case a test restates with a spy per callback that answers what lean's fake answered, in call order, and asserts the
+// calls (new-test.mjs). The case is the test's alone: it is not a closed call, so no other fact of the unit reads it.
+// null: some request is not such a call. LEAN_BREAK=new-test-callbacks: no callback case
+const FN_FAKE = /#fn$/;
+// every request a case made, in time order: the call's own, then each drive's (its calls, then its omitted forms')
+export const requestsOf = (o) => [...(o.trace ?? []), ...(o.drives ?? []).flatMap((d) => [...(d.trace ?? []), ...(d.omitted ?? []).flatMap((x) => x.trace ?? [])])];
+function fakePathsOf(v, out = new Set(), depth = 0) {
+  if (!v || typeof v !== 'object' || depth > 12) return out;
+  if (typeof v.$fake === 'string') { out.add(v.$fake); return out; }
+  for (const x of Array.isArray(v) ? v : Object.values(v)) fakePathsOf(x, out, depth + 1);
+  return out;
+}
+export function callbackCalls(shown, trace, env) {
+  if (broken('new-test-callbacks')) return trace.length ? null : [];
+  const paths = [...fakePathsOf(shown)].filter((p) => FN_FAKE.test(p));
+  const calls = new Map(paths.map((p) => [p, []])), seen = new Map();
+  for (const t of trace) {
+    if (t.op !== 'call' || !calls.has(t.path)) return null;
+    const k = (seen.get(t.path) ?? 0) + 1; seen.set(t.path, k);
+    const a = env.callAnswers?.get(`${t.path}()#${k}`);
+    if (!a || a.wrote) return null;
+    calls.get(t.path).push({ args: t.args, returned: render(a.value) });
+  }
+  return paths.map((p) => ({ path: p, calls: calls.get(p) }));
 }
 
 // `extra`: a test file read as the unit's PR-added test (new-tests.mjs): `allow` the test modules it may load, `globals`
@@ -347,6 +432,8 @@ export async function runNew(opts) {
     env.argPool = inputs.filter(x => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
     const shown = inputs.map((x) => render(x)); // the input as the record names it, before the call may write into it
     if (newProbes) env.siteState.hits = new Set(); // the statements the call completes, not the load
+    env.callAnswers = new Map(); // what each call of a fake answered (lane w9am: a callback's spy answers the same)
+    handedDraws(env, spec.handedParams);
     const observation = await observe({ env, unit: picked }, spec, inputs, ms);
     if (observation.harness) return stop({ inputs: i, reason: `input ${i}: ${observation.harness}` });
     const threw = Object.hasOwn(observation.outcome, 'threw');
@@ -361,9 +448,16 @@ export async function runNew(opts) {
     if (ok !== 'yes') { reach.notAdmitted++; continue; }
     reach.admitted++;
     const world = broken('closed-call') ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
-    if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); continue; }
+    // a case's value is the one the call returned, before the drives called what it handed out (they may write into it)
+    const caseOf = (callbacks) => ({ i, step, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: observation.drives?.length ? observation.outcome.returned : render(observation.raw?.returned) }, drives: drivesOf(observation.drives, env), ...(callbacks?.length ? { callbacks } : {}), thenable, sync });
+    if (world.length) {
+      reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1);
+      const callbacks = reach.graphWorld.length || broken('new-test-cases') ? null : callbackCalls(shown, requestsOf(observation), env); // (lane w9am) every request a call of a callback it was handed: a case of the test alone
+      if (callbacks?.some((c) => c.calls.length)) cases.push({ ...caseOf(callbacks), world: true });
+      continue;
+    }
     reach.closed++;
-    if (!broken('new-test-cases')) cases.push({ i, step, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: render(observation.raw?.returned) }, drives: !!observation.drives?.length, thenable, sync });
+    if (!broken('new-test-cases')) cases.push(caseOf(callbackCalls(shown, requestsOf(observation), env) ?? []));
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
     const wide = declared.params.some((p, k) => p.spec?.all && !(p.optional && inputs[k] === undefined)); // admitted only because a parameter's type is any or unknown, which admit every value: a validator's own rejection reads so
     if (threw) {
@@ -414,7 +508,7 @@ export async function runNew(opts) {
   // (new-unit tests) a test for the unit from its closed calls: the record new:proposed-test, or a coverage record naming why none
   if (!broken('new-test')) {
     let proposed;
-    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, cases, statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
+    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, handedParams: spec.handedParams ?? null, nullable, cases, statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
     catch (e) { proposed = { kind: 'new:coverage', phase: 'test', reason: `the test writer failed: ${String(e?.message ?? e).slice(0, 200)}` }; }
     if (proposed) book.add(proposed, `${proposed.kind} proposed`);
   }
