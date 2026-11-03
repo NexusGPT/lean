@@ -1564,6 +1564,11 @@ export async function runPair(opts) {
 }
 // a WITNESS names the same-file callees it may have come through (callees.mjs): `through` on each witness, and
 // `where.cause = 'callee'` when the unit's own text is equal on both sides
+// a unit run outside runPairInProcess, the new unit's runner child (exec/new-unit.mjs, lane w9bb): an error its code lets
+// escape after it returned (a fire-and-forget promise that rejects) is the unit's, a late-error record, as in a paired run;
+// before, the child's late hooks took it for lean's own and exited 1 (`candidate runner exited 1: `, n8n#41805's
+// recover, whose swapped await left the recovery promise unawaited). LEAN_BREAK=w9bb-runner-late-errors: not counted
+export async function inUnitRun(f) { const on = !broken('w9bb-runner-late-errors'); if (on) runsInFlight++; try { return await f(); } finally { if (on) runsInFlight--; } }
 export async function runPairInProcess(opts) { runsInFlight++; try { return await runPairInFlight(opts); } finally { runsInFlight--; } } // a unit run in flight: the late hooks record what escapes it
 async function runPairInFlight(opts) {
   readLoadFactor(); // the machine's share of a core for this unit: the wall allowance of every in-process watchdog

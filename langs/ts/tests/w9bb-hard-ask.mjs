@@ -21,6 +21,9 @@
 //                    settings schema) in a package declaring `"zod": "^4.1.11"` loads, zod the recording proxy, since the
 //                    vendored zod is 3.25.76; a range on the vendored major keeps it, an exact pin too (range.mjs cases). Under
 //                    the break: `ASK(fake answering at module evaluation): z.email is not a function`.
+//   w9bb-runner-late-errors exec/run.mjs inUnitRun: a new unit whose call leaves a rejecting promise unawaited
+//                    (n8n#41805's swapped recover) is NEW, the rejection a late-error record of its trace. Under the
+//                    break the runner child exits 1 on it: `candidate runner exited 1: ...unhandled rejection...`.
 //
 //   node tests/w9bb-hard-ask.mjs           each check green
 //   node tests/w9bb-hard-ask.mjs --break   each check once with its mechanism switched off: every one must be red
@@ -104,6 +107,14 @@ const checks = [
     const ranges = [['^4.1.11', false], ['^3.22.0', true], ['~3.25.0', true], ['3.24.1', true], ['>=3 <4', true], ['4.x', false], ['^3.25.0 || ^4.0.0', true], ['2.x', false], ['workspace:*', null], ['catalog:', null]];
     const wrong = ranges.filter(([r, want]) => compatible(r, '3.25.76') !== want);
     return { ok: j.verdict === 'NEW' && !wrong.length, detail: `${j.verdict}${j.verdict === 'NEW' ? '' : `: ${String(b.reason ?? j.reason).slice(0, 200)}`}; zod 3.25.76 against ${ranges.map(([r]) => r).join(', ')}: ${wrong.length ? `wrong at ${wrong.map(([r]) => r).join(', ')}` : 'as npm reads them'}` };
+  }],
+  ['w9bb-runner-late-errors', 'a rejection the new unit left unawaited is its late-error record, not the runner\'s exit', (m) => {
+    const f = path.join(here, 'fixtures', 'w9bb-hard-ask', 'recover.ts');
+    const r = spawnSync(process.execPath, [path.join(here, '..', 'check.mjs'), '--candidate', f, '--unit', 'Recoverer.recover', '--n', '8', '--no-project', '--dafny-seconds', '5'], { encoding: 'utf8', env: envOf(m), maxBuffer: 1 << 26 });
+    let j; try { j = JSON.parse(r.stdout); } catch { return { ok: false, detail: `unparsed (exit ${r.status}): ${String(r.stderr).slice(-300)}` }; }
+    const b = j.certificate?.lanes?.B ?? {};
+    const late = JSON.stringify(b).includes('late-error');
+    return { ok: j.verdict === 'NEW' && late, detail: `${j.verdict}${late ? ', a late-error record' : ''}${j.verdict === 'NEW' ? '' : `: ${String(b.reason ?? j.reason).slice(0, 220)}`}` };
   }],
 ];
 

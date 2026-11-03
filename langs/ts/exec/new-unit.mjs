@@ -6,7 +6,7 @@ import { createRequire, isBuiltin } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFunctions } from '../common.mjs';
-import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv, boundedChild, stderrCause } from './run.mjs';
+import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv, boundedChild, stderrCause, inUnitRun } from './run.mjs';
 import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { Environment, BudgetError, render, programBuilt, escapeEntry } from './fake.mjs';
 import { admitted, member, mismatch, declaration, declaredThrow, edgePlan, edgeInput } from './declared.mjs';
@@ -893,9 +893,9 @@ export function runNewFile(opts) {
 if (process.argv[1] && path.resolve(process.argv[1]) === here) {
   scrubEnv(); absentOutsideReads();
   const opts = JSON.parse(process.argv[2]);
-  if (!opts.batch) console.log(JSON.stringify(await runNew(opts)));
+  if (!opts.batch) console.log(JSON.stringify(await inUnitRun(() => runNew(opts)))); // the run is the unit's: its late errors are records (run.mjs inUnitRun)
   else {
     let loaded = null; try { loaded = loadProgram(opts.candidate, { project: opts.project ?? true }); } catch { /* each unit says so */ }
-    for (const unit of opts.units) { let r; try { r = await runNew({ ...opts, unit, units: undefined, batch: undefined, ...(loaded ? { loaded } : {}) }); } catch (e) { r = { candidateOnly: true, unit, file: opts.candidate, verdict: 'ASK', reason: `harness: ${String(e?.message ?? e).slice(0, 200)}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: String(e?.message ?? e).slice(0, 200) }] }; } process.stdout.write(JSON.stringify({ ...r, unit }) + '\n'); }
+    for (const unit of opts.units) { let r; try { r = await inUnitRun(() => runNew({ ...opts, unit, units: undefined, batch: undefined, ...(loaded ? { loaded } : {}) })); } catch (e) { r = { candidateOnly: true, unit, file: opts.candidate, verdict: 'ASK', reason: `harness: ${String(e?.message ?? e).slice(0, 200)}`, records: [{ kind: 'new:coverage', phase: 'harness', reason: String(e?.message ?? e).slice(0, 200) }] }; } process.stdout.write(JSON.stringify({ ...r, unit }) + '\n'); }
   }
 }
