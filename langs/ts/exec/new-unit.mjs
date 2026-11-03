@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import { createRequire, isBuiltin } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFunctions } from '../common.mjs';
+import { ts, loadProgram, loadProgramOptions, parseProjectConfig, topLevelFunctions, resolveFrom } from '../common.mjs';
 import { sandbox, pickUnit, observe, workerSandbox, workerFlagsFrom, workerEnv, absentOutsideReads, scrubEnv } from './run.mjs';
 import { guardSpawn, spawnRefusals } from './sandbox-list.mjs';
 import { Environment, BudgetError, render, programBuilt } from './fake.mjs';
@@ -46,7 +46,7 @@ function sourceSpecifier(specifier, options) {
 
 // source paths use TypeScript resolution; Node supplies errors for unresolved runtime specifiers
 function resolveModule(specifier, from, options) {
-  const found = ts.resolveModuleName(specifier, from, options, ts.sys).resolvedModule;
+  const found = resolveFrom(specifier, from, options).resolvedModule; // (lane w9au) the file's own project, a workspace package's source
   // a declared package is provided by the recording environment, without running installed code
   const packageOf = name => name.startsWith('@') ? name.split('/').slice(0, 2).join('/') : name.split('/')[0];
   const packageNames = [packageOf(specifier), ...aliasTargets(specifier, options).filter(installedPath).map(target => packageOf(target.split(/node_modules[/\\]/).at(-1)))];
@@ -335,7 +335,7 @@ export async function runNew(opts) {
     // the module graph holds world values when it links a package lean fakes, its evaluation asked the world, or its code
     // names a global the sandbox answers with a handle (a test of a handle's truth or type runs no trap, so no trace sees it)
     // (lane w9k) the unit's own reach decides when it is read; the module graph's rule stands where it is not
-    if (reach.graphWorld === null) { let own = null; try { own = unitWorld(reading, unit, loaded); } catch { own = null; } reach.rule = own ? 'unit' : 'graph'; reach.graphWorld = own ?? graphWorld(loaded, sources); }
+    if (reach.graphWorld === null) { let own = null; try { own = unitWorld(reading, unit, loaded, options); } catch { own = null; } reach.rule = own ? 'unit' : 'graph'; reach.graphWorld = own ?? graphWorld(loaded, sources); }
     const picked0 = pickUnit(loaded.exports, spec, env);
     if (!picked0) return { ...base, verdict: 'ASK', loaded: true, inputs: i, reason: `unit ${unit} not callable`, bound, records: [...book.list(), coverage('draw', `unit ${unit} not callable`)] };
     let sync = false, thenable = false; // a throw before the call returned, or a promise it returned: a rejection is a fault too
@@ -599,6 +599,29 @@ function rootOf(d) {
   return null;
 }
 const sourceOf = (f) => !f.isDeclarationFile && !/[\\/]node_modules[\\/]/.test(f.fileName);
+// (lane w9au) an import the checker does not follow (no declaration behind it: a checkout without an install, a builtin
+// without Node's declarations), read as lean's loader links it (resolveModule): a Node builtin, a world surface lean's
+// node fakes answer by name ({builtin}); a package lean fakes ({package}); a source file the loader reads ({file}); else
+// why it resolves to nothing ({why}), so the refusal names its cause. LEAN_BREAK=reach-builtins: a builtin is not read
+// as a surface; LEAN_BREAK=reach-packages: a package is not read as one lean fakes; LEAN_BREAK=reach-reason: no cause
+function importSurface(spec, fromAbs, options) {
+  const bare = spec.replace(/^node:/, '');
+  if (isBuiltin(spec) && (spec.startsWith('node:') || isBuiltin(bare))) { if (!broken('reach-builtins')) return { builtin: spec.startsWith('node:') ? spec : `node:${spec}` }; }
+  else if (options) {
+    let r = null, failure = null;
+    try { r = resolveModule(spec, fromAbs, options); } catch (e) { failure = e; }
+    if (r?.external) { if (!broken('reach-packages')) return { package: spec }; }
+    else if (r?.file) return { file: r.file, why: `the loader reads ${path.basename(r.file)}, which the checker's program does not hold` };
+    else if (failure) {
+      const link = failure.link ?? {};
+      const relative = spec.startsWith('.') || path.isAbsolute(spec);
+      const why = failure.environmentClass === 'build asset' ? `'${spec}' is a build asset` : failure.environmentClass === 'missing generated output' ? `'${spec}' names generated output the checkout does not hold` : relative ? `no file '${spec}' beside ${path.basename(fromAbs)}` : link.local ? `the tsconfig path for '${spec}' names no file` : `no tsconfig path for '${spec}', and no package '${spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]}' is declared or installed`;
+      return { why };
+    }
+  }
+  if (isBuiltin(spec)) return { why: `'${spec}' is a Node builtin without its declarations` };
+  return { why: `package '${spec}' has no declarations the checker reads` };
+}
 // the world one unit's run can read without a trap (lane w9k): what the code it reaches names (reach.mjs, followed
 // across the program's source files through the imports and members it uses), not the whole module graph. World: a
 // package binding (an import of a package lean fakes, or a module constant initialised from one) read other than as a
@@ -607,7 +630,7 @@ const sourceOf = (f) => !f.isDeclarationFile && !/[\\/]node_modules[\\/]/.test(f
 // run may read that loading could have set is world too: a `let` or `var`, a constant or class whose initialiser runs
 // code at load, and any file of the reach holding a top-level statement that is no declaration. null: the unit's
 // declaration is not read, and the graph's rule (graphWorld) stands. LEAN_BREAK=unit-reach: the graph's rule always
-function unitWorld(reading, unit, loaded) {
+function unitWorld(reading, unit, loaded, options = null) {
   if (broken('unit-reach') || !reading?.checker || !reading.sf) return null;
   const u = topLevelFunctions(reading.sf).get(unit);
   const start = u?.node ? rootOf(u.node) ?? u.node : null;
@@ -615,9 +638,13 @@ function unitWorld(reading, unit, loaded) {
   const checker = reading.checker;
   const faked = new Set(loaded.fakes);
   const asked = loadReads(loaded, faked);
+  // (lane w9au) an import of a file the run did not link is what the loader would link it as (importSurface)
+  const surfaces = new Map();
+  const surfaceOf = (spec, f) => { const k = `${f.fileName}\0${spec}`; if (!surfaces.has(k)) surfaces.set(k, importSurface(spec, f.fileName, options)); return surfaces.get(k); };
+  const fakedIn = (f) => ({ has: (spec) => { if (faked.has(spec)) return true; const s = surfaceOf(spec, f); return !!(s.package || s.builtin); } });
   const reaches = new Map(), taints = new Map();
   const reachFor = (f) => { if (!reaches.has(f)) reaches.set(f, makeReach(checker, f)); return reaches.get(f); };
-  const taintOf = (f) => { if (!taints.has(f)) taints.set(f, taintedNames(f, faked)); return taints.get(f); };
+  const taintOf = (f) => { if (!taints.has(f)) taints.set(f, taintedNames(f, fakedIn(f))); return taints.get(f); };
   const out = [], walked = new Set(), roots = new Set(), files = new Set();
   const at = (n) => `${path.basename(n.getSourceFile().fileName)}:${n.getSourceFile().getLineAndCharacterOfPosition(n.getStart()).line + 1}`;
   const queue = [];
@@ -644,8 +671,10 @@ function unitWorld(reading, unit, loaded) {
             const spec = decl?.moduleSpecifier && ts.isStringLiteralLike(decl.moduleSpecifier) ? decl.moduleSpecifier.text : null;
             let target = null; try { target = checker.getAliasedSymbol(sym); } catch { target = null; }
             const targets = (target?.declarations ?? []);
-            if (spec !== null && faked.has(spec)) { if (!member && !trapUse(n)) out.push(`a package binding \`${n.text}\` is read without a trap (${at(n)})`); }
-            else if (!targets.length) { if (!member) out.push(`an import lean cannot follow: \`${n.text}\` (${at(n)})`); }
+            const surface = spec !== null && !faked.has(spec) && !targets.length ? surfaceOf(spec, f) : null;
+            if (spec !== null && (faked.has(spec) || surface?.package)) { if (!member && !trapUse(n)) out.push(`a package binding \`${n.text}\` is read without a trap (${at(n)})`); }
+            else if (surface?.builtin) { if (!member && !trapUse(n)) out.push(`a ${surface.builtin} binding \`${n.text}\` is read without a trap (${at(n)})`); }
+            else if (!targets.length) { if (!member) out.push(`an import lean cannot follow: \`${n.text}\` (${at(n)})${surface?.why && !broken('reach-reason') ? `: ${surface.why}` : ''}`); }
             else for (const d of targets) {
               const df = d.getSourceFile();
               if (ts.isSourceFile(d)) { if (sourceOf(df)) for (const s of df.statements) enqueue(s); continue; } // a namespace import: the module's statements

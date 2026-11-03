@@ -14,6 +14,13 @@
 //   new-test-stubs    exec/new-test.mjs stubsOf: the answers as the runner's stubs (world.ts readConfig: vi.mock of node:fs)
 //   new-test-calls    exec/new-test.mjs callsOf: the requests asserted (world.ts saveNote: the write's path and content)
 //   url-strings       exec/spec.mjs: a unit that hands a string to the URL parser meets URLs (fetchJson: a response stubbed)
+// (lane w9au, design/w9au-import-follow.md) a unit whose reach crosses an import the checker follows only as the
+// repository resolves it (fixtures/new-unit-test/imports, a workspace read with its own tsconfig files):
+//   reach-resolve     common.mjs resolveFrom: an alias of another package's own tsconfig (later: a test), a workspace
+//                     package's manifest entry read back to its source (gauge: the source's read of document is seen)
+//   reach-packages    exec/new-unit.mjs importSurface: a declared package the checkout does not install (label: a test)
+//   reach-builtins    exec/new-unit.mjs importSurface: node:net without Node's declarations (hostKind: a test)
+//   reach-reason      exec/new-unit.mjs unitWorld: an import still not followed names why (bannerText)
 // Plain checks (no mechanism of their own): the clock read once is fake timers (stamp); Math.random is spied (pick); an
 // argument lean answers member by member is an object of its answers (describeUser); a unit
 // that asks the world where no stub answers gets no test, its reason naming the surface (world.ts elapsed: performance);
@@ -29,9 +36,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const fixtures = path.join(here, 'fixtures', 'new-unit-test');
 const brk = process.argv.includes('--break');
 
-function lean(args, mechanism) {
+function lean(args, mechanism, project = null) {
   const env = { ...process.env, ...(mechanism ? { LEAN_BREAK: mechanism } : {}) };
-  const r = spawnSync('node', [path.join(here, '..', 'check.mjs'), ...args, '--no-project', '--json'], { encoding: 'utf8', env, maxBuffer: 1 << 26 });
+  const r = spawnSync('node', [path.join(here, '..', 'check.mjs'), ...args, ...(project ? ['--project', project] : ['--no-project']), '--json'], { encoding: 'utf8', env, maxBuffer: 1 << 26 });
   try { return JSON.parse(r.stdout); } catch { return { verdict: `unparsed (exit ${r.status})`, certificate: { newUnit: { records: [] } }, stderr: String(r.stderr).slice(-300) }; }
 }
 const records = (r) => r.certificate?.newUnit?.records ?? [];
@@ -39,7 +46,11 @@ const proposed = (r) => records(r).find((x) => x.kind === 'new:proposed-test') ?
 const coverageTest = (r) => records(r).find((x) => x.kind === 'new:coverage' && x.phase === 'test') ?? null;
 const calc = path.join(fixtures, 'calc.ts'), world = path.join(fixtures, 'world.ts');
 const cache = new Map();
-const run = (unit, file = calc, m = null, n = 24) => { const k = `${file}|${unit}|${m}|${n}`; if (!cache.has(k)) cache.set(k, lean(['--candidate', file, '--unit', unit, '--n', String(n)], m)); return cache.get(k); };
+const run = (unit, file = calc, m = null, n = 24, project = null) => { const k = `${file}|${unit}|${m}|${n}|${project}`; if (!cache.has(k)) cache.set(k, lean(['--candidate', file, '--unit', unit, '--n', String(n)], m, project)); return cache.get(k); };
+// (lane w9au) the workspace fixture, read with the app package's own tsconfig
+const app = path.join(fixtures, 'imports', 'packages', 'app'), units = path.join(app, 'src', 'units.ts'), address = path.join(app, 'src', 'address.ts');
+const inApp = (unit, m = null, file = units) => run(unit, file, m, 24, path.join(app, 'tsconfig.json'));
+const reachReason = (r) => records(r).find((x) => x.kind === 'new:coverage' && x.phase === 'draw')?.reason ?? coverageTest(r)?.reason ?? '';
 
 const checks = [
   ['new-reach', 'the statements of a unit no parent holds are probed and counted', (m) => {
@@ -92,6 +103,42 @@ const checks = [
     const t = proposed(run('fetchJson', world, m)); const text = t?.text ?? '';
     const ok = /mockResolvedValueOnce\(new Response\(/.test(text) && /\.resolves\./.test(text);
     return { ok, detail: text.split('\n').find((l) => /new Response/.test(l))?.trim().slice(0, 140) ?? coverageTest(run('fetchJson', world, m))?.reason ?? 'no response stubbed' };
+  }],
+  // (lane w9au) an import the reach could not follow is followed as the repository resolves it (design/w9au-import-follow.md)
+  ['reach-resolve', 'an alias of another workspace package\'s own tsconfig is followed (`@lib/tick` from Clock.now): the unit gets a test', (m) => {
+    const r = inApp('later', m); const t = proposed(r);
+    const ok = !!t && t.check?.passed === t.cases && t.check.world === 0 && !/cannot follow/.test(reachReason(r));
+    return { ok, detail: t ? `cases ${t.cases}, check ${JSON.stringify(t.check)}` : reachReason(r) || 'no record' };
+  }],
+  ['reach-resolve', 'a workspace package is read from its source, named by its manifest\'s build entry (dist/main.js from src/main.ts): what the source reads is seen', (m) => {
+    const r = inApp('gauge', m); const why = reachReason(r);
+    const ok = /names document \(main\.ts:3\)/.test(why);
+    return { ok, detail: why.slice(0, 150) || 'no reason' };
+  }],
+  ['reach-packages', 'a package the repository declares and the checkout does not install is a package lean fakes (`v7` of uuid, called): the unit gets a test', (m) => {
+    const r = inApp('label', m); const t = proposed(r);
+    const ok = !!t && t.check?.passed === t.cases && t.check.world === 0 && !/cannot follow/.test(reachReason(r));
+    return { ok, detail: t ? `cases ${t.cases}, check ${JSON.stringify(t.check)}` : reachReason(r) || 'no record' };
+  }],
+  ['reach-builtins', 'a Node builtin read without Node\'s declarations is a world surface lean answers (`isIP` of node:net, called): the unit gets a test', (m) => {
+    const r = inApp('hostKind', m); const t = proposed(r);
+    const ok = !!t && t.check?.passed === t.cases && t.check.world === 0 && !/cannot follow/.test(reachReason(r));
+    return { ok, detail: t ? `cases ${t.cases}, check ${JSON.stringify(t.check)}` : reachReason(r) || 'no record' };
+  }],
+  ['reach-reason', 'an import still not followed names why (`@/meta/version`: the tsconfig path names no file)', (m) => {
+    const r = inApp('bannerText', m); const why = reachReason(r);
+    const ok = !proposed(r) && /an import lean cannot follow: `VERSION` \(banner\.ts:5\): the tsconfig path for '@\/meta\/version' names no file/.test(why);
+    return { ok, detail: why.slice(0, 160) || 'no reason' };
+  }],
+  [null, 'a `.js` specifier naming a `.ts` file is followed (TypeScript\'s own resolution): the unit gets a test', () => {
+    const r = inApp('quad'); const t = proposed(r);
+    const ok = !!t && t.check?.passed === t.cases;
+    return { ok, detail: t ? `cases ${t.cases}, check ${JSON.stringify(t.check)}` : reachReason(r) || 'no record' };
+  }],
+  [null, 'node:net called by the unit is mocked with lean\'s answers', () => {
+    const r = inApp('isAddress', null, address); const t = proposed(r); const text = t?.text ?? '';
+    const ok = /vi\.mock\("node:net", /.test(text) && /vi\.mocked\(stub_node_net\.isIP\)/.test(text) && t.check?.passed === t.cases && t.check.world === 0;
+    return { ok, detail: t ? text.split('\n').filter((l) => /vi\.(?:mock|mocked)\(/.test(l)).map((l) => l.trim()).join(' | ').slice(0, 150) : reachReason(r) || 'no record' };
   }],
   [null, 'the clock read once is fake timers at lean\'s instant', () => {
     const t = proposed(run('stamp', world)); const text = t?.text ?? '';

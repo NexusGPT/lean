@@ -80,7 +80,7 @@ export function loadProgram(file, opts = {}) {
     } else configFile = null;
   }
   if (!configFile) roots = [...roots, path.join(here, 'ambient.d.ts')]; // structuredClone and the like, declared for a file read without its project
-  const program = ts.createProgram(roots, options);
+  const program = configFile ? ts.createProgram(roots, options, projectHost(options)) : ts.createProgram(roots, options); // (lane w9au) a file of another project resolves as its project does
   const sf = program.getSourceFile(abs);
   if (!sf) throw new Error(`cannot read ${file}`);
   const checker = program.getTypeChecker();
@@ -293,6 +293,114 @@ export function workspaceResolution(options, configFile) {
     if (src && !matched(name)) options.paths[name] = [src];
     if (!matched(name + '/x')) options.paths[name + '/*'] = [path.join(dir, 'src') + '/*', dir + '/*'];
   }
+}
+
+// (lane w9au) A workspace package's own entries as source files of this tree: [[subpath, file]] for every subpath its
+// manifest names (`exports` keys without a `*`, each condition in the order Node and TypeScript read them: types,
+// source, import, module, default, require; the top-level `source`, `types`/`typings`, `module`, `main` for `.`). A
+// target that is a source file is kept as it is; a built target (`dist/x.js`, `dist/x.d.ts`) is read back through the
+// package's own tsconfig: its outDir maps to its rootDir (else the common folder of its source files), the emitted
+// extension to the source's (.ts, .tsx, .mts, .cts, and .js under allowJs). A target no source builds is left out.
+const manifestCache = new Map();
+export function manifestSources(dir) {
+  if (manifestCache.has(dir)) return manifestCache.get(dir);
+  const out = [];
+  manifestCache.set(dir, out);
+  let pkg; try { pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')); } catch { return out; }
+  const ORDER = ['types', 'source', 'import', 'module', 'default', 'require', 'node'];
+  const firstTargets = (v) => { if (typeof v === 'string') return [v]; if (Array.isArray(v)) return v.flatMap(firstTargets); if (v && typeof v === 'object') return [...ORDER.filter((k) => k in v), ...Object.keys(v).filter((k) => !ORDER.includes(k))].flatMap((k) => firstTargets(v[k])); return []; };
+  const subpaths = new Map();
+  const ex = pkg.exports;
+  if (typeof ex === 'string' || Array.isArray(ex)) subpaths.set('.', firstTargets(ex));
+  else if (ex && typeof ex === 'object') {
+    if (Object.keys(ex).some((k) => k.startsWith('.'))) { for (const [k, v] of Object.entries(ex)) if (k.startsWith('.') && !k.includes('*')) subpaths.set(k, firstTargets(v)); }
+    else subpaths.set('.', firstTargets(ex)); // a conditions object for `.` alone
+  }
+  const top = [pkg.source, pkg.types, pkg.typings, pkg.module, pkg.main].filter((x) => typeof x === 'string');
+  subpaths.set('.', [...(subpaths.get('.') ?? []), ...top]);
+  let build = null;
+  const buildOf = () => {
+    if (build) return build;
+    build = { outDir: null, rootDir: null, allowJs: false };
+    const cfg = ['tsconfig.build.json', 'tsconfig.json'].map((f) => path.join(dir, f)).find((f) => fs.existsSync(f));
+    const parsed = cfg ? parseProjectConfig(cfg) : null;
+    if (parsed) {
+      build.outDir = parsed.options.outDir ?? null; build.allowJs = !!parsed.options.allowJs;
+      const sources = parsed.fileNames.filter((f) => !/\.d\.[mc]?ts$/.test(f) && !/[\\/]node_modules[\\/]/.test(f)).map((f) => path.dirname(path.resolve(f)));
+      build.rootDir = parsed.options.rootDir ?? (sources.length ? sources.reduce((a, b) => { while (!(b + path.sep).startsWith(a + path.sep) && a !== path.dirname(a)) a = path.dirname(a); return a; }) : null);
+    }
+    return build;
+  };
+  const SOURCE = /\.(?:[mc]?ts|tsx)$/;
+  const sourceOf = (target) => {
+    const abs = path.resolve(dir, target);
+    if (!(abs + path.sep).startsWith(dir + path.sep) || /[\\/]node_modules[\\/]/.test(abs)) return null;
+    if (SOURCE.test(abs) && !/\.d\.[mc]?ts$/.test(abs) && fs.existsSync(abs)) return abs;
+    const b = buildOf();
+    const stems = [];
+    const stem = abs.replace(/\.d\.([mc]?)ts$/, '.$1js').replace(/\.([mc]?)js$/, '');
+    if (b.outDir && b.rootDir && (stem + path.sep).startsWith(path.resolve(b.outDir) + path.sep)) stems.push(path.join(b.rootDir, path.relative(path.resolve(b.outDir), stem)));
+    stems.push(stem); // a `.js` specifier naming its own `.ts` beside it
+    for (const s of stems) for (const ext of ['.ts', '.tsx', '.mts', '.cts', ...(b.allowJs ? ['.js', '.jsx', '.mjs', '.cjs'] : [])]) if (fs.existsSync(s + ext)) return s + ext;
+    return null;
+  };
+  for (const [sub, targets] of subpaths) for (const t of targets) { const f = sourceOf(t); if (f) { out.push([sub, f]); break; } }
+  return out;
+}
+
+// (lane w9au) The compiler options a file's own project resolves its imports with: the nearest tsconfig above the file
+// (its `paths`, `baseUrl`, `moduleResolution`), read as loadProgram reads it, else lean's single-file options. A program
+// built for one file reads files of other projects (a workspace package's source); each of their imports resolves as
+// that project resolves it. LEAN_BREAK=reach-resolve: every file resolves with the program's own options
+const fileOptionsCache = new Map(); // tsconfig -> its compiler options
+export function fileProjectOptions(fromAbs) {
+  const cfg = ts.findConfigFile(path.dirname(fromAbs), ts.sys.fileExists, 'tsconfig.json') ?? null;
+  if (!cfg) return null;
+  if (!fileOptionsCache.has(cfg)) { let o = null; try { o = loadProgramOptions(fromAbs, cfg).options; } catch { o = null; } fileOptionsCache.set(cfg, o); }
+  return fileOptionsCache.get(cfg);
+}
+// one import of one file, resolved with the options of the file's own project when it holds one other than the
+// program's (programConfig): TypeScript's resolution, the result's shape (resolvedModule)
+const resolutionCaches = new WeakMap(); // options -> TypeScript's module resolution cache for them
+const cacheFor = (o) => { if (!resolutionCaches.has(o)) resolutionCaches.set(o, ts.createModuleResolutionCache(process.cwd(), (x) => x, o)); return resolutionCaches.get(o); };
+export function resolveFrom(spec, fromAbs, options, programConfig = options.configFilePath ?? null, mode = undefined) {
+  if (broken('reach-resolve')) return ts.resolveModuleName(spec, fromAbs, options, ts.sys, cacheFor(options), undefined, mode);
+  const cfg = ts.findConfigFile(path.dirname(fromAbs), ts.sys.fileExists, 'tsconfig.json') ?? null;
+  const own = cfg && cfg !== programConfig ? fileProjectOptions(fromAbs) : null;
+  let r = own ? ts.resolveModuleName(spec, fromAbs, own, ts.sys, cacheFor(own), undefined, mode) : null;
+  if (!r?.resolvedModule) r = ts.resolveModuleName(spec, fromAbs, options, ts.sys, cacheFor(options), undefined, mode);
+  // a package of the repository's own workspace is its source (workspaceResolution), never a build output or an
+  // install's copy: the entry its manifest names, read back to the source that builds it
+  const found = r.resolvedModule?.resolvedFileName;
+  if (!found || /[\\/]node_modules[\\/]/.test(found) || /\.d\.[mc]?ts$/.test(found)) {
+    const entry = workspaceEntry(spec, fromAbs);
+    if (entry) return { resolvedModule: { resolvedFileName: entry, extension: ts.extensionFromPath(entry), isExternalLibraryImport: false, resolvedUsingTsExtension: false }, failedLookupLocations: [] };
+  }
+  return r;
+}
+// (lane w9au) a specifier naming a workspace package or one of its manifest's subpaths: the source file, else null
+const workspaces = new Map(); // dir -> workspacePaths(dir)
+export function workspaceEntry(spec, fromAbs) {
+  if (spec.startsWith('.') || path.isAbsolute(spec)) return null;
+  const dir = path.dirname(fromAbs);
+  if (!workspaces.has(dir)) workspaces.set(dir, workspacePaths(dir));
+  const ws = workspaces.get(dir);
+  for (const [name, pdir] of ws?.packages ?? []) {
+    if (spec !== name && !spec.startsWith(name + '/')) continue;
+    const sub = spec === name ? '.' : `./${spec.slice(name.length + 1)}`;
+    const hit = manifestSources(pdir).find(([s]) => s === sub);
+    if (hit) return hit[1];
+  }
+  return null;
+}
+// a compiler host whose module resolution is resolveFrom's, each import in the mode its file imports it (loadProgram)
+function projectHost(options) {
+  const host = ts.createCompilerHost(options);
+  host.resolveModuleNameLiterals = (literals, containingFile, redirected, opts, containingSourceFile) => literals.map((l) => {
+    let mode; try { mode = ts.getModeForUsageLocation(containingSourceFile, l, opts); } catch { mode = undefined; }
+    return resolveFrom(l.text, containingFile, opts, opts.configFilePath ?? null, mode);
+  });
+  return host;
 }
 
 // TypeScript's pattern test for a `paths` key: an exact key, or a key with one `*` whose prefix and suffix both fit
