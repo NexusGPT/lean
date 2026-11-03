@@ -48,8 +48,12 @@ function sourceSpecifier(specifier, options) {
 function resolveModule(specifier, from, options) {
   const found = ts.resolveModuleName(specifier, from, options, ts.sys).resolvedModule;
   // a declared package is provided by the recording environment, without running installed code
-  const packageOf = name => name.startsWith('@') ? name.split('/').slice(0, 2).join('/') : name.split('/')[0];
-  const packageNames = [packageOf(specifier), ...aliasTargets(specifier, options).filter(installedPath).map(target => packageOf(target.split(/node_modules[/\\]/).at(-1)))];
+  const packageOf = name => name.startsWith('@') ? name.split('/').slice(0, 2).join('/') : /^[a-z][\w-]*:/.test(name) && !broken('w9bb-types-declared') ? name.split(':')[0] : name.split('/')[0]; // `bun:sqlite`: the runtime's package, bun
+  // a module the project declares through its types package (lane w9bb): `@types/bun` declares `bun` and `bun:*`,
+  // `@types/vscode` declares `vscode`: a module the host runtime supplies, never installed (DefinitelyTyped's names: `@a/b`
+  // is `@types/a__b`). LEAN_BREAK=w9bb-types-declared: the package's own name only, `Cannot find module 'bun'`
+  const typesOf = name => broken('w9bb-types-declared') ? [] : [`@types/${name.startsWith('@') ? name.slice(1).replace('/', '__') : name}`];
+  const packageNames = [packageOf(specifier), ...aliasTargets(specifier, options).filter(installedPath).map(target => packageOf(target.split(/node_modules[/\\]/).at(-1)))].flatMap(name => [name, ...typesOf(name)]);
   if (!specifier.startsWith('.') && !path.isAbsolute(specifier)) {
     let dir = path.dirname(from);
     for (;;) {

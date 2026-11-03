@@ -13,6 +13,10 @@
 //                    LegacySyntheticEvent) loads, and its constructor's changed field is a WITNESS; a dispatch through an
 //                    EventTarget of a CustomEvent is the same on both sides. Under the break: `ASK(platform global): Event
 //                    is not defined` at the load.
+//   w9bb-types-declared exec/new-unit.mjs resolveModule: a script importing `bun` and `bun:sqlite`, in a package that
+//                    declares only `@types/bun` (cline#14303's build-sidecar-bin.ts), loads with the runtime's module as
+//                    the recording fake; its new unit is NEW. Under the break: `ASK(undeclared external package): Cannot
+//                    find module 'bun'`.
 //
 //   node tests/w9bb-hard-ask.mjs           each check green
 //   node tests/w9bb-hard-ask.mjs --break   each check once with its mechanism switched off: every one must be red
@@ -79,6 +83,13 @@ const checks = [
     const b = (r) => r.certificate?.lanes?.B ?? {};
     const ok = b(ctor).verdict === 'WITNESS' && /^PASS/.test(String(b(relay).verdict));
     return { ok, detail: `constructor: ${b(ctor).verdict}${b(ctor).verdict === 'WITNESS' ? '' : ` ${String(b(ctor).reason).slice(0, 160)}`}; relay: ${b(relay).verdict}${/^PASS/.test(String(b(relay).verdict)) ? '' : ` ${String(b(relay).reason).slice(0, 160)}`}` };
+  }],
+  ['w9bb-types-declared', 'a module declared by its @types package (bun) is the recording fake; the script\'s new unit runs', (m) => {
+    const f = path.join(here, 'fixtures', 'w9bb-hard-ask', 'bun-script', 'scripts', 'build-bin.ts');
+    const r = spawnSync(process.execPath, [path.join(here, '..', 'check.mjs'), '--candidate', f, '--unit', 'compileTarget', '--n', '8', '--dafny-seconds', '5'], { encoding: 'utf8', env: envOf(m), maxBuffer: 1 << 26 });
+    let j; try { j = JSON.parse(r.stdout); } catch { return { ok: false, detail: `unparsed (exit ${r.status}): ${String(r.stderr).slice(-300)}` }; }
+    const b = j.certificate?.lanes?.B ?? {};
+    return { ok: j.verdict === 'NEW' && b.loaded !== false, detail: `${j.verdict}${j.verdict === 'NEW' ? '' : `: ${String(b.reason ?? j.reason).slice(0, 200)}`}` };
   }],
 ];
 

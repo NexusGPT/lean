@@ -1,0 +1,7 @@
+{
+  "name": "w9bb-bun-script",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "^1.3.14"
+  }
+}
