@@ -43,6 +43,7 @@ export function toSource(v, shared = null) {
   if (Array.isArray(v)) return `[${v.map((x) => toSource(x, shared)).join(', ')}]`;
   if (typeof v !== 'object') throw new Error(`no source for a ${typeof v}`);
   if (Object.hasOwn(v, '$undefined')) return 'undefined';
+  if (Object.hasOwn(v, '$input')) return v.$input; // (lane w9al) an argument stubbed from lean's answers, by its name
   if (Object.hasOwn(v, '$nan')) return 'NaN';
   if (Object.hasOwn(v, '$negativeZero')) return '-0';
   if (Object.hasOwn(v, '$infinity')) return v.$infinity < 0 ? '-Infinity' : 'Infinity';
@@ -117,10 +118,38 @@ function surfaceOf(a, specifiers) {
   }
   return refuse('a request no stub answers by itself');
 }
+// (lane w9al) the handles of lean's world a case's arguments hold (an argument drawn as a service, an interface lean
+// answers member by member: `arg0`, `arg1.store`): their paths, or null when an argument holds a world value no input
+// stub restates (a function, a symbol, a cycle, a cut-off depth, an unsettled promise, a handle that is not the input's)
+export function inputHandles(args) {
+  const out = []; let other = false;
+  const walk = (v, d) => {
+    if (other || !v || typeof v !== 'object') return;
+    if (d > 12) { other = true; return; }
+    if (Array.isArray(v)) { v.forEach((x) => walk(x, d + 1)); return; }
+    if (Object.hasOwn(v, '$fake')) { if (/^arg\d+(?:\.[A-Za-z_$][\w$]*)*$/.test(String(v.$fake))) out.push(v.$fake); else other = true; return; }
+    if (['$fn', '$deep', '$cycle', '$symbol'].some((t) => Object.hasOwn(v, t)) || (Object.hasOwn(v, '$promise') && !Object.hasOwn(v, 'settled'))) { other = true; return; }
+    Object.values(v).forEach((x) => walk(x, d + 1));
+  };
+  walk(args, 0);
+  return other ? null : out;
+}
+// a request on an input handle: a member read (its value) or a member called (its answers), by its path below the handle
+function inputOf(a, handles) {
+  const root = handles.filter((h) => a.path === h || a.path.startsWith(`${h}.`)).sort((x, y) => y.length - x.length)[0];
+  if (!root) return null;
+  const refuse = (why) => ({ refused: `${a.op} ${a.path}: ${why}` });
+  const member = a.path.slice(root.length + 1);
+  if (!member) return refuse('an argument the unit calls (a handed function: lane w9am)');
+  if (!/^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*$/.test(member)) return refuse('a member of an argument read by index or through a call');
+  if (a.op !== 'get' && a.op !== 'call') return refuse('an argument constructed');
+  if (a.op === 'get' && a.shown?.returns && typeof a.shown.returns === 'object' && Object.hasOwn(a.shown.returns, '$fake')) return refuse('the unit holds a handle the argument answered as a value');
+  return { kind: 'input', root, member };
+}
 // LEAN_BREAK=new-test-world (with runNew's): a case that asked the world is never usable
-export function worldOf(c, { specifiers = [], dialect = 'vitest' } = {}) {
+export function worldOf(c, { specifiers = [], dialect = 'vitest', handles = [] } = {}) {
   const w = c.world;
-  if (!w) return { answers: [] };
+  if (!w) return { answers: [] }; // an input handle the call never read is passed as an empty object
   if (broken('new-test-world')) return { refused: 'the world of a case is not read' };
   for (const g of w.graph ?? []) { const m = /^names ([A-Za-z_$][\w$]*) \(/.exec(g); if (!m || !STUB_GLOBALS.has(m[1])) return { refused: `the unit's reach: ${g}` }; }
   for (const t of w.trace) if (!['get', 'call', 'new', 'fault'].includes(t.op)) return { refused: `${t.op} ${t.path}: a request no stub answers by itself` };
@@ -130,7 +159,7 @@ export function worldOf(c, { specifiers = [], dialect = 'vitest' } = {}) {
     if (isNavigation(a, w.answers.slice(k + 1))) continue;
     if (a.op === 'get' && a.path.startsWith('module:') && a.shown?.returns && typeof a.shown.returns === 'object' && Object.hasOwn(a.shown.returns, '$fake')) return { refused: `get ${a.path}: the unit holds a handle of the package as a value` };
     if (a.callback) return { refused: `${a.op} ${a.path}: the unit hands the world a function, which a stub would have to run` };
-    const surface = surfaceOf(a, specifiers);
+    const surface = inputOf(a, handles) ?? surfaceOf(a, specifiers);
     if (surface.refused) return surface;
     if (surface.kind === 'module' && (dialect === 'node:test' || dialect === 'mocha')) return { refused: `${a.op} ${a.path}: a package stub needs the runner's module mock, which ${dialect} has not by default` };
     const shown = a.clock !== undefined ? { returns: (surface.read === 'string' ? 0 : CLOCK_EPOCH) + a.clock } : a.shown;
@@ -164,6 +193,43 @@ const thunkOf = (shown) => (Object.hasOwn(shown, 'returns') ? `() => ${answerSou
 const aliasOf = (spec) => `stub_${spec.replace(/[^\w$]+/g, '_')}`;
 const keyOf = (a) => (a.kind === 'module' ? `module ${a.spec} ${a.member}` : a.kind === 'global' ? `global ${a.name}` : a.kind);
 
+// (lane w9al) a case's input handles as object literals built from lean's answers: a member read is its value, a member
+// called a mock with its answers in call order (a recorder by hand in node:test and mocha), a member read through is a
+// nested object; the argument is passed by its name (`$input`) and its called members are asserted like every stub
+function inputsOf(c, D, before, targets, out) {
+  const roots = new Map();
+  for (const a of c.worldAnswers ?? []) if (a.kind === 'input') { if (!roots.has(a.root)) roots.set(a.root, []); roots.get(a.root).push(a); }
+  const handles = inputHandles(c.args) ?? [];
+  for (const h of handles) if (!roots.has(h)) roots.set(h, []);
+  const names = new Map([...roots.keys()].map((r) => [r, `input_${r.replace(/[^\w$]+/g, '_')}`]));
+  for (const [root, as] of [...roots].sort((x, y) => y[0].length - x[0].length)) { // an inner handle first: an outer one may hold it
+    const tree = {};
+    for (const a of as) {
+      const segs = a.member.split('.'); let node = tree;
+      for (const sgm of segs.slice(0, -1)) { const next = node[sgm] ??= { $node: {} }; if (!next.$node) throw new Error(`${a.path}: a member read both as a value and through`); node = next.$node; }
+      const last = segs.at(-1), have = node[last];
+      if (a.op === 'get') { if (have && !Object.hasOwn(have, '$value')) throw new Error(`${a.path}: a member read both as a value and as a handle`); if (!have) { node[last] = { $value: a.shown.returns }; out.stubs++; } }
+      else { if (have && !have.$calls) throw new Error(`${a.path}: a member both read and called`); (node[last] ??= { $calls: [] }).$calls.push(a); out.stubs++; }
+    }
+    const inner = [...names].filter(([r]) => r !== root && r.startsWith(`${root}.`));
+    for (const [r, n] of inner) { const segs = r.slice(root.length + 1).split('.'); let node = tree; for (const sgm of segs.slice(0, -1)) node = (node[sgm] ??= { $node: {} }).$node; node[segs.at(-1)] = { $ref: n }; }
+    const name = names.get(root);
+    const print = (node, at) => `{ ${Object.entries(node).map(([k, v]) => {
+      const key = /^[A-Za-z_$][\w$]*$/.test(k) ? k : JSON.stringify(k), expr = `${at}.${k}`;
+      if (v.$ref) return `${key}: ${v.$ref}`;
+      if (v.$node) return `${key}: ${print(v.$node, expr)}`;
+      if (Object.hasOwn(v, '$value')) return `${key}: ${answerSource(v.$value)}`;
+      if (D) { targets.push({ expr, answers: v.$calls }); return `${key}: ${D}.fn()${v.$calls.map((a) => onceOf(a.shown)).join('')}`; }
+      const rec = `${expr.replace(/[^\w$]+/g, '_')}Stub`;
+      before.push(`const ${rec} = { calls: [], answers: [${v.$calls.map((a) => thunkOf(a.shown)).join(', ')}] };`);
+      targets.push({ plain: rec, answers: v.$calls });
+      return `${key}: (...args) => { ${rec}.calls.push(args); const next = ${rec}.answers.shift(); if (!next) throw new Error(${JSON.stringify(`${expr}: called past the answers the test holds`)}); return next(); }`;
+    }).join(', ')} }`.replace('{  }', '{}');
+    before.push(`const ${name} = ${print(tree, name)};`);
+  }
+  if (roots.size) { const swap = (v) => (Array.isArray(v) ? v.map(swap) : v && typeof v === 'object' ? (Object.hasOwn(v, '$fake') && names.has(v.$fake) ? { $input: names.get(v.$fake) } : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, swap(x)]))) : v); c.argsShown = swap(c.args); out.surfaces.add('input'); }
+}
+
 // the stubs of the kept cases in the runner's dialect: file-level lines (imports, the hoisted module mocks, a hook that
 // undoes every stub after each test) and, per case, the lines before its call and the stubs whose calls it asserts.
 // The module mock holds every member the unit's file imports from the specifier and every member a case called.
@@ -173,7 +239,7 @@ export function stubsOf(kept, dialect, imported = new Map()) {
   if (broken('new-test-stubs')) { for (const c of kept) out.cases.set(c, { before: [], targets: [], restore: [] }); return out; }
   const D = dialect === 'jest' ? 'jest' : 'vi', plain = dialect === 'node:test' || dialect === 'mocha';
   const modules = new Map(); const used = new Set();
-  for (const c of kept) for (const a of c.worldAnswers ?? []) { out.surfaces.add(a.kind === 'module' ? `module:${a.spec}` : a.kind === 'global' ? `global:${a.name}` : a.kind === 'clock' ? 'clock' : 'Math.random'); if (a.kind === 'module') { const m = modules.get(a.spec) ?? new Set(imported.get(a.spec) ?? []); m.add(a.member); modules.set(a.spec, m); } }
+  for (const c of kept) for (const a of c.worldAnswers ?? []) { out.surfaces.add(a.kind === 'module' ? `module:${a.spec}` : a.kind === 'global' ? `global:${a.name}` : a.kind === 'clock' ? 'clock' : a.kind === 'input' ? 'input' : 'Math.random'); if (a.kind === 'module') { const m = modules.get(a.spec) ?? new Set(imported.get(a.spec) ?? []); m.add(a.member); modules.set(a.spec, m); } }
   for (const [spec, members] of modules) {
     const alias = aliasOf(spec), named = [...members].filter((m) => m !== '' && m !== 'default').sort();
     out.imports.push(`import * as ${alias} from ${JSON.stringify(spec)};`);
@@ -182,7 +248,8 @@ export function stubsOf(kept, dialect, imported = new Map()) {
   }
   for (const c of kept) {
     const before = [], targets = [], restore = [], groups = new Map();
-    for (const a of c.worldAnswers ?? []) { const k = keyOf(a); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(a); }
+    inputsOf(c, plain ? null : D, before, targets, out);
+    for (const a of c.worldAnswers ?? []) { if (a.kind === 'input') continue; const k = keyOf(a); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(a); }
     for (const [k, as] of groups) {
       const a0 = as[0]; out.stubs += as.length;
       if (plain) {
@@ -247,7 +314,7 @@ export function testText({ unit, binding, defaultExport, importFrom, dialect, ca
   const world = stubs && (stubs.hoisted.length || stubs.hooks.length || [...stubs.cases.values()].some((x) => x.before.length)); // (lane w9al) the runner's mock API joins the head
   const head = world && d.style === 'expect' ? d.head.replace('{ describe, it, expect }', `{ describe, it, expect, ${dialect === 'jest' ? 'jest' : 'vi'}${stubs.hooks.length ? ', afterEach' : ''} }`) : d.head;
   const lines = [head, ...(stubs?.imports ?? []), defaultExport ? `import ${binding} from '${importFrom}';` : `import { ${binding} } from '${importFrom}';`, ...(stubs?.hoisted.length ? ['', ...stubs.hoisted] : []), '', `describe(${JSON.stringify(unit)}, () => {`, ...(stubs?.hooks ?? []).map((h) => `  ${h}`)];
-  const callOf = (c) => `${binding}(${c.args.map((a) => toSource(a, c.shared)).join(', ')})`;
+  const callOf = (c) => `${binding}(${(c.argsShown ?? c.args).map((a) => toSource(a, c.shared)).join(', ')})`; // (lane w9al) an input handle by its stub's name
   const seen = new Map();
   for (const c of cases) {
     c.shared = { defs: [] };
@@ -362,8 +429,9 @@ export async function writeNewTest({ candidate, unit, spec, cases = [], statemen
   // the world is one a stub answers with what lean answered (lane w9al: worldOf); the first refusal is kept for the reason
   const imported = importsOf(candidate), refusals = [];
   const usable = cases.filter((c) => {
-    if (c.drives || holdsWorld(c.args) || holdsWorld(c.outcome.returned ?? c.outcome.threw)) return false;
-    const w = worldOf(c, { specifiers: [...new Set([...specifiers, ...imported.keys()])], dialect });
+    const handles = broken('new-test-world') ? (holdsWorld(c.args) ? null : []) : inputHandles(c.args); // (lane w9al) an argument lean answers member by member is an input stub
+    if (c.drives || handles === null || holdsWorld(c.outcome.returned ?? c.outcome.threw)) return false;
+    const w = worldOf(c, { specifiers: [...new Set([...specifiers, ...imported.keys()])], dialect, handles });
     if (w.refused) { refusals.push(w.refused); return false; }
     c.worldAnswers = w.answers; return true;
   });

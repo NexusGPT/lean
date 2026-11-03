@@ -27,3 +27,11 @@ export function saveNote(dir: string, text: string): void {
 export function elapsed(since: number): number {
   return performance.now() - since;
 }
+// an argument lean draws as a handle (an interface it answers member by member): the test passes an object built from
+// lean's answers to the reads and calls the unit made of it, and asserts the calls
+export interface Profile { name: string; id: number }
+export interface Users { find(id: number): Promise<Profile | null>; count(): number }
+export async function describeUser(users: Users, id: number): Promise<string> {
+  const u = await users.find(id);
+  return u ? `${u.name}#${u.id} of ${users.count()}` : `none of ${users.count()}`;
+}

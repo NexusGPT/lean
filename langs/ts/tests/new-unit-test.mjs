@@ -14,7 +14,8 @@
 //   new-test-stubs    exec/new-test.mjs stubsOf: the answers as the runner's stubs (world.ts readConfig: vi.mock of node:fs)
 //   new-test-calls    exec/new-test.mjs callsOf: the requests asserted (world.ts saveNote: the write's path and content)
 //   url-strings       exec/spec.mjs: a unit that hands a string to the URL parser meets URLs (fetchJson: a response stubbed)
-// Plain checks (no mechanism of their own): the clock read once is fake timers (stamp); Math.random is spied (pick); a unit
+// Plain checks (no mechanism of their own): the clock read once is fake timers (stamp); Math.random is spied (pick); an
+// argument lean answers member by member is an object of its answers (describeUser); a unit
 // that asks the world where no stub answers gets no test, its reason naming the surface (world.ts elapsed: performance);
 // a helper no export reaches gets no test (calc.ts helper: "not exported"); a promise-returning unit awaits (later: resolves).
 //
@@ -101,6 +102,11 @@ const checks = [
     const t = proposed(run('pick', world)); const text = t?.text ?? '';
     const ok = /vi\.spyOn\(Math, 'random'\)\.mockReturnValueOnce\(0\.\d+\)/.test(text) && t.check?.passed === t.cases;
     return { ok, detail: text.split('\n').find((l) => /spyOn/.test(l))?.trim() ?? coverageTest(run('pick', world))?.reason ?? 'no record' };
+  }],
+  [null, 'an argument lean answers member by member is passed as an object of its answers, its calls asserted', () => {
+    const t = proposed(run('describeUser', world)); const text = t?.text ?? '';
+    const ok = !!t && t.world?.surfaces.includes('input') && /const input_arg0 = \{ find: vi\.fn\(\)\.mock(?:Resolved|Rejected)ValueOnce\(/.test(text) && /expect\(input_arg0\.find\)\.toHaveBeenNthCalledWith\(1, /.test(text) && t.check?.passed === t.cases && t.check.world === 0;
+    return { ok, detail: t ? text.split('\n').find((l) => /const input_arg0/.test(l))?.trim().slice(0, 150) ?? 'no input stub' : coverageTest(run('describeUser', world))?.reason ?? 'no record' };
   }],
   [null, 'a unit that asks the world where no stub answers gets no test, and the reason names the surface', () => {
     const r = run('elapsed', world); const c = coverageTest(r);
