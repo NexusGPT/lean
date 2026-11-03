@@ -1,0 +1,97 @@
+{
+ "why": "A unit no parent holds whose reach crosses an import the checker follows only as the repository resolves it (exec/new-unit.mjs unitWorld, importSurface; common.mjs resolveFrom, workspaceEntry; design/w9au-import-follow.md), in a workspace read with each package's own tsconfig: an alias of another package's tsconfig (later), a declared package the checkout does not install (label), node:net without Node's declarations (hostKind) are followed and the unit gets a test; a workspace package is read from the source its manifest's build entry names (gauge: the source's read of document is seen); an import still not followed names why (bannerText). Each row stays NEW.",
+ "candidateOnly": [
+  {
+   "file": "packages/app/src/units.ts",
+   "unit": "later",
+   "verdict": "NEW",
+   "project": true,
+   "records": [
+    {
+     "kind": "new:proposed-test",
+     "world": {
+      "surfaces": [
+       "input"
+      ]
+     },
+     "check": {
+      "world": 0,
+      "failed": 0
+     }
+    }
+   ]
+  },
+  {
+   "file": "packages/app/src/units.ts",
+   "unit": "label",
+   "verdict": "NEW",
+   "project": true,
+   "records": [
+    {
+     "kind": "new:proposed-test",
+     "world": {
+      "surfaces": [
+       "input"
+      ]
+     },
+     "check": {
+      "world": 0,
+      "failed": 0
+     }
+    }
+   ]
+  },
+  {
+   "file": "packages/app/src/units.ts",
+   "unit": "hostKind",
+   "verdict": "NEW",
+   "project": true,
+   "records": [
+    {
+     "kind": "new:proposed-test",
+     "world": {
+      "surfaces": [
+       "input"
+      ]
+     },
+     "check": {
+      "world": 0,
+      "failed": 0
+     }
+    }
+   ]
+  },
+  {
+   "file": "packages/app/src/units.ts",
+   "unit": "gauge",
+   "verdict": "NEW",
+   "project": true,
+   "records": [
+    {
+     "kind": "new:coverage",
+     "phase": "draw",
+     "reason": "names document (main.ts:3)"
+    }
+   ],
+   "absent": [
+    "new:proposed-test"
+   ]
+  },
+  {
+   "file": "packages/app/src/units.ts",
+   "unit": "bannerText",
+   "verdict": "NEW",
+   "project": true,
+   "records": [
+    {
+     "kind": "new:coverage",
+     "phase": "draw",
+     "reason": "an import lean cannot follow: `VERSION` (banner.ts:5): the tsconfig path for '@/meta/version' names no file"
+    }
+   ],
+   "absent": [
+    "new:proposed-test"
+   ]
+  }
+ ]
+}

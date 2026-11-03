@@ -1,0 +1,1 @@
+{ "name": "@fx/app", "type": "module", "dependencies": { "@fx/lib": "workspace:*", "@fx/meter": "workspace:*", "uuid": "^11.0.0" } }
