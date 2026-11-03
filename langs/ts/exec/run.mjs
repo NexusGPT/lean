@@ -626,9 +626,12 @@ export function sandbox(env, root) {
   const react = reactRuntime(env);
   const epoch = CLOCK_EPOCH;
   const dateNow = (...args) => epoch + env.clock('Date.now', args);
+  const own = new Map(); // a member the unit's code (a test's stub) sets on Date: kept on this side, never written through to the host's Date (lane w9al)
   const FakeDate = new Proxy(Date, {
     construct(t, args, newTarget) { return Reflect.construct(t, args.length ? args : [epoch + env.clock('Date', [], 'new')], newTarget); },
-    get(t, p) { return p === 'now' ? dateNow : Reflect.get(t, p); },
+    get(t, p) { return own.has(p) ? own.get(p) : p === 'now' ? dateNow : Reflect.get(t, p); },
+    set(t, p, v) { own.set(p, v); return true; },
+    defineProperty(t, p, d) { if (!Object.hasOwn(d, 'value')) return false; own.set(p, d.value); return true; },
     apply(t, receiver, args) { return new Date(epoch + env.clock('Date', args)).toString(); },
   });
   const hrtime = (...args) => {
@@ -647,7 +650,7 @@ export function sandbox(env, root) {
     setTimeout: (fn, ms, ...a) => env.arm('timeout', fn, ms, a), setInterval: (fn, ms, ...a) => env.arm('interval', fn, ms, a), setImmediate: (fn, ...a) => env.arm('immediate', fn, 0, a),
     requestAnimationFrame: (fn) => env.arm('frame', fn, 16), requestIdleCallback: (fn) => env.arm('idle', fn, 1),
     clearTimeout: (id) => env.clearTimer(id, 'clearTimeout'), clearInterval: (id) => env.clearTimer(id, 'clearInterval'), clearImmediate: (id) => env.clearTimer(id, 'clearImmediate'), cancelAnimationFrame: (id) => env.clearTimer(id, 'cancelAnimationFrame'), cancelIdleCallback: (id) => env.clearTimer(id, 'cancelIdleCallback'), queueMicrotask: (fn) => Promise.resolve().then(fn),
-    Math: Object.assign(Object.create(Math), { random: () => env.rng() }),
+    Math: Object.assign(Object.create(Math), { random: () => { const v = env.rng(); if (env.answers && !env.loading && !broken('new-test-world')) env.answers.push({ op: 'call', path: 'Math.random', args: [], shown: { returns: v } }); return v; } }), // (lane w9al) the draw is entered among the world's answers (fake.mjs answerOf), never on the trace
     Buffer, JSON, Object, Array, String, Number, Boolean, Map, Set, WeakMap, WeakSet, Symbol, Promise, RegExp,
     Error: programConstructor(Error), TypeError: programConstructor(TypeError), RangeError: programConstructor(RangeError), SyntaxError: programConstructor(SyntaxError), ReferenceError: programConstructor(ReferenceError), EvalError: programConstructor(EvalError), URIError: programConstructor(URIError), AggregateError: programConstructor(AggregateError), // an error the unit makes is program-built (fake.mjs programConstructor); one the engine raises is observed by its class alone
     parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent, encodeURI, decodeURI, URL, URLSearchParams, TextEncoder, TextDecoder, BigInt, Reflect: metadataReflect(env), Proxy, structuredClone,

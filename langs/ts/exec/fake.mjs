@@ -25,6 +25,7 @@ export function behaviouralFake(env, specifier) { return BEHAVIOURAL ? behaviour
 // every global the behavioural fakes hold, by name: the sandbox's globals take them over its own (exec/run.mjs sandbox)
 export function behaviouralGlobals(env) { return BEHAVIOURAL ? behavioural.globalsOf(env) : {}; }
 import { libraryFake, libraryTypeFake } from './fakes/lib/index.mjs';
+import { broken } from '../break.mjs';
 
 export class BudgetError extends Error {}
 const EMPTY_LIST = Symbol('an empty list');
@@ -64,12 +65,14 @@ export class Environment {
     this.worldSet = null;   // the world search (search.mjs searchWorld): path -> the kind of answer a recipe sets there, else the seeded one
     this.answered = [];     // the varied answers this run consumed, in order: [{ path, kind }] (the world search's moves)
     this.callAnswers = null; // (lane w9am) while a unit no parent holds is observed for a test: `<path>()#<k>` -> what a call of a fake answered and whether it wrote into what it was handed (new-unit.mjs callbackCalls)
+    this.answers = null;    // (lane w9al) while a list, every request of the unit with what the world answered it, in request order (answerOf)
   }
   // clock answers advance with the seeded history and are recorded beside port requests
   clock(path, args = [], op = 'call') {
     this.clockRng ??= makeRng(this.seed ^ 0x636c6f63);
     this.clockMillis = (this.clockMillis ?? (this.seed >>> 0) % 1000000) + 1 + Math.floor(this.clockRng() * 17);
     this.record(op, path, args.map((x) => render(x)));
+    if (this.answers && !this.loading && !broken('new-test-world')) this.answers.push({ op, path, args: args.map((x) => render(x)), clock: this.clockMillis }); // (lane w9al) the instant handed, before the reader's epoch
     return this.clockMillis;
   }
   // A typed answer: the value at `path` generated from its declared shape, seeded by (seed, path) so the same question
@@ -256,19 +259,20 @@ export class Environment {
         if (prop === 'toString') return fakeMember(`${path}.toString`, () => env.primitive('string', path));
         if (prop === Symbol.iterator) return function* () { const n = env.listSize(path); for (let i = 0; i < n; i++) yield env.answer(`${path}[${i}]`); }; // a fake tree is finite: deep levels are empty
         if (prop === Symbol.asyncIterator) return undefined;
-        if (typeof prop === 'string') { const m = env.modelOf(`${path}.${prop}`); if (m) { env[m.quiet ? 'compute' : 'record']('get', `${path}.${prop}`); return m.value ? m.value() : env.fake(`${path}.${prop}`); } } // a member a behavioural fake holds: its field's value, or a fake whose call the model answers
-        if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return env.member(path, prop, tspec); }
+        if (typeof prop === 'string') { const m = env.modelOf(`${path}.${prop}`); if (m) { env[m.quiet ? 'compute' : 'record']('get', `${path}.${prop}`); const v = m.value ? m.value() : env.fake(`${path}.${prop}`); if (!m.quiet) readAnswer(env, `${path}.${prop}`, v); return v; } } // a member a behavioural fake holds: its field's value, or a fake whose call the model answers
+        if (typeof prop === 'string' && typedMember(prop)) { env.record('get', `${path}.${prop}`); return readAnswer(env, `${path}.${prop}`, env.member(path, prop, tspec)); }
         if (typeof prop === 'string' && Object.hasOwn(ITERATION, prop) && !env.loading) return iterationMethod(env, receiver, path, prop); // an iteration method: the fake is read as an array when the call hands it a callback
         if (prop === 'length') return env.listSize(path); // the length of the array a fake stands for is its drawn shape and asks nothing of the world, as the iterator asks nothing: a loop that reads it once (forEach) and one that reads it per step (a counted for) make the same requests
         if (prop === 'constructor') return Object;
         if (typeof prop === 'symbol') return undefined;
         env.record('get', `${path}.${String(prop)}`);
-        return env.answer(`${path}.${String(prop)}`);
+        return readAnswer(env, `${path}.${String(prop)}`, env.answer(`${path}.${String(prop)}`));
       },
       set(t, prop, value) { env.record('set', `${path}.${String(prop)}`, [render(value)]); if (typeof prop === 'string') env.modelOf(`${path}.${prop}`)?.set?.(value); if (typeof value === 'function' && !value.__isFake && env.knownCallables) env.knownCallables.push({ path: `${path}.${String(prop)}`, fn: value }); return true; }, // a handler assigned to the environment: a program may call it later
       has(t, prop) { env.record('has', `${path}.${String(prop)}`); const m = typeof prop === 'string' ? env.modelOf(`${path}.${prop}`) : null; return m?.has ? !!m.has() : false; },
       deleteProperty(t, prop) { env.record('delete', `${path}.${String(prop)}`); if (typeof prop === 'string') env.modelOf(`${path}.${prop}`)?.delete?.(); return true; },
-      apply(t, thisArg, args) {
+      apply(t, thisArg, args) { return env.answers && !env.loading && !env.modelOf(path)?.quiet ? answerOf(env, { op: 'call', path, args }, () => handler.request(t, thisArg, args)) : handler.request(t, thisArg, args); }, // (lane w9al) a quiet model's call is no request: the real module computes the same
+      request(t, thisArg, args) {
         const model = env.modelOf(path);
         env[model?.quiet ? 'compute' : 'record']('call', path, args.map((x) => render(x)));
         if (model?.call) { // a behavioural fake answers from its state (exec/fakes): the call is recorded as every call is; a call that can fail still faults on its seeded draw, as the model's own failure (a rejected promise, an error handed to the callback)
@@ -311,7 +315,8 @@ export class Environment {
         env.callAnswers?.set(`${path}()#${k}`, { value: answer, wrote });
         return answer;
       },
-      construct(t, args) { const model = env.modelOf(path); env[model?.quiet ? 'compute' : 'record']('new', path, args.map((x) => render(x))); if (model?.construct) return model.construct(args); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); if (tspec && tspec.kind === 'class') return env.typed(`new ${path}#${k}`, tspec.instance); return env.fake(`new ${path}#${k}`); },
+      construct(t, args) { return env.answers && !env.loading && !env.modelOf(path)?.quiet ? answerOf(env, { op: 'new', path, args }, () => handler.made(t, args)) : handler.made(t, args); },
+      made(t, args) { const model = env.modelOf(path); env[model?.quiet ? 'compute' : 'record']('new', path, args.map((x) => render(x))); if (model?.construct) return model.construct(args); const k = (env.calls.get(path) ?? 0) + 1; env.calls.set(path, k); if (tspec && tspec.kind === 'class') return env.typed(`new ${path}#${k}`, tspec.instance); return env.fake(`new ${path}#${k}`); },
       getPrototypeOf() { return Function.prototype; },
       ownKeys(t) { env.record('keys', path); return Reflect.ownKeys(t); },
       getOwnPropertyDescriptor(t, prop) { return Reflect.getOwnPropertyDescriptor(t, prop); },
@@ -323,6 +328,32 @@ export class Environment {
   // the module fake: `require('x')` gives a fake whose members are fakes; default export is itself
   // a library with a fake (exec/fakes/lib, design/w2d-library-rows.md) answers with its behavioural module; LEAN_LIBRARY_FAKES=0 keeps the proxy
   module(name) { return libraryFake(this, name) ?? this.fake(`module:${name}`, this.shapes?.imports?.[name] ?? null); }
+}
+
+// (lane w9al) The answers of the world, as a test restates them (new-unit.mjs runNew, new-test.mjs stubsOf): while
+// `env.answers` is a list, each request of the unit (a call or `new` of a fake, a read of a fake's member, the clock,
+// Math.random, fetch) is entered in request order with its arguments as rendered and what the world answered: `returns`,
+// `throws`, or, for a promise the world made, `resolves`/`rejects` with its settled value. A request handed a function of
+// the unit is marked `callback` (the world runs it: no stub restates that). The entry is made when the request starts, so a
+// request a callback makes inside another is entered after it. LEAN_BREAK=new-test-world: nothing is entered.
+// an error the world raised keeps its own fields (Node's code, errno, syscall, path), which a unit reads to tell errors apart
+const answerValue = (v) => { const r = render(v); if (!isError(v) || !r || typeof r !== 'object') return r; const own = {}; try { for (const k of Object.keys(v)) if (k !== 'message' && k !== 'stack' && ['string', 'number', 'boolean'].includes(typeof v[k])) own[k] = v[k]; } catch { /* a value that refuses its keys gives none */ } return Object.keys(own).length ? { ...r, $fields: own } : r; };
+export function answerShown(v) {
+  if (promiseName(v)) { const n = promiseNames.get(v); return Object.hasOwn(n, 'reason') ? { rejects: answerValue(n.reason) } : { resolves: answerValue(n.value) }; }
+  return { returns: render(v) };
+}
+const handsFunction = (args) => args.some((a) => (typeof a === 'function' && !a.__isFake) || (a && typeof a === 'object' && !a.__isFake && !Array.isArray(a) && (() => { try { return Object.values(a).some((x) => typeof x === 'function' && !x.__isFake); } catch { return false; } })()));
+export function answerOf(env, { op, path, args = [] }, run) {
+  if (!env.answers || broken('new-test-world')) return run(null);
+  const entry = { op, path, args: args.map((x) => render(x)), ...(handsFunction(args) ? { callback: true } : {}) };
+  env.answers.push(entry);
+  let v; try { v = run(entry); } catch (e) { entry.shown ??= { throws: answerValue(e) }; throw e; }
+  entry.shown ??= answerShown(v);
+  return v;
+}
+function readAnswer(env, path, v) {
+  if (env.answers && !env.loading && !broken('new-test-world')) env.answers.push({ op: 'get', path, shown: { returns: render(v) } });
+  return v;
 }
 
 // The iteration methods a fake answers like an array. Called with a function, the fake is read as an array: its length
