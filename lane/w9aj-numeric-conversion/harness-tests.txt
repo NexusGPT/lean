@@ -1,0 +1,7 @@
+tests/w9ac-compare-literals.mjs exit 0: w9ac-compare-literals: 22 checks pass 
+tests/w9l-bounded-and-moves.mjs exit 0: w9l-bounded-and-moves: 26 checks pass 
+tests/search-inputs.mjs exit 0: search-inputs: 16 checks pass 
+exec/usage.test.mjs exit 0: ℹ skipped 0 ℹ todo 0 ℹ duration_ms 2058.262472 
+exec/gen.test.mjs exit 0: ℹ skipped 0 ℹ todo 0 ℹ duration_ms 9615.515267 
+exec/omitted.test.mjs exit 0: ℹ skipped 0 ℹ todo 0 ℹ duration_ms 33.295141 
+tests/opaque-unit.mjs --break exit 1: FAIL step line var (wld, retb, u) := ext_block_x(wld, u); FAIL step signature {"id":"block_x","ins":["World","U"],"out":"(World, Option<int>, U)"} 

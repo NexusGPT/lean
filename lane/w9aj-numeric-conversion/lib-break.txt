@@ -1,0 +1,17 @@
+| pair | unit | break | verdict as is -> broken | res |
+| --- | --- | --- | --- | --- |
+| conversion_flow | pageSize | LEAN_BREAK=w9aj-conversions | WITNESS -> PASS-bounded | PASS |
+| conversion_flow | offsetOf | LEAN_BREAK=w9aj-conversions | WITNESS -> PASS-bounded | PASS |
+lib-break: 2 rows, 0 failed
+exit 0
+| pair | unit | break | verdict as is -> broken | res |
+| --- | --- | --- | --- | --- |
+| conversion_round | bucketOf | LEAN_BREAK=w9aj-conversions | WITNESS -> PASS-bounded | PASS |
+| conversion_round | shiftOf | LEAN_BREAK=w9aj-conversions | WITNESS -> PASS-bounded | PASS |
+lib-break: 2 rows, 0 failed
+exit 0
+| pair | unit | break | verdict as is -> broken | res |
+| --- | --- | --- | --- | --- |
+| conversion_world | Renders.depthOf | LEAN_BREAK=w9aj-world-conversions | WITNESS -> PASS-bounded | PASS |
+lib-break: 1 rows, 0 failed
+exit 0

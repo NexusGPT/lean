@@ -1,0 +1,401 @@
+{
+ "band": {
+  "E": {
+   "f1": null,
+   "precision": null,
+   "recall": null
+  },
+  "M": {
+   "f1": null,
+   "precision": null,
+   "recall": null
+  },
+  "N": {
+   "f1": null,
+   "precision": null,
+   "recall": null
+  },
+  "all": {
+   "f1": null,
+   "precision": null,
+   "recall": null
+  }
+ },
+ "budgets": [
+  {
+   "budgets": {
+    "dafny_seconds": 30,
+    "n": 30,
+    "seed": 1,
+    "unit_seconds": "lean default (exec/run.mjs UNIT_SECONDS)"
+   },
+   "instances": 24
+  }
+ ],
+ "compare": null,
+ "cost": {
+  "input_tokens": 0,
+  "instances": 24,
+  "output_tokens": 0
+ },
+ "determinism": {
+  "differ": [],
+  "equal": 24,
+  "of": 24,
+  "timeout_class": []
+ },
+ "evidence": {
+  "comments": 339,
+  "evidenced": 339
+ },
+ "instances": {
+  "mutant": 12,
+  "pr": 12
+ },
+ "metrics": [],
+ "no_judge": {
+  "E": {
+   "comments": 91,
+   "f1": 0.058823529411764705,
+   "hits": 3,
+   "items": 11,
+   "matched": 3,
+   "precision": 0.03296703296703297,
+   "recall": 0.2727272727272727
+  },
+  "M": {
+   "comments": 2,
+   "f1": 0.0,
+   "hits": 0,
+   "items": 12,
+   "matched": 0,
+   "precision": 0.0,
+   "recall": 0.0
+  },
+  "N": null,
+  "all": {
+   "comments": 93,
+   "f1": 0.0,
+   "hits": 3,
+   "items": 12,
+   "matched": 0,
+   "precision": 0.03225806451612903,
+   "recall": 0.0
+  },
+  "missing_results": [],
+  "per_instance": [
+   {
+    "comments": 0,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "n8n-io__n8n#42608",
+    "kind": "pr",
+    "notes": 2,
+    "notes_in_ceiling": 2,
+    "notes_matched": null,
+    "repo": "n8n-io/n8n",
+    "window_full": false
+   },
+   {
+    "comments": 1,
+    "id": "n8n-io__n8n#42608~h2",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 4,
+    "escapes": 4,
+    "escapes_known": true,
+    "escapes_matched": 1,
+    "id": "n8n-io__n8n#41940",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 1,
+    "notes_matched": null,
+    "repo": "n8n-io/n8n",
+    "window_full": false
+   },
+   {
+    "comments": 8,
+    "id": "n8n-io__n8n#41940~h1",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 21,
+    "escapes": 3,
+    "escapes_known": true,
+    "escapes_matched": 1,
+    "id": "immich-app__immich#32498",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 0,
+    "notes_matched": null,
+    "repo": "immich-app/immich",
+    "window_full": false
+   },
+   {
+    "comments": 35,
+    "id": "immich-app__immich#32498~h3",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": true,
+    "record_witness": true,
+    "role": "changed"
+   },
+   {
+    "comments": 6,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "n8n-io__n8n#41825",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 0,
+    "notes_matched": null,
+    "repo": "n8n-io/n8n",
+    "window_full": false
+   },
+   {
+    "comments": 21,
+    "id": "n8n-io__n8n#41825~h3",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 13,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "mrdoob__three.js#34978",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 1,
+    "notes_matched": null,
+    "repo": "mrdoob/three.js",
+    "window_full": false
+   },
+   {
+    "comments": 30,
+    "id": "mrdoob__three.js#34978~h3",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 5,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "mrdoob__three.js#34309",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 1,
+    "notes_matched": null,
+    "repo": "mrdoob/three.js",
+    "window_full": false
+   },
+   {
+    "comments": 29,
+    "id": "mrdoob__three.js#34309~h3",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 13,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "n8n-io__n8n#41890",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 0,
+    "notes_matched": null,
+    "repo": "n8n-io/n8n",
+    "window_full": false
+   },
+   {
+    "comments": 15,
+    "id": "n8n-io__n8n#41890~h1",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 23,
+    "escapes": 2,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "bluewave-labs__Checkmate#3288",
+    "kind": "pr",
+    "notes": 4,
+    "notes_in_ceiling": 4,
+    "notes_matched": null,
+    "repo": "bluewave-labs/Checkmate",
+    "window_full": true
+   },
+   {
+    "comments": 41,
+    "id": "bluewave-labs__Checkmate#3288~h1",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 0,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "google-gemini__gemini-cli#29612",
+    "kind": "pr",
+    "notes": 3,
+    "notes_in_ceiling": 3,
+    "notes_matched": null,
+    "repo": "google-gemini/gemini-cli",
+    "window_full": false
+   },
+   {
+    "comments": 49,
+    "id": "google-gemini__gemini-cli#29612~h2",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 2,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": true,
+    "role": "changed"
+   },
+   {
+    "comments": 4,
+    "escapes": 2,
+    "escapes_known": true,
+    "escapes_matched": 1,
+    "id": "n8n-io__n8n#42766",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 1,
+    "notes_matched": null,
+    "repo": "n8n-io/n8n",
+    "window_full": false
+   },
+   {
+    "comments": 18,
+    "id": "n8n-io__n8n#42766~h1",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 0,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "n8n-io__n8n#41943",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 1,
+    "notes_matched": null,
+    "repo": "n8n-io/n8n",
+    "window_full": false
+   },
+   {
+    "comments": 0,
+    "id": "n8n-io__n8n#41943~h2",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   },
+   {
+    "comments": 2,
+    "escapes": 0,
+    "escapes_known": true,
+    "escapes_matched": 0,
+    "id": "mrdoob__three.js#34734",
+    "kind": "pr",
+    "notes": 1,
+    "notes_in_ceiling": 1,
+    "notes_matched": null,
+    "repo": "mrdoob/three.js",
+    "window_full": false
+   },
+   {
+    "comments": 1,
+    "id": "mrdoob__three.js#34734~h1",
+    "kind": "mutant",
+    "matched": 0,
+    "mutation": "numeric-conversion",
+    "new_comments": 0,
+    "parent_result": true,
+    "parent_witness": false,
+    "record_witness": false,
+    "role": "changed"
+   }
+  ]
+ },
+ "provenance": {
+  "classes_sha256": "752ccd5c4b130b54674af03dab9c365788cddd045beb0728e80fe3159043fbd5",
+  "da_head": "b363d04fa577f48bbc60abd8cd31fd87c6624e6c",
+  "instances_sha256": "3232a797f84cc454b03ba5a187c9fc0e75ea6345459b3bb067a9f8ac1057a154",
+  "lean_versions": [
+   "29edba438430ca26426f55336e8dcdb4fa461d55",
+   "?",
+   "dbe9a32fbed3628bcd9859f3a9c20baedd94be18"
+  ],
+  "tables_sha256": "3f77d0f701d1adfec5da611144bb25985b30061bb5d7bf80e6da4158537a8017"
+ },
+ "rounds": []
+}

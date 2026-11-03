@@ -1,0 +1,47 @@
+| pair | opaque_copied_argument | theorem generated | FAIL |             | theorem: refused: the parent input /tmp/lean-ts-xdVJsg/pair_opaque_copied_argument/parent.dfy does not exist (the translator produced no file for this side)
+opaque_copied_argument exit 0 secs 1.740282086 | TOTAL | 1 checks | 1 FAILED |
+| pair | opaque_for_in | theorem generated | PASS |             | ok
+| pair | opaque_for_in | planted planted is mutate.mjs index 3 | PASS |             | same text
+| pair | opaque_for_in | Equal_outside proved | PASS |             | faithful congruence proved; doubles unknown: not encoded: a ForInStatement: `for (k in o2) n += 1;` (line 6) (0 s); real lemma proved
+| pair | opaque_for_in | Equal_inside not proved | PASS |             | doubles unknown: not encoded: a ForInStatement: `for (k in o2) n += 1;` (line 13) (0 s); real lemma not proved
+| pair | opaque_for_in | Equal_upstream not proved | PASS |             | doubles unknown: not encoded: a ForInStatement: `for (k in o2) n += 1;` (line 27) (0 s); real lemma not proved
+| pair | opaque_for_in | Equal_planted not proved | PASS |             | doubles unknown: not encoded: a ForInStatement: `for (k in o2) n += 1;` (line 20) (0 s); real lemma not proved
+| pair | opaque_for_in | opaque outside: for-in | PASS |             | 1 step(s): for-in at line 6, reads o2 n k, writes world n k
+| pair | opaque_for_in | opaque inside: for-in | PASS |             | 1 step(s): for-in at line 14, reads o2 n k, writes world n k
+| pair | opaque_for_in | opaque upstream: for-in | PASS |             | 1 step(s): for-in at line 28, reads o2 n k, writes world n k
+| pair | opaque_for_in | opaque planted: for-in | PASS |             | 1 step(s): for-in at line 21, reads o2 n k, writes world n k
+| pair | opaque_for_in | break opaque-drop-read: Equal_upstream flips to proved (a false PASS-proved without the mechanism) | FAIL |             | not proved under LEAN_BREAK=opaque-drop-read: the mechanism is not what refuses it
+| pair | opaque_for_in | lane B outside PASS-bounded | PASS |             | PASS-bounded
+| pair | opaque_for_in | lane B inside WITNESS | PASS |             | WITNESS
+| pair | opaque_for_in | lane B upstream WITNESS | PASS |             | WITNESS
+| pair | opaque_for_in | lane B planted WITNESS | PASS |             | WITNESS
+opaque_for_in exit 0 secs 8.047582396 | TOTAL | 15 checks | 1 FAILED |
+| pair | opaque_read_after_call | theorem generated | PASS |             | ok
+| pair | opaque_read_after_call | Equal_snapshot proved | PASS |             | proved
+| pair | opaque_read_after_call | Equal_shifted not proved | PASS |             | not proved
+| pair | opaque_read_after_call | Equal_planted not proved | PASS |             | not proved
+| pair | opaque_read_after_call | Equal_moved not proved | PASS |             | not proved
+| pair | opaque_read_after_call | Equal_holder not proved | PASS |             | not proved
+| pair | opaque_read_after_call | Equal_written not proved | PASS |             | doubles unknown: not encoded: a call of a function outside the file's units: `make()` (line 53) (0 s); real lemma not proved
+| pair | opaque_read_after_call | Equal_two_new not proved | PASS |             | not proved
+| pair | opaque_read_after_call | Equal_accumulated not proved | PASS |             | not proved
+| pair | opaque_read_after_call | Equal_tally proved | PASS |             | proved
+| pair | opaque_read_after_call | Equal_distinct proved | PASS |             | proved
+| pair | opaque_read_after_call | opaque snapshot: read-after-call | PASS |             | 1 step(s): read-after-call at line 10, reads world p, writes 
+| pair | opaque_read_after_call | opaque distinct: read-after-call | PASS |             | 3 step(s): read-after-call at line 82, reads world items, writes ; read-after-call at line 82, reads world byX, writes ; read-after-call at line 82, reads world b, writes 
+| pair | opaque_read_after_call | break handle-value: Equal_moved flips to proved (a false PASS-proved without the mechanism) | PASS |             | proved under LEAN_BREAK=handle-value: the mechanism is what refuses it
+| pair | opaque_read_after_call | break reach-closure: Equal_holder flips to proved (a false PASS-proved without the mechanism) | PASS |             | proved under LEAN_BREAK=reach-closure: the mechanism is what refuses it
+| pair | opaque_read_after_call | break fresh-site: Equal_two_new flips to proved (a false PASS-proved without the mechanism) | PASS |             | proved under LEAN_BREAK=fresh-site: the mechanism is what refuses it
+| pair | opaque_read_after_call | break handle-write: Equal_written flips to proved (a false PASS-proved without the mechanism) | FAIL |             | not proved under LEAN_BREAK=handle-write: the mechanism is not what refuses it
+| pair | opaque_read_after_call | break sealed-collection: Equal_accumulated flips to proved (a false PASS-proved without the mechanism) | PASS |             | proved under LEAN_BREAK=sealed-collection: the mechanism is what refuses it
+| pair | opaque_read_after_call | lane B snapshot PASS-bounded | PASS |             | PASS-bounded
+| pair | opaque_read_after_call | lane B shifted WITNESS | PASS |             | WITNESS
+| pair | opaque_read_after_call | lane B planted WITNESS | PASS |             | WITNESS
+| pair | opaque_read_after_call | lane B moved WITNESS | PASS |             | WITNESS
+| pair | opaque_read_after_call | lane B holder PASS-bounded | PASS |             | PASS-bounded
+| pair | opaque_read_after_call | lane B written PASS-bounded | PASS |             | PASS-bounded
+| pair | opaque_read_after_call | lane B twoNew PASS-bounded | PASS |             | PASS-bounded
+| pair | opaque_read_after_call | lane B accumulated PASS-bounded | PASS |             | PASS-bounded
+| pair | opaque_read_after_call | lane B tally PASS-bounded | PASS |             | PASS-bounded
+| pair | opaque_read_after_call | lane B distinct PASS-bounded | PASS |             | PASS-bounded
+opaque_read_after_call exit 0 secs 2.504512833 | TOTAL | 28 checks | 1 FAILED |

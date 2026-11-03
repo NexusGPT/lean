@@ -9,13 +9,16 @@
 // `a['k']`, a call `a.m(...)` or `m(...)` (key `m()`), or a local whose declaration or assignment in the same function
 // holds such a read. Each row carries the line range of its innermost function (0 to Infinity at module level).
 import { ts } from '../common.mjs';
+import { broken } from '../break.mjs';
+import { conversionOf, flowsInto, WORLD_PICK, worldKindOf } from './conversions.mjs';
 
 const EQ = new Set([ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsEqualsToken, ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken]);
 const LOOSE = new Set([ts.SyntaxKind.EqualsEqualsToken, ts.SyntaxKind.ExclamationEqualsToken]);
 const strip = (e) => { while (e && (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e) || ts.isAsExpression(e) || ts.isAwaitExpression(e) || (ts.isTypeAssertionExpression?.(e)))) e = e.expression; return e; };
 
 // the world answer kinds (fake.mjs WORLD_KINDS) a literal is, or `lit:<json>` for a value outside that menu; loose
-// equality against null or undefined takes both
+// equality against null or undefined takes both. A read a numeric conversion takes is compared against the values
+// its family's members disagree on (conversions.mjs WORLD_PICK; `num:<text>` for NaN, -0, the infinities)
 function kindsOf(e, loose) {
   e = strip(e);
   if (!e) return null;
@@ -48,16 +51,17 @@ export function comparedTable(src, fileName) {
   const visitScope = (scope, from, to) => {
     const locals = new Map(); // a local's name -> the read keys its declarations and assignments in this function hold
     const pending = []; // [identifier text, kinds] compared before every assignment was seen
+    const inits = new Map(); // a local's name -> its initializer (a conversion's operands followed through it)
     const note = (name, init) => { const k = readKey(init); if (k) { if (!locals.has(name)) locals.set(name, new Set()); locals.get(name).add(k); } };
-    const add = (side, kinds) => {
+    const add = (side, kinds, conv) => { // conv: the line of the numeric conversion that takes the read
       if (!kinds) return;
       const e = strip(side);
-      if (e && ts.isIdentifier(e)) { pending.push([e.text, kinds]); return; }
-      const k = readKey(e); if (k) rows.push({ key: k, kinds, from, to });
+      if (e && ts.isIdentifier(e)) { pending.push([e.text, kinds, conv]); return; }
+      const k = readKey(e); if (k) rows.push({ key: k, kinds, from, to, ...(conv ? { conv } : {}) });
     };
     const walk = (n) => {
       if (n !== scope && ts.isFunctionLike(n) && n.body) { visitScope(n, line(n.getStart(sf)), line(n.end)); return; }
-      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) note(n.name.text, n.initializer);
+      if (ts.isVariableDeclaration(n) && ts.isIdentifier(n.name) && n.initializer) { note(n.name.text, n.initializer); inits.set(n.name.text, n.initializer); }
       if (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.EqualsToken && ts.isIdentifier(n.left)) note(n.left.text, n.right);
       if (ts.isBinaryExpression(n) && EQ.has(n.operatorToken.kind)) {
         const loose = LOOSE.has(n.operatorToken.kind);
@@ -68,13 +72,25 @@ export function comparedTable(src, fileName) {
         }
       }
       if (ts.isSwitchStatement(n)) for (const c of n.caseBlock.clauses) if (ts.isCaseClause(c)) add(n.expression, kindsOf(c.expression, false));
+      // a read a numeric conversion takes (exec/conversions.mjs, lane w9aj): the answers its family's members disagree
+      // on, as if compared against them (LEAN_BREAK=w9aj-world-conversions: none)
+      const cv = !broken('w9aj-world-conversions') && conversionOf(n);
+      if (cv) { const kinds = WORLD_PICK[cv.family].map(worldKindOf).filter(Boolean), at = line(n.getStart(sf)); for (const e of flowsInto(cv.arg, (id) => inits.get(id.text) ?? null)) add(e, kinds, at); }
       ts.forEachChild(n, walk);
     };
     ts.forEachChild(scope, walk);
-    for (const [name, kinds] of pending) for (const k of locals.get(name) ?? []) rows.push({ key: k, kinds, from, to });
+    for (const [name, kinds, conv] of pending) for (const k of locals.get(name) ?? []) rows.push({ key: k, kinds, from, to, ...(conv ? { conv } : {}) });
   };
   visitScope(sf, 0, Infinity);
   return rows;
+}
+
+// the reads a numeric conversion on a changed line takes (lane w9aj): key -> the answers its family disagrees on; the
+// world search sets an answer read under such a key to each, on a draw no difference reached yet (searchWorld)
+export function changedConversions(rows, changed) {
+  const out = new Map();
+  for (const r of rows) if (r.conv && changed.has(r.conv)) { if (!out.has(r.key)) out.set(r.key, []); for (const k of r.kinds) if (!out.get(r.key).includes(k)) out.get(r.key).push(k); }
+  return out;
 }
 
 // the guide of a run: key -> the kinds the functions enclosing the statements it ran compare that key against

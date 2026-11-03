@@ -1,0 +1,8 @@
+{
+ "why": "A rounding of a parsed text (exec/usage.mjs converts, exec/conversions.mjs rounding family; lane w9aj). The candidate swaps Math.floor for Math.trunc, which differ on a negative value with a fraction only; bucketOf rounds parseFloat(reading), shiftOf a field parsed, scaled and divided back. No drawn text is a negative fraction (the w9o texts hold none), so both are PASS-bounded on 9873874f64. The rounding reads through the parse and the arithmetic to the string, which draws the rounding family's texts; '-1.5' gives floor -2 and trunc -1 (WITNESS). Under LEAN_BREAK=w9aj-conversions both are PASS-bounded again.",
+ "laneBOnly": true,
+ "scope": [],
+ "equal": {},
+ "b": { "bucketOf": "WITNESS", "shiftOf": "WITNESS" },
+ "break": [{ "mechanism": "w9aj-conversions", "b": { "bucketOf": "PASS-bounded", "shiftOf": "PASS-bounded" } }]
+}

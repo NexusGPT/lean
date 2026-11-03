@@ -13,7 +13,7 @@ import path from 'node:path';
 import { ts, topLevelFunctions } from '../common.mjs';
 import { makeRng } from './fake.mjs';
 import { fits } from './spec.mjs';
-import { pathKey } from './compared.mjs';
+import { pathKey, comparedTable, changedConversions } from './compared.mjs';
 import { broken } from '../break.mjs';
 
 // ----- the branches: every condition of a file, with the lines each outcome governs -----
@@ -303,7 +303,10 @@ export function searchPlan(parent, candidate, unit, readText, { reach = false } 
   // the value sites are the unit's (the world search, w9l); the pair's probes are cached across its units (w9i), so each unit's plan holds its own copy of the file entries
   const values = { P: valueSites(sfP, unit, ch.parent), C: valueSites(sfC, unit, ch.candidate) };
   const planFiles = { [path.resolve(parent)]: { ...P, values: values.P }, [path.resolve(candidate)]: { ...C, values: values.C } };
-  return { files: planFiles, targets, statements, literals: { strings, numbers, near }, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, changedLines: ch, values: { parent: values.P.length, candidate: values.C.length }, describe, statementOf };
+  // the reads a changed numeric conversion takes, on either side (compared.mjs changedConversions; the world search's infection)
+  let conversions = new Map();
+  if (!broken('w9aj-world-conversions')) { try { for (const [t, f, c] of [[tP, parent, ch.parent], [tC, candidate, ch.candidate]]) for (const [k, ks] of changedConversions(comparedTable(t, f), c)) conversions.set(k, [...new Set([...(conversions.get(k) ?? []), ...ks])]); } catch { conversions = new Map(); } }
+  return { files: planFiles, targets, statements, literals: { strings, numbers, near }, conversions, changed: { parent: ch.parent.size, candidate: ch.candidate.size }, changedLines: ch, values: { parent: values.P.length, candidate: values.C.length }, describe, statementOf };
 }
 
 // ----- the changes of one input: leaves walked with their declared types -----
@@ -319,6 +322,10 @@ function leafValues(s, v, defs, lits, aware = true) {
   const isNear = (x) => !!lits.near && (typeof x === 'string' ? lits.near.strings.includes(x) : lits.near.numbers.some((y) => Object.is(y, x)));
   const add = (tier, x) => { if (Object.is(x, v) || seen.some((y) => Object.is(y, x)) || !fits(s, x, defs)) return; seen.push(x); out.push({ tier: tier === 1 && isNear(x) ? 0 : tier, value: x }); }; // tier 0: a literal of a target condition
   const opts = optionsOf(s, defs);
+  // a leaf a numeric conversion takes (spec.mjs boundaryOf `conv`, lane w9aj): its family's values, those of a leaf the
+  // two versions convert differently with the target conditions' literals (tier 0), the rest with the unit's (tier 1)
+  const cb = aware && !broken('w9aj-conversion-changes') ? (s?.boundary?.conv ? s.boundary : optionsOf(s, defs).find((o) => o.boundary?.conv)?.boundary) : null;
+  if (cb) for (const x of cb.conv) add(cb.convTier ?? 1, x);
   for (const o of opts) {
     if (o.kind === 'string') { for (const x of lits.strings) add(1, x); add(2, ''); for (const x of lits.strings) for (const y of neighbours(x)) add(3, y); }
     else if (o.kind === 'number') { for (const x of lits.numbers) add(1, x); if (aware) for (const x of SAFE_EDGES) add(2, x); if (typeof v === 'number' && Number.isFinite(v)) { add(3, v + 1); add(3, v - 1); } for (const x of lits.numbers) { add(3, x + 1); add(3, x - 1); } }
@@ -528,7 +535,7 @@ const worldMoves = (answered, world, at, rejected, threw, kept = new Map(), guid
   return out;
 };
 export const worldText = (world) => world.map(([p, k]) => `${p} = ${k}`);
-export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, maxMs, now = Date.now, perStart = 12 }) {
+export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, maxMs, now = Date.now, perStart = 12, conversions = null }) {
   let tried = 0, infectTried = 0, climbed = 0, byChange = 0;
   // an infected draw whose every differing value is falsy on both sides (run.mjs infectionOf: '' against null) is one a
   // truth test or `x || d` erases: it waits (`deferred`) until the draws a difference survives in, and the leaf changes
@@ -557,8 +564,32 @@ export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, m
         if (r.status === 'diff') return { diff: r, recipe };
         if (r.status !== 'skip' && r.infected) { j++; byChange++; return { start: { recipe, answered: r.answered, ran: r.ran, threw: r.threw, infected: true, at: r.at, guide: r.guide ?? null, ...(r.falsy ? { falsy: true } : {}) } }; }
       }
-      if (!any) return { stop: byDraws + byChange ? 'no change left' : 'no input infects' };
+      if (!any) return worldInfect();
     }
+  };
+  // infect by the world (lane w9aj): when no leaf change is left, an answer a changed numeric conversion takes
+  // (compared.mjs changedConversions) set to each value its family disagrees on, the draws in order, the answers in the
+  // order they were read; within the same half of the budget. LEAN_BREAK=w9aj-world-conversions: none
+  let wj = 0, wa = 0, wk = 0;
+  const worldInfect = async () => {
+    const none = { stop: byDraws + byChange ? 'no change left' : 'no input infects' };
+    if (!conversions || !conversions.size || broken('w9aj-world-conversions')) return none;
+    for (; wj < starts.length; wj++, wa = 0, wk = 0) {
+      const st = starts[wj];
+      if (st.infected) continue;
+      for (; wa < st.answered.length; wa++, wk = 0) {
+        const { path: p, kind } = st.answered[wa], ks = conversions.get(pathKey(p)) ?? [];
+        for (; wk < ks.length; wk++) {
+          if (ks[wk] === kind) continue;
+          if (infectTried >= Math.ceil(maxInputs / 2)) return none;
+          const stop = over(); if (stop) return { stop, over: true };
+          const world = [[p, ks[wk]]], r = await run(st.recipe, world); tried++; infectTried++;
+          if (r.status === 'diff') { wk++; return { diff: r, recipe: st.recipe, world }; }
+          if (r.status !== 'skip' && r.infected) { wk++; byChange++; return { start: { recipe: st.recipe, world, answered: r.answered, ran: r.ran, threw: r.threw, infected: true, at: r.at, guide: r.guide ?? null, ...(r.falsy ? { falsy: true } : {}) } }; }
+        }
+      }
+    }
+    return none;
   };
   // unmask: a deferred draw's leaves that hold a falsy primitive set to a truthy value its type admits, by tier, within
   // the infection's half of the budget; a run whose difference is no longer falsy is climbed
@@ -588,14 +619,14 @@ export async function searchWorld({ seed = 1, starts, run, changes, maxInputs, m
     }
     if (!s) {
       const next = await infectNext();
-      if (next.diff) return summary('divergence', { witness: next.diff, recipe: next.recipe, world: [] });
+      if (next.diff) return summary('divergence', { witness: next.diff, recipe: next.recipe, world: next.world ?? [] });
       if (next.start && falsyLast && next.start.falsy) { deferred.push(next.start); continue; }
       if (next.start) s = next.start;
       else if (deferred.length && !next.over) s = deferred.shift();
       else return summary(next.stop);
     }
-    let world = [], cur = s.answered, ran = s.ran, at = s.at, threw = s.threw, guide = s.guide ?? null, here = 0;
-    const seen = new Set(), rejected = new Set(), climb = { ...recipeText(s.recipe), world: [], ran };
+    let world = s.world ?? [], cur = s.answered, ran = s.ran, at = s.at, threw = s.threw, guide = s.guide ?? null, here = 0;
+    const seen = new Set(), rejected = new Set(), climb = { ...recipeText(s.recipe), world: worldText(world), ran };
     climbs.push(climb);
     for (let moved = true; moved && here < perStart;) {
       moved = false;

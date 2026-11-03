@@ -1,0 +1,8 @@
+{
+ "why": "A fallback on an answer of the world (exec/compared.mjs changedConversions, exec/search.mjs searchWorld worldInfect; lane w9aj). Renders.depthOf reads `registry.get(scene) || 0` from a package lean fakes; the candidate writes `?? 0`. They differ only on a falsy answer that is not absent, and the fake answers a handle or nothing, so no draw infects and the world search has no climb to start: PASS-bounded on 9873874f64. The read the changed conversion takes is set to each value of the fallback family on the draws in turn (within the infection's half of the budget); NaN gives the parent -1 and the candidate NaN, so the depth differs (WITNESS, source: world). Under LEAN_BREAK=w9aj-world-conversions it is PASS-bounded again.",
+ "laneBOnly": true,
+ "scope": [],
+ "equal": {},
+ "b": { "Renders.depthOf": "WITNESS" },
+ "break": [{ "mechanism": "w9aj-world-conversions", "b": { "Renders.depthOf": "PASS-bounded" } }]
+}

@@ -130,6 +130,10 @@ export const MECHANISMS = {
   'w9ac-compare-literals': 'exec/search.mjs searchWorld worldMoves: a climb no longer tries first the answers the functions a run entered compare a read against (exec/compared.mjs), only the moves its position order gives (lane w9ac; tests/w9ac-compare-literals.mjs, pair world_guard_path)',
   'w9ac-callee-files': 'exec/usage.mjs declaredFn: a callee in another local file (an import, a namespace member, a base method through super) is not read, so the literals it compares the unit\'s arguments against are not drawn (lane w9ac; tests/w9ac-compare-literals.mjs, pair callee_file_literals)',
   'w9ac-falsy-last': 'exec/search.mjs searchWorld: the infected draws are climbed in their order alone, a draw whose every differing value is falsy on both sides (run.mjs infectionOf) not last (lane w9ac; tests/w9ac-compare-literals.mjs)',
+  // lane w9aj (tests/w9aj-numeric-conversion.mjs drives them; pairs conversion_flow, conversion_round, conversion_world)
+  'w9aj-conversions': 'exec/usage.mjs converts: a leaf a numeric conversion takes through arithmetic, a local, a text kept but for case or blanks, or another conversion, or any conversion but the w9o string reading, carries no family, so it is drawn without the values the family\'s members disagree on (exec/conversions.mjs; lane w9aj)',
+  'w9aj-conversion-changes': 'exec/search.mjs leafValues: the input search\'s leaf changes leave out the values of the conversions a leaf goes through (spec.mjs boundaryOf conv; lane w9aj; tests/w9aj-numeric-conversion.mjs)',
+  'w9aj-world-conversions': 'exec/compared.mjs and exec/search.mjs searchWorld worldInfect: an answer of the world a numeric conversion on a changed line takes is not set to the values its family disagrees on (lane w9aj; pair conversion_world)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';

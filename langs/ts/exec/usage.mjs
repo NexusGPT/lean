@@ -12,6 +12,7 @@
 //   node usage.mjs <file.ts> --unit <name> [--no-project]   -> JSON on stdout
 import { ts, loadProgram, topLevelFunctions } from '../common.mjs';
 import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
+import { conversionOf, flowsInto } from './conversions.mjs';
 
 const ARRAY_CALLBACK = new Set(['find', 'findLast', 'filter', 'some', 'every', 'map', 'flatMap', 'forEach', 'findIndex', 'findLastIndex', 'sort', 'toSorted']);
 const ARRAY_ONLY = new Set(['push', 'pop', 'shift', 'unshift', 'splice', 'join', 'reverse', 'flat', 'fill', 'keys', 'values', 'entries', 'reduce', 'reduceRight', ...ARRAY_CALLBACK]);
@@ -20,11 +21,14 @@ const COMPARE = new Set([ts.SyntaxKind.EqualsEqualsEqualsToken, ts.SyntaxKind.Ex
 const ORDER = new Set([ts.SyntaxKind.LessThanToken, ts.SyntaxKind.LessThanEqualsToken, ts.SyntaxKind.GreaterThanToken, ts.SyntaxKind.GreaterThanEqualsToken]);
 const ARITH = new Set([ts.SyntaxKind.MinusToken, ts.SyntaxKind.AsteriskToken, ts.SyntaxKind.SlashToken, ts.SyntaxKind.PercentToken, ts.SyntaxKind.AsteriskAsteriskToken, ts.SyntaxKind.MinusEqualsToken, ts.SyntaxKind.AsteriskEqualsToken, ts.SyntaxKind.SlashEqualsToken]);
 
-export const newNode = () => ({ fields: {}, elem: null, len: null, compares: [], typeofs: [], includes: [], truthy: false, numeric: false, string: false, array: false, called: null, inTested: false, converted: false });
+export const newNode = () => ({ fields: {}, elem: null, len: null, compares: [], typeofs: [], includes: [], truthy: false, numeric: false, string: false, array: false, called: null, inTested: false, converted: false, converts: [], convertedBy: [], convChanged: false });
 // the calls that read a string as a number (Number, parseInt, parseFloat, isNaN, isFinite, and Number's own parseInt and
 // parseFloat): a leaf handed to one is `converted`, and spec.mjs draws it on the conversions' own boundaries (lane w9o)
 const CONVERT = new Set(['Number', 'parseInt', 'parseFloat', 'isNaN', 'isFinite']);
 const NUMBER_CONVERT = new Set(['parseInt', 'parseFloat']);
+// every numeric conversion (exec/conversions.mjs, lane w9aj): a leaf whose value a conversion takes, as its argument or
+// through the arithmetic its argument computes (a local holding such an expression followed), carries the conversion's
+// family in `converts`, and spec.mjs draws it on that family's values. LEAN_BREAK=w9aj-conversions: no such reading
 // Node's own signature (lane w9o): every argument of a node:path function is a string (Node validates it and throws on
 // anything else). A parameter the unit hands to one is read as a string, so an untyped one (a JavaScript unit's, an any)
 // is drawn as text, not as a handle the function rejects on every input. The callee is named by the module its import
@@ -123,9 +127,19 @@ export function usage(sf, unitName, checker, opts = {}) {
 
   function compare(n, lit) { if (!n || !lit) return; addLit(n.compares, lit.v); if (typeof lit.v === 'number') n.numeric = true; else if (typeof lit.v === 'string') n.string = true; }
 
+  // a local's initializer (by its symbol), for the reads a conversion of the local takes (conversions.mjs flowsInto)
+  const inits = new Map();
+  const localInit = (id) => { const s = symOf(id); return s ? inits.get(s) ?? null : null; };
+  function converts(node, env) {
+    if (broken('w9aj-conversions')) return;
+    const c = conversionOf(node); if (!c) return;
+    for (const e of flowsInto(c.arg, localInit)) { const n = nodeOf(e, env); if (!n) continue; if (!n.converts.includes(c.family)) n.converts.push(c.family); if (!n.convertedBy.includes(c.by)) n.convertedBy.push(c.by); }
+  }
+
   function walk(node, env, depth) {
     // declarations bind their names first, so later reads of the alias reach the chain
-    if (ts.isVariableDeclaration(node) && node.initializer) { walk(node.initializer, env, depth); bind(env, node.name, nodeOf(node.initializer, env)); return; }
+    if (ts.isVariableDeclaration(node) && node.initializer) { if (ts.isIdentifier(node.name)) { const sy = symOf(node.name); if (sy) inits.set(sy, node.initializer); } walk(node.initializer, env, depth); bind(env, node.name, nodeOf(node.initializer, env)); return; }
+    converts(node, env);
     // a write through a key (`d.k = v`, `d[k] = v`, `delete d.k`) is no read: it names no field of the input, only its
     // receiver is read
     const target = ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken ? strip(node.left) : ts.isDeleteExpression(node) ? strip(node.expression) : null;
@@ -263,6 +277,12 @@ export function mergeNodes(a, b) {
   for (const k of new Set([...Object.keys(a.fields), ...Object.keys(b.fields)])) o.fields[k] = mergeNodes(own(a, k), own(b, k));
   o.elem = mergeNodes(a.elem, b.elem); o.len = mergeNodes(a.len, b.len);
   for (const key of ['compares', 'typeofs', 'includes']) { for (const v of a[key]) addLit(o[key], v); for (const v of b[key]) addLit(o[key], v); }
+  o.converts = [...new Set([...(a.converts ?? []), ...(b.converts ?? [])])];
+  // a leaf the two versions convert differently (`Number(s)` on one, `parseInt(s)` on the other): its family's values are
+  // the ones a target condition names (the search's tier 0)
+  const by = (n) => [...(n.convertedBy ?? [])].sort().join(',');
+  o.convertedBy = [...new Set([...(a.convertedBy ?? []), ...(b.convertedBy ?? [])])];
+  o.convChanged = !!(a.convChanged || b.convChanged || (by(a) !== by(b) && (a.converts ?? []).some((f) => (b.converts ?? []).includes(f))));
   for (const key of ['truthy', 'numeric', 'string', 'array', 'inTested', 'converted']) o[key] = a[key] || b[key];
   o.called = a.called == null ? b.called : b.called == null ? a.called : Math.max(a.called, b.called);
   return o;
