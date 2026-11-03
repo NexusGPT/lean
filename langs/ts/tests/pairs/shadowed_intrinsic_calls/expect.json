@@ -1,0 +1,11 @@
+{
+ "why": "A file that binds an intrinsic at module scope (node's lib: `const { Object } = primordials`) and calls methods at module scope. The call marks (callee-trace.mjs factMarks) hoist their temporaries above the emit's prologue, and the prologue's scan (run.mjs intrinsicPrologue) stopped at that statement, so `Object.defineProperty(exports, \"__esModule\", ...)` read the file's `Object` in its dead zone and the module never loaded (node#66159, 2026-11-03). A hoisted temporary declaration is the emit's own, so the scan passes it; the candidate's absent-key fallback differs, a WITNESS lane B can only see once the module loads.",
+ "candidateOnly": [
+  {
+   "parent": "parent.js",
+   "file": "candidate.js",
+   "unit": "count",
+   "verdict": "WITNESS"
+  }
+ ]
+}

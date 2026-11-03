@@ -227,7 +227,11 @@ function intrinsicPrologue(js, shadowed, globalName) {
   if (!shadowed.size || broken('emit-intrinsics')) return js;
   const sf = ts.createSourceFile('emit.js', js, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const isExports = (e) => ts.isPropertyAccessExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'exports';
-  const emitted = (st) => (ts.isExpressionStatement(st) && ts.isStringLiteral(st.expression))
+  // a declaration of the marks' temporaries (`var _a, _b;`, hoisted above the prologue by callee-trace.mjs factMarks and
+  // the other marks) is the emit's own too: the scan passes it, else the helpers after it keep their bare `Object`
+  const hoistedTemps = (st) => !broken('emit-intrinsics-hoisted') && ts.isVariableStatement(st) && st.declarationList.declarations.length > 0
+    && st.declarationList.declarations.every((d) => ts.isIdentifier(d.name) && /^_(?:[a-z]+|\d+)$/.test(d.name.text) && !d.initializer);
+  const emitted = (st) => hoistedTemps(st) || (ts.isExpressionStatement(st) && ts.isStringLiteral(st.expression))
     || (ts.isVariableStatement(st) && st.declarationList.declarations.length === 1 && /^__\w+$/.test(st.declarationList.declarations[0].name.getText(sf)) && /^\(this && this\.__\w+\) \|\|/.test(st.declarationList.declarations[0].initializer?.getText(sf) ?? ''))
     || (ts.isExpressionStatement(st) && /^Object\.defineProperty\(exports, "__esModule"/.test(st.expression.getText(sf)))
     || (ts.isExpressionStatement(st) && ts.isBinaryExpression(st.expression) && isExports(st.expression.left) && /= void 0$/.test(st.expression.getText(sf)));
