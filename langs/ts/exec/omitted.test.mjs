@@ -72,3 +72,8 @@ test('a later differing drive is its own difference (LEAN_BREAK=w9af-drive-sites
   const was = process.env.LEAN_BREAK; process.env.LEAN_BREAK = 'w9af-drive-sites';
   try { assert.deepEqual(lines(fieldDifferences(a, b)), [[0, 3]]); } finally { if (was === undefined) delete process.env.LEAN_BREAK; else process.env.LEAN_BREAK = was; }
 });
+
+test('later drives are compared only while the two lists line up', () => {
+  const a = drives(1, 2), b = drives(5, 6); b.drives[1] = withSite({ $fn: '#2', args: [], returned: 6 }, site(9, 'return b * 2;')); // the candidate handed out another function first
+  assert.deepEqual(fieldDifferences(a, b).filter((w) => w.field === 'drives').map((w) => w.index), [0]);
+});

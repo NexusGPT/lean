@@ -2058,11 +2058,14 @@ const DIFFERENCE_FIELDS = ['outcome', 'heap', 'receiver', 'trace', 'pending', 'd
 // A later drive record that differs is located too (each drive is the call of another function the unit handed out):
 // a difference at the first drive (the PR's own change in one handed-out function) would otherwise hide every later
 // drive's (a changed default of another) on the same input; each counts when it names a new statement, as a field does.
+// Only while the two lists line up, record by record (the same handle on the same drawn arguments): after a drive that
+// handed out more or other functions on one side, the records at one index are no longer one function's two calls.
 // LEAN_BREAK=w9af-drive-sites: the first differing drive alone
 function laterDrives(a, b) {
   if (broken('w9af-drive-sites')) return [];
   const x = a.drives ?? [], y = b.drives ?? [], out = []; let first = true;
   for (let i = 0; i < Math.max(x.length, y.length) && out.length < WITNESS_SITES; i++) {
+    if (!x[i] || !y[i] || x[i].$fn !== y[i].$fn || JSON.stringify(x[i].args) !== JSON.stringify(y[i].args)) break; // the two lists no longer line up (one side handed out another function): a later pair is not one function's two calls
     if (JSON.stringify(x[i]) === JSON.stringify(y[i])) continue;
     if (first) { first = false; continue; } // firstDifference's own
     const w = firstDifference({ drives: x[i] ? [x[i]] : [] }, { drives: y[i] ? [y[i]] : [] }, 'drives');
