@@ -50,7 +50,8 @@ const checks = [
       const rel = 'apps/vscode/scripts/repro-cloud-session.mjs';
       const got = checkoutNamed('/w/ck/a#1~m1/lean/a#1~m1/.lean-run/runs/run-lVB1Lf/sources/apps/vscode/scripts/.lean_head_2682037_repro-cloud-session.mjs: ASK(fake answering at module evaluation): POST /api/v1/session returned 404: 0', rel);
       const other = checkoutNamed('/w/src/.lean_base_11_other.ts: x', rel); // another file's copy is not this row's file
-      const ok = got === `${rel}: ASK(fake answering at module evaluation): POST /api/v1/session returned 404: 0` && other === '/w/src/.lean_base_11_other.ts: x';
+      const bare = checkoutNamed('names fetch (.lean_head_3303844_repro-cloud-session.mjs:13); a module binding', rel); // a site's file, its bare name
+      const ok = got === `${rel}: ASK(fake answering at module evaluation): POST /api/v1/session returned 404: 0` && other === '/w/src/.lean_base_11_other.ts: x' && bare === `names fetch (${rel}:13); a module binding`;
       return { ok, detail: got.slice(0, 120) };
     } finally { if (saved === undefined) delete process.env.LEAN_BREAK; else process.env.LEAN_BREAK = saved; }
   }],

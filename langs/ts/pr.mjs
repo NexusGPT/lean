@@ -49,7 +49,7 @@ import { checkPin } from './solve/pin.mjs';
 // LEAN_BREAK=reason-names: the copy's path stays
 export function checkoutNamed(text, rel) {
   if (typeof text !== 'string' || broken('reason-names')) return text;
-  return text.replace(/(?:\/[^\s:'"`]*)?\/\.lean_(?:head|base)_\d+_([^\s:'"`/]+)/g, (whole, name) => (name === path.basename(rel) ? rel : whole));
+  return text.replace(/(?:[^\s:'"`()]*\/)?\.lean_(?:head|base)_\d+_([^\s:'"`()/]+)/g, (whole, name) => (name === path.basename(rel) ? rel : whole)); // a path to the copy, or its bare name (a site's file)
 }
 const TEST_FILE = /(?:^|[/\\])__tests__(?:[/\\]|$)|\.(?:spec|test)\.[cm]?[jt]sx?$/; // the test modules new-unit.mjs excludes from a unit's own load
 
