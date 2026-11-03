@@ -363,7 +363,7 @@ export async function runNew(opts) {
     const world = broken('closed-call') ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
     if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); continue; }
     reach.closed++;
-    if (!broken('new-test-cases')) cases.push({ i, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: render(observation.raw?.returned) }, drives: !!observation.drives?.length, thenable, sync });
+    if (!broken('new-test-cases')) cases.push({ i, step, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: render(observation.raw?.returned) }, drives: !!observation.drives?.length, thenable, sync });
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
     const wide = declared.params.some((p, k) => p.spec?.all && !(p.optional && inputs[k] === undefined)); // admitted only because a parameter's type is any or unknown, which admit every value: a validator's own rejection reads so
     if (threw) {
@@ -414,7 +414,7 @@ export async function runNew(opts) {
   // (new-unit tests) a test for the unit from its closed calls: the record new:proposed-test, or a coverage record naming why none
   if (!broken('new-test')) {
     let proposed;
-    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, cases, statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading }); }
+    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, cases, statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
     catch (e) { proposed = { kind: 'new:coverage', phase: 'test', reason: `the test writer failed: ${String(e?.message ?? e).slice(0, 200)}` }; }
     if (proposed) book.add(proposed, `${proposed.kind} proposed`);
   }

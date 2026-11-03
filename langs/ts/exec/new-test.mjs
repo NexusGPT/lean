@@ -9,8 +9,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { broken } from '../break.mjs';
 import { runTests } from './new-tests.mjs';
+import { inputsFor } from './gen.mjs';
+import { edgeInput } from './declared.mjs';
+import { pickUnit, observe } from './run.mjs';
+import { Environment, render } from './fake.mjs';
+import { sitesOf, mutate } from './mutate.mjs';
+import { setVirtual } from './new-unit.mjs';
 
 export const CASES = 12; // the cases a proposed test holds at most (design/constants.md)
+export const MUTANTS = 24; // the mutants planted in the unit at most, every kind once first (design/constants.md)
+export const KILL_MS = 60000; // the wall the mutant loop may take per unit
 
 // a rendered value (fake.mjs render) holds a value of lean's world, or one no test can restate by value
 const WORLD_TAGS = ['$fake', '$fn', '$deep', '$cycle', '$symbol'];
@@ -109,17 +117,72 @@ export function testText({ unit, binding, defaultExport, importFrom, dialect, ca
   return lines.join('\n');
 }
 
+// ----- the mutants: one edit per site of the unit (mutate.mjs), each compiled from its text beside the candidate, each
+// case replayed against it from the same seed (as the parameter trials replay a base); a mutant is killed when the case's
+// outcome differs, when the mutant asks the world where the unit did not, or when it runs out of its bound. Each mutant
+// stops at its first killer. No type check of a mutant here (a child under the permission model writes no file; the
+// bench's planted mutants are type-checked at their making). LEAN_BREAK=new-test-mutants: no mutant planted
+async function killsOf({ candidate, unit, spec, cases, seed, ms, load, project, now = Date.now }) {
+  if (broken('new-test-mutants') || !load) return null;
+  let sites; try { sites = sitesOf(candidate, unit, { project: project ?? false, hard: false }).sites; } catch (e) { return { error: `the mutation sites could not be read: ${String(e?.message ?? e).slice(0, 160)}` }; }
+  const order = [], seenKind = new Set();
+  sites.forEach((s, k) => { if (!seenKind.has(s.kind)) { seenKind.add(s.kind); order.push(k); } });
+  sites.forEach((s, k) => { if (!order.includes(k) && order.length < MUTANTS) order.push(k); });
+  const ext = path.extname(candidate) || '.ts', dir = path.dirname(path.resolve(candidate));
+  const planted = [], t0 = now();
+  let budget = null;
+  for (const k of order.slice(0, MUTANTS)) {
+    if (now() - t0 > KILL_MS) { budget = `stopped after ${planted.length} of ${Math.min(order.length, MUTANTS)} mutants at ${KILL_MS / 1000} s`; break; }
+    const m = mutate(candidate, unit, k, { project: project ?? false, typecheck: false });
+    if (!m) continue;
+    const virtual = path.join(dir, `.lean_mutant_${process.pid}_${unit.replace(/[^\w$]+/g, '_')}_${k}${ext}`);
+    setVirtual(virtual, m.source);
+    const entry = { k, kind: m.site.kind, lines: m.site.lines, was: String(m.site.was ?? '').slice(0, 40), killer: null };
+    for (const c of cases) {
+      const env = new Environment(seed * 7919 + c.i); env.shapes = spec;
+      let loaded; try { loaded = await load(virtual, env, {}); } catch (e) { entry.load = String(e?.message ?? e).slice(0, 120); break; }
+      const picked = pickUnit(loaded.exports, spec, env); if (!picked) { entry.load = 'unit not callable'; break; }
+      await new Promise((r) => setImmediate(r)); env.trace.length = 0; env.pending.length = 0; env.calls.clear();
+      const drawn = inputsFor(spec, seed, c.i, env); const inputs = c.step ? edgeInput(drawn, c.step) : drawn;
+      env.argPool = inputs.filter((x) => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
+      let o; try { o = await observe({ env, unit: picked }, spec, inputs, ms); } catch (e) { entry.killer = c.i; entry.how = `the run failed: ${String(e?.message ?? e).slice(0, 80)}`; break; }
+      if (o.harness) { entry.killer = c.i; entry.how = 'out of its bound'; break; }
+      const out = Object.hasOwn(o.outcome, 'threw') ? { threw: render(o.raw?.threw) } : { returned: render(o.raw?.returned) };
+      const was = Object.hasOwn(c.outcome, 'threw') ? { threw: c.outcome.threw } : { returned: c.outcome.returned };
+      if (JSON.stringify(out) !== JSON.stringify(was)) { entry.killer = c.i; entry.how = 'a different outcome'; break; }
+      if (o.trace.length) { entry.killer = c.i; entry.how = 'asked the world'; break; }
+    }
+    planted.push(entry);
+  }
+  return { planted, ...(budget ? { budget } : {}) };
+}
+
 // ----- the cases kept: the ones that complete a statement no kept case completed, then one per distinct outcome -----
-export function selectCases(usable, statements) {
-  const kept = [], have = new Set(), outcomes = new Set();
-  const key = (c) => JSON.stringify(c.outcome);
-  for (const c of usable) { const fresh = (c.reached ?? []).filter((t) => !have.has(t)); if (fresh.length && kept.length < CASES) { kept.push(c); for (const t of c.reached) have.add(t); outcomes.add(key(c)); } }
-  for (const c of usable) { if (kept.length >= CASES) break; if (kept.includes(c) || outcomes.has(key(c))) continue; kept.push(c); outcomes.add(key(c)); }
-  if (!kept.length && usable.length) kept.push(usable[0]);
+export function selectCases(usable, statements, kills = null) {
+  const kept = [], have = new Set();
+  const byIndex = new Map(usable.map((c) => [c.i, c]));
+  const add = (c) => { if (c && !kept.includes(c) && kept.length < CASES) { kept.push(c); for (const t of c.reached ?? []) have.add(t); } };
+  for (const c of usable) if ((c.reached ?? []).some((t) => !have.has(t))) add(c); // the statements, each by the first case completing it
+  for (const m of kills?.planted ?? []) if (m.killer !== null) add(byIndex.get(m.killer)); // each killed mutant by its first killer
+  // one case per distinct error: its class and its message with the case's own strings and every number templated
+  const errorKey = (c) => { const e = c.outcome.threw; let m = e && typeof e === 'object' ? String(e.message ?? '') : String(e ?? ''); for (const a of c.args) if (typeof a === 'string' && a.length) m = m.split(a).join('<q>'); return `${e && typeof e === 'object' ? e.$error ?? '' : typeof e}:${m.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '<q>').replace(/-?\d+(?:\.\d+)?/g, '<n>')}`; };
+  const errors = new Set(kept.filter((c) => Object.hasOwn(c.outcome, 'threw')).map(errorKey));
+  let extra = 0;
+  for (const c of usable) { if (!Object.hasOwn(c.outcome, 'threw') || extra >= 3) continue; const e = errorKey(c); if (!errors.has(e)) { errors.add(e); add(c); extra++; } }
+  if (!kept.length && usable.length) add(usable[0]);
   return kept.sort((a, b) => a.i - b.i);
 }
 
-export async function writeNewTest({ candidate, unit, spec, cases = [], statements = null, lines = null, seed = 1, ms = 2000, options, load }) {
+// the mutants as the record carries them: planted, killed, per kind, and the loads or bounds that stopped a mutant
+function mutantsOf(kills) {
+  if (!kills) return null;
+  if (kills.error) return { error: kills.error };
+  const kinds = {};
+  for (const m of kills.planted) { const e = (kinds[m.kind] ??= { planted: 0, killed: 0 }); e.planted++; if (m.killer !== null) e.killed++; }
+  return { planted: kills.planted.length, killed: kills.planted.filter((m) => m.killer !== null).length, kinds, typechecked: false, ...(kills.budget ? { budget: kills.budget } : {}), sites: kills.planted.map((m) => ({ kind: m.kind, lines: m.lines, was: m.was, ...(m.killer !== null ? { killer: m.killer, how: m.how } : {}), ...(m.load ? { load: m.load } : {}) })) };
+}
+
+export async function writeNewTest({ candidate, unit, spec, cases = [], statements = null, lines = null, seed = 1, ms = 2000, options, load, project }) {
   const listed = statements ?? [];
   const reachedAny = new Set(cases.flatMap((c) => c.reached ?? []));
   const usable = cases.filter((c) => !c.drives && !holdsWorld(c.args) && !holdsWorld(c.outcome.returned ?? c.outcome.threw));
@@ -132,7 +195,8 @@ export async function writeNewTest({ candidate, unit, spec, cases = [], statemen
   const { runner, dir } = runnerOf(candidate);
   const dialect = runner ?? 'vitest';
   const place = placeOf(candidate, unit, runner);
-  const kept = selectCases(usable, listed);
+  const kills = await killsOf({ candidate, unit, spec, cases: usable, seed, ms, load, project });
+  const kept = selectCases(usable, listed, kills);
   const reached = new Set(kept.flatMap((c) => c.reached ?? []));
   const missed = listed.filter((t) => !reached.has(t)), unreached = listed.filter((t) => !reachedAny.has(t));
   const isAsync = kept.some((c) => c.thenable) || !!spec?.isAsync;
@@ -140,7 +204,7 @@ export async function writeNewTest({ candidate, unit, spec, cases = [], statemen
   try { text = testText({ unit, binding, defaultExport: exported === 'default', importFrom: place.importFrom, dialect, cases: kept, isAsync }); }
   catch (e) { return cover(`no source for a case: ${String(e?.message ?? e).slice(0, 160)}`); }
   const at = (t) => lines?.[t] ?? t;
-  const record = { kind: 'new:proposed-test', unit, file: path.relative(dir, place.file), runner: runner ?? 'unknown (vitest dialect)', dialect, cases: kept.length, closed: cases.length, usable: usable.length, statements: { listed: listed.length, reached: reached.size, missed: missed.map(at), unreached: unreached.map(at) }, text };
+  const record = { kind: 'new:proposed-test', unit, file: path.relative(dir, place.file), runner: runner ?? 'unknown (vitest dialect)', dialect, cases: kept.length, closed: cases.length, usable: usable.length, statements: { listed: listed.length, reached: reached.size, missed: missed.map(at), unreached: unreached.map(at) }, mutants: mutantsOf(kills), text };
   if (missed.length) return cover(`a test from the closed calls completes ${reached.size} of ${listed.length} statements of the unit (missed: lines ${missed.map(at).join(', ')}): below the bar, no test proposed`, { statements: record.statements, cases: kept.length });
   // the self-check: the text runs under lean's runner model against the candidate; every case passes, the run asks nothing of the world
   if (!broken('new-test-check') && load) {

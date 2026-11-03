@@ -92,6 +92,7 @@ export const MECHANISMS = {
   'new-reach': 'exec/new-unit.mjs newUnitProbes: a candidate-only run probes no branch and no statement of the unit, so no case says which statements it completed (new-unit tests)',
   'new-test-cases': 'exec/new-unit.mjs runNew: a closed call of a unit no parent holds is not kept as a case, so no test is written (new-unit tests)',
   'new-test-source': 'exec/new-test.mjs toSource: every value prints as null, so the test asserts nothing the unit returned (new-unit tests)',
+  'new-test-mutants': 'exec/new-test.mjs killsOf: no mutant is planted in a unit no parent holds, so the record counts no kill and the cases keep no killer (new-unit tests)',
   'new-test-check': 'exec/new-test.mjs writeNewTest: the proposed test is not run under lean\'s runner model against the candidate, so a test that fails or asks the world is proposed all the same (new-unit tests)',
   'new-test': 'exec/new-unit.mjs runNew: the test writer (exec/new-test.mjs) does not run, so a unit no parent holds gets neither a proposed test nor the coverage record naming why (new-unit tests)',
   'emit-intrinsics-hoisted': 'exec/run.mjs intrinsicPrologue: the scan of the emit\'s prologue stops at the marks\' hoisted temporaries (`var _a, _b;`), so the helpers after them keep a bare `Object` the file shadows at module scope (node#66159, 2026-11-03)',

@@ -895,6 +895,9 @@ function newRecordText(x) {
   if (x.kind === 'new:fault') return `input ${x.input}${args}${x.edge ? `, \`${x.edge}\` at an edge value its type admits` : ''}: ${x.how === 'rejected' ? 'the promise rejected with' : 'threw'} ${x.error?.name ?? ''}${x.error?.message ? ': ' + shortValue(x.error.message) : x.error?.value ? ' ' + shortValue(x.error.value) : ''} (${x.inputs} input(s))`;
   if (x.kind === 'new:shape') return `input ${x.input}${args}: returned ${shortValue(x.returned)}, not a value of the declared \`${x.declared}\` (${x.inputs} input(s))`;
   if (x.kind === 'new:test') return `${x.file} \`${x.test}\` fails: ${x.error?.assertion ?? shortValue(x.error)}`;
+  if (x.kind === 'new:nan') return `input ${x.input}${args}: returned NaN${x.at ? ` at \`${x.at}\`` : ''} out of an input that holds none (${x.inputs} input(s))`;
+  if (x.kind === 'new:unread' || x.kind === 'new:ignored') return `the parameter \`${x.param}\` ${x.kind === 'new:unread' ? 'is never named by the body' : 'changes nothing'}: on ${x.trials} drawn inputs, replacing it alone left the returned value and the other arguments unchanged`;
+  if (x.kind === 'new:proposed-test') return `a test from the unit's behaviour: ${x.cases} case(s) of ${x.closed} closed call(s), completing ${x.statements?.reached ?? '?'} of ${x.statements?.listed ?? '?'} statements${x.mutants && !x.mutants.error ? `, telling apart ${x.mutants.killed} of ${x.mutants.planted} planted mutants` : ''}, passing under lean's runner model${x.check ? ` (${x.check.passed} of ${x.check.selected})` : ''}; proposed at \`${x.file}\` (${x.runner})`;
   return x.reason ?? '';
 }
 

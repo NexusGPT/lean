@@ -1,16 +1,12 @@
-// Units no parent holds, with the tests the PR adds beside them (candidate.test.ts, design/w1h-new-units.md).
-
-// its own test says add(1, 2) is 3: new:test
-export function add(a: number, b: number): number {
-  return a - b;
+// a new exported function with two branches and a throw: three cases complete every statement
+export function bucket(n: number, label: string): string {
+  if (!Number.isFinite(n)) throw new Error(`not a number: ${label}`);
+  if (n < 0) return `${label}:negative`;
+  if (n === 0) return `${label}:zero`;
+  return `${label}:positive(${Math.round(n)})`;
 }
-
-// its tests pass: no record
-export function mul(a: number, b: number): number {
-  return a * b;
-}
-
-// its test reads the clock lean answers: the failure rests on the world, so it is coverage, not new:test
-export function stamp(): number {
-  return Date.now();
-}
+// a unit that returns a promise: the test awaits it
+export async function later(n: number): Promise<number> { return n * 2 + 1; }
+// a helper no import reaches: no test can call it from the repository's runner
+function helper(x: number): number { return x + 1; }
+export function usesHelper(x: number): number { return helper(x) * 2; }
