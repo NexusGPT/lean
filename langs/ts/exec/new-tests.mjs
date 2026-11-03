@@ -217,6 +217,8 @@ function makeMocks(state) {
     },
     setSystemTime: (t) => { if (!timers) throw new Failure('setSystemTime without fake timers'); timers.now.t = t instanceof RealDate ? t.getTime() : Number(t); return vi; },
     useRealTimers: () => { if (timers) { const g = global(); if (timers.saved) Object.defineProperty(g, 'Date', timers.saved); timers = null; } return vi; },
+    // (lane w9bg) the module registry emptied: the next import of a module evaluates it afresh (a script's case)
+    resetModules: () => { if (!state.resetModules || broken('new-test-script')) throw new Gap('vi.resetModules'); state.resetModules(); return vi; },
   };
   return new Proxy(vi, { get: (t, k) => (typeof k === 'symbol' ? undefined : Object.hasOwn(t, k) ? t[k] : () => { throw new Gap(`vi.${String(k)}`); }) });
 }
@@ -267,20 +269,34 @@ function makeRunner(state, mocks = false) {
 // the test files' tests that name the unit: the file imports the unit's binding from the candidate (a named import, the
 // default when the unit is the default export, or a namespace's member); a test names it when its body, a hook of a
 // describe around it, or a top-level helper of the file such a body names, names it (the helpers to a fixed point)
+// (lane w9bg) a side-effect import of the candidate's file selects the unit too: a script exports nothing, and its body,
+// which runs the unit, runs when the file is imported; a static `import './x'` runs it for every test of the file, a
+// dynamic `import('./x')` for the tests whose body (or hook) holds it. LEAN_BREAK=new-test-script: neither selects
 function selection(testFile, text, candidates, unit, options) {
   const sf = ts.createSourceFile(testFile, text, ts.ScriptTarget.Latest, true);
   const exportName = unit.includes('.') ? unit.split('.')[0] : unit;
-  const names = new Set();
+  const names = new Set(), dynamic = new Set(); let all = false;
+  const isCandidate = (spec) => {
+    const found = ts.resolveModuleName(spec, testFile, options ?? {}, ts.sys).resolvedModule?.resolvedFileName;
+    if (found) return candidates.includes(path.resolve(found));
+    if (!spec.startsWith('.')) return false;
+    const at = path.resolve(path.dirname(testFile), spec); // a script TypeScript does not resolve (an .mjs, a .js without allowJs): the file itself, or the file with its own extension
+    return candidates.some((c) => c === at || c === `${at}${path.extname(c)}`);
+  };
+  if (!broken('new-test-script')) {
+    for (const st of sf.statements) if (ts.isImportDeclaration(st) && !st.importClause && ts.isStringLiteral(st.moduleSpecifier) && isCandidate(st.moduleSpecifier.text)) all = true;
+    const w = (n) => { if (ts.isCallExpression(n) && n.expression.kind === ts.SyntaxKind.ImportKeyword && n.arguments.length && ts.isStringLiteralLike(n.arguments[0]) && isCandidate(n.arguments[0].text)) dynamic.add(n.arguments[0].text); ts.forEachChild(n, w); };
+    w(sf);
+  }
   for (const st of sf.statements) {
     if (!ts.isImportDeclaration(st) || !st.importClause || st.importClause.isTypeOnly || !ts.isStringLiteral(st.moduleSpecifier)) continue;
-    const found = ts.resolveModuleName(st.moduleSpecifier.text, testFile, options ?? {}, ts.sys).resolvedModule?.resolvedFileName;
-    if (!found || !candidates.includes(path.resolve(found))) continue;
+    if (!isCandidate(st.moduleSpecifier.text)) continue;
     const nb = st.importClause.namedBindings;
     if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) if ((el.propertyName ?? el.name).text === exportName && !el.isTypeOnly) names.add(el.name.text);
     if (nb && ts.isNamespaceImport(nb)) names.add(nb.name.text);
     if (st.importClause.name) names.add(st.importClause.name.text); // a default import: the candidate's default may be the unit; naming it is over-approximated, never under
   }
-  if (!names.size) return null;
+  if (!names.size && !all && !dynamic.size) return null;
   const mentions = (node, set) => { let hit = false; const w = (n) => { if (hit) return; if (ts.isIdentifier(n) && set.has(n.text) && !(ts.isPropertyAccessExpression(n.parent) && n.parent.name === n)) hit = true; else ts.forEachChild(n, w); }; w(node); return hit; };
   const helpers = new Map();
   for (const st of sf.statements) {
@@ -289,8 +305,10 @@ function selection(testFile, text, candidates, unit, options) {
     if (ts.isClassDeclaration(st) && st.name) helpers.set(st.name.text, st);
   }
   for (let grew = true; grew;) { grew = false; for (const [name, node] of helpers) if (!names.has(name) && mentions(node, names)) { names.add(name); grew = true; } }
-  return { names, mock: MOCKS.exec(text)?.[0] ?? null };
+  return { names, all, dynamic: [...dynamic], mock: MOCKS.exec(text)?.[0] ?? null };
 }
+// whether a test's callback imports the candidate dynamically (selection `dynamic`)
+const importsIn = (fn, specs) => { if (!specs.length) return false; let src; try { src = Function.prototype.toString.call(fn.source ?? fn); } catch { return true; } return specs.some((s) => new RegExp(`\\bimport\\(\\s*(['"\`])${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\1\\s*\\)`).test(src)); };
 // a ReferenceError naming a global Node holds: the sandbox lacks it (new-unit.mjs platformGap, the same reading)
 const platformGlobal = (e) => { if (broken('platform-gap')) return null; try { const m = e && e.name === 'ReferenceError' && /^([A-Za-z_$][\w$]*) is not defined$/.exec(String(e.message)); return m && m[1] in globalThis ? m[1] : null; } catch { return null; } };
 const namesIn = (fn, names) => { let src; try { src = Function.prototype.toString.call(fn.source ?? fn); } catch { return true; } return [...names].some((n) => new RegExp(`(?<![\\w$.])${n.replace(/\$/g, '\\$')}(?![\\w$])`).test(src)); };
@@ -313,7 +331,7 @@ export async function runTests({ candidate, aliases = [], unit, testFiles, texts
     let loaded;
     try {
       if (mocks) { state.mocked = mockModules(file, text, runner.api.vi); for (const [spec, value] of state.mocked) runner.modules[spec] = value; }
-      loaded = await load(file, env, { allow: new Set([file]), globals: runner.api, modules: runner.modules, onContext: (g) => { state.global = g; } });
+      loaded = await load(file, env, { allow: new Set([file]), globals: runner.api, modules: runner.modules, onContext: (g) => { state.global = g; }, onReset: (reset) => { state.resetModules = reset; } });
     }
     catch (e) { cover(file, `the test file did not load: ${String(e?.message ?? e).slice(0, 200)}`); continue; }
     const worldAtLoad = graphWorld(loaded);
@@ -329,7 +347,7 @@ export async function runTests({ candidate, aliases = [], unit, testFiles, texts
     const selected = [];
     for (const t of state.tests) {
       const scopes = chain(t.scope);
-      const named = !!t.fn && (namesIn(t.fn, sel.names) || scopes.some((s) => [...s.hooks.beforeAll, ...s.hooks.beforeEach, ...s.hooks.afterEach].some((h) => namesIn(h, sel.names))));
+      const named = !!t.fn && (sel.all || namesIn(t.fn, sel.names) || importsIn(t.fn, sel.dynamic) || scopes.some((s) => [...s.hooks.beforeAll, ...s.hooks.beforeEach, ...s.hooks.afterEach].some((h) => namesIn(h, sel.names) || importsIn(h, sel.dynamic))));
       if (named) summary.selected++;
       if (!t.fn) { if (named) summary.skipped++; continue; }
       env.trace.length = 0; env.pending.length = 0;

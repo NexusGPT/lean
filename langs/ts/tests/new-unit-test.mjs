@@ -32,6 +32,15 @@
 //   reach-packages    exec/new-unit.mjs importSurface: a declared package the checkout does not install (label: a test)
 //   reach-builtins    exec/new-unit.mjs importSurface: node:net without Node's declarations (hostKind: a test)
 //   reach-reason      exec/new-unit.mjs unitWorld: an import still not followed names why (bannerText)
+// (lane w9bg, design/w9bg-scripts.md) a unit of a script, a module that exports nothing:
+//   new-test-script   exec/new-unit.mjs isScript/scriptCases, exec/new-test.mjs writeNewTest, exec/new-tests.mjs selection:
+//                     the body's runs are the cases, each test imports the script afresh under its stubs and asserts the
+//                     requests (script.ts send; script-main.ts headers, reached through main's call chain)
+//   new-test-script-reach exec/new-test.mjs writeNewTest: the unit's statements the runs never complete under the stubs
+//                     are the bar, reported (script-main.ts main: the lines after a timer no stub fires)
+//   new-test-env      exec/new-test.mjs surfaceOf/stubsOf, exec/new-unit.mjs envRead: an environment variable read is set
+//                     (or deleted) as lean's process answered, put back after (env.ts greeting)
+//   new-test-output   exec/new-test.mjs isOutput: a console call prints (script.ts: the run that completes logs)
 // Plain checks (no mechanism of their own): the clock read once is fake timers (stamp); Math.random is spied (pick); an
 // argument lean answers member by member is an object of its answers (describeUser); a unit that asks the world where no
 // stub answers gets no test, its reason naming the surface (world.ts elapsed: performance); a helper no export reaches
@@ -59,6 +68,7 @@ const records = (r) => r.certificate?.newUnit?.records ?? [];
 const proposed = (r) => records(r).find((x) => x.kind === 'new:proposed-test') ?? null;
 const coverageTest = (r) => records(r).find((x) => x.kind === 'new:coverage' && x.phase === 'test') ?? null;
 const calc = path.join(fixtures, 'calc.ts'), handed = path.join(fixtures, 'handed.ts'), world = path.join(fixtures, 'world.ts'), joint = path.join(fixtures, 'joint.ts');
+const script = path.join(fixtures, 'script.ts'), scriptMain = path.join(fixtures, 'script-main.ts'), envFile = path.join(fixtures, 'env.ts');
 const cache = new Map();
 const run = (unit, file = calc, m = null, n = 24, project = null) => { const k = `${file}|${unit}|${m}|${n}|${project}`; if (!cache.has(k)) cache.set(k, lean(['--candidate', file, '--unit', unit, '--n', String(n)], m, project)); return cache.get(k); };
 // (lane w9au) the workspace fixture, read with the app package's own tsconfig
@@ -226,6 +236,37 @@ const checks = [
     const t = proposed(run('tagAll', path.join(fixtures, 'node-runner', 'joint.ts'))); const text = t?.text ?? '';
     const ok = !!t && t.dialect === 'node:test' && /const fCalls: unknown\[\]\[\] = \[\];/.test(text) && /Date\.now = \(\.\.\.args\) =>/.test(text) && /\} finally \{ Date\.now = nowStub\.saved; \}/.test(text) && t.check?.passed === t.cases;
     return { ok, detail: t ? `${t.dialect}; ${(text.split('\n').find((l) => /finally/.test(l)) ?? 'no restore').trim()}` : coverageTest(run('tagAll', path.join(fixtures, 'node-runner', 'joint.ts')))?.reason ?? 'no record' };
+  }],
+  // (lane w9bg) a unit of a script: the script imported under the stubs of the body's runs, its requests asserted
+  ['new-test-script', 'a unit of a script gets a test that imports the script under the stubs of lean\'s answers and asserts its requests', (m) => {
+    const r = run('send', script, m); const t = proposed(r); const text = t?.text ?? '';
+    const ok = !!t && !!t.script && /vi\.resetModules\(\);/.test(text) && /await expect\(import\('\.\/script'\)\)\.rejects\.toThrow\("STATUS_TOKEN is required"\);/.test(text) && /delete process\.env\.STATUS_TOKEN;/.test(text) && /expect\(fetchStub\)\.toHaveBeenNthCalledWith\(1, "https:\/\/status\.example\.test\/report", /.test(text) && !/import \{ send \}/.test(text) && t.check?.passed === t.cases && t.check.world === 0 && t.statements.missed.length === 0;
+    return { ok, detail: t ? `cases ${t.cases}, reached ${t.statements.reached} of ${t.statements.listed}, world ${JSON.stringify(t.world)}, check ${JSON.stringify(t.check)}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  ['new-test-script', 'a script that only defines functions and calls one: a unit its call chain reaches gets the test', (m) => {
+    const r = run('headers', scriptMain, m); const t = proposed(r); const text = t?.text ?? '';
+    const ok = !!t && !!t.script && /await import\('\.\/script-main'\);/.test(text) && /expect\(fetchStub\)\.toHaveBeenNthCalledWith\(1, "https:\/\/files\.example\.test\/files\/notes\.txt", \{ body: "notes\.txt", headers: \{ accept: "text\/plain", "x-api-key": "[^"]*" \}, method: "POST" \}\);/.test(text) && t.check?.passed === t.cases && t.statements.missed.length === 0;
+    return { ok, detail: t ? `cases ${t.cases}, ${(text.split('\n').find((l) => /NthCalledWith/.test(l)) ?? 'no request asserted').trim().slice(0, 120)}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  ['new-test-script-reach', 'a statement of a script\'s unit no run completes under the stubs is reported: no test below the bar', (m) => {
+    const r = run('main', scriptMain, m); const c = coverageTest(r);
+    const ok = !proposed(r) && !!c && /the script's runs completes 3 of 5 statements of the unit \(missed: lines 24, 25\): below the bar/.test(c.reason);
+    return { ok, detail: c?.reason ?? (proposed(r) ? `a test was proposed (${proposed(r).cases} cases, statements ${JSON.stringify(proposed(r).statements)})` : 'no coverage record') };
+  }],
+  ['new-test-env', 'an environment variable the unit reads is set as lean\'s process answered, then put back', (m) => {
+    const r = run('greeting', envFile, m); const t = proposed(r); const text = t?.text ?? '';
+    const ok = !!t && t.world?.surfaces.includes('env') && /process\.env\.GREETING_NAME = "[^"]*";/.test(text) && /delete process\.env\.GREETING_NAME;/.test(text) && /finally \{ for \(const \[k, v\] of envBefore\)/.test(text) && t.check?.passed === t.cases && t.check.world === 0;
+    return { ok, detail: t ? `cases ${t.cases}, surfaces ${JSON.stringify(t.world.surfaces)}, check ${JSON.stringify(t.check)}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  ['new-test-output', 'a console line the script prints is let through: the run that completes is a case', (m) => {
+    const r = run('send', script, m); const t = proposed(r); const text = t?.text ?? '';
+    const ok = !!t && /it\("the script completes", async \(\) => \{/.test(text) && t.check?.passed === t.cases;
+    return { ok, detail: t ? `cases ${t.cases}: ${[...text.matchAll(/it\("([^"]*)"/g)].map((x) => x[1]).join('; ').slice(0, 140)}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  [null, 'two runs of the writer on a script are byte-equal', () => {
+    const a = proposed(lean(['--candidate', script, '--unit', 'send', '--n', '24'], null)), b = proposed(run('send', script));
+    const ok = !!a && !!b && a.text === b.text && JSON.stringify(a) === JSON.stringify(b);
+    return { ok, detail: a && b ? `text ${a.text.length} bytes, ${a.text === b.text ? 'equal' : 'differs'}; record ${JSON.stringify(a) === JSON.stringify(b) ? 'equal' : 'differs'}` : 'no record' };
   }],
 ];
 
