@@ -153,10 +153,13 @@ function inputOf(a, handles) {
 }
 // LEAN_BREAK=new-test-world (with runNew's): a case that asked the world is never usable
 // `spied` (lane w9as): the calls of a callback the test passes a spy for (lane w9am) are the spy's, not a stub's
+const ofSpy = (a, spied) => a.op === 'call' && spied.has(a.path);
+const worldBeyond = (c, spied) => c.world && { ...c.world, trace: c.world.trace.filter((t) => !ofSpy(t, spied)), answers: c.world.answers.filter((a) => !ofSpy(a, spied)) };
+// whether the case asked the world beyond its spied callbacks' calls: a request, an answer, armed work, a static reach
+export const asksWorld = (c, spied = new Set()) => { const w = worldBeyond(c, spied); return !!w && !!(w.trace.length || w.answers.length || w.pending?.length || w.graph?.length); };
 export function worldOf(c, { specifiers = [], dialect = 'vitest', handles = [], spied = new Set() } = {}) {
-  const ofSpy = (a) => a.op === 'call' && spied.has(a.path);
-  const w = c.world && { ...c.world, trace: c.world.trace.filter((t) => !ofSpy(t)), answers: c.world.answers.filter((a) => !ofSpy(a)) };
-  if (!w || (!w.trace.length && !w.answers.length && !w.pending?.length && !w.graph?.length)) return { answers: [] }; // an input handle the call never read is passed as an empty object
+  const w = worldBeyond(c, spied);
+  if (!asksWorld(c, spied)) return { answers: [] }; // an input handle the call never read is passed as an empty object
   if (broken('new-test-world')) return { refused: 'the world of a case is not read' };
   for (const g of w.graph ?? []) { const m = /^names ([A-Za-z_$][\w$]*) \(/.exec(g); if (!m || !STUB_GLOBALS.has(m[1])) return { refused: `the unit's reach: ${g}` }; }
   for (const t of w.trace) if (!['get', 'call', 'new', 'fault'].includes(t.op)) return { refused: `${t.op} ${t.path}: a request no stub answers by itself` };
@@ -628,7 +631,9 @@ export async function writeNewTest({ candidate, unit, spec, declared = null, han
     const no = (why, refused = null) => { whys.set(why, (whys.get(why) ?? 0) + 1); if (refused) refusals.push(refused); return false; };
     const spied = new Set((c.callbacks ?? []).map((x) => x.path));
     const handles = broken('new-test-world') ? [] : inputHandles(c.args, spied);
-    if (handles === null || holdsWorld(withoutHandles(c.outcome.returned ?? c.outcome.threw, spied))) return no(c.drives?.length && drivesAsk(c, spied) ? 'driveWorld' : 'world'); // the drive's reason first (lane w9am)
+    const outcome = c.outcome.returned ?? c.outcome.threw; // a function the unit handed out is w9am's to call (LEAN_BREAK=new-test-drives: a value of the world, as before it)
+    if (handles === null || holdsWorld(broken('new-test-drives') ? outcome : withoutHandles(outcome, spied))) return no(broken('new-test-drives') && c.drives?.length ? 'driveOff' : c.drives?.length && drivesAsk(c, spied) ? 'driveWorld' : 'world'); // the drive's reason first (lane w9am)
+    if (broken('new-test-drive-stubs') && c.drives?.length && asksWorld(c, spied)) return no(drivesAsk(c, spied) ? 'driveWorld' : 'driveStubs'); // each lane alone: no case with drives meets the world's stubs
     const w = worldOf(c, { specifiers: specs, dialect, handles, spied });
     if (w.refused) return no(drivesAsk(c, spied) ? 'driveWorld' : 'stub', w.refused); // a drive that asked the world: the drive's reason first (lane w9am)
     c.worldAnswers = w.answers;
