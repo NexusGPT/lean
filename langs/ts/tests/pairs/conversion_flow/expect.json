@@ -1,0 +1,8 @@
+{
+ "why": "A numeric conversion of a value the unit derives (exec/usage.mjs converts, exec/conversions.mjs flowsInto; lane w9aj). pageSize converts a local holding the parameter trimmed, offsetOf a field lowered in case behind a default; the candidate swaps Number for parseInt(text, 10). The w9o reading marks only a read handed straight to a conversion, so both are PASS-bounded on 9873874f64: the drawn strings give both versions the same number. The conversion read through the local draws the parse family's texts, and '1.5' or '12px' tell the versions apart (WITNESS). Under LEAN_BREAK=w9aj-conversions both are PASS-bounded again.",
+ "laneBOnly": true,
+ "scope": [],
+ "equal": {},
+ "b": { "pageSize": "WITNESS", "offsetOf": "WITNESS" },
+ "break": [{ "mechanism": "w9aj-conversions", "b": { "pageSize": "PASS-bounded", "offsetOf": "PASS-bounded" } }]
+}

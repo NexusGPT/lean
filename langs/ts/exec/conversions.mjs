@@ -45,7 +45,8 @@ export const FAMILY_VALUES = {
     [2.7, 'round and ceil 3, floor and trunc 2'],
     [-2.7, 'floor and round -3, trunc and ceil -2'],
     [2 ** 31 + 0.5, '`| 0` and `~~` wrap to a negative int32, trunc keeps 2147483648'],
-    ['1.5', 'a text: the Math functions convert it, ~~ and | 0 too, a parser stops elsewhere'],
+    ['1.5', 'a text: the Math functions and `| 0` convert it, ceil and round 2, floor and trunc 1'],
+    ['-1.5', 'a negative text: floor -2, trunc and ceil -1'],
   ],
   // isNaN, isFinite, Number.isNaN, Number.isFinite: a test of a number, the global ones converting first
   nan: [
@@ -132,7 +133,7 @@ export function conversionOf(n) {
 
 // the expressions whose value flows into a converted expression: the expression itself, and through arithmetic
 // (+ - * / % **, unary - +), `??`/`||` defaults' left sides, a conditional's branches and a text's case or blanks
-// changed, their operands; `local` maps
+// changed and a conversion's own argument, their operands; `local` maps
 // an identifier to the initializer of the local it names (followed once per name), or null
 export function flowsInto(e, local = null) {
   const out = [], seen = new Set();
@@ -145,6 +146,8 @@ export function flowsInto(e, local = null) {
     if (ts.isPrefixUnaryExpression(x) && (x.operator === ts.SyntaxKind.MinusToken || x.operator === ts.SyntaxKind.PlusToken)) { go(x.operand, d + 1); return; }
     if (ts.isConditionalExpression(x)) { go(x.whenTrue, d + 1); go(x.whenFalse, d + 1); return; }
     // a text kept as it is but for its case or its outer blanks: `s.trim()`, `String(x)`, `x.toString()`, `${x}`
+    // a conversion's own argument (`Math.floor(parseFloat(s))` reads s): what it converts flows on
+    const inner = conversionOf(x); if (inner && inner.family !== 'nan') { go(inner.arg, d + 1); return; }
     if (ts.isCallExpression(x)) { const c = strip(x.expression); if (ts.isPropertyAccessExpression(c) && ts.isIdentifier(c.name) && TEXT_KEPT.has(c.name.text) && x.arguments.length === 0) go(c.expression, d + 1); else if (ts.isIdentifier(c) && c.text === 'String' && x.arguments.length === 1) go(x.arguments[0], d + 1); return; }
     if (ts.isTemplateExpression(x) && x.templateSpans.length === 1 && !x.head.text && !x.templateSpans[0].literal.text) { go(x.templateSpans[0].expression, d + 1); return; }
     if (ts.isIdentifier(x) && local && !seen.has(x.text)) { const init = local(x); if (init) { seen.add(x.text); go(init, d + 1); } }
