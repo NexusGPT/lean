@@ -115,6 +115,7 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
   const host = sandbox(env, path.dirname(file));
   if (newProbes) vm.runInContext('globalThis', host.ctx)[newProbes.stateName] = env.siteState; // the probes' state (new-unit tests)
   if (extra.globals) { const g = vm.runInContext('globalThis', host.ctx); for (const [k, v] of Object.entries(extra.globals)) g[k] = v; }
+  extra.onContext?.(vm.runInContext('globalThis', host.ctx)); // (lane w9al) a proposed test's stubs set the unit's globals (new-tests.mjs makeMocks)
   const cache = new Map(), fakeNames = new Set(), edges = [];
   // external modules keep the recording fakes and React protocol of paired execution
   function fake(specifier, names) {
@@ -347,7 +348,9 @@ export async function runNew(opts) {
     env.argPool = inputs.filter(x => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
     const shown = inputs.map((x) => render(x)); // the input as the record names it, before the call may write into it
     if (newProbes) env.siteState.hits = new Set(); // the statements the call completes, not the load
+    if (!broken('new-test-world')) env.answers = []; // (lane w9al) the world's answers to this call, in request order (fake.mjs answerOf)
     const observation = await observe({ env, unit: picked }, spec, inputs, ms);
+    const answers = env.answers ?? []; env.answers = null;
     if (observation.harness) return stop({ inputs: i, reason: `input ${i}: ${observation.harness}` });
     const threw = Object.hasOwn(observation.outcome, 'threw');
     if (threw) { faults++; if (faultExamples.length < 3) faultExamples.push({ input: i, error: observation.outcome.threw }); }
@@ -361,9 +364,13 @@ export async function runNew(opts) {
     if (ok !== 'yes') { reach.notAdmitted++; continue; }
     reach.admitted++;
     const world = broken('closed-call') ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
-    if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); continue; }
+    // every admitted call is a case (new-test.mjs): a closed one as it ran, one that asked the world with what the world
+    // answered (lane w9al), so its test stubs those answers; a closed call that drew Math.random carries its draws too
+    const caseOf = () => ({ i, step, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: render(observation.raw?.returned) }, drives: !!observation.drives?.length, thenable, sync,
+      ...(world.length || answers.length ? { world: { answers, trace: observation.trace.map(({ op, path: p, args }) => ({ op, path: p, args })), pending: observation.pending.map((x) => x.op), graph: reach.graphWorld } } : {}) });
+    if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); if (!broken('new-test-cases') && !broken('new-test-world')) cases.push(caseOf()); continue; }
     reach.closed++;
-    if (!broken('new-test-cases')) cases.push({ i, step, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: render(observation.raw?.returned) }, drives: !!observation.drives?.length, thenable, sync });
+    if (!broken('new-test-cases')) cases.push(caseOf());
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
     const wide = declared.params.some((p, k) => p.spec?.all && !(p.optional && inputs[k] === undefined)); // admitted only because a parameter's type is any or unknown, which admit every value: a validator's own rejection reads so
     if (threw) {
@@ -414,7 +421,7 @@ export async function runNew(opts) {
   // (new-unit tests) a test for the unit from its closed calls: the record new:proposed-test, or a coverage record naming why none
   if (!broken('new-test')) {
     let proposed;
-    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, cases, statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
+    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, cases, specifiers: [...fakes].filter((f) => !/^(?:module|global):/.test(f)), statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
     catch (e) { proposed = { kind: 'new:coverage', phase: 'test', reason: `the test writer failed: ${String(e?.message ?? e).slice(0, 200)}` }; }
     if (proposed) book.add(proposed, `${proposed.kind} proposed`);
   }

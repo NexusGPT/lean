@@ -15,6 +15,8 @@ import { pickUnit, observe } from './run.mjs';
 import { Environment, render } from './fake.mjs';
 import { sitesOf, mutate } from './mutate.mjs';
 import { setVirtual } from './new-unit.mjs';
+import { ts } from '../common.mjs';
+import { CLOCK_EPOCH } from './record.mjs';
 
 export const CASES = 12; // the cases a proposed test holds at most (design/constants.md)
 export const MUTANTS = 24; // the mutants planted in the unit at most, every kind once first (design/constants.md)
@@ -83,6 +85,155 @@ function placeOf(file, unit, runner) {
   return { file: useFolder ? path.join(tests, name) : path.join(dir, name), importFrom: `${useFolder ? '../' : './'}${base}` };
 }
 
+// ----- (lane w9al) the world of a case: what lean answered the unit's requests, restated as stubs -----
+// A call that asked lean's world is a case when every request it made is one a test can answer by itself and every answer
+// prints as a value (design/w9al-world-stubs.md). The requests and answers are lean's own (fake.mjs answerOf): fetch
+// answered by its table, the clock, Math.random, a package lean fakes (its member called), each with the value it handed
+// the unit, in request order. The test stubs each surface with those answers in that order and asserts the requests made.
+const STUB_GLOBALS = new Set(['fetch']); // a global the unit's static reach names (`names G`) that a test stubs by name
+const STUB_TAGS = new Set(['$undefined', '$nan', '$negativeZero', '$infinity', '$bigint', '$date', '$regex', '$map', '$set', '$error', '$promise', '$response', '$fields']);
+// a rendered value toSource prints as the value itself (no handle of lean's world, no rendering of a platform object it does not print)
+export function stubPrintable(v, depth = 0) {
+  if (!v || typeof v !== 'object') return true;
+  if (depth > 12 || holdsWorld(v)) return false;
+  if (Array.isArray(v)) return v.every((x) => stubPrintable(x, depth + 1));
+  return Object.keys(v).every((k) => (!k.startsWith('$') || STUB_TAGS.has(k)) && stubPrintable(v[k], depth + 1));
+}
+const isNavigation = (a, rest) => a.op === 'get' && a.shown?.returns && typeof a.shown.returns === 'object' && Object.hasOwn(a.shown.returns, '$fake') && rest.some((b) => b.path === a.path || [`${a.path}.`, `${a.path}(`, `${a.path}#`].some((x) => b.path.startsWith(x)));
+// the surface a request reaches: a package's member (by the specifier the unit imports it under), a global by name, the clock, Math.random
+function surfaceOf(a, specifiers) {
+  const refuse = (why) => ({ refused: `${a.op} ${a.path}: ${why}` });
+  if (a.clock !== undefined) return a.path === 'Date.now' || a.path === 'Date' ? { kind: 'clock', read: a.path === 'Date.now' && a.op === 'call' ? 'now' : a.op === 'new' ? 'new' : 'string' } : refuse('a clock no runner fakes by itself');
+  if (a.path === 'Math.random') return { kind: 'random' };
+  if (a.path.startsWith('global:')) { const name = a.path.slice(7); return a.op === 'call' && /^[A-Za-z_$][\w$]*$/.test(name) ? { kind: 'global', name } : refuse('a global read as a value'); }
+  if (a.path.startsWith('module:')) {
+    const spec = specifiers.filter((x) => a.path === `module:${x}` || a.path.startsWith(`module:${x}.`)).sort((x, y) => y.length - x.length)[0];
+    if (!spec) return refuse('a package the run did not link by name');
+    let rest = a.path.slice(`module:${spec}`.length).replace(/^\./, '');
+    if (rest === 'default') rest = ''; else if (rest.startsWith('default.')) rest = rest.slice(8);
+    if (a.op !== 'call') return refuse(a.op === 'get' ? 'a value read from the package (a stub of a module answers calls)' : 'a class of the package constructed');
+    if (rest !== '' && !/^[A-Za-z_$][\w$]*$/.test(rest)) return refuse('a member of a value the package answered');
+    return { kind: 'module', spec, member: rest };
+  }
+  return refuse('a request no stub answers by itself');
+}
+// LEAN_BREAK=new-test-world (with runNew's): a case that asked the world is never usable
+export function worldOf(c, { specifiers = [], dialect = 'vitest' } = {}) {
+  const w = c.world;
+  if (!w) return { answers: [] };
+  if (broken('new-test-world')) return { refused: 'the world of a case is not read' };
+  for (const g of w.graph ?? []) { const m = /^names ([A-Za-z_$][\w$]*) \(/.exec(g); if (!m || !STUB_GLOBALS.has(m[1])) return { refused: `the unit's reach: ${g}` }; }
+  for (const t of w.trace) if (!['get', 'call', 'new', 'fault'].includes(t.op)) return { refused: `${t.op} ${t.path}: a request no stub answers by itself` };
+  if (w.pending?.length) return { refused: `the call armed ${w.pending[0]}, which a stub does not fire` };
+  const answers = [];
+  for (const [k, a] of w.answers.entries()) {
+    if (isNavigation(a, w.answers.slice(k + 1))) continue;
+    if (a.op === 'get' && a.path.startsWith('module:') && a.shown?.returns && typeof a.shown.returns === 'object' && Object.hasOwn(a.shown.returns, '$fake')) return { refused: `get ${a.path}: the unit holds a handle of the package as a value` };
+    if (a.callback) return { refused: `${a.op} ${a.path}: the unit hands the world a function, which a stub would have to run` };
+    const surface = surfaceOf(a, specifiers);
+    if (surface.refused) return surface;
+    if (surface.kind === 'module' && (dialect === 'node:test' || dialect === 'mocha')) return { refused: `${a.op} ${a.path}: a package stub needs the runner's module mock, which ${dialect} has not by default` };
+    const shown = a.clock !== undefined ? { returns: (surface.read === 'string' ? 0 : CLOCK_EPOCH) + a.clock } : a.shown;
+    if (surface.kind === 'clock' && surface.read === 'string') return { refused: `call ${a.path}: the clock read as a string` };
+    if (!shown || !stubPrintable(shown)) return { refused: `${a.op} ${a.path}: the world answered a value no test restates (${JSON.stringify(shown ?? null).slice(0, 80)})` };
+    answers.push({ ...surface, op: a.op, path: a.path, args: a.args ?? [], shown });
+  }
+  // every request on the trace is one an answer restates (a bridge's call, a write, a read a stub does not answer refuse)
+  const left = new Map(); for (const a of answers) left.set(`${a.op} ${a.path}`, (left.get(`${a.op} ${a.path}`) ?? 0) + 1);
+  for (const t of w.trace) { if (t.op !== 'call' && t.op !== 'new') continue; const k = `${t.op} ${t.path}`; if (!left.get(k)) return { refused: `${k}: a request no answer restates` }; left.set(k, left.get(k) - 1); }
+  const clock = answers.filter((a) => a.kind === 'clock');
+  if (new Set(clock.map((a) => a.shown.returns)).size > 1 && clock.some((a) => a.read !== 'now')) return { refused: `the clock read ${clock.length} times at different instants, through new Date` };
+  if (clock.some((a) => a.read !== 'now') && (dialect === 'node:test' || dialect === 'mocha')) return { refused: `new Date: a fake clock needs the runner's timers, which ${dialect} has not by default` };
+  return { answers };
+}
+
+// a value an answer hands back, as source: an error with its own fields, a fetch response as the platform builds it
+const ERRORS = new Set(['Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError', 'EvalError', 'URIError']);
+function answerSource(v) {
+  if (v && typeof v === 'object' && Object.hasOwn(v, '$response')) { const r = v.$response; return `new Response(${toSource(r.body ?? null)}, { status: ${r.status}, statusText: ${JSON.stringify(r.statusText ?? '')}, headers: ${toSource(Object.fromEntries(r.headers ?? []))} })`; }
+  if (v && typeof v === 'object' && Object.hasOwn(v, '$error')) {
+    const cls = ERRORS.has(v.$error) ? v.$error : 'Error', made = `new ${cls}(${JSON.stringify(String(v.message ?? ''))})`;
+    const fields = { ...(v.$fields ?? {}), ...(cls !== v.$error && v.$error ? { name: v.$error } : {}) };
+    return Object.keys(fields).length ? `Object.assign(${made}, ${toSource(fields)})` : made;
+  }
+  return toSource(v);
+}
+// the answer as a mock's next result (the runners' mock API) or as a thunk (a stub written by hand)
+const onceOf = (shown) => (Object.hasOwn(shown, 'returns') ? `.mockReturnValueOnce(${answerSource(shown.returns)})` : Object.hasOwn(shown, 'throws') ? `.mockImplementationOnce(() => { throw ${answerSource(shown.throws)}; })` : Object.hasOwn(shown, 'resolves') ? `.mockResolvedValueOnce(${answerSource(shown.resolves)})` : `.mockRejectedValueOnce(${answerSource(shown.rejects)})`);
+const thunkOf = (shown) => (Object.hasOwn(shown, 'returns') ? `() => ${answerSource(shown.returns)}` : Object.hasOwn(shown, 'throws') ? `() => { throw ${answerSource(shown.throws)}; }` : Object.hasOwn(shown, 'resolves') ? `() => Promise.resolve(${answerSource(shown.resolves)})` : `() => Promise.reject(${answerSource(shown.rejects)})`);
+const aliasOf = (spec) => `stub_${spec.replace(/[^\w$]+/g, '_')}`;
+const keyOf = (a) => (a.kind === 'module' ? `module ${a.spec} ${a.member}` : a.kind === 'global' ? `global ${a.name}` : a.kind);
+
+// the stubs of the kept cases in the runner's dialect: file-level lines (imports, the hoisted module mocks, a hook that
+// undoes every stub after each test) and, per case, the lines before its call and the stubs whose calls it asserts.
+// The module mock holds every member the unit's file imports from the specifier and every member a case called.
+// LEAN_BREAK=new-test-stubs: no stub is written, so the test asks the real world
+export function stubsOf(kept, dialect, imported = new Map()) {
+  const out = { imports: [], hoisted: [], hooks: [], cases: new Map(), stubs: 0, surfaces: new Set() };
+  if (broken('new-test-stubs')) { for (const c of kept) out.cases.set(c, { before: [], targets: [], restore: [] }); return out; }
+  const D = dialect === 'jest' ? 'jest' : 'vi', plain = dialect === 'node:test' || dialect === 'mocha';
+  const modules = new Map(); const used = new Set();
+  for (const c of kept) for (const a of c.worldAnswers ?? []) { out.surfaces.add(a.kind === 'module' ? `module:${a.spec}` : a.kind === 'global' ? `global:${a.name}` : a.kind === 'clock' ? 'clock' : 'Math.random'); if (a.kind === 'module') { const m = modules.get(a.spec) ?? new Set(imported.get(a.spec) ?? []); m.add(a.member); modules.set(a.spec, m); } }
+  for (const [spec, members] of modules) {
+    const alias = aliasOf(spec), named = [...members].filter((m) => m !== '' && m !== 'default').sort();
+    out.imports.push(`import * as ${alias} from ${JSON.stringify(spec)};`);
+    const m = `{ ${named.map((x) => `${x}: ${D}.fn()`).join(', ')} }`;
+    out.hoisted.push(members.has('') ? `${D}.mock(${JSON.stringify(spec)}, () => { const m = ${m}; return { ...m, default: Object.assign(${D}.fn(), m) }; });` : `${D}.mock(${JSON.stringify(spec)}, () => { const m = ${m}; return { ...m, default: m }; });`);
+  }
+  for (const c of kept) {
+    const before = [], targets = [], restore = [], groups = new Map();
+    for (const a of c.worldAnswers ?? []) { const k = keyOf(a); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(a); }
+    for (const [k, as] of groups) {
+      const a0 = as[0]; out.stubs += as.length;
+      if (plain) {
+        const holder = a0.kind === 'random' ? 'Math' : a0.kind === 'clock' ? 'Date' : 'globalThis', member = a0.kind === 'random' ? 'random' : a0.kind === 'clock' ? 'now' : a0.name;
+        const v = `${member}Stub`;
+        before.push(`const ${v} = { calls: [], answers: [${as.map((a) => thunkOf(a.shown)).join(', ')}], saved: ${holder}.${member} };`, `${holder}.${member} = (...args) => { ${v}.calls.push(args); const next = ${v}.answers.shift(); if (!next) throw new Error(${JSON.stringify(`${holder}.${member}: called past the answers the test holds`)}); return next(); };`);
+        restore.push(`${holder}.${member} = ${v}.saved;`);
+        if (a0.kind !== 'clock') targets.push({ plain: v, answers: as });
+        continue;
+      }
+      if (a0.kind === 'module') { const target = `${aliasOf(a0.spec)}.${a0.member === '' ? 'default' : a0.member}`; before.push(`${D}.mocked(${target})${as.map((a) => onceOf(a.shown)).join('')};`); targets.push({ expr: target, answers: as }); used.add('reset'); continue; }
+      if (a0.kind === 'global') {
+        const v = `${a0.name}Stub`;
+        if (D === 'vi') { before.push(`const ${v} = vi.fn()${as.map((a) => onceOf(a.shown)).join('')};`, `vi.stubGlobal(${JSON.stringify(a0.name)}, ${v});`); used.add('globals'); }
+        else { before.push(`const ${v} = jest.spyOn(globalThis, ${JSON.stringify(a0.name)})${as.map((a) => onceOf(a.shown)).join('')};`); used.add('restore'); }
+        targets.push({ expr: v, answers: as }); used.add('reset'); continue;
+      }
+      if (a0.kind === 'random') { before.push(`${D}.spyOn(Math, 'random')${as.map((a) => onceOf(a.shown)).join('')};`); targets.push({ expr: 'Math.random', answers: as }); used.add('restore'); continue; }
+      if (a0.kind === 'clock') {
+        if (new Set(as.map((a) => a.shown.returns)).size === 1) { before.push(`${D}.useFakeTimers(${D === 'vi' ? "{ toFake: ['Date'] }" : ''});`, `${D}.setSystemTime(${as[0].shown.returns});`); used.add('timers'); }
+        else { before.push(`${D}.spyOn(Date, 'now')${as.map((a) => onceOf(a.shown)).join('')};`); used.add('restore'); }
+      }
+    }
+    out.cases.set(c, { before, targets, restore });
+  }
+  if (!plain && used.size) {
+    const undo = [...(used.has('reset') ? [`${D}.resetAllMocks();`] : []), ...(used.has('restore') ? [`${D}.restoreAllMocks();`] : []), ...(used.has('globals') ? ['vi.unstubAllGlobals();'] : []), ...(used.has('timers') ? [`${D}.useRealTimers();`] : [])];
+    out.hooks.push(`afterEach(() => { ${undo.join(' ')} });`);
+  }
+  return out;
+}
+
+// the requests the case made, asserted after its outcome: how many times each stub was called and, where the arguments
+// print as values, with what. LEAN_BREAK=new-test-calls: no request is asserted
+export function callsOf(stub, dialect) {
+  if (broken('new-test-calls') || !stub) return { lines: [], calls: 0 };
+  const lines = []; let calls = 0;
+  for (const t of stub.targets) {
+    const args = t.answers.map((a) => a.args);
+    const printable = args.every((xs) => xs.every((x) => stubPrintable(x)));
+    if (t.plain) {
+      if (printable) { lines.push(`    assert.deepStrictEqual(${t.plain}.calls, [${args.map((xs) => `[${xs.map((x) => toSource(x)).join(', ')}]`).join(', ')}]);`); calls += args.length; }
+      else { lines.push(`    assert.strictEqual(${t.plain}.calls.length, ${args.length});`); calls++; }
+      continue;
+    }
+    lines.push(`    expect(${t.expr}).toHaveBeenCalledTimes(${args.length});`); calls++;
+    if (printable && t.answers[0].kind !== 'random') args.forEach((xs, k) => { lines.push(`    expect(${t.expr}).toHaveBeenNthCalledWith(${k + 1}${xs.map((x) => `, ${toSource(x)}`).join('')});`); calls++; });
+  }
+  return { lines, calls };
+}
+
 // ----- the text: one `it` per kept case, in the runner's dialect -----
 const DIALECT = {
   vitest: { head: "import { describe, it, expect } from 'vitest';", style: 'expect' },
@@ -91,9 +242,11 @@ const DIALECT = {
   mocha: { head: "import assert from 'node:assert/strict';", style: 'assert' }, // describe and it are mocha's globals
 };
 const short = (s, n = 70) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
-export function testText({ unit, binding, defaultExport, importFrom, dialect, cases, isAsync }) {
+export function testText({ unit, binding, defaultExport, importFrom, dialect, cases, isAsync, stubs = null }) {
   const d = DIALECT[dialect] ?? DIALECT.vitest;
-  const lines = [d.head, defaultExport ? `import ${binding} from '${importFrom}';` : `import { ${binding} } from '${importFrom}';`, '', `describe(${JSON.stringify(unit)}, () => {`];
+  const world = stubs && (stubs.hoisted.length || stubs.hooks.length || [...stubs.cases.values()].some((x) => x.before.length)); // (lane w9al) the runner's mock API joins the head
+  const head = world && d.style === 'expect' ? d.head.replace('{ describe, it, expect }', `{ describe, it, expect, ${dialect === 'jest' ? 'jest' : 'vi'}${stubs.hooks.length ? ', afterEach' : ''} }`) : d.head;
+  const lines = [head, ...(stubs?.imports ?? []), defaultExport ? `import ${binding} from '${importFrom}';` : `import { ${binding} } from '${importFrom}';`, ...(stubs?.hoisted.length ? ['', ...stubs.hoisted] : []), '', `describe(${JSON.stringify(unit)}, () => {`, ...(stubs?.hooks ?? []).map((h) => `  ${h}`)];
   const callOf = (c) => `${binding}(${c.args.map((a) => toSource(a, c.shared)).join(', ')})`;
   const seen = new Map();
   for (const c of cases) {
@@ -103,6 +256,8 @@ export function testText({ unit, binding, defaultExport, importFrom, dialect, ca
     let name = threw ? `${short(call, 60)} throws` : `${short(call, 60)} -> ${short(toSource(c.outcome.returned, { defs: [] }), 40)}`;
     const k = (seen.get(name) ?? 0) + 1; seen.set(name, k); if (k > 1) name += ` (${k})`;
     const body = [];
+    const stub = stubs?.cases.get(c) ?? null; // (lane w9al) the case's stubs before its call
+    for (const line of stub?.before ?? []) body.push(`    ${line}`);
     for (const def of c.shared.defs) body.push(`    ${def}`);
     if (d.style === 'expect') {
       if (threw) body.push(isAsync ? `    await expect(${call}).rejects.toThrow(${JSON.stringify(message)});` : `    expect(() => ${call}).toThrow(${JSON.stringify(message)});`);
@@ -111,6 +266,8 @@ export function testText({ unit, binding, defaultExport, importFrom, dialect, ca
       if (threw) body.push(isAsync ? `    await assert.rejects(${call}, { message: ${JSON.stringify(message)} });` : `    assert.throws(() => ${call}, { message: ${JSON.stringify(message)} });`);
       else body.push(`    assert.deepStrictEqual(${isAsync ? `await ${call}` : call}, ${toSource(c.outcome.returned, c.shared)});`);
     }
+    const calls = callsOf(stub, dialect); body.push(...calls.lines); if (stubs) stubs.calls = (stubs.calls ?? 0) + calls.calls; // (lane w9al) the requests it made
+    if (stub?.restore.length) { const k = body.findIndex((l) => !(stub.before.includes(l.trim()))); const set = body.slice(0, k), rest = body.slice(k); body.length = 0; body.push(...set, '    try {', ...rest.map((l) => `  ${l}`), `    } finally { ${stub.restore.join(' ')} }`); }
     lines.push(`  it(${JSON.stringify(name)}, ${isAsync ? 'async ' : ''}() => {`, ...body, '  });');
   }
   lines.push('});', '');
@@ -150,7 +307,8 @@ async function killsOf({ candidate, unit, spec, cases, seed, ms, load, project, 
       const out = Object.hasOwn(o.outcome, 'threw') ? { threw: render(o.raw?.threw) } : { returned: render(o.raw?.returned) };
       const was = Object.hasOwn(c.outcome, 'threw') ? { threw: c.outcome.threw } : { returned: c.outcome.returned };
       if (JSON.stringify(out) !== JSON.stringify(was)) { entry.killer = c.i; entry.how = 'a different outcome'; break; }
-      if (o.trace.length) { entry.killer = c.i; entry.how = 'asked the world'; break; }
+      const asked = JSON.stringify(o.trace.map(({ op, path: p, args }) => ({ op, path: p, args }))), was2 = JSON.stringify(c.world?.trace ?? []); // (lane w9al) a case that asked the world kills a mutant that asks it otherwise
+      if (asked !== was2) { entry.killer = c.i; entry.how = c.world ? 'other requests of the world' : 'asked the world'; break; }
     }
     planted.push(entry);
   }
@@ -182,35 +340,61 @@ function mutantsOf(kills) {
   return { planted: kills.planted.length, killed: kills.planted.filter((m) => m.killer !== null).length, kinds, typechecked: false, ...(kills.budget ? { budget: kills.budget } : {}), sites: kills.planted.map((m) => ({ kind: m.kind, lines: m.lines, was: m.was, ...(m.killer !== null ? { killer: m.killer, how: m.how } : {}), ...(m.load ? { load: m.load } : {}) })) };
 }
 
-export async function writeNewTest({ candidate, unit, spec, cases = [], statements = null, lines = null, seed = 1, ms = 2000, options, load, project }) {
+// (lane w9al) the specifiers the candidate's file imports, each with the names it imports from it (a package mock holds them all)
+function importsOf(candidate) {
+  const out = new Map();
+  let sf; try { sf = ts.createSourceFile(candidate, fs.readFileSync(candidate, 'utf8'), ts.ScriptTarget.Latest, true); } catch { return out; }
+  for (const st of sf.statements) {
+    if (!ts.isImportDeclaration(st) || !ts.isStringLiteral(st.moduleSpecifier) || st.importClause?.isTypeOnly) continue;
+    const names = out.get(st.moduleSpecifier.text) ?? new Set(); out.set(st.moduleSpecifier.text, names);
+    const nb = st.importClause?.namedBindings;
+    if (nb && ts.isNamedImports(nb)) for (const el of nb.elements) if (!el.isTypeOnly) names.add((el.propertyName ?? el.name).text);
+  }
+  return out;
+}
+
+export async function writeNewTest({ candidate, unit, spec, cases = [], statements = null, lines = null, seed = 1, ms = 2000, options, load, project, specifiers = [] }) {
   const listed = statements ?? [];
   const reachedAny = new Set(cases.flatMap((c) => c.reached ?? []));
-  const usable = cases.filter((c) => !c.drives && !holdsWorld(c.args) && !holdsWorld(c.outcome.returned ?? c.outcome.threw));
+  const { runner, dir } = runnerOf(candidate);
+  const dialect = runner ?? 'vitest';
+  // a case is usable when its arguments and outcome print as values, it hands out no function, and every request it made of
+  // the world is one a stub answers with what lean answered (lane w9al: worldOf); the first refusal is kept for the reason
+  const imported = importsOf(candidate), refusals = [];
+  const usable = cases.filter((c) => {
+    if (c.drives || holdsWorld(c.args) || holdsWorld(c.outcome.returned ?? c.outcome.threw)) return false;
+    const w = worldOf(c, { specifiers: [...new Set([...specifiers, ...imported.keys()])], dialect });
+    if (w.refused) { refusals.push(w.refused); return false; }
+    c.worldAnswers = w.answers; return true;
+  });
+  const closed = cases.filter((c) => !c.world).length, asked = cases.length - closed; // (lane w9al) a call that drew from the world (a request, Math.random) is no closed call
   const cover = (reason, extra = {}) => ({ kind: 'new:coverage', phase: 'test', reason, ...extra });
-  if (!usable.length) return cover(cases.length ? `${cases.length} closed call(s), none a test can restate by value: each holds a value of lean's world or hands out a function (needs a stub)` : 'no closed call of the unit: every drawn input reached the world or was not admitted by the declared types');
+  if (!usable.length) {
+    const why = refusals.length ? ` (needs a stub of a surface no test stubs: ${[...new Set(refusals)].slice(0, 2).join('; ').slice(0, 240)})` : '';
+    return cover(asked ? `${cases.length} call(s), ${asked} of them asking lean's world, none a test can restate: each holds a value of lean's world, hands out a function, or asks the world where no stub answers${why}` : cases.length ? `${cases.length} closed call(s), none a test can restate by value: each holds a value of lean's world or hands out a function (needs a stub)` : 'no closed call of the unit: every drawn input reached the world or was not admitted by the declared types', refusals.length ? { surfaces: [...new Set(refusals)].slice(0, 4) } : {});
+  }
   // the unit as the repository's runner imports it: a top-level binding the module exports under its own name, or its default
   const exported = spec?.exported ?? null, binding = unit.includes('.') ? null : unit;
   if (!binding) return cover(`the unit ${unit} is a member (a class method or a property): the runner cannot call it by name (needs a stub)`);
   if (exported === false) return cover(`the unit ${unit} is not exported: the repository's runner cannot import it (needs a stub)`);
-  const { runner, dir } = runnerOf(candidate);
-  const dialect = runner ?? 'vitest';
   const place = placeOf(candidate, unit, runner);
   const kills = await killsOf({ candidate, unit, spec, cases: usable, seed, ms, load, project });
   const kept = selectCases(usable, listed, kills);
   const reached = new Set(kept.flatMap((c) => c.reached ?? []));
   const missed = listed.filter((t) => !reached.has(t)), unreached = listed.filter((t) => !reachedAny.has(t));
   const isAsync = kept.some((c) => c.thenable) || !!spec?.isAsync;
-  let text;
-  try { text = testText({ unit, binding, defaultExport: exported === 'default', importFrom: place.importFrom, dialect, cases: kept, isAsync }); }
+  let text, stubs;
+  try { stubs = stubsOf(kept, dialect, imported); text = testText({ unit, binding, defaultExport: exported === 'default', importFrom: place.importFrom, dialect, cases: kept, isAsync, stubs }); }
   catch (e) { return cover(`no source for a case: ${String(e?.message ?? e).slice(0, 160)}`); }
   const at = (t) => lines?.[t] ?? t;
-  const record = { kind: 'new:proposed-test', unit, file: path.relative(dir, place.file), runner: runner ?? 'unknown (vitest dialect)', dialect, cases: kept.length, closed: cases.length, usable: usable.length, statements: { listed: listed.length, reached: reached.size, missed: missed.map(at), unreached: unreached.map(at) }, mutants: mutantsOf(kills), text };
+  const record = { kind: 'new:proposed-test', unit, file: path.relative(dir, place.file), runner: runner ?? 'unknown (vitest dialect)', dialect, cases: kept.length, closed, usable: usable.length, statements: { listed: listed.length, reached: reached.size, missed: missed.map(at), unreached: unreached.map(at) }, mutants: mutantsOf(kills),
+    world: { asked, stubs: stubs.stubs, calls: stubs.calls ?? 0, surfaces: [...stubs.surfaces].sort(), ...(refusals.length ? { refused: [...new Set(refusals)].slice(0, 4) } : {}) }, text };
   if (missed.length) return cover(`a test from the closed calls completes ${reached.size} of ${listed.length} statements of the unit (missed: lines ${missed.map(at).join(', ')}): below the bar, no test proposed`, { statements: record.statements, cases: kept.length });
   // the self-check: the text runs under lean's runner model against the candidate; every case passes, the run asks nothing of the world
   if (!broken('new-test-check') && load) {
     const virtual = path.join(path.dirname(path.resolve(candidate)), `.lean_test_${process.pid}_${unit.replace(/[^\w$]+/g, '_')}.test${path.extname(candidate) || '.ts'}`);
     const textAt = text.replace(`'${place.importFrom}'`, `'./${path.basename(candidate, path.extname(candidate))}'`);
-    const r = await runTests({ candidate: path.resolve(candidate), unit, testFiles: [virtual], texts: new Map([[virtual, textAt]]), ms, seed, load, graphWorld: () => [], options });
+    const r = await runTests({ candidate: path.resolve(candidate), unit, testFiles: [virtual], texts: new Map([[virtual, textAt]]), ms, seed, load, graphWorld: () => [], options, mocks: true }); // (lane w9al) the test's own stubs run as the runner runs them
     const s = r.summary, bad = r.records.filter((x) => x.kind !== 'new:coverage' || x.phase !== 'test' || !/does not import/.test(String(x.reason)));
     record.check = { files: s.files, selected: s.selected, passed: s.passed, failed: s.failed, world: s.world, notModelled: s.notModelled, unsettled: s.unsettled };
     if (s.selected !== kept.length || s.passed !== kept.length) return cover(`the test does not pass under lean's runner model on the candidate (selected ${s.selected}, passed ${s.passed}, failed ${s.failed}, world ${s.world}, not modelled ${s.notModelled}, unsettled ${s.unsettled}; ${bad.map((x) => x.reason ?? x.error?.assertion ?? x.error?.message ?? '').filter(Boolean).slice(0, 2).join('; ').slice(0, 200)})`, { statements: record.statements, cases: kept.length });

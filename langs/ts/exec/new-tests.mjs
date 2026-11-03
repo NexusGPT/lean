@@ -7,6 +7,7 @@
 // uses a runner feature this module does not model (a module mock, a spy, fake timers, a matcher it does not hold), and one
 // that does not settle within its bound. The runner here is a model of vitest's and jest's API, the part the tests read.
 import path from 'node:path';
+import vm from 'node:vm';
 import { ts } from '../common.mjs';
 import { Environment, BudgetError, render } from './fake.mjs';
 import { guardedCall } from './run.mjs';
@@ -90,8 +91,18 @@ function makeExpect(state) {
         },
       };
       m.toThrowError = m.toThrow;
+      // (lane w9al) the mock matchers, on a mock of the model's own (makeMocks): the calls it recorded
+      const callsOf = () => { if (!actual || !actual[MOCK]) throw new Failure(`expected a mock, got ${show(actual)}`); return actual.mock.calls; };
+      Object.assign(m, {
+        toHaveBeenCalled: () => assert(callsOf().length > 0, 'to have been called'),
+        toHaveBeenCalledTimes: (k) => assert(callsOf().length === k, `to have been called ${k} times (it was called ${callsOf().length} times)`),
+        toHaveBeenCalledWith: (...a) => assert(callsOf().some((xs) => equals(xs, a, false)), `to have been called with ${show(a)}`),
+        toHaveBeenNthCalledWith: (k, ...a) => assert(callsOf().length >= k && equals(callsOf()[k - 1], a, false), `to have been called the ${k}th time with ${show(a)} (it was: ${show(callsOf()[k - 1])})`),
+        toHaveBeenLastCalledWith: (...a) => assert(callsOf().length > 0 && equals(callsOf().at(-1), a, false), `to have been called last with ${show(a)}`),
+      });
+      m.toBeCalled = m.toHaveBeenCalled; m.toBeCalledTimes = m.toHaveBeenCalledTimes; m.toBeCalledWith = m.toHaveBeenCalledWith;
       if (mode) { // resolves / rejects: the matchers wait for the promise, then judge what it settled to
-        return new Proxy({}, { get: (t, k) => { if (k === 'then') return undefined; if (!Object.hasOwn(m, k)) throw new Gap(`matcher .${mode}.${String(k)}`); return async (...a) => { let v, ok; try { v = await actual; ok = true; } catch (e) { v = e; ok = false; } if (ok !== (mode === 'resolves')) throw new Failure(`expected the promise to ${mode === 'resolves' ? 'resolve' : 'reject'}; it ${ok ? 'resolved to' : 'rejected with'} ${show(v)}`); return expect(v, message)[negate ? 'not' : 'self'][k](...a); }; } });
+        return new Proxy({}, { get: (t, k) => { if (k === 'then') return undefined; if (!Object.hasOwn(m, k)) throw new Gap(`matcher .${mode}.${String(k)}`); return async (...a) => { let v, ok; try { v = await actual; ok = true; } catch (e) { v = e; ok = false; } if (ok !== (mode === 'resolves')) throw new Failure(`expected the promise to ${mode === 'resolves' ? 'resolve' : 'reject'}; it ${ok ? 'resolved to' : 'rejected with'} ${show(v)}`); return expect(mode === 'rejects' && (k === 'toThrow' || k === 'toThrowError') ? () => { throw v; } : v, message)[negate ? 'not' : 'self'][k](...a); }; } }); // `.rejects.toThrow` judges the rejection as the error a call threw (the runners' own reading)
       }
       return m;
     };
@@ -125,13 +136,91 @@ function makeAssert(state) { // node:assert, the part tests read
     notDeepStrictEqual: (x, y, msg) => fail(!equals(x, y, true), msg ?? `expected ${show(x)} not to deep-strict-equal ${show(y)}`),
     throws: (fn, e, msg) => { let threw = false, err; try { fn(); } catch (x) { threw = true; err = x; } fail(threw && (e === undefined || typeof e === 'string' || (typeof e === 'function' ? err instanceof e : e instanceof RegExp ? e.test(String(err?.message)) : true)), msg ?? (typeof e === 'string' ? e : `expected the function to throw${threw ? ' ' + show(e) : ''}`)); },
     match: (s, re, msg) => fail(typeof s === 'string' && re.test(s), msg ?? `expected ${show(s)} to match ${re}`),
+    // (lane w9al) a promise (or a function returning one) that rejects; an object names fields the error must hold, as node:assert reads it
+    rejects: async (p, e, msg) => { let threw = false, err; try { await (typeof p === 'function' ? p() : p); } catch (x) { threw = true; err = x; } fail(threw && (e === undefined || typeof e === 'string' || (typeof e === 'function' ? err instanceof e : e instanceof RegExp ? e.test(String(err?.message)) : e && typeof e === 'object' ? Object.keys(e).every((k) => err != null && equals(err[k], e[k], false)) : true)), msg ?? (typeof e === 'string' ? e : `expected the promise to reject${threw ? ' with ' + show(e) + '; it rejected with ' + show(err) : ''}`)); },
   });
   a.strict = a;
   return new Proxy(a, { get: (t, k) => (Object.hasOwn(t, k) || typeof k === 'symbol' || k === 'prototype' ? t[k] : (() => { throw new Gap(`assert.${String(k)}`); })) });
 }
 
+// (lane w9al) the runner's mock API, the part lean's own proposed test writes (new-test.mjs stubsOf): mock functions with
+// their queued answers, a spy that replaces an object's member and restores it, a global stubbed and unstubbed on the
+// unit's context, the Date of fake timers at a set instant, and the module mocks, made from their factories before the
+// test file loads (as the runners hoist them) and linked in place of the package for every importer. Only a test lean
+// wrote runs with it (runTests `mocks`); a test the PR adds that mocks stays not modelled, as before
+const MOCK = Symbol('lean.mock');
+function makeMocks(state) {
+  const all = [], spies = [], stubbed = [];
+  let timers = null;
+  const global = () => { if (!state.global) throw new Gap('a global stubbed before the context exists'); return state.global; };
+  function fn(impl) {
+    const mock = { calls: [], results: [], once: [], impl: impl ?? null };
+    const f = function (...args) {
+      mock.calls.push(args);
+      const run = mock.once.length ? mock.once.shift() : mock.impl;
+      try { const r = run ? run.apply(this, args) : undefined; mock.results.push({ type: 'return', value: r }); return r; } catch (e) { mock.results.push({ type: 'throw', value: e }); throw e; }
+    };
+    const chain = (k, make) => { f[k] = (...a) => { make(...a); return f; }; };
+    Object.defineProperty(f, MOCK, { value: true }); f.mock = mock;
+    chain('mockImplementation', (g) => { mock.impl = g; }); chain('mockImplementationOnce', (g) => { mock.once.push(g); });
+    chain('mockReturnValue', (v) => { mock.impl = () => v; }); chain('mockReturnValueOnce', (v) => { mock.once.push(() => v); });
+    chain('mockResolvedValue', (v) => { mock.impl = () => Promise.resolve(v); }); chain('mockResolvedValueOnce', (v) => { mock.once.push(() => Promise.resolve(v)); });
+    chain('mockRejectedValue', (v) => { mock.impl = () => Promise.reject(v); }); chain('mockRejectedValueOnce', (v) => { mock.once.push(() => Promise.reject(v)); });
+    chain('mockClear', () => { mock.calls.length = 0; mock.results.length = 0; });
+    chain('mockReset', () => { mock.calls.length = 0; mock.results.length = 0; mock.once.length = 0; mock.impl = f.original ? function (...a) { return f.original.apply(this, a); } : null; });
+    chain('mockRestore', () => { f.mockReset(); f.restore?.(); });
+    all.push(f);
+    return f;
+  }
+  const spyOn = (obj, key) => {
+    if (obj == null || (typeof obj !== 'object' && typeof obj !== 'function')) throw new Failure(`cannot spy on ${String(key)} of ${show(obj)}`);
+    const original = obj[key];
+    if (typeof original !== 'function') throw new Failure(`cannot spy on ${String(key)}: not a function`);
+    const f = fn(function (...a) { return original.apply(this, a); });
+    f.original = original; f.restore = () => { obj[key] = original; };
+    obj[key] = f; spies.push(f);
+    return f;
+  };
+  const RealDate = Date;
+  const vi = {
+    fn, spyOn, mocked: (x) => x, isMockFunction: (x) => !!(x && x[MOCK]),
+    mock: (spec) => { if (!state.mocked?.has(spec)) throw new Gap(`a module mock the file does not hoist (${spec})`); }, // made before the load (mockModules)
+    clearAllMocks: () => { for (const f of all) f.mockClear(); },
+    resetAllMocks: () => { for (const f of all) f.mockReset(); },
+    restoreAllMocks: () => { for (const f of spies.splice(0)) f.restore(); },
+    stubGlobal: (name, v) => { const g = global(); stubbed.push([name, Object.getOwnPropertyDescriptor(g, name)]); g[name] = v; return vi; },
+    unstubAllGlobals: () => { const g = global(); for (const [name, d] of stubbed.splice(0).reverse()) { if (d) Object.defineProperty(g, name, d); else delete g[name]; } return vi; },
+    useFakeTimers: (opts) => {
+      if (!timers) {
+        const now = { t: typeof opts?.now === 'number' ? opts.now : opts?.now instanceof RealDate ? opts.now.getTime() : RealDate.now() };
+        function FixedDate(...a) { if (!new.target) return new RealDate(now.t).toString(); return a.length ? new RealDate(...a) : new RealDate(now.t); }
+        Object.assign(FixedDate, { now: () => now.t, UTC: RealDate.UTC, parse: RealDate.parse }); FixedDate.prototype = RealDate.prototype;
+        const g = global(); timers = { now, saved: Object.getOwnPropertyDescriptor(g, 'Date') }; g.Date = FixedDate;
+      }
+      return vi;
+    },
+    setSystemTime: (t) => { if (!timers) throw new Failure('setSystemTime without fake timers'); timers.now.t = t instanceof RealDate ? t.getTime() : Number(t); return vi; },
+    useRealTimers: () => { if (timers) { const g = global(); if (timers.saved) Object.defineProperty(g, 'Date', timers.saved); timers = null; } return vi; },
+  };
+  return new Proxy(vi, { get: (t, k) => (typeof k === 'symbol' ? undefined : Object.hasOwn(t, k) ? t[k] : () => { throw new Gap(`vi.${String(k)}`); }) });
+}
+// the module mocks a test file hoists: each top-level `vi.mock('<specifier>', factory)` (or `jest.mock`), its factory run
+// before the file loads, on a context that holds the mock API alone; the factory's object stands for the package
+function mockModules(file, text, vi) {
+  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true), out = new Map();
+  for (const st of sf.statements) {
+    const e = ts.isExpressionStatement(st) ? st.expression : null;
+    if (!e || !ts.isCallExpression(e) || !ts.isPropertyAccessExpression(e.expression) || !ts.isIdentifier(e.expression.expression) || !['vi', 'jest'].includes(e.expression.expression.text) || e.expression.name.text !== 'mock') continue;
+    const [spec, factory] = e.arguments;
+    if (!spec || !ts.isStringLiteral(spec) || !factory || !(ts.isArrowFunction(factory) || ts.isFunctionExpression(factory))) throw new Gap('a module mock without a factory');
+    const js = ts.transpileModule(`(${factory.getText(sf)})`, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText;
+    out.set(spec.text, vm.runInNewContext(js, { vi, jest: vi }, { timeout: 1000 })());
+  }
+  return out;
+}
+
 // the registration API: describe blocks run at load, tests and hooks are collected in their scope
-function makeRunner(state) {
+function makeRunner(state, mocks = false) {
   const root = { name: null, parent: null, hooks: { beforeAll: [], beforeEach: [], afterEach: [], afterAll: [] }, ran: false };
   let scope = root;
   const fullName = (s, name) => { const parts = []; for (let x = s; x && x.name !== null; x = x.parent) parts.unshift(x.name); return [...parts, name].join(' > '); };
@@ -148,7 +237,7 @@ function makeRunner(state) {
   describe.skip = () => {}; describe.only = describe; describe.concurrent = describe; describe.sequential = describe; describe.todo = () => {};
   describe.each = each(describe); describe.skipIf = (c) => (c ? describe.skip : describe); describe.runIf = (c) => (c ? describe : describe.skip);
   const hook = (kind) => (fn) => { scope.hooks[kind].push(fn); };
-  const vi = new Proxy({}, { get: (t, k) => (typeof k === 'symbol' ? undefined : () => { throw new Gap(`vi.${String(k)}`); }) });
+  const vi = mocks ? makeMocks(state) : new Proxy({}, { get: (t, k) => (typeof k === 'symbol' ? undefined : () => { throw new Gap(`vi.${String(k)}`); }) });
   const expect = makeExpect(state), assert = makeAssert(state);
   const api = { describe, it: test, test, expect, assert, beforeAll: hook('beforeAll'), afterAll: hook('afterAll'), beforeEach: hook('beforeEach'), afterEach: hook('afterEach'), before: hook('beforeAll'), after: hook('afterAll'), vi, jest: vi, suite: describe };
   const modules = {};
@@ -191,7 +280,7 @@ const namesIn = (fn, names) => { let src; try { src = Function.prototype.toStrin
 
 // run every test file's tests in their order (a file's tests share its module state, as the runners run them), report
 // the ones that name the unit
-export async function runTests({ candidate, aliases = [], unit, testFiles, texts = null, ms = 2000, seed = 1, load, graphWorld, options }) {
+export async function runTests({ candidate, aliases = [], unit, testFiles, texts = null, ms = 2000, seed = 1, load, graphWorld, options, mocks = false }) {
   const records = [], summary = { files: 0, selected: 0, passed: 0, failed: 0, notModelled: 0, world: 0, unsettled: 0, skipped: 0 };
   const cover = (file, reason, tests) => records.push({ kind: 'new:coverage', phase: 'test', file: path.basename(file), reason, ...(tests ? { tests } : {}) });
   for (const file of testFiles) {
@@ -200,12 +289,15 @@ export async function runTests({ candidate, aliases = [], unit, testFiles, texts
     const sel = selection(file, text, [candidate, ...aliases], unit, options);
     if (!sel) continue; // the file does not import the unit
     summary.files++;
-    if (sel.mock) { cover(file, `the file replaces a module, a global or the clock (${sel.mock}): its tests are not the unit's behaviour alone`); summary.notModelled++; continue; }
-    const state = { tests: [], assertions: 0 };
-    const runner = makeRunner(state);
+    if (sel.mock && !mocks) { cover(file, `the file replaces a module, a global or the clock (${sel.mock}): its tests are not the unit's behaviour alone`); summary.notModelled++; continue; }
+    const state = { tests: [], assertions: 0, global: null, mocked: null };
+    const runner = makeRunner(state, mocks);
     const env = new Environment(seed * 7919 + 104729);
     let loaded;
-    try { loaded = await load(file, env, { allow: new Set([file]), globals: runner.api, modules: runner.modules }); }
+    try {
+      if (mocks) { state.mocked = mockModules(file, text, runner.api.vi); for (const [spec, value] of state.mocked) runner.modules[spec] = value; }
+      loaded = await load(file, env, { allow: new Set([file]), globals: runner.api, modules: runner.modules, onContext: (g) => { state.global = g; } });
+    }
     catch (e) { cover(file, `the test file did not load: ${String(e?.message ?? e).slice(0, 200)}`); continue; }
     const worldAtLoad = graphWorld(loaded);
     let tainted = worldAtLoad.length ? worldAtLoad.slice(0, 3).join('; ') : null; // once the file's state holds a world value, every later result may rest on it

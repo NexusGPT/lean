@@ -18,7 +18,7 @@
 // headers in the standard's order, the body text, and the request's mode, credentials, cache and redirect. A request
 // that is not a valid Request rejects with the TypeError the standard raises; an aborted signal rejects with its
 // reason; on the world's fault draw (one call in twelve, fake.mjs faultDraw) the network fails, a rejected TypeError.
-import { render, namePromise, programBuilt } from '../../fake.mjs';
+import { render, namePromise, programBuilt, answerOf } from '../../fake.mjs';
 import { HostHeaders, headerEntries } from './headers.mjs';
 import { keyName, drawText, hashOf } from './draw.mjs';
 
@@ -100,9 +100,10 @@ function drawRow(env, req, key) {
 export function fetchFake(env) {
   const table = new Map(); // key -> row: the requests this side has made, each answered once and the same ever after
   const reject = (e, at) => { const p = Promise.reject(e); return namePromise(env, env.scheduler ? env.scheduler.hold(p, at) : p, at, { reason: e }); };
-  return function fetch(input, init) {
+  return function fetch(input, init) { return answerOf(env, { op: 'call', path: 'global:fetch', args: init === undefined ? [input] : [input, init] }, (entry) => request(input, init, entry)); }; // (lane w9al) the response entered among the world's answers, its body as text
+  function request(input, init, entry) {
     let req;
-    try { req = new Request(input, init); } catch (e) { env.record('call', 'global:fetch', [render(input), render(init)]); return Promise.reject(e); } // not a request: the standard's TypeError, the arguments as given
+    try { req = new Request(input, init); } catch (e) { env.record('call', 'global:fetch', [render(input), render(init)]); if (entry) entry.shown = { rejects: render(e) }; return Promise.reject(e); } // not a request: the standard's TypeError, the arguments as given
     const key = requestKey(req);
     env.record('call', 'global:fetch', [requestShape(req)]);
     const n = ((env.fetchCalls ??= new Map()).get(key) ?? 0) + 1; env.fetchCalls.set(key, n);
@@ -111,9 +112,10 @@ export function fetchFake(env) {
     if (!env.loading && env.cbDepth === 0 && env.faultDraw(at)) { env.record('fault', 'global:fetch', []); const e = new TypeError('fetch failed'); programBuilt.add(e); return reject(e, at); }
     if (!table.has(key)) table.set(key, drawRow(env, req, key));
     const res = new FetchResponse(env, table.get(key));
+    if (entry) { const row = table.get(key); entry.shown = { resolves: { $response: { status: row.status, statusText: row.statusText, headers: row.nullBody ? [] : [['content-type', 'application/json']], body: row.nullBody ? null : row.text } } }; }
     const p = Promise.resolve(res);
     return namePromise(env, env.scheduler ? env.scheduler.hold(p, at) : p, at, { value: res });
-  };
+  }
 }
 
 export function renderResponse(v) {
