@@ -10,6 +10,7 @@ import path from 'node:path';
 import { ts } from '../common.mjs';
 import { Environment, BudgetError, render } from './fake.mjs';
 import { guardedCall } from './run.mjs';
+import { setVirtual } from './new-unit.mjs';
 import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 
 // the specifiers the runner answers itself: the test frameworks' own modules
@@ -190,11 +191,12 @@ const namesIn = (fn, names) => { let src; try { src = Function.prototype.toStrin
 
 // run every test file's tests in their order (a file's tests share its module state, as the runners run them), report
 // the ones that name the unit
-export async function runTests({ candidate, aliases = [], unit, testFiles, ms = 2000, seed = 1, load, graphWorld, options }) {
+export async function runTests({ candidate, aliases = [], unit, testFiles, texts = null, ms = 2000, seed = 1, load, graphWorld, options }) {
   const records = [], summary = { files: 0, selected: 0, passed: 0, failed: 0, notModelled: 0, world: 0, unsettled: 0, skipped: 0 };
   const cover = (file, reason, tests) => records.push({ kind: 'new:coverage', phase: 'test', file: path.basename(file), reason, ...(tests ? { tests } : {}) });
   for (const file of testFiles) {
-    let text; try { text = (await import('node:fs')).readFileSync(file, 'utf8'); } catch (e) { cover(file, `unreadable: ${e.message}`); continue; }
+    let text; try { text = texts?.get(file) ?? (await import('node:fs')).readFileSync(file, 'utf8'); } catch (e) { cover(file, `unreadable: ${e.message}`); continue; }
+    if (texts?.has(file)) setVirtual(file, text); // a proposed test (new-test.mjs): its module compiles from its text
     const sel = selection(file, text, [candidate, ...aliases], unit, options);
     if (!sel) continue; // the file does not import the unit
     summary.files++;

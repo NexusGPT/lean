@@ -140,6 +140,7 @@ export const setFieldsProject = (p) => { fieldsProject = p; }; // a caller that 
 // the branch probes of the input search (search.mjs branchMarks): the files of the pair under search, by absolute path,
 // each with its branch table and its side's tag; null when no search runs (LEAN_SEARCH, --search), and then nothing changes
 let probes = null;
+export const setProbes = (m) => { probes = m; }; // a candidate-only run's probes (new-unit.mjs newUnitProbes): the NEW path's reach, the same hooks
 // the files whose call sites lane B records for the callee facts (callee-trace.mjs): the pair's two files while runPair runs
 let factFiles = new Set();
 function compileWithSites(src, tsName, abs) {

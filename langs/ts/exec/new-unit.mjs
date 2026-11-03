@@ -13,6 +13,9 @@ import { admitted, member, mismatch, declaration, declaredThrow, edgePlan, edgeI
 import { runTests, TEST_MODULES } from './new-tests.mjs';
 import { specOf } from './spec.mjs';
 import { inputsFor } from './gen.mjs';
+import { branchTable, reachTable, probeKeys, branchMarks, unitBranches } from './search.mjs';
+import { setProbes } from './run.mjs';
+import { writeNewTest } from './new-test.mjs';
 import { netMode, denyNetwork, networkDenied, sandboxEntry } from './net-deny.mjs';
 import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { makeReach } from '../reach.mjs'; // the code a unit's run executes (unitWorld)
@@ -81,10 +84,36 @@ function topLevelAwait(sf) {
 }
 const lastWorld = (env) => { const t = env.trace[env.trace.length - 1]; return t ? `${t.op} ${t.path}` : 'none'; };
 
+// (new-unit tests, design/new-unit-test.md) the reach probes of a candidate-only run: every line of the unit counts as
+// changed, so its branches and statements are probed as the pair path probes a changed unit (search.mjs branchMarks,
+// run.mjs siteState.b/.r through the probes map); the hooks read the state through a global of the module's context.
+// LEAN_BREAK=new-reach: no probe, no statement reached
+let newProbes = null;
+// a file given by its text, under a path that holds no file: a proposed test (new-test.mjs), compiled as a module beside the unit
+const virtualFiles = new Map();
+export const setVirtual = (abs, text) => { virtualFiles.set(path.resolve(abs), text); };
+function newUnitProbes(abs, unit) {
+  if (broken('new-reach')) return null;
+  const src = fs.readFileSync(abs, 'utf8');
+  const sf = ts.createSourceFile(abs, src, ts.ScriptTarget.Latest, true, abs.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const u = topLevelFunctions(sf).get(unit); const node = u && (u.node ?? u.fn);
+  if (!node) return null;
+  const lineOf = (pos) => sf.getLineAndCharacterOfPosition(pos).line + 1;
+  const changed = new Set(); for (let L = lineOf(node.getStart(sf)); L <= lineOf(node.end); L++) changed.add(L);
+  const table = branchTable(sf), statements = reachTable(sf, changed, table);
+  for (const e of table) e.probe = e.start >= node.getStart(sf) && e.end <= node.end;
+  const entry = { tag: 'C', table, reach: statements, keys: probeKeys('C', table, statements) };
+  const own = unitBranches(sf, unit, table, changed, statements, true).statements.map((t) => `C:${t}`);
+  const lines = Object.fromEntries(statements.map((r) => [`C:s${r.id}`, r.line]));
+  let stateName = '__lean_site'; while (src.includes(stateName)) stateName += '_';
+  return { abs, entry, statements: own, lines, stateName };
+}
+
 // `extra`: a test file read as the unit's PR-added test (new-tests.mjs): `allow` the test modules it may load, `globals`
 // the runner's globals (describe, it, expect) set on the context, `modules` the runner's own modules ('vitest' and its kin)
 export async function loadCandidate(file, env, options, ms, sources = new Map(), extra = {}) {
   const host = sandbox(env, path.dirname(file));
+  if (newProbes) vm.runInContext('globalThis', host.ctx)[newProbes.stateName] = env.siteState; // the probes' state (new-unit tests)
   if (extra.globals) { const g = vm.runInContext('globalThis', host.ctx); for (const [k, v] of Object.entries(extra.globals)) g[k] = v; }
   const cache = new Map(), fakeNames = new Set(), edges = [];
   // external modules keep the recording fakes and React protocol of paired execution
@@ -105,7 +134,7 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
     }
     let compiled = sources.get(abs);
     if (!compiled) {
-      const src = fs.readFileSync(abs, 'utf8');
+      const src = virtualFiles.get(abs) ?? fs.readFileSync(abs, 'utf8');
       const sf = ts.createSourceFile(abs, src, ts.ScriptTarget.Latest, true);
       // literal dynamic imports are checked even when their branch is not drawn; their modules are not evaluated here
       let commonjs = /\.c[jt]s$/.test(abs);
@@ -119,7 +148,7 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
       }
       literals(sf);
       const names = [...new Set([...topLevelFunctions(sf).values()].map(u => u.className ?? u.name))].filter((name) => /^[A-Za-z_$][\w$]*$/.test(name)); // the module's own bindings: a callback or a literal member (`describe()#1`, `ops.add`) is reached through its holder, never by name
-      let js = ts.transpileModule(src, { compilerOptions: compile, fileName: abs }).outputText;
+      let js = ts.transpileModule(src, { compilerOptions: compile, fileName: abs, ...(newProbes && newProbes.abs === abs ? { transformers: { before: [branchMarks(newProbes.entry.table, abs, newProbes.stateName, newProbes.entry.reach)] } } : {}) }).outputText;
       let unitSlot = '__lean_units'; while (src.includes(unitSlot)) unitSlot += '_';
       // a module whose top level awaits (a script that asks a server, then polls it): the harness reads its units while
       // the body waits at an await, as run.mjs's loader does (lane w9ab). The surface is a function declaration, which the
@@ -263,6 +292,7 @@ export async function runNew(opts) {
         for (const [key, targets] of Object.entries(parsed.options.paths ?? {})) options.paths[key] = targets.map(target => path.resolve(base, target));
       }
     }
+    newProbes = newUnitProbes(abs, unit); setProbes(newProbes ? new Map([[abs, newProbes.entry]]) : null);
     await loadCandidate(abs, new Environment(seed * 7919), options, ms, sources);
   } catch (e) { const r = loadFailure(base, e, 0, bound); return { ...r, records: [coverage('load', r.reason)] }; }
   let spec, reading, decl, nullable = false, exactOptional = false;
@@ -284,6 +314,7 @@ export async function runNew(opts) {
   const shapes = new Map(), fakes = new Set(), faultExamples = [];
   const book = recordBook();
   const bases = []; // closed calls that returned a value (the parameter trials, lane w9k)
+  const cases = []; // every closed call, as a test restates it (new-test.mjs): its input, its outcome, the statements it completed
   const reach = { inputs: 0, admitted: 0, closed: 0, notAdmitted: 0, world: 0, worldOps: new Map(), graphWorld: null };
   const refused = []; let refusedReason = null; // the inputs whose drawn world the module's evaluation refused
   const stop = (extra) => ({ ...base, verdict: 'ASK', loaded: true, faults, bound, ...extra, records: [...book.list(), coverage('draw', extra.reason)], declaration: declarationRecord(decl, reach, nullable, edges) });
@@ -315,6 +346,7 @@ export async function runNew(opts) {
     const inputs = step ? edgeInput(drawn, step) : drawn;
     env.argPool = inputs.filter(x => x && (typeof x === 'object' || typeof x === 'function') && x.__isFake);
     const shown = inputs.map((x) => render(x)); // the input as the record names it, before the call may write into it
+    if (newProbes) env.siteState.hits = new Set(); // the statements the call completes, not the load
     const observation = await observe({ env, unit: picked }, spec, inputs, ms);
     if (observation.harness) return stop({ inputs: i, reason: `input ${i}: ${observation.harness}` });
     const threw = Object.hasOwn(observation.outcome, 'threw');
@@ -331,6 +363,7 @@ export async function runNew(opts) {
     const world = broken('closed-call') ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
     if (world.length) { reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1); continue; }
     reach.closed++;
+    if (!broken('new-test-cases')) cases.push({ i, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: render(observation.raw?.returned) }, drives: !!observation.drives?.length, thenable, sync });
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
     const wide = declared.params.some((p, k) => p.spec?.all && !(p.optional && inputs[k] === undefined)); // admitted only because a parameter's type is any or unknown, which admit every value: a validator's own rejection reads so
     if (threw) {
@@ -377,6 +410,13 @@ export async function runNew(opts) {
     const aliases = opts.candidateAlias && path.resolve(opts.candidateAlias) !== abs && (() => { try { return fs.readFileSync(opts.candidateAlias).equals(fs.readFileSync(abs)); } catch { return false; } })() ? [path.resolve(opts.candidateAlias)] : [];
     tests = await runTests({ candidate: abs, aliases, unit, testFiles: opts.tests.map((t) => path.resolve(t)), ms, seed, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), graphWorld: (loaded) => graphWorld(loaded, sources, TEST_MODULES), options });
     for (const r of tests.records) book.add(r, `${r.kind} ${r.file}:${r.test}`);
+  }
+  // (new-unit tests) a test for the unit from its closed calls: the record new:proposed-test, or a coverage record naming why none
+  if (!broken('new-test')) {
+    let proposed;
+    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, cases, statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading }); }
+    catch (e) { proposed = { kind: 'new:coverage', phase: 'test', reason: `the test writer failed: ${String(e?.message ?? e).slice(0, 200)}` }; }
+    if (proposed) book.add(proposed, `${proposed.kind} proposed`);
   }
   if (refused.length) { bound.refusedWorlds = { inputs: refused.length, first: refused[0], reason: refusedReason }; book.add(coverage('load', `${refused.length} of ${n} inputs skipped: the module's evaluation refused their drawn world (first, input ${refused[0]}: ${refusedReason})`)); }
   if (!reach.closed) book.add(coverage('draw', decl?.overloaded ? 'the unit is overloaded: its callers are admitted by its overload signatures, which this reading does not take one by one' : !declared ? 'the declaration was not read' : reach.admitted === 0 ? `no drawn input is one the declared types say they admit (${reach.notAdmitted} of ${reach.inputs}: a parameter type lean reads as opaque, a type parameter, or a draw wider than the declaration)` : `every admitted input reached the world (${reach.world} of ${reach.admitted}): ${[...reach.worldOps.keys()].slice(0, 4).join('; ')}`), 'coverage draw');
@@ -486,6 +526,22 @@ async function parameterTrials({ candidate, unit, options, ms, sources, spec, se
       : { kind: 'new:ignored', param: name, index: k, trials, ...example, claim: `on ${trials} drawn inputs the declaration admits, replacing \`${name}\` alone left the returned value and the other arguments unchanged` });
   }
   return out;
+}
+// how the module exports the unit: its own name, 'default', or false (a top-level binding no export names)
+function exportKind(reading, unit) {
+  try {
+    const sf = reading?.sf; if (!sf) return null;
+    const u = topLevelFunctions(sf).get(unit); const node = u && (u.node ?? u.fn); if (!node) return null;
+    const name = unit.includes('.') ? unit.split('.')[0] : unit;
+    const mods = (n) => (ts.canHaveModifiers(n) ? ts.getModifiers(n) ?? [] : []);
+    const decl = ts.isVariableDeclaration(node) ? node.parent.parent : node;
+    if (mods(decl).some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) return mods(decl).some((m) => m.kind === ts.SyntaxKind.DefaultKeyword) ? 'default' : name;
+    for (const st of sf.statements) {
+      if (ts.isExportAssignment(st) && !st.isExportEquals && ts.isIdentifier(st.expression) && st.expression.text === name) return 'default';
+      if (ts.isExportDeclaration(st) && st.exportClause && ts.isNamedExports(st.exportClause) && !st.moduleSpecifier) for (const el of st.exportClause.elements) if ((el.propertyName ?? el.name).text === name) return el.name.text;
+    }
+    return false;
+  } catch { return null; }
 }
 function declarationRecord(decl, reach, nullable, edges) {
   return { returns: decl?.returns ?? null, inferred: decl ? decl.inferred : null, throws: decl?.throws ?? null, jsdoc: decl?.jsdoc ?? null, strictNullChecks: !nullable, edgeInputs: edges,
