@@ -6,6 +6,7 @@
 import { ts, loadProgram, topLevelFunctions, primitiveBrand } from '../common.mjs';
 import { hookTable, hookRecordSpec } from '../hooks.mjs';
 import { usage, mergeUsage, newNode } from './usage.mjs';
+import { valuesOf, searchValuesOf } from './conversions.mjs';
 import { decoratorTable, importOf } from '../decorators.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -397,7 +398,7 @@ export function specOf(file, unitName, opts = {}) {
 // a fresh value of that kind, `{t:'draw'}` for the declared generator's own draw.
 const U = { t: 'undefined' }, DRAW = { t: 'draw' };
 const isUndef = (v) => v && typeof v === 'object' && v.undefined === true;
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const same = (a, b) => (typeof a === 'number' || typeof b === 'number' ? Object.is(a, b) : JSON.stringify(a) === JSON.stringify(b)); // NaN and -0 are values of their own (a conversion's boundary holds both)
 function admits(spec, v, optional, defs, d = 0) {
   if (!spec || d > 6) return false;
   if (spec.kind === 'ref') return admits(defs[spec.key], v, optional, defs, d + 1);
@@ -433,6 +434,10 @@ function boundaryOf(node, spec, optional, defs) {
   }
   for (const s of node.includes) if (typeof s === 'string') add(cmp, s);
   if (node.converted && !broken('converted-text')) for (const s of CONVERTED_TEXT) add(cmp, s); // a string read as a number: the texts the conversions disagree on
+  // a leaf a numeric conversion takes (usage.mjs `converts`, lane w9aj): the values its family's members disagree on
+  // (exec/conversions.mjs FAMILY_VALUES), the ones its type admits
+  for (const f of node.converts ?? []) for (const v of valuesOf(f)) { if (f === 'parse' && typeof v === 'string' && broken('converted-text')) continue; add(cmp, v); }
+  const conv = node.converts?.length ? { conv: searchValuesOf(node.converts), convTier: node.convChanged ? 0 : 1 } : {}; // the search's leaf changes of this leaf (search.mjs leafValues)
   const rep = { object: [{ t: 'object' }, null], string: [''], number: [0], boolean: [true, false], undefined: [U], function: [{ t: 'fn' }] };
   for (const t of node.typeofs) for (const v of rep[t] ?? []) add(cmp, v);
   if (node.len) for (const c of node.len.compares) if (typeof c === 'number' && Number.isInteger(c)) for (const L of [c, c + 1, c - 1]) if (L >= 0 && L <= 2000) add(cmp, 'x'.repeat(L));
@@ -441,8 +446,8 @@ function boundaryOf(node, spec, optional, defs) {
   if (node.truthy) for (const v of [null, U, false, 0, '']) add(falsy, v);
   // a compared leaf also walks the falsy values its truthiness test separates at; a leaf only tested for truthiness
   // walks the declared draw first and turns after every compared leaf (rank 1)
-  if (cmp.length) { for (const v of falsy) add(cmp, v); if (draw) add(cmp, DRAW); return { cmp, falsy, rank: 0 }; }
-  return falsy.length ? { cmp: [DRAW, ...falsy], falsy, rank: 1 } : null;
+  if (cmp.length) { for (const v of falsy) add(cmp, v); if (draw) add(cmp, DRAW); return { cmp, falsy, rank: 0, ...conv }; }
+  return falsy.length ? { cmp: [DRAW, ...falsy], falsy, rank: 1, ...conv } : null;
 }
 // the lengths a `.length` comparison separates at, for an array
 function lengthsOf(node) {

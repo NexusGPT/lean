@@ -319,6 +319,10 @@ function leafValues(s, v, defs, lits, aware = true) {
   const isNear = (x) => !!lits.near && (typeof x === 'string' ? lits.near.strings.includes(x) : lits.near.numbers.some((y) => Object.is(y, x)));
   const add = (tier, x) => { if (Object.is(x, v) || seen.some((y) => Object.is(y, x)) || !fits(s, x, defs)) return; seen.push(x); out.push({ tier: tier === 1 && isNear(x) ? 0 : tier, value: x }); }; // tier 0: a literal of a target condition
   const opts = optionsOf(s, defs);
+  // a leaf a numeric conversion takes (spec.mjs boundaryOf `conv`, lane w9aj): its family's values, those of a leaf the
+  // two versions convert differently with the target conditions' literals (tier 0), the rest with the unit's (tier 1)
+  const cb = aware && !broken('w9aj-conversions') ? (s?.boundary?.conv ? s.boundary : optionsOf(s, defs).find((o) => o.boundary?.conv)?.boundary) : null;
+  if (cb) for (const x of cb.conv) add(cb.convTier ?? 1, x);
   for (const o of opts) {
     if (o.kind === 'string') { for (const x of lits.strings) add(1, x); add(2, ''); for (const x of lits.strings) for (const y of neighbours(x)) add(3, y); }
     else if (o.kind === 'number') { for (const x of lits.numbers) add(1, x); if (aware) for (const x of SAFE_EDGES) add(2, x); if (typeof v === 'number' && Number.isFinite(v)) { add(3, v + 1); add(3, v - 1); } for (const x of lits.numbers) { add(3, x + 1); add(3, x - 1); } }
