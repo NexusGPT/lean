@@ -353,8 +353,10 @@ export function manifestSources(dir) {
 // built for one file reads files of other projects (a workspace package's source); each of their imports resolves as
 // that project resolves it. LEAN_BREAK=reach-resolve: every file resolves with the program's own options
 const fileOptionsCache = new Map(); // tsconfig -> its compiler options
+const configOfDir = new Map(); // folder -> the nearest tsconfig above it, or null
+const nearestConfig = (dir) => { if (!configOfDir.has(dir)) configOfDir.set(dir, ts.findConfigFile(dir, ts.sys.fileExists, 'tsconfig.json') ?? null); return configOfDir.get(dir); };
 export function fileProjectOptions(fromAbs) {
-  const cfg = ts.findConfigFile(path.dirname(fromAbs), ts.sys.fileExists, 'tsconfig.json') ?? null;
+  const cfg = nearestConfig(path.dirname(fromAbs));
   if (!cfg) return null;
   if (!fileOptionsCache.has(cfg)) { let o = null; try { o = loadProgramOptions(fromAbs, cfg).options; } catch { o = null; } fileOptionsCache.set(cfg, o); }
   return fileOptionsCache.get(cfg);
@@ -365,7 +367,7 @@ const resolutionCaches = new WeakMap(); // options -> TypeScript's module resolu
 const cacheFor = (o) => { if (!resolutionCaches.has(o)) resolutionCaches.set(o, ts.createModuleResolutionCache(process.cwd(), (x) => x, o)); return resolutionCaches.get(o); };
 export function resolveFrom(spec, fromAbs, options, programConfig = options.configFilePath ?? null, mode = undefined) {
   if (broken('reach-resolve')) return ts.resolveModuleName(spec, fromAbs, options, ts.sys, cacheFor(options), undefined, mode);
-  const cfg = ts.findConfigFile(path.dirname(fromAbs), ts.sys.fileExists, 'tsconfig.json') ?? null;
+  const cfg = nearestConfig(path.dirname(fromAbs));
   const own = cfg && cfg !== programConfig ? fileProjectOptions(fromAbs) : null;
   let r = own ? ts.resolveModuleName(spec, fromAbs, own, ts.sys, cacheFor(own), undefined, mode) : null;
   if (!r?.resolvedModule) r = ts.resolveModuleName(spec, fromAbs, options, ts.sys, cacheFor(options), undefined, mode);

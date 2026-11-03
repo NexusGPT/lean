@@ -641,7 +641,7 @@ function unitWorld(reading, unit, loaded, options = null) {
   // (lane w9au) an import of a file the run did not link is what the loader would link it as (importSurface)
   const surfaces = new Map();
   const surfaceOf = (spec, f) => { const k = `${f.fileName}\0${spec}`; if (!surfaces.has(k)) surfaces.set(k, importSurface(spec, f.fileName, options)); return surfaces.get(k); };
-  const fakedIn = (f) => ({ has: (spec) => { if (faked.has(spec)) return true; const s = surfaceOf(spec, f); return !!(s.package || s.builtin); } });
+  const fakedIn = (f) => ({ has: (spec) => { if (faked.has(spec)) return true; if (spec.startsWith('.') || path.isAbsolute(spec)) return false; const s = surfaceOf(spec, f); return !!(s.package || s.builtin); } });
   const reaches = new Map(), taints = new Map();
   const reachFor = (f) => { if (!reaches.has(f)) reaches.set(f, makeReach(checker, f)); return reaches.get(f); };
   const taintOf = (f) => { if (!taints.has(f)) taints.set(f, taintedNames(f, fakedIn(f))); return taints.get(f); };
