@@ -19,8 +19,9 @@ Lane B never called a callable with a trailing argument left out, so a change to
 1. `patch.mjs parameterReads`, at instrumentation. For each function, the statement marks record its parameters:
    the name, whether a caller may leave the parameter out, and the first statement of the body that reads it (the
    innermost statement around the first read in source order). A caller may leave a parameter out when it has a
-   default, a `?`, a bracketed JSDoc `@param`, or a body that tests it against `undefined`/`null`/`typeof` or reads
-   `arguments`. The record sits on the function's body site. The function's frame carries it as `body`, and the
+   default, a `?`, a bracketed JSDoc `@param`, a body that tests it against `undefined` or `null` (`===`, `==`,
+   `typeof`, `??`) or reads `arguments`, or a call in the file by the function's name (`f(...)`, `x.f(...)`, no
+   spread) that passes fewer arguments. The record sits on the function's body site. The function's frame carries it as `body`, and the
    frame that exits last is `state.exited`. None of this enters an observation.
 2. `exec/run.mjs omittedForms`, at a drive. After the drawn calls, the driven function is called again on the
    **first call's own leading arguments**:
@@ -43,12 +44,11 @@ Lane B never called a callable with a trailing argument left out, so a change to
 
 - `tests/pairs/omitted_args_returned`: a returned `get(scene, depth = 0)` whose default moves. WITNESS at
   `if (depth >= list.length)`. `LEAN_BREAK=w9af-omitted-drives` gives PASS-bounded.
+- `exec/omitted.test.mjs`: each rule of parameterReads, the read statement, the forms, the break.
 - `tests/pairs/omitted_args_unit`: `scale(value, factor = 2)` (explicit undefined suffices, WITNESS before and after)
   and `pad(text, width?)` testing `arguments.length`. `LEAN_BREAK=w9af-omitted-args` gives PASS-bounded.
 
 ## Open
 
-- "Unused by some caller in the file": a trailing parameter that a same-file caller never passes, but that has no
-  default and no undefined test, is not yet read as optional.
 - A witness from the unit's own omitted parameter is reported at the outcome's statement (the return), not at the
   statement that reads the parameter.
