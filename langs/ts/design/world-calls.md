@@ -27,9 +27,11 @@ a reason that was a temporary file's path. Two general causes, neither of them t
   outcome. At most 50 instants per await (a poll past them is a budget ASK naming the await site). Not under the race
   explorer (`env.scheduler` holds every release) and not inside a firing.
 - **A promise no world call settles is named.** Nothing armed and nothing moving (trace, pending work, queue) for 8
-  turns and 200 ms of wall: the input stops at once, `budget: unsettled: the unit awaits at <file>:<line> \`<statement>\`
-  a promise no world call settles (last world call: <op> <path>; nothing armed)`. A timed-out input's reason names
-  where it stood the same way (`the first stood at …`).
+  turns and 200 ms of wall: the input stops at once and is skipped as a timed-out input is (both sides alike, or one
+  side named; a promise the unit's own code leaves unresolved, as an async executor whose awaited call faulted, is such
+  an input on both sides). The unit's reason, when it is ASK, names the first: `unsettled: the unit awaits at
+  <file>:<line> \`<statement>\` a promise no world call settles (last world call: <op> <path>; nothing armed)`, or for
+  a timeout `timed out at <file>:<line> … (last world call: …)` (`first: …`, `bound.skipped.at`).
 - **The units of an awaiting module are reachable** (`earlyUnitShim`). At the body's start, on its first line, after
   its directive: each unit a getter that reads its binding when picked (uninitialised reads as undefined), and the
   module-state getter. A body still paused when the module is picked drops the timers it armed while loading

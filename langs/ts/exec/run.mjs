@@ -67,7 +67,7 @@ const awaitUnit = async (env, p, ms) => { const w = openWindow(env); try { retur
 // last world call. Not under the race explorer (env.scheduler holds every release itself), nor inside a firing
 // (one clock at a time). LEAN_BREAK=world-clock: the wall clock alone, as before
 const AWAIT_FIRES = 50, IDLE_TURNS = 8, IDLE_MS = 200;
-class Unsettled extends BudgetError { constructor(m) { super(m); this.name = 'Unsettled'; } } // a budget stop: every catch that lets a budget through lets it through, and the input's row is ASK with its message
+class Unsettled extends BudgetError { constructor(m) { super(m); this.name = 'Unsettled'; } } // a harness stop every catch lets through as it lets a budget through; observeWindow reads it as a timed-out input (skipped), where a budget stop is ASK
 const siteLabel = (s) => (!s ? 'an unmarked statement' : typeof s === 'object' && s.file ? `${path.basename(String(s.file))}:${s.start}${s.text ? ` \`${String(s.text).split('\n')[0].slice(0, 80)}\`` : ''}` : JSON.stringify(s).slice(0, 80)); // patch.mjs statementMarks: { file, start, end, text }
 const stoppedAt = (env) => `${siteLabel(env.siteState?.current?.site)} (last world call: ${lastWorldCall(env)})`; // where a stopped input stood
 const lastWorldCall = (env) => { for (let i = env.trace.length - 1; i >= 0; i--) { const t = env.trace[i]; if (t.op !== 'fire') return `${t.op} ${t.path}`; } return 'none'; };
@@ -1058,11 +1058,12 @@ async function observeWindow(side, spec, args, ms) {
     outcome = { returned: isJsxValue(outcomeValue) ? renderTree(outcomeValue) : render(outcomeValue) };
     if (returnedPromise) outcome.promise = returnedPromise;
   } catch (e) {
-    if (e && e.message === '__timeout__') { callTimedOut(); return { harness: 'timeout', at: stoppedAt(env) }; }
+    if (e && e.message === '__timeout__') { callTimedOut(); return { harness: 'timeout', at: `timed out at ${stoppedAt(env)}` }; }
+    if (e instanceof Unsettled) return { harness: 'timeout', at: e.message }; // a promise nothing will settle is an input that never ends: skipped as a timed-out one is (both sides alike, or one side named), only at once and with where it waits
     if (e instanceof BudgetError) return { harness: `budget: ${e.message}` };
     if (e instanceof Suspended || (e && typeof e.then === 'function')) return { harness: `suspense: ${e instanceof Suspended ? e.message.slice(10) : 'a thenable thrown during render'}` }; // ASK:suspense, never a crash and never a thrown-value outcome
     if (e instanceof RenderLoop) return { harness: e.message }; // ASK:render-loop: React would throw or never settle
-    if (e instanceof CallTimeout) { callTimedOut(); return { harness: 'timeout', at: stoppedAt(env) }; }
+    if (e instanceof CallTimeout) { callTimedOut(); return { harness: 'timeout', at: `timed out at ${stoppedAt(env)}` }; }
     if (e && (e instanceof RangeError || e.name === 'RangeError') && /call stack/i.test(String(e.message))) return { harness: 'stack overflow' }; // whichever realm threw it: the host's (a fake, a patched intrinsic) or the sandbox's (the unit's own recursion)
     outcomeSite = env.siteState?.completed ?? env.siteState?.current?.site ?? null;
     outcome = { threw: render(e) }; thrownValue = e;
@@ -1898,7 +1899,7 @@ async function runPairOnce(opts) {
   if (diffs.undriven && !diffs.length) bound.undriven = { inputs: diffs.undriven.length, first: diffs.undriven[0] }; // runPair turns a PASS into ASK callback-undriven
   Object.defineProperty(bound, 'library', { enumerable: true, get: () => { const sm = summarizeRecords(records, libraryTableOf()); libraryCases(sm); if (recorderRetries) sm.retriedWithoutRecorder = recorderRetries; return sm; } }); // read when the result is written, after every rung
   if (skipped.length) bound.skipped = { inputs: skipped.length, oneSided: oneSided.length, reason: 'a side timed out on that input (an unbounded loop), or both sides exhausted the call stack; the input proves nothing', ...(timeoutAt ? { at: timeoutAt } : {}) };
-  const where = timeoutAt ? `; the first stood at ${timeoutAt}` : ''; // the statement it ran or awaited at and the world call before it (lane w9ab)
+  const where = timeoutAt ? `; first: ${timeoutAt}` : ''; // the statement it ran or awaited at and the world call before it (lane w9ab)
   if (!diffs.length && oneSided.length) return { verdict: 'ASK', reason: `one side timed out on ${oneSided.length} input(s) (first: input ${oneSided[0].input}, ${oneSided[0].side})${where}; the other inputs showed no difference`, unit, bound, ran: n - skipped.length };
   if (skipped.length && skipped.length >= n - (harnessAsk ? 1 : 0) && !diffs.length) return { verdict: 'ASK', reason: `every input timed out (${skipped.length} of ${n})${where}`, unit, bound };
   const handlerRun = sawJsx ? { models: { parent: descriptorsOf(parent, unit, { project }), candidate: descriptorsOf(candidate, unit, { project }) }, stats: newHandlerStats() } : null; // the descriptors of the unit's handlers, read once per side, applied at every fire of the sequences and the finite lane
