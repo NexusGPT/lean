@@ -272,6 +272,17 @@ export function specOf(file, unitName, opts = {}) {
     ts.forEachChild(n, walk);
   };
   walk(u.body);
+  // (lane w9al) a unit that hands a value to the platform's URL parser (the global `fetch`, `new URL`, `new Request`, read
+  // from the standard library's declarations) meets strings the parser admits, as a unit that matches a pattern meets
+  // strings of that pattern: a drawn word is no URL, so the request is refused before it is made and nothing after it runs.
+  // LEAN_BREAK=url-strings: no such string
+  if (!broken('url-strings')) {
+    let parses = false;
+    const platform = (id) => { try { const ds = checker.getSymbolAtLocation(id)?.declarations ?? []; return ds.every((d) => d.getSourceFile().isDeclarationFile); } catch { return false; } }; // the standard library's (or no declaration: a script without lib)
+    const walkUrl = (n) => { if (parses) return; if (((ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'fetch') || (ts.isNewExpression(n) && ts.isIdentifier(n.expression) && ['URL', 'Request'].includes(n.expression.text))) && platform(n.expression)) parses = true; else ts.forEachChild(n, walkUrl); };
+    walkUrl(u.body);
+    if (parses) for (const v of URL_STRINGS) if (!strings.includes(v)) strings.push(v);
+  }
   // a unit that compares lengths meets strings at those lengths: the boundary of a cut-off is where a change shows
   if (usesLength) for (const v of [...literals]) if (Number.isInteger(v) && v >= 0 && v <= 2000) { const str = 'x'.repeat(v); if (!strings.includes(str)) strings.push(str); }
   // the receiver's fields and methods, and every fake module's imported members, typed the same way
@@ -448,6 +459,8 @@ function admits(spec, v, optional, defs, d = 0) {
 // '0x1A' and '0b11' are numbers to Number alone; 'Infinity' to Number and parseFloat; '.5' to all but parseInt; '-0' is
 // a signed zero), so a change of one conversion for another, or of its radix, meets an input that tells them apart.
 // LEAN_BREAK=converted-text: a converted leaf draws as before
+// (lane w9al) the strings the platform's URL parser admits that a URL-parsing unit meets (spec above): an origin, and a path with a query
+export const URL_STRINGS = ['https://example.com/', 'https://example.com/a/b?c=1'];
 export const CONVERTED_TEXT = ['', ' ', '1.5', '12px', '0x1A', '1e3', 'Infinity', '0b11', '.5', '-0', '1_000'];
 // the boundary of one usage node against a spec: the compared values the spec admits, then a draw, then the falsy
 function boundaryOf(node, spec, optional, defs) {

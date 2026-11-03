@@ -15,10 +15,23 @@
 //                     the unit's value holds the function, and calls a method on its holder (handed.ts makeAdder, tally)
 //   new-test-callbacks exec/new-unit.mjs callbackCalls: a call whose only requests call a callback it was handed is a
 //                     case; the test passes a spy answering what lean's fake answered and asserts the calls (handed.ts mapAll)
-// Plain checks (no mechanism of their own): a unit that asks the world gets no test (world.ts fetchJson: "no closed call");
-// a helper no export reaches gets no test (calc.ts helper: "not exported"); a promise-returning unit awaits (later: resolves);
-// a handed-out function that asks the world gets no test, with that reason (handed.ts reader); the node:test dialect
-// asserts a handed-out function and a callback's calls with node:assert alone (node-runner/handed.ts).
+//   new-test-world    exec/fake.mjs answerOf + exec/new-unit.mjs runNew + exec/new-test.mjs worldOf: a call that asked the
+//                     world is a case with lean's answers (world.ts fetchJson: a test whose self-check passes, world 0)
+//   new-test-stubs    exec/new-test.mjs stubsOf: the answers as the runner's stubs (world.ts readConfig: vi.mock of node:fs)
+//   new-test-calls    exec/new-test.mjs callsOf: the requests asserted (world.ts saveNote: the write's path and content)
+//   url-strings       exec/spec.mjs: a unit that hands a string to the URL parser meets URLs (fetchJson: a response stubbed)
+//   new-test-drive-stubs exec/new-test.mjs usableCase/handedBody (lane w9as): a case that asked the world and handed out a
+//                     function is called under the case's stubs, its drives' requests answered in request order (joint.ts
+//                     loader: a drive's file read is node:fs mocked; since: the clock of the call, drives closed)
+//   new-test-callback-stubs exec/new-unit.mjs callbackCalls `others` (lane w9as): a callback's calls beside a request the
+//                     world's stubs answer get a spy (joint.ts tagAll: the spy and the clock)
+// Plain checks (no mechanism of their own): the clock read once is fake timers (stamp); Math.random is spied (pick); an
+// argument lean answers member by member is an object of its answers (describeUser); a unit that asks the world where no
+// stub answers gets no test, its reason naming the surface (world.ts elapsed: performance); a helper no export reaches
+// gets no test (calc.ts helper: "not exported"); a promise-returning unit awaits (later: resolves); a handed-out function
+// that asks the world where no stub answers gets no test, with that reason (handed.ts reader); the node:test dialect
+// asserts a handed-out function and a callback's calls with node:assert alone (node-runner/handed.ts), and a callback's
+// spy beside a hand stub of the clock restored in `finally` (node-runner/joint.ts).
 //
 //   node tests/new-unit-test.mjs           each check green
 //   node tests/new-unit-test.mjs --break   each check once with its mechanism switched off: every one must be red
@@ -38,7 +51,7 @@ function lean(args, mechanism) {
 const records = (r) => r.certificate?.newUnit?.records ?? [];
 const proposed = (r) => records(r).find((x) => x.kind === 'new:proposed-test') ?? null;
 const coverageTest = (r) => records(r).find((x) => x.kind === 'new:coverage' && x.phase === 'test') ?? null;
-const calc = path.join(fixtures, 'calc.ts'), handed = path.join(fixtures, 'handed.ts');
+const calc = path.join(fixtures, 'calc.ts'), handed = path.join(fixtures, 'handed.ts'), world = path.join(fixtures, 'world.ts'), joint = path.join(fixtures, 'joint.ts');
 const cache = new Map();
 const run = (unit, file = calc, m = null, n = 24) => { const k = `${file}|${unit}|${m}|${n}`; if (!cache.has(k)) cache.set(k, lean(['--candidate', file, '--unit', unit, '--n', String(n)], m)); return cache.get(k); };
 
@@ -73,9 +86,45 @@ const checks = [
     const ok = !!proposed(r) || !!coverageTest(r);
     return { ok, detail: proposed(r) ? 'proposed' : coverageTest(r)?.reason ?? 'neither record' };
   }],
-  [null, 'a unit that asks the world gets no test, with the reason', () => {
-    const r = run('fetchJson', path.join(fixtures, 'world.ts'), null, 12); const c = coverageTest(r);
-    const ok = !proposed(r) && !!c && /no closed call/.test(c.reason);
+  // (lane w9al) a unit that asks the world: its test stubs lean's answers and asserts the requests (design/w9al-world-stubs.md)
+  ['new-test-world', 'a unit that asks the world gets a test from its calls and lean\'s answers to them', (m) => {
+    const r = run('fetchJson', world, m); const t = proposed(r); const c = t?.check;
+    const ok = !!t && t.world?.asked > 0 && t.world.surfaces.includes('global:fetch') && !!c && c.selected === t.cases && c.passed === t.cases && c.world === 0;
+    return { ok, detail: t ? `world ${JSON.stringify(t.world)}, check ${JSON.stringify(c)}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  ['new-test-stubs', 'the answers are stubs in the runner\'s dialect, and the test passes under them', (m) => {
+    const r = run('readConfig', world, m); const t = proposed(r); const text = t?.text ?? ''; const c = t?.check;
+    const ok = /vi\.mock\("node:fs", /.test(text) && /vi\.mocked\(stub_node_fs\.readFileSync\)\.mock(?:ReturnValue|ImplementationOnce)/.test(text) && !!c && c.passed === t.cases && c.world === 0;
+    return { ok, detail: t ? `${text.split('\n').filter((l) => /vi\.(?:mock|mocked)\(/.test(l)).slice(0, 2).join(' | ').slice(0, 140)}; check ${JSON.stringify(c)}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  ['new-test-calls', 'the requests the unit made are asserted (a write\'s path and content)', (m) => {
+    const r = run('saveNote', world, m); const t = proposed(r); const text = t?.text ?? '';
+    const ok = !!t && t.world?.calls > 0 && /expect\(stub_node_fs\.writeFileSync\)\.toHaveBeenNthCalledWith\(1, "[^"]*note\.txt", /.test(text) && t.check?.passed === t.cases;
+    return { ok, detail: t ? `calls ${t.world?.calls}: ${text.split('\n').find((l) => /NthCalledWith/.test(l))?.trim() ?? 'none asserted'}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  ['url-strings', 'a unit that hands a string to the URL parser meets one it admits (the request is made)', (m) => {
+    const t = proposed(run('fetchJson', world, m)); const text = t?.text ?? '';
+    const ok = /mockResolvedValueOnce\(new Response\(/.test(text) && /\.resolves\./.test(text);
+    return { ok, detail: text.split('\n').find((l) => /new Response/.test(l))?.trim().slice(0, 140) ?? coverageTest(run('fetchJson', world, m))?.reason ?? 'no response stubbed' };
+  }],
+  [null, 'the clock read once is fake timers at lean\'s instant', () => {
+    const t = proposed(run('stamp', world)); const text = t?.text ?? '';
+    const ok = /vi\.useFakeTimers\(/.test(text) && /vi\.setSystemTime\(17\d{11}\);/.test(text) && t.check?.passed === t.cases;
+    return { ok, detail: text.split('\n').filter((l) => /setSystemTime|toEqual/.test(l)).map((l) => l.trim()).join(' | ') || coverageTest(run('stamp', world))?.reason || 'no record' };
+  }],
+  [null, 'Math.random is spied with lean\'s draws', () => {
+    const t = proposed(run('pick', world)); const text = t?.text ?? '';
+    const ok = /vi\.spyOn\(Math, 'random'\)\.mockReturnValueOnce\(0\.\d+\)/.test(text) && t.check?.passed === t.cases;
+    return { ok, detail: text.split('\n').find((l) => /spyOn/.test(l))?.trim() ?? coverageTest(run('pick', world))?.reason ?? 'no record' };
+  }],
+  [null, 'an argument lean answers member by member is passed as an object of its answers, its calls asserted', () => {
+    const t = proposed(run('describeUser', world)); const text = t?.text ?? '';
+    const ok = !!t && t.world?.surfaces.includes('input') && /const input_arg0 = \{ find: vi\.fn\(\)\.mock(?:Resolved|Rejected)ValueOnce\(/.test(text) && /expect\(input_arg0\.find\)\.toHaveBeenNthCalledWith\(1, /.test(text) && t.check?.passed === t.cases && t.check.world === 0;
+    return { ok, detail: t ? text.split('\n').find((l) => /const input_arg0/.test(l))?.trim().slice(0, 150) ?? 'no input stub' : coverageTest(run('describeUser', world))?.reason ?? 'no record' };
+  }],
+  [null, 'a unit that asks the world where no stub answers gets no test, and the reason names the surface', () => {
+    const r = run('elapsed', world); const c = coverageTest(r);
+    const ok = !proposed(r) && !!c && /performance/.test(c.reason);
     return { ok, detail: c?.reason ?? (proposed(r) ? 'a test was proposed' : 'no coverage record') };
   }],
   [null, 'a helper no export reaches gets no test, with the reason', () => {
@@ -113,6 +162,23 @@ const checks = [
     const file = path.join(fixtures, 'node-runner', 'handed.ts'); const a = proposed(run('counter', file)), b = proposed(run('mapAll', file));
     const ok = !!a && !!b && a.dialect === 'node:test' && /assert\.strictEqual\(typeof out\.next, 'function'\)/.test(a.text) && /assert\.deepStrictEqual\(out\.next\(\), \d+\)/.test(a.text) && /const fCalls: unknown\[\]\[\] = \[\];/.test(b.text) && /assert\.deepStrictEqual\(fCalls, \[\[/.test(b.text) && a.check?.passed === a.cases && b.check?.passed === b.cases;
     return { ok, detail: `${a ? a.dialect : 'counter: none'}; ${b ? (b.text.split('\n').find((l) => /fCalls, \[\[/.test(l)) ?? 'no call assertion').trim() : 'mapAll: none'}` };
+  }],
+  // (lane w9as) the two lanes in one case: a handed-out function or a callback beside the world's stubs (design/w9as-merge.md)
+  ['new-test-drive-stubs', 'a handed-out function that asks the world is called under the stubs of lean\'s answers', (m) => {
+    const a = proposed(run('loader', joint, m)), b = proposed(run('since', joint, m)); const ta = a?.text ?? '', tb = b?.text ?? '';
+    const ok = !!a && !!b && a.drives?.calls >= 3 && a.world?.stubs >= 3 && /vi\.mock\("node:fs", /.test(ta) && /const out = loader\(/.test(ta) && /out\("[^"]*"\)/.test(ta) && /expect\(stub_node_fs\.readFileSync\)\.toHaveBeenNthCalledWith\(1, /.test(ta) && a.check?.passed === a.cases
+      && b.drives?.calls >= 1 && /vi\.setSystemTime\(17\d{11}\);/.test(tb) && /const out = since\(/.test(tb) && /expect\(out\(\)\)\.toEqual\("[^"]*@17\d{11}"\)/.test(tb) && b.check?.passed === b.cases;
+    return { ok, detail: `loader: ${a ? `drives ${JSON.stringify(a.drives)}, world ${JSON.stringify(a.world)}, check ${JSON.stringify(a.check)}` : coverageTest(run('loader', joint, m))?.reason ?? 'no record'}; since: ${b ? (tb.split('\n').find((l) => /out\(\)/.test(l)) ?? 'no drive').trim() : coverageTest(run('since', joint, m))?.reason ?? 'no record'}` };
+  }],
+  ['new-test-callback-stubs', 'a callback called beside a request of the world is a spy, the request a stub', (m) => {
+    const t = proposed(run('tagAll', joint, m)); const text = t?.text ?? '';
+    const ok = !!t && t.callbacks?.calls >= 1 && t.world?.surfaces.includes('clock') && /const f = vi\.fn\(\)\.mockReturnValueOnce\(/.test(text) && /vi\.setSystemTime\(17\d{11}\);/.test(text) && /expect\(f\)\.toHaveBeenNthCalledWith\(1, /.test(text) && t.check?.passed === t.cases && t.check.world === 0;
+    return { ok, detail: t ? `callbacks ${JSON.stringify(t.callbacks)}, world ${JSON.stringify(t.world)}, check ${JSON.stringify(t.check)}` : coverageTest(run('tagAll', joint, m))?.reason ?? 'no record' };
+  }],
+  [null, 'the node:test dialect spies on a callback beside a hand stub of the clock, restored in finally', () => {
+    const t = proposed(run('tagAll', path.join(fixtures, 'node-runner', 'joint.ts'))); const text = t?.text ?? '';
+    const ok = !!t && t.dialect === 'node:test' && /const fCalls: unknown\[\]\[\] = \[\];/.test(text) && /Date\.now = \(\.\.\.args\) =>/.test(text) && /\} finally \{ Date\.now = nowStub\.saved; \}/.test(text) && t.check?.passed === t.cases;
+    return { ok, detail: t ? `${t.dialect}; ${(text.split('\n').find((l) => /finally/.test(l)) ?? 'no restore').trim()}` : coverageTest(run('tagAll', path.join(fixtures, 'node-runner', 'joint.ts')))?.reason ?? 'no record' };
   }],
 ];
 

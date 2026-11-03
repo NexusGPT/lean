@@ -185,12 +185,15 @@ function fakePathsOf(v, out = new Set(), depth = 0) {
   for (const x of Array.isArray(v) ? v : Object.values(v)) fakePathsOf(x, out, depth + 1);
   return out;
 }
-export function callbackCalls(shown, trace, env) {
+// `others` (lane w9as): a request that is no call of a drawn callback is left to the world's stubs (new-test.mjs worldOf),
+// which answer it or refuse the case; without it such a request makes the call no callback case.
+// LEAN_BREAK=new-test-callback-stubs: never `others`, so a callback's calls beside a stubbed request get no spy
+export function callbackCalls(shown, trace, env, { others = false } = {}) {
   if (broken('new-test-callbacks')) return trace.length ? null : [];
   const paths = [...fakePathsOf(shown)].filter((p) => FN_FAKE.test(p));
   const calls = new Map(paths.map((p) => [p, []])), seen = new Map();
   for (const t of trace) {
-    if (t.op !== 'call' || !calls.has(t.path)) return null;
+    if (t.op !== 'call' || !calls.has(t.path)) { if (others) continue; return null; }
     if (JSON.stringify(t.args ?? []).includes('"$fn"')) return null; // the unit hands the callback a function: lean's fake runs it, a spy would not
     const k = (seen.get(t.path) ?? 0) + 1; seen.set(t.path, k);
     const a = env.callAnswers?.get(`${t.path}()#${k}`);
@@ -206,6 +209,7 @@ export async function loadCandidate(file, env, options, ms, sources = new Map(),
   const host = sandbox(env, path.dirname(file));
   if (newProbes) vm.runInContext('globalThis', host.ctx)[newProbes.stateName] = env.siteState; // the probes' state (new-unit tests)
   if (extra.globals) { const g = vm.runInContext('globalThis', host.ctx); for (const [k, v] of Object.entries(extra.globals)) g[k] = v; }
+  extra.onContext?.(vm.runInContext('globalThis', host.ctx)); // (lane w9al) a proposed test's stubs set the unit's globals (new-tests.mjs makeMocks)
   const cache = new Map(), fakeNames = new Set(), edges = [];
   // external modules keep the recording fakes and React protocol of paired execution
   function fake(specifier, names) {
@@ -455,7 +459,9 @@ export async function runNew(opts) {
     if (newProbes) env.siteState.hits = new Set(); // the statements the call completes, not the load
     env.callAnswers = new Map(); // what each call of a fake answered (lane w9am: a callback's spy answers the same)
     handedDraws(env, spec.handedParams);
+    if (!broken('new-test-world')) env.answers = []; // (lane w9al) the world's answers to this call, its drives' included, in request order (fake.mjs answerOf)
     const observation = await observe({ env, unit: picked }, spec, inputs, ms);
+    const answers = env.answers ?? []; env.answers = null;
     if (observation.harness) return stop({ inputs: i, reason: `input ${i}: ${observation.harness}` });
     const threw = Object.hasOwn(observation.outcome, 'threw');
     if (threw) { faults++; if (faultExamples.length < 3) faultExamples.push({ input: i, error: observation.outcome.threw }); }
@@ -469,16 +475,24 @@ export async function runNew(opts) {
     if (ok !== 'yes') { reach.notAdmitted++; continue; }
     reach.admitted++;
     const world = broken('closed-call') ? [] : [...reach.graphWorld, ...observation.trace.map(({ op, path }) => `${op} ${path}`)];
-    // a case's value is the one the call returned, before the drives called what it handed out (they may write into it)
-    const caseOf = (callbacks) => ({ i, step, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: observation.drives?.length ? observation.outcome.returned : render(observation.raw?.returned) }, drives: drivesOf(observation.drives, env), ...(callbacks?.length ? { callbacks } : {}), thenable, sync });
+    // every admitted call is a case (new-test.mjs): a closed one as it ran; one that asked the world with what the world
+    // answered (lane w9al), so its test stubs those answers; the drives of what it handed out (lane w9am), whose requests
+    // are the case's world too (lane w9as: the stubs answer them in request order); the calls of a callback it was handed
+    // (lane w9am), which the test's spy answers. A case's value is the one the call returned, before the drives called what
+    // it handed out (they may write into it). A closed call that drew Math.random carries its draws in its world.
+    const requests = requestsOf(observation);
+    const caseOf = (callbacks) => ({ i, step, args: shown, reached: newProbes ? newProbes.statements.filter((t) => env.siteState.hits?.has(t)) : null, outcome: threw ? { threw: render(observation.raw?.threw), declared: !!declaredThrow(decl, observation.raw?.threw) } : { returned: observation.drives?.length ? observation.outcome.returned : render(observation.raw?.returned) }, drives: drivesOf(observation.drives, env), ...(callbacks?.length ? { callbacks } : {}), thenable, sync,
+      ...(world.length || answers.length || requests.length ? { world: { answers, trace: requests.map(({ op, path: p, args }) => ({ op, path: p, args })), pending: [...observation.pending.map((x) => x.op), ...(observation.drives ?? []).flatMap((d) => (Array.isArray(d.pending) ? d.pending.map((x) => x?.op ?? 'pending') : d.pending ? ['pending'] : []))], graph: reach.graphWorld } } : {}) });
+    const joint = !broken('new-test-world') && !broken('new-test-callback-stubs'); // (lane w9as) a callback's calls beside requests the world's stubs answer
     if (world.length) {
       reach.world++; for (const w of world.slice(0, 3)) reach.worldOps.set(w, (reach.worldOps.get(w) ?? 0) + 1);
-      const callbacks = reach.graphWorld.length || broken('new-test-cases') ? null : callbackCalls(shown, requestsOf(observation), env); // (lane w9am) every request a call of a callback it was handed: a case of the test alone
-      if (callbacks?.some((c) => c.calls.length)) cases.push({ ...caseOf(callbacks), world: true });
+      if (broken('new-test-cases')) continue;
+      const callbacks = reach.graphWorld.length && !joint ? null : callbackCalls(shown, requests, env, { others: joint }); // (lane w9am) the calls of a callback it was handed: the spy's
+      if (!broken('new-test-world') || callbacks?.some((c) => c.calls.length)) cases.push(caseOf(callbacks)); // (lane w9al) LEAN_BREAK=new-test-world: only a case whose every request is a callback's
       continue;
     }
     reach.closed++;
-    if (!broken('new-test-cases')) cases.push(caseOf(callbackCalls(shown, requestsOf(observation), env) ?? []));
+    if (!broken('new-test-cases')) cases.push(caseOf(callbackCalls(shown, requests, env, { others: joint }) ?? []));
     const named = { input: i, args: shown, ...(step ? { edge: declared.params[step.param]?.name ?? `arg${step.param}` } : {}) };
     const wide = declared.params.some((p, k) => p.spec?.all && !(p.optional && inputs[k] === undefined)); // admitted only because a parameter's type is any or unknown, which admit every value: a validator's own rejection reads so
     if (threw) {
@@ -529,7 +543,7 @@ export async function runNew(opts) {
   // (new-unit tests) a test for the unit from its closed calls: the record new:proposed-test, or a coverage record naming why none
   if (!broken('new-test')) {
     let proposed;
-    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, handedParams: spec.handedParams ?? null, nullable, cases, statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
+    try { proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported: exportKind(reading, unit) }, decl, declared, handedParams: spec.handedParams ?? null, nullable, cases, specifiers: [...fakes].filter((f) => !/^(?:module|global):/.test(f)), statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
     catch (e) { proposed = { kind: 'new:coverage', phase: 'test', reason: `the test writer failed: ${String(e?.message ?? e).slice(0, 200)}` }; }
     if (proposed) book.add(proposed, `${proposed.kind} proposed`);
   }
