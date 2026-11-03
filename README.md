@@ -13,7 +13,7 @@
 lean is a differential equivalence checker. Give it the old version and the new version of a function, and the scope of what was meant to change. It decides whether the two behave the same everywhere else: by proof when it can, by exhaustive exploration when the state is finite, by execution when it must, and it says which. The code that ships is the code it reads: TypeScript as written, inside its project, with its `tsconfig.json`, its imports and its types.
 
 - **Nothing to rewrite.** No annotations, no wrapper library, no model in the loop.
-- **Nothing to trust.** Every verdict carries the hashes of both sides, the theorem and the prover version, or the inputs, the seed and the bound. No verdict comes from a model's opinion; no `assume` anywhere a proof can see.
+- **Nothing to trust.** Every verdict carries the hashes of both sides, the theorem and the prover version, or the inputs, the seed and the bound. No verdict comes from a model's opinion; no `assume` anywhere a proof can see. A proof that reads a call through a fact lane B confirmed (the callee writes none of what it is handed) names that fact in the certificate's `lanes.A.assumptions`.<!-- langs/ts/check.mjs (the ASSUME lines read into lanes.A.assumptions); node langs/ts/tests/callee-fact.mjs: "callee-fact: all hold (tags PASS-proved under 1 assumption(s), ...)" -->
 - **Whole programs, not toy functions.** Services with injected ports, async pipelines, exceptions across calls, classes, generators, references into shared objects, Map and Set cells, timers, React components with hooks, effects and children.
 
 TypeScript is the first language. The core (the theorem, the checker, the certificate, the conformance suite) is language-agnostic; each language adds a lint, a translator and an execution harness under `langs/`. Python is at its second milestone ([`langs/py/subset.md`](langs/py/subset.md)).
@@ -55,17 +55,27 @@ A `PASS-decided` is as final as a proof for that component; a sibling `Mutant` t
 - **Lane B runs both versions** in one process against the same recording fakes, on inputs drawn from the parameter types, boundary values first. It compares what each call returns or throws, the objects reached, the ordered effects and the pending work. A difference is a `WITNESS`, with the input.
 - **Lane A proves them equal.** Both sides become Dafny; every effect is a step of an explicit world, so two reads of a clock are never "equal by accident". One lemma per changed function says: outside the scope, `f_parent(x) == f_candidate(x)` for every input and every world. Dafny and Z3 decide it.
 - **A component finite by its types** is explored on every click order from every prop value, to the end of its state space. The full account (what "equal" means, the certificate, how a function that calls a changed function is judged) is [`docs/how-it-works.md`](docs/how-it-works.md).
+
+**Lane B goes after the changed line.** A drawn input often reaches a change and shows nothing: the difference is masked by what the world answers, needs an argument left out, or waits behind a timer. Lane B probes the values a changed line computes, then searches: it moves the world's answers (absent, null, a handle, a fault), first toward the literals the code compares them against; it calls a function again with each optional trailing argument left out; it fires awaited timers on the virtual clock. A parent that fails to load in the fake world gives no input at all, so the loader's fixes count too. Each row is a pair of the suite; the last column is the same run with that mechanism switched off (`LEAN_BREAK=<name>`):
+
+| pair, unit | the change | now | mechanism off |
+|---|---|---|---|
+| [`omitted_args_unit`](langs/ts/tests/pairs/omitted_args_unit/), `pad` | the width used when `arguments.length < 2` goes from 4 to 6 | **WITNESS**: `pad("vftsi")` is `"vftsi"` against `".vftsi"` | PASS-bounded (`w9af-omitted-args`) |
+| [`world_await`](langs/ts/tests/pairs/world_await/), `backoff` | the value returned after `await` on a 1 s `setTimeout` | **WITNESS**: `"retried"` against `"again"` | PASS-bounded (`world-clock`) |
+| [`world_masked`](langs/ts/tests/pairs/world_masked/), `register` | a flipped condition on the name handed to a callee, read only when the cache has no entry | **WITNESS** from the world `getData()#1.<key>.entry = undefined` | PASS-bounded (`w9l-bounds`) |
+| [`shadowed_intrinsic_calls`](langs/ts/tests/pairs/shadowed_intrinsic_calls/), `count` | a CommonJS module that binds `Object` at its top, as node's own lib does | **WITNESS**: `0` against `-1` | ASK, the parent fails to load (`emit-intrinsics-hoisted`) |
+<!-- each row: node langs/ts/check.mjs --parent <pair>/parent.ts --candidate <pair>/candidate.ts --unit <unit> --no-project, then the same under LEAN_BREAK=<name> (langs/ts/tests/break.mjs); designs: langs/ts/design/w9af-omitted-args.md, world-calls.md, w9l-bounded-and-moves.md, w9ac-compare-literals.md -->
 ## The verdicts
 
 <p align="center"><img src="docs/verdicts.svg" width="100%" alt="The five verdicts, each with what backs it and a real run"></p>
 
-`check.mjs` reports the strongest verdict the evidence supports: `WITNESS`, then `PASS-proved`, `PASS-decided`, `PASS-bounded`, `ASK`. A bounded pass never becomes a proof. Two more sit outside the order: `REFUSE` (a construct with no faithful reading, or a local import that cannot load) and `NEW` (a function with no parent, run with no equality claim).
+`check.mjs` reports the strongest verdict the evidence supports: `WITNESS`, then `PASS-proved`, `PASS-decided`, `PASS-bounded`, `ASK`. A bounded pass never becomes a proof. Two more sit outside the order: `REFUSE` (a construct with no faithful reading, or a local import that cannot load) and `NEW` (a function with no parent, run with no equality claim: its record says what it does on drawn inputs and proposes a test, [below](#a-function-the-pull-request-adds)).
 
-**A function outside the proof subset still gets an answer.** The lint names the construct and lane A says `ASK`, but lane B still runs both versions: a `WITNESS` or a `PASS-bounded`, never silence. Here the candidate also adds one to the caller's first positive row and takes it off the result, so the return value never changes ([`alias_result`](langs/ts/tests/pairs/alias_result/), `bump`):
+**A function outside the proof subset still gets an answer.** The lint names the construct, and lane A reads it as one opaque step or says `ASK`, but lane B still runs both versions: a `WITNESS` or a `PASS-bounded`, never silence. Here the candidate also adds one to the caller's first positive row and takes it off the result, so the return value never changes ([`alias_result`](langs/ts/tests/pairs/alias_result/), `bump`):
 
 ```
 $ node langs/ts/check.mjs --parent langs/ts/tests/pairs/alias_result/parent.ts --candidate langs/ts/tests/pairs/alias_result/candidate.ts --unit bump --no-project
-WITNESS -> bump.json   # the lint refuses line 59 (alias-mutation); input 5: both return 1, the first row is { n: 1 } against { n: 2 }
+WITNESS -> bump.json   # the lint grades line 59 an opaque block (alias-mutation); input 5: both return 1, the first row is { n: 1 } against { n: 2 }
 ```
 ## What it reads
 
@@ -121,10 +131,10 @@ Beside it: `statement`, `rollback` (throws on an unknown account) and a class `L
 
 | function | verdict | what the certificate says |
 |---|---|---|
-| `applyAll` | **WITNESS** | input 12: `posted: 2` against `posted: 0`; the parent calls `notify` twice, the candidate never |
+| `applyAll` | **WITNESS** | input 17: `posted: 1` against `posted: 0`; the parent calls `notify` once, the candidate never |
 | `statement` | **PASS-proved** | the loop with `continue` became a `filter` and a `map`: `Equal_statement: true`, `5 verified, 0 errors` |
 | `rollback` | **WITNESS** | input 0: the parent `threw: Error "unknown account "`, the candidate `returned: 994` |
-| `Ledger.post` | **WITNESS** | its own text is a refactor, but it calls the changed `applyAll`: program 3, `posted: 2` against `posted: 1`, and the receiver's `count` differs (2 against 1) |
+| `Ledger.post` | **WITNESS** | its own text is a refactor, but it calls the changed `applyAll`: program 10, `posted: 3` against `posted: 2`, and the receiver's `count` differs (3 against 2) |
 | `Ledger.reset` | **PASS-proved** | the old count read through a local: `Equal_ledger_reset: true`, `1 verified, 0 errors` |
 | `Ledger.posted` | **PASS-proved** | untouched: `1 verified, 0 errors` |
 
@@ -145,6 +155,40 @@ $ node langs/ts/pr.mjs --repo . --base 85136f1~1 --head 85136f1 --scope unitDisc
 **Impact:** the asked rule is reported `IN-SCOPE`; the slip nobody asked for is a `WITNESS` at `pricing.ts:59`, and so are the two callers whose text never changed. A test suite passes this pull request unless a test sits exactly on the threshold. Intake, budgets, reuse: [`docs/pull-requests.md`](docs/pull-requests.md).
 
 **In CI**, [`langs/ts/ci/comment.mjs`](langs/ts/ci/) posts this table as one comment, updated on every push, and `--block witness` fails the check on a `WITNESS` row. Options, refusal records and inline comments: [`docs/pull-requests.md`](docs/pull-requests.md#in-ci).
+
+#### A function the pull request adds
+
+A new function has no parent to be equal to. Its row is `NEW`, and lean runs it on inputs drawn from its declared types. A call the types admit and that asks nothing of the world is a closed call. Each closed call is an observation, and the record says what they show: a throw at an edge value (`new:fault`), a `NaN` out of an input that holds none (`new:nan`), a parameter the result never depends on (`new:ignored`: in [`new_unit_facts`](langs/ts/tests/pairs/new_unit_facts/), `pick(a, b)` returns the same value when `b` alone is redrawn, on 6 inputs).<!-- node langs/ts/check.mjs --candidate langs/ts/tests/pairs/new_unit_facts/params.ts --unit pick --no-project: NEW, record new:ignored, param b, trials 6 -->
+
+Then lean writes the test those calls make, in the repository's runner dialect (vitest, jest, mocha or node:test, read from `package.json`). It keeps the cases that complete the statements it probes and that tell apart the mutants it plants in the function. Before proposing the test, it runs it against the candidate under its own runner model ([`exec/new-test.mjs`](langs/ts/exec/new-test.mjs)):
+
+```
+$ node langs/ts/check.mjs --candidate langs/ts/tests/pairs/new_unit_test/candidate.ts --unit bucket --no-project
+NEW -> bucket.json   # new:proposed-test: 5 cases of 200 closed calls, 7 of 7 statements, 15 of 15 planted mutants told apart, 5 of 5 passing
+```
+
+```ts
+it("bucket(NaN, \"v8cf2\") throws", () => {
+  expect(() => bucket(NaN, "v8cf2")).toThrow("not a number: v8cf2");
+});
+it("bucket(-1, \"twelve-chars\") -> \"twelve-chars:negative\"", () => {
+  expect(bucket(-1, "twelve-chars")).toEqual("twelve-chars:negative");
+});
+```
+
+A function that hands out functions gets a test that calls them, in lean's order, on arguments drawn from their declared parameter types. A callback the function is handed becomes a spy that answers what lean's fake answered, and the test asserts its calls ([`new_unit_test_drives`](langs/ts/tests/pairs/new_unit_test_drives/), [design](langs/ts/design/w9am-handed-functions.md)):
+
+```ts
+const out = counter(0);                                  const f = vi.fn().mockReturnValueOnce(1000000000);
+expect(out).toEqual({ next: expect.any(Function),        expect(mapAll([""], f)).toEqual([1000000000]);
+                      reset: expect.any(Function) });    expect(f).toHaveBeenCalledTimes(1);
+expect(out.next()).toEqual(1);                           expect(f).toHaveBeenNthCalledWith(1, "");
+```
+<!-- node langs/ts/check.mjs --candidate langs/ts/tests/pairs/new_unit_test_drives/candidate.ts --unit counter|mapAll --no-project: NEW; counter drives {cases 1, calls 6}, 5 of 5 statements; mapAll callbacks {cases 2, calls 1}, 4 of 4 statements -->
+
+**Impact:** the reviewer of a new function gets its behaviour written down as a test that already passes, with the share of its statements and planted mutants that test covers. The test records the function as submitted. It finds no bug by itself.
+
+Where no test is written, the record says why: a function no export names, a class method or property, a function whose every closed call returns or hands out a value of lean's world (a stub is needed, and the writer builds no stubs yet), or one that arms a timer.<!-- langs/ts/exec/new-test.mjs writeNewTest: the coverage reasons "not exported", "is a member", "(needs a stub)"; langs/ts/design/w9am-handed-functions.md "What stays out" -->
 
 ### 3. In the editor
 
@@ -213,7 +257,7 @@ lean judges values, the reachable object graph, effects, schedules and a compone
 
 The rule in one line: **a function owns what it creates, and everything else flows through its arguments, its result, and the world.** Code written that way gets more than a test: the next change to it is a theorem. Two pairs: a function written the usual way, then lean-style. Each gets the same later refactor (`*.next.ts`), and lean checks it on both. Every check ran with `--no-project --n 30 --dafny-seconds 30`; the `#` lines are read from the certificate. Files: [`examples/showcase/`](examples/showcase/); run the commands from that folder.
 
-A local alias of a value you were handed (`const t = cart.totals; t.net += price`) was once refused by the lint; the heap core reads it now, so `examples/showcase/usual/cart.ts` proves against its refactor as the lean-style file does. A `const` second name of a parameter that holds an instance of a class of the same file is carried by the value reading too, a write through either name rebinding the other, as long as neither is rebound, handed to a call or read by a closure (`node langs/ts/tests/carried-alias.mjs`: `carried-alias: all hold`). Two habits the lint still asks for:
+A local alias of a value you were handed (`const t = cart.totals; t.net += price`) was once refused by the lint; the heap core reads it now, so `examples/showcase/usual/cart.ts` proves against its refactor as the lean-style file does. A `const` second name of a parameter that holds an instance of a class of the same file is carried by the value reading too, a write through either name rebinding the other, as long as neither is rebound, handed to a call or read by a closure (`node langs/ts/tests/carried-alias.mjs`: `carried-alias: all hold`). Two habits still decide whether a change is proved:
 
 **1. A booking: write an effect under a condition as a branch, not an expression.** `confirm(b: Booking, late: boolean): number`; the refactor computes the price before the note (`const price = b.nights * b.rate`) and returns it.
 ```ts
@@ -221,11 +265,10 @@ A local alias of a value you were handed (`const t = cart.totals; t.net += price
 late && b.notes.push("late arrival");         if (late) b.notes.push("late arrival");
 return b.nights * b.rate;                     return b.nights * b.rate;
 ```
+The lint admits `usual/booking.ts` but grades the expression statement opaque (`usual/booking.ts:4:3  unsupported-syntax  [opaque: statement]`, exit 0): lane A reads it as one step it cannot see into, and the reordering is not proved.
 ```
-$ node langs/ts/lint/lint.mjs usual/booking.ts --advice
-usual/booking.ts:4:3  unsupported-syntax  only assignments, ++/--, calls, and await may stand as statements
 $ node langs/ts/check.mjs --parent usual/booking.ts --candidate usual/booking.next.ts --unit confirm
-PASS-bounded -> usual-booking.json   # lanes.A: ASK, translate: outside the subset (unsupported-syntax)
+PASS-bounded -> usual-booking.json   # lanes.A: ASK:doubles-unknown, `late && b.notes.push(...)` (line 4) not encoded
 $ node langs/ts/lint/lint.mjs lean/booking.ts --advice
 lean/booking.ts: inside the subset
 $ node langs/ts/check.mjs --parent lean/booking.ts --candidate lean/booking.next.ts --unit confirm
@@ -258,6 +301,7 @@ The habits one by one, with what each buys: [`docs/writing-provable-code.md`](do
 | | command |
 |---|---|
 | one function, both lanes, one verdict with its certificate | `node langs/ts/check.mjs --parent old.ts --candidate new.ts --unit applyDiscount` (`--unit Class.method`; `--scope scope.json`; `--n`, `--seed`, `--dafny-seconds`, `--dafny-wall-seconds`, `--deep[=k]`, `--sandbox-base <ref>`, `--out verdict.json`) |
+| a function with no parent: its records and a proposed test | `node langs/ts/check.mjs --candidate new.ts --unit f` (`--tests a.test.ts,…` runs the pull request's own tests that name it) |
 | a whole pull request, one table | `node langs/ts/pr.mjs --repo <checkout> --base <ref> [--head <ref>] [--scope f,Class.m] [--preview] [--time-budget <s>] [--unit-budget <n>] [--out report.md]` |
 | lane B alone, in seconds | `node langs/ts/exec/run.mjs --parent old.ts --candidate new.ts --unit f` |
 | the lint, in the terminal or an agent's loop | `node langs/ts/lint/lint.mjs file.ts [--json \| --agent] [--any-type] [--advice]` |
@@ -288,7 +332,9 @@ docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     
 | the front-end layers: a tree to a stated depth with context, resolved Tailwind styles with the project's theme | built |
 | the CI comment and block flag | built; runs on GitHub runners ([pull request #1](https://github.com/NexusGPT/lean/pull/1): the table posted as the comment, the image job building the container and running ten proof-lane pairs inside it) |
 | a container image with Dafny and Z3, so the proof lane needs nothing installed | built (above); one Z3 is looked up once and named in the certificate, and the step cache is keyed by the Dafny and Z3 versions |
-| the readings of the backlog kinds above | in progress, one design note each; landed 2026-10-30: the four type-assertion slots and a held value into an outside callee, strict-mode values, a field read or one-level write after a call as a world read, the faithful number reading on held values; landed 2026-10-31 (v0.1.3, [`CHANGELOG.md`](CHANGELOG.md)): the stage-5 readings, from bitwise operators and class handles to Map and Set copies and discriminated unions, and the type inventory's forms 4 to 7 |
+| the readings of the backlog kinds above | in progress, one design note each; landed 2026-10-30: the four type-assertion slots and a held value into an outside callee, strict-mode values, a field read or one-level write after a call as a world read, the faithful number reading on held values; landed 2026-10-31 (v0.1.3, [`CHANGELOG.md`](CHANGELOG.md)): the stage-5 readings, from bitwise operators and class handles to Map and Set copies and discriminated unions, and the type inventory's forms 4 to 7; landed 2026-11-02: a record's key order handed through a same-file callee, and an await's rejection inside a loop, two readings that had proved units lane B tells apart ([`handed_key_order_callee`](langs/ts/tests/pairs/handed_key_order_callee/), [`async_loop_exit`](langs/ts/tests/pairs/async_loop_exit/)) <!-- lane/w9y-translator-soundness-result.md; commit 373a235a6a (2026-11-02); breaks same-file-key-order, async-loop-exit --> |
+| lane B's searches toward the changed line: the world's answers moved, guided by the literals the code compares them against; trailing arguments left out; awaited timers on the virtual clock | built; the table [above](#how-it-works) names a pair for each that is red with its mechanism off |
+| a function with no parent: outcome facts (`new:fault`, `new:nan`, `new:ignored`), a proposed test in the repository's runner dialect, handed-out functions and callbacks asserted | built; no world stubs yet, so a function whose calls reach the world gets no test |
 | screen analysis, the gate, the benchmark, containment | in DA ([link](https://github.com/NexusGPT/differential-attestation)) |
 | more languages through the conformance suite | Python at its second milestone: the lint names the rewrite, lane B in the TypeScript record shape, five pairs ([`langs/py/design/milestone-2.md`](langs/py/design/milestone-2.md)) |
 
@@ -296,7 +342,7 @@ docker run --rm lean:local node langs/ts/tests/run.mjs --pair readme_ledger     
 
 lean says `ASK` rather than guess. Today it asks on: a `while` loop with no measure it can derive, a loop reshaped into a different loop when its body does more than guard and push, a result that may share an input (`ASK:identity`), a suspended render, two asynchronous schedules racing beyond the explored bound, a changed signature without a declared adapter (`ASK:interface`), and a difference that passes only through a module lean cannot load.
 
-Lane B's bound is real: a frozen world, generated inputs, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. Measured figures: [`langs/ts/design/`](langs/ts/design/). Every Dafny call, the checker's own included, runs under a wall cap ((`--dafny-seconds` + 60) s per unit by default, `--dafny-wall-seconds` to set it), and on the cap lean kills Dafny's whole process tree and lane A reads `ASK:timeout`, never a proof (`node langs/ts/tests/wall-cap.mjs`: `PASS-bounded: not proved: wall cap 2 s exceeded`). What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
+Lane B's bound is real: a frozen world, generated inputs, click sequences to a stated depth. Its word is `PASS-bounded`, and it stays that word. A function with no parent gets no equality claim: its proposed test restates what it did on lean's inputs, and a function whose calls reach the world, a member, or a function no export names gets none. Measured figures: [`langs/ts/design/`](langs/ts/design/). Every Dafny call, the checker's own included, runs under a wall cap ((`--dafny-seconds` + 60) s per unit by default, `--dafny-wall-seconds` to set it), and on the cap lean kills Dafny's whole process tree and lane A reads `ASK:timeout`, never a proof (`node langs/ts/tests/wall-cap.mjs`: `PASS-bounded: not proved: wall cap 2 s exceeded`). What the code under test can reach, what the certificate holds and never holds, and the check behind each line: [`docs/ASSURANCE.md`](docs/ASSURANCE.md) (`node scripts/assurance-check.mjs`).
 ## What lean is not
 
 - **Not a jail.** The sandbox fakes the world, but it is a Node `vm` context, and code that leaves it (through a host intrinsic such as `Buffer.constructor`) reaches the worker process. Measured on Node 24 ([`langs/ts/design/sandbox-boundary.md`](langs/ts/design/sandbox-boundary.md), probe log beside it), that process denies file writes, child processes, native addons, worker threads and file reads outside the given trees. The network stays open, and so do the environment variables lean keeps (`LEAN_*`, `NODE_OPTIONS`, `PATH`, `HOME`, `XDG_CACHE_HOME`): at v0.1.3 a probe connected to a local listener and read three, `HOME LEAN_NET PATH` (`bash fixtures/sandbox/probe.sh`). `LEAN_NET=deny` closes the network at the process's own bindings, and the unit's record names every attempt it refused. A unit with no parent runs in a child under the same permission model. A project's `.gate/sandbox.json`, read from the parent commit and never from the working tree, widens or narrows what lane B may read, write, start and install, and every name it refuses is a `sandbox` row of the certificate (`check.mjs --sandbox-base <ref>`, `pr.mjs` at `--base`; `node --test langs/ts/exec/sandbox-list.test.mjs`: `pass 8`, `fail 0`; [`langs/ts/design/sandbox-allow-list.md`](langs/ts/design/sandbox-allow-list.md)). Containment of hostile code is the gate's, in [DA](https://github.com/NexusGPT/differential-attestation).
