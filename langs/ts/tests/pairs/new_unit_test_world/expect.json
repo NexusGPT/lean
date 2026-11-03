@@ -1,0 +1,10 @@
+{
+ "why": "A unit no parent holds that asks the world gets a test whose stubs restate lean's own answers (exec/new-test.mjs worldOf, stubsOf, callsOf; design/w9al-world-stubs.md): fetch stubbed with lean's response, node:fs mocked with its text, the clock at lean's instant, Math.random spied, a write asserted by its path and content. Each row stays NEW, never PASS, and carries new:proposed-test with the world it stubbed.",
+ "candidateOnly": [
+  { "file": "candidate.ts", "unit": "fetchJson", "verdict": "NEW", "records": [ { "kind": "new:proposed-test", "dialect": "vitest", "world": { "surfaces": ["global:fetch"] }, "check": { "world": 0, "failed": 0 } } ] },
+  { "file": "candidate.ts", "unit": "stamp", "verdict": "NEW", "records": [ { "kind": "new:proposed-test", "world": { "surfaces": ["clock"] }, "check": { "world": 0, "failed": 0 } } ] },
+  { "file": "candidate.ts", "unit": "readConfig", "verdict": "NEW", "records": [ { "kind": "new:proposed-test", "world": { "surfaces": ["module:node:fs"] }, "check": { "world": 0, "failed": 0 } } ] },
+  { "file": "candidate.ts", "unit": "pick", "verdict": "NEW", "records": [ { "kind": "new:proposed-test", "world": { "surfaces": ["Math.random"] }, "check": { "world": 0, "failed": 0 } } ] },
+  { "file": "candidate.ts", "unit": "saveNote", "verdict": "NEW", "records": [ { "kind": "new:proposed-test", "text": "toHaveBeenNthCalledWith(1, ", "check": { "world": 0, "failed": 0 } } ] }
+ ]
+}
