@@ -594,7 +594,7 @@ export async function runNew(opts) {
     try {
       const exported = exportKind(reading, unit);
       const script = exported === false && !broken('new-test-script') && isScript(reading.sf) ? await scriptCases({ abs, options, ms, sources, seed, runs: Math.min(n, SCRIPT_RUNS) }) : null; // (lane w9bg) the body's runs are the unit's cases
-      proposed = await writeNewTest({ candidate: abs, unit, spec: { ...spec, exported }, script, decl, declared, handedParams: spec.handedParams ?? null, nullable, cases, specifiers: [...fakes].filter((f) => !/^(?:module|global):/.test(f)), statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
+      proposed = await writeNewTest({ candidate: abs, sourceName: opts.sourceName ?? null, unit, spec: { ...spec, exported }, script, decl, declared, handedParams: spec.handedParams ?? null, nullable, cases, specifiers: [...fakes].filter((f) => !/^(?:module|global):/.test(f)), statements: newProbes?.statements ?? null, lines: newProbes?.lines ?? null, seed, n, ms, options, sources, load: (file, env, extra) => loadCandidate(file, env, options, ms, sources, extra), reading, project }); }
     catch (e) { proposed = { kind: 'new:coverage', phase: 'test', reason: `the test writer failed: ${String(e?.message ?? e).slice(0, 200)}` }; }
     if (proposed) book.add(proposed, `${proposed.kind} proposed`);
   }

@@ -41,6 +41,8 @@
 //   new-test-env      exec/new-test.mjs surfaceOf/stubsOf, exec/new-unit.mjs envRead: an environment variable read is set
 //                     (or deleted) as lean's process answered, put back after (env.ts greeting)
 //   new-test-output   exec/new-test.mjs isOutput: a console call prints (script.ts: the run that completes logs)
+//   new-test-source-name exec/new-test.mjs placeOf, pr.mjs, check.mjs --source-name: a unit lean reads from pr.mjs's
+//                     temporary copy gets a test named after, and importing, the repository file (env.ts greeting)
 // Plain checks (no mechanism of their own): the clock read once is fake timers (stamp); Math.random is spied (pick); an
 // argument lean answers member by member is an object of its answers (describeUser); a unit that asks the world where no
 // stub answers gets no test, its reason naming the surface (world.ts elapsed: performance); a helper no export reaches
@@ -52,6 +54,7 @@
 //   node tests/new-unit-test.mjs           each check green
 //   node tests/new-unit-test.mjs --break   each check once with its mechanism switched off: every one must be red
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -262,6 +265,14 @@ const checks = [
     const r = run('send', script, m); const t = proposed(r); const text = t?.text ?? '';
     const ok = !!t && /it\("the script completes", async \(\) => \{/.test(text) && t.check?.passed === t.cases;
     return { ok, detail: t ? `cases ${t.cases}: ${[...text.matchAll(/it\("([^"]*)"/g)].map((x) => x[1]).join('; ').slice(0, 140)}` : coverageTest(r)?.reason ?? 'no record' };
+  }],
+  ['new-test-source-name', 'a unit read from a temporary copy (pr.mjs .lean_head_<pid>_) gets a test named after the repository file, importing it', (m) => {
+    const tmp = path.join(fixtures, `.lean_head_${process.pid}_env.ts`);
+    fs.copyFileSync(envFile, tmp);
+    let r; try { r = lean(['--candidate', tmp, '--unit', 'greeting', '--n', '24', '--source-name', 'env.ts'], m); } finally { fs.rmSync(tmp, { force: true }); }
+    const t = proposed(r); const text = t?.text ?? '';
+    const ok = !!t && t.file === 'env.greeting.lean.test.ts' && /^import \{ greeting \} from '\.\/env';$/m.test(text) && !/lean_head/.test(text) && t.check?.passed === t.cases;
+    return { ok, detail: t ? `file ${t.file}; ${(text.split('\n').find((l) => /from '\./.test(l)) ?? 'no import').trim()}; check ${JSON.stringify(t.check)}` : coverageTest(r)?.reason ?? 'no record' };
   }],
   [null, 'two runs of the writer on a script are byte-equal', () => {
     const a = proposed(lean(['--candidate', script, '--unit', 'send', '--n', '24'], null)), b = proposed(run('send', script));

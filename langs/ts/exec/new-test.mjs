@@ -81,9 +81,10 @@ export function runnerOf(file) {
   }
 }
 // where the test file goes: the package's `__tests__` folder beside the unit when the package uses one, else beside the unit
-function placeOf(file, unit, runner) {
+// `sourceName` (lane w9bg): the file's repository name when lean reads it from a temporary sibling (pr.mjs)
+function placeOf(file, unit, runner, sourceName = null) {
   const dir = path.dirname(path.resolve(file)), ext = path.extname(file) || '.ts';
-  const base = path.basename(file, ext), name = `${base}.${unit.replace(/[^\w$]+/g, '_')}.lean.test${ext}`;
+  const base = path.basename(sourceName ?? file, ext), name = `${base}.${unit.replace(/[^\w$]+/g, '_')}.lean.test${ext}`;
   const tests = path.join(dir, '__tests__');
   const useFolder = fs.existsSync(tests) && fs.statSync(tests).isDirectory();
   return { file: useFolder ? path.join(tests, name) : path.join(dir, name), importFrom: `${useFolder ? '../' : './'}${base}` };
@@ -649,7 +650,7 @@ function importsOf(candidate) {
   return out;
 }
 
-export async function writeNewTest({ candidate, unit, spec, declared = null, handedParams = null, nullable = false, cases: drawn = [], script = null, statements = null, lines = null, seed = 1, ms = 2000, options, load, project, specifiers = [] }) {
+export async function writeNewTest({ candidate, sourceName = null, unit, spec, declared = null, handedParams = null, nullable = false, cases: drawn = [], script = null, statements = null, lines = null, seed = 1, ms = 2000, options, load, project, specifiers = [] }) {
   // the unit as the repository's runner imports it: a top-level binding the module exports under its own name, or its default
   const exported = spec?.exported ?? null, binding = unit.includes('.') ? null : unit;
   const { runner, dir } = runnerOf(candidate);
@@ -695,7 +696,7 @@ export async function writeNewTest({ candidate, unit, spec, declared = null, han
   }
   if (!binding) return cover(`the unit ${unit} is a member (a class method or a property): the runner cannot call it by name (needs a stub)`);
   if (exported === false && !scripted) return cover(`the unit ${unit} is not exported: the repository's runner cannot import it (needs a stub)`);
-  const place = placeOf(candidate, unit, runner);
+  const place = placeOf(candidate, unit, runner, broken('new-test-source-name') ? null : sourceName); // LEAN_BREAK=new-test-source-name: named after the file lean read
   // (lane w9bg) a JavaScript script is imported by its file name with its extension (Node's ESM resolves no other); a
   // TypeScript one without, as the unit's own binding is
   if (scripted && /^\.[cm]?js$/.test(path.extname(candidate))) place.importFrom += path.extname(candidate);
