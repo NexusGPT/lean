@@ -131,6 +131,8 @@ export const MECHANISMS = {
   'w9ac-callee-files': 'exec/usage.mjs declaredFn: a callee in another local file (an import, a namespace member, a base method through super) is not read, so the literals it compares the unit\'s arguments against are not drawn (lane w9ac; tests/w9ac-compare-literals.mjs, pair callee_file_literals)',
   'w9ac-falsy-last': 'exec/search.mjs searchWorld: the infected draws are climbed in their order alone, a draw whose every differing value is falsy on both sides (run.mjs infectionOf) not last (lane w9ac; tests/w9ac-compare-literals.mjs)',
   'w9bb-source-nul': 'ci/ledger.mjs binaryBytes: a JavaScript or TypeScript file whose UTF-8 text holds a NUL byte (a raw NUL in a string or template literal) is read as binary, so no unit of it is listed (lane w9bb; tests/w9bb-hard-ask.mjs)',
+  'w9bb-runner-bound': 'exec/run.mjs boundedChild: the new unit\'s runner (exec/new-unit.mjs runNew) is bounded by wall time alone, not by its CPU time with a far wall guard, so a load past the cores kills a unit that is still within its budget (lane w9bb; tests/w9bb-hard-ask.mjs)',
+  'w9bb-runner-reason': 'exec/new-unit.mjs runnerReason: a runner that gives no result is ASK with the spawn\'s message (`spawnSync node ETIMEDOUT`) or `candidate runner exited <n>: <stdout>`, the budget it hit and the child\'s stderr unsaid (lane w9bb; tests/w9bb-hard-ask.mjs)',
 };
 // the switch itself is product code (../break.mjs), so the product never imports from tests/
 export { BREAK_ENV, broken } from '../break.mjs';

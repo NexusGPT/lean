@@ -22,7 +22,7 @@ import vm from 'node:vm';
 import crypto from 'node:crypto';
 import { broken } from '../break.mjs'; // the one --break convention (A6; names in tests/break.mjs)
 import { createRequire } from 'node:module';
-import { fork, spawnSync, execFile } from 'node:child_process';
+import { fork, spawn, spawnSync, execFile } from 'node:child_process';
 import { captureEnvironment, captureActive, snapshot, witnessRecord, drawSummary, CLOCK_EPOCH, beginUnitRecord, finishUnitRecord, incompleteUnitRecord } from './record.mjs';
 import { ts, loadProgram, topLevelFunctions, aliasTarget, literalMemberUnits, enclosingUnitName, MODULE_UNIT, moduleStatements, fileClassFieldsDefine } from '../common.mjs';
 import { Environment, render, renderTree, renderDrawn, programConstructor, BudgetError, promiseName, withSite, rememberFunctionSource, setRoots, bindRealm, ownFunction, resetEscapes, openEscapes, closeEscapes, escapeEntry, escapeKey, undecidedDrives, undrivenOf, pauseEscapes, resumeEscapes, canonHandles , enterWorld, behaviouralGlobals } from './fake.mjs';
@@ -1343,7 +1343,7 @@ function pollCpu() {
     if (cpu >= w.bound) w.onBound(cpu);
   });
 }
-function watchCpu(pid, bound, handlers) {
+export function watchCpu(pid, bound, handlers) {
   cpuWatched.set(pid, { bound, ...handlers });
   if (psUnavailable) handlers.onUnavailable();
   else if (!cpuPoll) { cpuPoll = setInterval(pollCpu, CPU_POLL_MS); cpuPoll.unref(); }
@@ -1370,6 +1370,37 @@ export function cpuRateNsPerIter(iters = 4_000_000, samples = 5) { // the median
     rates.push(((b.user - a.user) + (b.system - a.system)) * 1000 / iters);
   }
   rates.sort((p, q) => p - q); return rates[Math.floor(rates.length / 2)];
+}
+// A child process under the bound above (lane w9bb): `seconds` of its main thread's CPU, a wall guard FAR_GUARD times
+// longer (the CPU bound itself where no CPU reading exists). It resolves with the child's stdout, stderr, exit status and
+// signal, and `stop` when lean killed it: which bound, its seconds, the wall and CPU seconds spent, the one-minute load
+// and the cores, so a reason names the budget it hit. new-unit.mjs runNew's runner was a spawnSync under a wall bound
+// alone (max(30 s, (n + trial runs) x ms + 10 s)): the hard set lost 25 units to `spawnSync /usr/bin/node ETIMEDOUT`
+// under a load of 60 to 117 on 32 cores. LEAN_BREAK=w9bb-runner-bound: the wall bound alone, as before
+export function boundedChild(cmd, args, { seconds, env, maxBuffer = 1 << 26 }) {
+  return new Promise((resolve) => {
+    const started = Date.now(), wallOnly = broken('w9bb-runner-bound');
+    const child = spawn(cmd, args, { env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const out = [], err = []; let outLen = 0, errLen = 0, cpu = 0, stop = null, done = false;
+    child.stdout.on('data', (d) => { if (outLen < maxBuffer) { out.push(d); outLen += d.length; } });
+    child.stderr.on('data', (d) => { if (errLen < maxBuffer) { err.push(d); errLen += d.length; } });
+    const kill = (why, bound) => { if (stop) return; stop = { why, seconds: Math.round(bound), wallSeconds: Math.round((Date.now() - started) / 1000), cpuSeconds: Math.round(cpu), load: Math.round(os.loadavg()[0] * 10) / 10, cores: os.cpus().length || 1 }; try { child.kill('SIGKILL'); } catch { /* already gone */ } };
+    const wallAt = (s, why) => setTimeout(() => kill(why, s), Math.max(0, s * 1000 - (Date.now() - started)));
+    let timer = wallAt(wallOnly ? seconds : seconds * FAR_GUARD, wallOnly ? 'wall-clock' : `far wall-clock guard (${FAR_GUARD} times the CPU-time)`);
+    const watch = wallOnly ? { stop() {} } : watchCpu(child.pid, seconds, { onSample: (c) => { cpu = c; }, onBound: (c) => { cpu = c; kill('CPU-time', seconds); },
+      onUnavailable: () => { clearTimeout(timer); timer = wallAt(seconds, 'wall-clock'); } });
+    const end = (status, signal, error) => { if (done) return; done = true; clearTimeout(timer); watch.stop(); resolve({ stdout: Buffer.concat(out).toString('utf8'), stderr: Buffer.concat(err).toString('utf8'), status, signal, stop, error }); };
+    child.on('error', (e) => end(null, null, e));
+    child.on('close', (status, signal) => end(status, signal, null));
+  });
+}
+// The last lines of a child's stderr that say why it ended: Node's own warnings dropped, a FATAL ERROR (V8's heap) or an
+// uncaught error's line first when there is one
+export function stderrCause(stderr, lines = 3) {
+  const tail = String(stderr ?? '').split('\n').map((l) => l.trim()).filter((l) => l && !/ExperimentalWarning|trace-warnings|^\(node:\d+\) Warning/.test(l));
+  const fatal = tail.find((l) => /FATAL ERROR|^\w*Error\b|^Error:/.test(l));
+  const last = tail.slice(-lines);
+  return (fatal && !last.includes(fatal) ? [fatal, ...last] : last).join(' | ').slice(0, 600);
 }
 let loadFactor = 1;
 export function readLoadFactor() { const cores = os.cpus().length || 1; const load = os.loadavg()[0] || 0; loadFactor = Math.min(FAR_GUARD, Math.max(1, load / cores)); return loadFactor; }
