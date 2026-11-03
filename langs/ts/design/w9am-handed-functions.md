@@ -85,8 +85,9 @@ the call wrote into what it was handed, from `writeHanded`'s count).
 
 `callbackCalls(shown, requests, env)` reads every request of a case in time order (`requestsOf`: the call's own, then
 each drive's). When every request is a call of a drawn function argument (a `$fake` of the arguments whose path ends
-`#fn`), each answer is known, and no call wrote into its arguments, the case carries `callbacks: [{ path, calls:
-[{ args, returned }] }]`.
+`#fn`), each answer is known, no call wrote into its arguments, and no call handed the callback a function of the
+unit's (lean's fake runs such a function, a spy would not, so its statements would count for a test that never
+completes them), the case carries `callbacks: [{ path, calls: [{ args, returned }] }]`.
 
 A call whose only requests are such calls is not closed. It becomes a case of the test alone (`world: true`). It does
 not count in `reach.closed` and feeds no other fact (fault, shape, NaN, parameter trials). Those facts read exactly
@@ -101,7 +102,8 @@ order, and the calls are asserted at the end:
     expect(f).toHaveBeenNthCalledWith(1, "");
 
 jest uses `jest.fn()` (imported from `@jest/globals`). node:test and mocha use a plain recording function and
-`assert.deepStrictEqual(fCalls, [[""]])`, with `unknown[]` annotations in a TypeScript test.
+`assert.deepStrictEqual(fCalls, [[""]])`. In a TypeScript test it takes `unknown[]` annotations, and a spy that is
+never called answers `any`, so it stands for every callback type.
 
 A callback the drives call (`deferred(f)` returns `() => f() + 1`) is answered by the same spy, in the same order.
 
@@ -122,6 +124,14 @@ the test makes) and `callbacks: { cases, calls }`. `closed` counts the closed ca
 The refusal names each reason with its count, for example "24 closed call(s), none a test can restate by value:
 24 a handed-out function whose outcome holds a value of the world (needs a stub)".
 
+## The type check
+
+The generated tests of every fixture, and of seven more shapes (a curried function, an async method, a method on
+`this`, an array of functions, two callbacks, a callback answering an object, a function with an optional parameter
+that throws), type-check under `--strict` against the fixture with a minimal `vitest` / `node:test` declaration (0
+diagnostics, 18 files). The `makeAdder` test written under `LEAN_BREAK=new-test-drive-types` does not: `out([])` and
+`out(null)` are 3 diagnostics.
+
 ## What stays out
 
 - An object's prototype methods (a class instance): lean renders an instance by its own fields and never drives its
@@ -130,4 +140,6 @@ The refusal names each reason with its count, for example "24 closed call(s), no
   then `reset` three times. A `next` after `reset` would need lean to drive differently (run.mjs, shared with lane B).
 - A callback whose answer is a value of the world (a fake object it returns and the unit reads), a call of it that
   faulted on its seeded draw, or one that wrote into the objects it was handed.
+- A function the unit hands out only by writing it into an argument or a module binding: the test reaches it by no
+  path from the returned value ("reaches by no path").
 - Timers (`debounce`): lane w9al.
